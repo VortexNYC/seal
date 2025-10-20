@@ -372,7 +372,7 @@
 - **Member Updates**: Real-time workspace member list updates
 - **State Persistence**: Automatic workspace preference saving
 
-### Better Auth Integration
+### Clerk Integration
 - **Multi-Organization Support**: Handle users across multiple workspaces
 - **Permission Context**: Dynamic permission checking per workspace
 - **Role-Based Features**: Different UI based on user role in workspace
@@ -384,7 +384,7 @@
 - **Deep Linking**: Direct links to specific workspace contexts
 - **State Persistence**: Remember last active workspace preference
 
-### Polar Billing Integration
+### Stripe Billing Integration
 - **Per-Workspace Billing**: Independent billing status per workspace
 - **Feature Access**: Features based on current workspace subscription
 - **Trial Management**: Clear trial status and expiration warnings

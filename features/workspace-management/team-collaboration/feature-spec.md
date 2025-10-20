@@ -9,8 +9,8 @@
 - [ ] **Team activity visibility** and notifications
 
 ## Technology Stack Integration
-- **Better Auth Organization Plugin**: Team member management and invitations
-- **Better Auth RBAC Plugin**: Permission management for team collaboration
+- **Clerk Organizations**: Team member management and invitations
+- **Clerk Roles & Permissions**: Permission management for team collaboration
 - **Convex Presence**: Real-time collaboration and user presence tracking
 - **React Email + Resend**: Team notification system
 - **Convex**: Real-time document sharing and activity feeds
@@ -26,7 +26,7 @@
 ## Edge Cases (from Feature Edge Cases Breakdown)
 
 ### Feature Description
-Basic team workspace functionality using Better Auth organizations - simple document sharing within paid workspaces.
+Basic team workspace functionality using Clerk organizations - simple document sharing within paid workspaces.
 
 ### Core Functionality
 - Paid workspace with multiple team members
@@ -35,8 +35,8 @@ Basic team workspace functionality using Better Auth organizations - simple docu
 - Document access control
 
 ### Technology Stack Integration
-- **Better Auth Organizations**: Multi-tenant workspace management
-- **Better Auth RBAC**: Basic role permissions
+- **Clerk Organizations**: Multi-tenant workspace management
+- **Clerk Roles & Permissions**: Basic role permissions
 - **Convex Database**: Shared document storage
 
 ### Edge Cases & State Management
@@ -46,7 +46,7 @@ Basic team workspace functionality using Better Auth organizations - simple docu
   - Email invitation workflow using Resend
   - Pending invitation state management
   - Invitation expiration handling (7 days default)
-  - Better Auth organization member creation
+  - Clerk organization member creation
 - [ ] **Member role changes**: Update permissions when roles change
   - Owner to member role transitions only
   - Permission cascade updates when role changes
@@ -55,7 +55,7 @@ Basic team workspace functionality using Better Auth organizations - simple docu
 - [ ] **Removing team members**: Clean up access when members leave
   - Document access revocation
   - Document ownership transfer for departing owners
-  - Better Auth organization member removal
+  - Clerk organization member removal
 - [ ] **Team member limits**: Handle workspace member limits
   - Free tier: 1 user only (solo workspace)
   - Paid tier: unlimited members
@@ -79,7 +79,7 @@ Basic team workspace functionality using Better Auth organizations - simple docu
   - Document visibility levels (private, shared with workspace)
   - Simple read/write permission assignment
   - Document ownership tracking
-  - Better Auth permission checking integration
+  - Clerk permission checking integration
 - [ ] **Document access via email sharing**: External document access
   - Documents shared via email link (existing feature)
   - No workspace access for external recipients
@@ -92,7 +92,7 @@ Basic team workspace functionality using Better Auth organizations - simple docu
 
 #### Workspace Management
 - [ ] **Workspace creation and setup**: Initial team workspace setup
-  - Organization creation via Better Auth
+  - Organization creation via Clerk
   - Initial owner role assignment
   - Workspace name and settings configuration
   - Default permission structure setup
@@ -131,8 +131,8 @@ Basic team workspace functionality using Better Auth organizations - simple docu
   - Team member count accuracy via Convex automatic updates
   - Activity log completeness via Convex mutation guarantees
 
-#### Integration & API Access (Better Auth Plugin Integration)
-- [ ] **Team API access**: Organization-scoped API management via Better Auth plugins
+#### Integration & API Access (Clerk Integration)
+- [ ] **Team API access**: Organization-scoped API management via Clerk
   - **API Key Plugin**: Generate workspace-specific API keys with organization context
   - **Organization Plugin**: API keys inherit organization membership and permissions  
   - **RBAC Plugin**: API permissions based on user role (owner, member) within organization

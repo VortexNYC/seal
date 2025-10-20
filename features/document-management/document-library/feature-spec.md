@@ -30,12 +30,12 @@
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ User Interface ───────────────────────────────────────────────────────────────────╮
-│ • **TanStack Start**: Server-side rendering and API routes for document library     │
+│ • **TanStack Router**: Client-side routing for document library                     │
 │ • **React**: Component state management and loading indicators                       │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Security & Access Control ─────────────────────────────────────────────────────────╮
-│ • **Better Auth RBAC**: Workspace-scoped access control for document visibility     │
+│ • **Clerk Roles & Permissions**: Workspace-scoped access control for document visibility     │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -92,7 +92,7 @@
 - [ ] **Convex Subscription Success**: Real-time subscription to workspace documents established
   - Live Data: Documents appear immediately with current status (draft, pending, completed)
   - Real-time Updates: Document changes propagate instantly to UI
-  - Access Control: Better Auth RBAC filters documents in Convex query
+  - Access Control: Clerk Roles & Permissions filters documents in Convex query
 - [ ] **Convex Connection Failure**: Initial connection to Convex fails
   - Error State: "Unable to load documents. Checking connection..."
   - Retry Logic: Convex automatic reconnection with exponential backoff
@@ -174,7 +174,7 @@
   - Optimistic Updates: Actions appear successful immediately in UI
   - Server Confirmation: Convex confirms mutation success/failure
   - Live Propagation: Action results propagate to all connected users
-- [ ] **Mutation Permission Errors**: Better Auth RBAC prevents unauthorized actions
+- [ ] **Mutation Permission Errors**: Clerk Roles & Permissions prevents unauthorized actions
   - Client-side Prevention: Hide actions user doesn't have permission for
   - Server-side Validation: Convex mutations validate permissions server-side
   - Error Handling: Clear error messages when permissions insufficient
@@ -195,7 +195,7 @@
 - [ ] **Workspace-scoped Queries**: Convex queries filtered by current workspace
   - Automatic Scoping: All document queries automatically scoped to active workspace
   - Context Switching: Document list updates immediately when switching workspaces
-  - Access Validation: Better Auth RBAC validates workspace access server-side
+  - Access Validation: Clerk Roles & Permissions validates workspace access server-side
 - [ ] **Real-time Permission Changes**: Permission updates propagate via Convex
   - Permission Revocation: Documents disappear immediately when access revoked
   - Permission Grants: New documents appear when access granted

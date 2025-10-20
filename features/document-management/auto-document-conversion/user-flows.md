@@ -28,7 +28,7 @@
     ┃ ┇━ Document sent securely to Gotenberg on Fly.io              ┃
     ┃ ┇━ LibreOffice engine converts to PDF                        ┃
     ┃ ┇━ Real-time progress updates via Convex                     ┃
-    ┃ ┗━ Converted PDF returned to TanStack Start                  ┃
+    ┃ ┗━ Converted PDF returned to React app                       ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
     ┃
 ■ Conversion Completion

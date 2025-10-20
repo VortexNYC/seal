@@ -234,7 +234,7 @@ This document contains all features, enhancements, and requirements that are not
   - Clear pricing display and upgrade prompts
 
 - [ ] **Payment Processing** ⚡ Important
-  - Polar integration for subscription management
+  - Stripe integration for subscription management
   - Payment methods (credit card, bank transfer)
   - Invoice generation and history
   - Usage-based billing for overages
@@ -271,7 +271,7 @@ This document contains all features, enhancements, and requirements that are not
 - [ ] **Accessibility standards** (WCAG 2.1 AA minimum)
 
 ### Business Requirements
-- [ ] **Freemium model** operational with Polar integration
+- [ ] **Freemium model** operational with Stripe integration
 - [ ] **User onboarding** flow completed in <5 minutes
 - [ ] **Community feedback** systems in place
 - [ ] **Documentation** comprehensive for users and developers

@@ -379,7 +379,7 @@
 - **Error Handling**: Clear error messages with recovery options
 
 ### OAuth Integration
-- **Google/Microsoft**: Better Auth provider integration
+- **Google/Microsoft**: Clerk provider integration
 - **Loading States**: Show redirect progress
 - **Error Recovery**: Fall back to email/password
 
@@ -397,9 +397,9 @@
 
 ## Technical Integration
 
-### Better Auth Integration
-- Real-time validation using Better Auth patterns
-- Password strength requirements from Better Auth config
+### Clerk Integration
+- Real-time validation using Clerk patterns
+- Password strength requirements from Clerk config
 - OAuth provider configuration
 - Session creation on successful signup
 

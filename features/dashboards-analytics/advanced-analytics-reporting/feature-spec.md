@@ -12,7 +12,7 @@
 - **Convex**: Analytics data aggregation and queries
 - **React**: Dashboard and visualization components
 - **Chart.js/D3**: Data visualization and reporting
-- **Better Auth RBAC**: Analytics access control
+- **Clerk Roles & Permissions**: Analytics access control
 
 ## Business Requirements
 - Comprehensive workflow performance insights
@@ -51,14 +51,14 @@
 
 #### Team Analytics Access (Admin Permission)
 - [ ] **Team-wide analytics for admins**: Workspace admins can view team analytics
-  - **Better Auth RBAC**: Only workspace owners and admins can access team analytics
+  - **Clerk Roles & Permissions**: Only workspace owners and admins can access team analytics
   - **Team document metrics**: See analytics across all workspace documents
   - **Team member activity**: View document creation/completion by team members
   - **Workspace usage statistics**: Overall workspace document volume and activity
 - [ ] **Individual member analytics**: Personal analytics for all workspace members  
   - **Personal dashboard**: Each member sees only their own document metrics
   - **No team visibility**: Regular members cannot see other members' analytics
-  - **Permission enforcement**: Better Auth RBAC enforces analytics access control
+  - **Permission enforcement**: Clerk Roles & Permissions enforces analytics access control
 
 #### Error Handling
 - [ ] **Missing data**: Handle cases where analytics data is unavailable

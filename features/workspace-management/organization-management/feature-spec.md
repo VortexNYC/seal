@@ -2,17 +2,17 @@
 
 ## Feature Requirements (from MVP Core Features)
 
-### Organization Management ⭐ **Critical**  
+### Organization Management ⭐ **Critical**
 - [ ] **Create organizations** (teams/companies)
 - [ ] **Invite team members** via email
 - [ ] **Role-based permissions** (Owner, Admin, Member)
 - [ ] **Organization switching** for users in multiple orgs
-- [ ] **Basic billing per organization** (via Polar)
+- [ ] **Basic billing per organization** (via Stripe)
 
 ## Technology Stack Integration
-- **Better Auth Organization Plugin**: Workspace creation and member management
-- **Better Auth RBAC Plugin**: Role-based permissions (Owner, Admin, Member)
-- **Polar**: Billing integration with per-organization subscription management
+- **Clerk Organizations**: Workspace creation and member management
+- **Clerk Roles & Permissions**: Role-based permissions (Owner, Admin, Member)
+- **Stripe**: Billing integration with per-organization subscription management
 - **React Email + Resend**: Email invitations and notifications
 - **Convex**: Real-time organization data and member presence
 
@@ -26,12 +26,12 @@
 
 ## Edge Cases (from Feature Edge Cases Breakdown)
 
-### Better Auth Organization Plugin Integration
-- **Workspace Creation**: Better Auth's organization plugin handles workspace creation
+### Clerk Organizations Integration
+- **Workspace Creation**: Clerk's organization system handles workspace creation
 - **Member Management**: Built-in invitation system with email verification
 - **Role Assignment**: RBAC plugin provides Owner/Admin/Member roles
 - **Multi-workspace Support**: Users can belong to multiple workspaces
-- **Billing Association**: Each workspace has separate Polar subscription
+- **Billing Association**: Each workspace has separate Stripe subscription
 
 ### Workspace Creation States & Edge Cases
 
@@ -48,7 +48,7 @@
 #### Workspace Creation Edge Cases
 - [ ] **Standard Workspace Creation**: Any email type creates workspace
   - Success: Workspace created, user is owner
-  - Better Auth: Uses organization plugin create method
+  - Clerk: Uses organization creation API
 - [ ] **Duplicate Workspace Name**: User's chosen name already exists
   - Resolution: Auto-append number "My Workspace (2)"
   - Fallback: Allow user to choose different name
@@ -70,9 +70,9 @@
 
 ### Member Invitation & Management Edge Cases
 
-#### Invitation Flow (Better Auth + React Email + Resend)
+#### Invitation Flow (Clerk + React Email + Resend)
 - [ ] **Single Member Invitation**: Owner invites one person
-  - Process: Better Auth invitation creation → React Email template → Resend delivery
+  - Process: Clerk invitation creation → React Email template → Resend delivery
 - [ ] **Batch Email Invitations**: Owner invites up to 10 people at once
   - UI: Textarea with comma/newline separated emails
   - Validation: Email format check, duplicate detection within batch
@@ -84,7 +84,7 @@
 #### Invitation Delivery Edge Cases
 - [ ] **Email Delivered Successfully**: Standard invitation flow via Resend
 - [ ] **Email Bounced**: Invalid recipient email address
-  - Status: Mark invitation as "bounced" in Better Auth
+  - Status: Mark invitation as "bounced" in Clerk
   - Action: Notify sender, provide retry option
 - [ ] **Resend Rate Limiting**: Too many invitations sent quickly
   - Behavior: Queue emails, respect Resend rate limits
@@ -92,20 +92,20 @@
 
 #### Invitation Response Edge Cases
 - [ ] **Invitation Accepted**: New member joins workspace
-  - State: Update Better Auth organization membership
+  - State: Update Clerk organization membership
   - Convex: Real-time update to all workspace members
 - [ ] **Invitation Declined**: Recipient explicitly declines
   - State: Mark invitation as declined, notify sender
-- [ ] **Invitation Expired**: > 7 days old (Better Auth default)
+- [ ] **Invitation Expired**: > 7 days old (Clerk default)
   - State: Auto-expire invitation, require new invitation
 - [ ] **User Already Member**: Invited user is already in workspace
   - Info: "You're already a member of this workspace"
 - [ ] **Invitation to Self**: Owner tries to invite their own email
   - Error: "You can't invite yourself to the workspace"
 
-### Role Management Edge Cases (Better Auth RBAC)
+### Role Management Edge Cases (Clerk Roles & Permissions)
 
-#### Role Assignment States (Following Better Auth Patterns)
+#### Role Assignment States (Following Clerk Patterns)
 - [ ] **Owner Role**: Full permissions, cannot be removed by others
   - Permissions: All workspace settings, billing, member management
 - [ ] **Admin Role**: Most permissions, cannot modify owner
@@ -115,7 +115,7 @@
 
 #### Role Change Edge Cases
 - [ ] **Promote Member to Admin**: Owner promotes existing member
-  - Process: Better Auth RBAC role update
+  - Process: Clerk role update
   - Notification: Email notification via React Email + Resend
 - [ ] **Owner Transfer**: Current owner wants to transfer ownership
   - Requirement: Must have another admin to transfer to
@@ -148,16 +148,16 @@
   - Detection: Real-time permission update via Convex
   - Action: Immediate context switch, show notification
 
-### Billing Integration Edge Cases (Polar Plugin)
+### Billing Integration Edge Cases (Stripe)
 
 #### Simplified Billing Model
 - [ ] **New Workspace Created**: Plan-based requirements
   - Free Plan: No payment required, 10 docs/month limit
   - Pro Trial: Payment info required, 2-week trial then $10/month per seat
   - Billing: Independent subscription per workspace
-- [ ] **Billing Setup Success**: Polar subscription active
+- [ ] **Billing Setup Success**: Stripe subscription active
   - State: Workspace enabled, full feature access
-- [ ] **Pro Trial Billing Setup Failure**: Payment info declined, Polar API error
+- [ ] **Pro Trial Billing Setup Failure**: Payment info declined, Stripe API error
   - State: Fallback to Free plan with limitations
   - Action: Fix payment method to activate Pro features
 - [ ] **Trial Expiration**: 2-week trial ends without payment
@@ -166,7 +166,7 @@
 
 #### Multi-Workspace Billing Edge Cases
 - [ ] **User in Multiple Paid Workspaces**: Each workspace pays for user's seat independently
-  - Behavior: Each workspace has independent Polar subscription and pays for their own seats
+  - Behavior: Each workspace has independent Stripe subscription and pays for their own seats
   - UI: Clear billing context when switching workspaces, user sees features based on current workspace plan
 - [ ] **Payment Method Update**: Payment info expires or changes
   - Notification: Email all workspace admins via React Email + Resend
@@ -188,17 +188,17 @@
 
 #### Platform Admin Override Capabilities
 - [ ] **Workspace Management**: Platform admin can access any workspace
-  - Permission: Super admin role in Better Auth admin plugin
+  - Permission: Super admin role in Clerk dashboard
   - Audit: All admin actions logged for compliance
 - [ ] **Force User Removal**: Remove problematic users from workspaces
   - Process: Admin plugin user management interface
-- [ ] **Billing Override**: Admin can modify billing without Polar
+- [ ] **Billing Override**: Admin can modify billing without Stripe
   - Use case: Customer service, refunds, special arrangements
   - Audit: Financial override actions logged
 
 #### Multi-Tenant Security (Admin Plugin)
 - [ ] **Workspace Data Isolation**: Each workspace's data completely separate
-  - Technical: Better Auth ensures proper data scoping
+  - Technical: Clerk ensures proper data scoping
 - [ ] **Admin Access Logging**: All platform admin actions tracked
   - Storage: Immutable audit log for compliance
 - [ ] **Emergency Access**: Platform issues require immediate access
@@ -211,4 +211,4 @@
 - **Example**: User in 3 workspaces = 3 workspaces each pay for their own seats independently
 - **User Experience**: John joins Acme Corp workspace → Acme Corp pays for John's seat, John gets Pro features
 - **Rationale**: Freemium drives adoption, workspace owners control billing for Pro features
-- **Implementation**: Each workspace has independent Polar subscription or Free tier, users inherit workspace plan features
+- **Implementation**: Each workspace has independent Stripe subscription or Free tier, users inherit workspace plan features

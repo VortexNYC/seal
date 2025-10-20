@@ -254,9 +254,9 @@
 - **Error Detection**: Advanced cryptographic error detection
 - **Performance Optimization**: Efficient hashing for large documents
 
-### Better Auth Integration
+### Clerk Integration
 - **Session Validation**: Secure session management during security events
-- **Access Control**: Integration with Better Auth access control
+- **Access Control**: Integration with Clerk access control
 - **API Security**: Secure API endpoints for security operations
 - **Multi-Factor**: Additional authentication for high-security actions
 

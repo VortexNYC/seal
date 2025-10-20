@@ -27,14 +27,14 @@
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Template Interface ───────────────────────────────────────────────────────────────────╮
-│ • **TanStack Start**: Server-side rendering for template interfaces and API routes    │
+│ • **TanStack Router**: Client-side routing for template interfaces                    │
 │ • **React**: Template creation, management, and discovery interfaces                   │
 │ • **fuzzysort**: Template search and discovery (consistent with document search)      │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Template Storage & Security ──────────────────────────────────────────────────────────╮
 │ • **Convex**: Template storage, sharing, version control, and real-time sync          │
-│ • **Better Auth RBAC**: Workspace-scoped template permissions and access control      │
+│ • **Clerk Roles & Permissions**: Workspace-scoped template permissions and access control      │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -135,7 +135,7 @@ Templates are reusable document scaffolds (like "Sales Agreement", "Partnership 
   - Workspace Templates: All workspace members can access shared templates
   - Permission Levels: View-only vs edit permissions for templates
   - Template Ownership: Track template creator and maintainers
-  - Access Control: Better Auth RBAC controls template access
+  - Access Control: Clerk Roles & Permissions controls template access
 
 #### Template Application & Usage (Independence Model)
 - [ ] **New document from template**: Template creates completely independent document copy

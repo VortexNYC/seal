@@ -355,19 +355,19 @@
   - Auto-complete support for password managers
   - Clear on multiple failed attempts
 
-- **Remember Me**: 
-  - Extends session duration (Better Auth configuration)
+- **Remember Me**:
+  - Extends session duration (Clerk configuration)
   - Persists workspace selection
   - Clear visual indication when checked
 
 ### Authentication Flow
-- **Rate Limiting**: Better Auth handles attempt limiting
-- **Session Management**: JWT tokens via Better Auth + Convex
+- **Rate Limiting**: Clerk handles attempt limiting
+- **Session Management**: JWT tokens via Clerk + Convex
 - **Multi-Workspace**: Show workspace selector after successful auth
 - **Plan Context**: User inherits features from the selected workspace's subscription plan
 
 ### OAuth Integration
-- **Provider Support**: Google, Microsoft, Apple via Better Auth
+- **Provider Support**: Google, Microsoft, Apple via Clerk
 - **Error Handling**: Clear fallback to email/password
 - **Account Linking**: Handle existing account scenarios
 
@@ -401,7 +401,7 @@
 
 ## Technical Integration
 
-### Better Auth Integration
+### Clerk Integration
 - Email/password authentication
 - OAuth provider configuration (Google, Microsoft, Apple)
 - Session management and refresh tokens
@@ -409,6 +409,6 @@
 
 ### State Management
 - Form state via TanStack Form
-- Authentication state via Better Auth
+- Authentication state via Clerk
 - Loading states and error handling
 - Workspace selection persistence

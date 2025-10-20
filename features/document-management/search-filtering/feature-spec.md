@@ -30,9 +30,9 @@
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ User Interface ───────────────────────────────────────────────────────────────────╮
-│ • **TanStack Start**: Server-side rendering for search interfaces and API routes    │
+│ • **TanStack Router**: Client-side routing for search interfaces                    │
 │ • **React**: Search interface and filter components                                   │
-│ • **Better Auth RBAC**: Workspace-scoped search access control                       │
+│ • **Clerk Roles & Permissions**: Workspace-scoped search access control                       │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -197,7 +197,7 @@
 
 #### Workspace Context & Permissions
 - [ ] **Workspace-scoped search**: Search only documents user can access
-  - Better Auth RBAC filtering in search results
+  - Clerk Roles & Permissions filtering in search results
   - Workspace-specific document search
   - Permission-based result filtering
   - No leaked document information in search

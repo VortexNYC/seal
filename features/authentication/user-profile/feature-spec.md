@@ -9,7 +9,7 @@
 - [ ] **Usage statistics** (documents sent, signed)
 
 ## Technology Stack Integration
-- **Better Auth**: User profile management
+- **Clerk**: User profile management
 - **Convex**: Real-time data sync for profile updates
 - **Resend**: Email delivery for profile-related notifications
 - **File uploads**: Avatar image handling with validation
@@ -30,4 +30,4 @@
 - **Timezone**: Auto-detection only (legal compliance for signing timestamps)
 - **Notifications**: Email-only approach (no real-time browser notifications or toast messages)
 - **Data Export**: Full export capabilities maintained
-- **Security**: Follow Better Auth patterns
+- **Security**: Follow Clerk patterns

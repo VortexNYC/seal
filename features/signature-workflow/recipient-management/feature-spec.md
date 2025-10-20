@@ -11,10 +11,10 @@
 - [ ] **Approval Chains** for multi-level approval
 
 ## Technology Stack Integration
-- **TanStack Start**: Server-side rendering for recipient interfaces and API routes
+- **TanStack Router**: Client-side routing for recipient interfaces
 - **React**: Recipient management interface components and forms
 - **Zod**: Email validation, recipient data schemas, and form validation
-- **Better Auth RBAC**: User lookup, organization member validation, and access control
+- **Clerk Roles & Permissions**: User lookup, organization member validation, and access control
 - **Convex**: Recipient data storage, real-time updates, and status tracking
 - **Resend**: Email delivery, bounce handling, and delivery tracking
 - **date-fns**: Signing deadline management and notification scheduling

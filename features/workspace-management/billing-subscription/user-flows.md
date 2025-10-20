@@ -18,13 +18,13 @@
     ├─ Show: Pro plan benefits and pricing
     └─ Action: "Upgrade to Pro - $10/month per user"
     ↓
-○ Payment Method Setup (Polar Integration)
-    ├─ Form: Credit card details via Polar
+○ Payment Method Setup (Stripe Integration)
+    ├─ Form: Credit card details via Stripe
     ├─ Validation: Real-time card validation
     └─ Security: PCI-compliant processing
     ↓
 □ Subscription Creation
-    ├─ Polar: Create Pro subscription
+    ├─ Stripe: Create Pro subscription
     ├─ Billing: Immediate Pro activation
     ├─ Features: Unlock unlimited documents
     └─ Notification: Email confirmation sent
@@ -46,7 +46,7 @@
     └─ Primary: Mark primary payment method
     ↓
 ○ Add New Payment Method
-    ├─ Form: Credit card form via Polar
+    ├─ Form: Credit card form via Stripe
     ├─ Validation: Card number, expiry, CVC
     └─ Save: Store payment method securely
     ↓
@@ -58,7 +58,7 @@
 
 ### Failed Payment Recovery Flow
 ```
-○ Payment Failure Occurs (Polar Webhook)
+○ Payment Failure Occurs (Stripe Webhook)
     ↓
 □ Payment Failed Notification
     ├─ Email: Immediate notification to workspace owner
@@ -72,7 +72,7 @@
     └─ Validate: Test new payment method
     ↓
 □ Payment Retry Process
-    ├─ Polar: Retry failed payment with new method
+    ├─ Stripe: Retry failed payment with new method
     ├─ Success: Clear failed payment status
     ├─ Failure: Continue grace period countdown
     └─ Notification: Email confirmation of payment status
@@ -95,7 +95,7 @@
     ↓
 ○ Invoice Download
     ├─ Click: "Download PDF" for specific invoice
-    ├─ Generate: PDF invoice via Polar
+    ├─ Generate: PDF invoice via Stripe
     ├─ Content: Workspace details, billing period, charges
     └─ Download: Automatic PDF download to browser
 ```
@@ -121,7 +121,7 @@
 □ Billing Cycle End
     ├─ Automatic: Downgrade to Free plan
     ├─ Limits: Enforce Free plan restrictions
-    ├─ Payment: Cancel Pro subscription via Polar
+    ├─ Payment: Cancel Pro subscription via Stripe
     └─ Notification: Downgrade completion email
 ```
 
@@ -135,7 +135,7 @@
     └─ Display: "Adding member will increase billing to $20/month"
     ↓
 ○ Member Addition Confirmed
-    ├─ Polar: Update subscription quantity
+    ├─ Stripe: Update subscription quantity
     ├─ Prorated: Calculate mid-month billing adjustment
     ├─ Billing: Next invoice reflects new member count
     └─ Notification: Billing update confirmation
@@ -157,7 +157,7 @@
     └─ Confirm: "Are you sure you want to cancel?"
     ↓
 ○ Cancellation Processed
-    ├─ Polar: Cancel subscription at period end
+    ├─ Stripe: Cancel subscription at period end
     ├─ Status: "Cancelled - expires [date]"
     ├─ Access: Maintain Pro features until expiration
     └─ Notification: Cancellation confirmation email
@@ -175,7 +175,7 @@
 ```
 ○ Non-Owner Attempts Billing Access
     ↓
-□ Permission Check (Better Auth RBAC)
+□ Permission Check (RBAC)
     ├─ Role: Check workspace owner role
     ├─ Denial: "You don't have permission to access billing"
     ├─ Display: Read-only plan information
@@ -189,7 +189,7 @@
 □ Error Handling
     ├─ Card Declined: "Your card was declined. Please try a different card."
     ├─ Expired Card: "Your card has expired. Please update your payment method."
-    ├─ Polar Error: "Payment processing temporarily unavailable. Please try again."
+    ├─ Stripe Error: "Payment processing temporarily unavailable. Please try again."
     └─ Network Error: "Connection error. Please check your internet and retry."
     ↓
 ○ Recovery Options

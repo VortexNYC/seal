@@ -67,7 +67,7 @@
 ○ Developer Needs API Access
     ↓
 □ Pro Plan Verification
-    ├─ Better Auth RBAC checks Pro plan status
+    ├─ RBAC checks Pro plan status
     ├─ Workspace has API access enabled
     ├─ User has permission to generate keys
     └─ API key limits not exceeded
@@ -79,7 +79,7 @@
     └─ No complex configuration required
     ↓
 □ API Key Creation Process
-    ├─ Better Auth API Key Plugin handles generation
+    ├─ API Key system handles generation
     ├─ Workspace-scoped key with proper permissions
     ├─ Auto-generated key with "seal_" prefix
     └─ Key metadata stored for management

@@ -267,7 +267,7 @@
 
 ## Integration Touch Points
 
-### Better Auth Integration
+### Authentication Integration
 - **Seamless Registration**: Simple email/password flow
 - **Workspace Creation**: Automatic workspace with sensible defaults
 - **Session Persistence**: Maintain onboarding progress across sessions

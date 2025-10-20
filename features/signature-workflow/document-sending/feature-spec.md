@@ -13,7 +13,7 @@
 - [ ] **Bulk document sending** for multiple documents
 
 ## Technology Stack Integration
-- **TanStack Start**: Server-side rendering for sending interfaces and API routes
+- **TanStack Router**: Client-side routing for sending interfaces
 - **React**: Document sending interface, preview, and messaging components
 - **Zod**: Email message validation, deadline validation, and form schemas
 - **Convex**: Document status tracking, sending logs, and real-time updates

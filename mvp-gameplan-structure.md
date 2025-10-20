@@ -12,7 +12,7 @@ Focus on the **essential 20%** of features that deliver **80%** of the value. We
 - [ ] **User Journey Mapping**: Document signing from sender and signer perspectives  
 - [ ] **Technical Architecture Planning**: System design and data flow
 - [ ] **Legal Requirements Research**: Digital signature compliance (eSign Act, UETA)
-- [ ] **Integration Planning**: Better Auth, Polar, Convex setup strategies
+- [ ] **Integration Planning**: Clerk, Stripe, Convex setup strategies
 
 ### Validation & Feedback
 - [ ] **Developer Community Outreach**: Gauge interest and gather requirements
@@ -23,12 +23,12 @@ Focus on the **essential 20%** of features that deliver **80%** of the value. We
 
 ### Backend Foundation
 - [ ] **Convex Setup**: Database schema, real-time subscriptions
-- [ ] **Better Auth Integration**: User authentication, organization management
+- [ ] **Clerk Integration**: User authentication, organization management
 - [ ] **File Storage**: Document upload, storage, and retrieval system
 - [ ] **API Design**: RESTful endpoints for core operations
 
-### Frontend Foundation  
-- [ ] **TanStack Start Setup**: Project scaffolding, routing, SSR
+### Frontend Foundation
+- [ ] **TanStack Router Setup**: Project scaffolding, client-side routing
 - [ ] **shadcn/ui Integration**: Design system, component library
 - [ ] **Authentication Flow**: Login, signup, organization switching
 - [ ] **Basic Dashboard**: User interface skeleton
@@ -78,7 +78,7 @@ Focus on the **essential 20%** of features that deliver **80%** of the value. We
 ## 💰 Phase 5: Business Integration (Week 11-12)
 
 ### Payment Integration
-- [ ] **Polar Setup**: Payment processing, subscription management
+- [ ] **Stripe Setup**: Payment processing, subscription management
 - [ ] **Pricing Tiers**: Free tier definition, paid plan structure
 - [ ] **Usage Tracking**: Document limits, feature restrictions
 - [ ] **Billing Dashboard**: Invoice management, payment history

@@ -6,9 +6,9 @@
 ```
 ○ External System Makes API Request
     ↓
-□ Better Auth API Key Validation
+□ API Key Validation
     ├─ Extract Bearer token from Authorization header
-    ├─ Better Auth API Key Plugin validates token
+    ├─ API Key validation system checks token
     ├─ Check if API key exists and is active
     └─ Verify workspace and user permissions
     ↓
@@ -155,7 +155,7 @@
 ```
 ○ API Request Subject to Rate Limiting
     ↓
-□ Better Auth Rate Limit Check
+□ Rate Limit Check
     ├─ API key current usage retrieved
     ├─ Rate limit window and limits checked
     ├─ Request count within time window

@@ -167,7 +167,7 @@
 │    │                    Start Pro Trial                                  │  │
 │    └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│              🔒 Secure billing powered by Polar                             │
+│              🔒 Secure billing powered by Stripe                             │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -460,7 +460,7 @@
 │ │Create & Start Trial │ │
 │ └─────────────────────┘ │
 │                         │
-│ 🔒 Secure via Polar     │
+│ 🔒 Secure via Stripe     │
 │                         │
 └─────────────────────────┘
 ```
@@ -476,15 +476,15 @@
 - **URL Sanitization**: Convert to URL-safe format for workspace routing
 
 ### Billing Integration
-- **Polar Integration**: Plan-based payment processing (Pro Trial only)
+- **Stripe Integration**: Plan-based payment processing (Pro Trial only)
 - **Free Plan**: No payment collection required
 - **Pro Trial Management**: Automatic 2-week trial activation with payment info
 - **Error Handling**: Clear payment error messages with Free plan fallback
 - **Security**: PCI-compliant payment processing for Pro plans
 
-### Better Auth Integration
-- **Organization Creation**: Uses Better Auth Organization plugin
-- **Owner Role Assignment**: Automatic owner role via RBAC plugin
+### Clerk Integration
+- **Organization Creation**: Uses Clerk Organizations
+- **Owner Role Assignment**: Automatic owner role assignment
 - **Permission Setup**: Immediate full workspace permissions
 - **Multi-workspace Support**: Prepares for future workspace membership
 
@@ -498,13 +498,13 @@
 
 ## Technical Integration
 
-### Better Auth Organization Plugin
+### Clerk Organization Plugin
 - **Workspace Creation**: Uses createOrganization API
-- **Owner Assignment**: Automatic role assignment via RBAC
+- **Owner Assignment**: Automatic role assignment
 - **Member Management**: Prepares invitation infrastructure
 - **Multi-workspace Support**: User can belong to multiple organizations
 
-### Polar Billing Integration
+### Stripe Billing Integration
 - **Subscription Creation**: Per-workspace subscription model (Pro plans only)
 - **Free Plan**: No payment processing required
 - **Pro Trial Processing**: Secure payment info collection and storage

@@ -628,10 +628,10 @@
 - **Real-time Updates**: Live progress and status updates via Convex subscriptions
 - **Analytics**: Track completion rates and identify drop-off points
 
-### Better Auth Integration
+### Clerk Integration
 - **Session Management**: Maintain authentication throughout multi-step flow
 - **Workspace Creation**: Automatic workspace setup during onboarding
-- **User Context**: Personalized experience based on Better Auth user data
+- **User Context**: Personalized experience based on Clerk user data
 - **Security**: Secure document handling with proper access control
 
 ### shadcn/ui Integration

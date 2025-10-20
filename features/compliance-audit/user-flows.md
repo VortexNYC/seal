@@ -247,7 +247,7 @@
 ○ User Requests Access to Audit Trails
     ↓
 □ Permission Verification Process
-    ├─ Better Auth RBAC permission check
+    ├─ RBAC permission check
     ├─ User role and workspace context verified
     ├─ Document access permissions validated
     └─ Audit access authorization confirmed

@@ -16,7 +16,7 @@
     ┃ ┣━ Convex subscription establishes for workspace documents      ┃
     ┃ ┣━ Real-time document list populates instantly                 ┃
     ┃ ┣━ Document status indicators show current state               ┃
-    ┃ ┗━ Access control enforced via Better Auth RBAC               ┃
+    ┃ ┗━ Access control enforced via RBAC                           ┃
     ┃                                                                 ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
     ┃

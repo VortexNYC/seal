@@ -11,12 +11,12 @@
 
 ### Security & Cryptography
 - **Web Crypto API**: Modern browser-native cryptography for digital signatures
-- **Better Auth**: Secure authentication and session management
+- **Clerk**: Production-ready authentication and session management
 - **Convex**: Secure backend with built-in data validation
 
 ### API Management & Compliance
-- **Better Auth API Key Plugin**: API key generation and management for external integrations
-- **Retraced**: Open source audit logging service for eSign compliance
+- **Clerk**: API key generation and management for external integrations (via Clerk API)
+- **Convex**: Immutable audit logging for eSign compliance
 - **Convex Presence**: Real-time collaboration and user presence tracking
 
 ## Business Requirements
@@ -29,7 +29,7 @@
 ## Edge Cases (from Feature Edge Cases Breakdown)
 
 ### Feature Description
-Essential document security and legal compliance features that work alongside Better Auth's built-in security measures.
+Essential document security and legal compliance features that work alongside Clerk's built-in security measures.
 
 ### Core Functionality
 - Document integrity verification
@@ -40,8 +40,8 @@ Essential document security and legal compliance features that work alongside Be
 ### Technology Stack Integration
 - **Convex Database**: Secure document storage and audit logs
 - **Web Crypto API**: Modern browser-native cryptography for hashing
-- **Better Auth**: Handles all user authentication, MFA, session security
-- **Retraced**: Audit logging service
+- **Clerk**: Handles all user authentication, MFA, session security
+- **Convex**: Immutable audit logging service
 
 ### Edge Cases & State Management
 

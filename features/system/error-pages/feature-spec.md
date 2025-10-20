@@ -10,8 +10,8 @@
 - [ ] **Session Expired** page for authentication timeout
 
 ## Technology Stack Integration
-- **TanStack Start**: Error boundaries and server-side error handling
-- **Better Auth**: Session expiration and permission errors
+- **TanStack Router**: Error boundaries and client-side error handling
+- **Clerk**: Session expiration and permission errors
 - **React**: Client-side error boundaries for unhandled exceptions
 - **Convex**: Network error detection and offline state management
 
@@ -63,7 +63,7 @@
 - [ ] **Database Connection Error**: Convex connection failure  
   - Display: "We're having trouble connecting to our servers"
   - Recovery: [Retry] [Check Status Page] [Contact Support]
-- [ ] **Third-party Service Error**: Polar, Resend, or other service failure
+- [ ] **Third-party Service Error**: Stripe, Resend, or other service failure
   - Display: Service-specific error message
   - Context: "Payment processing temporarily unavailable"
   - Recovery: [Try Later] [Use Alternative] [Contact Support]

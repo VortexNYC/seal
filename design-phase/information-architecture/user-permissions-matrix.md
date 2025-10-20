@@ -1,21 +1,21 @@
 # User Permissions Matrix - Simplified RBAC System
 
-## Better Auth RBAC Integration Overview
+## Clerk RBAC Integration Overview
 
-This permissions matrix defines role-based access control for all 26 features using Better Auth's RBAC plugin with three core workspace roles: Member, Admin, and Owner.
+This permissions matrix defines role-based access control for all 26 features using Clerk's RBAC with three core workspace roles: Member, Admin, and Owner.
 
 ---
 
-## <­ Role Definitions & Hierarchy
+## <ï¿½ Role Definitions & Hierarchy
 
 ### Role Inheritance Structure
 ```
 Workspace Owner
-    “ (all workspace permissions)
+    ï¿½ (all workspace permissions)
 Workspace Admin  
-    “ (management permissions)
+    ï¿½ (management permissions)
 Workspace Member
-    “ (standard user permissions)
+    ï¿½ (standard user permissions)
 ```
 
 ---
@@ -39,7 +39,7 @@ Workspace Member
 
 ---
 
-## =Ê Complete Permissions Matrix
+## =ï¿½ Complete Permissions Matrix
 
 ### = Authentication & Security (Feature #1, #26)
 
@@ -59,7 +59,7 @@ Workspace Member
 
 ---
 
-### <â Workspace Management (Feature #2, #21, #25)
+### <ï¿½ Workspace Management (Feature #2, #21, #25)
 
 | Permission | Member | Admin | Owner |
 |------------|---------|-------|-------|
@@ -81,7 +81,7 @@ Workspace Member
 
 ---
 
-### =Ä Document Management (Feature #4, #5, #6, #17, #24)
+### =ï¿½ Document Management (Feature #4, #5, #6, #17, #24)
 
 | Permission | Member | Admin | Owner |
 |------------|---------|-------|-------|
@@ -135,7 +135,7 @@ Workspace Member
 
 ---
 
-### =¬ Communications (Feature #11, #12)
+### =ï¿½ Communications (Feature #11, #12)
 
 | Permission | Member | Admin | Owner |
 |------------|---------|-------|-------|
@@ -152,7 +152,7 @@ Workspace Member
 
 ---
 
-### =Ê Analytics & Reporting (Feature #13, #20)
+### =ï¿½ Analytics & Reporting (Feature #13, #20)
 
 | Permission | Member | Admin | Owner |
 |------------|---------|-------|-------|
@@ -204,7 +204,7 @@ Workspace Member
 
 ---
 
-### =Ë Compliance & Audit (Feature #23)
+### =ï¿½ Compliance & Audit (Feature #23)
 
 | Permission | Member | Admin | Owner |
 |------------|---------|-------|-------|
@@ -220,7 +220,7 @@ Workspace Member
 
 ---
 
-## = Better Auth Configuration
+## = Clerk Configuration
 
 ### RBAC Plugin Configuration
 ```javascript
@@ -274,7 +274,7 @@ rbac: {
 
 ---
 
-## <¯ Key Permission Patterns
+## <ï¿½ Key Permission Patterns
 
 ### Resource Ownership
 - **Own Resources**: Members can manage their own documents, templates, API keys

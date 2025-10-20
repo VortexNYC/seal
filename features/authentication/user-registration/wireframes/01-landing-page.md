@@ -207,12 +207,12 @@
 
 ### OAuth Buttons
 - **Google OAuth**: "Continue with Google"
-  - Target: Better Auth Google provider
+  - Target: Clerk Google provider
   - Icon: Google logo
   - Branded colors per Google guidelines
   
 - **Microsoft OAuth**: "Continue with Microsoft"
-  - Target: Better Auth Microsoft provider
+  - Target: Clerk Microsoft provider
   - Icon: Microsoft logo
   - Branded colors per Microsoft guidelines
 

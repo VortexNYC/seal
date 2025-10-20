@@ -6,10 +6,10 @@
 - [ ] **User onboarding** flow completed in <5 minutes
 
 ## Technology Stack Integration
-- **Better Auth**: Seamless authentication flow integration
+- **Clerk**: Seamless authentication flow integration
 - **React**: Interactive onboarding components
 - **Convex**: Real-time progress tracking during onboarding
-- **Better Auth Organization Plugin**: Workspace creation during onboarding
+- **Clerk Organizations**: Workspace creation during onboarding
 
 ## Business Requirements
 - Fast, intuitive onboarding process
@@ -20,7 +20,7 @@
 - Mobile-responsive onboarding experience
 
 ## Design Philosophy
-- Polar-inspired minimalist aesthetic
+- Stripe-inspired minimalist aesthetic
 - Focus on getting users to success quickly
 - Progressive disclosure of features
 - Clear progress indicators
@@ -31,8 +31,8 @@
 
 ### Core Tech Stack
 - **React** - Landing page and onboarding components
-- **TanStack Start** - Server-side rendering for marketing pages
-- **Better Auth** - Seamless transition from marketing to authenticated experience
+- **TanStack Router** - Client-side routing for marketing pages
+- **Clerk** - Seamless transition from marketing to authenticated experience
 - **Convex** - Onboarding progress tracking
 
 ### Onboarding States
@@ -46,8 +46,8 @@
 
 ### Core Edge Cases
 
-#### Marketing Landing Page (Polar-Style)
-- [ ] **Clean, developer-focused design**: Minimalist aesthetic like Polar
+#### Marketing Landing Page (Stripe-Style)
+- [ ] **Clean, developer-focused design**: Minimalist aesthetic like Stripe
   - Clean typography and generous white space
   - Monochromatic palette with subtle accent colors
   - Developer-friendly messaging and code examples

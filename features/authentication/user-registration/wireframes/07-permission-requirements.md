@@ -1,8 +1,8 @@
-# Authentication Permission Requirements - Better Auth RBAC Integration
+# Authentication Permission Requirements - Clerk RBAC Integration
 
 ## Permission Matrix Overview
 
-This document maps all authentication-related permissions using Better Auth's RBAC plugin structure. All permissions are scoped to workspaces (organizations) with role-based access control.
+This document maps all authentication-related permissions using Clerk's RBAC structure. All permissions are scoped to workspaces (organizations) with role-based access control.
 
 ---
 
@@ -203,7 +203,7 @@ This document maps all authentication-related permissions using Better Auth's RB
 
 ---
 
-## Better Auth Plugin Integration
+## Clerk Plugin Integration
 
 ### Organization Plugin Configuration
 ```javascript

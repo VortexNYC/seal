@@ -237,10 +237,10 @@
 
 ## Integration Touch Points
 
-### Better Auth Integration
+### Authentication Integration
 - **Session Security**: All compliance actions require active authenticated session
 - **MFA Requirements**: High-security actions (audit access) require MFA verification
-- **API Access**: Compliance APIs secured with Better Auth API keys
+- **API Access**: Compliance APIs secured with API keys
 
 ### Convex Integration
 - **Real-time Monitoring**: Live compliance dashboard updates

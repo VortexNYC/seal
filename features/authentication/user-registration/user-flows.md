@@ -96,7 +96,7 @@ Validation Check
 
 #### Password Validation Errors  
 ```
-Password Input (Better Auth Rules)
+Password Input (Clerk Rules)
     ↓
 Strength Check
     ├─ Too short (<8) → "Password must be at least 8 characters"
@@ -150,7 +150,7 @@ Sign In Form
     ├─ [Continue with Microsoft] 
     └─ [Continue with Apple]
     ↓
-Better Auth Validation 🟡
+Clerk Validation 🟡
     ↓
 Authentication Success ✅
     ↓
@@ -168,7 +168,7 @@ Dashboard with Session Active 🏠
 ```
 Sign In Attempt
     ↓
-Better Auth Validation
+Authentication System Validation
     ├─ Invalid email → "No account found with this email"
     │                  └─ [Create Account] Link
     ├─ Wrong password → "Incorrect password"
@@ -182,7 +182,7 @@ Better Auth Validation
                             └─ [Resend Verification]
 ```
 
-#### Rate Limiting (Better Auth)
+#### Rate Limiting (Clerk)
 ```
 Multiple Failed Attempts
     ↓
@@ -288,7 +288,7 @@ Password Reset Process
     │                 └─ [Request New Link]
     ├─ Link already used → "Link already used"
     │                       └─ [Request New Link]
-    ├─ Weak password → Better Auth validation errors
+    ├─ Weak password → Clerk validation errors
     │                  └─ [Try Stronger Password]
     └─ Server error → "Unable to reset password"
                       ├─ [Try Again]
@@ -411,7 +411,7 @@ User Authentication Status:
 Session Lifecycle:
 ○ Sign In Success → Active Session
     ↓
-□ Periodic Token Refresh (Better Auth)
+□ Periodic Token Refresh (Clerk)
     ↓
 ◇ Session Check
     ├─ Valid → Continue
@@ -528,7 +528,7 @@ Cross-Workspace Context:
     ├─ Required: Full Name + Password
     └─ Button: "Create Account & Continue to Sign"
     ↓
-□ Better Auth Account Creation
+□ Clerk Account Creation
     ├─ Email Verification Required
     ├─ Personal Workspace Auto-Created
     └─ User Profile Established

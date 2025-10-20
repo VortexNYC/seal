@@ -328,7 +328,7 @@
 - **Data Integrity**: Tamper-proof audit log storage
 - **Export Capabilities**: Multiple export formats for compliance needs
 
-### Better Auth Integration
+### Clerk Integration
 - **Admin Security**: MFA required for audit access
 - **Role-based Access**: Different dashboard views based on user role
 - **API Security**: Secure API endpoints for audit data access

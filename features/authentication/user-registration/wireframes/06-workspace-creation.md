@@ -528,13 +528,13 @@
 
 ---
 
-## Better Auth Integration
+## Clerk Integration
 
 ### Organization Plugin
-- **Workspace Creation**: Leverage Better Auth Organization plugin
+- **Workspace Creation**: Leverage Clerk Organizations
 - **Owner Assignment**: Set creator as organization owner
-- **Member Invitations**: Send invitation emails via Better Auth
-- **Role Management**: Integrate with RBAC plugin for permissions
+- **Member Invitations**: Send invitation emails via Clerk
+- **Role Management**: Integrate with Clerk roles for permissions
 
 ### Permission Setup
 - **Owner Permissions**: Full workspace access and management

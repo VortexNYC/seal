@@ -23,7 +23,7 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ╭─ Frontend & Interface ─────────────────────────────────────────────────────────────────╮
-│ • **TanStack Start**: Server-side rendering and API routes                            │
+│ • **TanStack Router**: Client-side routing                                            │
 │ • **React**: Drag-and-drop upload interface                                           │
 │ • **react-pdf**: PDF preview and viewing                                              │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
@@ -57,7 +57,7 @@
 
 ### Convex File Storage Integration
 - **File Upload**: Convex file storage for final PDF documents
-- **Security**: Workspace-scoped access controls via Better Auth RBAC
+- **Security**: Workspace-scoped access controls via Clerk Roles & Permissions
 - **Processing**: Multi-format conversion + PDF validation and metadata extraction
 - **Storage Limits**: Unlimited storage per workspace (Pro plans), 10 docs/month (Free plan)
 - **File Organization**: Document categorization and search capabilities

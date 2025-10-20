@@ -379,8 +379,8 @@
 
 ## Technical Integration
 
-### Better Auth Integration
-- **Password Reset Flow**: Integrated with Better Auth patterns
+### Clerk Integration
+- **Password Reset Flow**: Integrated with Clerk patterns
 - **Email Service**: React Email + Resend for delivery
 - **Security Tokens**: Secure token generation and validation
 - **Session Management**: Force re-authentication after reset
@@ -418,7 +418,7 @@
 - **Rate Limiting**: Prevent abuse and brute force attempts
 
 ### Password Security
-- **Strength Requirements**: Enforce Better Auth password rules
+- **Strength Requirements**: Enforce Clerk password rules
 - **Common Password Detection**: Prevent weak/common passwords
 - **Secure Storage**: Proper password hashing on backend
 - **Session Invalidation**: Force re-auth with new password

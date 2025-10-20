@@ -83,7 +83,7 @@ Every UI component/screen has these states:
 #### Validation Strategy
 - **Real-time validation**: Using TanStack Form + Zod schemas
 - **Progressive validation**: Validate on blur, then real-time after first error
-- **Server validation**: Handled via Better Auth patterns
+- **Server validation**: Handled via Clerk patterns
 - **Error display**: Inline errors with clear recovery instructions
 
 #### Common Form States

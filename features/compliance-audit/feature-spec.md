@@ -10,7 +10,7 @@
 
 ## Technology Stack Integration
 - **Convex**: Immutable audit log storage and real-time tracking
-- **Better Auth**: User identity and authentication tracking
+- **Clerk**: User identity and authentication tracking
 - **Web Crypto API**: Digital signature verification and tamper detection
 - **date-fns**: Precise timestamp handling and timezone management
 
@@ -47,7 +47,7 @@
   - Timestamp verification and chronological ordering
   - Tamper detection for audit log integrity
 - [ ] **User attribution**: Link every action to specific authenticated users
-  - Better Auth user identification for all actions
+  - Clerk user identification for all actions
   - IP address and device tracking for security
   - Session tracking and authentication verification
   - Workspace context and permission validation
@@ -115,7 +115,7 @@
 
 #### Basic Privacy & Data Protection
 - [ ] **Data retention**: Basic audit data storage and retention
-- [ ] **Access control**: Secure audit log access with Better Auth RBAC
+- [ ] **Access control**: Secure audit log access with Clerk organizations and RBAC
 
 #### Error Handling
 - [ ] **Audit data consistency**: Ensure complete audit trail coverage

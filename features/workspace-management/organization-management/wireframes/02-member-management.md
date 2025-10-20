@@ -428,9 +428,9 @@
 
 ## Technical Integration
 
-### Better Auth Integration
-- **RBAC Plugin**: Role-based permission management
-- **Organization Plugin**: Member invitation and management
+### Clerk Integration
+- **Roles & Permissions**: Role-based permission management
+- **Organizations**: Member invitation and management
 - **Permission Checking**: Real-time permission validation
 - **Audit Logging**: Complete trail of member and role changes
 
@@ -446,7 +446,7 @@
 - **Batch Email Handling**: Efficient bulk invitation processing
 - **Delivery Tracking**: Monitor invitation email delivery status
 
-### Polar Billing Integration
+### Stripe Billing Integration
 - **Seat Management**: Automatic billing updates for member changes
 - **Prorated Billing**: Handle mid-cycle member additions/removals
 - **Cost Calculation**: Real-time billing impact display

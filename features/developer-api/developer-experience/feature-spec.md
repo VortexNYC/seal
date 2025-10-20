@@ -9,11 +9,11 @@
 - [ ] **Testing tools** and sandbox environment
 
 ## Technology Stack Integration
-- **TanStack Start**: Documentation site with server-side rendering
-- **Better Auth API Key Plugin**: API key generation, validation, rate limiting, metadata
+- **TanStack Router**: Documentation site with client-side routing
+- **Clerk API Keys**: API key generation, validation, rate limiting, metadata
 - **Convex HTTP Actions**: Simple API endpoints at deployment-name.convex.site
 - **Zod**: Request/response validation schemas
-- **convex-better-auth.netlify.app**: Integration patterns for authentication
+- **Clerk Convex Integration**: Authentication patterns for API endpoints
 
 ## Business Requirements
 - Simplified developer onboarding and integration (Pro plans only)
@@ -34,27 +34,27 @@
 
 ### Core Edge Cases
 
-#### Better Auth API Key Management Integration
-- [ ] **API Key Generation**: Developers generate keys via Better Auth plugin
+#### Clerk API Key Management Integration
+- [ ] **API Key Generation**: Developers generate keys via Clerk
   - Workspace-scoped API keys with organization context
-  - Custom key prefixes (e.g., "docusign_live_", "docusign_test_")
+  - Custom key prefixes (e.g., "seal_live_", "seal_test_")
   - Metadata fields for key descriptions and purposes
   - Configurable expiration times per key
-- [ ] **Built-in Rate Limiting**: Better Auth plugin provides per-key rate limiting
+- [ ] **Built-in Rate Limiting**: Clerk provides per-key rate limiting
   - Configurable requests per time window per API key
   - Automatic rate limit headers (X-RateLimit-Limit, X-RateLimit-Remaining)
   - Clear rate limit exceeded responses with retry info
-- [ ] **API Key Security**: Built-in security via Better Auth plugin
+- [ ] **API Key Security**: Built-in security via Clerk
   - Automatic key hashing and secure storage
   - Key validation without custom implementation
-  - Integration with Better Auth session management
+  - Integration with Clerk session management
 - [ ] **Developer Dashboard**: API key management interface
   - Generate, view, and revoke API keys
   - View API key usage statistics and rate limit status
   - Test API calls directly from dashboard
 
 #### Super Simple API Documentation (Resend-Style)
-- [ ] **"Send in 2 lines" examples**: Ultra-simple integration like Polar/Resend
+- [ ] **"Send in 2 lines" examples**: Ultra-simple integration like Stripe/Resend
   ```bash
   curl -X POST https://your-app.convex.site/sendDocument \
     -H "Authorization: Bearer YOUR_API_KEY" \
@@ -71,7 +71,7 @@
   - Python requests example
   - All examples use real API structure
 
-#### Better Auth API Key (Keep It Simple)
+#### Clerk API Key (Keep It Simple)
 - [ ] **One-click API key generation**: Easy key creation in dashboard
   - Single "Generate API Key" button
   - Copy-paste API key display
@@ -100,7 +100,7 @@
   - Simple verification example code
   - Clear security best practices
 
-#### Integration Examples (Polar-Style)
+#### Integration Examples (Stripe-Style)
 - [ ] **"No Code" option**: Simple webhook-to-external-service integration
   - Zapier/Make.com webhook examples
   - Direct integration with common tools

@@ -333,13 +333,13 @@
 
 ## Technical Integration
 
-### TanStack Start Integration
-- **Server-Side Rendering**: Fast initial page load with shadcn/ui server components
+### TanStack Router Integration
+- **Client-Side Routing**: Fast navigation with React components
 - **SEO Optimization**: Proper meta tags and structured data
 - **Route Management**: Smooth navigation between sections
-- **Static Generation**: Pre-built marketing pages for performance
+- **Code Splitting**: Optimized bundle size for performance
 
-### Better Auth Integration
+### Clerk Integration
 - **Seamless Signup**: Direct integration with registration flow
 - **Social Login**: Google/Microsoft OAuth options
 - **Session Management**: Maintain state across site sections

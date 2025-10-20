@@ -4,17 +4,17 @@
 
 ### User Registration & Authentication ⭐ **Critical**
 - [ ] **Email/password signup and login**
-- [ ] **OAuth integration** (Google, GitHub via Better Auth)
+- [ ] **OAuth integration** (Google, GitHub via Clerk)
 - [ ] **Email verification** process
 - [ ] **Password reset** functionality
 - [ ] **Session management** and secure token handling
 - [ ] **Cross-workspace document signing** - users can sign documents from other workspaces
 
 ## Technology Stack Integration
-- **Better Auth**: Open source authentication and organization management
+- **Clerk**: Production-ready authentication and organization management
 - **Convex**: Real-time backend with TypeScript integration
-- **React Email**: Component-based email templates
-- **Resend**: Email delivery service
+- **React Email**: Component-based email templates (for transactional emails)
+- **Resend**: Email delivery service (Clerk handles verification emails)
 - **Zod**: TypeScript-first schema validation
 - **TanStack Form**: Advanced form handling with validation
 
@@ -29,22 +29,22 @@
 
 ## Edge Cases & Implementation Requirements
 
-### Better Auth Integration Requirements
-- **Core Auth**: All validation, rate limiting, session management follows Better Auth patterns
-- **Organization Plugin**: Team workspace creation, member invitations, role assignments
-- **Admin Plugin**: Platform admin access, multi-tenant management, user impersonation
-- **RBAC Plugin**: Role-based permissions (owner, admin, member), resource access control
-- **API Key Plugin**: API key generation with per-key rate limiting, permissions, metadata
-- **Polar Plugin**: Billing integration, subscription status, payment webhooks
-- **Convex Integration**: Real-time features and data sync via Better Auth JWT tokens (convex-better-auth.netlify.app)
-- **JWT/Cookie Handling**: Via Better Auth + Convex authentication patterns
-- **Email System**: React Email + Resend for all communications
+### Clerk Integration Requirements
+- **Core Auth**: All validation, rate limiting, session management via Clerk
+- **Organizations**: Team workspace creation, member invitations, role assignments
+- **Admin Features**: Platform admin access, multi-tenant management via Clerk dashboard
+- **Roles & Permissions**: Role-based permissions (owner, admin, member), resource access control
+- **API Keys**: API key generation via Clerk (if needed for developer API)
+- **Webhook Integration**: User events, organization events, billing webhooks
+- **Convex Integration**: Real-time features and data sync via Clerk JWT tokens
+- **JWT/Cookie Handling**: Via Clerk + Convex authentication patterns
+- **Email System**: Clerk for auth emails, React Email + Resend for transactional emails
 
 ### Sign Up Flow States & Edge Cases
 
 #### Happy Path Workflow
 1. **Landing State**: Sign up form with email/password fields
-2. **Input Validation**: Real-time field validation following Better Auth patterns
+2. **Input Validation**: Real-time field validation following Clerk patterns
 3. **Submission State**: Loading spinner, form disabled
 4. **Email OTP Verification**: 6-digit code sent via React Email + Resend
 5. **Code Verification**: User enters 6-digit code from email
@@ -75,14 +75,14 @@
 - [ ] **Very Long Email**: 200+ character emails
   - Error: "Email address too long (max 200 characters)"
 
-#### Password Validation Edge Cases (Better Auth Standards)
-- [ ] **Strong Password**: Meets Better Auth requirements → Green checkmarks
-- [ ] **Too Short**: < 8 characters (Better Auth minimum)
-  - Error: Follow Better Auth error messages
+#### Password Validation Edge Cases (Clerk Standards)
+- [ ] **Strong Password**: Meets Clerk requirements → Green checkmarks
+- [ ] **Too Short**: < 8 characters (Clerk minimum)
+  - Error: Follow Clerk error messages
 - [ ] **Too Weak**: Insufficient complexity
-  - Error: Follow Better Auth validation rules
+  - Error: Follow Clerk validation rules
 - [ ] **Common Password**: "password123", "qwerty"
-  - Error: Better Auth common password detection
+  - Error: Clerk common password detection
 - [ ] **Password Mismatch**: Confirmation doesn't match
   - Error: "Passwords don't match"
 
@@ -109,10 +109,10 @@
 
 #### Happy Path Workflow
 1. **Sign In Form**: Email/password or OAuth (Google, Microsoft, Apple)
-2. **Better Auth Validation**: Credential check via Better Auth
-3. **Authentication Success**: JWT/session via Better Auth + Convex
+2. **Clerk Validation**: Credential check via Clerk
+3. **Authentication Success**: JWT/session via Clerk + Convex
 4. **Dashboard Redirect**: Based on user role and organization
-5. **Session Management**: Better Auth session handling
+5. **Session Management**: Clerk session handling
 
 #### Document Signing Context (NEW)
 1. **Signing Link Clicked**: Existing user needs to sign document
@@ -120,19 +120,19 @@
 3. **Sign In & Continue to Sign**: Direct to signing interface after auth
 
 #### OAuth Sign-In Edge Cases (Google, Microsoft, Apple)
-- [ ] **OAuth Success**: Provider auth successful via Better Auth
+- [ ] **OAuth Success**: Provider auth successful via Clerk
 - [ ] **OAuth Cancelled**: User cancels OAuth flow
   - Info: "Sign in cancelled. Try again when ready"
 - [ ] **OAuth Error**: Provider returns error
   - Error: "Sign in failed. Please try again or use email/password"
 - [ ] **OAuth Email Mismatch**: OAuth email differs from existing account
-  - Options: "Link accounts?" or "Create new account?" (Better Auth handling)
+  - Options: "Link accounts?" or "Create new account?" (Clerk handling)
 - [ ] **OAuth Email**: Any email type via OAuth
   - Flow: Proceed to workspace creation like regular signup
 
-#### Rate Limiting & Security (Better Auth + Admin Plugin)
-- [ ] **Normal Attempts**: Better Auth rate limiting rules
-- [ ] **Excessive Attempts**: Better Auth lockout mechanisms
+#### Rate Limiting & Security (Clerk)
+- [ ] **Normal Attempts**: Clerk rate limiting rules
+- [ ] **Excessive Attempts**: Clerk lockout mechanisms
 - [ ] **Admin Override**: Admin plugin allows admin access to unlock accounts
 - [ ] **Multi-tenant Security**: Organization-level security controls via admin plugin
 
@@ -189,7 +189,7 @@
   - Warning: "X active documents will be cancelled"
 - [ ] **Team Ownership**: User owns team workspace
   - Requirement: Transfer ownership or delete team first
-- [ ] **Subscription Active**: Billing via Polar plugin
+- [ ] **Subscription Active**: Billing via Stripe
   - Requirement: Cancel subscription first
 - [ ] **Grace Period**: 90-day recovery window
 - [ ] **Legal Compliance**: Preserve audit trails and signed documents
@@ -204,11 +204,11 @@
 - [ ] **Compliance Reports**: Admin can generate deletion reports
 
 ### Technical Integration Points
-- [ ] **Better Auth Session**: JWT tokens, refresh handling
+- [ ] **Clerk Session**: JWT tokens, refresh handling
 - [ ] **Convex Real-time**: User presence, live updates
-- [ ] **React Email Templates**: All email communications
+- [ ] **Email Templates**: Clerk for auth emails, React Email for transactional
 - [ ] **Resend Delivery**: Email delivery and tracking
-- [ ] **Polar Billing**: Subscription status affects auth flow
+- [ ] **Stripe Billing**: Subscription status affects auth flow
 - [ ] **Admin Dashboard**: Multi-tenant management interface
 - [ ] **RBAC Permissions**: Role-based access throughout app
 - [ ] **Cross-Workspace Access**: Secure document access across workspace boundaries

@@ -16,7 +16,7 @@
 ◉ **Text extraction** for search indexing via PDF.js
 ◉ **Canvas overlay setup** for signature field placement (Konva.js)
 ◉ **Version control** for document updates
-◉ **Access control** per document via Better Auth RBAC
+◉ **Access control** per document via Clerk Roles & Permissions
 ◉ **Legal compliance** data collection and audit trails
 ◉ **Document templates** for reuse
 
@@ -31,14 +31,14 @@
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ User Interface & Interaction ─────────────────────────────────────────────────────────╮
-│ • **TanStack Start**: Server-side rendering and API routes for document processing  │
+│ • **TanStack Router**: Client-side routing for document processing                  │
 │ • **Konva.js**: Signature field placement UI overlay (optimized event listeners)     │
 │ • **react-signature-pad**: Signature capture with superior touch support             │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Storage & Security ──────────────────────────────────────────────────────────────────╮
 │ • **Convex**: Document metadata storage, version control, and real-time updates     │
-│ • **Better Auth RBAC**: Document-level access control                               │
+│ • **Clerk Roles & Permissions**: Document-level access control                               │
 │ • **Zod**: Metadata validation and schema enforcement                               │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 

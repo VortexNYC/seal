@@ -6,7 +6,7 @@
 ```
 ○ User Navigates to Non-Existent URL
     ↓
-□ Route Not Found (TanStack Start)
+□ Route Not Found (TanStack Router)
     ├─ Check: URL pattern against known routes
     ├─ Result: No matching route found
     └─ Trigger: Show 404 error page
@@ -28,7 +28,7 @@
 ```
 ○ User Attempts Unauthorized Action
     ↓
-□ Permission Check (Better Auth RBAC)
+□ Permission Check (RBAC)
     ├─ Check: User role vs required permission
     ├─ Result: Insufficient permissions
     └─ Trigger: Show 403 error page
@@ -50,7 +50,7 @@
 ```
 ○ Application Exception Occurs
     ↓
-□ Error Boundary Triggered (React + TanStack Start)
+□ Error Boundary Triggered (React + TanStack Router)
     ├─ Catch: Unhandled server/client exception
     ├─ Log: Error details for debugging
     └─ Trigger: Show 500 error page
@@ -94,7 +94,7 @@
 ```
 ○ Session Timeout Occurs
     ↓
-□ Authentication Check (Better Auth)
+□ Authentication Check
     ├─ Check: JWT token expiration
     ├─ Result: Session expired
     └─ Trigger: Show session expired page

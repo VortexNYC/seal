@@ -434,7 +434,7 @@
 - **Sharing Modes**: Clear visual distinction between private, team, and external sharing
 - **Permission Levels**: Simple permission control (View, Edit, Manage) with clear explanations
 - **Team Member Selection**: Easy team member discovery and permission assignment
-- **Access Control**: Better Auth RBAC integration for permission enforcement
+- **Access Control**: Clerk RBAC integration for permission enforcement
 
 ### Team Document Library
 - **Filter and Search**: Real-time filtering by sharing status and document type
@@ -450,9 +450,9 @@
 
 ---
 
-## Better Auth Integration
+## Clerk Integration
 
-### RBAC Plugin
+### RBAC
 - **Document Permissions**: Fine-grained access control per document
 - **Role-based Access**: Automatic permission inheritance from workspace roles
 - **Permission Cascade**: Efficient permission updates on role changes

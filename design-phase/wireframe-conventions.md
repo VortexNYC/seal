@@ -585,7 +585,7 @@ interface WireframeActions {
 }
 ```
 
-#### **Better Auth Integration (REQUIRED)**
+#### **Clerk Integration (REQUIRED)**
 ```javascript
 // REQUIRED: Specify authentication requirements
 interface AuthRequirements {
@@ -759,7 +759,7 @@ interface ConvexIntegration {
 
 **Technical Updates:**
 - Added Convex real-time subscriptions
-- Updated Better Auth integration patterns
+- Updated Clerk integration patterns
 - New analytics events for user behavior tracking
 
 **Breaking Changes:**

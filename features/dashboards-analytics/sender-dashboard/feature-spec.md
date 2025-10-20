@@ -12,7 +12,7 @@
 ## Technology Stack Integration
 - **React**: Dashboard UI components and layout
 - **Convex**: Real-time document status updates
-- **Better Auth RBAC**: User-scoped document visibility
+- **Clerk Roles & Permissions**: User-scoped document visibility
 - **Convex Subscriptions**: Live activity feed updates
 - **React Query**: Optimized data fetching and caching
 

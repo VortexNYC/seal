@@ -25,7 +25,7 @@ This document outlines all user flows for profile management, including profile 
     └─ Changes highlighted
     ↓
 □ Save Changes
-    ├─ Better Auth profile update
+    ├─ Profile update in authentication system
     ├─ Convex real-time sync
     └─ Success confirmation
     ↓
@@ -119,7 +119,7 @@ Profile Edit Errors:
     ↓
 □ User Clicks Verification Link
     ├─ Email verified
-    ├─ Better Auth profile updated
+    ├─ Profile updated in authentication system
     └─ All sessions refreshed
     ↓
 ◉ Email Change Complete

@@ -12,7 +12,7 @@
 - **Convex**: Batch operations and job queuing
 - **React**: Bulk operation UI and progress tracking
 - **Resend**: Bulk email delivery
-- **Better Auth RBAC**: Bulk operation permissions
+- **Clerk Roles & Permissions**: Bulk operation permissions
 
 ## Business Requirements
 - Efficient handling of large document volumes

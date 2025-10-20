@@ -14,7 +14,7 @@
 - **Canvas API**: Signature capture and rendering
 - **react-pdf**: PDF document display during signing
 - **Convex**: Real-time signing progress tracking
-- **Better Auth**: Signer authentication and session management
+- **Clerk**: Signer authentication and session management
 
 ## Business Requirements
 - Seamless signing experience across all devices

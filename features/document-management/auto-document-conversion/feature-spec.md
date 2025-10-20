@@ -27,10 +27,10 @@
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Application Layer ────────────────────────────────────────────────────────────────────╮
-│ • **TanStack Start**: Server-side rendering and API routes for conversion handling    │
+│ • **TanStack Router**: Client-side routing for conversion interfaces                 │
 │ • **Convex**: Real-time conversion job queue and status tracking                     │
 │ • **React**: Upload progress and conversion status UI                                 │
-│ • **Better Auth RBAC**: Workspace-scoped conversion access                           │
+│ • **Clerk Roles & Permissions**: Workspace-scoped conversion access                           │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -94,7 +94,7 @@
   - Resource management for conversion workloads
 - [ ] **Chromiumly API integration**: TypeScript wrapper for seamless conversion
   - Type-safe API calls to Gotenberg via Chromiumly
-  - Proper file upload handling through TanStack Start
+  - Proper file upload handling through React
   - Conversion parameter configuration
   - Error handling and response parsing
 
@@ -154,7 +154,7 @@
   - Audit logging of conversion activities
 - [ ] **Data protection**: Ensure privacy during processing
   - Document content never stored permanently on Fly.io conversion service
-  - Secure transmission protocols via TanStack Start
+  - Secure transmission protocols via Convex
   - Privacy compliance for sensitive documents
   - Data retention policies for conversion logs
 
@@ -172,7 +172,7 @@
 
 #### Integration & Workflow
 - [ ] **Upload pipeline integration**: Seamless conversion during upload
-  - Automatic conversion trigger via TanStack Start API routes
+  - Automatic conversion trigger via Convex HTTP actions
   - Upload progress combined with conversion status via Convex real-time updates
   - Fallback handling when conversion fails
   - Integration with document processing workflow

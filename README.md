@@ -29,14 +29,14 @@ await sendForSignature({ document, recipients, fields })
 
 ### Frontend & UI
 - **React** - Component-based UI development
-- **TanStack Start** - Full-stack React framework with SSR
+- **TanStack Router** - Type-safe routing for React
 - **Tailwind CSS** - Utility-first CSS framework
 - **shadcn/ui** - Beautiful, accessible UI components
 
 ### Backend & Infrastructure
 - **Convex** - Real-time backend with TypeScript
-- **Better Auth** - Authentication and organization management
-- **Polar** - Payment processing
+- **Clerk** - Authentication and organization management
+- **Stripe** - Payment processing and subscription management
 - **Resend** - Email delivery with React Email templates
 
 ### Document Processing
@@ -71,9 +71,9 @@ await sendForSignature({ document, recipients, fields })
 
 ### Phase 1: Core Infrastructure (Weeks 3-4)
 - Convex backend setup and database schema
-- Better Auth integration
+- Clerk integration
 - File storage system
-- TanStack Start frontend foundation
+- TanStack Router frontend foundation
 
 ### Phase 2: Document Management (Weeks 5-6)
 - File upload and processing
@@ -94,7 +94,7 @@ await sendForSignature({ document, recipients, fields })
 - Dashboard and tracking
 
 ### Phase 5: Business Integration (Weeks 11-12)
-- Polar payment integration
+- Stripe payment integration
 - Public API and webhooks
 - Developer documentation
 - Basic integrations

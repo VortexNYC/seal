@@ -384,12 +384,12 @@
 
 ---
 
-## Better Auth Integration
+## Clerk Integration
 
 ### Organization Plugin
-- **Member Management**: Leverage Better Auth organization membership
+- **Member Management**: Leverage Clerk organization membership
 - **Invitation System**: Built-in invitation flow with token management
-- **Role Assignment**: Seamless RBAC integration
+- **Role Assignment**: Seamless role integration
 - **Multi-workspace Support**: Clean workspace context separation
 
 ### RBAC Plugin

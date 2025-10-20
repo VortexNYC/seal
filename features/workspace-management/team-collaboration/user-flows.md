@@ -19,8 +19,8 @@
     ├─ Duplicate detection within batch
     └─ Role selection (Member or Admin)
     ↓
-○ Invitation Processing (Better Auth + React Email + Resend)
-    ├─ Better Auth organization invitation creation
+○ Invitation Processing (React Email + Resend)
+    ├─ Organization invitation creation
     ├─ React Email template generation
     ├─ Resend email delivery
     └─ Convex real-time updates to all workspace members
@@ -104,7 +104,7 @@
     ├─ Document appears in team's shared documents
     ├─ Activity feed shows sharing event
     ├─ Team members receive notification (if enabled)
-    └─ Document access permissions enforced via Better Auth RBAC
+    └─ Document access permissions enforced via RBAC
     ↓
 ○ Team Member Access
     ├─ View document in shared documents list
@@ -123,13 +123,13 @@
     ├─ Role change options based on user's permissions
     └─ Bulk role management capabilities
     ↓
-○ Role Change Process (Better Auth RBAC)
+○ Role Change Process (RBAC)
     ├─ Owner → Can change any role except own
     ├─ Admin → Can manage Members only
     └─ Member → No role management permissions
     ↓
 □ Role Update Process
-    ├─ Better Auth RBAC role update
+    ├─ RBAC role update
     ├─ Convex updates all clients immediately
     ├─ Permission refresh across all sessions
     ├─ Document access re-evaluation
@@ -205,7 +205,7 @@
     ├─ Team member counts per workspace
     └─ Recent activity per workspace
     ↓
-○ Permission Context Updates (Convex + Better Auth)
+○ Permission Context Updates (Convex)
     ├─ User permissions refresh for selected workspace
     ├─ Document lists update to workspace-specific
     ├─ Team member visibility scoped to workspace
@@ -236,7 +236,7 @@
     └─ Notify external recipients of ownership change
     ↓
 □ Member Removal Execution
-    ├─ Better Auth organization membership removal
+    ├─ Organization membership removal
     ├─ Document access revocation (immediate)
     ├─ Session invalidation across all devices
     ├─ Activity log entry
@@ -356,7 +356,7 @@
 
 ## Integration Touch Points
 
-### Better Auth Organization Plugin
+### Organization Management
 - **Team Management**: Seamless member invitation and role management
 - **Permission Enforcement**: Real-time RBAC integration
 - **Multi-workspace Support**: Clean separation of team contexts

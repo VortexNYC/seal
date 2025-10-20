@@ -9,26 +9,59 @@ Build an open source, developer-first alternative to DocuSign that founders and 
 - **Modern Stack**: Leverage the best open source tools and frameworks
 - **Speed**: Move fast, iterate quickly, ship early and often
 
+## 🏗️ Project Architecture
+
+### Monorepo Structure
+We're using a **Turborepo + Bun workspaces** monorepo for code organization and build optimization.
+
+```
+/seal (root)
+├── /apps
+│   ├── /web              # Main web application (Bun + React + TanStack Router)
+│   └── /docs             # Documentation site (future)
+├── /packages
+│   ├── /ui               # Shared UI components (shadcn/ui)
+│   ├── /convex           # Convex backend schemas and functions
+│   ├── /sdk              # Public SDK for developers
+│   └── /shared           # Shared utilities, types, Zod schemas
+├── /tooling
+│   ├── /biome            # Biome linter/formatter config
+│   └── /typescript       # Shared TypeScript configuration
+└── package.json          # Root workspace configuration
+```
+
+### Deployment Architecture
+- **Frontend**: Vercel (web app only)
+- **Backend**: Convex (completely independent deployment with own CLI)
+- **Auth**: Clerk (hosted service)
+- **Payments**: Stripe (hosted service)
+- **Email**: Resend (hosted service)
+- **Monitoring**: Sentry (hosted service)
+
 ## 🛠 Technology Stack
 
 ### Package Management & Build Tools
-- **Bun**: Ultra-fast JavaScript runtime and package manager
+- **Bun**: Ultra-fast JavaScript runtime and package manager (all the way!)
+- **Turborepo**: Monorepo build system with intelligent caching
 - **Vite**: Lightning-fast build tooling and development server
 - **TypeScript**: Type safety and superior developer experience
 
 ### Frontend & UI
 - **React**: Component-based UI development
-- **TanStack Start**: Full-stack React framework with SSR
+- **TanStack Router**: Type-safe routing for React applications
 - **Tailwind CSS**: Utility-first CSS framework for rapid styling
 - **shadcn/ui**: Beautiful, accessible UI components built on Radix
 - **Expo**: Cross-platform mobile development (future phase)
 
 ### Backend & Infrastructure
-- **Convex**: Real-time backend with TypeScript
-- **Better Auth**: Open source authentication and organization management
-- **Polar**: Open source payment processing
+- **Convex**: Real-time backend with TypeScript (independent deployment)
+- **Clerk**: Production-ready authentication and organization management
+- **Stripe**: Payment processing and subscription management
 - **Resend**: Email delivery with React Email templates
-- **Vercel**: Deployment and hosting
+
+### Deployment & Hosting
+- **Vercel**: Frontend deployment only
+- **Convex**: Backend deployment (completely separate, uses own CLI)
 
 ### Data & Validation
 - **Zod**: TypeScript-first schema validation
@@ -37,11 +70,12 @@ Build an open source, developer-first alternative to DocuSign that founders and 
 - **TanStack Virtual**: Virtualization for large documents
 
 ### Document Processing & Communication
-- **react-pdf**: PDF viewing with precise control for field positioning
-- **@react-pdf-viewer/core**: Rich PDF viewer features (zoom, search, navigation)
-- **React Email**: Component-based email templates
-- **PDF-lib**: Low-level PDF document manipulation
+- **react-pdf**: PDF rendering as images/canvas in browser for display
+- **@react-pdf-viewer/core**: Rich PDF viewer UI (zoom, search, navigation, toolbar)
+- **PDF-lib**: Low-level PDF manipulation (adding signature fields, flattening documents)
 - **react-signature-canvas**: Canvas-based signature capture
+- **React Email**: Component-based email templates
+- **Note**: Not generating PDFs from scratch - users upload existing PDFs
 
 ### Interactive Canvas & Positioning
 - **@dnd-kit/core**: Modern drag-and-drop with accessibility focus
@@ -49,9 +83,13 @@ Build an open source, developer-first alternative to DocuSign that founders and 
 - **fabric.js**: Advanced canvas library (backup option)
 
 ### Security & Utilities
-- **Web Crypto API**: Modern browser-native cryptography for digital signatures (*extracted to Feature #26*)
+- **Web Crypto API**: Browser-native cryptography for digital signatures and document hashing
 - **date-fns**: Lightweight date handling library
 - **sharp**: Image processing and optimization
+
+### Monitoring & Observability
+- **Sentry**: Error monitoring and performance tracking (MVP)
+- **PostHog**: Product analytics and feature flags (post-MVP)
 
 ### Search & Content Processing
 - **pdf-ts**: PDF text extraction for search functionality (built on PDF.js)
@@ -71,8 +109,7 @@ Build an open source, developer-first alternative to DocuSign that founders and 
 - **Biome**: Fast linter and formatter (replaces ESLint & Prettier)
 - **Vitest**: Unit testing framework (Bun compatible)
 - **Playwright**: End-to-end testing
-- **Sentry**: Error monitoring and performance tracking
-- **PostHog**: Product analytics and feature flags
+- **CI/CD**: To be determined (post-MVP setup)
 
 ### 🚫 Excluded from MVP (Future Consideration)
 - **Document Conversion**: Office-to-PDF conversion (complex, external dependencies)
@@ -166,9 +203,9 @@ Build an open source, developer-first alternative to DocuSign that founders and 
 
 ---
 
-## 🎨 Brand Positioning Strategy ("The Polar Effect")
+## 🎨 Brand Positioning Strategy ("The Stripe Effect")
 
-### Visual Design Principles (Inspired by Polar.sh)
+### Visual Design Principles (Inspired by Stripe.com)
 - **Minimalist Aesthetic**: Clean, uncluttered layouts with generous white space
 - **Monochromatic Palette**: Primarily black and white with subtle accent colors
 - **Subtle Gradients**: Light gradient backgrounds on components for depth
@@ -214,7 +251,7 @@ await sendForSignature({ document, recipients, fields })
 #### Developer Section (Separate but Connected)
 - **API Docs**: Comprehensive technical documentation
 - **SDKs**: Multiple language support showcased
-- **Integrations**: Framework adapters (like Polar's approach)
+- **Integrations**: Framework adapters (like Stripe's approach)
 - **Code Examples**: Real implementation snippets
 - **GitHub Integration**: Direct links to open source repos
 

@@ -9,7 +9,7 @@
 □ Workspace Creation Required
     ├─ All users must create a workspace
     ├─ No exceptions - required for account setup
-    └─ Uses Better Auth Organization plugin
+    └─ Uses organization management system
     ↓
 □ Workspace Naming
     ├─ User enters workspace name
@@ -19,7 +19,7 @@
     ↓
 □ Owner Role Assignment (Automatic)
     ├─ Creator automatically becomes workspace owner
-    ├─ Full permissions granted via Better Auth RBAC
+    ├─ Full permissions granted via RBAC
     └─ Cannot be removed by others
     ↓
 ○ Billing Setup (Plan-Based)
@@ -28,8 +28,8 @@
     └─ $10/month per seat after trial (Pro only)
     ↓
 □ Workspace Creation Success
-    ├─ Better Auth organization created
-    ├─ Polar subscription initialized
+    ├─ Organization created
+    ├─ Stripe subscription initialized
     ├─ User granted owner permissions
     └─ Redirect to workspace dashboard
 ```
@@ -69,7 +69,7 @@
     └─ Duplicate detection within batch
     ↓
 ○ Invitation Processing
-    ├─ Better Auth invitation creation
+    ├─ Invitation creation
     ├─ React Email template generation
     └─ Resend email delivery
     ↓
@@ -106,7 +106,7 @@
     ↓
 □ New Member Onboarding
     ├─ Account creation (if new user)
-    ├─ Better Auth organization membership
+    ├─ Organization membership created
     ├─ Role assignment (Member by default)
     └─ Welcome to workspace experience
     ↓
@@ -132,7 +132,7 @@
     └─ [Member] → No role management permissions
     ↓
 □ Role Update Process
-    ├─ Better Auth RBAC role update
+    ├─ RBAC role update
     ├─ Convex updates all clients immediately
     ├─ Email notification to affected user
     └─ Workspace activity log entry
@@ -163,8 +163,8 @@
     └─ Both confirmations required
     ↓
 □ Transfer Execution
-    ├─ Better Auth role updates (atomic)
-    ├─ Polar billing ownership transfer
+    ├─ Role updates (atomic)
+    ├─ Stripe billing ownership transfer
     ├─ Convex updates all workspace data instantly
     └─ Comprehensive audit log entry
     ↓
@@ -308,19 +308,19 @@
 
 ## Integration Touch Points
 
-### Better Auth Organization Plugin
+### Organization Management System
 - **Workspace Creation**: Seamless organization creation with proper setup
 - **Member Management**: Built-in invitation system with token management
 - **Role Assignment**: RBAC integration for Owner/Admin/Member permissions
 - **Multi-workspace Support**: Handle users across multiple organizations
 
-### Better Auth RBAC Plugin
+### RBAC System
 - **Permission Enforcement**: Real-time permission checking and updates
 - **Role Hierarchies**: Clear Owner > Admin > Member permission structure
 - **Context Switching**: Permission refresh when changing workspaces
 - **Audit Integration**: All role changes logged for compliance
 
-### Polar Billing Integration
+### Stripe Billing Integration
 - **Per-Workspace Billing**: Independent subscriptions for each workspace
 - **Seat-Based Pricing**: $10/month per member seat model
 - **Trial Management**: 14-day free trial with automatic conversion

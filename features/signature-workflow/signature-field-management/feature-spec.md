@@ -15,14 +15,14 @@
 - [ ] **Radio Button Groups** for single selection
 
 ## Technology Stack Integration
-- **TanStack Start**: Server-side rendering for signature field interfaces and API routes
+- **TanStack Router**: Client-side routing for signature field interfaces
 - **Konva.js**: Canvas overlay for intuitive field placement and drag-and-drop interactions
 - **PDF.js**: PDF display layer and coordinate system integration (consistent with document processing)
 - **PDF-lib**: PDF dimensions and coordinate handling for field embedding
 - **React**: Field management interface components and property editors
 - **Zod**: Field validation schemas and property validation
 - **Convex**: Real-time field data storage, synchronization, and audit trails
-- **Better Auth RBAC**: Field editing permissions and workspace access control
+- **Clerk Roles & Permissions**: Field editing permissions and workspace access control
 
 ## Business Requirements
 - Field placement happens AFTER recipient management is complete

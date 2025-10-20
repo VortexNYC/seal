@@ -10,7 +10,7 @@
 
 ## Technology Stack Integration
 - **Convex HTTP Actions**: External API endpoints at `https://deployment-name.convex.site`
-- **Better Auth API Key Plugin**: API key generation and validation
+- **Clerk**: API key generation and validation
 - **Convex Actions**: Outbound webhook delivery to external systems
 - **Zod**: Request/response validation schemas
 
@@ -26,7 +26,7 @@
 ## Edge Cases (from Feature Edge Cases Breakdown)
 
 ### API Integration States
-- `authenticating` - Validating Better Auth API key
+- `authenticating` - Validating Clerk API key
 - `authorized` - API request authorized successfully  
 - `processing` - Convex HTTP Action processing request
 - `responding` - Sending response to external system
@@ -45,20 +45,20 @@
   - Send reminder emails
   - Get signing progress
 
-#### Better Auth API Key Plugin Integration
-- [ ] **API key generation**: Users generate workspace-scoped API keys via Better Auth plugin
+#### Clerk API Key Integration
+- [ ] **API key generation**: Users generate workspace-scoped API keys via Clerk
   - Custom key prefix support (e.g., "docusign_" prefix)
   - Metadata storage for key purposes and descriptions
   - Expiration time configuration per key
 - [ ] **Request authentication**: Validate API keys on each Convex HTTP Action request
-  - Better Auth API key validation with built-in security
+  - Clerk API key validation with built-in security
   - Automatic key hashing and verification
   - Session-free API authentication
 - [ ] **Permission validation**: Workspace-scoped API key permissions
   - RBAC integration - API keys inherit user role permissions
   - Resource-specific API permissions (documents, templates, etc.)
   - Organization-level access control
-- [ ] **Built-in rate limiting**: Better Auth API Key Plugin provides per-key rate limiting
+- [ ] **Built-in rate limiting**: Clerk provides per-key rate limiting
   - Configurable requests per time window per API key
   - Automatic rate limit tracking and reset
   - Rate limit headers in HTTP responses
@@ -70,7 +70,7 @@
   - Document completed (all signatures)
   - Document expired or declined
 - [ ] **Webhook reliability**: Retry failed deliveries with exponential backoff
-- [ ] **Webhook security**: Better Auth handles webhook authentication and security
+- [ ] **Webhook security**: Clerk handles webhook authentication and security
 
 #### Error Handling
 - [ ] **Authentication errors**: Handle invalid API keys gracefully

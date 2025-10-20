@@ -7,7 +7,7 @@
 ○ User Accesses Analytics Dashboard
     ↓
 □ Permission Verification
-    ├─ Better Auth RBAC permission check
+    ├─ RBAC permission check
     ├─ User role validation (admin/member)
     ├─ Workspace access verification
     └─ Analytics scope determination
