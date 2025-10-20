@@ -18,11 +18,11 @@ We're using a **Turborepo + Bun workspaces** monorepo for code organization and 
 /seal (root)
 ├── /apps
 │   ├── /web              # Main web application (Bun + React + TanStack Router)
-│   └── /docs             # Documentation site (future)
+│   └── /docs             # API documentation site
 ├── /packages
 │   ├── /ui               # Shared UI components (shadcn/ui)
 │   ├── /convex           # Convex backend schemas and functions
-│   ├── /sdk              # Public SDK for developers
+│   ├── /api              # Public REST API layer
 │   └── /shared           # Shared utilities, types, Zod schemas
 ├── /tooling
 │   ├── /biome            # Biome linter/formatter config
@@ -219,12 +219,14 @@ We're using a **Turborepo + Bun workspaces** monorepo for code organization and 
 **"Document signing infrastructure for modern developers"**
 *The open source alternative that developers actually want to use*
 
-#### Our "2 Lines of Code" Equivalent
-```javascript
-import { sendForSignature } from '@oursignature/sdk'
-await sendForSignature({ document, recipients, fields })
+#### Our "Simple API Call" Equivalent
+```bash
+curl https://api.seal.io/v1/documents/send \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "document=@contract.pdf" \
+  -F "recipients[0][email]=signer@example.com"
 ```
-**"Send documents for signature with 2 lines of code"**
+**"Send documents for signature with a simple API call"**
 
 #### Key Value Propositions
 1. **Developer Experience First**: API that just works, comprehensive docs, TypeScript native
@@ -249,11 +251,11 @@ await sendForSignature({ document, recipients, fields })
 - **Trust Signals**: Compliance, security, testimonials
 
 #### Developer Section (Separate but Connected)
-- **API Docs**: Comprehensive technical documentation
-- **SDKs**: Multiple language support showcased
-- **Integrations**: Framework adapters (like Stripe's approach)
-- **Code Examples**: Real implementation snippets
-- **GitHub Integration**: Direct links to open source repos
+- **API Reference**: Comprehensive REST API documentation
+- **Code Examples**: Real implementation snippets in multiple languages
+- **Integrations**: Framework adapters and webhook examples
+- **Interactive API Explorer**: Try endpoints with your API key
+- **GitHub Integration**: Direct links to open source repos and example apps
 
 ### Competitive Differentiation Messages
 

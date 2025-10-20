@@ -74,8 +74,8 @@
   - Clear success confirmation
 - [ ] **API integration focus**: Highlight programmatic access
   - Show API key generation
-  - Provide curl examples
-  - Link to SDK documentation
+  - Provide cURL examples in multiple languages
+  - Link to API reference documentation
   - Webhook setup guidance
 
 #### Simple Documentation

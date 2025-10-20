@@ -184,7 +184,7 @@ Workspace Member
 | **Developer Tools** |
 | Access API documentation |  |  |  |
 | Use testing environment |  |  |  |
-| Download SDKs |  |  |  |
+| View code examples |  |  |  |
 
 ---
 

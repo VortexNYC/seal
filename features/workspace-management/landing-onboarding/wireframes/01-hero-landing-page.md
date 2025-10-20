@@ -175,7 +175,7 @@
 ║      ║                      neutral-100 code block bg                                ║   ║
 ║      ╚═══════════════════════════════════════════════════════════════════════════════════╝   ║
 ║                                                                                               ║
-║      📚 Documentation      🔧 SDKs & Tools      🏃‍♂️ Quick Start                           ║
+║      📚 Documentation      💻 Code Examples      🏃‍♂️ Quick Start                           ║
 ║      📖 API Reference      🪝 Webhooks          💬 Developer Community                      ║
 ║                             neutral-600 feature grid                                         ║
 ║                                                                                               ║

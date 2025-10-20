@@ -5,7 +5,7 @@
 ### Developer Experience
 - [ ] **API documentation** with interactive examples
 - [ ] **Developer onboarding** and quickstart guides
-- [ ] **SDK libraries** for popular languages
+- [ ] **Multi-language code examples** for popular languages (cURL, JavaScript, Python, PHP, Go)
 - [ ] **Testing tools** and sandbox environment
 
 ## Technology Stack Integration

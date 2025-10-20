@@ -257,9 +257,9 @@
     ↓
 □ Redirect to Developer Section
     ├─ seal.nyc/developers landing
-    ├─ API documentation
-    ├─ SDK downloads
-    ├─ Integration examples
+    ├─ API reference documentation
+    ├─ Code examples in multiple languages
+    ├─ Integration examples and webhooks
     └─ Separate developer onboarding/setup
 ```
 

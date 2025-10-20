@@ -86,7 +86,7 @@ Focus on the **essential 20%** of features that deliver **80%** of the value. We
 ### API & Integrations
 - [ ] **Public API**: RESTful API for external integrations
 - [ ] **Webhooks**: Real-time event notifications
-- [ ] **Developer Documentation**: API docs, SDKs, examples
+- [ ] **Developer Documentation**: API reference, multi-language code examples
 - [ ] **Basic Integrations**: Popular tools (Zapier, Make, etc.)
 
 ## 🔍 Phase 6: Polish & Launch (Week 13-14)

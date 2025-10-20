@@ -6,7 +6,7 @@
 - [ ] **RESTful API endpoints** for document operations
 - [ ] **Webhook notifications** for external integrations
 - [ ] **API key authentication** and rate limiting
-- [ ] **Developer documentation** and SDKs
+- [ ] **Developer documentation** with multi-language code examples
 
 ## Technology Stack Integration
 - **Convex HTTP Actions**: External API endpoints at `https://deployment-name.convex.site`

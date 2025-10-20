@@ -18,12 +18,15 @@ Build a developer-first alternative to DocuSign that founders and builders love,
 
 ## 🚀 Getting Started
 
-```javascript
-import { sendForSignature } from '@seal/sdk'
-await sendForSignature({ document, recipients, fields })
+```bash
+curl https://api.seal.io/v1/documents/send \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "document=@contract.pdf" \
+  -F "recipients[0][email]=signer@example.com" \
+  -F "recipients[0][name]=John Doe"
 ```
 
-**Send documents for signature with 2 lines of code**
+**Send documents for signature with a simple API call**
 
 ## 🛠 Technology Stack
 

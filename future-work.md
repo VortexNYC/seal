@@ -50,7 +50,7 @@ This document contains all features, enhancements, and requirements that are not
 - [ ] **No Account Required for Signers** ⭐ Differentiator ⚡ Important 🎯 MVP Priority
 - [ ] **Template-Based Workflows** (simple template system) ⚡ Important 🎯 MVP Priority
 - [ ] **Embedded Template Creation** ⚡ Important
-- [ ] **Multiple SDK Languages** (Java, Python, Ruby, PHP, NodeJS) ⚡ Important
+- [ ] **Community-contributed client libraries** (Java, Python, Ruby, PHP, NodeJS) ⚡ Important
 
 ### Compliance & Legal ⚡ **Important**
 - [ ] **Document Export/Import** ⚡ Important (CSV, Excel, PDF reports)
@@ -145,9 +145,9 @@ This document contains all features, enhancements, and requirements that are not
 - [ ] **Notification grouping** and bulk management
 - [ ] **Real-time status updates** via Convex subscriptions
 
-### Developer SDK Extensions
+### Developer API Extensions
 - [ ] **1000+ Pre-built Integrations** ⭐ Differentiator
-- [ ] **Multi-language SDKs** (Java, C#, PHP, Node.js)
+- [ ] **Community-maintained client libraries** (Java, C#, PHP, Node.js, Go, Ruby)
 
 ---
 

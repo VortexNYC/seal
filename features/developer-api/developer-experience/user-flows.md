@@ -240,35 +240,36 @@
     └─ Improved integration reliability
 ```
 
-## SDK and Code Examples
+## API-First Integration with Code Examples
 
-### SDK Discovery Flow
+### Multi-Language Code Example Discovery Flow
 ```
-○ Developer Looks for Language-Specific SDK
+○ Developer Looks for Language-Specific Integration
     ↓
-□ SDK Options Available
-    ├─ JavaScript/Node.js SDK with npm install
-    ├─ Python SDK with pip install
-    ├─ PHP SDK with composer install
-    └─ Go SDK with go get install
+□ Code Examples Available for Multiple Languages
+    ├─ JavaScript/Node.js examples with fetch/axios
+    ├─ Python examples with requests library
+    ├─ PHP examples with cURL
+    ├─ Go examples with net/http
+    └─ Shell/cURL examples for quick testing
     ↓
-○ Developer Chooses Preferred SDK
-    ├─ Language-specific installation instructions
-    ├─ Quickstart guide for chosen SDK
-    ├─ Working code examples in documentation
-    └─ SDK-specific best practices
+○ Developer Chooses Preferred Language
+    ├─ Language-specific code snippets ready to copy
+    ├─ Complete working examples with error handling
+    ├─ Authentication headers and best practices shown
+    └─ Real API endpoints and request/response examples
     ↓
-□ SDK Integration Implementation
-    ├─ Install SDK via package manager
-    ├─ Initialize with API key
-    ├─ Use SDK methods for document operations
-    └─ Handle responses and errors with SDK
+□ API Integration Implementation
+    ├─ Copy language-specific code example
+    ├─ Replace API key placeholder with real key
+    ├─ Customize request parameters for use case
+    └─ Test API call with real data
     ↓
-○ SDK Integration Complete
-    ├─ Type-safe API interactions
-    ├─ Language-native error handling
-    ├─ Reduced boilerplate code
-    └─ Professional development experience
+○ API Integration Complete
+    ├─ Working REST API integration
+    ├─ Language-native HTTP client usage
+    ├─ No SDK dependencies to maintain
+    └─ Full control over API requests
 ```
 
 ### Code Example Usage Flow
