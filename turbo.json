@@ -1,0 +1,59 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"ui": "tui",
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build"],
+			"inputs": ["$TURBO_DEFAULT$", ".env*"],
+			"outputs": [
+				".next/**",
+				"!.next/cache/**",
+				".output/**",
+				"dist/**",
+				"convex/_generated/**"
+			]
+		},
+		"start": {
+			"cache": false
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		},
+		"lint": {
+			"dependsOn": ["^build"]
+		},
+		"format": {
+			"dependsOn": []
+		},
+		"typecheck": {
+			"dependsOn": ["^build"]
+		},
+		"clean": {
+			"cache": false
+		},
+		"//#clean": {
+			"cache": false
+		}
+	},
+	"globalEnv": [
+		"VERCEL_URL",
+		"PORT",
+		"CLERK_SECRET_KEY",
+		"CLERK_WEBHOOK_SECRET",
+		"NEXT_PUBLIC_CONVEX_URL",
+		"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+		"VITE_CONVEX_URL",
+		"VITE_CLERK_PUBLISHABLE_KEY",
+		"VITE_CLERK_SIGN_IN_URL",
+		"VITE_CLERK_SIGN_UP_URL"
+	],
+	"globalPassThroughEnv": [
+		"NODE_ENV",
+		"CI",
+		"VERCEL",
+		"VERCEL_ENV",
+		"VERCEL_URL",
+		"npm_lifecycle_event"
+	]
+}
