@@ -1,0 +1,169 @@
+{
+  // Format and code actions
+  "format_on_save": "on",
+  "formatter": "language_server",
+  "code_actions_on_format": {
+    "source.fixAll.biome": true,
+    "source.organizeImports.biome": true
+  },
+
+  // Language servers configuration
+  "language_servers": [
+    "vtsls",
+    "biome",
+    "!typescript-language-server",
+    "!eslint",
+    "!prettier",
+    "..."
+  ],
+
+  // LSP settings
+  "lsp": {
+    "biome": {
+      "settings": {
+        "require_config_file": true
+      }
+    },
+    "vtsls": {
+      "settings": {
+        "typescript": {
+          "preferences": {
+            "includePackageJsonAutoImports": "on",
+            "includeInlayParameterNameHints": "all",
+            "includeInlayParameterNameHintsWhenArgumentMatchesName": true,
+            "includeInlayFunctionParameterTypeHints": true,
+            "includeInlayVariableTypeHints": true,
+            "includeInlayVariableTypeHintsWhenTypeMatchesName": true,
+            "includeInlayPropertyDeclarationTypeHints": true,
+            "includeInlayFunctionLikeReturnTypeHints": true,
+            "includeInlayEnumMemberValueHints": true
+          },
+          "tsserver": {
+            "maxTsServerMemory": 8192
+          }
+        },
+        "javascript": {
+          "preferences": {
+            "includePackageJsonAutoImports": "on",
+            "includeInlayParameterNameHints": "all",
+            "includeInlayParameterNameHintsWhenArgumentMatchesName": true,
+            "includeInlayFunctionParameterTypeHints": true,
+            "includeInlayVariableTypeHints": true,
+            "includeInlayVariableTypeHintsWhenTypeMatchesName": true,
+            "includeInlayPropertyDeclarationTypeHints": true,
+            "includeInlayFunctionLikeReturnTypeHints": true,
+            "includeInlayEnumMemberValueHints": true
+          },
+          "tsserver": {
+            "maxTsServerMemory": 8192
+          }
+        }
+      }
+    }
+  },
+
+  // Language-specific settings
+  "languages": {
+    "JavaScript": {
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      },
+      "code_actions_on_format": {
+        "source.fixAll.biome": true,
+        "source.organizeImports.biome": true
+      },
+      "prettier": {
+        "allowed": false
+      }
+    },
+    "TypeScript": {
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      },
+      "code_actions_on_format": {
+        "source.fixAll.biome": true,
+        "source.organizeImports.biome": true
+      },
+      "prettier": {
+        "allowed": false
+      }
+    },
+    "TSX": {
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      },
+      "code_actions_on_format": {
+        "source.fixAll.biome": true,
+        "source.organizeImports.biome": true
+      },
+      "prettier": {
+        "allowed": false
+      }
+    },
+    "JSON": {
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      },
+      "prettier": {
+        "allowed": false
+      }
+    },
+    "JSONC": {
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      },
+      "prettier": {
+        "allowed": false
+      }
+    },
+    "CSS": {
+      "formatter": {
+        "language_server": {
+          "name": "biome"
+        }
+      },
+      "prettier": {
+        "allowed": false
+      }
+    }
+  },
+
+  // Inlay hints
+  // "inlay_hints": {
+  // 	"enabled": true,
+  // 	"show_type_hints": true,
+  // 	"show_parameter_hints": true,
+  // 	"show_other_hints": true
+  // },
+
+  // Tab settings
+  "tab_size": 2,
+  "hard_tabs": false,
+
+  // Editor preferences
+  "soft_wrap": "editor_width",
+  "preferred_line_length": 100,
+  "show_completions_on_input": true,
+  "auto_signature_help": true,
+
+  // File watching and performance
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/node_modules",
+    "**/target",
+    "**/.next",
+    "**/dist",
+    "**/.turbo",
+    "**/coverage"
+  ]
+}
