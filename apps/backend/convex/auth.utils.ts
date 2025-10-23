@@ -14,7 +14,7 @@ export const ROLE_HIERARCHY: Record<OrganizationMemberRole, number> = {
 };
 
 /**
- * Financial management permissions for each role
+ * Document signing platform permissions for each role
  */
 export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 	system: [
@@ -34,38 +34,38 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 		"subscription:manage",
 		"subscription:billing:read",
 		"subscription:billing:update",
-		// Financial accounts (full access)
-		"accounts:read",
-		"accounts:create",
-		"accounts:update",
-		"accounts:delete",
-		"accounts:archive",
-		// Transactions (full access)
-		"transactions:read",
-		"transactions:create",
-		"transactions:update",
-		"transactions:delete",
-		"transactions:import",
-		"transactions:export",
-		// Categories (full access)
-		"categories:read",
-		"categories:create",
-		"categories:update",
-		"categories:delete",
-		// Budgets (full access)
-		"budgets:read",
-		"budgets:create",
-		"budgets:update",
-		"budgets:delete",
-		// Goals (full access)
-		"goals:read",
-		"goals:create",
-		"goals:update",
-		"goals:delete",
-		// Reports and analytics
+		// Documents (full access)
+		"documents:read",
+		"documents:create",
+		"documents:update",
+		"documents:delete",
+		"documents:send",
+		"documents:cancel",
+		"documents:download",
+		// Templates (full access)
+		"templates:read",
+		"templates:create",
+		"templates:update",
+		"templates:delete",
+		"templates:use",
+		// Signatures (view all org signatures)
+		"signatures:read",
+		"signatures:download",
+		// Audit & Compliance
+		"audit:read",
+		"audit:export",
+		// API & Webhooks
+		"api:read",
+		"api:create",
+		"api:delete",
+		"webhooks:read",
+		"webhooks:create",
+		"webhooks:update",
+		"webhooks:delete",
+		// Analytics & Reports
+		"analytics:read",
 		"reports:read",
 		"reports:generate",
-		"analytics:read",
 		// Data management
 		"data:export",
 		"data:backup",
@@ -76,81 +76,74 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 		"org:settings:read",
 		"org:users:read",
 		"org:users:invite",
-		"org:users:update_role",
 		// Subscription view
 		"subscription:billing:read",
-		// Financial accounts (manage)
-		"accounts:read",
-		"accounts:create",
-		"accounts:update",
-		"accounts:archive",
-		// Transactions (manage)
-		"transactions:read",
-		"transactions:create",
-		"transactions:update",
-		"transactions:delete",
-		"transactions:import",
-		"transactions:export",
-		// Categories (manage)
-		"categories:read",
-		"categories:create",
-		"categories:update",
-		"categories:delete",
-		// Budgets (manage)
-		"budgets:read",
-		"budgets:create",
-		"budgets:update",
-		"budgets:delete",
-		// Goals (manage)
-		"goals:read",
-		"goals:create",
-		"goals:update",
-		"goals:delete",
-		// Reports
+		// Documents (full access)
+		"documents:read",
+		"documents:create",
+		"documents:update",
+		"documents:delete",
+		"documents:send",
+		"documents:cancel",
+		"documents:download",
+		// Templates (full access)
+		"templates:read",
+		"templates:create",
+		"templates:update",
+		"templates:delete",
+		"templates:use",
+		// Signatures (view all)
+		"signatures:read",
+		"signatures:download",
+		// Audit (read only)
+		"audit:read",
+		"audit:export",
+		// API & Webhooks (manage)
+		"api:read",
+		"api:create",
+		"api:delete",
+		"webhooks:read",
+		"webhooks:create",
+		"webhooks:update",
+		"webhooks:delete",
+		// Analytics
+		"analytics:read",
 		"reports:read",
 		"reports:generate",
-		"analytics:read",
 		// Data export
 		"data:export",
 	],
 
 	member: [
-		// Basic financial access
-		"accounts:read",
-		"accounts:create",
-		"accounts:update",
-		// Transactions
-		"transactions:read",
-		"transactions:create",
-		"transactions:update",
-		"transactions:import",
-		// Categories (read and personal create)
-		"categories:read",
-		"categories:create",
-		// Budgets
-		"budgets:read",
-		"budgets:create",
-		"budgets:update",
-		// Goals
-		"goals:read",
-		"goals:create",
-		"goals:update",
-		// Basic reports
-		"reports:read",
+		// Documents (create and manage own)
+		"documents:read",
+		"documents:create",
+		"documents:update",
+		"documents:send",
+		"documents:cancel",
+		"documents:download",
+		// Templates (use existing, create own)
+		"templates:read",
+		"templates:create",
+		"templates:use",
+		// Signatures (own documents only)
+		"signatures:read",
+		"signatures:download",
+		// Basic analytics
 		"analytics:read",
+		"reports:read",
 		// Personal data
 		"data:export",
 	],
 
 	viewer: [
 		// Read-only access
-		"accounts:read",
-		"transactions:read",
-		"categories:read",
-		"budgets:read",
-		"goals:read",
-		"reports:read",
+		"documents:read",
+		"documents:download",
+		"templates:read",
+		"signatures:read",
 		"analytics:read",
+		"reports:read",
 	],
 };
 
@@ -230,9 +223,9 @@ export function getDisplayName(user: Doc<"users">): string {
 }
 
 /**
- * Financial management permission constants
+ * Document signing platform permission constants
  */
-export const FINANCIAL_PERMISSIONS = {
+export const DOCUMENT_SIGNING_PERMISSIONS = {
 	// Organization permissions
 	ORG_MANAGE: "org:manage",
 	ORG_SETTINGS_READ: "org:settings:read",
@@ -247,43 +240,45 @@ export const FINANCIAL_PERMISSIONS = {
 	SUBSCRIPTION_BILLING_READ: "subscription:billing:read",
 	SUBSCRIPTION_BILLING_UPDATE: "subscription:billing:update",
 
-	// Account permissions
-	ACCOUNTS_READ: "accounts:read",
-	ACCOUNTS_CREATE: "accounts:create",
-	ACCOUNTS_UPDATE: "accounts:update",
-	ACCOUNTS_DELETE: "accounts:delete",
-	ACCOUNTS_ARCHIVE: "accounts:archive",
+	// Document permissions
+	DOCUMENTS_READ: "documents:read",
+	DOCUMENTS_CREATE: "documents:create",
+	DOCUMENTS_UPDATE: "documents:update",
+	DOCUMENTS_DELETE: "documents:delete",
+	DOCUMENTS_SEND: "documents:send",
+	DOCUMENTS_CANCEL: "documents:cancel",
+	DOCUMENTS_DOWNLOAD: "documents:download",
 
-	// Transaction permissions
-	TRANSACTIONS_READ: "transactions:read",
-	TRANSACTIONS_CREATE: "transactions:create",
-	TRANSACTIONS_UPDATE: "transactions:update",
-	TRANSACTIONS_DELETE: "transactions:delete",
-	TRANSACTIONS_IMPORT: "transactions:import",
-	TRANSACTIONS_EXPORT: "transactions:export",
+	// Template permissions
+	TEMPLATES_READ: "templates:read",
+	TEMPLATES_CREATE: "templates:create",
+	TEMPLATES_UPDATE: "templates:update",
+	TEMPLATES_DELETE: "templates:delete",
+	TEMPLATES_USE: "templates:use",
 
-	// Category permissions
-	CATEGORIES_READ: "categories:read",
-	CATEGORIES_CREATE: "categories:create",
-	CATEGORIES_UPDATE: "categories:update",
-	CATEGORIES_DELETE: "categories:delete",
+	// Signature permissions
+	SIGNATURES_READ: "signatures:read",
+	SIGNATURES_DOWNLOAD: "signatures:download",
 
-	// Budget permissions
-	BUDGETS_READ: "budgets:read",
-	BUDGETS_CREATE: "budgets:create",
-	BUDGETS_UPDATE: "budgets:update",
-	BUDGETS_DELETE: "budgets:delete",
+	// Audit permissions
+	AUDIT_READ: "audit:read",
+	AUDIT_EXPORT: "audit:export",
 
-	// Goal permissions
-	GOALS_READ: "goals:read",
-	GOALS_CREATE: "goals:create",
-	GOALS_UPDATE: "goals:update",
-	GOALS_DELETE: "goals:delete",
+	// API permissions
+	API_READ: "api:read",
+	API_CREATE: "api:create",
+	API_DELETE: "api:delete",
 
-	// Report and analytics permissions
+	// Webhook permissions
+	WEBHOOKS_READ: "webhooks:read",
+	WEBHOOKS_CREATE: "webhooks:create",
+	WEBHOOKS_UPDATE: "webhooks:update",
+	WEBHOOKS_DELETE: "webhooks:delete",
+
+	// Analytics permissions
+	ANALYTICS_READ: "analytics:read",
 	REPORTS_READ: "reports:read",
 	REPORTS_GENERATE: "reports:generate",
-	ANALYTICS_READ: "analytics:read",
 
 	// Data management permissions
 	DATA_EXPORT: "data:export",
@@ -291,14 +286,14 @@ export const FINANCIAL_PERMISSIONS = {
 } as const;
 
 /**
- * Check if user can manage financial accounts
+ * Check if user can manage documents
  */
-export function canManageAccounts(
+export function canManageDocuments(
 	member: Doc<"organization_members">,
 	orgId: string,
 ): boolean {
-	// Must have account management permission
-	if (!hasPermission(member, FINANCIAL_PERMISSIONS.ACCOUNTS_CREATE)) {
+	// Must have document management permission
+	if (!hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_CREATE)) {
 		return false;
 	}
 
@@ -307,14 +302,23 @@ export function canManageAccounts(
 }
 
 /**
- * Check if user can create/edit transactions
+ * Check if user can send documents for signing
  */
-export function canManageTransactions(
+export function canSendDocuments(
+	member: Doc<"organization_members">,
+): boolean {
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_SEND);
+}
+
+/**
+ * Check if user can manage templates
+ */
+export function canManageTemplates(
 	member: Doc<"organization_members">,
 	orgId: string,
 ): boolean {
-	// Must have transaction write permission
-	if (!hasPermission(member, FINANCIAL_PERMISSIONS.TRANSACTIONS_CREATE)) {
+	// Must have template management permission
+	if (!hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_CREATE)) {
 		return false;
 	}
 
@@ -323,49 +327,48 @@ export function canManageTransactions(
 }
 
 /**
- * Check if user can manage budgets
+ * Check if user can download documents
  */
-export function canManageBudgets(
+export function canDownloadDocuments(
 	member: Doc<"organization_members">,
-	orgId: string,
 ): boolean {
-	// Must have budget management permission
-	if (!hasPermission(member, FINANCIAL_PERMISSIONS.BUDGETS_CREATE)) {
-		return false;
-	}
-
-	// Must be in same organization
-	return canAccessOrganization(member, orgId);
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_DOWNLOAD);
 }
 
 /**
- * Check if user can manage goals
+ * Check if user can access signatures
  */
-export function canManageGoals(
+export function canAccessSignatures(
 	member: Doc<"organization_members">,
-	orgId: string,
 ): boolean {
-	// Must have goal management permission
-	if (!hasPermission(member, FINANCIAL_PERMISSIONS.GOALS_CREATE)) {
-		return false;
-	}
-
-	// Must be in same organization
-	return canAccessOrganization(member, orgId);
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.SIGNATURES_READ);
 }
 
 /**
- * Check if user can access financial data
+ * Check if user can manage webhooks
  */
-export function canAccessFinancialData(
+export function canManageWebhooks(
 	member: Doc<"organization_members">,
 ): boolean {
-	return (
-		hasPermission(member, FINANCIAL_PERMISSIONS.ACCOUNTS_READ) ||
-		hasPermission(member, FINANCIAL_PERMISSIONS.TRANSACTIONS_READ) ||
-		hasPermission(member, FINANCIAL_PERMISSIONS.BUDGETS_READ) ||
-		hasPermission(member, FINANCIAL_PERMISSIONS.GOALS_READ)
-	);
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.WEBHOOKS_CREATE);
+}
+
+/**
+ * Check if user can manage API keys
+ */
+export function canManageAPIKeys(
+	member: Doc<"organization_members">,
+): boolean {
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.API_CREATE);
+}
+
+/**
+ * Check if user can access audit logs
+ */
+export function canAccessAuditLogs(
+	member: Doc<"organization_members">,
+): boolean {
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.AUDIT_READ);
 }
 
 /**
@@ -374,7 +377,7 @@ export function canAccessFinancialData(
 export function canManageSubscription(
 	member: Doc<"organization_members">,
 ): boolean {
-	return hasPermission(member, FINANCIAL_PERMISSIONS.SUBSCRIPTION_MANAGE);
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_MANAGE);
 }
 
 /**
@@ -383,7 +386,7 @@ export function canManageSubscription(
 export function canManageOrganization(
 	member: Doc<"organization_members">,
 ): boolean {
-	return hasPermission(member, FINANCIAL_PERMISSIONS.ORG_MANAGE);
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.ORG_MANAGE);
 }
 
 /**
@@ -391,8 +394,8 @@ export function canManageOrganization(
  */
 export function canManageMembers(member: Doc<"organization_members">): boolean {
 	return (
-		hasPermission(member, FINANCIAL_PERMISSIONS.ORG_USERS_INVITE) ||
-		hasPermission(member, FINANCIAL_PERMISSIONS.ORG_USERS_REMOVE)
+		hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE) ||
+		hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_REMOVE)
 	);
 }
 
@@ -401,7 +404,7 @@ export function canManageMembers(member: Doc<"organization_members">): boolean {
  */
 export function getHighestPermissionLevel(
 	member: Doc<"organization_members">,
-	domain: "accounts" | "transactions" | "budgets" | "goals" | "categories",
+	domain: "documents" | "templates" | "signatures" | "webhooks" | "api",
 ): "none" | "read" | "write" | "delete" {
 	const permissions = getEffectivePermissions(member);
 
@@ -452,7 +455,7 @@ export function isBusinessUser(_member: Doc<"organization_members">): boolean {
  * Check if user can export data
  */
 export function canExportData(member: Doc<"organization_members">): boolean {
-	return hasPermission(member, FINANCIAL_PERMISSIONS.DATA_EXPORT);
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DATA_EXPORT);
 }
 
 /**
@@ -461,7 +464,7 @@ export function canExportData(member: Doc<"organization_members">): boolean {
 export function canGenerateReports(
 	member: Doc<"organization_members">,
 ): boolean {
-	return hasPermission(member, FINANCIAL_PERMISSIONS.REPORTS_GENERATE);
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.REPORTS_GENERATE);
 }
 
 /**
@@ -470,27 +473,27 @@ export function canGenerateReports(
 export function canAccessAnalytics(
 	member: Doc<"organization_members">,
 ): boolean {
-	return hasPermission(member, FINANCIAL_PERMISSIONS.ANALYTICS_READ);
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.ANALYTICS_READ);
 }
 
 /**
- * Check if user can import/export transactions
+ * Check if user can use templates
  */
-export function canImportTransactions(
+export function canUseTemplates(
 	member: Doc<"organization_members">,
 ): boolean {
-	return hasPermission(member, FINANCIAL_PERMISSIONS.TRANSACTIONS_IMPORT);
+	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_USE);
 }
 
 /**
- * Check if user has financial management access
+ * Check if user has document signing access
  */
-export function hasFinancialAccess(
+export function hasDocumentSigningAccess(
 	member: Doc<"organization_members">,
 ): boolean {
 	return (
-		hasPermission(member, FINANCIAL_PERMISSIONS.ACCOUNTS_READ) ||
-		hasPermission(member, FINANCIAL_PERMISSIONS.TRANSACTIONS_READ)
+		hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_READ) ||
+		hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.SIGNATURES_READ)
 	);
 }
 
@@ -513,12 +516,15 @@ export const AuthUtils = {
 	isOwner,
 	isAdmin,
 
-	// Financial management functions
-	canManageAccounts,
-	canManageTransactions,
-	canManageBudgets,
-	canManageGoals,
-	canAccessFinancialData,
+	// Document signing management functions
+	canManageDocuments,
+	canSendDocuments,
+	canManageTemplates,
+	canDownloadDocuments,
+	canAccessSignatures,
+	canManageWebhooks,
+	canManageAPIKeys,
+	canAccessAuditLogs,
 	canManageSubscription,
 	canManageOrganization,
 	canManageMembers,
@@ -528,10 +534,10 @@ export const AuthUtils = {
 	canExportData,
 	canGenerateReports,
 	canAccessAnalytics,
-	canImportTransactions,
-	hasFinancialAccess,
+	canUseTemplates,
+	hasDocumentSigningAccess,
 
 	// Permission constants
-	PERMISSIONS: FINANCIAL_PERMISSIONS,
+	PERMISSIONS: DOCUMENT_SIGNING_PERMISSIONS,
 	ROLE_HIERARCHY,
 };

@@ -1,0 +1,335 @@
+/**
+ * Organization/Workspace queries
+ *
+ * Provides read access to organization data, members, and invitations
+ */
+
+import { ConvexError, v } from "convex/values";
+import { authQuery } from "../auth";
+import type { Doc } from "../_generated/dataModel";
+import { hasPermission, DOCUMENT_SIGNING_PERMISSIONS } from "../auth.utils";
+
+/**
+ * Get current organization details by slug
+ */
+export const getOrganization = authQuery({
+	args: {
+		slug: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const org = await ctx.db
+			.query("organizations")
+			.withIndex("by_slug", (q) => q.eq("slug", args.slug))
+			.first();
+
+		if (!org) {
+			throw new ConvexError("Organization not found");
+		}
+
+		// Verify user has access to this organization
+		const member = await ctx.db
+			.query("organization_members")
+			.withIndex("by_user_and_organization", (q) =>
+				q.eq("userId", ctx.user._id).eq("organizationId", org._id),
+			)
+			.first();
+
+		if (!member) {
+			throw new ConvexError("No access to this organization");
+		}
+
+		return {
+			...org,
+			userRole: member.role,
+			userStatus: member.status,
+		};
+	},
+});
+
+/**
+ * Get all members of an organization with user details
+ */
+export const getOrganizationMembers = authQuery({
+	args: {
+		organizationId: v.id("organizations"),
+	},
+	handler: async (ctx, args) => {
+		// Verify user has access to this organization
+		const userMember = await ctx.db
+			.query("organization_members")
+			.withIndex("by_user_and_organization", (q) =>
+				q.eq("userId", ctx.user._id).eq("organizationId", args.organizationId),
+			)
+			.first();
+
+		if (!userMember) {
+			throw new ConvexError("No access to this organization");
+		}
+
+		// Get all members
+		const members = await ctx.db
+			.query("organization_members")
+			.withIndex("by_organization", (q) =>
+				q.eq("organizationId", args.organizationId),
+			)
+			.collect();
+
+		// Fetch user details for each member
+		const membersWithDetails = await Promise.all(
+			members.map(async (member) => {
+				const user = await ctx.db.get(member.userId);
+				if (!user) {
+					return null;
+				}
+
+				return {
+					id: member._id,
+					userId: user._id,
+					name: user.name,
+					email: user.email,
+					avatarUrl: user.avatarUrl,
+					role: member.role,
+					status: member.status,
+					isPrimary: member.isPrimary,
+					joinedAt: member._creationTime,
+					permissions: member.permissions,
+				};
+			}),
+		);
+
+		// Filter out null values and sort by role hierarchy (owner first, then admin, etc.)
+		const roleOrder = {
+			owner: 0,
+			admin: 1,
+			member: 2,
+			viewer: 3,
+			system: 4,
+		};
+
+		return membersWithDetails
+			.filter((m): m is NonNullable<typeof m> => m !== null)
+			.sort((a, b) => {
+				const roleCompare = roleOrder[a.role] - roleOrder[b.role];
+				if (roleCompare !== 0) return roleCompare;
+				// If same role, sort by join date
+				return a.joinedAt - b.joinedAt;
+			});
+	},
+});
+
+/**
+ * Get pending invitations for an organization
+ */
+export const getPendingInvitations = authQuery({
+	args: {
+		organizationId: v.id("organizations"),
+	},
+	handler: async (ctx, args) => {
+		// Verify user has access and can manage members
+		const userMember = await ctx.db
+			.query("organization_members")
+			.withIndex("by_user_and_organization", (q) =>
+				q.eq("userId", ctx.user._id).eq("organizationId", args.organizationId),
+			)
+			.first();
+
+		if (!userMember) {
+			throw new ConvexError("No access to this organization");
+		}
+
+		// Only admins and owners can view invitations
+		if (!hasPermission(userMember, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE)) {
+			throw new ConvexError("Insufficient permissions to view invitations");
+		}
+
+		// Get pending invitations
+		const invitations = await ctx.db
+			.query("organization_invitations")
+			.withIndex("by_organization", (q) =>
+				q.eq("organizationId", args.organizationId),
+			)
+			.filter((q) => q.eq(q.field("status"), "pending"))
+			.collect();
+
+		// Fetch inviter details
+		const invitationsWithDetails = await Promise.all(
+			invitations.map(async (invitation) => {
+				const inviter = await ctx.db.get(invitation.invitedBy);
+
+				return {
+					id: invitation._id,
+					email: invitation.email,
+					role: invitation.role,
+					status: invitation.status,
+					invitedAt: invitation._creationTime,
+					expiresAt: invitation.expiresAt,
+					inviterName: inviter?.name || "Unknown",
+					inviterEmail: inviter?.email || "",
+				};
+			}),
+		);
+
+		// Sort by most recent first
+		return invitationsWithDetails.sort((a, b) => b.invitedAt - a.invitedAt);
+	},
+});
+
+/**
+ * Get user's permissions for the current organization
+ */
+export const getUserPermissions = authQuery({
+	args: {
+		organizationId: v.id("organizations"),
+	},
+	handler: async (ctx, args) => {
+		// Get user's membership
+		const member = await ctx.db
+			.query("organization_members")
+			.withIndex("by_user_and_organization", (q) =>
+				q.eq("userId", ctx.user._id).eq("organizationId", args.organizationId),
+			)
+			.first();
+
+		if (!member) {
+			throw new ConvexError("No access to this organization");
+		}
+
+		// Return detailed permission information
+		return {
+			role: member.role,
+			status: member.status,
+			isPrimary: member.isPrimary,
+			permissions: {
+				// Organization management
+				canManageOrganization: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.ORG_MANAGE,
+				),
+				canViewSettings: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.ORG_SETTINGS_READ,
+				),
+				canUpdateSettings: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.ORG_SETTINGS_UPDATE,
+				),
+
+				// Member management
+				canViewMembers: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_READ,
+				),
+				canInviteMembers: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE,
+				),
+				canRemoveMembers: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_REMOVE,
+				),
+				canUpdateRoles: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_UPDATE_ROLE,
+				),
+
+				// Subscription
+				canManageBilling: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_MANAGE,
+				),
+				canViewBilling: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_BILLING_READ,
+				),
+
+				// Documents
+				canCreateDocuments: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_CREATE,
+				),
+				canSendDocuments: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_SEND,
+				),
+				canDeleteDocuments: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_DELETE,
+				),
+
+				// Templates
+				canCreateTemplates: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_CREATE,
+				),
+				canManageTemplates: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_UPDATE,
+				),
+
+				// API & Webhooks
+				canManageAPIKeys: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.API_CREATE,
+				),
+				canManageWebhooks: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.WEBHOOKS_CREATE,
+				),
+
+				// Audit
+				canViewAudit: hasPermission(
+					member,
+					DOCUMENT_SIGNING_PERMISSIONS.AUDIT_READ,
+				),
+			},
+		};
+	},
+});
+
+/**
+ * Get organization member count
+ */
+export const getOrganizationMemberCount = authQuery({
+	args: {
+		organizationId: v.id("organizations"),
+	},
+	handler: async (ctx, args) => {
+		// Verify user has access to this organization
+		const userMember = await ctx.db
+			.query("organization_members")
+			.withIndex("by_user_and_organization", (q) =>
+				q.eq("userId", ctx.user._id).eq("organizationId", args.organizationId),
+			)
+			.first();
+
+		if (!userMember) {
+			throw new ConvexError("No access to this organization");
+		}
+
+		const members = await ctx.db
+			.query("organization_members")
+			.withIndex("by_organization", (q) =>
+				q.eq("organizationId", args.organizationId),
+			)
+			.collect();
+
+		const activeMembers = members.filter((m) => m.status === "active");
+
+		return {
+			total: members.length,
+			active: activeMembers.length,
+			byRole: {
+				owner: members.filter((m) => m.role === "owner").length,
+				admin: members.filter((m) => m.role === "admin").length,
+				member: members.filter((m) => m.role === "member").length,
+				viewer: members.filter((m) => m.role === "viewer").length,
+			},
+			byStatus: {
+				active: activeMembers.length,
+				inactive: members.filter((m) => m.status === "inactive").length,
+				suspended: members.filter((m) => m.status === "suspended").length,
+				pending: members.filter((m) => m.status === "pending").length,
+			},
+		};
+	},
+});
