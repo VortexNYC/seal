@@ -1,20 +1,20 @@
 {
-  "name": "@seal/backend",
-  "version": "0.0.1",
-  "type": "module",
-  "scripts": {
-    "dev": "convex dev",
-    "deploy": "convex deploy",
-    "lint": "biome check .",
-    "format": "biome format --write .",
-    "typecheck": "tsc --noEmit",
-    "clean": "git clean -xdf .cache .turbo node_modules convex/_generate"
-  },
-  "dependencies": {
-    "convex": "^1.28.0",
-    "convex-helpers": "^0.1.104",
-    "stripe": "^19.1.0",
-    "svix": "^1.77.0",
-    "zod": "^3.25.76"
-  }
+	"name": "@seal/backend",
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "convex dev",
+		"deploy": "convex deploy",
+		"lint": "biome check .",
+		"format": "biome format --write .",
+		"typecheck": "tsc --noEmit",
+		"clean": "git clean -xdf .cache .turbo node_modules convex/_generate"
+	},
+	"dependencies": {
+		"convex": "^1.28.0",
+		"convex-helpers": "^0.1.104",
+		"stripe": "^19.1.0",
+		"svix": "^1.77.0",
+		"zod": "^3.25.76"
+	}
 }
