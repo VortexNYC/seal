@@ -497,6 +497,78 @@ export const removeMember = adminMutation({
 });
 
 /**
+ * Create invitation for new member
+ */
+export const createInvitation = adminMutation({
+	args: {
+		email: v.string(),
+		role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+	},
+	handler: async (ctx, args) => {
+		const { organization, user: currentUser } = ctx.auth;
+
+		// Validate email
+		const email = args.email.trim().toLowerCase();
+		if (!email || !email.includes("@")) {
+			throw new ConvexError("Invalid email address");
+		}
+
+		// Check if user already exists with this email
+		const existingUser = await ctx.db
+			.query("users")
+			.withIndex("by_email", (q) => q.eq("email", email))
+			.first();
+
+		if (existingUser) {
+			// Check if already a member
+			const existingMembership = await ctx.db
+				.query("organization_members")
+				.withIndex("by_user_organization", (q) =>
+					q.eq("userId", existingUser._id).eq("organizationId", organization._id),
+				)
+				.first();
+
+			if (existingMembership) {
+				throw new ConvexError("User is already a member of this organization");
+			}
+		}
+
+		// Check for existing pending invitation
+		const existingInvitation = await ctx.db
+			.query("organization_invitations")
+			.withIndex("by_email", (q) => q.eq("email", email))
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("organizationId"), organization._id),
+					q.eq(q.field("status"), "pending"),
+				),
+			)
+			.first();
+
+		if (existingInvitation) {
+			throw new ConvexError("An invitation has already been sent to this email");
+		}
+
+		// Generate invitation token
+		const token = crypto.randomUUID();
+
+		// Create invitation
+		const invitationId = await ctx.db.insert("organization_invitations", {
+			organizationId: organization._id,
+			email,
+			role: args.role,
+			status: "pending",
+			token,
+			invitedBy: currentUser._id,
+			expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+			createdAt: Date.now(),
+		});
+
+		return { id: invitationId };
+	},
+});
+
+/**
  * Update member status
  */
 export const updateMemberStatus = adminMutation({
