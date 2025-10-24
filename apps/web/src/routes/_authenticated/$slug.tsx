@@ -5,6 +5,7 @@
  * Route: /{slug}/*
  */
 
+import { useClerk } from "@clerk/clerk-react";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
@@ -15,6 +16,7 @@ import {
 	Home,
 	Key,
 	LayoutTemplate,
+	LogOut,
 	Settings,
 	Users,
 	Webhook,
@@ -88,6 +90,7 @@ interface WorkspaceSidebarProps {
 }
 
 function WorkspaceSidebar({ slug, orgId }: WorkspaceSidebarProps) {
+	const { signOut } = useClerk();
 	const permissions = useQuery(api.organizations.queries.getUserPermissions, {
 		organizationId: orgId,
 	});
@@ -151,7 +154,11 @@ function WorkspaceSidebar({ slug, orgId }: WorkspaceSidebarProps) {
 	return (
 		<Sidebar>
 			<SidebarHeader className="border-b p-4">
-				<Link to="/$slug/home" params={{ slug }} className="flex items-center gap-2">
+				<Link
+					to="/$slug/home"
+					params={{ slug }}
+					className="flex items-center gap-2"
+				>
 					<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
 						<FileText className="h-4 w-4" />
 					</div>
@@ -184,12 +191,23 @@ function WorkspaceSidebar({ slug, orgId }: WorkspaceSidebarProps) {
 			</SidebarContent>
 
 			<SidebarFooter className="border-t p-4">
-				<div className="text-xs text-muted-foreground">
-					{permissions?.role && (
-						<div className="capitalize">
-							Role: <span className="font-medium">{permissions.role}</span>
-						</div>
-					)}
+				<div className="flex items-center justify-between gap-4">
+					<div className="text-xs text-muted-foreground">
+						{permissions?.role && (
+							<div className="capitalize">
+								Role: <span className="font-medium">{permissions.role}</span>
+							</div>
+						)}
+					</div>
+					<button
+						type="button"
+						onClick={() => signOut()}
+						className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+						title="Sign out"
+					>
+						<LogOut className="h-4 w-4" />
+						<span>Sign out</span>
+					</button>
 				</div>
 			</SidebarFooter>
 		</Sidebar>
