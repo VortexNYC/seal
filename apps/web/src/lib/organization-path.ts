@@ -64,11 +64,11 @@ function ensureOrganizationPathname(slug: string, pathname: string): string {
 
 	const [first, ...rest] = segments;
 
-	if (ORGANIZATION_ROUTE_SEGMENTS.has(first)) {
+	if (first && ORGANIZATION_ROUTE_SEGMENTS.has(first)) {
 		return `/${slug}/${[first, ...rest].join("/")}`;
 	}
 
-	if (rest.length > 0 && ORGANIZATION_ROUTE_SEGMENTS.has(rest[0])) {
+	if (rest.length > 0 && rest[0] && ORGANIZATION_ROUTE_SEGMENTS.has(rest[0])) {
 		return `/${slug}/${rest.join("/")}`;
 	}
 
