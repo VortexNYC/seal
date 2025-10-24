@@ -8,9 +8,9 @@
 		"build": "vite build && tsc",
 		"serve": "vite preview",
 		"test": "vitest run",
-		"format": "biome format",
-		"lint": "biome lint",
-		"check": "biome check"
+		"format": "biome format --write .",
+		"typecheck": "tsc --noEmit",
+		"clean": "git clean -xdf .cache .turbo node_modules convex/_generate"
 	},
 	"dependencies": {
 		"@clerk/clerk-react": "^5.53.2",
