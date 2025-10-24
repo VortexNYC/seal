@@ -24,7 +24,8 @@
 			"dependsOn": ["^build"]
 		},
 		"format": {
-			"dependsOn": []
+			"dependsOn": [],
+			"outputLogs": "new-only"
 		},
 		"typecheck": {
 			"dependsOn": ["^build"]
@@ -41,6 +42,7 @@
 		"PORT",
 		"CLERK_SECRET_KEY",
 		"CLERK_WEBHOOK_SECRET",
+		"CONVEX_DEPLOY_KEY",
 		"NEXT_PUBLIC_CONVEX_URL",
 		"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
 		"VITE_CONVEX_URL",

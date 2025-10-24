@@ -1,7 +1,7 @@
 {
 	"name": "@seal/backend",
 	"version": "0.0.1",
-	"type": "module",
+	"private": true,
 	"scripts": {
 		"dev": "convex dev",
 		"deploy": "convex deploy",
@@ -16,5 +16,8 @@
 		"stripe": "^19.1.0",
 		"svix": "^1.77.0",
 		"zod": "^3.25.76"
+	},
+	"devDependencies": {
+		"@clerk/types": "^4.95.0"
 	}
 }
