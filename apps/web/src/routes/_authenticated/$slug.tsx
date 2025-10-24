@@ -151,7 +151,7 @@ function WorkspaceSidebar({ slug, orgId }: WorkspaceSidebarProps) {
 	return (
 		<Sidebar>
 			<SidebarHeader className="border-b p-4">
-				<Link to={`/${slug}/home`} className="flex items-center gap-2">
+				<Link to="/$slug/home" params={{ slug }} className="flex items-center gap-2">
 					<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
 						<FileText className="h-4 w-4" />
 					</div>
