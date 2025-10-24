@@ -42,7 +42,7 @@ export function RoleSelector({
 		try {
 			await updateMemberRole({
 				memberId,
-				newRole: newRole as "admin" | "member" | "viewer",
+				role: newRole as "admin" | "member" | "viewer" | "owner",
 			});
 
 			toast.success("Role updated", {
