@@ -524,7 +524,9 @@ export const createInvitation = adminMutation({
 			const existingMembership = await ctx.db
 				.query("organization_members")
 				.withIndex("by_user_organization", (q) =>
-					q.eq("userId", existingUser._id).eq("organizationId", organization._id),
+					q
+						.eq("userId", existingUser._id)
+						.eq("organizationId", organization._id),
 				)
 				.first();
 
@@ -546,7 +548,9 @@ export const createInvitation = adminMutation({
 			.first();
 
 		if (existingInvitation) {
-			throw new ConvexError("An invitation has already been sent to this email");
+			throw new ConvexError(
+				"An invitation has already been sent to this email",
+			);
 		}
 
 		// Generate invitation token
