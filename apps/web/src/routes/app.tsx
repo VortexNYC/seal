@@ -1,8 +1,8 @@
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { useQuery } from "convex/react";
+import { useState } from "react";
 import { buildOrganizationPath } from "@/lib/organization-path";
 
 export const Route = createFileRoute("/app")({
@@ -24,26 +24,22 @@ function AppRedirect() {
 
 function AuthenticatedRedirect() {
 	const organizationStatus = useQuery(api.check_membership.hasOrganization);
-	const [isCreatingOrg, setIsCreatingOrg] = useState(false);
-	const ensurePersonalOrganization = useMutation(
-		api.organizations.mutations.ensurePersonalOrganization,
-	);
+	const [isCreatingOrg] = useState(false);
 
 	const isLoading = organizationStatus === undefined;
-	const hasOrganization = organizationStatus?.hasOrganization ?? false;
 	const activeOrganizationSlug =
 		organizationStatus?.activeOrganizationSlug ?? null;
 
 	// Auto-create personal organization for authenticated users without one
-	useEffect(() => {
-		if (!isLoading && !hasOrganization && !isCreatingOrg) {
-			setIsCreatingOrg(true);
-			ensurePersonalOrganization({}).catch((error) => {
-				console.error("Failed to create personal organization:", error);
-				setIsCreatingOrg(false);
-			});
-		}
-	}, [isLoading, hasOrganization, isCreatingOrg, ensurePersonalOrganization]);
+	// useEffect(() => {
+	// 	if (!isLoading && !hasOrganization && !isCreatingOrg) {
+	// 		setIsCreatingOrg(true);
+	// 		ensurePersonalOrganization({}).catch((error) => {
+	// 			console.error("Failed to create personal organization:", error);
+	// 			setIsCreatingOrg(false);
+	// 		});
+	// 	}
+	// }, [isLoading, hasOrganization, isCreatingOrg, ensurePersonalOrganization]);
 
 	// Show loading state while checking authentication or creating organization
 	if (isLoading || isCreatingOrg) {

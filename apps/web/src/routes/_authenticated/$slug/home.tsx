@@ -5,112 +5,116 @@
  * Route: /{slug}/home
  */
 
-import { createFileRoute } from '@tanstack/react-router';
-import { useQuery } from 'convex/react';
-import { api } from '@seal/backend/convex/_generated/api';
-import type { Id } from '@seal/backend/convex/_generated/dataModel';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Users, Clock, CheckCircle2 } from 'lucide-react';
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
+import { CheckCircle2, Clock, FileText, Users } from "lucide-react";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 
-export const Route = createFileRoute('/_authenticated/$slug/home')({
-  component: WorkspaceHome,
+export const Route = createFileRoute("/_authenticated/$slug/home")({
+	component: WorkspaceHome,
 });
 
 function WorkspaceHome() {
-  const { slug } = Route.useParams();
+	const { slug } = Route.useParams();
 
-  // Fetch organization details
-  const organization = useQuery(api.organizations.queries.getOrganization, { slug });
+	// Fetch organization details
+	const organization = useQuery(api.organizations.queries.getOrganization, {
+		slug,
+	});
 
-  if (!organization) {
-    return <div>Loading...</div>;
-  }
+	const orgId = organization?._id as Id<"organizations"> | undefined;
 
-  const orgId = organization._id as Id<"organizations">;
+	// Fetch member count (all hooks must be called before any conditional returns)
+	const memberCount = useQuery(
+		api.organizations.queries.getOrganizationMemberCount,
+		orgId ? { organizationId: orgId } : "skip",
+	);
 
-  // Fetch member count
-  const memberCount = useQuery(api.organizations.queries.getOrganizationMemberCount, {
-    organizationId: orgId,
-  });
+	// Early return after all hooks are called
+	if (!organization || !orgId) {
+		return <div>Loading...</div>;
+	}
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-muted-foreground">
-          Welcome to {organization.name}
-        </p>
-      </div>
+	return (
+		<div className="space-y-6">
+			<div>
+				<h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+				<p className="text-muted-foreground">Welcome to {organization.name}</p>
+			</div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              No documents yet
-            </p>
-          </CardContent>
-        </Card>
+			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">
+							Total Documents
+						</CardTitle>
+						<FileText className="h-4 w-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold">0</div>
+						<p className="text-xs text-muted-foreground">No documents yet</p>
+					</CardContent>
+				</Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {memberCount?.active ?? 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {memberCount?.total ?? 0} total
-            </p>
-          </CardContent>
-        </Card>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">Team Members</CardTitle>
+						<Users className="h-4 w-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold">{memberCount?.active ?? 0}</div>
+						<p className="text-xs text-muted-foreground">
+							{memberCount?.total ?? 0} total
+						</p>
+					</CardContent>
+				</Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Signatures</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              Awaiting signatures
-            </p>
-          </CardContent>
-        </Card>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">
+							Pending Signatures
+						</CardTitle>
+						<Clock className="h-4 w-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold">0</div>
+						<p className="text-xs text-muted-foreground">Awaiting signatures</p>
+					</CardContent>
+				</Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              This month
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">Completed</CardTitle>
+						<CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold">0</div>
+						<p className="text-xs text-muted-foreground">This month</p>
+					</CardContent>
+				</Card>
+			</div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>
-            Your team's recent document activity
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-            No recent activity
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+			<Card>
+				<CardHeader>
+					<CardTitle>Recent Activity</CardTitle>
+					<CardDescription>
+						Your team's recent document activity
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+						No recent activity
+					</div>
+				</CardContent>
+			</Card>
+		</div>
+	);
 }
