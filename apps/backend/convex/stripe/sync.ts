@@ -259,7 +259,9 @@ const syncFromStripeInternal = async (ctx: ActionCtx) => {
 		}
 
 		if (!page.has_more) break;
-		startingAfter = page.data[page.data.length - 1].id;
+		const lastItem = page.data[page.data.length - 1];
+		if (!lastItem) break;
+		startingAfter = lastItem.id;
 	}
 
 	console.warn(`✓ Stripe sync complete! Synced ${productCount} products.`);

@@ -35,7 +35,7 @@ function parseProductMetadata(
 
 	const tier = product.metadata?.tier || "unknown";
 	const includedCredits = product.metadata?.includedCredits
-		? parseInt(product.metadata.includedCredits)
+		? parseInt(product.metadata.includedCredits, 10)
 		: 0;
 
 	const features = product.metadata?.features
@@ -75,9 +75,12 @@ async function buildPriceParams(
 	productId: string,
 ) {
 	// Lookup the subscription product ID from Convex
-	const product = await ctx.runQuery(internal.stripe.sync.getProductByExternalId, {
-		externalProductId: productId,
-	});
+	const product = await ctx.runQuery(
+		internal.stripe.sync.getProductByExternalId,
+		{
+			externalProductId: productId,
+		},
+	);
 
 	if (!product) {
 		throw new Error(`Product ${productId} not found in database`);
@@ -160,7 +163,9 @@ export async function syncPrices(
 
 		total += page.data.length;
 		if (!page.has_more) break;
-		startingAfter = page.data[page.data.length - 1].id;
+		const lastItem = page.data[page.data.length - 1];
+		if (!lastItem) break;
+		startingAfter = lastItem.id;
 	}
 
 	console.warn(`  Synced ${total} prices for ${productName}`);

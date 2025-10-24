@@ -62,10 +62,12 @@ export async function getOrCreateStripeCustomer(
 
 		if (searchResults.data.length > 0) {
 			const existingCustomer = searchResults.data[0];
-			console.warn(
-				`Found existing Stripe customer ${existingCustomer.id} for user ${userId}, reusing instead of creating duplicate`,
-			);
-			return existingCustomer.id;
+			if (existingCustomer) {
+				console.warn(
+					`Found existing Stripe customer ${existingCustomer.id} for user ${userId}, reusing instead of creating duplicate`,
+				);
+				return existingCustomer.id;
+			}
 		}
 	} catch (err) {
 		console.error("Stripe customer search failed, will attempt to create", {
