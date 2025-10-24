@@ -88,7 +88,13 @@ function TeamSettings() {
 				</CardHeader>
 				<CardContent>
 					<MembersList
-						members={members ?? []}
+						members={
+							members?.map((m) => ({
+								...m,
+								name: m.name ?? null,
+								avatarUrl: m.avatarUrl ?? null,
+							})) ?? []
+						}
 						organizationId={orgId}
 						canManageRoles={canManageRoles}
 						canRemove={canRemove}
@@ -107,7 +113,13 @@ function TeamSettings() {
 					</CardHeader>
 					<CardContent>
 						<PendingInvitationsList
-							invitations={invitations}
+							invitations={invitations.map((inv) => ({
+								...inv,
+								role:
+									inv.role === "system" || inv.role === "owner"
+										? "admin"
+										: inv.role,
+							}))}
 							organizationId={orgId}
 						/>
 					</CardContent>
