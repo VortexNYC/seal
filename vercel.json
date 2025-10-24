@@ -1,4 +1,7 @@
 {
+	"buildCommand": "cd ../backend && bunx convex deploy --cmd 'bun run build'",
+	"installCommand": "cd ../.. && bun install",
+	"outputDirectory": "dist",
 	"rewrites": [
 		{
 			"source": "/(.*)",
