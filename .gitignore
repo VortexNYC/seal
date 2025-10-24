@@ -83,6 +83,3 @@ update-sea-142.ts
 
 # Logs
 logs.txt
-
-# Vercel config (managed via dashboard)
-vercel.json

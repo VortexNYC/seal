@@ -1,0 +1,11 @@
+{
+	"buildCommand": "cd ../backend && bunx convex deploy --cmd 'bunx turbo run build --filter=@delta-hub/web'",
+	"devCommand": "cd ../backend && bunx convex deploy --cmd 'bunx turbo run dev --filter=@delta-hub/web'",
+	"installCommand": "bun install",
+	"rewrites": [
+		{
+			"source": "/(.*)",
+			"destination": "/index.html"
+		}
+	]
+}
