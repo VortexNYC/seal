@@ -304,9 +304,7 @@ export function canManageDocuments(
 /**
  * Check if user can send documents for signing
  */
-export function canSendDocuments(
-	member: Doc<"organization_members">,
-): boolean {
+export function canSendDocuments(member: Doc<"organization_members">): boolean {
 	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_SEND);
 }
 
@@ -356,9 +354,7 @@ export function canManageWebhooks(
 /**
  * Check if user can manage API keys
  */
-export function canManageAPIKeys(
-	member: Doc<"organization_members">,
-): boolean {
+export function canManageAPIKeys(member: Doc<"organization_members">): boolean {
 	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.API_CREATE);
 }
 
@@ -377,7 +373,10 @@ export function canAccessAuditLogs(
 export function canManageSubscription(
 	member: Doc<"organization_members">,
 ): boolean {
-	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_MANAGE);
+	return hasPermission(
+		member,
+		DOCUMENT_SIGNING_PERMISSIONS.SUBSCRIPTION_MANAGE,
+	);
 }
 
 /**
@@ -479,9 +478,7 @@ export function canAccessAnalytics(
 /**
  * Check if user can use templates
  */
-export function canUseTemplates(
-	member: Doc<"organization_members">,
-): boolean {
+export function canUseTemplates(member: Doc<"organization_members">): boolean {
 	return hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.TEMPLATES_USE);
 }
 

@@ -6,8 +6,7 @@
 
 import { ConvexError, v } from "convex/values";
 import { authQuery } from "../auth";
-import type { Doc } from "../_generated/dataModel";
-import { hasPermission, DOCUMENT_SIGNING_PERMISSIONS } from "../auth.utils";
+import { DOCUMENT_SIGNING_PERMISSIONS, hasPermission } from "../auth.utils";
 
 /**
  * Get current organization details by slug
@@ -29,8 +28,8 @@ export const getOrganization = authQuery({
 		// Verify user has access to this organization
 		const member = await ctx.db
 			.query("organization_members")
-			.withIndex("by_user_and_organization", (q) =>
-				q.eq("userId", ctx.user._id).eq("organizationId", org._id),
+			.withIndex("by_user_organization", (q) =>
+				q.eq("userId", ctx.auth.user._id).eq("organizationId", org._id),
 			)
 			.first();
 
@@ -57,8 +56,10 @@ export const getOrganizationMembers = authQuery({
 		// Verify user has access to this organization
 		const userMember = await ctx.db
 			.query("organization_members")
-			.withIndex("by_user_and_organization", (q) =>
-				q.eq("userId", ctx.user._id).eq("organizationId", args.organizationId),
+			.withIndex("by_user_organization", (q) =>
+				q
+					.eq("userId", ctx.auth.user._id)
+					.eq("organizationId", args.organizationId),
 			)
 			.first();
 
@@ -87,7 +88,7 @@ export const getOrganizationMembers = authQuery({
 					userId: user._id,
 					name: user.name,
 					email: user.email,
-					avatarUrl: user.avatarUrl,
+					avatarUrl: user.avatar,
 					role: member.role,
 					status: member.status,
 					isPrimary: member.isPrimary,
@@ -128,8 +129,10 @@ export const getPendingInvitations = authQuery({
 		// Verify user has access and can manage members
 		const userMember = await ctx.db
 			.query("organization_members")
-			.withIndex("by_user_and_organization", (q) =>
-				q.eq("userId", ctx.user._id).eq("organizationId", args.organizationId),
+			.withIndex("by_user_organization", (q) =>
+				q
+					.eq("userId", ctx.auth.user._id)
+					.eq("organizationId", args.organizationId),
 			)
 			.first();
 
@@ -138,7 +141,9 @@ export const getPendingInvitations = authQuery({
 		}
 
 		// Only admins and owners can view invitations
-		if (!hasPermission(userMember, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE)) {
+		if (
+			!hasPermission(userMember, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE)
+		) {
 			throw new ConvexError("Insufficient permissions to view invitations");
 		}
 
@@ -185,8 +190,10 @@ export const getUserPermissions = authQuery({
 		// Get user's membership
 		const member = await ctx.db
 			.query("organization_members")
-			.withIndex("by_user_and_organization", (q) =>
-				q.eq("userId", ctx.user._id).eq("organizationId", args.organizationId),
+			.withIndex("by_user_organization", (q) =>
+				q
+					.eq("userId", ctx.auth.user._id)
+					.eq("organizationId", args.organizationId),
 			)
 			.first();
 
@@ -297,8 +304,10 @@ export const getOrganizationMemberCount = authQuery({
 		// Verify user has access to this organization
 		const userMember = await ctx.db
 			.query("organization_members")
-			.withIndex("by_user_and_organization", (q) =>
-				q.eq("userId", ctx.user._id).eq("organizationId", args.organizationId),
+			.withIndex("by_user_organization", (q) =>
+				q
+					.eq("userId", ctx.auth.user._id)
+					.eq("organizationId", args.organizationId),
 			)
 			.first();
 

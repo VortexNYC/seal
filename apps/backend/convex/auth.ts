@@ -228,7 +228,7 @@ export async function getAuthContext(
 		isAdmin: () => AuthUtils.isAdmin(member),
 
 		// Financial-specific helpers
-		canManageFinances: () => AuthUtils.hasFinancialAccess(member),
+		canManageFinances: () => AuthUtils.canManageSubscription(member),
 		canManageSubscription: () => AuthUtils.canManageSubscription(member),
 		canManageMembers: () => AuthUtils.canManageMembers(member),
 	};
