@@ -1,6 +1,6 @@
 {
-	"buildCommand": "cd apps/backend && bunx convex deploy --cmd 'bunx turbo run build --filter=@seal/web'",
-	"devCommand": "cd apps/backend && bunx convex deploy --cmd 'bunx turbo run dev --filter=@seal/web'",
+	"buildCommand": "cd ../backend && bunx convex deploy --cmd 'bunx turbo run build --filter=@seal/web'",
+	"devCommand": "cd ../backend && bunx convex deploy --cmd 'bunx turbo run dev --filter=@seal/web'",
 	"installCommand": "bun install",
 	"rewrites": [
 		{
