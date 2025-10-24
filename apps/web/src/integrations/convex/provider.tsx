@@ -1,15 +1,7 @@
 import { ConvexQueryClient } from "@convex-dev/react-query";
 import { ConvexProvider } from "convex/react";
 
-interface ImportMetaEnv {
-	readonly VITE_CONVEX_URL: string;
-}
-
-interface ImportMeta {
-	readonly env: ImportMetaEnv;
-}
-
-const CONVEX_URL = (import.meta as ImportMeta).env.VITE_CONVEX_URL;
+const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string;
 if (!CONVEX_URL) {
 	console.error("missing envar CONVEX_URL");
 }

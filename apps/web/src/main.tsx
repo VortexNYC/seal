@@ -5,9 +5,9 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import ReactDOM from "react-dom/client";
-import { DefaultCatchBoundary } from "./components/default-catch-boundary.tsx";
-import Loader from "./components/loader.tsx";
-import { NotFound } from "./components/not-found.tsx";
+import { DefaultCatchBoundary } from "./components/default-catch-boundary";
+import Loader from "./components/loader";
+import { NotFound } from "./components/not-found";
 import { routeTree } from "./routeTree.gen";
 
 import "./styles.css";
