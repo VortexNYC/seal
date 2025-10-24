@@ -44,7 +44,9 @@ export function InviteMemberDialog({
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const addMember = useMutation(api.organizations.mutations.addMember);
+	const createInvitation = useMutation(
+		api.organizations.mutations.createInvitation,
+	);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -59,8 +61,7 @@ export function InviteMemberDialog({
 				return;
 			}
 
-			await addMember({
-				organizationId,
+			await createInvitation({
 				email: email.trim().toLowerCase(),
 				role,
 			});
