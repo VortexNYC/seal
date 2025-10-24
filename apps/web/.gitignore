@@ -1,2 +1,6 @@
 
 .env.local
+
+# Generated files from build
+src/**/*.js
+!vite.config.js

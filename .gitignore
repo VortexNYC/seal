@@ -77,3 +77,12 @@ get-user-info.ts
 test-linear.ts
 update-linear-tasks.ts
 update-sea-142.ts
+
+# Local environment files
+.env.linear
+
+# Logs
+logs.txt
+
+# Vercel config (managed via dashboard)
+vercel.json
