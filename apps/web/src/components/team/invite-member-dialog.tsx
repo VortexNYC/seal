@@ -36,7 +36,7 @@ interface InviteMemberDialogProps {
 }
 
 export function InviteMemberDialog({
-	organizationId,
+	organizationId: _organizationId,
 }: InviteMemberDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [email, setEmail] = useState("");
