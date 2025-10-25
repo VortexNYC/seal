@@ -3,11 +3,9 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"dev": "vite --port 3000",
-		"dev:convex": "convex dev",
-		"build": "vite build && tsc",
+		"dev": "vite",
+		"build": "vite build",
 		"serve": "vite preview",
-		"test": "vitest run",
 		"lint": "biome check .",
 		"format": "biome format --write .",
 		"typecheck": "tsc --noEmit",
