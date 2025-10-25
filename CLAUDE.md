@@ -1,0 +1,1 @@
+- Always check on linear for the team "Seal"
