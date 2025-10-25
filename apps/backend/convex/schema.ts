@@ -1,5 +1,14 @@
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
+import {
+	documentAccessTable,
+	type DocumentPermissionLevel,
+} from "./schemas/document_access";
+import {
+	documentsTable,
+	type DocumentSharingMode,
+	type DocumentStatus,
+} from "./schemas/documents";
 import { organizationInvitationsTable } from "./schemas/organization_invitations";
 import {
 	type OrganizationMemberRole,
@@ -24,11 +33,17 @@ export type OrganizationType = Infer<typeof organizationTypeTuple>;
 // Re-export status and role types
 export type { OrganizationMemberRole, OrganizationMemberStatus, UserStatus };
 
+// Re-export document types
+export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus };
+
 export default defineSchema({
 	users: usersTable,
 	organizations: organizationsTable,
 	organization_members: organizationMembersTable,
 	organization_invitations: organizationInvitationsTable,
+
+	documents: documentsTable,
+	document_access: documentAccessTable,
 
 	subscriptions: subscriptionsTable,
 	subscription_products: subscriptionProductsTable,
