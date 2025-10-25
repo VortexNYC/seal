@@ -69,14 +69,7 @@ linear-client.ts
 linear-client.js
 
 # Linear utility scripts (development only)
-check-tasks.ts
-get-all-linear-tasks.ts
-get-my-tasks.ts
-get-user-info.ts
-test-linear.ts
-update-linear-tasks.ts
-update-sea-142.ts
-
+scripts/
 # Local environment files
 .env.linear
 
