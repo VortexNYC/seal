@@ -1,7 +1,7 @@
 {
-	"buildCommand": "cd ../backend && bunx convex deploy --cmd 'bun run build'",
-	"installCommand": "cd ../.. && bun install",
-	"outputDirectory": "dist",
+	"buildCommand": "cd ../backend && bunx convex deploy --cmd 'bunx turbo run build --filter=@seal/web'",
+	"devCommand": "cd ../backend && bunx convex deploy --cmd 'bunx turbo run dev --filter=@seal/web'",
+	"installCommand": "bun install",
 	"rewrites": [
 		{
 			"source": "/(.*)",
