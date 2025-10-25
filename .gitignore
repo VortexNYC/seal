@@ -73,6 +73,7 @@ linear-client.js
 # Linear utility scripts (development only)
 check-tasks.ts
 get-all-linear-tasks.ts
+get-my-tasks.ts
 get-user-info.ts
 test-linear.ts
 update-linear-tasks.ts
