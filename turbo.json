@@ -5,13 +5,7 @@
 		"build": {
 			"dependsOn": ["^build"],
 			"inputs": ["$TURBO_DEFAULT$", ".env*"],
-			"outputs": [
-				".next/**",
-				"!.next/cache/**",
-				".output/**",
-				"dist/**",
-				"convex/_generated/**"
-			]
+			"outputs": [".next/**", "!.next/cache/**", ".output/**", "dist/**"]
 		},
 		"start": {
 			"cache": false
