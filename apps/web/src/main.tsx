@@ -1,5 +1,6 @@
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { ConvexQueryClient } from "@convex-dev/react-query";
+import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
@@ -12,6 +13,7 @@ import { routeTree } from "./routeTree.gen";
 
 import "./styles.css";
 
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN as string;
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string;
 const CLERK_URL = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
 
@@ -21,6 +23,13 @@ if (!CONVEX_URL) {
 if (!CLERK_URL) {
 	throw new Error("missing VITE_CLERK_PUBLISHABLE_KEY envar");
 }
+
+Sentry.init({
+	dsn: SENTRY_DSN,
+	// Setting this option to true will send default PII data to Sentry.
+	// For example, automatic IP address collection on events
+	sendDefaultPii: true,
+});
 
 const convex = new ConvexReactClient(CONVEX_URL);
 const convexQueryClient = new ConvexQueryClient(convex);
