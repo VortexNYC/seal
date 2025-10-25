@@ -64,8 +64,6 @@ next-env.d.ts
 **/.claude/settings.local.json
 .env*.local
 
-_generated/
-
 # Linear API client (contains sensitive config)
 linear-client.ts
 linear-client.js
