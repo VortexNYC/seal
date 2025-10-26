@@ -1,8 +1,10 @@
-import { useMutation } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "../ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -11,10 +13,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../ui/dialog";
-import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 interface UploadDialogProps {
 	organizationId: Id<"organizations">;
@@ -43,7 +43,10 @@ export function UploadDialog({
 
 			try {
 				// Step 1: Generate upload URL
-				const uploadUrl = await convexQuery(api.documents.mutations.generateUploadUrl, {});
+				const uploadUrl = await convexQuery(
+					api.documents.mutations.generateUploadUrl,
+					{},
+				);
 
 				// Step 2: Upload file to Convex Storage
 				const result = await fetch(uploadUrl, {
@@ -108,7 +111,8 @@ export function UploadDialog({
 					<DialogHeader>
 						<DialogTitle>Upload Document</DialogTitle>
 						<DialogDescription>
-							Upload a document to your workspace. It will be private by default.
+							Upload a document to your workspace. It will be private by
+							default.
 						</DialogDescription>
 					</DialogHeader>
 

@@ -1,22 +1,35 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { convexQuery } from "@convex-dev/react-query";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import {
+	DownloadIcon,
+	FileIcon,
+	MoreVerticalIcon,
+	Share2Icon,
+	TrashIcon,
+	UploadIcon,
+} from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { ShareDialog } from "../../../components/documents/share-dialog";
+import { UploadDialog } from "../../../components/documents/upload-dialog";
+import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "../../../components/ui/card";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu";
-import { UploadDialog } from "../../../components/documents/upload-dialog";
-import { ShareDialog } from "../../../components/documents/share-dialog";
-import { FileIcon, MoreVerticalIcon, UploadIcon, Share2Icon, DownloadIcon, TrashIcon } from "lucide-react";
-import { Badge } from "../../../components/ui/badge";
-import { toast } from "sonner";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents")({
 	component: DocumentsPage,
@@ -28,7 +41,8 @@ function DocumentsPage() {
 	const { slug } = Route.useParams();
 	const [uploadOpen, setUploadOpen] = useState(false);
 	const [shareDialogOpen, setShareDialogOpen] = useState(false);
-	const [selectedDocumentId, setSelectedDocumentId] = useState<Id<"documents"> | null>(null);
+	const [selectedDocumentId, setSelectedDocumentId] =
+		useState<Id<"documents"> | null>(null);
 	const [filter, setFilter] = useState<FilterType>("all");
 
 	// Get organization
@@ -53,16 +67,18 @@ function DocumentsPage() {
 			await convexQuery(api.documents.mutations.deleteDocument, { documentId });
 			toast.success("Document deleted");
 			refetch();
-		} catch (error) {
+		} catch (_error) {
 			toast.error("Failed to delete document");
 		}
 	};
 
 	const handleDownload = async (documentId: string) => {
 		try {
-			const url = await convexQuery(api.documents.queries.getDocumentUrl, { documentId });
+			const url = await convexQuery(api.documents.queries.getDocumentUrl, {
+				documentId,
+			});
 			window.open(url, "_blank");
-		} catch (error) {
+		} catch (_error) {
 			toast.error("Failed to download document");
 		}
 	};
@@ -72,7 +88,7 @@ function DocumentsPage() {
 		const k = 1024;
 		const sizes = ["Bytes", "KB", "MB", "GB"];
 		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return `${Math.round(bytes / Math.pow(k, i) * 100) / 100} ${sizes[i]}`;
+		return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
 	};
 
 	const formatDate = (timestamp: number) => {
@@ -195,7 +211,11 @@ function DocumentsPage() {
 									</div>
 									<div className="flex items-center justify-between text-sm">
 										<span className="text-muted-foreground">Sharing</span>
-										<Badge variant={doc.sharingMode === "private" ? "secondary" : "default"}>
+										<Badge
+											variant={
+												doc.sharingMode === "private" ? "secondary" : "default"
+											}
+										>
 											{doc.sharingMode === "private" && "Private"}
 											{doc.sharingMode === "workspace" && "Team"}
 											{doc.sharingMode === "specific" && "Specific"}

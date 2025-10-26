@@ -1,8 +1,12 @@
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { XIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -11,7 +15,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../ui/dialog";
-import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import {
 	Select,
@@ -20,9 +23,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../ui/select";
-import { Badge } from "../ui/badge";
-import { XIcon } from "lucide-react";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 interface ShareDialogProps {
 	documentId: Id<"documents">;
@@ -44,7 +44,8 @@ export function ShareDialog({
 }: ShareDialogProps) {
 	const [sharingMode, setSharingMode] = useState<SharingMode>("private");
 	const [selectedUserId, setSelectedUserId] = useState<string>("");
-	const [permissionLevel, setPermissionLevel] = useState<PermissionLevel>("view");
+	const [permissionLevel, setPermissionLevel] =
+		useState<PermissionLevel>("view");
 
 	// Get document
 	const { data: document } = useSuspenseQuery(
@@ -131,7 +132,9 @@ export function ShareDialog({
 	const availableMembers = members?.filter(
 		(member) =>
 			member.userId !== document.ownerId &&
-			!accessList.specificAccess.some((access) => access.userId === member.userId),
+			!accessList.specificAccess.some(
+				(access) => access.userId === member.userId,
+			),
 	);
 
 	return (
@@ -150,7 +153,9 @@ export function ShareDialog({
 						<Label>Sharing Mode</Label>
 						<Select
 							value={sharingMode}
-							onValueChange={(value) => handleSharingModeChange(value as SharingMode)}
+							onValueChange={(value) =>
+								handleSharingModeChange(value as SharingMode)
+							}
 						>
 							<SelectTrigger>
 								<SelectValue />
@@ -168,9 +173,12 @@ export function ShareDialog({
 							</SelectContent>
 						</Select>
 						<p className="text-sm text-muted-foreground">
-							{sharingMode === "private" && "Only you can view and edit this document"}
-							{sharingMode === "workspace" && "All team members will have access"}
-							{sharingMode === "specific" && "Only selected users will have access"}
+							{sharingMode === "private" &&
+								"Only you can view and edit this document"}
+							{sharingMode === "workspace" &&
+								"All team members will have access"}
+							{sharingMode === "specific" &&
+								"Only selected users will have access"}
 						</p>
 					</div>
 
@@ -180,7 +188,10 @@ export function ShareDialog({
 							<div className="space-y-2">
 								<Label>Add People</Label>
 								<div className="flex gap-2">
-									<Select value={selectedUserId} onValueChange={setSelectedUserId}>
+									<Select
+										value={selectedUserId}
+										onValueChange={setSelectedUserId}
+									>
 										<SelectTrigger className="flex-1">
 											<SelectValue placeholder="Select a team member..." />
 										</SelectTrigger>
@@ -192,7 +203,12 @@ export function ShareDialog({
 											))}
 										</SelectContent>
 									</Select>
-									<Select value={permissionLevel} onValueChange={(v) => setPermissionLevel(v as PermissionLevel)}>
+									<Select
+										value={permissionLevel}
+										onValueChange={(v) =>
+											setPermissionLevel(v as PermissionLevel)
+										}
+									>
 										<SelectTrigger className="w-[140px]">
 											<SelectValue />
 										</SelectTrigger>
@@ -231,12 +247,15 @@ export function ShareDialog({
 													<Badge variant="secondary">
 														{access.permissionLevel === "view" && "Can View"}
 														{access.permissionLevel === "edit" && "Can Edit"}
-														{access.permissionLevel === "manage" && "Can Manage"}
+														{access.permissionLevel === "manage" &&
+															"Can Manage"}
 													</Badge>
 													<Button
 														variant="ghost"
 														size="icon"
-														onClick={() => revokeAccessMutation.mutate(access.userId)}
+														onClick={() =>
+															revokeAccessMutation.mutate(access.userId)
+														}
 														disabled={revokeAccessMutation.isPending}
 													>
 														<XIcon className="h-4 w-4" />
