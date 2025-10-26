@@ -1,13 +1,13 @@
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
 import {
-	documentAccessTable,
 	type DocumentPermissionLevel,
+	documentAccessTable,
 } from "./schemas/document_access";
 import {
-	documentsTable,
 	type DocumentSharingMode,
 	type DocumentStatus,
+	documentsTable,
 } from "./schemas/documents";
 import { organizationInvitationsTable } from "./schemas/organization_invitations";
 import {
