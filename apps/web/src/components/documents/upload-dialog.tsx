@@ -1,7 +1,6 @@
-import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -33,60 +32,10 @@ export function UploadDialog({
 	const [description, setDescription] = useState("");
 	const [uploading, setUploading] = useState(false);
 
-	const uploadMutation = useMutation({
-		mutationFn: async () => {
-			if (!file) {
-				throw new Error("No file selected");
-			}
-
-			setUploading(true);
-
-			try {
-				// Step 1: Generate upload URL
-				const uploadUrl = await convexQuery(
-					api.documents.mutations.generateUploadUrl,
-					{},
-				);
-
-				// Step 2: Upload file to Convex Storage
-				const result = await fetch(uploadUrl, {
-					method: "POST",
-					headers: { "Content-Type": file.type },
-					body: file,
-				});
-
-				if (!result.ok) {
-					throw new Error("Upload failed");
-				}
-
-				const { storageId } = await result.json();
-
-				// Step 3: Create document record
-				await convexQuery(api.documents.mutations.createDocument, {
-					organizationId,
-					name: file.name,
-					description: description || undefined,
-					fileSize: file.size,
-					fileType: file.type,
-					storageId,
-				});
-
-				return { success: true };
-			} finally {
-				setUploading(false);
-			}
-		},
-		onSuccess: () => {
-			toast.success("Document uploaded successfully");
-			setFile(null);
-			setDescription("");
-			onOpenChange(false);
-			onSuccess?.();
-		},
-		onError: (error: Error) => {
-			toast.error(`Upload failed: ${error.message}`);
-		},
-	});
+	const generateUploadUrl = useMutation(
+		api.documents.mutations.generateUploadUrl,
+	);
+	const createDocument = useMutation(api.documents.mutations.createDocument);
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const selectedFile = e.target.files?.[0];
@@ -95,13 +44,54 @@ export function UploadDialog({
 		}
 	};
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!file) {
 			toast.error("Please select a file");
 			return;
 		}
-		uploadMutation.mutate();
+
+		setUploading(true);
+
+		try {
+			// Step 1: Generate upload URL
+			const uploadUrl = await generateUploadUrl({});
+
+			// Step 2: Upload file to Convex Storage
+			const result = await fetch(uploadUrl, {
+				method: "POST",
+				headers: { "Content-Type": file.type },
+				body: file,
+			});
+
+			if (!result.ok) {
+				throw new Error("Upload failed");
+			}
+
+			const { storageId } = await result.json();
+
+			// Step 3: Create document record
+			await createDocument({
+				organizationId,
+				name: file.name,
+				description: description || undefined,
+				fileSize: file.size,
+				fileType: file.type,
+				storageId,
+			});
+
+			toast.success("Document uploaded successfully");
+			setFile(null);
+			setDescription("");
+			onOpenChange(false);
+			onSuccess?.();
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Upload failed";
+			toast.error(`Upload failed: ${errorMessage}`);
+		} finally {
+			setUploading(false);
+		}
 	};
 
 	return (

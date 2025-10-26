@@ -2,7 +2,8 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouteContext } from "@tanstack/react-router";
+import { useMutation } from "convex/react";
 import {
 	DownloadIcon,
 	FileIcon,
@@ -39,6 +40,7 @@ type FilterType = "all" | "owned" | "shared";
 
 function DocumentsPage() {
 	const { slug } = Route.useParams();
+	const { convexClient } = useRouteContext({ from: "__root__" });
 	const [uploadOpen, setUploadOpen] = useState(false);
 	const [shareDialogOpen, setShareDialogOpen] = useState(false);
 	const [selectedDocumentId, setSelectedDocumentId] =
@@ -58,13 +60,15 @@ function DocumentsPage() {
 		}),
 	);
 
-	const handleDelete = async (documentId: string) => {
+	const deleteDocument = useMutation(api.documents.mutations.deleteDocument);
+
+	const handleDelete = async (documentId: Id<"documents">) => {
 		if (!confirm("Are you sure you want to delete this document?")) {
 			return;
 		}
 
 		try {
-			await convexQuery(api.documents.mutations.deleteDocument, { documentId });
+			await deleteDocument({ documentId });
 			toast.success("Document deleted");
 			refetch();
 		} catch (_error) {
@@ -72,11 +76,14 @@ function DocumentsPage() {
 		}
 	};
 
-	const handleDownload = async (documentId: string) => {
+	const handleDownload = async (documentId: Id<"documents">) => {
 		try {
-			const url = await convexQuery(api.documents.queries.getDocumentUrl, {
-				documentId,
-			});
+			const url = await convexClient.query(
+				api.documents.queries.getDocumentUrl,
+				{
+					documentId,
+				},
+			);
 			window.open(url, "_blank");
 		} catch (_error) {
 			toast.error("Failed to download document");

@@ -1,7 +1,8 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation } from "convex/react";
 import { XIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -65,67 +66,30 @@ export function ShareDialog({
 	);
 
 	// Update sharing mode mutation
-	const updateModeMutation = useMutation({
-		mutationFn: async (mode: SharingMode) => {
-			await convexQuery(api.documents.sharing.updateSharingMode, {
-				documentId,
-				sharingMode: mode,
-			});
-		},
-		onSuccess: () => {
-			toast.success("Sharing mode updated");
-			refetchAccess();
-			onSuccess?.();
-		},
-		onError: (error: Error) => {
-			toast.error(`Failed to update sharing: ${error.message}`);
-		},
-	});
+	const updateModeMutation = useMutation(
+		api.documents.sharing.updateSharingMode,
+	);
 
 	// Grant access mutation
-	const grantAccessMutation = useMutation({
-		mutationFn: async () => {
-			if (!selectedUserId) {
-				throw new Error("Please select a user");
-			}
-
-			await convexQuery(api.documents.sharing.grantAccess, {
-				documentId,
-				userId: selectedUserId as Id<"users">,
-				permissionLevel,
-			});
-		},
-		onSuccess: () => {
-			toast.success("Access granted");
-			setSelectedUserId("");
-			setPermissionLevel("view");
-			refetchAccess();
-		},
-		onError: (error: Error) => {
-			toast.error(`Failed to grant access: ${error.message}`);
-		},
-	});
+	const grantAccessMutation = useMutation(api.documents.sharing.grantAccess);
 
 	// Revoke access mutation
-	const revokeAccessMutation = useMutation({
-		mutationFn: async (userId: Id<"users">) => {
-			await convexQuery(api.documents.sharing.revokeAccess, {
-				documentId,
-				userId,
-			});
-		},
-		onSuccess: () => {
-			toast.success("Access revoked");
-			refetchAccess();
-		},
-		onError: (error: Error) => {
-			toast.error(`Failed to revoke access: ${error.message}`);
-		},
-	});
+	const revokeAccessMutation = useMutation(api.documents.sharing.revokeAccess);
 
 	const handleSharingModeChange = (mode: SharingMode) => {
 		setSharingMode(mode);
-		updateModeMutation.mutate(mode);
+		updateModeMutation({
+			documentId,
+			sharingMode: mode,
+		})
+			.then(() => {
+				toast.success("Sharing mode updated");
+				refetchAccess();
+				onSuccess?.();
+			})
+			.catch((error: Error) => {
+				toast.error(`Failed to update sharing: ${error.message}`);
+			});
 	};
 
 	// Filter out users who already have access
@@ -219,8 +183,26 @@ export function ShareDialog({
 										</SelectContent>
 									</Select>
 									<Button
-										onClick={() => grantAccessMutation.mutate()}
-										disabled={!selectedUserId || grantAccessMutation.isPending}
+										onClick={() => {
+											if (!selectedUserId) return;
+											grantAccessMutation({
+												documentId,
+												userId: selectedUserId as Id<"users">,
+												permissionLevel,
+											})
+												.then(() => {
+													toast.success("Access granted");
+													setSelectedUserId("");
+													setPermissionLevel("view");
+													refetchAccess();
+												})
+												.catch((error: Error) => {
+													toast.error(
+														`Failed to grant access: ${error.message}`,
+													);
+												});
+										}}
+										disabled={!selectedUserId}
 									>
 										Add
 									</Button>
@@ -253,10 +235,21 @@ export function ShareDialog({
 													<Button
 														variant="ghost"
 														size="icon"
-														onClick={() =>
-															revokeAccessMutation.mutate(access.userId)
-														}
-														disabled={revokeAccessMutation.isPending}
+														onClick={() => {
+															revokeAccessMutation({
+																documentId,
+																userId: access.userId,
+															})
+																.then(() => {
+																	toast.success("Access revoked");
+																	refetchAccess();
+																})
+																.catch((error: Error) => {
+																	toast.error(
+																		`Failed to revoke access: ${error.message}`,
+																	);
+																});
+														}}
 													>
 														<XIcon className="h-4 w-4" />
 													</Button>
