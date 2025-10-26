@@ -1,1 +1,2 @@
 - Always check on linear for the team "Seal"
+- Add custom scripts will be inside of the folder "scripts"
