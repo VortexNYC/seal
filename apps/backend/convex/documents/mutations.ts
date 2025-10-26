@@ -3,7 +3,6 @@
  */
 
 import { ConvexError, v } from "convex/values";
-import type { MutationCtx } from "../_generated/server";
 import { authMutation } from "../auth";
 
 /**
@@ -124,12 +123,20 @@ export const updateDocument = authMutation({
 		}
 
 		// 2. Check if user has edit access (owner or has "edit"/"manage" permission)
-		const hasEditAccess = await checkDocumentAccess(
-			ctx,
-			args.documentId,
-			userId,
-			["edit", "manage"],
-		);
+		let hasEditAccess = false;
+		if (document.ownerId !== userId) {
+			const access = await ctx.db
+				.query("document_access")
+				.withIndex("by_document_user", (q) =>
+					q.eq("documentId", args.documentId).eq("userId", userId),
+				)
+				.first();
+
+			hasEditAccess =
+				access !== null &&
+				(access.permissionLevel === "edit" ||
+					access.permissionLevel === "manage");
+		}
 
 		if (!hasEditAccess && document.ownerId !== userId) {
 			throw new ConvexError("You don't have permission to edit this document");
@@ -156,26 +163,3 @@ export const updateDocument = authMutation({
 		return { success: true };
 	},
 });
-
-/**
- * Helper function to check if a user has specific permission levels on a document
- */
-async function checkDocumentAccess(
-	ctx: any,
-	documentId: any,
-	userId: any,
-	requiredLevels: Array<"view" | "edit" | "manage">,
-): Promise<boolean> {
-	const access = await ctx.db
-		.query("document_access")
-		.withIndex("by_document_user", (q: any) =>
-			q.eq("documentId", documentId).eq("userId", userId),
-		)
-		.first();
-
-	if (!access) {
-		return false;
-	}
-
-	return requiredLevels.includes(access.permissionLevel);
-}

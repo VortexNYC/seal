@@ -3,8 +3,6 @@
  */
 
 import { ConvexError, v } from "convex/values";
-import type { Doc } from "../_generated/dataModel";
-import type { QueryCtx } from "../_generated/server";
 import { authQuery } from "../auth";
 
 /**
@@ -22,7 +20,34 @@ export const getDocument = authQuery({
 		}
 
 		// 2. Check if user has access
-		const hasAccess = await checkUserCanAccessDocument(ctx, document, userId);
+		// Owner always has access
+		let hasAccess = document.ownerId === userId;
+
+		if (!hasAccess) {
+			// Check organization membership
+			const member = await ctx.db
+				.query("organization_members")
+				.withIndex("by_user_organization", (q) =>
+					q.eq("userId", userId).eq("organizationId", document.organizationId),
+				)
+				.first();
+
+			if (member && member.status === "active") {
+				// Check sharing mode
+				if (document.sharingMode === "workspace") {
+					hasAccess = true;
+				} else if (document.sharingMode === "specific") {
+					const access = await ctx.db
+						.query("document_access")
+						.withIndex("by_document_user", (q) =>
+							q.eq("documentId", document._id).eq("userId", userId),
+						)
+						.first();
+					hasAccess = access !== null && access.revokedAt === undefined;
+				}
+			}
+		}
+
 		if (!hasAccess) {
 			throw new ConvexError("You don't have access to this document");
 		}
@@ -46,7 +71,34 @@ export const getDocumentUrl = authQuery({
 		}
 
 		// 2. Check if user has access
-		const hasAccess = await checkUserCanAccessDocument(ctx, document, userId);
+		// Owner always has access
+		let hasAccess = document.ownerId === userId;
+
+		if (!hasAccess) {
+			// Check organization membership
+			const member = await ctx.db
+				.query("organization_members")
+				.withIndex("by_user_organization", (q) =>
+					q.eq("userId", userId).eq("organizationId", document.organizationId),
+				)
+				.first();
+
+			if (member && member.status === "active") {
+				// Check sharing mode
+				if (document.sharingMode === "workspace") {
+					hasAccess = true;
+				} else if (document.sharingMode === "specific") {
+					const access = await ctx.db
+						.query("document_access")
+						.withIndex("by_document_user", (q) =>
+							q.eq("documentId", document._id).eq("userId", userId),
+						)
+						.first();
+					hasAccess = access !== null && access.revokedAt === undefined;
+				}
+			}
+		}
+
 		if (!hasAccess) {
 			throw new ConvexError("You don't have access to this document");
 		}
@@ -112,7 +164,24 @@ export const listDocuments = authQuery({
 			}
 
 			// Check access
-			const hasAccess = await checkUserCanAccessDocument(ctx, doc, userId);
+			// Owner always has access
+			let hasAccess = doc.ownerId === userId;
+
+			if (!hasAccess) {
+				// Check sharing mode (already verified member above)
+				if (doc.sharingMode === "workspace") {
+					hasAccess = true;
+				} else if (doc.sharingMode === "specific") {
+					const access = await ctx.db
+						.query("document_access")
+						.withIndex("by_document_user", (q) =>
+							q.eq("documentId", doc._id).eq("userId", userId),
+						)
+						.first();
+					hasAccess = access !== null && access.revokedAt === undefined;
+				}
+			}
+
 			if (hasAccess) {
 				accessibleDocuments.push(doc);
 			}
@@ -182,52 +251,3 @@ export const getDocumentAccessList = authQuery({
 		};
 	},
 });
-
-/**
- * Helper: Check if a user can access a document
- */
-async function checkUserCanAccessDocument(
-	ctx: any,
-	document: any,
-	userId: any,
-): Promise<boolean> {
-	// 1. Owner always has access
-	if (document.ownerId === userId) {
-		return true;
-	}
-
-	// 2. Check organization membership
-	const member = await ctx.db
-		.query("organization_members")
-		.withIndex("by_user_organization", (q: any) =>
-			q.eq("userId", userId).eq("organizationId", document.organizationId),
-		)
-		.first();
-
-	if (!member || member.status !== "active") {
-		return false;
-	}
-
-	// 3. Check sharing mode
-	if (document.sharingMode === "private") {
-		return false; // Only owner can access (already checked above)
-	}
-
-	if (document.sharingMode === "workspace") {
-		return true; // All active members can access
-	}
-
-	if (document.sharingMode === "specific") {
-		// Check document_access table
-		const access = await ctx.db
-			.query("document_access")
-			.withIndex("by_document_user", (q: any) =>
-				q.eq("documentId", document._id).eq("userId", userId),
-			)
-			.first();
-
-		return access !== null && access.revokedAt === undefined;
-	}
-
-	return false;
-}

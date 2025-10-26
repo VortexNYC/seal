@@ -3,8 +3,6 @@
  */
 
 import { ConvexError, v } from "convex/values";
-import type { Doc } from "../_generated/dataModel";
-import type { MutationCtx } from "../_generated/server";
 import { authMutation } from "../auth";
 
 /**
@@ -49,11 +47,19 @@ export const updateSharingMode = authMutation({
 		}
 
 		// 3. Check plan restrictions for team sharing
-		if (
-			args.sharingMode === "workspace" ||
-			args.sharingMode === "specific"
-		) {
-			await ensureProPlan(ctx, userId);
+		if (args.sharingMode === "workspace" || args.sharingMode === "specific") {
+			const subscription = await ctx.db
+				.query("subscriptions")
+				.withIndex("by_user_id", (q) => q.eq("userId", userId))
+				.first();
+
+			const isPro = subscription?.status === "active";
+
+			if (!isPro) {
+				throw new ConvexError(
+					"Team sharing features require a Pro plan. Please upgrade to share documents with your team.",
+				);
+			}
 		}
 
 		// 4. Update sharing mode
@@ -77,7 +83,11 @@ export const grantAccess = authMutation({
 	args: {
 		documentId: v.id("documents"),
 		userId: v.id("users"),
-		permissionLevel: v.union(v.literal("view"), v.literal("edit"), v.literal("manage")),
+		permissionLevel: v.union(
+			v.literal("view"),
+			v.literal("edit"),
+			v.literal("manage"),
+		),
 	},
 	handler: async (ctx, args) => {
 		const currentUserId = ctx.auth.user._id;
@@ -89,7 +99,18 @@ export const grantAccess = authMutation({
 		}
 
 		// 2. Check if current user can manage this document
-		const canManage = await checkCanManageDocument(ctx, document, currentUserId);
+		let canManage = document.ownerId === currentUserId;
+		if (!canManage) {
+			const access = await ctx.db
+				.query("document_access")
+				.withIndex("by_document_user", (q) =>
+					q.eq("documentId", document._id).eq("userId", currentUserId),
+				)
+				.first();
+			canManage =
+				access?.permissionLevel === "manage" && access.revokedAt === undefined;
+		}
+
 		if (!canManage) {
 			throw new ConvexError(
 				"Only the document owner or managers can grant access",
@@ -107,12 +128,16 @@ export const grantAccess = authMutation({
 		const targetMember = await ctx.db
 			.query("organization_members")
 			.withIndex("by_user_organization", (q) =>
-				q.eq("userId", args.userId).eq("organizationId", document.organizationId),
+				q
+					.eq("userId", args.userId)
+					.eq("organizationId", document.organizationId),
 			)
 			.first();
 
 		if (!targetMember || targetMember.status !== "active") {
-			throw new ConvexError("User is not an active member of this organization");
+			throw new ConvexError(
+				"User is not an active member of this organization",
+			);
 		}
 
 		// 5. Check if access already exists
@@ -164,7 +189,18 @@ export const revokeAccess = authMutation({
 		}
 
 		// 2. Check if current user can manage this document
-		const canManage = await checkCanManageDocument(ctx, document, currentUserId);
+		let canManage = document.ownerId === currentUserId;
+		if (!canManage) {
+			const access = await ctx.db
+				.query("document_access")
+				.withIndex("by_document_user", (q) =>
+					q.eq("documentId", document._id).eq("userId", currentUserId),
+				)
+				.first();
+			canManage =
+				access?.permissionLevel === "manage" && access.revokedAt === undefined;
+		}
+
 		if (!canManage) {
 			throw new ConvexError(
 				"Only the document owner or managers can revoke access",
@@ -185,7 +221,9 @@ export const revokeAccess = authMutation({
 			.first();
 
 		if (!access) {
-			throw new ConvexError("User does not have explicit access to this document");
+			throw new ConvexError(
+				"User does not have explicit access to this document",
+			);
 		}
 
 		// Mark as revoked (soft delete for audit trail)
@@ -220,7 +258,18 @@ export const updateAccessLevel = authMutation({
 		}
 
 		// 2. Check if current user can manage this document
-		const canManage = await checkCanManageDocument(ctx, document, currentUserId);
+		let canManage = document.ownerId === currentUserId;
+		if (!canManage) {
+			const access = await ctx.db
+				.query("document_access")
+				.withIndex("by_document_user", (q) =>
+					q.eq("documentId", document._id).eq("userId", currentUserId),
+				)
+				.first();
+			canManage =
+				access?.permissionLevel === "manage" && access.revokedAt === undefined;
+		}
+
 		if (!canManage) {
 			throw new ConvexError(
 				"Only the document owner or managers can update access levels",
@@ -236,7 +285,9 @@ export const updateAccessLevel = authMutation({
 			.first();
 
 		if (!access || access.revokedAt !== undefined) {
-			throw new ConvexError("User does not have active access to this document");
+			throw new ConvexError(
+				"User does not have active access to this document",
+			);
 		}
 
 		// 4. Update permission level
@@ -307,46 +358,3 @@ export const transferOwnership = authMutation({
 		return { success: true };
 	},
 });
-
-/**
- * Helper: Check if user can manage a document
- */
-async function checkCanManageDocument(
-	ctx: any,
-	document: any,
-	userId: any,
-): Promise<boolean> {
-	// Owner can always manage
-	if (document.ownerId === userId) {
-		return true;
-	}
-
-	// Check if user has "manage" permission
-	const access = await ctx.db
-		.query("document_access")
-		.withIndex("by_document_user", (q: any) =>
-			q.eq("documentId", document._id).eq("userId", userId),
-		)
-		.first();
-
-	return access?.permissionLevel === "manage" && access.revokedAt === undefined;
-}
-
-/**
- * Helper: Ensure user has Pro plan for team sharing features
- * Note: In this system, subscriptions are user-based, not organization-based
- */
-async function ensureProPlan(ctx: any, userId: any): Promise<void> {
-	const subscription = await ctx.db
-		.query("subscriptions")
-		.withIndex("by_user_id", (q: any) => q.eq("userId", userId))
-		.first();
-
-	const isPro = subscription?.status === "active";
-
-	if (!isPro) {
-		throw new ConvexError(
-			"Team sharing features require a Pro plan. Please upgrade to share documents with your team.",
-		);
-	}
-}
