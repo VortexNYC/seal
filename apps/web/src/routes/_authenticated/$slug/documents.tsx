@@ -1,0 +1,229 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { convexQuery } from "@convex-dev/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
+import { useState } from "react";
+import { Button } from "../../../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "../../../components/ui/dropdown-menu";
+import { UploadDialog } from "../../../components/documents/upload-dialog";
+import { ShareDialog } from "../../../components/documents/share-dialog";
+import { FileIcon, MoreVerticalIcon, UploadIcon, Share2Icon, DownloadIcon, TrashIcon } from "lucide-react";
+import { Badge } from "../../../components/ui/badge";
+import { toast } from "sonner";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+
+export const Route = createFileRoute("/_authenticated/$slug/documents")({
+	component: DocumentsPage,
+});
+
+type FilterType = "all" | "owned" | "shared";
+
+function DocumentsPage() {
+	const { slug } = Route.useParams();
+	const [uploadOpen, setUploadOpen] = useState(false);
+	const [shareDialogOpen, setShareDialogOpen] = useState(false);
+	const [selectedDocumentId, setSelectedDocumentId] = useState<Id<"documents"> | null>(null);
+	const [filter, setFilter] = useState<FilterType>("all");
+
+	// Get organization
+	const { data: organization } = useSuspenseQuery(
+		convexQuery(api.organizations.queries.getOrganization, { slug }),
+	);
+
+	// Get documents
+	const { data: documents, refetch } = useSuspenseQuery(
+		convexQuery(api.documents.queries.listDocuments, {
+			organizationId: organization._id,
+			filter,
+		}),
+	);
+
+	const handleDelete = async (documentId: string) => {
+		if (!confirm("Are you sure you want to delete this document?")) {
+			return;
+		}
+
+		try {
+			await convexQuery(api.documents.mutations.deleteDocument, { documentId });
+			toast.success("Document deleted");
+			refetch();
+		} catch (error) {
+			toast.error("Failed to delete document");
+		}
+	};
+
+	const handleDownload = async (documentId: string) => {
+		try {
+			const url = await convexQuery(api.documents.queries.getDocumentUrl, { documentId });
+			window.open(url, "_blank");
+		} catch (error) {
+			toast.error("Failed to download document");
+		}
+	};
+
+	const formatBytes = (bytes: number) => {
+		if (bytes === 0) return "0 Bytes";
+		const k = 1024;
+		const sizes = ["Bytes", "KB", "MB", "GB"];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return `${Math.round(bytes / Math.pow(k, i) * 100) / 100} ${sizes[i]}`;
+	};
+
+	const formatDate = (timestamp: number) => {
+		return new Date(timestamp).toLocaleDateString("en-US", {
+			year: "numeric",
+			month: "short",
+			day: "numeric",
+		});
+	};
+
+	return (
+		<div className="container mx-auto py-6 space-y-6">
+			<div className="flex items-center justify-between">
+				<div>
+					<h1 className="text-3xl font-bold">Documents</h1>
+					<p className="text-muted-foreground">
+						Manage and share documents with your team
+					</p>
+				</div>
+				<Button onClick={() => setUploadOpen(true)}>
+					<UploadIcon className="mr-2 h-4 w-4" />
+					Upload Document
+				</Button>
+			</div>
+
+			{/* Filter Tabs */}
+			<div className="flex gap-2">
+				<Button
+					variant={filter === "all" ? "default" : "outline"}
+					onClick={() => setFilter("all")}
+				>
+					All Documents
+				</Button>
+				<Button
+					variant={filter === "owned" ? "default" : "outline"}
+					onClick={() => setFilter("owned")}
+				>
+					My Documents
+				</Button>
+				<Button
+					variant={filter === "shared" ? "default" : "outline"}
+					onClick={() => setFilter("shared")}
+				>
+					Shared with Me
+				</Button>
+			</div>
+
+			{/* Documents Grid */}
+			{documents.length === 0 ? (
+				<Card>
+					<CardContent className="flex flex-col items-center justify-center py-12">
+						<FileIcon className="h-12 w-12 text-muted-foreground mb-4" />
+						<p className="text-lg font-medium">No documents yet</p>
+						<p className="text-sm text-muted-foreground mb-4">
+							Upload your first document to get started
+						</p>
+						<Button onClick={() => setUploadOpen(true)}>
+							<UploadIcon className="mr-2 h-4 w-4" />
+							Upload Document
+						</Button>
+					</CardContent>
+				</Card>
+			) : (
+				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+					{documents.map((doc) => (
+						<Card key={doc._id} className="hover:shadow-lg transition-shadow">
+							<CardHeader>
+								<div className="flex items-start justify-between">
+									<div className="flex items-center gap-2">
+										<FileIcon className="h-5 w-5 text-muted-foreground" />
+										<CardTitle className="text-base truncate">
+											{doc.name}
+										</CardTitle>
+									</div>
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button variant="ghost" size="icon" className="h-8 w-8">
+												<MoreVerticalIcon className="h-4 w-4" />
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent align="end">
+											<DropdownMenuItem onClick={() => handleDownload(doc._id)}>
+												<DownloadIcon className="mr-2 h-4 w-4" />
+												Download
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={() => {
+													setSelectedDocumentId(doc._id);
+													setShareDialogOpen(true);
+												}}
+											>
+												<Share2Icon className="mr-2 h-4 w-4" />
+												Share
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={() => handleDelete(doc._id)}
+												className="text-destructive"
+											>
+												<TrashIcon className="mr-2 h-4 w-4" />
+												Delete
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</div>
+								{doc.description && (
+									<CardDescription className="line-clamp-2">
+										{doc.description}
+									</CardDescription>
+								)}
+							</CardHeader>
+							<CardContent>
+								<div className="space-y-2">
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">Size</span>
+										<span>{formatBytes(doc.fileSize)}</span>
+									</div>
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">Uploaded</span>
+										<span>{formatDate(doc.createdAt)}</span>
+									</div>
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">Sharing</span>
+										<Badge variant={doc.sharingMode === "private" ? "secondary" : "default"}>
+											{doc.sharingMode === "private" && "Private"}
+											{doc.sharingMode === "workspace" && "Team"}
+											{doc.sharingMode === "specific" && "Specific"}
+										</Badge>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					))}
+				</div>
+			)}
+
+			<UploadDialog
+				organizationId={organization._id}
+				open={uploadOpen}
+				onOpenChange={setUploadOpen}
+				onSuccess={() => refetch()}
+			/>
+
+			{selectedDocumentId && (
+				<ShareDialog
+					documentId={selectedDocumentId}
+					organizationId={organization._id}
+					open={shareDialogOpen}
+					onOpenChange={setShareDialogOpen}
+					onSuccess={() => refetch()}
+				/>
+			)}
+		</div>
+	);
+}
