@@ -8,7 +8,7 @@
 import { createClerkClient } from "@clerk/backend";
 import { ConvexError, v } from "convex/values";
 import { action } from "../_generated/server";
-import { api } from "../_generated/api";
+import { internal } from "../_generated/api";
 
 /**
  * Send organization invitation via Clerk backend API
@@ -28,26 +28,27 @@ export const clerkInvite = action({
 			throw new ConvexError("Authentication required");
 		}
 
-		// Get organization details and verify user has access
-		const organization = await ctx.runQuery(api.organizations.queries.getOrganization, {
-			slug: "", // We'll fetch by ID instead
-		}).catch(async () => {
-			// Fallback: get organization directly
-			const org = await ctx.runQuery(api.organizations.queries.getOrganizationMembers, {
-				organizationId: args.organizationId,
+		// Check if Clerk is configured
+		if (!process.env.CLERK_SECRET_KEY) {
+			throw new ConvexError({
+				code: "MISSING_CONFIG",
+				message: "CLERK_SECRET_KEY environment variable is not set",
 			});
-			return org ? { _id: args.organizationId } : null;
+		}
+
+		// Get organization via internal query
+		const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
+			organizationId: args.organizationId,
 		});
 
 		if (!organization) {
 			throw new ConvexError("Organization not found");
 		}
 
-		// Check if Clerk is configured
-		if (!process.env.CLERK_SECRET_KEY) {
+		if (!organization.clerkId) {
 			throw new ConvexError({
-				code: "MISSING_CONFIG",
-				message: "CLERK_SECRET_KEY environment variable is not set",
+				code: "ORGANIZATION_NOT_SYNCED",
+				message: "This organization is not synced with Clerk. Only Clerk-managed organizations can send invitations.",
 			});
 		}
 
@@ -59,7 +60,7 @@ export const clerkInvite = action({
 			// Create invitation in Clerk
 			// Note: We're using "org:member" as the Clerk role - the actual role is stored in publicMetadata
 			await clerk.organizations.createOrganizationInvitation({
-				organizationId: args.organizationId,
+				organizationId: organization.clerkId,
 				emailAddress: args.email.toLowerCase(),
 				role: "org:member",
 				publicMetadata: {

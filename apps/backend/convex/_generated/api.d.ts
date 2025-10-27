@@ -22,6 +22,7 @@ import type * as organization_roles_migrations from "../organization_roles/migra
 import type * as organization_roles_mutations from "../organization_roles/mutations.js";
 import type * as organization_roles_queries from "../organization_roles/queries.js";
 import type * as organizations_actions from "../organizations/actions.js";
+import type * as organizations_helpers from "../organizations/helpers.js";
 import type * as organizations_mutations from "../organizations/mutations.js";
 import type * as organizations_queries from "../organizations/queries.js";
 import type * as schemas_document_access from "../schemas/document_access.js";
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   "organization_roles/mutations": typeof organization_roles_mutations;
   "organization_roles/queries": typeof organization_roles_queries;
   "organizations/actions": typeof organizations_actions;
+  "organizations/helpers": typeof organizations_helpers;
   "organizations/mutations": typeof organizations_mutations;
   "organizations/queries": typeof organizations_queries;
   "schemas/document_access": typeof schemas_document_access;
