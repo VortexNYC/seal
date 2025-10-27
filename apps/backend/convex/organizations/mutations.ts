@@ -6,8 +6,8 @@ import { ConvexError, v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { type MutationCtx, mutation } from "../_generated/server";
 import { adminMutation, authMutation } from "../auth";
-import { organizationBaseSchema } from "../validations/organizations";
 import { seedSystemRoles } from "../organization_roles/helpers";
+import { organizationBaseSchema } from "../validations/organizations";
 
 // Type for organization update operations
 type OrganizationUpdateData = Partial<
@@ -554,7 +554,7 @@ export const createInvitation = adminMutation({
 			return {
 				id: membershipId,
 				addedDirectly: true,
-				message: "User added to organization"
+				message: "User added to organization",
 			};
 		}
 
@@ -594,7 +594,7 @@ export const createInvitation = adminMutation({
 		return {
 			id: invitationId,
 			addedDirectly: false,
-			message: "Invitation sent"
+			message: "Invitation sent",
 		};
 	},
 });
@@ -778,7 +778,11 @@ export const bulkActivateMembers = adminMutation({
 		memberUpdates: v.array(
 			v.object({
 				memberId: v.id("organization_members"),
-				role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+				role: v.union(
+					v.literal("admin"),
+					v.literal("member"),
+					v.literal("viewer"),
+				),
 			}),
 		),
 	},

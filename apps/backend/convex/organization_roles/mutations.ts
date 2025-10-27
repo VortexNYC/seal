@@ -2,10 +2,9 @@
  * Mutations for organization roles
  */
 
-import { v } from "convex/values";
-import { ConvexError } from "convex/values";
-import { permissionMutation } from "../auth/wrappers";
+import { ConvexError, v } from "convex/values";
 import { isValidPermission } from "../auth/permissions";
+import { permissionMutation } from "../auth/wrappers";
 
 /**
  * Create a new custom role
@@ -32,9 +31,7 @@ export const create = permissionMutation("users:roles")({
 		const existing = await ctx.db
 			.query("organization_roles")
 			.withIndex("by_name", (q) =>
-				q
-					.eq("organizationId", ctx.auth.organizationId)
-					.eq("name", args.name),
+				q.eq("organizationId", ctx.auth.organizationId).eq("name", args.name),
 			)
 			.first();
 
@@ -104,13 +101,12 @@ export const update = permissionMutation("users:roles")({
 
 		// Update name if provided
 		if (args.name !== undefined) {
+			const newName = args.name;
 			// Check for duplicate
 			const duplicate = await ctx.db
 				.query("organization_roles")
 				.withIndex("by_name", (q) =>
-					q
-						.eq("organizationId", ctx.auth.organizationId)
-						.eq("name", args.name!),
+					q.eq("organizationId", ctx.auth.organizationId).eq("name", newName),
 				)
 				.first();
 

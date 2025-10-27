@@ -5,6 +5,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { internalQuery } from "../_generated/server";
 import { authQuery } from "../auth";
 import { DOCUMENT_SIGNING_PERMISSIONS, hasPermission } from "../auth.utils";
 
@@ -170,6 +171,8 @@ export const getPendingInvitations = authQuery({
 					expiresAt: invitation.expiresAt,
 					inviterName: inviter?.name || "Unknown",
 					inviterEmail: inviter?.email || "",
+					clerkInvitationId: invitation.clerkInvitationId,
+					clerkOrganizationId: invitation.clerkOrganizationId,
 				};
 			}),
 		);
@@ -410,6 +413,37 @@ export const getOrganizationMember = authQuery({
 			permissionOverrides: member.permissionOverrides,
 			clerkId: user.clerkId,
 			timezone: user.timezone,
+		};
+	},
+});
+
+/**
+ * Get invitation by Clerk invitation ID (internal only)
+ * Used by actions that need to lookup invitations without auth
+ */
+export const getInvitationByClerkId = internalQuery({
+	args: {
+		clerkInvitationId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const invitation = await ctx.db
+			.query("organization_invitations")
+			.withIndex("by_clerk_invitation_id", (q) =>
+				q.eq("clerkInvitationId", args.clerkInvitationId),
+			)
+			.first();
+
+		if (!invitation) {
+			return null;
+		}
+
+		return {
+			_id: invitation._id,
+			organizationId: invitation.organizationId,
+			emailAddress: invitation.email,
+			role: invitation.role,
+			status: invitation.status,
+			clerkInvitationId: invitation.clerkInvitationId,
 		};
 	},
 });
