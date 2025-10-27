@@ -50,7 +50,8 @@ export function ensureOrganizationScope(
 	if (targetOrgId && targetOrgId !== auth.organizationId) {
 		throw new ConvexError({
 			code: "FORBIDDEN",
-			message: "Organization scope mismatch - cannot access resources from different organization",
+			message:
+				"Organization scope mismatch - cannot access resources from different organization",
 		});
 	}
 }

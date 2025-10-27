@@ -7,12 +7,12 @@ import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import {
-	type RoleTemplate,
 	getExpandedPermissions,
 	hasAllPermissions,
 	hasAnyPermission,
 	hasPermission,
 	isValidPermission,
+	type RoleTemplate,
 } from "./permissions";
 
 /**
@@ -77,18 +77,20 @@ export async function getAuthContextWithPermissions(
 		});
 	}
 
+	const userActiveOrganizationId = user.activeOrganizationId;
+
 	// Step 3: Check super admin status
 	if (user.isSuperAdmin) {
 		// Super admins bypass all organization checks
 		// We still need a valid organization for context
-		if (!user.activeOrganizationId) {
+		if (!userActiveOrganizationId) {
 			throw new ConvexError({
 				code: "FORBIDDEN",
 				message: "Super admin must have an active organization",
 			});
 		}
 
-		const organization = await ctx.db.get(user.activeOrganizationId);
+		const organization = await ctx.db.get(userActiveOrganizationId);
 		if (!organization) {
 			throw new ConvexError({
 				code: "NOT_FOUND",
@@ -100,7 +102,7 @@ export async function getAuthContextWithPermissions(
 		const member = await ctx.db
 			.query("organization_members")
 			.withIndex("by_user_organization", (q) =>
-				q.eq("userId", user._id).eq("organizationId", user.activeOrganizationId!),
+				q.eq("userId", user._id).eq("organizationId", userActiveOrganizationId),
 			)
 			.first();
 
@@ -113,7 +115,7 @@ export async function getAuthContextWithPermissions(
 
 		return {
 			userId: user._id,
-			organizationId: user.activeOrganizationId,
+			organizationId: userActiveOrganizationId,
 			email: user.email,
 			name: user.name,
 			role: "super_admin",
@@ -129,8 +131,10 @@ export async function getAuthContextWithPermissions(
 		};
 	}
 
+	const userActiveOrganizationId2 = user.activeOrganizationId;
+
 	// Step 4: Get active organization
-	if (!user.activeOrganizationId) {
+	if (!userActiveOrganizationId2) {
 		throw new ConvexError({
 			code: "FORBIDDEN",
 			message: "No active organization",
@@ -141,7 +145,7 @@ export async function getAuthContextWithPermissions(
 	const membership = await ctx.db
 		.query("organization_members")
 		.withIndex("by_user_organization", (q) =>
-			q.eq("userId", user._id).eq("organizationId", user.activeOrganizationId!),
+			q.eq("userId", user._id).eq("organizationId", userActiveOrganizationId2),
 		)
 		.first();
 
@@ -161,7 +165,7 @@ export async function getAuthContextWithPermissions(
 	}
 
 	// Step 7: Load organization
-	const organization = await ctx.db.get(user.activeOrganizationId);
+	const organization = await ctx.db.get(userActiveOrganizationId2);
 	if (!organization) {
 		throw new ConvexError({
 			code: "NOT_FOUND",
@@ -218,7 +222,7 @@ export async function getAuthContextWithPermissions(
 
 	return {
 		userId: user._id,
-		organizationId: user.activeOrganizationId,
+		organizationId: userActiveOrganizationId2,
 		email: user.email,
 		name: user.name,
 		role: membership.role,

@@ -7,48 +7,48 @@
 
 // Master list of all permissions in the system
 export const PERMISSIONS = {
-  // Organization Management
-  "organization:view": "View organization details",
-  "organization:edit": "Edit organization settings",
-  "organization:manage": "Manage organization settings and members",
-  "organization:billing": "Manage billing and subscriptions",
-  "organization:members": "Manage organization members",
-  "organization:invitations": "Send and manage invitations",
+	// Organization Management
+	"organization:view": "View organization details",
+	"organization:edit": "Edit organization settings",
+	"organization:manage": "Manage organization settings and members",
+	"organization:billing": "Manage billing and subscriptions",
+	"organization:members": "Manage organization members",
+	"organization:invitations": "Send and manage invitations",
 
-  // Documents
-  "documents:view": "View documents",
-  "documents:create": "Create new documents",
-  "documents:edit": "Edit documents",
-  "documents:delete": "Delete documents",
-  "documents:share": "Share documents",
-  "documents:export": "Export documents",
+	// Documents
+	"documents:view": "View documents",
+	"documents:create": "Create new documents",
+	"documents:edit": "Edit documents",
+	"documents:delete": "Delete documents",
+	"documents:share": "Share documents",
+	"documents:export": "Export documents",
 
-  // Templates
-  "templates:view": "View templates",
-  "templates:create": "Create templates",
-  "templates:edit": "Edit templates",
-  "templates:delete": "Delete templates",
-  "templates:use": "Use templates",
+	// Templates
+	"templates:view": "View templates",
+	"templates:create": "Create templates",
+	"templates:edit": "Edit templates",
+	"templates:delete": "Delete templates",
+	"templates:use": "Use templates",
 
-  // Settings
-  "settings:view": "View settings",
-  "settings:edit": "Edit settings",
-  "settings:integrations": "Manage integrations",
+	// Settings
+	"settings:view": "View settings",
+	"settings:edit": "Edit settings",
+	"settings:integrations": "Manage integrations",
 
-  // Users & Roles
-  "users:view": "View users",
-  "users:create": "Create users",
-  "users:edit": "Edit users",
-  "users:delete": "Delete users",
-  "users:roles": "Manage user roles",
+	// Users & Roles
+	"users:view": "View users",
+	"users:create": "Create users",
+	"users:edit": "Edit users",
+	"users:delete": "Delete users",
+	"users:roles": "Manage user roles",
 
-  // Audit
-  "audit:view": "View audit logs",
-  "audit:export": "Export audit logs",
+	// Audit
+	"audit:view": "View audit logs",
+	"audit:export": "Export audit logs",
 
-  // System (Super Admin only)
-  "system:super": "Super admin access",
-  "system:maintenance": "System maintenance",
+	// System (Super Admin only)
+	"system:super": "Super admin access",
+	"system:maintenance": "System maintenance",
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;
@@ -61,55 +61,55 @@ export type PermissionKey = keyof typeof PERMISSIONS;
  * - "domain:*" grants all permissions in that domain
  */
 export const ROLE_TEMPLATES = {
-  owner: {
-    name: "Owner",
-    description: "Full access to all features including billing",
-    permissions: ["*"] as const,
-  },
-  admin: {
-    name: "Administrator",
-    description: "Manage all operations except billing",
-    permissions: [
-      "organization:view",
-      "organization:edit",
-      "organization:manage",
-      "organization:members",
-      "organization:invitations",
-      "documents:*",
-      "templates:*",
-      "settings:*",
-      "users:*",
-      "audit:view",
-    ] as const,
-  },
-  member: {
-    name: "Member",
-    description: "Create and edit content",
-    permissions: [
-      "organization:view",
-      "documents:view",
-      "documents:create",
-      "documents:edit",
-      "documents:share",
-      "documents:export",
-      "templates:view",
-      "templates:use",
-      "templates:create",
-      "settings:view",
-      "users:view",
-    ] as const,
-  },
-  viewer: {
-    name: "Viewer",
-    description: "Read-only access to most features",
-    permissions: [
-      "organization:view",
-      "documents:view",
-      "templates:view",
-      "settings:view",
-      "users:view",
-    ] as const,
-  },
+	owner: {
+		name: "Owner",
+		description: "Full access to all features including billing",
+		permissions: ["*"] as const,
+	},
+	admin: {
+		name: "Administrator",
+		description: "Manage all operations except billing",
+		permissions: [
+			"organization:view",
+			"organization:edit",
+			"organization:manage",
+			"organization:members",
+			"organization:invitations",
+			"documents:*",
+			"templates:*",
+			"settings:*",
+			"users:*",
+			"audit:view",
+		] as const,
+	},
+	member: {
+		name: "Member",
+		description: "Create and edit content",
+		permissions: [
+			"organization:view",
+			"documents:view",
+			"documents:create",
+			"documents:edit",
+			"documents:share",
+			"documents:export",
+			"templates:view",
+			"templates:use",
+			"templates:create",
+			"settings:view",
+			"users:view",
+		] as const,
+	},
+	viewer: {
+		name: "Viewer",
+		description: "Read-only access to most features",
+		permissions: [
+			"organization:view",
+			"documents:view",
+			"templates:view",
+			"settings:view",
+			"users:view",
+		] as const,
+	},
 } as const;
 
 export type RoleTemplate = keyof typeof ROLE_TEMPLATES;
@@ -123,26 +123,26 @@ export type RoleTemplate = keyof typeof ROLE_TEMPLATES;
  * @returns true if user has the permission
  */
 export function hasPermission(
-  userPermissions: readonly string[],
-  requiredPermission: string,
+	userPermissions: readonly string[],
+	requiredPermission: string,
 ): boolean {
-  // Global wildcard = all permissions
-  if (userPermissions.includes("*")) {
-    return true;
-  }
+	// Global wildcard = all permissions
+	if (userPermissions.includes("*")) {
+		return true;
+	}
 
-  // Exact match
-  if (userPermissions.includes(requiredPermission)) {
-    return true;
-  }
+	// Exact match
+	if (userPermissions.includes(requiredPermission)) {
+		return true;
+	}
 
-  // Domain wildcard (e.g., "documents:*" covers "documents:view")
-  const [domain] = requiredPermission.split(":");
-  if (domain && userPermissions.includes(`${domain}:*`)) {
-    return true;
-  }
+	// Domain wildcard (e.g., "documents:*" covers "documents:view")
+	const [domain] = requiredPermission.split(":");
+	if (domain && userPermissions.includes(`${domain}:*`)) {
+		return true;
+	}
 
-  return false;
+	return false;
 }
 
 /**
@@ -153,12 +153,12 @@ export function hasPermission(
  * @returns true if user has at least one of the permissions
  */
 export function hasAnyPermission(
-  userPermissions: readonly string[],
-  requiredPermissions: string[],
+	userPermissions: readonly string[],
+	requiredPermissions: string[],
 ): boolean {
-  return requiredPermissions.some((permission) =>
-    hasPermission(userPermissions, permission),
-  );
+	return requiredPermissions.some((permission) =>
+		hasPermission(userPermissions, permission),
+	);
 }
 
 /**
@@ -169,12 +169,12 @@ export function hasAnyPermission(
  * @returns true if user has all of the permissions
  */
 export function hasAllPermissions(
-  userPermissions: readonly string[],
-  requiredPermissions: string[],
+	userPermissions: readonly string[],
+	requiredPermissions: string[],
 ): boolean {
-  return requiredPermissions.every((permission) =>
-    hasPermission(userPermissions, permission),
-  );
+	return requiredPermissions.every((permission) =>
+		hasPermission(userPermissions, permission),
+	);
 }
 
 /**
@@ -185,32 +185,32 @@ export function hasAllPermissions(
  * @returns Array of all permissions for that role
  */
 export function getExpandedPermissions(role: RoleTemplate): PermissionKey[] {
-  const template = ROLE_TEMPLATES[role];
-  const permissions = new Set<PermissionKey>();
+	const template = ROLE_TEMPLATES[role];
+	const permissions = new Set<PermissionKey>();
 
-  for (const perm of template.permissions) {
-    if (perm === "*") {
-      // Add all permissions
-      for (const key of Object.keys(PERMISSIONS)) {
-        permissions.add(key as PermissionKey);
-      }
-    } else if (perm.endsWith(":*")) {
-      // Add all permissions in domain
-      const domain = perm.slice(0, -2);
-      for (const key of Object.keys(PERMISSIONS)) {
-        if (key.startsWith(`${domain}:`)) {
-          permissions.add(key as PermissionKey);
-        }
-      }
-    } else {
-      // Add specific permission
-      if (perm in PERMISSIONS) {
-        permissions.add(perm as PermissionKey);
-      }
-    }
-  }
+	for (const perm of template.permissions) {
+		if (perm === "*") {
+			// Add all permissions
+			for (const key of Object.keys(PERMISSIONS)) {
+				permissions.add(key as PermissionKey);
+			}
+		} else if (perm.endsWith(":*")) {
+			// Add all permissions in domain
+			const domain = perm.slice(0, -2);
+			for (const key of Object.keys(PERMISSIONS)) {
+				if (key.startsWith(`${domain}:`)) {
+					permissions.add(key as PermissionKey);
+				}
+			}
+		} else {
+			// Add specific permission
+			if (perm in PERMISSIONS) {
+				permissions.add(perm as PermissionKey);
+			}
+		}
+	}
 
-  return Array.from(permissions).sort();
+	return Array.from(permissions).sort();
 }
 
 /**
@@ -220,7 +220,7 @@ export function getExpandedPermissions(role: RoleTemplate): PermissionKey[] {
  * @returns true if the permission exists in PERMISSIONS
  */
 export function isValidPermission(permission: string): boolean {
-  return permission in PERMISSIONS;
+	return permission in PERMISSIONS;
 }
 
 /**
@@ -230,28 +230,28 @@ export function isValidPermission(permission: string): boolean {
  * @returns Object with domain names as keys and permission arrays as values
  */
 export function getPermissionsByDomain(): Record<
-  string,
-  Array<{ key: PermissionKey; description: string }>
+	string,
+	Array<{ key: PermissionKey; description: string }>
 > {
-  const byDomain: Record<
-    string,
-    Array<{ key: PermissionKey; description: string }>
-  > = {};
+	const byDomain: Record<
+		string,
+		Array<{ key: PermissionKey; description: string }>
+	> = {};
 
-  for (const [key, description] of Object.entries(PERMISSIONS)) {
-    const [domain] = key.split(":");
-    if (domain) {
-      if (!byDomain[domain]) {
-        byDomain[domain] = [];
-      }
-      byDomain[domain].push({
-        key: key as PermissionKey,
-        description,
-      });
-    }
-  }
+	for (const [key, description] of Object.entries(PERMISSIONS)) {
+		const [domain] = key.split(":");
+		if (domain) {
+			if (!byDomain[domain]) {
+				byDomain[domain] = [];
+			}
+			byDomain[domain].push({
+				key: key as PermissionKey,
+				description,
+			});
+		}
+	}
 
-  return byDomain;
+	return byDomain;
 }
 
 /**
@@ -261,11 +261,11 @@ export function getPermissionsByDomain(): Record<
  * @returns Object with name and description
  */
 export function getRoleInfo(role: RoleTemplate): {
-  name: string;
-  description: string;
+	name: string;
+	description: string;
 } {
-  return {
-    name: ROLE_TEMPLATES[role].name,
-    description: ROLE_TEMPLATES[role].description,
-  };
+	return {
+		name: ROLE_TEMPLATES[role].name,
+		description: ROLE_TEMPLATES[role].description,
+	};
 }
