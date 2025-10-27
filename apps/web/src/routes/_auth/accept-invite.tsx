@@ -6,7 +6,7 @@
  * and redirects back to the app. This route is just a landing page.
  */
 
-import { useAuth } from "@clerk/clerk-react";
+import { SignIn, useAuth } from "@clerk/clerk-react";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
@@ -19,7 +19,12 @@ function AcceptInviteRoute() {
 
 	useEffect(() => {
 		// Log for debugging
-		console.log("[AcceptInvite] isSignedIn:", isSignedIn, "isLoaded:", isLoaded);
+		console.log(
+			"[AcceptInvite] isSignedIn:",
+			isSignedIn,
+			"isLoaded:",
+			isLoaded,
+		);
 		console.log("[AcceptInvite] Current URL:", window.location.href);
 	}, [isSignedIn, isLoaded]);
 
@@ -39,8 +44,8 @@ function AcceptInviteRoute() {
 		return <Navigate to="/app" replace />;
 	}
 
-	// If not signed in, Clerk should have automatically redirected to sign-in/sign-up
-	// If we reach here, something went wrong, so redirect to sign-up
-	console.log("[AcceptInvite] Not signed in, redirecting to /sign-up");
-	return <Navigate to="/sign-up" replace />;
+	// Render embedded SignIn so the invitation token present in the URL
+	// is preserved and processed by Clerk. This avoids losing the token
+	// via a redirect to a different path.
+	return <SignIn routing="virtual" signUpUrl="/sign-up" />;
 }

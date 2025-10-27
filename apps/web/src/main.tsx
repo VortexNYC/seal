@@ -61,6 +61,8 @@ const router = createRouter({
 				publishableKey={CLERK_URL}
 				signInUrl="/sign-in"
 				signUpUrl="/sign-up"
+				afterSignInUrl="/app"
+				afterSignUpUrl="/app"
 				signInFallbackRedirectUrl="/app"
 				signUpFallbackRedirectUrl="/app"
 			>

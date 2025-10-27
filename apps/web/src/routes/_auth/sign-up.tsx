@@ -6,5 +6,5 @@ export const Route = createFileRoute("/_auth/sign-up")({
 });
 
 function RouteComponent() {
-	return <SignUp />;
+	return <SignUp routing="virtual" />;
 }
