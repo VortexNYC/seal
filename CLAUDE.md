@@ -1,2 +1,3 @@
 - Always check on linear for the team "Seal"
 - Add custom scripts will be inside of the folder "scripts"
+- If there are scripts available under scripts/linear/ then always use them to communicate to Linear instead of the MCP
