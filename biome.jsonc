@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.2.6/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.3.0/schema.json",
 	"files": {
 		"maxSize": 2097152,
 		"includes": [
@@ -10,12 +10,15 @@
 			"**/*.json",
 			"!**/dist",
 			"!**/.cache",
+			"!**/.output",
+			"!**/.tanstack",
 			"!**/*.d.ts",
 			"!**/_generated",
 			"!**/.next",
 			"!**/.turbo",
 			"!**/.clerk",
-			"!**/node_modules"
+			"!**/node_modules",
+			"!**/routeTree.gen.ts"
 		]
 	},
 	"overrides": [
@@ -26,29 +29,13 @@
 			}
 		},
 		{
-			"includes": [
-				"**/scripts/**",
-				"scripts/**",
-				"**/migrations.ts",
-				"**/credit_letter/migrations.ts",
-				"**/credit_letter/fee/mutations.ts",
-				"**/credit_letter/installment/mutations.ts",
-				"**/credit_letter/status_history/mutations.ts"
-			],
+			"includes": ["migration/**", "**/migration/**"],
 			"linter": {
-				"enabled": false
-			}
-		},
-		{
-			"includes": ["**/routeTree.gen.ts", "**/route-tree.gen.ts"],
-			"linter": {
-				"enabled": false
-			},
-			"formatter": {
-				"enabled": false
-			},
-			"assist": {
-				"enabled": false
+				"rules": {
+					"security": {
+						"noGlobalEval": "off"
+					}
+				}
 			}
 		}
 	],
@@ -77,10 +64,14 @@
 				"useExhaustiveDependencies": "warn",
 				"useHookAtTopLevel": "error",
 				"noUndeclaredVariables": "off",
-				"noUnusedImports": "error",
+				"noUnusedImports": {
+					"level": "error",
+					"options": {},
+					"fix": "safe"
+				},
 				"noUnusedVariables": "error",
-				"useUniqueElementIds": "off",
-				"noNestedComponentDefinitions": "off"
+				"noNestedComponentDefinitions": "off",
+				"useUniqueElementIds": "off"
 			},
 			"performance": {
 				"useTopLevelRegex": "off",
