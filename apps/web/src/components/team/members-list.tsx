@@ -5,11 +5,21 @@
  */
 
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { Link, useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { Filter, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
 	Table,
@@ -19,7 +29,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { ManageMemberDialog } from "./manage-member-dialog";
 import { RoleSelector } from "./role-selector";
 
 interface Member {
@@ -48,21 +57,61 @@ export function MembersList({
 	canRemove: _canRemove,
 }: MembersListProps) {
 	const { slug } = useParams({ strict: false });
+	const navigate = useNavigate();
 	const [searchQuery, setSearchQuery] = useState("");
-	const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+	const [selectedRoles, setSelectedRoles] = useState<Set<Member["role"]>>(
+		new Set(),
+	);
 
-	// Filter members based on search query
+	// Available roles for filtering
+	const availableRoles: Member["role"][] = [
+		"owner",
+		"admin",
+		"member",
+		"viewer",
+		"system",
+	];
+
+	// Filter members based on search query and selected roles
 	const filteredMembers = useMemo(() => {
-		if (!searchQuery) return members;
+		let filtered = members;
 
-		const query = searchQuery.toLowerCase();
-		return members.filter((member) => {
-			const name = member.name?.toLowerCase() || "";
-			const email = member.email.toLowerCase();
-			const role = member.role.toLowerCase();
-			return name.includes(query) || email.includes(query) || role.includes(query);
+		// Apply role filter
+		if (selectedRoles.size > 0) {
+			filtered = filtered.filter((member) => selectedRoles.has(member.role));
+		}
+
+		// Apply search query filter
+		if (searchQuery) {
+			const query = searchQuery.toLowerCase();
+			filtered = filtered.filter((member) => {
+				const name = member.name?.toLowerCase() || "";
+				const email = member.email.toLowerCase();
+				const role = member.role.toLowerCase();
+				return (
+					name.includes(query) || email.includes(query) || role.includes(query)
+				);
+			});
+		}
+
+		return filtered;
+	}, [members, searchQuery, selectedRoles]);
+
+	const toggleRole = (role: Member["role"]) => {
+		setSelectedRoles((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(role)) {
+				newSet.delete(role);
+			} else {
+				newSet.add(role);
+			}
+			return newSet;
 		});
-	}, [members, searchQuery]);
+	};
+
+	const clearRoleFilter = () => {
+		setSelectedRoles(new Set());
+	};
 
 	const getInitials = (name: string | null, email: string) => {
 		if (name) {
@@ -123,20 +172,87 @@ export function MembersList({
 
 	return (
 		<div className="space-y-4">
-			{/* Search Bar */}
-			<div className="flex items-center gap-3">
+			{/* Search Bar and Filters */}
+			<div className="flex items-center gap-3 flex-wrap">
 				<Input
 					placeholder="Search members by name, email, or role..."
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
 					className="max-w-md"
 				/>
+
+				{/* Role Filter Dropdown */}
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="outline" size="default" className="gap-2">
+							<Filter className="size-4" />
+							Role
+							{selectedRoles.size > 0 && (
+								<Badge variant="secondary" className="ml-1 rounded-full px-1.5">
+									{selectedRoles.size}
+								</Badge>
+							)}
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="start" className="w-48">
+						<DropdownMenuLabel>Filter by role</DropdownMenuLabel>
+						<DropdownMenuSeparator />
+						{availableRoles.map((role) => (
+							<DropdownMenuCheckboxItem
+								key={role}
+								checked={selectedRoles.has(role)}
+								onCheckedChange={() => toggleRole(role)}
+								className="capitalize"
+							>
+								{role}
+							</DropdownMenuCheckboxItem>
+						))}
+						{selectedRoles.size > 0 && (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									onClick={(e) => {
+										e.preventDefault();
+										clearRoleFilter();
+									}}
+									className="text-muted-foreground"
+								>
+									Clear filters
+								</DropdownMenuItem>
+							</>
+						)}
+					</DropdownMenuContent>
+				</DropdownMenu>
+
+				{/* Active Role Filter Badges */}
+				{selectedRoles.size > 0 && (
+					<div className="flex items-center gap-2 flex-wrap">
+						{Array.from(selectedRoles).map((role) => (
+							<Badge
+								key={role}
+								variant="secondary"
+								className="gap-1 capitalize"
+							>
+								{role}
+								<button
+									type="button"
+									onClick={() => toggleRole(role)}
+									className="ml-1 rounded-full hover:bg-muted"
+								>
+									<X className="size-3" />
+								</button>
+							</Badge>
+						))}
+					</div>
+				)}
 			</div>
 
 			{/* Members Table */}
 			{filteredMembers.length === 0 ? (
 				<div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-					{searchQuery ? "No members found matching your search" : "No members found"}
+					{searchQuery
+						? "No members found matching your search"
+						: "No members found"}
 				</div>
 			) : (
 				<div className="rounded-md border">
@@ -147,12 +263,21 @@ export function MembersList({
 								<TableHead>Role</TableHead>
 								<TableHead>Status</TableHead>
 								<TableHead>Joined</TableHead>
-								<TableHead className="w-32">Actions</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{filteredMembers.map((member) => (
-								<TableRow key={member.id} className="hover:bg-muted/50">
+								<TableRow
+									key={member.id}
+									className="hover:bg-muted/50 cursor-pointer"
+									onClick={() => {
+										if (!slug) return;
+										navigate({
+											to: "/$slug/settings/team/$memberId",
+											params: { slug, memberId: member.id },
+										});
+									}}
+								>
 									<TableCell>
 										<div className="flex items-center gap-3">
 											<Avatar>
@@ -171,7 +296,7 @@ export function MembersList({
 											</div>
 										</div>
 									</TableCell>
-									<TableCell>
+									<TableCell onClick={(e) => e.stopPropagation()}>
 										{canManageRoles && member.role !== "owner" ? (
 											<RoleSelector
 												memberId={member.id}
@@ -186,31 +311,11 @@ export function MembersList({
 									<TableCell className="text-sm text-muted-foreground">
 										{formatJoinDate(member.joinedAt)}
 									</TableCell>
-									<TableCell>
-										{canManageRoles && member.role !== "owner" && (
-											<Button
-												size="sm"
-												variant="outline"
-												onClick={() => setSelectedMember(member)}
-											>
-												Manage
-											</Button>
-										)}
-									</TableCell>
 								</TableRow>
 							))}
 						</TableBody>
 					</Table>
 				</div>
-			)}
-
-			{/* Manage Member Dialog */}
-			{selectedMember && (
-				<ManageMemberDialog
-					member={selectedMember}
-					open={!!selectedMember}
-					onOpenChange={(open) => !open && setSelectedMember(null)}
-				/>
 			)}
 		</div>
 	);

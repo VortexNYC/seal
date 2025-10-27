@@ -1,11 +1,24 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
-import { ArrowLeft, Mail, Calendar, Shield } from "lucide-react";
+import { useAction, useQuery } from "convex/react";
+import { ArrowLeft, Calendar, Mail, Shield, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -24,6 +37,8 @@ export const Route = createFileRoute(
 function MemberDetails() {
 	const { slug, memberId } = Route.useParams();
 	const navigate = useNavigate();
+	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	const organization = useQuery(api.organizations.queries.getOrganization, {
 		slug,
@@ -40,6 +55,33 @@ function MemberDetails() {
 				}
 			: "skip",
 	);
+
+	const deleteUser = useAction(api.organizations.actions.clerkDeleteUser);
+
+	const handleDeleteUser = async () => {
+		if (!orgId || !memberId) return;
+
+		setIsDeleting(true);
+		try {
+			await deleteUser({
+				memberId: memberId as Id<"organization_members">,
+				organizationId: orgId,
+			});
+
+			toast.success("User deleted successfully");
+			navigate({
+				to: "/$slug/settings/team",
+				params: { slug },
+			});
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : "Failed to delete user",
+			);
+		} finally {
+			setIsDeleting(false);
+			setShowDeleteDialog(false);
+		}
+	};
 
 	if (!organization || !orgId) {
 		return <div>Loading...</div>;
@@ -219,7 +261,76 @@ function MemberDetails() {
 						)}
 					</CardContent>
 				</Card>
+
+				{/* Danger Zone - Delete User */}
+				{member.role !== "owner" && (
+					<Card className="border-destructive">
+						<CardHeader>
+							<CardTitle className="text-destructive">Danger Zone</CardTitle>
+							<CardDescription>
+								Permanently delete this user from the system
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className="flex items-center justify-between">
+								<div>
+									<p className="text-sm font-medium">Delete User</p>
+									<p className="text-sm text-muted-foreground">
+										This will permanently delete the user from Clerk and all
+										their data from the system. This action cannot be undone.
+									</p>
+								</div>
+								<Button
+									variant="destructive"
+									size="sm"
+									onClick={() => setShowDeleteDialog(true)}
+									disabled={isDeleting}
+								>
+									<Trash2 className="mr-2 h-4 w-4" />
+									Delete User
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				)}
 			</div>
+
+			{/* Delete Confirmation Dialog */}
+			<AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+						<AlertDialogDescription asChild>
+							<div>
+								<p>
+									This action cannot be undone. This will permanently delete the
+									user{" "}
+									<span className="font-semibold">
+										{member.name || member.email}
+									</span>{" "}
+									from Clerk and remove all their data from the system,
+									including:
+								</p>
+								<ul className="mt-2 list-inside list-disc space-y-1">
+									<li>User account and profile</li>
+									<li>All organization memberships</li>
+									<li>Access to all workspaces</li>
+								</ul>
+							</div>
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleDeleteUser}
+							disabled={isDeleting}
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+						>
+							{isDeleting ? "Deleting..." : "Delete User"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</PageWrapper>
 	);
 }

@@ -18,9 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export const Route = createFileRoute(
-	"/_authenticated/$slug/settings/team/",
-)({
+export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
 	component: TeamSettings,
 });
 

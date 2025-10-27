@@ -54,26 +54,26 @@ export function ManageMemberDialog({
 	onOpenChange,
 }: ManageMemberDialogProps) {
 	const [role, setRole] = useState<"admin" | "member" | "viewer">(
-		member.role === "owner" || member.role === "system" ? "admin" : member.role
+		member.role === "owner" || member.role === "system" ? "admin" : member.role,
 	);
 	const [status, setStatus] = useState<
 		"active" | "inactive" | "suspended" | "pending"
 	>(
 		member.status === "blocked"
 			? "suspended"
-			: (member.status as "active" | "inactive" | "suspended" | "pending")
+			: (member.status as "active" | "inactive" | "suspended" | "pending"),
 	);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const updateMemberRole = useMutation(
-		api.organizations.mutations.updateMemberRole
+		api.organizations.mutations.updateMemberRole,
 	);
 	const updateMemberStatus = useMutation(
-		api.organizations.mutations.updateMemberStatus
+		api.organizations.mutations.updateMemberStatus,
 	);
 	const suspendMember = useMutation(api.organizations.mutations.suspendMember);
 	const reactivateMember = useMutation(
-		api.organizations.mutations.reactivateMember
+		api.organizations.mutations.reactivateMember,
 	);
 	const removeMember = useMutation(api.organizations.mutations.removeMember);
 
@@ -176,7 +176,7 @@ export function ManageMemberDialog({
 	const handleRemove = async () => {
 		if (
 			!confirm(
-				`Are you sure you want to remove ${member.name || member.email} from this workspace?`
+				`Are you sure you want to remove ${member.name || member.email} from this workspace?`,
 			)
 		) {
 			return;
@@ -226,7 +226,9 @@ export function ManageMemberDialog({
 						</Avatar>
 						<div className="flex-1">
 							<div className="font-medium">{member.name || "Unknown"}</div>
-							<div className="text-sm text-muted-foreground">{member.email}</div>
+							<div className="text-sm text-muted-foreground">
+								{member.email}
+							</div>
 						</div>
 						<Badge
 							variant={
@@ -297,7 +299,7 @@ export function ManageMemberDialog({
 							value={status}
 							onValueChange={(value) =>
 								setStatus(
-									value as "active" | "inactive" | "suspended" | "pending"
+									value as "active" | "inactive" | "suspended" | "pending",
 								)
 							}
 							disabled={isSubmitting || member.role === "owner"}
@@ -330,7 +332,8 @@ export function ManageMemberDialog({
 									Suspend Member
 								</Button>
 							)}
-							{(member.status === "suspended" || member.status === "inactive") &&
+							{(member.status === "suspended" ||
+								member.status === "inactive") &&
 								member.role !== "owner" && (
 									<Button
 										size="sm"

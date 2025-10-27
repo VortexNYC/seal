@@ -6,8 +6,8 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
-import { X } from "lucide-react";
+import { useAction } from "convex/react";
+import { Ban } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,8 @@ interface Invitation {
 	expiresAt: number;
 	inviterName: string;
 	inviterEmail: string;
+	clerkInvitationId?: string;
+	clerkOrganizationId?: string;
 }
 
 interface PendingInvitationsListProps {
@@ -41,32 +43,43 @@ export function PendingInvitationsList({
 	invitations,
 	organizationId: _organizationId,
 }: PendingInvitationsListProps) {
-	const [cancellingId, setCancellingId] = useState<
-		Id<"organization_invitations"> | null
-	>(null);
+	const [revokingId, setRevokingId] =
+		useState<Id<"organization_invitations"> | null>(null);
 
-	const cancelInvitation = useMutation(
-		api.organizations.mutations.cancelInvitation,
+	const revokeInvitation = useAction(
+		api.organizations.actions.clerkRevokeInvitation,
 	);
 
-	const handleCancelInvitation = async (
+	const handleRevokeInvitation = async (
 		invitationId: Id<"organization_invitations">,
 		email: string,
+		clerkInvitationId?: string,
+		clerkOrganizationId?: string,
 	) => {
-		setCancellingId(invitationId);
+		if (!clerkInvitationId || !clerkOrganizationId) {
+			toast.error("Cannot revoke invitation", {
+				description: "This invitation is not managed by Clerk",
+			});
+			return;
+		}
+
+		setRevokingId(invitationId);
 		try {
-			await cancelInvitation({ invitationId });
-			toast.success("Invitation cancelled", {
-				description: `The invitation for ${email} has been cancelled`,
+			await revokeInvitation({
+				clerkInvitationId,
+				clerkOrganizationId,
+			});
+			toast.success("Invitation revoked", {
+				description: `The invitation for ${email} has been revoked`,
 			});
 		} catch (error) {
 			const errorMessage =
-				error instanceof Error ? error.message : "Failed to cancel invitation";
-			toast.error("Failed to cancel invitation", {
+				error instanceof Error ? error.message : "Failed to revoke invitation";
+			toast.error("Failed to revoke invitation", {
 				description: errorMessage,
 			});
 		} finally {
-			setCancellingId(null);
+			setRevokingId(null);
 		}
 	};
 
@@ -153,15 +166,20 @@ export function PendingInvitationsList({
 						</TableCell>
 						<TableCell className="text-right">
 							<Button
-								variant="ghost"
-								size="icon"
+								variant="outline"
+								size="sm"
 								onClick={() =>
-									handleCancelInvitation(invitation.id, invitation.email)
+									handleRevokeInvitation(
+										invitation.id,
+										invitation.email,
+										invitation.clerkInvitationId,
+										invitation.clerkOrganizationId,
+									)
 								}
-								disabled={cancellingId === invitation.id}
-								title="Cancel invitation"
+								disabled={revokingId === invitation.id}
 							>
-								<X className="h-4 w-4" />
+								<Ban className="mr-2 h-4 w-4" />
+								{revokingId === invitation.id ? "Revoking..." : "Revoke"}
 							</Button>
 						</TableCell>
 					</TableRow>
