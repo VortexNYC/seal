@@ -4,7 +4,8 @@
  */
 
 import { ConvexError, v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { internalMutation, mutation } from "./_generated/server";
 import type { OrganizationRole } from "./schema";
 
 /**
@@ -374,5 +375,455 @@ export const removeOrganizationMembership = mutation({
 		}
 
 		return { success: true };
+	},
+});
+
+/**
+ * Upsert organization membership from Clerk webhook (with retry logic)
+ * This is the enhanced version similar to Catapult-Vite's implementation
+ */
+export const upsertMembershipFromClerk = internalMutation({
+	args: {
+		clerkUserId: v.string(),
+		clerkOrgId: v.string(),
+		clerkMembershipId: v.string(),
+		role: v.string(),
+		retryCount: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		if (!args.clerkUserId || !args.clerkOrgId || !args.clerkMembershipId) {
+			throw new ConvexError({
+				code: "INVALID_ARGUMENT",
+				message:
+					"Clerk User ID, Organization ID, and Membership ID are required",
+			});
+		}
+
+		const retryCount = args.retryCount || 0;
+		const maxRetries = 3;
+
+		// Find user
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+			.first();
+
+		if (!user) {
+			console.warn(
+				`⚠️ User with Clerk ID ${args.clerkUserId} not found for membership upsert`,
+			);
+			return { error: "User not found" };
+		}
+
+		// Find organization
+		const organization = await ctx.db
+			.query("organizations")
+			.withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkOrgId))
+			.first();
+
+		if (!organization) {
+			if (retryCount < maxRetries) {
+				console.log(
+					`⏳ Organization not found, retrying in 2 seconds (attempt ${retryCount + 1}/${maxRetries})...`,
+				);
+
+				// Schedule a retry after 2 seconds
+				await ctx.scheduler.runAfter(2000, internal.webhooks.upsertMembershipFromClerk, {
+					...args,
+					retryCount: retryCount + 1,
+				});
+
+				return { scheduled: true, retryCount: retryCount + 1 };
+			}
+
+			console.warn(
+				`⚠️ Organization with Clerk ID ${args.clerkOrgId} not found after ${maxRetries} retries`,
+			);
+			return { error: "Organization not found after retries" };
+		}
+
+		// Check if membership exists by Clerk membership ID
+		const existingByClerkMembership = await ctx.db
+			.query("organization_members")
+			.withIndex("by_clerk_membership_id", (q) =>
+				q.eq("clerkMembershipId", args.clerkMembershipId),
+			)
+			.first();
+
+		// Check if membership exists by user-org combination
+		const existingByUserOrg = await ctx.db
+			.query("organization_members")
+			.withIndex("by_user_organization", (q) =>
+				q.eq("userId", user._id).eq("organizationId", organization._id),
+			)
+			.first();
+
+		// Check if this is the first member of the organization
+		const existingMembers = await ctx.db
+			.query("organization_members")
+			.withIndex("by_organization", (q) => q.eq("organizationId", organization._id))
+			.take(1);
+
+		const isFirstMember = existingMembers.length === 0;
+
+		// Map Clerk roles to our role system
+		const clerkRole = args.role?.toLowerCase() || "";
+		let mappedRole: OrganizationRole;
+
+		if (isFirstMember) {
+			// First member is always owner
+			mappedRole = "owner";
+		} else if (clerkRole.includes("admin") || clerkRole === "org:admin") {
+			mappedRole = "admin";
+		} else if (clerkRole.includes("member")) {
+			mappedRole = "member";
+		} else {
+			mappedRole = "viewer";
+		}
+
+		const now = Date.now();
+		const membershipData = {
+			userId: user._id,
+			organizationId: organization._id,
+			role: mappedRole,
+			status: "active" as const,
+			isPrimary: false,
+			permissions: [],
+			clerkMembershipId: args.clerkMembershipId,
+		};
+
+		if (existingByClerkMembership) {
+			// Update existing membership (sync fields only, don't override custom settings)
+			await ctx.db.patch(existingByClerkMembership._id, {
+				clerkMembershipId: args.clerkMembershipId,
+			});
+			console.log(
+				`✅ Synced existing membership with Clerk ID: ${args.clerkMembershipId}`,
+			);
+			return { created: false, _id: existingByClerkMembership._id };
+		}
+
+		if (existingByUserOrg) {
+			// Add Clerk ID to existing membership
+			await ctx.db.patch(existingByUserOrg._id, {
+				clerkMembershipId: args.clerkMembershipId,
+			});
+			console.log(
+				`✅ Updated existing membership, added Clerk ID: ${args.clerkMembershipId}`,
+			);
+			return { created: false, _id: existingByUserOrg._id };
+		}
+
+		// Create new membership
+		const membershipId = await ctx.db.insert("organization_members", membershipData);
+
+		const membershipType = isFirstMember ? "owner" : mappedRole;
+		console.log(
+			`✅ Created membership from Clerk: ${user.email} -> ${organization.name} (${membershipType})`,
+		);
+		return { created: true, _id: membershipId, isFirstMember };
+	},
+});
+
+/**
+ * Sync membership from Clerk webhook (update only)
+ */
+export const syncMembershipFromClerk = internalMutation({
+	args: {
+		clerkMembershipId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const membership = await ctx.db
+			.query("organization_members")
+			.withIndex("by_clerk_membership_id", (q) =>
+				q.eq("clerkMembershipId", args.clerkMembershipId),
+			)
+			.first();
+
+		if (!membership) {
+			console.warn(
+				`⚠️ Membership with Clerk ID ${args.clerkMembershipId} not found for sync`,
+			);
+			return { synced: false };
+		}
+
+		// Just update the timestamp to show it was synced
+		// Don't override role or other custom settings
+		console.log(`✅ Synced membership with Clerk ID: ${args.clerkMembershipId}`);
+		return { synced: true, _id: membership._id };
+	},
+});
+
+/**
+ * Delete membership from Clerk webhook
+ */
+export const deleteMembershipFromClerk = internalMutation({
+	args: {
+		clerkMembershipId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const membership = await ctx.db
+			.query("organization_members")
+			.withIndex("by_clerk_membership_id", (q) =>
+				q.eq("clerkMembershipId", args.clerkMembershipId),
+			)
+			.first();
+
+		if (!membership) {
+			console.warn(
+				`⚠️ Membership with Clerk ID ${args.clerkMembershipId} not found for deletion`,
+			);
+			return { deleted: false };
+		}
+
+		await ctx.db.delete(membership._id);
+
+		console.log(`✅ Deleted membership with Clerk ID: ${args.clerkMembershipId}`);
+		return { deleted: true, _id: membership._id };
+	},
+});
+
+/**
+ * Handle organizationInvitation.created webhook
+ * Stores the invitation in our database
+ */
+export const handleInvitationCreated = internalMutation({
+	args: {
+		clerkInvitationId: v.string(),
+		clerkOrganizationId: v.string(),
+		emailAddress: v.string(),
+		role: v.optional(v.string()),
+		publicMetadata: v.optional(v.any()),
+		createdAt: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		// Find organization by Clerk ID
+		const organization = await ctx.db
+			.query("organizations")
+			.withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkOrganizationId))
+			.first();
+
+		if (!organization) {
+			console.warn(
+				`⚠️ Organization with Clerk ID ${args.clerkOrganizationId} not found for invitation`,
+			);
+			return { created: false };
+		}
+
+		// Extract role from metadata
+		const metadata = args.publicMetadata as Record<string, any> | undefined;
+		const invitationRole = (metadata?.role as string) || "member";
+
+		// Map to our role system
+		let role: OrganizationRole;
+		if (invitationRole === "admin") {
+			role = "admin";
+		} else if (invitationRole === "viewer") {
+			role = "viewer";
+		} else {
+			role = "member";
+		}
+
+		// Check if invitation already exists
+		const existingInvitation = await ctx.db
+			.query("organization_invitations")
+			.withIndex("by_clerk_invitation_id", (q) =>
+				q.eq("clerkInvitationId", args.clerkInvitationId),
+			)
+			.first();
+
+		if (existingInvitation) {
+			console.log(
+				`ℹ️ Invitation ${args.clerkInvitationId} already exists, skipping`,
+			);
+			return { created: false, _id: existingInvitation._id };
+		}
+
+		// Get the inviter (first owner/admin of the organization)
+		const inviter = await ctx.db
+			.query("organization_members")
+			.withIndex("by_organization", (q) =>
+				q.eq("organizationId", organization._id),
+			)
+			.filter((q) =>
+				q.or(q.eq(q.field("role"), "owner"), q.eq(q.field("role"), "admin")),
+			)
+			.first();
+
+		if (!inviter) {
+			console.warn(
+				`⚠️ No owner/admin found for organization ${organization._id}`,
+			);
+			return { created: false };
+		}
+
+		// Create invitation record
+		const invitationId = await ctx.db.insert("organization_invitations", {
+			organizationId: organization._id,
+			email: args.emailAddress.toLowerCase(),
+			role,
+			status: "pending",
+			token: args.clerkInvitationId, // Use Clerk ID as token
+			invitedBy: inviter.userId,
+			expiresAt: args.createdAt ? args.createdAt + 30 * 24 * 60 * 60 * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+			createdAt: args.createdAt || Date.now(),
+			clerkInvitationId: args.clerkInvitationId,
+			clerkOrganizationId: args.clerkOrganizationId,
+		});
+
+		console.log(
+			`✅ Created invitation record: ${args.emailAddress} -> ${organization.name}`,
+		);
+		return { created: true, _id: invitationId };
+	},
+});
+
+/**
+ * Handle organizationInvitation.accepted webhook
+ * Creates organization membership when user accepts invitation
+ */
+export const handleInvitationAccepted = internalMutation({
+	args: {
+		clerkInvitationId: v.string(),
+		clerkOrganizationId: v.string(),
+		clerkUserId: v.optional(v.string()),
+		retryCount: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const retryCount = args.retryCount || 0;
+		const maxRetries = 3;
+
+		// Find the invitation
+		const invitation = await ctx.db
+			.query("organization_invitations")
+			.withIndex("by_clerk_invitation_id", (q) =>
+				q.eq("clerkInvitationId", args.clerkInvitationId),
+			)
+			.first();
+
+		if (!invitation) {
+			console.warn(
+				`⚠️ Invitation ${args.clerkInvitationId} not found in database`,
+			);
+			return { accepted: false };
+		}
+
+		// Find user by Clerk ID (if provided)
+		let user = null;
+		if (args.clerkUserId) {
+			user = await ctx.db
+				.query("users")
+				.withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+				.first();
+		}
+
+		// If user not found by Clerk ID, try by email
+		if (!user) {
+			user = await ctx.db
+				.query("users")
+				.withIndex("by_email", (q) => q.eq("email", invitation.email))
+				.first();
+		}
+
+		if (!user) {
+			if (retryCount < maxRetries) {
+				console.log(
+					`⏳ User not found, retrying in 2 seconds (attempt ${retryCount + 1}/${maxRetries})...`,
+				);
+
+				// Schedule a retry after 2 seconds
+				await ctx.scheduler.runAfter(
+					2000,
+					internal.webhooks.handleInvitationAccepted,
+					{
+						...args,
+						retryCount: retryCount + 1,
+					},
+				);
+
+				return { scheduled: true, retryCount: retryCount + 1 };
+			}
+
+			console.warn(
+				`⚠️ User not found after ${maxRetries} retries for invitation ${args.clerkInvitationId}`,
+			);
+			return { accepted: false };
+		}
+
+		// Check if membership already exists
+		const existingMembership = await ctx.db
+			.query("organization_members")
+			.withIndex("by_user_organization", (q) =>
+				q.eq("userId", user._id).eq("organizationId", invitation.organizationId),
+			)
+			.first();
+
+		if (existingMembership) {
+			console.log(
+				`ℹ️ Membership already exists for user ${user.email}, updating invitation status`,
+			);
+
+			// Update invitation status
+			await ctx.db.patch(invitation._id, {
+				status: "accepted",
+				acceptedBy: user._id,
+				acceptedAt: Date.now(),
+			});
+
+			return { accepted: true, _id: existingMembership._id };
+		}
+
+		// Create membership
+		const membershipId = await ctx.db.insert("organization_members", {
+			organizationId: invitation.organizationId,
+			userId: user._id,
+			role: invitation.role,
+			status: "active",
+			isPrimary: false,
+			permissions: [],
+		});
+
+		// Update invitation status
+		await ctx.db.patch(invitation._id, {
+			status: "accepted",
+			acceptedBy: user._id,
+			acceptedAt: Date.now(),
+		});
+
+		console.log(
+			`✅ Created membership from invitation: ${user.email} -> organization ${invitation.organizationId}`,
+		);
+		return { accepted: true, _id: membershipId };
+	},
+});
+
+/**
+ * Handle organizationInvitation.revoked webhook
+ * Removes the invitation from our database
+ */
+export const handleInvitationRevoked = internalMutation({
+	args: {
+		clerkInvitationId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// Find and delete the invitation
+		const invitation = await ctx.db
+			.query("organization_invitations")
+			.withIndex("by_clerk_invitation_id", (q) =>
+				q.eq("clerkInvitationId", args.clerkInvitationId),
+			)
+			.first();
+
+		if (!invitation) {
+			console.warn(
+				`⚠️ Invitation ${args.clerkInvitationId} not found for revocation`,
+			);
+			return { revoked: false };
+		}
+
+		await ctx.db.delete(invitation._id);
+
+		console.log(`✅ Revoked invitation: ${args.clerkInvitationId}`);
+		return { revoked: true, _id: invitation._id };
 	},
 });

@@ -6,8 +6,8 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
-import { AlertCircle, UserPlus } from "lucide-react";
+import { useAction } from "convex/react";
+import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,7 +19,6 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,20 +32,21 @@ import {
 
 interface InviteMemberDialogProps {
 	organizationId: Id<"organizations">;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
 }
 
 export function InviteMemberDialog({
 	organizationId: _organizationId,
+	open,
+	onOpenChange,
 }: InviteMemberDialogProps) {
-	const [open, setOpen] = useState(false);
 	const [email, setEmail] = useState("");
 	const [role, setRole] = useState<"admin" | "member" | "viewer">("member");
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const createInvitation = useMutation(
-		api.organizations.mutations.createInvitation,
-	);
+	const clerkInvite = useAction(api.organizations.actions.clerkInvite);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -61,19 +61,27 @@ export function InviteMemberDialog({
 				return;
 			}
 
-			await createInvitation({
+			const result = await clerkInvite({
 				email: email.trim().toLowerCase(),
 				role,
+				organizationId: _organizationId,
 			});
 
-			toast.success("Invitation sent", {
-				description: `An invitation has been sent to ${email}`,
-			});
+			if (result.ok) {
+				toast.success("Invitation sent", {
+					description: `An invitation has been sent to ${email} via email`,
+				});
 
-			// Reset form and close dialog
-			setEmail("");
-			setRole("member");
-			setOpen(false);
+				// Reset form and close dialog
+				setEmail("");
+				setRole("member");
+				onOpenChange(false);
+			} else {
+				setError(result.message || "Failed to send invitation");
+				toast.error("Failed to send invitation", {
+					description: result.message,
+				});
+			}
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "Failed to send invitation";
@@ -87,7 +95,7 @@ export function InviteMemberDialog({
 	};
 
 	const handleOpenChange = (newOpen: boolean) => {
-		setOpen(newOpen);
+		onOpenChange(newOpen);
 		if (!newOpen) {
 			// Reset form when closing
 			setEmail("");
@@ -98,12 +106,6 @@ export function InviteMemberDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger asChild>
-				<Button>
-					<UserPlus className="mr-2 h-4 w-4" />
-					Invite Member
-				</Button>
-			</DialogTrigger>
 			<DialogContent className="sm:max-w-[425px]">
 				<form onSubmit={handleSubmit}>
 					<DialogHeader>
@@ -183,7 +185,7 @@ export function InviteMemberDialog({
 						<Button
 							type="button"
 							variant="outline"
-							onClick={() => setOpen(false)}
+							onClick={() => onOpenChange(false)}
 							disabled={isSubmitting}
 						>
 							Cancel

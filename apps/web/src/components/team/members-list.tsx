@@ -5,19 +5,12 @@
  */
 
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import { Link, useParams } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
 	Table,
 	TableBody,
@@ -26,7 +19,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { RemoveMemberDialog } from "./remove-member-dialog";
+import { ManageMemberDialog } from "./manage-member-dialog";
 import { RoleSelector } from "./role-selector";
 
 interface Member {
@@ -52,10 +45,24 @@ export function MembersList({
 	members,
 	organizationId,
 	canManageRoles,
-	canRemove,
+	canRemove: _canRemove,
 }: MembersListProps) {
+	const { slug } = useParams({ strict: false });
+	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-	const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+
+	// Filter members based on search query
+	const filteredMembers = useMemo(() => {
+		if (!searchQuery) return members;
+
+		const query = searchQuery.toLowerCase();
+		return members.filter((member) => {
+			const name = member.name?.toLowerCase() || "";
+			const email = member.email.toLowerCase();
+			const role = member.role.toLowerCase();
+			return name.includes(query) || email.includes(query) || role.includes(query);
+		});
+	}, [members, searchQuery]);
 
 	const getInitials = (name: string | null, email: string) => {
 		if (name) {
@@ -114,101 +121,97 @@ export function MembersList({
 		});
 	};
 
-	if (members.length === 0) {
-		return (
-			<div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-				No members found
-			</div>
-		);
-	}
-
 	return (
-		<>
-			<Table>
-				<TableHeader>
-					<TableRow>
-						<TableHead>Member</TableHead>
-						<TableHead>Role</TableHead>
-						<TableHead>Status</TableHead>
-						<TableHead>Joined</TableHead>
-						<TableHead className="text-right">Actions</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{members.map((member) => (
-						<TableRow key={member.id}>
-							<TableCell>
-								<div className="flex items-center gap-3">
-									<Avatar>
-										<AvatarImage src={member.avatarUrl ?? undefined} />
-										<AvatarFallback>
-											{getInitials(member.name, member.email)}
-										</AvatarFallback>
-									</Avatar>
-									<div>
-										<div className="font-medium">
-											{member.name || "Unknown"}
-										</div>
-										<div className="text-sm text-muted-foreground">
-											{member.email}
-										</div>
-									</div>
-								</div>
-							</TableCell>
-							<TableCell>
-								{canManageRoles && member.role !== "owner" ? (
-									<RoleSelector
-										memberId={member.id}
-										currentRole={member.role}
-										organizationId={organizationId}
-									/>
-								) : (
-									getRoleBadge(member.role)
-								)}
-							</TableCell>
-							<TableCell>{getStatusBadge(member.status)}</TableCell>
-							<TableCell className="text-sm text-muted-foreground">
-								{formatJoinDate(member.joinedAt)}
-							</TableCell>
-							<TableCell className="text-right">
-								{(canManageRoles || canRemove) && member.role !== "owner" && (
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button variant="ghost" size="icon">
-												<MoreHorizontal className="h-4 w-4" />
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end">
-											<DropdownMenuLabel>Actions</DropdownMenuLabel>
-											<DropdownMenuSeparator />
-											{canRemove && (
-												<DropdownMenuItem
-													className="text-destructive"
-													onSelect={() => {
-														setSelectedMember(member);
-														setShowRemoveDialog(true);
-													}}
-												>
-													Remove member
-												</DropdownMenuItem>
-											)}
-										</DropdownMenuContent>
-									</DropdownMenu>
-								)}
-							</TableCell>
-						</TableRow>
-					))}
-				</TableBody>
-			</Table>
+		<div className="space-y-4">
+			{/* Search Bar */}
+			<div className="flex items-center gap-3">
+				<Input
+					placeholder="Search members by name, email, or role..."
+					value={searchQuery}
+					onChange={(e) => setSearchQuery(e.target.value)}
+					className="max-w-md"
+				/>
+			</div>
 
+			{/* Members Table */}
+			{filteredMembers.length === 0 ? (
+				<div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+					{searchQuery ? "No members found matching your search" : "No members found"}
+				</div>
+			) : (
+				<div className="rounded-md border">
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Member</TableHead>
+								<TableHead>Role</TableHead>
+								<TableHead>Status</TableHead>
+								<TableHead>Joined</TableHead>
+								<TableHead className="w-32">Actions</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{filteredMembers.map((member) => (
+								<TableRow key={member.id} className="hover:bg-muted/50">
+									<TableCell>
+										<div className="flex items-center gap-3">
+											<Avatar>
+												<AvatarImage src={member.avatarUrl ?? undefined} />
+												<AvatarFallback>
+													{getInitials(member.name, member.email)}
+												</AvatarFallback>
+											</Avatar>
+											<div>
+												<div className="font-medium">
+													{member.name || "Unknown"}
+												</div>
+												<div className="text-sm text-muted-foreground">
+													{member.email}
+												</div>
+											</div>
+										</div>
+									</TableCell>
+									<TableCell>
+										{canManageRoles && member.role !== "owner" ? (
+											<RoleSelector
+												memberId={member.id}
+												currentRole={member.role}
+												organizationId={organizationId}
+											/>
+										) : (
+											getRoleBadge(member.role)
+										)}
+									</TableCell>
+									<TableCell>{getStatusBadge(member.status)}</TableCell>
+									<TableCell className="text-sm text-muted-foreground">
+										{formatJoinDate(member.joinedAt)}
+									</TableCell>
+									<TableCell>
+										{canManageRoles && member.role !== "owner" && (
+											<Button
+												size="sm"
+												variant="outline"
+												onClick={() => setSelectedMember(member)}
+											>
+												Manage
+											</Button>
+										)}
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				</div>
+			)}
+
+			{/* Manage Member Dialog */}
 			{selectedMember && (
-				<RemoveMemberDialog
+				<ManageMemberDialog
 					member={selectedMember}
-					organizationId={organizationId}
-					open={showRemoveDialog}
-					onOpenChange={setShowRemoveDialog}
+					open={!!selectedMember}
+					onOpenChange={(open) => !open && setSelectedMember(null)}
 				/>
 			)}
-		</>
+		</div>
 	);
 }

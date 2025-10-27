@@ -1,0 +1,166 @@
+/**
+ * Organization Actions - Clerk Backend API Integration
+ *
+ * These actions use the Clerk Backend API to manage organization invitations.
+ * Invitations are sent via Clerk's email system and synced via webhooks.
+ */
+
+import { createClerkClient } from "@clerk/backend";
+import { ConvexError, v } from "convex/values";
+import { action } from "../_generated/server";
+import { api } from "../_generated/api";
+
+/**
+ * Send organization invitation via Clerk backend API
+ * Creates an invitation in Clerk which automatically sends an email
+ * The webhook will sync the invitation to our database
+ */
+export const clerkInvite = action({
+	args: {
+		email: v.string(),
+		role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+		organizationId: v.id("organizations"),
+	},
+	handler: async (ctx, args): Promise<{ ok: boolean; message: string }> => {
+		// Get the authenticated user
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new ConvexError("Authentication required");
+		}
+
+		// Get organization details and verify user has access
+		const organization = await ctx.runQuery(api.organizations.queries.getOrganization, {
+			slug: "", // We'll fetch by ID instead
+		}).catch(async () => {
+			// Fallback: get organization directly
+			const org = await ctx.runQuery(api.organizations.queries.getOrganizationMembers, {
+				organizationId: args.organizationId,
+			});
+			return org ? { _id: args.organizationId } : null;
+		});
+
+		if (!organization) {
+			throw new ConvexError("Organization not found");
+		}
+
+		// Check if Clerk is configured
+		if (!process.env.CLERK_SECRET_KEY) {
+			throw new ConvexError({
+				code: "MISSING_CONFIG",
+				message: "CLERK_SECRET_KEY environment variable is not set",
+			});
+		}
+
+		try {
+			const clerk = createClerkClient({
+				secretKey: process.env.CLERK_SECRET_KEY,
+			});
+
+			// Create invitation in Clerk
+			// Note: We're using "org:member" as the Clerk role - the actual role is stored in publicMetadata
+			await clerk.organizations.createOrganizationInvitation({
+				organizationId: args.organizationId,
+				emailAddress: args.email.toLowerCase(),
+				role: "org:member",
+				publicMetadata: {
+					role: args.role, // Store our role in metadata
+				},
+			});
+
+			return { ok: true, message: "Invitation sent successfully" };
+		} catch (error) {
+			console.error("[clerkInvite] Error:", error);
+			throw new ConvexError({
+				code: "INVITATION_ERROR",
+				message:
+					error instanceof Error ? error.message : "Failed to send invitation",
+			});
+		}
+	},
+});
+
+/**
+ * Revoke an organization invitation via Clerk backend API
+ * Prevents the user from accepting the invitation
+ * Clerk will send a webhook event to update our database
+ */
+export const clerkRevokeInvitation = action({
+	args: {
+		clerkInvitationId: v.string(),
+		clerkOrganizationId: v.string(),
+	},
+	handler: async (ctx, args): Promise<{ ok: boolean; message: string }> => {
+		// Get the authenticated user
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new ConvexError("Authentication required");
+		}
+
+		if (!process.env.CLERK_SECRET_KEY) {
+			throw new ConvexError({
+				code: "MISSING_CONFIG",
+				message: "CLERK_SECRET_KEY environment variable is not set",
+			});
+		}
+
+		try {
+			const clerk = createClerkClient({
+				secretKey: process.env.CLERK_SECRET_KEY,
+			});
+
+			// Revoke the invitation in Clerk
+			await clerk.organizations.revokeOrganizationInvitation({
+				invitationId: args.clerkInvitationId,
+				organizationId: args.clerkOrganizationId,
+			});
+
+			return { ok: true, message: "Invitation revoked successfully" };
+		} catch (error) {
+			console.error("[clerkRevokeInvitation] Error:", error);
+			throw new ConvexError({
+				code: "REVOKE_ERROR",
+				message:
+					error instanceof Error
+						? error.message
+						: "Failed to revoke invitation",
+			});
+		}
+	},
+});
+
+/**
+ * Get invitation email by Clerk invitation ID
+ * Used by the accept-invite route to prefill the email in signup
+ */
+export const getInvitationEmailByClerkId = action({
+	args: {
+		clerkInvitationId: v.string()
+	},
+	handler: async (ctx, args): Promise<{ email: string | null }> => {
+		// This is a public action - no auth required
+		// The invitation ID itself serves as authentication
+
+		if (!process.env.CLERK_SECRET_KEY) {
+			throw new ConvexError({
+				code: "MISSING_CONFIG",
+				message: "CLERK_SECRET_KEY environment variable is not set",
+			});
+		}
+
+		try {
+			const clerk = createClerkClient({
+				secretKey: process.env.CLERK_SECRET_KEY,
+			});
+
+			// Fetch the invitation from Clerk
+			const invitation = await clerk.invitations.getInvitation({
+				invitationId: args.clerkInvitationId,
+			});
+
+			return { email: invitation.emailAddress };
+		} catch (error) {
+			console.error("[getInvitationEmailByClerkId] Error:", error);
+			return { email: null };
+		}
+	},
+});

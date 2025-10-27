@@ -342,3 +342,74 @@ export const getOrganizationMemberCount = authQuery({
 		};
 	},
 });
+
+/**
+ * Get details of a specific organization member
+ */
+export const getOrganizationMember = authQuery({
+	args: {
+		organizationId: v.id("organizations"),
+		memberId: v.id("organization_members"),
+	},
+	handler: async (ctx, args) => {
+		// Verify user has access to this organization
+		const userMember = await ctx.db
+			.query("organization_members")
+			.withIndex("by_user_organization", (q) =>
+				q
+					.eq("userId", ctx.auth.user._id)
+					.eq("organizationId", args.organizationId),
+			)
+			.first();
+
+		if (!userMember) {
+			throw new ConvexError("No access to this organization");
+		}
+
+		// Get the member
+		const member = await ctx.db.get(args.memberId);
+		if (!member) {
+			throw new ConvexError("Member not found");
+		}
+
+		// Verify member belongs to this organization
+		if (member.organizationId !== args.organizationId) {
+			throw new ConvexError("Member not found in this organization");
+		}
+
+		// Get user details
+		const user = await ctx.db.get(member.userId);
+		if (!user) {
+			throw new ConvexError("User not found");
+		}
+
+		// Get custom role if assigned
+		let customRole = null;
+		if (member.roleId) {
+			customRole = await ctx.db.get(member.roleId);
+		}
+
+		return {
+			id: member._id,
+			userId: user._id,
+			name: user.name,
+			email: user.email,
+			avatarUrl: user.avatar,
+			role: member.role,
+			customRole: customRole
+				? {
+						id: customRole._id,
+						name: customRole.name,
+						permissions: customRole.permissions,
+					}
+				: null,
+			status: member.status,
+			isPrimary: member.isPrimary,
+			joinedAt: member._creationTime,
+			permissions: member.permissions,
+			permissionOverrides: member.permissionOverrides,
+			clerkId: user.clerkId,
+			timezone: user.timezone,
+		};
+	},
+});

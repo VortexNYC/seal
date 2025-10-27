@@ -7,6 +7,7 @@ import type { Doc } from "../_generated/dataModel";
 import { type MutationCtx, mutation } from "../_generated/server";
 import { adminMutation, authMutation } from "../auth";
 import { organizationBaseSchema } from "../validations/organizations";
+import { seedSystemRoles } from "../organization_roles/helpers";
 
 // Type for organization update operations
 type OrganizationUpdateData = Partial<
@@ -81,6 +82,9 @@ export const ensurePersonalOrganization = mutation({
 				clerkId: args.clerkOrganizationId || undefined,
 				updatedAt: Date.now(),
 			});
+
+			// Seed system roles for the new organization
+			await seedSystemRoles(ctx.db, organizationId);
 
 			organization = await ctx.db.get(organizationId);
 		} else {
@@ -234,6 +238,9 @@ export const createWorkspace = authMutation({
 			isActive: true,
 			updatedAt: Date.now(),
 		});
+
+		// Seed system roles for the new organization
+		await seedSystemRoles(ctx.db, organizationId);
 
 		// Add creator as owner
 		await ctx.db.insert("organization_members", {
@@ -497,7 +504,7 @@ export const removeMember = adminMutation({
 });
 
 /**
- * Create invitation for new member
+ * Create invitation for new member or add existing user directly
  */
 export const createInvitation = adminMutation({
 	args: {
@@ -533,6 +540,22 @@ export const createInvitation = adminMutation({
 			if (existingMembership) {
 				throw new ConvexError("User is already a member of this organization");
 			}
+
+			// User exists but is not a member - add them directly
+			const membershipId = await ctx.db.insert("organization_members", {
+				organizationId: organization._id,
+				userId: existingUser._id,
+				role: args.role,
+				status: "active",
+				isPrimary: false,
+				permissions: [],
+			});
+
+			return {
+				id: membershipId,
+				addedDirectly: true,
+				message: "User added to organization"
+			};
 		}
 
 		// Check for existing pending invitation
@@ -556,7 +579,7 @@ export const createInvitation = adminMutation({
 		// Generate invitation token
 		const token = crypto.randomUUID();
 
-		// Create invitation
+		// Create invitation for new user
 		const invitationId = await ctx.db.insert("organization_invitations", {
 			organizationId: organization._id,
 			email,
@@ -568,7 +591,44 @@ export const createInvitation = adminMutation({
 			createdAt: Date.now(),
 		});
 
-		return { id: invitationId };
+		return {
+			id: invitationId,
+			addedDirectly: false,
+			message: "Invitation sent"
+		};
+	},
+});
+
+/**
+ * Cancel a pending invitation
+ */
+export const cancelInvitation = adminMutation({
+	args: {
+		invitationId: v.id("organization_invitations"),
+	},
+	handler: async (ctx, args) => {
+		const { organization } = ctx.auth;
+
+		// Get the invitation
+		const invitation = await ctx.db.get(args.invitationId);
+		if (!invitation) {
+			throw new ConvexError("Invitation not found");
+		}
+
+		// Ensure invitation belongs to the organization
+		if (invitation.organizationId !== organization._id) {
+			throw new ConvexError("Invitation not found");
+		}
+
+		// Check if invitation is still pending
+		if (invitation.status !== "pending") {
+			throw new ConvexError("Can only cancel pending invitations");
+		}
+
+		// Delete the invitation
+		await ctx.db.delete(args.invitationId);
+
+		return { success: true };
 	},
 });
 
@@ -602,10 +662,179 @@ export const updateMemberStatus = adminMutation({
 			throw new ConvexError("Cannot change your own status");
 		}
 
+		// Don't allow suspending or deactivating owners
+		if (membership.role === "owner" && args.status !== "active") {
+			throw new ConvexError("Cannot suspend or deactivate organization owner");
+		}
+
 		await ctx.db.patch(args.memberId, {
 			status: args.status,
 		});
 
 		return { success: true };
+	},
+});
+
+/**
+ * Activate a pending member
+ */
+export const activateMember = adminMutation({
+	args: {
+		memberId: v.id("organization_members"),
+		role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+	},
+	handler: async (ctx, args) => {
+		const { organization } = ctx.auth;
+
+		const membership = await ctx.db.get(args.memberId);
+		if (!membership) {
+			throw new ConvexError("Member not found");
+		}
+
+		if (membership.organizationId !== organization._id) {
+			throw new ConvexError("Member not found");
+		}
+
+		if (membership.status === "active") {
+			throw new ConvexError("Member is already active");
+		}
+
+		await ctx.db.patch(args.memberId, {
+			role: args.role,
+			status: "active",
+		});
+
+		return { success: true };
+	},
+});
+
+/**
+ * Suspend a member
+ */
+export const suspendMember = adminMutation({
+	args: {
+		memberId: v.id("organization_members"),
+	},
+	handler: async (ctx, args) => {
+		const { organization, user: currentUser } = ctx.auth;
+
+		const membership = await ctx.db.get(args.memberId);
+		if (!membership) {
+			throw new ConvexError("Member not found");
+		}
+
+		if (membership.organizationId !== organization._id) {
+			throw new ConvexError("Member not found");
+		}
+
+		if (membership.userId === currentUser._id) {
+			throw new ConvexError("Cannot suspend yourself");
+		}
+
+		if (membership.role === "owner") {
+			throw new ConvexError("Cannot suspend organization owner");
+		}
+
+		await ctx.db.patch(args.memberId, {
+			status: "suspended",
+		});
+
+		return { success: true };
+	},
+});
+
+/**
+ * Reactivate a suspended or inactive member
+ */
+export const reactivateMember = adminMutation({
+	args: {
+		memberId: v.id("organization_members"),
+	},
+	handler: async (ctx, args) => {
+		const { organization } = ctx.auth;
+
+		const membership = await ctx.db.get(args.memberId);
+		if (!membership) {
+			throw new ConvexError("Member not found");
+		}
+
+		if (membership.organizationId !== organization._id) {
+			throw new ConvexError("Member not found");
+		}
+
+		await ctx.db.patch(args.memberId, {
+			status: "active",
+		});
+
+		return { success: true };
+	},
+});
+
+/**
+ * Bulk activate members
+ */
+export const bulkActivateMembers = adminMutation({
+	args: {
+		memberUpdates: v.array(
+			v.object({
+				memberId: v.id("organization_members"),
+				role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+			}),
+		),
+	},
+	handler: async (ctx, args) => {
+		const { organization } = ctx.auth;
+
+		const results = [];
+
+		for (const update of args.memberUpdates) {
+			try {
+				const membership = await ctx.db.get(update.memberId);
+				if (!membership) {
+					results.push({
+						memberId: update.memberId,
+						success: false,
+						error: "Member not found",
+					});
+					continue;
+				}
+
+				if (membership.organizationId !== organization._id) {
+					results.push({
+						memberId: update.memberId,
+						success: false,
+						error: "Member not found",
+					});
+					continue;
+				}
+
+				if (membership.status === "active") {
+					results.push({
+						memberId: update.memberId,
+						success: false,
+						error: "Member is already active",
+					});
+					continue;
+				}
+
+				await ctx.db.patch(update.memberId, {
+					role: update.role,
+					status: "active",
+				});
+
+				results.push({
+					memberId: update.memberId,
+					success: true,
+				});
+			} catch (error) {
+				results.push({
+					memberId: update.memberId,
+					success: false,
+					error: error instanceof Error ? error.message : "Unknown error",
+				});
+			}
+		}
+
+		return { results };
 	},
 });

@@ -27,7 +27,12 @@ export const organizationInvitationsTable = defineTable({
 	acceptedAt: v.optional(v.number()),
 	expiresAt: v.number(),
 	createdAt: v.number(),
+	// Clerk-specific fields
+	clerkInvitationId: v.optional(v.string()),
+	clerkOrganizationId: v.optional(v.string()),
+	roleId: v.optional(v.id("organization_roles")), // Custom role reference
 })
 	.index("by_organization", ["organizationId"])
 	.index("by_email", ["email"])
-	.index("by_token", ["token"]);
+	.index("by_token", ["token"])
+	.index("by_clerk_invitation_id", ["clerkInvitationId"]);

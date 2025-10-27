@@ -24,6 +24,9 @@ export const usersTable = defineTable({
 	timezone: v.string(), // User's timezone
 	locale: v.string(), // User's locale (en-US, pt-BR, etc.)
 
+	// Super admin flag (bypasses all organization permissions)
+	isSuperAdmin: v.optional(v.boolean()),
+
 	// Onboarding tracking
 	onboardingCompleted: v.optional(v.boolean()),
 	onboardingCompletedAt: v.optional(v.number()),

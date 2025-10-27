@@ -8,18 +8,27 @@
  * @module
  */
 
+import type * as auth_guards from "../auth/guards.js";
+import type * as auth_permissions from "../auth/permissions.js";
+import type * as auth_wrappers from "../auth/wrappers.js";
 import type * as auth from "../auth.js";
 import type * as check_membership from "../check_membership.js";
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_queries from "../documents/queries.js";
 import type * as documents_sharing from "../documents/sharing.js";
 import type * as http from "../http.js";
+import type * as organization_roles_helpers from "../organization_roles/helpers.js";
+import type * as organization_roles_migrations from "../organization_roles/migrations.js";
+import type * as organization_roles_mutations from "../organization_roles/mutations.js";
+import type * as organization_roles_queries from "../organization_roles/queries.js";
+import type * as organizations_actions from "../organizations/actions.js";
 import type * as organizations_mutations from "../organizations/mutations.js";
 import type * as organizations_queries from "../organizations/queries.js";
 import type * as schemas_document_access from "../schemas/document_access.js";
 import type * as schemas_documents from "../schemas/documents.js";
 import type * as schemas_organization_invitations from "../schemas/organization_invitations.js";
 import type * as schemas_organization_members from "../schemas/organization_members.js";
+import type * as schemas_organization_roles from "../schemas/organization_roles.js";
 import type * as schemas_organizations from "../schemas/organizations.js";
 import type * as schemas_subscription_prices from "../schemas/subscription_prices.js";
 import type * as schemas_subscription_products from "../schemas/subscription_products.js";
@@ -48,18 +57,27 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "auth/guards": typeof auth_guards;
+  "auth/permissions": typeof auth_permissions;
+  "auth/wrappers": typeof auth_wrappers;
   auth: typeof auth;
   check_membership: typeof check_membership;
   "documents/mutations": typeof documents_mutations;
   "documents/queries": typeof documents_queries;
   "documents/sharing": typeof documents_sharing;
   http: typeof http;
+  "organization_roles/helpers": typeof organization_roles_helpers;
+  "organization_roles/migrations": typeof organization_roles_migrations;
+  "organization_roles/mutations": typeof organization_roles_mutations;
+  "organization_roles/queries": typeof organization_roles_queries;
+  "organizations/actions": typeof organizations_actions;
   "organizations/mutations": typeof organizations_mutations;
   "organizations/queries": typeof organizations_queries;
   "schemas/document_access": typeof schemas_document_access;
   "schemas/documents": typeof schemas_documents;
   "schemas/organization_invitations": typeof schemas_organization_invitations;
   "schemas/organization_members": typeof schemas_organization_members;
+  "schemas/organization_roles": typeof schemas_organization_roles;
   "schemas/organizations": typeof schemas_organizations;
   "schemas/subscription_prices": typeof schemas_subscription_prices;
   "schemas/subscription_products": typeof schemas_subscription_products;

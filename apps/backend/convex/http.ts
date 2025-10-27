@@ -1,6 +1,7 @@
 import { httpRouter } from "convex/server";
 import Stripe from "stripe";
 import { Webhook } from "svix";
+import { internal } from "./_generated/api";
 import { api } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
@@ -15,7 +16,10 @@ interface ClerkWebhookEvent {
 		| "organization.deleted"
 		| "organizationMembership.created"
 		| "organizationMembership.updated"
-		| "organizationMembership.deleted";
+		| "organizationMembership.deleted"
+		| "organizationInvitation.created"
+		| "organizationInvitation.accepted"
+		| "organizationInvitation.revoked";
 	data: {
 		id: string;
 		first_name?: string;
@@ -34,6 +38,11 @@ interface ClerkWebhookEvent {
 		organization?: { id: string };
 		public_user_data?: { user_id: string };
 		role?: string;
+		// For invitation events
+		email_address?: string;
+		status?: string;
+		created_at?: number;
+		updated_at?: number;
 	};
 }
 
@@ -129,29 +138,83 @@ http.route({
 					break;
 
 				case "organizationMembership.created":
-				case "organizationMembership.updated":
+					// Use enhanced upsert with retry logic and clerkMembershipId tracking
 					if (data.organization?.id && data.public_user_data?.user_id) {
-						await ctx.runMutation(api.webhooks.syncOrganizationMembership, {
-							userClerkId: data.public_user_data.user_id,
-							organizationClerkId: data.organization.id,
+						await ctx.runMutation(internal.webhooks.upsertMembershipFromClerk, {
+							clerkUserId: data.public_user_data.user_id,
+							clerkOrgId: data.organization.id,
+							clerkMembershipId: data.id, // Track the membership ID
 							role: data.role || "member",
 						});
 						console.log(
-							`[Clerk Webhook] Membership synced: ${data.public_user_data.user_id} -> ${data.organization.id}`,
+							`[Clerk Webhook] Membership created: ${data.public_user_data.user_id} -> ${data.organization.id} (${data.id})`,
+						);
+					}
+					break;
+
+				case "organizationMembership.updated":
+					// For updates, just sync without creating new records
+					if (data.id) {
+						await ctx.runMutation(internal.webhooks.syncMembershipFromClerk, {
+							clerkMembershipId: data.id,
+						});
+						console.log(
+							`[Clerk Webhook] Membership updated: ${data.id}`,
 						);
 					}
 					break;
 
 				case "organizationMembership.deleted":
-					if (data.organization?.id && data.public_user_data?.user_id) {
-						await ctx.runMutation(api.webhooks.removeOrganizationMembership, {
-							userClerkId: data.public_user_data.user_id,
-							organizationClerkId: data.organization.id,
+					// Use enhanced delete with clerkMembershipId
+					if (data.id) {
+						await ctx.runMutation(internal.webhooks.deleteMembershipFromClerk, {
+							clerkMembershipId: data.id,
 						});
 						console.log(
-							`[Clerk Webhook] Membership removed: ${data.public_user_data.user_id} -> ${data.organization.id}`,
+							`[Clerk Webhook] Membership deleted: ${data.id}`,
 						);
 					}
+					break;
+
+				case "organizationInvitation.created":
+					// Store invitation in database
+					if (data.organization?.id && data.email_address) {
+						await ctx.runMutation(internal.webhooks.handleInvitationCreated, {
+							clerkInvitationId: data.id,
+							clerkOrganizationId: data.organization.id,
+							emailAddress: data.email_address,
+							role: data.role,
+							publicMetadata: data.public_metadata,
+							createdAt: data.created_at,
+						});
+						console.log(
+							`[Clerk Webhook] Invitation created: ${data.email_address} -> ${data.organization.id}`,
+						);
+					}
+					break;
+
+				case "organizationInvitation.accepted":
+					// Create membership when invitation is accepted
+					if (data.organization?.id) {
+						await ctx.runMutation(internal.webhooks.handleInvitationAccepted, {
+							clerkInvitationId: data.id,
+							clerkOrganizationId: data.organization.id,
+							clerkUserId: data.public_user_data?.user_id,
+						});
+						console.log(
+							`[Clerk Webhook] Invitation accepted: ${data.id}`,
+						);
+					}
+					break;
+
+				case "organizationInvitation.revoked":
+					// Remove invitation from database
+					await ctx.runMutation(internal.webhooks.handleInvitationRevoked, {
+						clerkInvitationId: data.id,
+					});
+					console.log(
+						`[Clerk Webhook] Invitation revoked: ${data.id}`,
+					);
 					break;
 
 				default:

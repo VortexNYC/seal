@@ -4,8 +4,11 @@
  * Displays pending invitations with option to cancel
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useMutation } from "convex/react";
 import { X } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,8 +41,34 @@ export function PendingInvitationsList({
 	invitations,
 	organizationId: _organizationId,
 }: PendingInvitationsListProps) {
-	// Note: We'll need to add a cancelInvitation mutation in the backend
-	// For now, we'll just show the invitations
+	const [cancellingId, setCancellingId] = useState<
+		Id<"organization_invitations"> | null
+	>(null);
+
+	const cancelInvitation = useMutation(
+		api.organizations.mutations.cancelInvitation,
+	);
+
+	const handleCancelInvitation = async (
+		invitationId: Id<"organization_invitations">,
+		email: string,
+	) => {
+		setCancellingId(invitationId);
+		try {
+			await cancelInvitation({ invitationId });
+			toast.success("Invitation cancelled", {
+				description: `The invitation for ${email} has been cancelled`,
+			});
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to cancel invitation";
+			toast.error("Failed to cancel invitation", {
+				description: errorMessage,
+			});
+		} finally {
+			setCancellingId(null);
+		}
+	};
 
 	const getRoleBadge = (role: string) => {
 		const colors: Record<string, string> = {
@@ -126,12 +155,11 @@ export function PendingInvitationsList({
 							<Button
 								variant="ghost"
 								size="icon"
-								onClick={() => {
-									// TODO: Implement cancel invitation
-									toast.info("Cancel invitation", {
-										description: "This feature is coming soon",
-									});
-								}}
+								onClick={() =>
+									handleCancelInvitation(invitation.id, invitation.email)
+								}
+								disabled={cancellingId === invitation.id}
+								title="Cancel invitation"
 							>
 								<X className="h-4 w-4" />
 							</Button>

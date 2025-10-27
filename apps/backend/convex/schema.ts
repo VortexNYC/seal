@@ -16,6 +16,11 @@ import {
 	organizationMembersTable,
 } from "./schemas/organization_members";
 import {
+	type OrganizationRoleType,
+	organizationRolesTable,
+} from "./schemas/organization_roles";
+import {
+	type OrganizationStatus,
 	organizationsTable,
 	type organizationTypeTuple,
 } from "./schemas/organizations";
@@ -31,7 +36,13 @@ export type UserType = "personal" | "business"; // Simple user type classificati
 export type OrganizationType = Infer<typeof organizationTypeTuple>;
 
 // Re-export status and role types
-export type { OrganizationMemberRole, OrganizationMemberStatus, UserStatus };
+export type {
+	OrganizationMemberRole,
+	OrganizationMemberStatus,
+	OrganizationRoleType,
+	OrganizationStatus,
+	UserStatus,
+};
 
 // Re-export document types
 export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus };
@@ -41,6 +52,7 @@ export default defineSchema({
 	organizations: organizationsTable,
 	organization_members: organizationMembersTable,
 	organization_invitations: organizationInvitationsTable,
+	organization_roles: organizationRolesTable,
 
 	documents: documentsTable,
 	document_access: documentAccessTable,
