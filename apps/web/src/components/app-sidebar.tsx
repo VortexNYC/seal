@@ -1,182 +1,317 @@
 "use client";
 
-import {
-	BookOpen,
-	Bot,
-	Command,
-	Frame,
-	LifeBuoy,
-	Map as MapIcon,
-	PieChart,
-	Send,
-	Settings2,
-	SquareTerminal,
-} from "lucide-react";
-import type * as React from "react";
+import { useClerk, useUser } from "@clerk/clerk-react";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
+import { LayoutTemplate, type LucideIcon, Settings } from "lucide-react";
+import * as React from "react";
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
-import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
+import { TeamSwitcher } from "@/components/team-switcher";
 import {
 	Sidebar,
 	SidebarContent,
 	SidebarFooter,
 	SidebarHeader,
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
+	SidebarRail,
 } from "@/components/ui/sidebar";
+import { buildOrganizationPath } from "@/lib/organization-path";
+import { cn } from "@/lib/utils";
 
-const data = {
-	user: {
-		name: "shadcn",
-		email: "m@example.com",
-		avatar: "/avatars/shadcn.jpg",
-	},
-	navMain: [
+type SidebarOrganization = {
+	_id: Id<"organizations">;
+	name: string;
+	slug: string;
+};
+
+type PermissionSet = {
+	role: string;
+	status: string;
+	isPrimary: boolean;
+	permissions: {
+		canCreateDocuments: boolean;
+		canCreateTemplates: boolean;
+		canViewSettings: boolean;
+		canViewMembers: boolean;
+		canManageWebhooks: boolean;
+		canManageAPIKeys: boolean;
+		canManageBilling?: boolean;
+		canViewBilling?: boolean;
+	};
+} | null;
+
+type OrganizationListEntry = {
+	organizationId: Id<"organizations">;
+	organizationName: string;
+	organizationSlug: string;
+	role: string;
+};
+
+type NavMainItem = {
+	title: string;
+	url: string;
+	icon: LucideIcon;
+	isActive: boolean;
+	items: {
+		title: string;
+		url: string;
+		isActive: boolean;
+	}[];
+};
+
+type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+	slug: string;
+	organization: SidebarOrganization;
+	permissions: PermissionSet | undefined;
+};
+
+function getInitials(value: string) {
+	return value
+		.split(/\s+/)
+		.filter(Boolean)
+		.map((part) => part.charAt(0))
+		.join("")
+		.slice(0, 2)
+		.toUpperCase();
+}
+
+function formatRole(value: string | undefined) {
+	if (!value) {
+		return "Member";
+	}
+
+	return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function isPathActive(currentPath: string, targetPath: string) {
+	// Exact match - this is the primary check
+	return currentPath === targetPath;
+}
+
+function buildNavSections({
+	slug,
+	currentPath,
+	permissions,
+}: {
+	slug: string;
+	currentPath: string;
+	permissions: PermissionSet | undefined;
+}): NavMainItem[] {
+	const permissionFlags = permissions?.permissions;
+	const canView = (flag?: boolean) =>
+		flag === undefined ? true : Boolean(flag);
+
+	const workspaceItems = [
 		{
-			title: "Playground",
-			url: "#",
-			icon: SquareTerminal,
-			isActive: true,
-			items: [
-				{
-					title: "History",
-					url: "#",
-				},
-				{
-					title: "Starred",
-					url: "#",
-				},
-				{
-					title: "Settings",
-					url: "#",
-				},
-			],
+			title: "Dashboard",
+			url: buildOrganizationPath(slug, "/home"),
+			visible: true,
 		},
 		{
-			title: "Models",
-			url: "#",
-			icon: Bot,
-			items: [
-				{
-					title: "Genesis",
-					url: "#",
-				},
-				{
-					title: "Explorer",
-					url: "#",
-				},
-				{
-					title: "Quantum",
-					url: "#",
-				},
-			],
+			title: "Documents",
+			url: buildOrganizationPath(slug, "/documents"),
+			visible: canView(permissionFlags?.canCreateDocuments),
 		},
 		{
-			title: "Documentation",
-			url: "#",
-			icon: BookOpen,
-			items: [
-				{
-					title: "Introduction",
-					url: "#",
-				},
-				{
-					title: "Get Started",
-					url: "#",
-				},
-				{
-					title: "Tutorials",
-					url: "#",
-				},
-				{
-					title: "Changelog",
-					url: "#",
-				},
-			],
+			title: "Templates",
+			url: buildOrganizationPath(slug, "/templates"),
+			visible: canView(permissionFlags?.canCreateTemplates),
+		},
+		{
+			title: "Analytics",
+			url: buildOrganizationPath(slug, "/analytics"),
+			visible: true,
+		},
+	].filter((item) => item.visible);
+
+	const settingsItems = [
+		{
+			title: "General",
+			url: buildOrganizationPath(slug, "/settings"),
+			visible: canView(permissionFlags?.canViewSettings),
+		},
+		{
+			title: "Team",
+			url: buildOrganizationPath(slug, "/settings/team"),
+			visible: canView(permissionFlags?.canViewMembers),
+		},
+	].filter((item) => item.visible);
+
+	const sections = [
+		{
+			title: "Workspace",
+			icon: LayoutTemplate,
+			items: workspaceItems,
 		},
 		{
 			title: "Settings",
-			url: "#",
-			icon: Settings2,
-			items: [
-				{
-					title: "General",
-					url: "#",
-				},
-				{
-					title: "Team",
-					url: "#",
-				},
-				{
-					title: "Billing",
-					url: "#",
-				},
-				{
-					title: "Limits",
-					url: "#",
-				},
-			],
+			icon: Settings,
+			items: settingsItems,
 		},
-	],
-	navSecondary: [
-		{
-			title: "Support",
-			url: "#",
-			icon: LifeBuoy,
-		},
-		{
-			title: "Feedback",
-			url: "#",
-			icon: Send,
-		},
-	],
-	projects: [
-		{
-			name: "Design Engineering",
-			url: "#",
-			icon: Frame,
-		},
-		{
-			name: "Sales & Marketing",
-			url: "#",
-			icon: PieChart,
-		},
-		{
-			name: "Travel",
-			url: "#",
-			icon: MapIcon,
-		},
-	],
-};
+	];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+	return sections
+		.map((section) => {
+			if (section.items.length === 0) {
+				return null;
+			}
+
+			const items = section.items.map((item) => ({
+				title: item.title,
+				url: item.url,
+				isActive: isPathActive(currentPath, item.url),
+			}));
+
+			return {
+				title: section.title,
+				url: items[0]?.url ?? "#",
+				icon: section.icon,
+				isActive: items.some((item) => item.isActive),
+				items,
+			};
+		})
+		.filter((section): section is NavMainItem => section !== null);
+}
+
+function buildTeamOptions({
+	slug,
+	organizations,
+}: {
+	slug: string;
+	organizations: OrganizationListEntry[] | undefined;
+}) {
+	if (!organizations) {
+		return [];
+	}
+
+	const sorted = [...organizations].sort((a, b) => {
+		if (a.organizationSlug === slug) return -1;
+		if (b.organizationSlug === slug) return 1;
+		return a.organizationName.localeCompare(b.organizationName);
+	});
+
+	return sorted.map((organization) => {
+		const initials = getInitials(organization.organizationName);
+
+		const Logo = ({ className }: { className?: string }) => (
+			<span
+				className={cn(
+					"grid h-full w-full place-items-center rounded-md bg-transparent text-[0.65rem] font-semibold uppercase",
+					className,
+				)}
+			>
+				{initials}
+			</span>
+		);
+
+		return {
+			name: organization.organizationName,
+			plan: formatRole(organization.role),
+			slug: organization.organizationSlug,
+			logo: Logo,
+		};
+	});
+}
+
+export function AppSidebar({
+	slug,
+	organization,
+	permissions,
+	...props
+}: AppSidebarProps) {
+	const location = useLocation();
+	const navigate = useNavigate();
+	const { user } = useUser();
+	const { signOut } = useClerk();
+	const organizations = useQuery(api.check_membership.listUserOrganizations);
+
+	const teamOptions = React.useMemo(
+		() => buildTeamOptions({ slug, organizations }),
+		[organizations, slug],
+	);
+
+	const navItems = React.useMemo(
+		() =>
+			buildNavSections({
+				slug,
+				currentPath: location.pathname,
+				permissions,
+			}),
+		[slug, location.pathname, permissions],
+	);
+
+	const activeTeamSlug = slug;
+
+	const currentUser = React.useMemo(() => {
+		if (!user) return null;
+
+		const name =
+			user.fullName ||
+			[user.firstName, user.lastName].filter(Boolean).join(" ") ||
+			user.username ||
+			user.primaryEmailAddress?.emailAddress ||
+			"User";
+
+		const email =
+			user.primaryEmailAddress?.emailAddress ||
+			user.emailAddresses[0]?.emailAddress ||
+			"unknown@example.com";
+
+		const initials = getInitials(name || email);
+
+		return {
+			name,
+			email,
+			avatar: user.imageUrl ?? "",
+			initials,
+		};
+	}, [user]);
+
+	const handleTeamSelect = React.useCallback(
+		(nextSlug: string) => {
+			if (!nextSlug || nextSlug === slug) {
+				return;
+			}
+
+			let relativePath = location.pathname;
+			if (relativePath.startsWith(`/${slug}`)) {
+				relativePath = relativePath.slice(slug.length + 1);
+			}
+
+			const target = buildOrganizationPath(
+				nextSlug,
+				relativePath.length > 0 ? relativePath : "/home",
+			);
+
+			navigate({ to: target });
+		},
+		[location.pathname, navigate, slug],
+	);
+
+	if (!organization) {
+		return null;
+	}
+
 	return (
-		<Sidebar variant="inset" {...props}>
+		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<SidebarMenuButton size="lg">
-							<div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-								<Command className="size-4" />
-							</div>
-							<div className="grid flex-1 text-left text-sm leading-tight">
-								<span className="truncate font-medium">Acme Inc</span>
-								<span className="truncate text-xs">Enterprise</span>
-							</div>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				</SidebarMenu>
+				{teamOptions.length > 0 && (
+					<TeamSwitcher
+						teams={teamOptions}
+						activeSlug={activeTeamSlug}
+						onTeamSelect={handleTeamSelect}
+					/>
+				)}
 			</SidebarHeader>
 			<SidebarContent>
-				<NavMain items={data.navMain} />
-				<NavProjects projects={data.projects} />
-				<NavSecondary items={data.navSecondary} className="mt-auto" />
+				<NavMain items={navItems} />
 			</SidebarContent>
 			<SidebarFooter>
-				<NavUser user={data.user} />
+				{currentUser && <NavUser user={currentUser} onSignOut={signOut} />}
 			</SidebarFooter>
+			<SidebarRail />
 		</Sidebar>
 	);
 }
