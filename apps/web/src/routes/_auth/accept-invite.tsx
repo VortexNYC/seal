@@ -24,14 +24,15 @@ function AcceptInviteRoute() {
 
 	const afterSignUpUrl = useMemo(() => {
 		if (typeof window === "undefined") {
-			return "/";
+			return "/app";
 		}
 		const params = new URLSearchParams(window.location.search);
 		const requestedRedirect = params.get("redirect_url");
 		if (requestedRedirect?.startsWith("/")) {
 			return requestedRedirect;
 		}
-		return "/";
+		// Default to /app which will redirect to user's organization
+		return "/app";
 	}, []);
 
 	useEffect(() => {

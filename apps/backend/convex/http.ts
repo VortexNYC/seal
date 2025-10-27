@@ -38,7 +38,8 @@ interface ClerkWebhookEvent {
 		organization?: { id: string };
 		public_user_data?: { user_id: string };
 		role?: string;
-		// For invitation events
+		// For invitation events (organization_id is a direct field, not nested)
+		organization_id?: string;
 		email_address?: string;
 		status?: string;
 		created_at?: number;
@@ -178,27 +179,48 @@ http.route({
 
 				case "organizationInvitation.created":
 					// Store invitation in database
-					if (data.organization?.id && data.email_address) {
-						await ctx.runMutation(internal.webhooks.handleInvitationCreated, {
-							clerkInvitationId: data.id,
-							clerkOrganizationId: data.organization.id,
-							emailAddress: data.email_address,
-							role: data.role,
-							publicMetadata: data.public_metadata,
-							createdAt: data.created_at,
-						});
-						console.log(
-							`[Clerk Webhook] Invitation created: ${data.email_address} -> ${data.organization.id}`,
+					console.log(`[Clerk Webhook] Processing invitation.created`, {
+						hasOrgId: !!data.organization_id,
+						hasEmail: !!data.email_address,
+						orgId: data.organization_id,
+						email: data.email_address,
+					});
+
+					if (data.organization_id && data.email_address) {
+						try {
+							const result = await ctx.runMutation(internal.webhooks.handleInvitationCreated, {
+								clerkInvitationId: data.id,
+								clerkOrganizationId: data.organization_id,
+								emailAddress: data.email_address,
+								role: data.role,
+								publicMetadata: data.public_metadata,
+								createdAt: data.created_at,
+							});
+							console.log(
+								`[Clerk Webhook] Invitation created successfully: ${data.email_address} -> ${data.organization_id}`,
+								result,
+							);
+						} catch (error) {
+							console.error(
+								`[Clerk Webhook] Error handling invitation.created:`,
+								error,
+							);
+							throw error;
+						}
+					} else {
+						console.warn(
+							`[Clerk Webhook] Missing required data for invitation.created`,
+							{ hasOrgId: !!data.organization_id, hasEmail: !!data.email_address },
 						);
 					}
 					break;
 
 				case "organizationInvitation.accepted":
 					// Create membership when invitation is accepted
-					if (data.organization?.id) {
+					if (data.organization_id) {
 						await ctx.runMutation(internal.webhooks.handleInvitationAccepted, {
 							clerkInvitationId: data.id,
-							clerkOrganizationId: data.organization.id,
+							clerkOrganizationId: data.organization_id,
 							clerkUserId: data.public_user_data?.user_id,
 						});
 						console.log(
