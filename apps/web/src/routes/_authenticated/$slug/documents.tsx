@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PageWrapper } from "@/components/page-wrapper";
 import { ShareDialog } from "../../../components/documents/share-dialog";
 import { UploadDialog } from "../../../components/documents/upload-dialog";
 import { Badge } from "../../../components/ui/badge";
@@ -47,12 +48,10 @@ function DocumentsPage() {
 		useState<Id<"documents"> | null>(null);
 	const [filter, setFilter] = useState<FilterType>("all");
 
-	// Get organization
 	const { data: organization } = useSuspenseQuery(
 		convexQuery(api.organizations.queries.getOrganization, { slug }),
 	);
 
-	// Get documents
 	const { data: documents, refetch } = useSuspenseQuery(
 		convexQuery(api.documents.queries.listDocuments, {
 			organizationId: organization._id,
@@ -107,150 +106,153 @@ function DocumentsPage() {
 	};
 
 	return (
-		<div className="container mx-auto py-6 space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-3xl font-bold">Documents</h1>
+		<PageWrapper title="Documents">
+			<div className="space-y-6">
+				<div className="flex items-center justify-between">
 					<p className="text-muted-foreground">
 						Manage and share documents with your team
 					</p>
+					<Button onClick={() => setUploadOpen(true)}>
+						<UploadIcon className="mr-2 h-4 w-4" />
+						Upload Document
+					</Button>
 				</div>
-				<Button onClick={() => setUploadOpen(true)}>
-					<UploadIcon className="mr-2 h-4 w-4" />
-					Upload Document
-				</Button>
-			</div>
 
-			{/* Filter Tabs */}
-			<div className="flex gap-2">
-				<Button
-					variant={filter === "all" ? "default" : "outline"}
-					onClick={() => setFilter("all")}
-				>
-					All Documents
-				</Button>
-				<Button
-					variant={filter === "owned" ? "default" : "outline"}
-					onClick={() => setFilter("owned")}
-				>
-					My Documents
-				</Button>
-				<Button
-					variant={filter === "shared" ? "default" : "outline"}
-					onClick={() => setFilter("shared")}
-				>
-					Shared with Me
-				</Button>
-			</div>
-
-			{/* Documents Grid */}
-			{documents.length === 0 ? (
-				<Card>
-					<CardContent className="flex flex-col items-center justify-center py-12">
-						<FileIcon className="h-12 w-12 text-muted-foreground mb-4" />
-						<p className="text-lg font-medium">No documents yet</p>
-						<p className="text-sm text-muted-foreground mb-4">
-							Upload your first document to get started
-						</p>
-						<Button onClick={() => setUploadOpen(true)}>
-							<UploadIcon className="mr-2 h-4 w-4" />
-							Upload Document
-						</Button>
-					</CardContent>
-				</Card>
-			) : (
-				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-					{documents.map((doc) => (
-						<Card key={doc._id} className="hover:shadow-lg transition-shadow">
-							<CardHeader>
-								<div className="flex items-start justify-between">
-									<div className="flex items-center gap-2">
-										<FileIcon className="h-5 w-5 text-muted-foreground" />
-										<CardTitle className="text-base truncate">
-											{doc.name}
-										</CardTitle>
-									</div>
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button variant="ghost" size="icon" className="h-8 w-8">
-												<MoreVerticalIcon className="h-4 w-4" />
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end">
-											<DropdownMenuItem onClick={() => handleDownload(doc._id)}>
-												<DownloadIcon className="mr-2 h-4 w-4" />
-												Download
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												onClick={() => {
-													setSelectedDocumentId(doc._id);
-													setShareDialogOpen(true);
-												}}
-											>
-												<Share2Icon className="mr-2 h-4 w-4" />
-												Share
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												onClick={() => handleDelete(doc._id)}
-												className="text-destructive"
-											>
-												<TrashIcon className="mr-2 h-4 w-4" />
-												Delete
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</div>
-								{doc.description && (
-									<CardDescription className="line-clamp-2">
-										{doc.description}
-									</CardDescription>
-								)}
-							</CardHeader>
-							<CardContent>
-								<div className="space-y-2">
-									<div className="flex items-center justify-between text-sm">
-										<span className="text-muted-foreground">Size</span>
-										<span>{formatBytes(doc.fileSize)}</span>
-									</div>
-									<div className="flex items-center justify-between text-sm">
-										<span className="text-muted-foreground">Uploaded</span>
-										<span>{formatDate(doc.createdAt)}</span>
-									</div>
-									<div className="flex items-center justify-between text-sm">
-										<span className="text-muted-foreground">Sharing</span>
-										<Badge
-											variant={
-												doc.sharingMode === "private" ? "secondary" : "default"
-											}
-										>
-											{doc.sharingMode === "private" && "Private"}
-											{doc.sharingMode === "workspace" && "Team"}
-											{doc.sharingMode === "specific" && "Specific"}
-										</Badge>
-									</div>
-								</div>
-							</CardContent>
-						</Card>
-					))}
+				{/* Filter Tabs */}
+				<div className="flex gap-2">
+					<Button
+						variant={filter === "all" ? "default" : "outline"}
+						onClick={() => setFilter("all")}
+					>
+						All Documents
+					</Button>
+					<Button
+						variant={filter === "owned" ? "default" : "outline"}
+						onClick={() => setFilter("owned")}
+					>
+						My Documents
+					</Button>
+					<Button
+						variant={filter === "shared" ? "default" : "outline"}
+						onClick={() => setFilter("shared")}
+					>
+						Shared with Me
+					</Button>
 				</div>
-			)}
 
-			<UploadDialog
-				organizationId={organization._id}
-				open={uploadOpen}
-				onOpenChange={setUploadOpen}
-				onSuccess={() => refetch()}
-			/>
+				{/* Documents Grid */}
+				{documents.length === 0 ? (
+					<Card>
+						<CardContent className="flex flex-col items-center justify-center py-12">
+							<FileIcon className="h-12 w-12 text-muted-foreground mb-4" />
+							<p className="text-lg font-medium">No documents yet</p>
+							<p className="text-sm text-muted-foreground mb-4">
+								Upload your first document to get started
+							</p>
+							<Button onClick={() => setUploadOpen(true)}>
+								<UploadIcon className="mr-2 h-4 w-4" />
+								Upload Document
+							</Button>
+						</CardContent>
+					</Card>
+				) : (
+					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+						{documents.map((doc) => (
+							<Card key={doc._id} className="hover:shadow-lg transition-shadow">
+								<CardHeader>
+									<div className="flex items-start justify-between">
+										<div className="flex items-center gap-2">
+											<FileIcon className="h-5 w-5 text-muted-foreground" />
+											<CardTitle className="text-base truncate">
+												{doc.name}
+											</CardTitle>
+										</div>
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button variant="ghost" size="icon" className="h-8 w-8">
+													<MoreVerticalIcon className="h-4 w-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												<DropdownMenuItem
+													onClick={() => handleDownload(doc._id)}
+												>
+													<DownloadIcon className="mr-2 h-4 w-4" />
+													Download
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onClick={() => {
+														setSelectedDocumentId(doc._id);
+														setShareDialogOpen(true);
+													}}
+												>
+													<Share2Icon className="mr-2 h-4 w-4" />
+													Share
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onClick={() => handleDelete(doc._id)}
+													className="text-destructive"
+												>
+													<TrashIcon className="mr-2 h-4 w-4" />
+													Delete
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</div>
+									{doc.description && (
+										<CardDescription className="line-clamp-2">
+											{doc.description}
+										</CardDescription>
+									)}
+								</CardHeader>
+								<CardContent>
+									<div className="space-y-2">
+										<div className="flex items-center justify-between text-sm">
+											<span className="text-muted-foreground">Size</span>
+											<span>{formatBytes(doc.fileSize)}</span>
+										</div>
+										<div className="flex items-center justify-between text-sm">
+											<span className="text-muted-foreground">Uploaded</span>
+											<span>{formatDate(doc.createdAt)}</span>
+										</div>
+										<div className="flex items-center justify-between text-sm">
+											<span className="text-muted-foreground">Sharing</span>
+											<Badge
+												variant={
+													doc.sharingMode === "private"
+														? "secondary"
+														: "default"
+												}
+											>
+												{doc.sharingMode === "private" && "Private"}
+												{doc.sharingMode === "workspace" && "Team"}
+												{doc.sharingMode === "specific" && "Specific"}
+											</Badge>
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+						))}
+					</div>
+				)}
 
-			{selectedDocumentId && (
-				<ShareDialog
-					documentId={selectedDocumentId}
+				<UploadDialog
 					organizationId={organization._id}
-					open={shareDialogOpen}
-					onOpenChange={setShareDialogOpen}
+					open={uploadOpen}
+					onOpenChange={setUploadOpen}
 					onSuccess={() => refetch()}
 				/>
-			)}
-		</div>
+
+				{selectedDocumentId && (
+					<ShareDialog
+						documentId={selectedDocumentId}
+						organizationId={organization._id}
+						open={shareDialogOpen}
+						onOpenChange={setShareDialogOpen}
+						onSuccess={() => refetch()}
+					/>
+				)}
+			</div>
+		</PageWrapper>
 	);
 }
