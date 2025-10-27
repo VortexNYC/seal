@@ -1,8 +1,7 @@
 import { httpRouter } from "convex/server";
 import Stripe from "stripe";
 import { Webhook } from "svix";
-import { internal } from "./_generated/api";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
 
@@ -159,9 +158,7 @@ http.route({
 						await ctx.runMutation(internal.webhooks.syncMembershipFromClerk, {
 							clerkMembershipId: data.id,
 						});
-						console.log(
-							`[Clerk Webhook] Membership updated: ${data.id}`,
-						);
+						console.log(`[Clerk Webhook] Membership updated: ${data.id}`);
 					}
 					break;
 
@@ -171,9 +168,7 @@ http.route({
 						await ctx.runMutation(internal.webhooks.deleteMembershipFromClerk, {
 							clerkMembershipId: data.id,
 						});
-						console.log(
-							`[Clerk Webhook] Membership deleted: ${data.id}`,
-						);
+						console.log(`[Clerk Webhook] Membership deleted: ${data.id}`);
 					}
 					break;
 
@@ -188,14 +183,17 @@ http.route({
 
 					if (data.organization_id && data.email_address) {
 						try {
-							const result = await ctx.runMutation(internal.webhooks.handleInvitationCreated, {
-								clerkInvitationId: data.id,
-								clerkOrganizationId: data.organization_id,
-								emailAddress: data.email_address,
-								role: data.role,
-								publicMetadata: data.public_metadata,
-								createdAt: data.created_at,
-							});
+							const result = await ctx.runMutation(
+								internal.webhooks.handleInvitationCreated,
+								{
+									clerkInvitationId: data.id,
+									clerkOrganizationId: data.organization_id,
+									emailAddress: data.email_address,
+									role: data.role,
+									publicMetadata: data.public_metadata,
+									createdAt: data.created_at,
+								},
+							);
 							console.log(
 								`[Clerk Webhook] Invitation created successfully: ${data.email_address} -> ${data.organization_id}`,
 								result,
@@ -210,7 +208,10 @@ http.route({
 					} else {
 						console.warn(
 							`[Clerk Webhook] Missing required data for invitation.created`,
-							{ hasOrgId: !!data.organization_id, hasEmail: !!data.email_address },
+							{
+								hasOrgId: !!data.organization_id,
+								hasEmail: !!data.email_address,
+							},
 						);
 					}
 					break;
@@ -223,9 +224,7 @@ http.route({
 							clerkOrganizationId: data.organization_id,
 							clerkUserId: data.public_user_data?.user_id,
 						});
-						console.log(
-							`[Clerk Webhook] Invitation accepted: ${data.id}`,
-						);
+						console.log(`[Clerk Webhook] Invitation accepted: ${data.id}`);
 					}
 					break;
 
@@ -234,9 +233,7 @@ http.route({
 					await ctx.runMutation(internal.webhooks.handleInvitationRevoked, {
 						clerkInvitationId: data.id,
 					});
-					console.log(
-						`[Clerk Webhook] Invitation revoked: ${data.id}`,
-					);
+					console.log(`[Clerk Webhook] Invitation revoked: ${data.id}`);
 					break;
 
 				default:

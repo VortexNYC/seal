@@ -428,10 +428,14 @@ export const upsertMembershipFromClerk = internalMutation({
 				);
 
 				// Schedule a retry after 2 seconds
-				await ctx.scheduler.runAfter(2000, internal.webhooks.upsertMembershipFromClerk, {
-					...args,
-					retryCount: retryCount + 1,
-				});
+				await ctx.scheduler.runAfter(
+					2000,
+					internal.webhooks.upsertMembershipFromClerk,
+					{
+						...args,
+						retryCount: retryCount + 1,
+					},
+				);
 
 				return { scheduled: true, retryCount: retryCount + 1 };
 			}
@@ -461,7 +465,9 @@ export const upsertMembershipFromClerk = internalMutation({
 		// Check if this is the first member of the organization
 		const existingMembers = await ctx.db
 			.query("organization_members")
-			.withIndex("by_organization", (q) => q.eq("organizationId", organization._id))
+			.withIndex("by_organization", (q) =>
+				q.eq("organizationId", organization._id),
+			)
 			.take(1);
 
 		const isFirstMember = existingMembers.length === 0;
@@ -481,7 +487,6 @@ export const upsertMembershipFromClerk = internalMutation({
 			mappedRole = "viewer";
 		}
 
-		const now = Date.now();
 		const membershipData = {
 			userId: user._id,
 			organizationId: organization._id,
@@ -515,7 +520,10 @@ export const upsertMembershipFromClerk = internalMutation({
 		}
 
 		// Create new membership
-		const membershipId = await ctx.db.insert("organization_members", membershipData);
+		const membershipId = await ctx.db.insert(
+			"organization_members",
+			membershipData,
+		);
 
 		const membershipType = isFirstMember ? "owner" : mappedRole;
 		console.log(
@@ -549,7 +557,9 @@ export const syncMembershipFromClerk = internalMutation({
 
 		// Just update the timestamp to show it was synced
 		// Don't override role or other custom settings
-		console.log(`✅ Synced membership with Clerk ID: ${args.clerkMembershipId}`);
+		console.log(
+			`✅ Synced membership with Clerk ID: ${args.clerkMembershipId}`,
+		);
 		return { synced: true, _id: membership._id };
 	},
 });
@@ -578,7 +588,9 @@ export const deleteMembershipFromClerk = internalMutation({
 
 		await ctx.db.delete(membership._id);
 
-		console.log(`✅ Deleted membership with Clerk ID: ${args.clerkMembershipId}`);
+		console.log(
+			`✅ Deleted membership with Clerk ID: ${args.clerkMembershipId}`,
+		);
 		return { deleted: true, _id: membership._id };
 	},
 });
@@ -600,7 +612,9 @@ export const handleInvitationCreated = internalMutation({
 		// Find organization by Clerk ID
 		const organization = await ctx.db
 			.query("organizations")
-			.withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkOrganizationId))
+			.withIndex("by_clerk_id", (q) =>
+				q.eq("clerkId", args.clerkOrganizationId),
+			)
 			.first();
 
 		if (!organization) {
@@ -611,7 +625,7 @@ export const handleInvitationCreated = internalMutation({
 		}
 
 		// Extract role from metadata
-		const metadata = args.publicMetadata as Record<string, any> | undefined;
+		const metadata = args.publicMetadata as Record<string, unknown> | undefined;
 		const invitationRole = (metadata?.role as string) || "member";
 
 		// Map to our role system
@@ -665,7 +679,9 @@ export const handleInvitationCreated = internalMutation({
 			status: "pending",
 			token: args.clerkInvitationId, // Use Clerk ID as token
 			invitedBy: inviter.userId,
-			expiresAt: args.createdAt ? args.createdAt + 30 * 24 * 60 * 60 * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+			expiresAt: args.createdAt
+				? args.createdAt + 30 * 24 * 60 * 60 * 1000
+				: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
 			createdAt: args.createdAt || Date.now(),
 			clerkInvitationId: args.clerkInvitationId,
 			clerkOrganizationId: args.clerkOrganizationId,
@@ -711,9 +727,10 @@ export const handleInvitationAccepted = internalMutation({
 		// Find user by Clerk ID (if provided)
 		let user = null;
 		if (args.clerkUserId) {
+			const clerkUserId = args.clerkUserId;
 			user = await ctx.db
 				.query("users")
-				.withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+				.withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkUserId))
 				.first();
 		}
 
@@ -754,7 +771,9 @@ export const handleInvitationAccepted = internalMutation({
 		const existingMembership = await ctx.db
 			.query("organization_members")
 			.withIndex("by_user_organization", (q) =>
-				q.eq("userId", user._id).eq("organizationId", invitation.organizationId),
+				q
+					.eq("userId", user._id)
+					.eq("organizationId", invitation.organizationId),
 			)
 			.first();
 
