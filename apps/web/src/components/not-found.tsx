@@ -1,27 +1,54 @@
 import { Link } from "@tanstack/react-router";
+import { FileQuestion, Home, Undo2 } from "lucide-react";
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 
 export function NotFound({ children }: { children?: ReactNode }) {
 	return (
-		<div className="space-y-2 p-2">
-			<div className="text-gray-600 dark:text-gray-400">
-				{children || <p>The page you are looking for does not exist.</p>}
-			</div>
-			<p className="flex items-center gap-2 flex-wrap">
-				<button
-					type="button"
-					onClick={() => window.history.back()}
-					className="bg-emerald-500 text-white px-2 py-1 rounded uppercase font-black text-sm"
-				>
-					Go back
-				</button>
-				<Link
-					to="/"
-					className="bg-cyan-600 text-white px-2 py-1 rounded uppercase font-black text-sm"
-				>
-					Start Over
-				</Link>
-			</p>
+		<div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+			<Card className="w-full max-w-2xl">
+				<CardHeader className="text-center">
+					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+						<FileQuestion className="h-6 w-6 text-muted-foreground" />
+					</div>
+					<CardTitle className="text-2xl">404 - Page Not Found</CardTitle>
+					<CardDescription>
+						{children || "The page you are looking for does not exist."}
+					</CardDescription>
+				</CardHeader>
+
+				<CardContent>
+					<p className="text-center text-sm text-muted-foreground">
+						The page may have been moved, deleted, or the URL might be
+						incorrect.
+					</p>
+				</CardContent>
+
+				<CardFooter className="flex flex-col sm:flex-row gap-2">
+					<Button
+						onClick={() => window.history.back()}
+						variant="default"
+						className="w-full sm:w-auto"
+					>
+						<Undo2 className="mr-2 h-4 w-4" />
+						Go Back
+					</Button>
+					<Button asChild variant="outline" className="w-full sm:w-auto">
+						<Link to="/">
+							<Home className="mr-2 h-4 w-4" />
+							Go Home
+						</Link>
+					</Button>
+				</CardFooter>
+			</Card>
 		</div>
 	);
 }
