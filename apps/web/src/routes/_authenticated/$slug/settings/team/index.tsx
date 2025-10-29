@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { UserPlus } from "lucide-react";
 import { useState } from "react";
 import { PageWrapper } from "@/components/page-wrapper";
+import { TeamSettingsSkeleton } from "@/components/skeletons/team-settings-skeleton";
 import { InviteMemberDialog } from "@/components/team/invite-member-dialog";
 import { MembersList } from "@/components/team/members-list";
 import { PendingInvitationsList } from "@/components/team/pending-invitations-list";
@@ -20,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
 	component: TeamSettings,
+	pendingComponent: TeamSettingsSkeleton,
 });
 
 function TeamSettings() {
@@ -49,8 +51,9 @@ function TeamSettings() {
 			: "skip",
 	);
 
+	// Loading state handled by pendingComponent
 	if (!organization || !orgId) {
-		return <div>Loading...</div>;
+		return null;
 	}
 
 	const canInvite = permissions?.permissions.canInviteMembers ?? false;

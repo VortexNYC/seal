@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, Mail, Shield, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
+import { MemberDetailsSkeleton } from "@/components/skeletons/member-details-skeleton";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -32,6 +33,7 @@ export const Route = createFileRoute(
 	"/_authenticated/$slug/settings/team/$memberId",
 )({
 	component: MemberDetails,
+	pendingComponent: MemberDetailsSkeleton,
 });
 
 function MemberDetails() {
@@ -83,12 +85,13 @@ function MemberDetails() {
 		}
 	};
 
+	// Loading state handled by pendingComponent
 	if (!organization || !orgId) {
-		return <div>Loading...</div>;
+		return null;
 	}
 
 	if (!member) {
-		return <div>Loading member details...</div>;
+		return null;
 	}
 
 	const getInitials = (name: string | null | undefined, email: string) => {

@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
+import { DocumentsSkeleton } from "@/components/skeletons/documents-skeleton";
 import { ShareDialog } from "../../../components/documents/share-dialog";
 import { UploadDialog } from "../../../components/documents/upload-dialog";
 import { Badge } from "../../../components/ui/badge";
@@ -35,6 +36,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/$slug/documents")({
 	component: DocumentsPage,
+	pendingComponent: DocumentsSkeleton,
 });
 
 type FilterType = "all" | "owned" | "shared";

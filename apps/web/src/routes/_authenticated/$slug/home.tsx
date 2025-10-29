@@ -11,6 +11,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { CheckCircle2, Clock, FileText, Users } from "lucide-react";
 import { PageWrapper } from "@/components/page-wrapper";
+import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import {
 	Card,
 	CardContent,
@@ -21,6 +22,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/$slug/home")({
 	component: WorkspaceHome,
+	pendingComponent: DashboardSkeleton,
 });
 
 function WorkspaceHome() {
@@ -37,8 +39,9 @@ function WorkspaceHome() {
 		orgId ? { organizationId: orgId } : "skip",
 	);
 
+	// Loading state handled by pendingComponent
 	if (!organization || !orgId) {
-		return <div>Loading...</div>;
+		return null;
 	}
 
 	return (

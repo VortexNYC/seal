@@ -10,10 +10,12 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { AppSidebar } from "@/components/app-sidebar";
+import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
 	component: WorkspaceLayout,
+	pendingComponent: WorkspaceLayoutSkeleton,
 });
 
 function WorkspaceLayout() {
@@ -30,14 +32,9 @@ function WorkspaceLayout() {
 		orgId ? { organizationId: orgId } : "skip",
 	);
 
+	// Loading state handled by pendingComponent
 	if (!organization || !orgId) {
-		return (
-			<div className="flex h-screen items-center justify-center">
-				<div className="text-center">
-					<h2 className="text-2xl font-semibold">Loading workspace...</h2>
-				</div>
-			</div>
-		);
+		return null;
 	}
 
 	return (
