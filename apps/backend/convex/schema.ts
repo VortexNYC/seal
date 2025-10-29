@@ -46,6 +46,7 @@ export type {
 
 // Re-export document types
 export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus };
+export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";
 
 export default defineSchema({
 	users: usersTable,
