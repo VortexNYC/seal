@@ -173,12 +173,12 @@ export function MembersList({
 	return (
 		<div className="space-y-4">
 			{/* Search Bar and Filters */}
-			<div className="flex items-center gap-3 flex-wrap">
+			<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
 				<Input
-					placeholder="Search members by name, email, or role..."
+					placeholder="Search members..."
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
-					className="max-w-md"
+					className="flex-1 sm:max-w-md"
 				/>
 
 				{/* Role Filter Dropdown */}
@@ -255,66 +255,74 @@ export function MembersList({
 						: "No members found"}
 				</div>
 			) : (
-				<div className="rounded-md border">
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Member</TableHead>
-								<TableHead>Role</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead>Joined</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{filteredMembers.map((member) => (
-								<TableRow
-									key={member.id}
-									className="hover:bg-muted/50 cursor-pointer"
-									onClick={() => {
-										if (!slug) return;
-										navigate({
-											to: "/$slug/settings/team/$memberId",
-											params: { slug, memberId: member.id },
-										});
-									}}
-								>
-									<TableCell>
-										<div className="flex items-center gap-3">
-											<Avatar>
-												<AvatarImage src={member.avatarUrl ?? undefined} />
-												<AvatarFallback>
-													{getInitials(member.name, member.email)}
-												</AvatarFallback>
-											</Avatar>
-											<div>
-												<div className="font-medium">
-													{member.name || "Unknown"}
-												</div>
-												<div className="text-sm text-muted-foreground">
-													{member.email}
+				<div className="rounded-md border overflow-hidden">
+					<div className="overflow-x-auto">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead className="min-w-[200px]">Member</TableHead>
+									<TableHead className="min-w-[120px]">Role</TableHead>
+									<TableHead className="min-w-[100px] hidden sm:table-cell">
+										Status
+									</TableHead>
+									<TableHead className="min-w-[120px] hidden md:table-cell">
+										Joined
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{filteredMembers.map((member) => (
+									<TableRow
+										key={member.id}
+										className="hover:bg-muted/50 cursor-pointer"
+										onClick={() => {
+											if (!slug) return;
+											navigate({
+												to: "/$slug/settings/team/$memberId",
+												params: { slug, memberId: member.id },
+											});
+										}}
+									>
+										<TableCell>
+											<div className="flex items-center gap-3">
+												<Avatar className="h-8 w-8 sm:h-10 sm:w-10">
+													<AvatarImage src={member.avatarUrl ?? undefined} />
+													<AvatarFallback>
+														{getInitials(member.name, member.email)}
+													</AvatarFallback>
+												</Avatar>
+												<div className="min-w-0">
+													<div className="font-medium truncate">
+														{member.name || "Unknown"}
+													</div>
+													<div className="text-xs sm:text-sm text-muted-foreground truncate">
+														{member.email}
+													</div>
 												</div>
 											</div>
-										</div>
-									</TableCell>
-									<TableCell onClick={(e) => e.stopPropagation()}>
-										{canManageRoles && member.role !== "owner" ? (
-											<RoleSelector
-												memberId={member.id}
-												currentRole={member.role}
-												organizationId={organizationId}
-											/>
-										) : (
-											getRoleBadge(member.role)
-										)}
-									</TableCell>
-									<TableCell>{getStatusBadge(member.status)}</TableCell>
-									<TableCell className="text-sm text-muted-foreground">
-										{formatJoinDate(member.joinedAt)}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+										</TableCell>
+										<TableCell onClick={(e) => e.stopPropagation()}>
+											{canManageRoles && member.role !== "owner" ? (
+												<RoleSelector
+													memberId={member.id}
+													currentRole={member.role}
+													organizationId={organizationId}
+												/>
+											) : (
+												getRoleBadge(member.role)
+											)}
+										</TableCell>
+										<TableCell className="hidden sm:table-cell">
+											{getStatusBadge(member.status)}
+										</TableCell>
+										<TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+											{formatJoinDate(member.joinedAt)}
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</div>
 				</div>
 			)}
 		</div>

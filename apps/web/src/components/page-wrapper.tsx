@@ -30,17 +30,23 @@ export function PageWrapper({
 	return (
 		<>
 			<div className="border-b">
-				<div className="flex h-16 items-center gap-4 px-6">
-					<SidebarTrigger />
-					<Separator orientation="vertical" className="h-6" />
-					<div className="flex-1">
-						<h1 className="text-lg font-semibold">{title}</h1>
-						{description && (
-							<p className="text-sm text-muted-foreground">{description}</p>
-						)}
+				<div className="flex min-h-16 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-0">
+					<div className="flex items-center gap-4 flex-1 min-w-0">
+						<SidebarTrigger />
+						<Separator orientation="vertical" className="h-6 hidden sm:block" />
+						<div className="flex-1 min-w-0">
+							<h1 className="text-base sm:text-lg font-semibold truncate">
+								{title}
+							</h1>
+							{description && (
+								<p className="text-xs sm:text-sm text-muted-foreground truncate">
+									{description}
+								</p>
+							)}
+						</div>
 					</div>
 					{allActions.length > 0 && (
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
 							{allActions.map((actionItem, index) => {
 								const Icon = actionItem.icon;
 								return (
@@ -48,9 +54,11 @@ export function PageWrapper({
 										key={index}
 										onClick={actionItem.onClick}
 										variant={actionItem.variant || "default"}
+										size="sm"
+										className="flex-1 sm:flex-none"
 									>
 										{Icon && <Icon className="mr-2 h-4 w-4" />}
-										{actionItem.label}
+										<span className="truncate">{actionItem.label}</span>
 									</Button>
 								);
 							})}
@@ -58,7 +66,7 @@ export function PageWrapper({
 					)}
 				</div>
 			</div>
-			<div className="p-6">{children}</div>
+			<div className="p-4 sm:p-6">{children}</div>
 		</>
 	);
 }
