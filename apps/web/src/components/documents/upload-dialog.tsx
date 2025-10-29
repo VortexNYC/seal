@@ -3,6 +3,12 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+	ALLOWED_FILE_EXTENSIONS,
+	getMaxFileSizeDisplay,
+	getSupportedFileTypesDisplay,
+	validateFileForUpload,
+} from "../../lib/upload-validation";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -40,6 +46,13 @@ export function UploadDialog({
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const selectedFile = e.target.files?.[0];
 		if (selectedFile) {
+			// Validate file before setting
+			const validation = validateFileForUpload(selectedFile);
+			if (!validation.valid) {
+				toast.error(validation.errors.join(" • "));
+				e.target.value = ""; // Clear the input
+				return;
+			}
 			setFile(selectedFile);
 		}
 	};
@@ -102,7 +115,8 @@ export function UploadDialog({
 						<DialogTitle>Upload Document</DialogTitle>
 						<DialogDescription>
 							Upload a document to your workspace. It will be private by
-							default.
+							default. Maximum file size: {getMaxFileSizeDisplay()}. Supported
+							types: {getSupportedFileTypesDisplay()}.
 						</DialogDescription>
 					</DialogHeader>
 
@@ -112,6 +126,7 @@ export function UploadDialog({
 							<Input
 								id="file"
 								type="file"
+								accept={ALLOWED_FILE_EXTENSIONS}
 								onChange={handleFileChange}
 								disabled={uploading}
 								required
