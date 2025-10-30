@@ -5,6 +5,16 @@ import {
 	documentAccessTable,
 } from "./schemas/document_access";
 import {
+	type RecipientRole,
+	type RecipientStatus,
+	documentRecipientsTable,
+} from "./schemas/document_recipients";
+import {
+	type ReminderStatus,
+	type ReminderType,
+	documentRemindersTable,
+} from "./schemas/document_reminders";
+import {
 	type DocumentSharingMode,
 	type DocumentStatus,
 	documentsTable,
@@ -46,6 +56,8 @@ export type {
 
 // Re-export document types
 export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus };
+export type { RecipientRole, RecipientStatus };
+export type { ReminderStatus, ReminderType };
 
 export default defineSchema({
 	users: usersTable,
@@ -56,6 +68,8 @@ export default defineSchema({
 
 	documents: documentsTable,
 	document_access: documentAccessTable,
+	document_recipients: documentRecipientsTable,
+	document_reminders: documentRemindersTable,
 
 	subscriptions: subscriptionsTable,
 	subscription_products: subscriptionProductsTable,
