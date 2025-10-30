@@ -3,6 +3,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { internal } from "../_generated/api";
 import { authMutation } from "../auth";
 
 /**
@@ -95,10 +96,17 @@ export const deleteDocument = authMutation({
 			updatedAt: Date.now(),
 		});
 
-		// TODO: Schedule storage cleanup task to delete file after grace period
-		// await ctx.scheduler.runAfter(7 * 24 * 60 * 60 * 1000, internal.documents.cleanupStorage, {
-		//   storageId: document.storageId
-		// });
+		// 4. Schedule storage cleanup after 7 day grace period
+		// This allows document recovery if needed
+		const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+		await ctx.scheduler.runAfter(
+			GRACE_PERIOD_MS,
+			internal.documents.cleanup.cleanupDocumentStorage,
+			{
+				storageId: document.storageId,
+				documentId: args.documentId,
+			},
+		);
 
 		return { success: true };
 	},
