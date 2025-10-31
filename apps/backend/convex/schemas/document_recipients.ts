@@ -2,30 +2,30 @@ import { defineTable } from "convex/server";
 import { type Infer, v } from "convex/values";
 
 /**
- * Recipient role - what action they need to take
+ * Recipient role defines what action they need to take
  */
 export const recipientRoleTuple = v.union(
 	v.literal("signer"), // Must sign the document
-	v.literal("viewer"), // View only (for information)
-	v.literal("approver"), // Must approve (doesn't sign, just approves)
+	v.literal("viewer"), // Can only view the document
+	v.literal("approver"), // Must approve before signing can proceed
 );
 export type RecipientRole = Infer<typeof recipientRoleTuple>;
 
 /**
- * Recipient status - current state of their action
+ * Recipient status tracks their progress through the workflow
  */
 export const recipientStatusTuple = v.union(
-	v.literal("pending"), // Invited but hasn't viewed yet
-	v.literal("viewed"), // Opened the document
-	v.literal("signed"), // Completed signing (for signers)
-	v.literal("approved"), // Completed approval (for approvers)
+	v.literal("pending"), // Waiting for action
+	v.literal("viewed"), // Has viewed the document
+	v.literal("signed"), // Has signed the document
+	v.literal("approved"), // Has approved the document (approvers only)
 	v.literal("declined"), // Declined to sign/approve
 );
 export type RecipientStatus = Infer<typeof recipientStatusTuple>;
 
 /**
  * Document recipients table
- * Tracks all recipients who need to take action on a document
+ * Tracks who needs to take action on a document and their progress
  */
 export const documentRecipientsTable = defineTable({
 	// Document reference
@@ -39,29 +39,45 @@ export const documentRecipientsTable = defineTable({
 	role: recipientRoleTuple,
 	status: recipientStatusTuple,
 
-	// Secure access token (256-bit cryptographic token)
-	signingToken: v.string(), // Unique token for accessing the document
-	tokenExpiresAt: v.number(), // When the token expires
+	// Order for signing sequence (if needed)
+	order: v.optional(v.number()), // For sequential signing workflows
 
-	// Activity tracking
-	viewedAt: v.optional(v.number()),
-	signedAt: v.optional(v.number()),
-	approvedAt: v.optional(v.number()),
-	declinedAt: v.optional(v.number()),
+	// Signing token for secure access
+	signingToken: v.string(), // Unique token for this recipient
+	tokenExpiresAt: v.number(), // Token expiration timestamp
 
-	// Signature/approval data
-	signatureData: v.optional(v.string()), // Signature image or approval note
-	ipAddress: v.optional(v.string()), // IP address when action was taken
-	userAgent: v.optional(v.string()), // Browser/device info
+	// Activity timestamps
+	sentAt: v.optional(v.number()), // When invitation was sent
+	viewedAt: v.optional(v.number()), // When recipient viewed document
+	signedAt: v.optional(v.number()), // When recipient signed
+	approvedAt: v.optional(v.number()), // When recipient approved (approvers only)
+	declinedAt: v.optional(v.number()), // When recipient declined
+
+	// Decline information
+	declineReason: v.optional(v.string()),
+
+	// Signature data (for signers)
+	signatureData: v.optional(v.string()), // Base64 encoded signature image or typed name
+	signatureType: v.optional(
+		v.union(
+			v.literal("drawn"), // Hand-drawn signature
+			v.literal("typed"), // Typed name as signature
+			v.literal("uploaded"), // Uploaded signature image
+		),
+	),
+
+	// IP address for audit trail
+	ipAddress: v.optional(v.string()),
 
 	// Metadata
 	createdAt: v.number(),
 	updatedAt: v.number(),
 })
 	.index("by_document", ["documentId"])
-	.index("by_signing_token", ["signingToken"])
+	.index("by_document_status", ["documentId", "status"])
+	.index("by_token", ["signingToken"])
 	.index("by_email", ["email"])
-	.index("by_document_status", ["documentId", "status"]);
+	.index("by_document_order", ["documentId", "order"]);
 
 /**
  * Get human-readable label for recipient role
@@ -96,16 +112,25 @@ export function isRecipientComplete(
 	role: RecipientRole,
 	status: RecipientStatus,
 ): boolean {
-	if (status === "declined") return true;
-
 	switch (role) {
 		case "signer":
 			return status === "signed";
 		case "approver":
 			return status === "approved";
 		case "viewer":
-			return status === "viewed"; // Viewers just need to view
+			return status === "viewed";
 		default:
 			return false;
 	}
+}
+
+/**
+ * Check if recipient is in a terminal state
+ */
+export function isRecipientTerminal(status: RecipientStatus): boolean {
+	return (
+		status === "signed" ||
+		status === "approved" ||
+		status === "declined"
+	);
 }

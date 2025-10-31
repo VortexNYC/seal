@@ -58,6 +58,7 @@ export type {
 export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus };
 export type { RecipientRole, RecipientStatus };
 export type { ReminderStatus, ReminderType };
+export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";
 
 export default defineSchema({
 	users: usersTable,
