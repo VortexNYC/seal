@@ -2,7 +2,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useRouteContext } from "@tanstack/react-router";
+import { createFileRoute, useRouter, useRouteContext } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import {
 	DownloadIcon,
@@ -43,6 +43,7 @@ type FilterType = "all" | "owned" | "shared";
 
 function DocumentsPage() {
 	const { slug } = Route.useParams();
+	const router = useRouter();
 	const { convexClient } = useRouteContext({ from: "__root__" });
 	const [uploadOpen, setUploadOpen] = useState(false);
 	const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -160,7 +161,16 @@ function DocumentsPage() {
 				) : (
 					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 						{documents.map((doc) => (
-							<Card key={doc._id} className="hover:shadow-lg transition-shadow">
+							<Card
+								key={doc._id}
+								className="hover:shadow-lg transition-shadow cursor-pointer"
+								onClick={() =>
+									router.navigate({
+										to: "/$slug/documents/$documentId",
+										params: { slug, documentId: doc._id },
+									})
+								}
+							>
 								<CardHeader>
 									<div className="flex items-start justify-between">
 										<div className="flex items-center gap-2">
@@ -171,11 +181,16 @@ function DocumentsPage() {
 										</div>
 										<DropdownMenu>
 											<DropdownMenuTrigger asChild>
-												<Button variant="ghost" size="icon" className="h-8 w-8">
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-8 w-8"
+													onClick={(e) => e.stopPropagation()}
+												>
 													<MoreVerticalIcon className="h-4 w-4" />
 												</Button>
 											</DropdownMenuTrigger>
-											<DropdownMenuContent align="end">
+											<DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
 												<DropdownMenuItem
 													onClick={() => handleDownload(doc._id)}
 												>
