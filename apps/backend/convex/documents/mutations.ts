@@ -4,6 +4,13 @@
 
 import { ConvexError, v } from "convex/values";
 import { authMutation } from "../auth";
+import {
+	canCancelDocument,
+	canCompleteDocument,
+	canSendDocument,
+	transitionWorkflowStatus,
+	verifyDocumentOwnership,
+} from "./workflow_helpers";
 
 /**
  * Generate an upload URL for document storage
@@ -60,6 +67,7 @@ export const createDocument = authMutation({
 			storageId: args.storageId,
 			sharingMode: "private", // Default to private
 			status: "active",
+			workflowStatus: "draft", // Default to draft workflow status
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		});
@@ -159,6 +167,129 @@ export const updateDocument = authMutation({
 		}
 
 		await ctx.db.patch(args.documentId, updateData);
+
+		return { success: true };
+	},
+});
+
+/**
+ * Send a document to recipients
+ * Transitions workflow status from draft to sent
+ */
+export const sendDocument = authMutation({
+	args: {
+		documentId: v.id("documents"),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Verify ownership
+		await verifyDocumentOwnership(ctx, args.documentId, userId);
+
+		// 2. Get the document
+		const document = await ctx.db.get(args.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		// 3. Verify document is in draft status (default to draft for migration)
+		const currentStatus = document.workflowStatus ?? "draft";
+		if (!canSendDocument(currentStatus)) {
+			throw new ConvexError(
+				`Cannot send document with status: ${currentStatus}`,
+			);
+		}
+
+		// 4. Transition to sent status
+		await transitionWorkflowStatus(ctx, args.documentId, "sent");
+
+		// TODO: When recipients are implemented (SEA-127):
+		// - Verify document has at least one recipient
+		// - Generate signing tokens for recipients
+		// - Send email notifications
+
+		return { success: true };
+	},
+});
+
+/**
+ * Cancel a document workflow
+ * Can be called by owner at any time before completion
+ */
+export const cancelDocument = authMutation({
+	args: {
+		documentId: v.id("documents"),
+		reason: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Verify ownership
+		await verifyDocumentOwnership(ctx, args.documentId, userId);
+
+		// 2. Get the document
+		const document = await ctx.db.get(args.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		// 3. Verify document can be cancelled (default to draft for migration)
+		const currentStatus = document.workflowStatus ?? "draft";
+		if (!canCancelDocument(currentStatus)) {
+			throw new ConvexError(
+				`Cannot cancel document with status: ${currentStatus}`,
+			);
+		}
+
+		// 4. Transition to cancelled status
+		await transitionWorkflowStatus(ctx, args.documentId, "cancelled");
+
+		// TODO: When recipients are implemented (SEA-127):
+		// - Notify all recipients about cancellation
+		// - Invalidate signing tokens
+
+		return { success: true };
+	},
+});
+
+/**
+ * Mark a document as completed
+ * Called when all required signatures have been collected
+ */
+export const completeDocument = authMutation({
+	args: {
+		documentId: v.id("documents"),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Verify ownership
+		await verifyDocumentOwnership(ctx, args.documentId, userId);
+
+		// 2. Get the document
+		const document = await ctx.db.get(args.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		// 3. Verify document can be completed (default to draft for migration)
+		const currentStatus = document.workflowStatus ?? "draft";
+		if (!canCompleteDocument(currentStatus)) {
+			throw new ConvexError(
+				`Cannot complete document with status: ${currentStatus}`,
+			);
+		}
+
+		// TODO: When recipients are implemented (SEA-127):
+		// - Verify all required signers have signed
+		// - Cannot complete if any required signatures are missing
+
+		// 4. Transition to completed status
+		await transitionWorkflowStatus(ctx, args.documentId, "completed");
+
+		// TODO: When email is implemented:
+		// - Notify all participants about completion
+		// - Send final signed document copy
 
 		return { success: true };
 	},
