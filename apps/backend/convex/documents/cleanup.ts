@@ -5,6 +5,39 @@
 
 import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
+import type { MutationCtx } from "../_generated/server";
+import type { Id } from "../_generated/dataModel";
+
+/**
+ * Helper function to perform the actual cleanup logic
+ * Shared between single and batch cleanup operations
+ */
+async function performCleanup(
+	ctx: MutationCtx,
+	storageId: string,
+	documentId: Id<"documents">,
+): Promise<{ deleted: boolean; reason?: string }> {
+	// 1. Verify document is still marked as deleted
+	const document = await ctx.db.get(documentId);
+
+	// Only delete storage if document is still deleted (or doesn't exist)
+	if (!document || document.status === "deleted") {
+		// 2. Delete the file from Convex Storage
+		await ctx.storage.delete(storageId);
+
+		console.log(
+			`Storage cleanup: Deleted file ${storageId} for document ${documentId}`,
+		);
+
+		return { deleted: true };
+	}
+
+	// Document was restored, don't delete storage
+	console.log(
+		`Storage cleanup: Skipped deletion for ${storageId} - document was restored`,
+	);
+	return { deleted: false, reason: "document_restored" };
+}
 
 /**
  * Cleanup storage for a deleted document
@@ -17,26 +50,13 @@ export const cleanupDocumentStorage = internalMutation({
 	},
 	handler: async (ctx, args) => {
 		try {
-			// 1. Verify document is still marked as deleted
-			const document = await ctx.db.get(args.documentId);
-
-			// Only delete storage if document is still deleted (or doesn't exist)
-			if (!document || document.status === "deleted") {
-				// 2. Delete the file from Convex Storage
-				await ctx.storage.delete(args.storageId);
-
-				console.log(
-					`Storage cleanup: Deleted file ${args.storageId} for document ${args.documentId}`,
-				);
-
-				return { success: true, deleted: true };
-			}
-
-			// Document was restored, don't delete storage
-			console.log(
-				`Storage cleanup: Skipped deletion for ${args.storageId} - document was restored`,
+			const result = await performCleanup(
+				ctx,
+				args.storageId,
+				args.documentId,
 			);
-			return { success: true, deleted: false, reason: "document_restored" };
+
+			return { success: true, ...result };
 		} catch (error) {
 			console.error(
 				`Storage cleanup error for ${args.storageId}:`,
@@ -70,10 +90,13 @@ export const batchCleanupDocumentStorage = internalMutation({
 
 		for (const item of args.items) {
 			try {
-				const document = await ctx.db.get(item.documentId);
+				const result = await performCleanup(
+					ctx,
+					item.storageId,
+					item.documentId,
+				);
 
-				if (!document || document.status === "deleted") {
-					await ctx.storage.delete(item.storageId);
+				if (result.deleted) {
 					results.deleted++;
 				} else {
 					results.skipped++;
