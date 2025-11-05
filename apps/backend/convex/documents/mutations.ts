@@ -3,6 +3,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { internal } from "../_generated/api";
 import { authMutation } from "../auth";
 import { validateFile } from "./upload_config";
 
@@ -104,10 +105,26 @@ export const deleteDocument = authMutation({
 			updatedAt: Date.now(),
 		});
 
-		// TODO: Schedule storage cleanup task to delete file after grace period
-		// await ctx.scheduler.runAfter(7 * 24 * 60 * 60 * 1000, internal.documents.cleanupStorage, {
-		//   storageId: document.storageId
-		// });
+		// 4. Verify storage exists before scheduling cleanup
+		const storageUrl = await ctx.storage.getUrl(document.storageId);
+		if (!storageUrl) {
+			console.warn(
+				`Storage ${document.storageId} not found for document ${args.documentId}`,
+			);
+			return { success: true, warning: "storage_already_deleted" };
+		}
+
+		// 5. Schedule storage cleanup after 7 day grace period
+		// This allows document recovery if needed
+		const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+		await ctx.scheduler.runAfter(
+			GRACE_PERIOD_MS,
+			internal.documents.cleanup.cleanupDocumentStorage,
+			{
+				storageId: document.storageId,
+				documentId: args.documentId,
+			},
+		);
 
 		return { success: true };
 	},

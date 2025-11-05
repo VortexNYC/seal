@@ -13,6 +13,7 @@ import type * as auth_permissions from "../auth/permissions.js";
 import type * as auth_wrappers from "../auth/wrappers.js";
 import type * as auth from "../auth.js";
 import type * as check_membership from "../check_membership.js";
+import type * as documents_cleanup from "../documents/cleanup.js";
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_queries from "../documents/queries.js";
 import type * as documents_sharing from "../documents/sharing.js";
@@ -64,6 +65,7 @@ declare const fullApi: ApiFromModules<{
   "auth/wrappers": typeof auth_wrappers;
   auth: typeof auth;
   check_membership: typeof check_membership;
+  "documents/cleanup": typeof documents_cleanup;
   "documents/mutations": typeof documents_mutations;
   "documents/queries": typeof documents_queries;
   "documents/sharing": typeof documents_sharing;
