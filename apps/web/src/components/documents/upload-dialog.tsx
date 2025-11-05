@@ -1,12 +1,11 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
-import { Upload, X, FileIcon, CheckCircle2, AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileIcon, Upload, X } from "lucide-react";
 import { useState } from "react";
-import { useDropzone, type FileRejection } from "react-dropzone";
+import { type FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import {
-	ALLOWED_FILE_EXTENSIONS,
 	DROPZONE_ACCEPT_TYPES,
 	formatFileSize,
 	getMaxFileSizeDisplay,
@@ -68,9 +67,7 @@ export function UploadDialog({
 		// Handle rejected files
 		if (rejectedFiles.length > 0) {
 			const errorMessages = rejectedFiles.map((rejection) => {
-				const errors = rejection.errors
-					.map((e) => e.message)
-					.join(", ");
+				const errors = rejection.errors.map((e) => e.message).join(", ");
 				return `${rejection.file.name}: ${errors}`;
 			});
 			toast.error(`Some files were rejected: ${errorMessages.join("; ")}`);
@@ -224,7 +221,9 @@ export function UploadDialog({
 			case "error":
 				return <AlertCircle className="h-4 w-4 text-red-500" />;
 			case "uploading":
-				return <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />;
+				return (
+					<div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+				);
 			default:
 				return <FileIcon className="h-4 w-4 text-muted-foreground" />;
 		}
@@ -233,154 +232,157 @@ export function UploadDialog({
 	return (
 		<>
 			<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[625px] max-h-[80vh] flex flex-col">
-				<form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-					<DialogHeader>
-						<DialogTitle>Upload Documents</DialogTitle>
-						<DialogDescription>
-							Drag and drop files here or click to browse. Maximum file size:{" "}
-							{getMaxFileSizeDisplay()}. Supported types:{" "}
-							{getSupportedFileTypesDisplay()}.
-						</DialogDescription>
-					</DialogHeader>
+				<DialogContent className="sm:max-w-[625px] max-h-[80vh] flex flex-col">
+					<form
+						onSubmit={handleSubmit}
+						className="flex flex-col flex-1 min-h-0"
+					>
+						<DialogHeader>
+							<DialogTitle>Upload Documents</DialogTitle>
+							<DialogDescription>
+								Drag and drop files here or click to browse. Maximum file size:{" "}
+								{getMaxFileSizeDisplay()}. Supported types:{" "}
+								{getSupportedFileTypesDisplay()}.
+							</DialogDescription>
+						</DialogHeader>
 
-					<div className="flex-1 overflow-y-auto py-4 space-y-4">
-						{/* Dropzone Area */}
-						<div
-							{...getRootProps()}
-							className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-								isDragActive
-									? "border-primary bg-primary/5"
-									: "border-muted-foreground/25 hover:border-primary/50"
-							} ${uploading ? "opacity-50 cursor-not-allowed" : ""}`}
-						>
-							<input {...getInputProps()} />
-							<Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-							{isDragActive ? (
-								<p className="text-sm text-primary font-medium">
-									Drop files here...
-								</p>
-							) : (
-								<>
-									<p className="text-sm font-medium mb-1">
-										Drag & drop files here, or click to select
+						<div className="flex-1 overflow-y-auto py-4 space-y-4">
+							{/* Dropzone Area */}
+							<div
+								{...getRootProps()}
+								className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+									isDragActive
+										? "border-primary bg-primary/5"
+										: "border-muted-foreground/25 hover:border-primary/50"
+								} ${uploading ? "opacity-50 cursor-not-allowed" : ""}`}
+							>
+								<input {...getInputProps()} />
+								<Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+								{isDragActive ? (
+									<p className="text-sm text-primary font-medium">
+										Drop files here...
 									</p>
-									<p className="text-xs text-muted-foreground">
-										Supports multiple files
-									</p>
-								</>
+								) : (
+									<>
+										<p className="text-sm font-medium mb-1">
+											Drag & drop files here, or click to select
+										</p>
+										<p className="text-xs text-muted-foreground">
+											Supports multiple files
+										</p>
+									</>
+								)}
+							</div>
+
+							{/* Description Field */}
+							{files.length > 0 && (
+								<div className="grid gap-2">
+									<Label htmlFor="description">
+										Description (optional, applies to all files)
+									</Label>
+									<Input
+										id="description"
+										type="text"
+										placeholder="Add a description..."
+										value={description}
+										onChange={(e) => setDescription(e.target.value)}
+										disabled={uploading}
+									/>
+								</div>
+							)}
+
+							{/* File List */}
+							{files.length > 0 && (
+								<div className="space-y-2">
+									<Label>Selected Files ({files.length})</Label>
+									<div className="space-y-2 max-h-[300px] overflow-y-auto border rounded-md p-2">
+										{files.map((fileWithStatus, index) => (
+											<div
+												key={index}
+												className="flex items-start gap-3 p-3 bg-muted/50 rounded-md"
+											>
+												{getStatusIcon(fileWithStatus.status)}
+												<div className="flex-1 min-w-0">
+													<p className="text-sm font-medium truncate">
+														{fileWithStatus.file.name}
+													</p>
+													<p className="text-xs text-muted-foreground">
+														{formatFileSize(fileWithStatus.file.size)}
+													</p>
+													{fileWithStatus.status === "error" &&
+														fileWithStatus.error && (
+															<p className="text-xs text-red-500 mt-1">
+																{fileWithStatus.error}
+															</p>
+														)}
+												</div>
+												{fileWithStatus.status === "pending" && !uploading && (
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8"
+														onClick={() => removeFile(index)}
+													>
+														<X className="h-4 w-4" />
+													</Button>
+												)}
+											</div>
+										))}
+									</div>
+								</div>
 							)}
 						</div>
 
-						{/* Description Field */}
-						{files.length > 0 && (
-							<div className="grid gap-2">
-								<Label htmlFor="description">
-									Description (optional, applies to all files)
-								</Label>
-								<Input
-									id="description"
-									type="text"
-									placeholder="Add a description..."
-									value={description}
-									onChange={(e) => setDescription(e.target.value)}
-									disabled={uploading}
-								/>
-							</div>
-						)}
+						<DialogFooter>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => {
+									if (uploading) {
+										setShowCancelConfirm(true);
+									} else {
+										setFiles([]);
+										setDescription("");
+										onOpenChange(false);
+									}
+								}}
+							>
+								Cancel
+							</Button>
+							<Button type="submit" disabled={uploading || files.length === 0}>
+								{uploading
+									? `Uploading ${files.filter((f) => f.status === "uploading").length}/${files.length}...`
+									: `Upload ${files.length} ${files.length === 1 ? "File" : "Files"}`}
+							</Button>
+						</DialogFooter>
+					</form>
+				</DialogContent>
+			</Dialog>
 
-						{/* File List */}
-						{files.length > 0 && (
-							<div className="space-y-2">
-								<Label>Selected Files ({files.length})</Label>
-								<div className="space-y-2 max-h-[300px] overflow-y-auto border rounded-md p-2">
-									{files.map((fileWithStatus, index) => (
-										<div
-											key={index}
-											className="flex items-start gap-3 p-3 bg-muted/50 rounded-md"
-										>
-											{getStatusIcon(fileWithStatus.status)}
-											<div className="flex-1 min-w-0">
-												<p className="text-sm font-medium truncate">
-													{fileWithStatus.file.name}
-												</p>
-												<p className="text-xs text-muted-foreground">
-													{formatFileSize(fileWithStatus.file.size)}
-												</p>
-												{fileWithStatus.status === "error" &&
-													fileWithStatus.error && (
-														<p className="text-xs text-red-500 mt-1">
-															{fileWithStatus.error}
-														</p>
-													)}
-											</div>
-											{fileWithStatus.status === "pending" && !uploading && (
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon"
-													className="h-8 w-8"
-													onClick={() => removeFile(index)}
-												>
-													<X className="h-4 w-4" />
-												</Button>
-											)}
-										</div>
-									))}
-								</div>
-							</div>
-						)}
-					</div>
-
-					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
+			<AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Cancel upload?</AlertDialogTitle>
+						<AlertDialogDescription>
+							Upload is in progress. Canceling will stop all ongoing uploads.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Continue uploading</AlertDialogCancel>
+						<AlertDialogAction
 							onClick={() => {
-								if (uploading) {
-									setShowCancelConfirm(true);
-								} else {
-									setFiles([]);
-									setDescription("");
-									onOpenChange(false);
-								}
+								setFiles([]);
+								setDescription("");
+								onOpenChange(false);
+								setShowCancelConfirm(false);
 							}}
 						>
-							Cancel
-						</Button>
-						<Button type="submit" disabled={uploading || files.length === 0}>
-							{uploading
-								? `Uploading ${files.filter((f) => f.status === "uploading").length}/${files.length}...`
-								: `Upload ${files.length} ${files.length === 1 ? "File" : "Files"}`}
-						</Button>
-					</DialogFooter>
-				</form>
-			</DialogContent>
-		</Dialog>
-
-		<AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
-			<AlertDialogContent>
-				<AlertDialogHeader>
-					<AlertDialogTitle>Cancel upload?</AlertDialogTitle>
-					<AlertDialogDescription>
-						Upload is in progress. Canceling will stop all ongoing uploads.
-					</AlertDialogDescription>
-				</AlertDialogHeader>
-				<AlertDialogFooter>
-					<AlertDialogCancel>Continue uploading</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={() => {
-							setFiles([]);
-							setDescription("");
-							onOpenChange(false);
-							setShowCancelConfirm(false);
-						}}
-					>
-						Cancel upload
-					</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
+							Cancel upload
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</>
 	);
 }
