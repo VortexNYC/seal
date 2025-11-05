@@ -7,6 +7,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { PageWrapper } from "@/components/page-wrapper";
+import { FormSkeleton } from "@/components/skeletons";
 import {
 	Card,
 	CardContent,
@@ -17,6 +18,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/")({
 	component: GeneralSettings,
+	pendingComponent: FormSkeleton,
 });
 
 function GeneralSettings() {
