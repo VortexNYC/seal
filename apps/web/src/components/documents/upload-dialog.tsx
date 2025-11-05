@@ -3,15 +3,26 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { Upload, X, FileIcon, CheckCircle2, AlertCircle } from "lucide-react";
 import { useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { useDropzone, type FileRejection } from "react-dropzone";
 import { toast } from "sonner";
 import {
 	ALLOWED_FILE_EXTENSIONS,
+	DROPZONE_ACCEPT_TYPES,
 	formatFileSize,
 	getMaxFileSizeDisplay,
 	getSupportedFileTypesDisplay,
 	validateFileForUpload,
 } from "../../lib/upload-validation";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -23,7 +34,6 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Progress } from "../ui/progress";
 
 interface UploadDialogProps {
 	organizationId: Id<"organizations">;
@@ -36,7 +46,6 @@ interface FileWithStatus {
 	file: File;
 	status: "pending" | "uploading" | "success" | "error";
 	error?: string;
-	progress?: number;
 }
 
 export function UploadDialog({
@@ -48,18 +57,19 @@ export function UploadDialog({
 	const [files, setFiles] = useState<FileWithStatus[]>([]);
 	const [description, setDescription] = useState("");
 	const [uploading, setUploading] = useState(false);
+	const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
 	const generateUploadUrl = useMutation(
 		api.documents.mutations.generateUploadUrl,
 	);
 	const createDocument = useMutation(api.documents.mutations.createDocument);
 
-	const onDrop = (acceptedFiles: File[], rejectedFiles: any[]) => {
+	const onDrop = (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
 		// Handle rejected files
 		if (rejectedFiles.length > 0) {
 			const errorMessages = rejectedFiles.map((rejection) => {
 				const errors = rejection.errors
-					.map((e: any) => e.message)
+					.map((e) => e.message)
 					.join(", ");
 				return `${rejection.file.name}: ${errors}`;
 			});
@@ -85,13 +95,7 @@ export function UploadDialog({
 
 	const { getRootProps, getInputProps, isDragActive } = useDropzone({
 		onDrop,
-		accept: ALLOWED_FILE_EXTENSIONS.split(",").reduce(
-			(acc, ext) => {
-				acc[ext] = [];
-				return acc;
-			},
-			{} as Record<string, string[]>,
-		),
+		accept: DROPZONE_ACCEPT_TYPES,
 		disabled: uploading,
 		multiple: true,
 	});
@@ -110,7 +114,7 @@ export function UploadDialog({
 			// Update status to uploading
 			setFiles((prev) =>
 				prev.map((f, i) =>
-					i === index ? { ...f, status: "uploading" as const, progress: 0 } : f,
+					i === index ? { ...f, status: "uploading" as const } : f,
 				),
 			);
 
@@ -143,7 +147,7 @@ export function UploadDialog({
 			// Update status to success
 			setFiles((prev) =>
 				prev.map((f, i) =>
-					i === index ? { ...f, status: "success" as const, progress: 100 } : f,
+					i === index ? { ...f, status: "success" as const } : f,
 				),
 			);
 
@@ -227,7 +231,8 @@ export function UploadDialog({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<>
+			<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-[625px] max-h-[80vh] flex flex-col">
 				<form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
 					<DialogHeader>
@@ -302,13 +307,6 @@ export function UploadDialog({
 												<p className="text-xs text-muted-foreground">
 													{formatFileSize(fileWithStatus.file.size)}
 												</p>
-												{fileWithStatus.status === "uploading" &&
-													fileWithStatus.progress !== undefined && (
-														<Progress
-															value={fileWithStatus.progress}
-															className="h-1 mt-2"
-														/>
-													)}
 												{fileWithStatus.status === "error" &&
 													fileWithStatus.error && (
 														<p className="text-xs text-red-500 mt-1">
@@ -339,16 +337,14 @@ export function UploadDialog({
 							type="button"
 							variant="outline"
 							onClick={() => {
-								if (
-									!uploading ||
-									confirm("Upload in progress. Are you sure you want to cancel?")
-								) {
+								if (uploading) {
+									setShowCancelConfirm(true);
+								} else {
 									setFiles([]);
 									setDescription("");
 									onOpenChange(false);
 								}
 							}}
-							disabled={uploading}
 						>
 							Cancel
 						</Button>
@@ -361,5 +357,30 @@ export function UploadDialog({
 				</form>
 			</DialogContent>
 		</Dialog>
+
+		<AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>Cancel upload?</AlertDialogTitle>
+					<AlertDialogDescription>
+						Upload is in progress. Canceling will stop all ongoing uploads.
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel>Continue uploading</AlertDialogCancel>
+					<AlertDialogAction
+						onClick={() => {
+							setFiles([]);
+							setDescription("");
+							onOpenChange(false);
+							setShowCancelConfirm(false);
+						}}
+					>
+						Cancel upload
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
+		</>
 	);
 }
