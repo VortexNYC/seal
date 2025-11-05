@@ -5,6 +5,7 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import { authMutation } from "../auth";
+import { validateFile } from "./upload_config";
 
 /**
  * Generate an upload URL for document storage
@@ -34,7 +35,15 @@ export const createDocument = authMutation({
 	handler: async (ctx, args) => {
 		const userId = ctx.auth.user._id;
 
-		// 1. Verify user is a member of the organization
+		// 1. Validate file before processing
+		const validation = validateFile(args.name, args.fileType, args.fileSize);
+		if (!validation.valid) {
+			throw new ConvexError(
+				`File validation failed: ${validation.errors.join(", ")}`,
+			);
+		}
+
+		// 2. Verify user is a member of the organization
 		const member = await ctx.db
 			.query("organization_members")
 			.withIndex("by_user_organization", (q) =>
@@ -50,7 +59,7 @@ export const createDocument = authMutation({
 			throw new ConvexError("Your organization membership is not active");
 		}
 
-		// 2. Create the document record (default to private sharing)
+		// 3. Create the document record (default to private sharing)
 		const documentId = await ctx.db.insert("documents", {
 			organizationId: args.organizationId,
 			ownerId: userId,

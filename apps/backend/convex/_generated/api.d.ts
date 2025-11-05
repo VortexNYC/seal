@@ -17,6 +17,7 @@ import type * as documents_cleanup from "../documents/cleanup.js";
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_queries from "../documents/queries.js";
 import type * as documents_sharing from "../documents/sharing.js";
+import type * as documents_upload_config from "../documents/upload_config.js";
 import type * as http from "../http.js";
 import type * as organization_roles_helpers from "../organization_roles/helpers.js";
 import type * as organization_roles_migrations from "../organization_roles/migrations.js";
@@ -68,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   "documents/mutations": typeof documents_mutations;
   "documents/queries": typeof documents_queries;
   "documents/sharing": typeof documents_sharing;
+  "documents/upload_config": typeof documents_upload_config;
   http: typeof http;
   "organization_roles/helpers": typeof organization_roles_helpers;
   "organization_roles/migrations": typeof organization_roles_migrations;
