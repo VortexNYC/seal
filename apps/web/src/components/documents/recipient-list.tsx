@@ -17,7 +17,12 @@ import {
 	TableRow,
 } from "../ui/table";
 
-type RecipientStatus = "pending" | "viewed" | "signed" | "approved" | "declined";
+type RecipientStatus =
+	| "pending"
+	| "viewed"
+	| "signed"
+	| "approved"
+	| "declined";
 type RecipientRole = "signer" | "viewer" | "approver";
 
 interface Recipient {

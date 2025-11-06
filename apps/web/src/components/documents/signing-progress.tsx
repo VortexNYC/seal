@@ -68,7 +68,8 @@ export function SigningProgress({ progress }: SigningProgressProps) {
 
 				{byStatus.pending > 0 && (
 					<div className="text-xs text-muted-foreground pt-2 border-t">
-						Waiting for {byStatus.pending} {byStatus.pending === 1 ? "person" : "people"} to take action
+						Waiting for {byStatus.pending}{" "}
+						{byStatus.pending === 1 ? "person" : "people"} to take action
 					</div>
 				)}
 			</CardContent>

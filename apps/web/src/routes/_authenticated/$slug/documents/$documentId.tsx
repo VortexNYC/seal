@@ -31,11 +31,12 @@ function DocumentDetailPage() {
 		}),
 	);
 
-	const { data: recipients = [], refetch: refetchRecipients } = useSuspenseQuery(
-		convexQuery(api.documents.recipients_queries.getDocumentRecipients, {
-			documentId: documentId as Id<"documents">,
-		}),
-	);
+	const { data: recipients = [], refetch: refetchRecipients } =
+		useSuspenseQuery(
+			convexQuery(api.documents.recipients_queries.getDocumentRecipients, {
+				documentId: documentId as Id<"documents">,
+			}),
+		);
 
 	const { data: progress } = useSuspenseQuery(
 		convexQuery(api.documents.recipients_queries.getRecipientProgress, {
@@ -142,10 +143,7 @@ function DocumentDetailPage() {
 						<div className="flex items-center justify-between">
 							<h2 className="text-lg font-semibold">Recipients</h2>
 							{canEdit && (
-								<Button
-									size="sm"
-									onClick={() => setAddRecipientOpen(true)}
-								>
+								<Button size="sm" onClick={() => setAddRecipientOpen(true)}>
 									<UserPlusIcon className="mr-2 h-4 w-4" />
 									Add Recipient
 								</Button>

@@ -2,7 +2,11 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useRouter, useRouteContext } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useRouteContext,
+	useRouter,
+} from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import {
 	BanIcon,
@@ -20,10 +24,7 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { DocumentsSkeleton } from "@/components/skeletons/documents-skeleton";
 import { ShareDialog } from "../../../components/documents/share-dialog";
 import { UploadDialog } from "../../../components/documents/upload-dialog";
-import {
-	WorkflowStatusBadge,
-	type DocumentWorkflowStatus,
-} from "../../../components/documents/workflow-status-badge";
+import { WorkflowStatusBadge } from "../../../components/documents/workflow-status-badge";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import {
@@ -313,7 +314,10 @@ function DocumentsPage() {
 													<MoreVerticalIcon className="h-4 w-4" />
 												</Button>
 											</DropdownMenuTrigger>
-											<DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+											<DropdownMenuContent
+												align="end"
+												onClick={(e) => e.stopPropagation()}
+											>
 												{/* Send Document - only for drafts */}
 												{(doc.workflowStatus ?? "draft") === "draft" && (
 													<DropdownMenuItem
@@ -326,7 +330,8 @@ function DocumentsPage() {
 
 												{/* Cancel Document - for sent or in_progress */}
 												{((doc.workflowStatus ?? "draft") === "sent" ||
-													(doc.workflowStatus ?? "draft") === "in_progress") && (
+													(doc.workflowStatus ?? "draft") ===
+														"in_progress") && (
 													<DropdownMenuItem
 														onClick={() => handleCancelDocument(doc._id)}
 														className="text-destructive"

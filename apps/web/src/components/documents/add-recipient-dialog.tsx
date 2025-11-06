@@ -1,8 +1,8 @@
+import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { api } from "@seal/backend/convex/_generated/api";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -40,7 +40,9 @@ export function AddRecipientDialog({
 	const [role, setRole] = useState<"signer" | "viewer" | "approver">("signer");
 	const [loading, setLoading] = useState(false);
 
-	const addRecipients = useMutation(api.documents.recipients_mutations.addRecipients);
+	const addRecipients = useMutation(
+		api.documents.recipients_mutations.addRecipients,
+	);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -115,20 +117,26 @@ export function AddRecipientDialog({
 
 					<div className="space-y-2">
 						<Label htmlFor="role">Role</Label>
-						<Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
+						<Select
+							value={role}
+							onValueChange={(v) => setRole(v as typeof role)}
+						>
 							<SelectTrigger id="role">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="signer">Signer (Must sign)</SelectItem>
 								<SelectItem value="viewer">Viewer (View only)</SelectItem>
-								<SelectItem value="approver">Approver (Must approve)</SelectItem>
+								<SelectItem value="approver">
+									Approver (Must approve)
+								</SelectItem>
 							</SelectContent>
 						</Select>
 						<p className="text-xs text-muted-foreground">
 							{role === "signer" && "This person must sign the document."}
 							{role === "viewer" && "This person can only view the document."}
-							{role === "approver" && "This person must approve before signing can proceed."}
+							{role === "approver" &&
+								"This person must approve before signing can proceed."}
 						</p>
 					</div>
 

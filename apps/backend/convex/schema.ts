@@ -5,14 +5,14 @@ import {
 	documentAccessTable,
 } from "./schemas/document_access";
 import {
+	documentRecipientsTable,
 	type RecipientRole,
 	type RecipientStatus,
-	documentRecipientsTable,
 } from "./schemas/document_recipients";
 import {
+	documentRemindersTable,
 	type ReminderStatus,
 	type ReminderType,
-	documentRemindersTable,
 } from "./schemas/document_reminders";
 import {
 	type DocumentSharingMode,

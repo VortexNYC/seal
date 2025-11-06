@@ -21,9 +21,7 @@ export const documentWorkflowStatusTuple = v.union(
 	v.literal("declined"),
 );
 
-export type DocumentWorkflowStatus = Infer<
-	typeof documentWorkflowStatusTuple
->;
+export type DocumentWorkflowStatus = Infer<typeof documentWorkflowStatusTuple>;
 
 /**
  * Valid status transitions for document workflow
@@ -53,9 +51,7 @@ export function isValidWorkflowTransition(
 /**
  * Get human-readable label for workflow status
  */
-export function getWorkflowStatusLabel(
-	status: DocumentWorkflowStatus,
-): string {
+export function getWorkflowStatusLabel(status: DocumentWorkflowStatus): string {
 	const labels: Record<DocumentWorkflowStatus, string> = {
 		draft: "Draft",
 		sent: "Sent",

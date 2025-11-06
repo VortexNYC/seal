@@ -1,3 +1,4 @@
+import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import {
@@ -10,7 +11,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { api } from "@seal/backend/convex/_generated/api";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
@@ -22,7 +22,12 @@ import {
 	TableRow,
 } from "../ui/table";
 
-type RecipientStatus = "pending" | "viewed" | "signed" | "approved" | "declined";
+type RecipientStatus =
+	| "pending"
+	| "viewed"
+	| "signed"
+	| "approved"
+	| "declined";
 type RecipientRole = "signer" | "viewer" | "approver";
 
 interface Recipient {

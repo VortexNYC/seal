@@ -80,9 +80,7 @@ export function ActivityFeed({ events }: ActivityFeedProps) {
 					<CardTitle className="text-lg">Activity</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="text-sm text-muted-foreground">
-						No activity yet
-					</div>
+					<div className="text-sm text-muted-foreground">No activity yet</div>
 				</CardContent>
 			</Card>
 		);
