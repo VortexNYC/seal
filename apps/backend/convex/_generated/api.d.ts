@@ -34,6 +34,7 @@ import type * as organizations_actions from "../organizations/actions.js";
 import type * as organizations_helpers from "../organizations/helpers.js";
 import type * as organizations_mutations from "../organizations/mutations.js";
 import type * as organizations_queries from "../organizations/queries.js";
+import type * as schemas_audit_logs from "../schemas/audit_logs.js";
 import type * as schemas_document_access from "../schemas/document_access.js";
 import type * as schemas_document_recipients from "../schemas/document_recipients.js";
 import type * as schemas_document_reminders from "../schemas/document_reminders.js";
@@ -43,6 +44,9 @@ import type * as schemas_organization_invitations from "../schemas/organization_
 import type * as schemas_organization_members from "../schemas/organization_members.js";
 import type * as schemas_organization_roles from "../schemas/organization_roles.js";
 import type * as schemas_organizations from "../schemas/organizations.js";
+import type * as schemas_recipients from "../schemas/recipients.js";
+import type * as schemas_signature_fields from "../schemas/signature_fields.js";
+import type * as schemas_signatures from "../schemas/signatures.js";
 import type * as schemas_subscription_prices from "../schemas/subscription_prices.js";
 import type * as schemas_subscription_products from "../schemas/subscription_products.js";
 import type * as schemas_subscriptions from "../schemas/subscriptions.js";
@@ -96,6 +100,7 @@ declare const fullApi: ApiFromModules<{
   "organizations/helpers": typeof organizations_helpers;
   "organizations/mutations": typeof organizations_mutations;
   "organizations/queries": typeof organizations_queries;
+  "schemas/audit_logs": typeof schemas_audit_logs;
   "schemas/document_access": typeof schemas_document_access;
   "schemas/document_recipients": typeof schemas_document_recipients;
   "schemas/document_reminders": typeof schemas_document_reminders;
@@ -105,6 +110,9 @@ declare const fullApi: ApiFromModules<{
   "schemas/organization_members": typeof schemas_organization_members;
   "schemas/organization_roles": typeof schemas_organization_roles;
   "schemas/organizations": typeof schemas_organizations;
+  "schemas/recipients": typeof schemas_recipients;
+  "schemas/signature_fields": typeof schemas_signature_fields;
+  "schemas/signatures": typeof schemas_signatures;
   "schemas/subscription_prices": typeof schemas_subscription_prices;
   "schemas/subscription_products": typeof schemas_subscription_products;
   "schemas/subscriptions": typeof schemas_subscriptions;
