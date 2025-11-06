@@ -20,7 +20,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function WorkspaceLayoutSkeleton() {
 	return (
 		<SidebarProvider>
-			<div className="flex min-h-screen w-full">
+			<div
+				className="flex min-h-screen w-full"
+				role="status"
+				aria-label="Loading workspace"
+			>
 				{/* Sidebar Skeleton */}
 				<aside className="flex h-screen w-[240px] flex-col gap-2 border-r bg-sidebar p-2">
 					{/* Logo/Header */}

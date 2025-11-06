@@ -42,7 +42,7 @@ export function CardSkeleton({
 	showFooter = false,
 }: CardSkeletonProps) {
 	return (
-		<Card>
+		<Card role="status" aria-label="Loading card content">
 			<CardHeader>
 				<CardTitle>
 					<Skeleton className="h-5 w-[200px]" />

@@ -42,7 +42,7 @@ export function TableSkeleton({
 	showHeader = true,
 }: TableSkeletonProps) {
 	return (
-		<div className="rounded-md border">
+		<div className="rounded-md border" role="status" aria-label="Loading table">
 			<Table>
 				{showHeader && (
 					<TableHeader>

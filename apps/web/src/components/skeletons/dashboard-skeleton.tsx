@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function DashboardSkeleton() {
 	return (
 		<PageWrapper title="Dashboard">
-			<div className="space-y-6">
+			<div className="space-y-6" role="status" aria-label="Loading dashboard">
 				<div>
 					<Skeleton className="h-9 w-[200px] mb-2" />
 					<Skeleton className="h-5 w-[300px]" />
