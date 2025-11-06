@@ -18,9 +18,10 @@ import {
 	TrashIcon,
 	UploadIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
+import { CardSkeleton } from "@/components/skeletons/card-skeleton";
 import { DocumentsSkeleton } from "@/components/skeletons/documents-skeleton";
 import { ShareDialog } from "../../../components/documents/share-dialog";
 import { UploadDialog } from "../../../components/documents/upload-dialog";
@@ -55,25 +56,28 @@ type WorkflowStatusFilter =
 	| "completed"
 	| "cancelled";
 
-function DocumentsPage() {
+interface DocumentsListProps {
+	organizationId: Id<"organizations">;
+	filter: FilterType;
+	workflowStatusFilter: WorkflowStatusFilter;
+	onRefetch: () => void;
+	onShareClick: (documentId: Id<"documents">) => void;
+}
+
+function DocumentsList({
+	organizationId,
+	filter,
+	workflowStatusFilter,
+	onRefetch,
+	onShareClick,
+}: DocumentsListProps) {
 	const { slug } = Route.useParams();
 	const router = useRouter();
 	const { convexClient } = useRouteContext({ from: "__root__" });
-	const [uploadOpen, setUploadOpen] = useState(false);
-	const [shareDialogOpen, setShareDialogOpen] = useState(false);
-	const [selectedDocumentId, setSelectedDocumentId] =
-		useState<Id<"documents"> | null>(null);
-	const [filter, setFilter] = useState<FilterType>("all");
-	const [workflowStatusFilter, setWorkflowStatusFilter] =
-		useState<WorkflowStatusFilter>("all");
-
-	const { data: organization } = useSuspenseQuery(
-		convexQuery(api.organizations.queries.getOrganization, { slug }),
-	);
 
 	const { data: allDocuments, refetch } = useSuspenseQuery(
 		convexQuery(api.documents.queries.listDocuments, {
-			organizationId: organization._id,
+			organizationId,
 			filter,
 		}),
 	);
@@ -99,7 +103,7 @@ function DocumentsPage() {
 		try {
 			await deleteDocument({ documentId });
 			toast.success("Document deleted");
-			refetch();
+			onRefetch();
 		} catch (_error) {
 			toast.error("Failed to delete document");
 		}
@@ -173,6 +177,164 @@ function DocumentsPage() {
 			month: "short",
 			day: "numeric",
 		});
+	};
+
+	return (
+		<>
+			{/* Documents Grid */}
+			{documents.length === 0 ? (
+				<Card>
+					<CardContent className="flex flex-col items-center justify-center py-12">
+						<FileIcon className="h-12 w-12 text-muted-foreground mb-4" />
+						<p className="text-lg font-medium">No documents yet</p>
+						<p className="text-sm text-muted-foreground mb-4">
+							Upload your first document to get started
+						</p>
+					</CardContent>
+				</Card>
+			) : (
+				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+					{documents.map((doc) => (
+						<Card
+							key={doc._id}
+							className="hover:shadow-lg transition-shadow cursor-pointer"
+							onClick={() =>
+								router.navigate({
+									to: "/$slug/documents/$documentId",
+									params: { slug, documentId: doc._id },
+								})
+							}
+						>
+							<CardHeader>
+								<div className="flex items-start justify-between">
+									<div className="flex items-center gap-2">
+										<FileIcon className="h-5 w-5 text-muted-foreground" />
+										<CardTitle className="text-base truncate">
+											{doc.name}
+										</CardTitle>
+									</div>
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-8 w-8"
+												onClick={(e) => e.stopPropagation()}
+											>
+												<MoreVerticalIcon className="h-4 w-4" />
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent
+											align="end"
+											onClick={(e) => e.stopPropagation()}
+										>
+											{/* Send Document - only for drafts */}
+											{(doc.workflowStatus ?? "draft") === "draft" && (
+												<DropdownMenuItem
+													onClick={() => handleSendDocument(doc._id)}
+												>
+													<SendIcon className="mr-2 h-4 w-4" />
+													Send Document
+												</DropdownMenuItem>
+											)}
+
+											{/* Cancel Document - for sent or in_progress */}
+											{((doc.workflowStatus ?? "draft") === "sent" ||
+												(doc.workflowStatus ?? "draft") === "in_progress") && (
+												<DropdownMenuItem
+													onClick={() => handleCancelDocument(doc._id)}
+													className="text-destructive"
+												>
+													<BanIcon className="mr-2 h-4 w-4" />
+													Cancel Document
+												</DropdownMenuItem>
+											)}
+											<DropdownMenuItem onClick={() => handleDownload(doc._id)}>
+												<DownloadIcon className="mr-2 h-4 w-4" />
+												Download
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={() => {
+													onShareClick(doc._id);
+												}}
+											>
+												<Share2Icon className="mr-2 h-4 w-4" />
+												Share
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={() => handleDelete(doc._id)}
+												className="text-destructive"
+											>
+												<TrashIcon className="mr-2 h-4 w-4" />
+												Delete
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</div>
+								{doc.description && (
+									<CardDescription className="line-clamp-2">
+										{doc.description}
+									</CardDescription>
+								)}
+							</CardHeader>
+							<CardContent>
+								<div className="space-y-2">
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">Status</span>
+										<WorkflowStatusBadge status={doc.workflowStatus} />
+									</div>
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">Size</span>
+										<span>{formatBytes(doc.fileSize)}</span>
+									</div>
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">Uploaded</span>
+										<span>{formatDate(doc.createdAt)}</span>
+									</div>
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-muted-foreground">Sharing</span>
+										<Badge
+											variant={
+												doc.sharingMode === "private" ? "secondary" : "default"
+											}
+										>
+											{doc.sharingMode === "private" && "Private"}
+											{doc.sharingMode === "workspace" && "Team"}
+											{doc.sharingMode === "specific" && "Specific"}
+										</Badge>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					))}
+				</div>
+			)}
+		</>
+	);
+}
+
+function DocumentsPage() {
+	const { slug } = Route.useParams();
+	const [uploadOpen, setUploadOpen] = useState(false);
+	const [shareDialogOpen, setShareDialogOpen] = useState(false);
+	const [selectedDocumentId, setSelectedDocumentId] =
+		useState<Id<"documents"> | null>(null);
+	const [filter, setFilter] = useState<FilterType>("all");
+	const [workflowStatusFilter, setWorkflowStatusFilter] =
+		useState<WorkflowStatusFilter>("all");
+	const [refreshKey, setRefreshKey] = useState(0);
+
+	const { data: organization } = useSuspenseQuery(
+		convexQuery(api.organizations.queries.getOrganization, { slug }),
+	);
+
+	const handleRefetch = () => {
+		setRefreshKey((prev) => prev + 1);
+	};
+
+	const handleShareClick = (documentId: Id<"documents">) => {
+		setSelectedDocumentId(documentId);
+		setShareDialogOpen(true);
 	};
 
 	return (
@@ -267,150 +429,34 @@ function DocumentsPage() {
 					</div>
 				</div>
 
-				{/* Documents Grid */}
-				{documents.length === 0 ? (
-					<Card>
-						<CardContent className="flex flex-col items-center justify-center py-12">
-							<FileIcon className="h-12 w-12 text-muted-foreground mb-4" />
-							<p className="text-lg font-medium">No documents yet</p>
-							<p className="text-sm text-muted-foreground mb-4">
-								Upload your first document to get started
-							</p>
-							<Button onClick={() => setUploadOpen(true)}>
-								<UploadIcon className="mr-2 h-4 w-4" />
-								Upload Document
-							</Button>
-						</CardContent>
-					</Card>
-				) : (
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-						{documents.map((doc) => (
-							<Card
-								key={doc._id}
-								className="hover:shadow-lg transition-shadow cursor-pointer"
-								onClick={() =>
-									router.navigate({
-										to: "/$slug/documents/$documentId",
-										params: { slug, documentId: doc._id },
-									})
-								}
-							>
-								<CardHeader>
-									<div className="flex items-start justify-between">
-										<div className="flex items-center gap-2">
-											<FileIcon className="h-5 w-5 text-muted-foreground" />
-											<CardTitle className="text-base truncate">
-												{doc.name}
-											</CardTitle>
-										</div>
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button
-													variant="ghost"
-													size="icon"
-													className="h-8 w-8"
-													onClick={(e) => e.stopPropagation()}
-												>
-													<MoreVerticalIcon className="h-4 w-4" />
-												</Button>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent
-												align="end"
-												onClick={(e) => e.stopPropagation()}
-											>
-												{/* Send Document - only for drafts */}
-												{(doc.workflowStatus ?? "draft") === "draft" && (
-													<DropdownMenuItem
-														onClick={() => handleSendDocument(doc._id)}
-													>
-														<SendIcon className="mr-2 h-4 w-4" />
-														Send Document
-													</DropdownMenuItem>
-												)}
-
-												{/* Cancel Document - for sent or in_progress */}
-												{((doc.workflowStatus ?? "draft") === "sent" ||
-													(doc.workflowStatus ?? "draft") ===
-														"in_progress") && (
-													<DropdownMenuItem
-														onClick={() => handleCancelDocument(doc._id)}
-														className="text-destructive"
-													>
-														<BanIcon className="mr-2 h-4 w-4" />
-														Cancel Document
-													</DropdownMenuItem>
-												)}
-												<DropdownMenuItem
-													onClick={() => handleDownload(doc._id)}
-												>
-													<DownloadIcon className="mr-2 h-4 w-4" />
-													Download
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													onClick={() => {
-														setSelectedDocumentId(doc._id);
-														setShareDialogOpen(true);
-													}}
-												>
-													<Share2Icon className="mr-2 h-4 w-4" />
-													Share
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													onClick={() => handleDelete(doc._id)}
-													className="text-destructive"
-												>
-													<TrashIcon className="mr-2 h-4 w-4" />
-													Delete
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</div>
-									{doc.description && (
-										<CardDescription className="line-clamp-2">
-											{doc.description}
-										</CardDescription>
-									)}
-								</CardHeader>
-								<CardContent>
-									<div className="space-y-2">
-										<div className="flex items-center justify-between text-sm">
-											<span className="text-muted-foreground">Status</span>
-											<WorkflowStatusBadge status={doc.workflowStatus} />
-										</div>
-										<div className="flex items-center justify-between text-sm">
-											<span className="text-muted-foreground">Size</span>
-											<span>{formatBytes(doc.fileSize)}</span>
-										</div>
-										<div className="flex items-center justify-between text-sm">
-											<span className="text-muted-foreground">Uploaded</span>
-											<span>{formatDate(doc.createdAt)}</span>
-										</div>
-										<div className="flex items-center justify-between text-sm">
-											<span className="text-muted-foreground">Sharing</span>
-											<Badge
-												variant={
-													doc.sharingMode === "private"
-														? "secondary"
-														: "default"
-												}
-											>
-												{doc.sharingMode === "private" && "Private"}
-												{doc.sharingMode === "workspace" && "Team"}
-												{doc.sharingMode === "specific" && "Specific"}
-											</Badge>
-										</div>
-									</div>
-								</CardContent>
-							</Card>
-						))}
-					</div>
-				)}
+				{/* Documents List with Suspense */}
+				<Suspense
+					key={`${filter}-${workflowStatusFilter}-${refreshKey}`}
+					fallback={
+						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+							<CardSkeleton showDescription showFooter={false} />
+							<CardSkeleton showDescription showFooter={false} />
+							<CardSkeleton showDescription showFooter={false} />
+							<CardSkeleton showDescription showFooter={false} />
+							<CardSkeleton showDescription showFooter={false} />
+							<CardSkeleton showDescription showFooter={false} />
+						</div>
+					}
+				>
+					<DocumentsList
+						organizationId={organization._id}
+						filter={filter}
+						workflowStatusFilter={workflowStatusFilter}
+						onRefetch={handleRefetch}
+						onShareClick={handleShareClick}
+					/>
+				</Suspense>
 
 				<UploadDialog
 					organizationId={organization._id}
 					open={uploadOpen}
 					onOpenChange={setUploadOpen}
-					onSuccess={() => refetch()}
+					onSuccess={handleRefetch}
 				/>
 
 				{selectedDocumentId && (
@@ -419,7 +465,7 @@ function DocumentsPage() {
 						organizationId={organization._id}
 						open={shareDialogOpen}
 						onOpenChange={setShareDialogOpen}
-						onSuccess={() => refetch()}
+						onSuccess={handleRefetch}
 					/>
 				)}
 			</div>
