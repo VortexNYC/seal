@@ -3,7 +3,9 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { internal } from "../_generated/api";
 import { authMutation } from "../auth";
+import { validateFile } from "./upload_config";
 import {
 	canCancelDocument,
 	canCompleteDocument,
@@ -40,7 +42,15 @@ export const createDocument = authMutation({
 	handler: async (ctx, args) => {
 		const userId = ctx.auth.user._id;
 
-		// 1. Verify user is a member of the organization
+		// 1. Validate file before processing
+		const validation = validateFile(args.name, args.fileType, args.fileSize);
+		if (!validation.valid) {
+			throw new ConvexError(
+				`File validation failed: ${validation.errors.join(", ")}`,
+			);
+		}
+
+		// 2. Verify user is a member of the organization
 		const member = await ctx.db
 			.query("organization_members")
 			.withIndex("by_user_organization", (q) =>
@@ -56,7 +66,7 @@ export const createDocument = authMutation({
 			throw new ConvexError("Your organization membership is not active");
 		}
 
-		// 2. Create the document record (default to private sharing)
+		// 3. Create the document record (default to private sharing)
 		const documentId = await ctx.db.insert("documents", {
 			organizationId: args.organizationId,
 			ownerId: userId,
@@ -103,10 +113,26 @@ export const deleteDocument = authMutation({
 			updatedAt: Date.now(),
 		});
 
-		// TODO: Schedule storage cleanup task to delete file after grace period
-		// await ctx.scheduler.runAfter(7 * 24 * 60 * 60 * 1000, internal.documents.cleanupStorage, {
-		//   storageId: document.storageId
-		// });
+		// 4. Verify storage exists before scheduling cleanup
+		const storageUrl = await ctx.storage.getUrl(document.storageId);
+		if (!storageUrl) {
+			console.warn(
+				`Storage ${document.storageId} not found for document ${args.documentId}`,
+			);
+			return { success: true, warning: "storage_already_deleted" };
+		}
+
+		// 5. Schedule storage cleanup after 7 day grace period
+		// This allows document recovery if needed
+		const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+		await ctx.scheduler.runAfter(
+			GRACE_PERIOD_MS,
+			internal.documents.cleanup.cleanupDocumentStorage,
+			{
+				storageId: document.storageId,
+				documentId: args.documentId,
+			},
+		);
 
 		return { success: true };
 	},

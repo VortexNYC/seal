@@ -13,6 +13,7 @@ import type * as auth_permissions from "../auth/permissions.js";
 import type * as auth_wrappers from "../auth/wrappers.js";
 import type * as auth from "../auth.js";
 import type * as check_membership from "../check_membership.js";
+import type * as documents_cleanup from "../documents/cleanup.js";
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_queries from "../documents/queries.js";
 import type * as documents_recipient_helpers from "../documents/recipient_helpers.js";
@@ -21,6 +22,7 @@ import type * as documents_recipients_queries from "../documents/recipients_quer
 import type * as documents_reminders from "../documents/reminders.js";
 import type * as documents_reminders_queries from "../documents/reminders_queries.js";
 import type * as documents_sharing from "../documents/sharing.js";
+import type * as documents_upload_config from "../documents/upload_config.js";
 import type * as documents_workflow_helpers from "../documents/workflow_helpers.js";
 import type * as documents_workflow_mutations from "../documents/workflow_mutations.js";
 import type * as http from "../http.js";
@@ -73,6 +75,7 @@ declare const fullApi: ApiFromModules<{
   "auth/wrappers": typeof auth_wrappers;
   auth: typeof auth;
   check_membership: typeof check_membership;
+  "documents/cleanup": typeof documents_cleanup;
   "documents/mutations": typeof documents_mutations;
   "documents/queries": typeof documents_queries;
   "documents/recipient_helpers": typeof documents_recipient_helpers;
@@ -81,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   "documents/reminders": typeof documents_reminders;
   "documents/reminders_queries": typeof documents_reminders_queries;
   "documents/sharing": typeof documents_sharing;
+  "documents/upload_config": typeof documents_upload_config;
   "documents/workflow_helpers": typeof documents_workflow_helpers;
   "documents/workflow_mutations": typeof documents_workflow_mutations;
   http: typeof http;
