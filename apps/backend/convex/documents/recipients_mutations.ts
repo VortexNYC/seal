@@ -140,11 +140,7 @@ export const updateRecipientStatus = authMutation({
 		status: recipientStatusTuple,
 		signatureData: v.optional(v.string()),
 		signatureType: v.optional(
-			v.union(
-				v.literal("drawn"),
-				v.literal("typed"),
-				v.literal("uploaded"),
-			),
+			v.union(v.literal("drawn"), v.literal("typed"), v.literal("uploaded")),
 		),
 		declineReason: v.optional(v.string()),
 		ipAddress: v.optional(v.string()),
@@ -238,9 +234,9 @@ export const updateRecipientStatus = authMutation({
 			updateData.ipAddress = args.ipAddress;
 		}
 
-		await ctx.db.patch(args.recipientId, updateData);
+		await ctx.db.patch(recipient._id, updateData);
 
-		return { success: true, recipientId: args.recipientId };
+		return { success: true, recipientId: recipient._id };
 	},
 });
 

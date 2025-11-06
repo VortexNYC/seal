@@ -3,7 +3,7 @@
  */
 
 import { v } from "convex/values";
-import { query } from "../_generated/server";
+import type { Doc } from "../_generated/dataModel";
 import { authQuery } from "../auth";
 import { verifyDocumentOwnership } from "./recipient_helpers";
 
@@ -31,21 +31,22 @@ export const getDocumentReminders = authQuery({
 		// Verify ownership
 		await verifyDocumentOwnership(ctx, args.documentId, userId);
 
-		// Build query
-		let remindersQuery = ctx.db
-			.query("document_reminders")
-			.withIndex("by_document", (q) => q.eq("documentId", args.documentId));
-
-		// Apply status filter if provided
+		// Build query with status filter if provided
+		let reminders: Doc<"document_reminders">[];
 		if (args.status) {
-			remindersQuery = ctx.db
+			const status = args.status; // TypeScript needs this to be non-optional
+			reminders = await ctx.db
 				.query("document_reminders")
 				.withIndex("by_document_status", (q) =>
-					q.eq("documentId", args.documentId).eq("status", args.status),
-				);
+					q.eq("documentId", args.documentId).eq("status", status),
+				)
+				.collect();
+		} else {
+			reminders = await ctx.db
+				.query("document_reminders")
+				.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+				.collect();
 		}
-
-		const reminders = await remindersQuery.collect();
 
 		// Filter by type if provided
 		const filteredReminders = args.type

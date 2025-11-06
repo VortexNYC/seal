@@ -33,7 +33,9 @@ export const sendManualReminder = authMutation({
 		// 3. Get the recipient
 		const recipient = await ctx.db.get(args.recipientId);
 		if (!recipient || recipient.documentId !== args.documentId) {
-			throw new ConvexError("Recipient not found or doesn't belong to document");
+			throw new ConvexError(
+				"Recipient not found or doesn't belong to document",
+			);
 		}
 
 		// 4. Check recipient status - don't remind completed recipients
@@ -223,7 +225,9 @@ export const cancelReminder = authMutation({
 
 		// 3. Check if reminder can be cancelled
 		if (reminder.status === "sent") {
-			throw new ConvexError("Cannot cancel reminder that has already been sent");
+			throw new ConvexError(
+				"Cannot cancel reminder that has already been sent",
+			);
 		}
 
 		if (reminder.status === "cancelled") {
@@ -345,13 +349,15 @@ export const processReminder = internalMutation({
 		} catch (error) {
 			console.error(`Error processing reminder ${args.reminderId}:`, error);
 
+			// Fetch reminder to get current attemptCount
+			const reminderForUpdate = await ctx.db.get(args.reminderId);
+
 			// Update reminder with error
 			await ctx.db.patch(args.reminderId, {
 				status: "failed",
 				failedAt: Date.now(),
-				lastError:
-					error instanceof Error ? error.message : "Unknown error",
-				attemptCount: (reminder.attemptCount || 0) + 1,
+				lastError: error instanceof Error ? error.message : "Unknown error",
+				attemptCount: (reminderForUpdate?.attemptCount || 0) + 1,
 				updatedAt: Date.now(),
 			});
 
