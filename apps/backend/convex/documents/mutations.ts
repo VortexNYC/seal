@@ -3,7 +3,16 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { internal } from "../_generated/api";
 import { authMutation } from "../auth";
+import { validateFile } from "./upload_config";
+import {
+	canCancelDocument,
+	canCompleteDocument,
+	canSendDocument,
+	transitionWorkflowStatus,
+	verifyDocumentOwnership,
+} from "./workflow_helpers";
 
 /**
  * Generate an upload URL for document storage
@@ -33,7 +42,15 @@ export const createDocument = authMutation({
 	handler: async (ctx, args) => {
 		const userId = ctx.auth.user._id;
 
-		// 1. Verify user is a member of the organization
+		// 1. Validate file before processing
+		const validation = validateFile(args.name, args.fileType, args.fileSize);
+		if (!validation.valid) {
+			throw new ConvexError(
+				`File validation failed: ${validation.errors.join(", ")}`,
+			);
+		}
+
+		// 2. Verify user is a member of the organization
 		const member = await ctx.db
 			.query("organization_members")
 			.withIndex("by_user_organization", (q) =>
@@ -49,7 +66,7 @@ export const createDocument = authMutation({
 			throw new ConvexError("Your organization membership is not active");
 		}
 
-		// 2. Create the document record (default to private sharing)
+		// 3. Create the document record (default to private sharing)
 		const documentId = await ctx.db.insert("documents", {
 			organizationId: args.organizationId,
 			ownerId: userId,
@@ -60,6 +77,7 @@ export const createDocument = authMutation({
 			storageId: args.storageId,
 			sharingMode: "private", // Default to private
 			status: "active",
+			workflowStatus: "draft", // Default to draft workflow status
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		});
@@ -95,10 +113,26 @@ export const deleteDocument = authMutation({
 			updatedAt: Date.now(),
 		});
 
-		// TODO: Schedule storage cleanup task to delete file after grace period
-		// await ctx.scheduler.runAfter(7 * 24 * 60 * 60 * 1000, internal.documents.cleanupStorage, {
-		//   storageId: document.storageId
-		// });
+		// 4. Verify storage exists before scheduling cleanup
+		const storageUrl = await ctx.storage.getUrl(document.storageId);
+		if (!storageUrl) {
+			console.warn(
+				`Storage ${document.storageId} not found for document ${args.documentId}`,
+			);
+			return { success: true, warning: "storage_already_deleted" };
+		}
+
+		// 5. Schedule storage cleanup after 7 day grace period
+		// This allows document recovery if needed
+		const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+		await ctx.scheduler.runAfter(
+			GRACE_PERIOD_MS,
+			internal.documents.cleanup.cleanupDocumentStorage,
+			{
+				storageId: document.storageId,
+				documentId: args.documentId,
+			},
+		);
 
 		return { success: true };
 	},
@@ -159,6 +193,129 @@ export const updateDocument = authMutation({
 		}
 
 		await ctx.db.patch(args.documentId, updateData);
+
+		return { success: true };
+	},
+});
+
+/**
+ * Send a document to recipients
+ * Transitions workflow status from draft to sent
+ */
+export const sendDocument = authMutation({
+	args: {
+		documentId: v.id("documents"),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Verify ownership
+		await verifyDocumentOwnership(ctx, args.documentId, userId);
+
+		// 2. Get the document
+		const document = await ctx.db.get(args.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		// 3. Verify document is in draft status (default to draft for migration)
+		const currentStatus = document.workflowStatus ?? "draft";
+		if (!canSendDocument(currentStatus)) {
+			throw new ConvexError(
+				`Cannot send document with status: ${currentStatus}`,
+			);
+		}
+
+		// 4. Transition to sent status
+		await transitionWorkflowStatus(ctx, args.documentId, "sent");
+
+		// TODO: When recipients are implemented (SEA-127):
+		// - Verify document has at least one recipient
+		// - Generate signing tokens for recipients
+		// - Send email notifications
+
+		return { success: true };
+	},
+});
+
+/**
+ * Cancel a document workflow
+ * Can be called by owner at any time before completion
+ */
+export const cancelDocument = authMutation({
+	args: {
+		documentId: v.id("documents"),
+		reason: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Verify ownership
+		await verifyDocumentOwnership(ctx, args.documentId, userId);
+
+		// 2. Get the document
+		const document = await ctx.db.get(args.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		// 3. Verify document can be cancelled (default to draft for migration)
+		const currentStatus = document.workflowStatus ?? "draft";
+		if (!canCancelDocument(currentStatus)) {
+			throw new ConvexError(
+				`Cannot cancel document with status: ${currentStatus}`,
+			);
+		}
+
+		// 4. Transition to cancelled status
+		await transitionWorkflowStatus(ctx, args.documentId, "cancelled");
+
+		// TODO: When recipients are implemented (SEA-127):
+		// - Notify all recipients about cancellation
+		// - Invalidate signing tokens
+
+		return { success: true };
+	},
+});
+
+/**
+ * Mark a document as completed
+ * Called when all required signatures have been collected
+ */
+export const completeDocument = authMutation({
+	args: {
+		documentId: v.id("documents"),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Verify ownership
+		await verifyDocumentOwnership(ctx, args.documentId, userId);
+
+		// 2. Get the document
+		const document = await ctx.db.get(args.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		// 3. Verify document can be completed (default to draft for migration)
+		const currentStatus = document.workflowStatus ?? "draft";
+		if (!canCompleteDocument(currentStatus)) {
+			throw new ConvexError(
+				`Cannot complete document with status: ${currentStatus}`,
+			);
+		}
+
+		// TODO: When recipients are implemented (SEA-127):
+		// - Verify all required signers have signed
+		// - Cannot complete if any required signatures are missing
+
+		// 4. Transition to completed status
+		await transitionWorkflowStatus(ctx, args.documentId, "completed");
+
+		// TODO: When email is implemented:
+		// - Notify all participants about completion
+		// - Send final signed document copy
 
 		return { success: true };
 	},
