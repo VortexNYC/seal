@@ -60,7 +60,8 @@ export const sendDocument = authMutation({
 					recipient.status !== "approved" &&
 					recipient.status !== "declined"
 				) {
-					const scheduledFor = now + args.autoRemindAfterDays * 24 * 60 * 60 * 1000;
+					const scheduledFor =
+						now + args.autoRemindAfterDays * 24 * 60 * 60 * 1000;
 
 					const reminderId = await ctx.db.insert("document_reminders", {
 						documentId: args.documentId,
@@ -135,7 +136,7 @@ export const completeDocument = authMutation({
 
 		// 4. Mark document as completed
 		await ctx.db.patch(args.documentId, {
-			status: "completed",
+			workflowStatus: "completed",
 			completedAt: Date.now(),
 			updatedAt: Date.now(),
 		});
@@ -191,13 +192,13 @@ export const cancelDocument = authMutation({
 		}
 
 		// 3. Can't cancel already completed document
-		if (document.status === "completed") {
+		if (document.workflowStatus === "completed") {
 			throw new ConvexError("Cannot cancel a completed document");
 		}
 
 		// 4. Mark document as cancelled
 		await ctx.db.patch(args.documentId, {
-			status: "cancelled",
+			workflowStatus: "cancelled",
 			cancelledAt: Date.now(),
 			updatedAt: Date.now(),
 		});
@@ -245,7 +246,10 @@ export const checkAndCompleteWorkflow = authMutation({
 		}
 
 		// 3. Skip if already completed or cancelled
-		if (document.status === "completed" || document.status === "cancelled") {
+		if (
+			document.workflowStatus === "completed" ||
+			document.workflowStatus === "cancelled"
+		) {
 			return { success: true, completed: false, reason: "already_final" };
 		}
 
@@ -272,7 +276,7 @@ export const checkAndCompleteWorkflow = authMutation({
 
 		// 5. All recipients completed - mark document as completed
 		await ctx.db.patch(args.documentId, {
-			status: "completed",
+			workflowStatus: "completed",
 			completedAt: Date.now(),
 			updatedAt: Date.now(),
 		});
