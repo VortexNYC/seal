@@ -137,6 +137,11 @@ function buildNavSections({
 			url: buildOrganizationPath(slug, "/settings/team"),
 			visible: canView(permissionFlags?.canViewMembers),
 		},
+		{
+			title: "Profile",
+			url: buildOrganizationPath(slug, "/settings/profile"),
+			visible: true, // Profile settings are always visible to the user
+		},
 	].filter((item) => item.visible);
 
 	const sections = [
