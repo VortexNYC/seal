@@ -338,18 +338,15 @@ function DocumentsPage() {
 	}
 
 	return (
-		<PageWrapper title="Documents">
+		<PageWrapper
+			title="Documents"
+			action={{
+				label: "Upload Document",
+				onClick: () => setUploadOpen(true),
+				icon: UploadIcon,
+			}}
+		>
 			<div className="space-y-6">
-				<div className="flex items-center justify-between">
-					<p className="text-muted-foreground">
-						Manage and share documents with your team
-					</p>
-					<Button onClick={() => setUploadOpen(true)}>
-						<UploadIcon className="mr-2 h-4 w-4" />
-						Upload Document
-					</Button>
-				</div>
-
 				{/* Filter Tabs */}
 				<div className="space-y-4">
 					<div className="flex gap-2 flex-wrap">
