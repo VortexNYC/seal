@@ -8,6 +8,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, TrendingUp } from "lucide-react";
 import { PageWrapper } from "@/components/page-wrapper";
+import { CardSkeleton } from "@/components/skeletons";
 import {
 	Card,
 	CardContent,
@@ -18,6 +19,12 @@ import {
 
 export const Route = createFileRoute("/_authenticated/$slug/analytics")({
 	component: AnalyticsPage,
+	pendingComponent: () => (
+		<div className="grid gap-4 md:grid-cols-2">
+			<CardSkeleton />
+			<CardSkeleton />
+		</div>
+	),
 });
 
 function AnalyticsPage() {
