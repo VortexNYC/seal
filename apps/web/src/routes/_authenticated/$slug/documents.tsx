@@ -74,7 +74,6 @@ function DocumentsList({
 		try {
 			await deleteDocument({ documentId });
 			toast.success("Document deleted");
-			refetch();
 			onRefetch();
 		} catch (_error) {
 			toast.error("Failed to delete document");
