@@ -34,7 +34,7 @@ export function ListSkeleton({
 	showSecondaryText = true,
 }: ListSkeletonProps) {
 	return (
-		<div className="space-y-4">
+		<div className="space-y-4" role="status" aria-label="Loading list items">
 			{Array.from({ length: count }).map((_, i) => (
 				<div key={i} className="flex items-center gap-3">
 					{showAvatar && <Skeleton className="h-10 w-10 rounded-full" />}
