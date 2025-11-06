@@ -21,7 +21,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function MemberDetailsSkeleton() {
 	return (
 		<PageWrapper title="Member Details">
-			<div className="space-y-6">
+			<div
+				className="space-y-6"
+				role="status"
+				aria-label="Loading member details"
+			>
 				{/* Profile Header Skeleton */}
 				<div className="flex items-start gap-4">
 					<Skeleton className="h-16 w-16 rounded-full" />
