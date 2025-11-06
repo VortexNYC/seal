@@ -31,6 +31,10 @@ import { Route as AuthenticatedSlugDocumentsDocumentIdRouteImport } from './rout
 import { Route as AuthenticatedSlugSettingsTeamIndexRouteImport } from './routes/_authenticated/$slug/settings/team/index'
 import { Route as AuthenticatedSlugSettingsProfileIndexRouteImport } from './routes/_authenticated/$slug/settings/profile/index'
 import { Route as AuthenticatedSlugSettingsTeamMemberIdRouteImport } from './routes/_authenticated/$slug/settings/team/$memberId'
+import { Route as AuthenticatedSlugSettingsProfileUsageRouteImport } from './routes/_authenticated/$slug/settings/profile/usage'
+import { Route as AuthenticatedSlugSettingsProfileSecurityRouteImport } from './routes/_authenticated/$slug/settings/profile/security'
+import { Route as AuthenticatedSlugSettingsProfileNotificationsRouteImport } from './routes/_authenticated/$slug/settings/profile/notifications'
+import { Route as AuthenticatedSlugSettingsProfileIntegrationsRouteImport } from './routes/_authenticated/$slug/settings/profile/integrations'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -152,6 +156,30 @@ const AuthenticatedSlugSettingsTeamMemberIdRoute =
     path: '/$memberId',
     getParentRoute: () => AuthenticatedSlugSettingsTeamRoute,
   } as any)
+const AuthenticatedSlugSettingsProfileUsageRoute =
+  AuthenticatedSlugSettingsProfileUsageRouteImport.update({
+    id: '/usage',
+    path: '/usage',
+    getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
+  } as any)
+const AuthenticatedSlugSettingsProfileSecurityRoute =
+  AuthenticatedSlugSettingsProfileSecurityRouteImport.update({
+    id: '/security',
+    path: '/security',
+    getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
+  } as any)
+const AuthenticatedSlugSettingsProfileNotificationsRoute =
+  AuthenticatedSlugSettingsProfileNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
+  } as any)
+const AuthenticatedSlugSettingsProfileIntegrationsRoute =
+  AuthenticatedSlugSettingsProfileIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -171,6 +199,10 @@ export interface FileRoutesByFullPath {
   '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
   '/$slug/settings': typeof AuthenticatedSlugSettingsIndexRoute
   '/onboarding/choose-organization': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
+  '/$slug/settings/profile/integrations': typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
+  '/$slug/settings/profile/notifications': typeof AuthenticatedSlugSettingsProfileNotificationsRoute
+  '/$slug/settings/profile/security': typeof AuthenticatedSlugSettingsProfileSecurityRoute
+  '/$slug/settings/profile/usage': typeof AuthenticatedSlugSettingsProfileUsageRoute
   '/$slug/settings/team/$memberId': typeof AuthenticatedSlugSettingsTeamMemberIdRoute
   '/$slug/settings/profile/': typeof AuthenticatedSlugSettingsProfileIndexRoute
   '/$slug/settings/team/': typeof AuthenticatedSlugSettingsTeamIndexRoute
@@ -190,6 +222,10 @@ export interface FileRoutesByTo {
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/$slug/settings': typeof AuthenticatedSlugSettingsIndexRoute
   '/onboarding/choose-organization': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
+  '/$slug/settings/profile/integrations': typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
+  '/$slug/settings/profile/notifications': typeof AuthenticatedSlugSettingsProfileNotificationsRoute
+  '/$slug/settings/profile/security': typeof AuthenticatedSlugSettingsProfileSecurityRoute
+  '/$slug/settings/profile/usage': typeof AuthenticatedSlugSettingsProfileUsageRoute
   '/$slug/settings/team/$memberId': typeof AuthenticatedSlugSettingsTeamMemberIdRoute
   '/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileIndexRoute
   '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamIndexRoute
@@ -215,6 +251,10 @@ export interface FileRoutesById {
   '/_authenticated/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
   '/_authenticated/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
   '/_authenticated/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
+  '/_authenticated/$slug/settings/profile/integrations': typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
+  '/_authenticated/$slug/settings/profile/notifications': typeof AuthenticatedSlugSettingsProfileNotificationsRoute
+  '/_authenticated/$slug/settings/profile/security': typeof AuthenticatedSlugSettingsProfileSecurityRoute
+  '/_authenticated/$slug/settings/profile/usage': typeof AuthenticatedSlugSettingsProfileUsageRoute
   '/_authenticated/$slug/settings/team/$memberId': typeof AuthenticatedSlugSettingsTeamMemberIdRoute
   '/_authenticated/$slug/settings/profile/': typeof AuthenticatedSlugSettingsProfileIndexRoute
   '/_authenticated/$slug/settings/team/': typeof AuthenticatedSlugSettingsTeamIndexRoute
@@ -239,6 +279,10 @@ export interface FileRouteTypes {
     | '/$slug/settings/team'
     | '/$slug/settings'
     | '/onboarding/choose-organization'
+    | '/$slug/settings/profile/integrations'
+    | '/$slug/settings/profile/notifications'
+    | '/$slug/settings/profile/security'
+    | '/$slug/settings/profile/usage'
     | '/$slug/settings/team/$memberId'
     | '/$slug/settings/profile/'
     | '/$slug/settings/team/'
@@ -258,6 +302,10 @@ export interface FileRouteTypes {
     | '/$slug/settings/billing'
     | '/$slug/settings'
     | '/onboarding/choose-organization'
+    | '/$slug/settings/profile/integrations'
+    | '/$slug/settings/profile/notifications'
+    | '/$slug/settings/profile/security'
+    | '/$slug/settings/profile/usage'
     | '/$slug/settings/team/$memberId'
     | '/$slug/settings/profile'
     | '/$slug/settings/team'
@@ -282,6 +330,10 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/settings/team'
     | '/_authenticated/$slug/settings/'
     | '/_authenticated/onboarding/choose-organization/'
+    | '/_authenticated/$slug/settings/profile/integrations'
+    | '/_authenticated/$slug/settings/profile/notifications'
+    | '/_authenticated/$slug/settings/profile/security'
+    | '/_authenticated/$slug/settings/profile/usage'
     | '/_authenticated/$slug/settings/team/$memberId'
     | '/_authenticated/$slug/settings/profile/'
     | '/_authenticated/$slug/settings/team/'
@@ -450,6 +502,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugSettingsTeamMemberIdRouteImport
       parentRoute: typeof AuthenticatedSlugSettingsTeamRoute
     }
+    '/_authenticated/$slug/settings/profile/usage': {
+      id: '/_authenticated/$slug/settings/profile/usage'
+      path: '/usage'
+      fullPath: '/$slug/settings/profile/usage'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileUsageRouteImport
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
+    }
+    '/_authenticated/$slug/settings/profile/security': {
+      id: '/_authenticated/$slug/settings/profile/security'
+      path: '/security'
+      fullPath: '/$slug/settings/profile/security'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileSecurityRouteImport
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
+    }
+    '/_authenticated/$slug/settings/profile/notifications': {
+      id: '/_authenticated/$slug/settings/profile/notifications'
+      path: '/notifications'
+      fullPath: '/$slug/settings/profile/notifications'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileNotificationsRouteImport
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
+    }
+    '/_authenticated/$slug/settings/profile/integrations': {
+      id: '/_authenticated/$slug/settings/profile/integrations'
+      path: '/integrations'
+      fullPath: '/$slug/settings/profile/integrations'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
+    }
   }
 }
 
@@ -483,11 +563,23 @@ const AuthenticatedSlugDocumentsRouteWithChildren =
   )
 
 interface AuthenticatedSlugSettingsProfileRouteChildren {
+  AuthenticatedSlugSettingsProfileIntegrationsRoute: typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
+  AuthenticatedSlugSettingsProfileNotificationsRoute: typeof AuthenticatedSlugSettingsProfileNotificationsRoute
+  AuthenticatedSlugSettingsProfileSecurityRoute: typeof AuthenticatedSlugSettingsProfileSecurityRoute
+  AuthenticatedSlugSettingsProfileUsageRoute: typeof AuthenticatedSlugSettingsProfileUsageRoute
   AuthenticatedSlugSettingsProfileIndexRoute: typeof AuthenticatedSlugSettingsProfileIndexRoute
 }
 
 const AuthenticatedSlugSettingsProfileRouteChildren: AuthenticatedSlugSettingsProfileRouteChildren =
   {
+    AuthenticatedSlugSettingsProfileIntegrationsRoute:
+      AuthenticatedSlugSettingsProfileIntegrationsRoute,
+    AuthenticatedSlugSettingsProfileNotificationsRoute:
+      AuthenticatedSlugSettingsProfileNotificationsRoute,
+    AuthenticatedSlugSettingsProfileSecurityRoute:
+      AuthenticatedSlugSettingsProfileSecurityRoute,
+    AuthenticatedSlugSettingsProfileUsageRoute:
+      AuthenticatedSlugSettingsProfileUsageRoute,
     AuthenticatedSlugSettingsProfileIndexRoute:
       AuthenticatedSlugSettingsProfileIndexRoute,
   }
