@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function DocumentsSkeleton() {
 	return (
 		<PageWrapper title="Documents">
-			<div className="space-y-6">
+			<div className="space-y-6" role="status" aria-label="Loading documents">
 				<div className="flex items-center justify-between">
 					<Skeleton className="h-5 w-[300px]" />
 					<Skeleton className="h-10 w-[160px]" />

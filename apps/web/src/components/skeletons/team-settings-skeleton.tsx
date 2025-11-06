@@ -22,7 +22,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export function TeamSettingsSkeleton() {
 	return (
 		<PageWrapper title="Team">
-			<Tabs defaultValue="members" className="w-full">
+			<Tabs
+				defaultValue="members"
+				className="w-full"
+				role="status"
+				aria-label="Loading team settings"
+			>
 				<TabsList>
 					<TabsTrigger value="members">Members</TabsTrigger>
 					<TabsTrigger value="invitations">Invitations</TabsTrigger>
