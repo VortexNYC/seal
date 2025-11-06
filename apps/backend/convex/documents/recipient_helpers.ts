@@ -3,14 +3,17 @@
  */
 
 import { ConvexError } from "convex/values";
-import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
+
+// Generic context type that works with both standard and custom auth contexts
+type GenericCtx = Pick<MutationCtx | QueryCtx, "db">;
 
 /**
  * Verify user is the document owner
  */
 export async function verifyDocumentOwnership(
-	ctx: MutationCtx | QueryCtx,
+	ctx: GenericCtx,
 	documentId: Id<"documents">,
 	userId: Id<"users">,
 ): Promise<void> {
@@ -20,9 +23,7 @@ export async function verifyDocumentOwnership(
 	}
 
 	if (document.ownerId !== userId) {
-		throw new ConvexError(
-			"Only the document owner can perform this action",
-		);
+		throw new ConvexError("Only the document owner can perform this action");
 	}
 }
 
@@ -30,7 +31,7 @@ export async function verifyDocumentOwnership(
  * Check if all required recipients have completed their actions
  */
 export async function areAllRecipientsComplete(
-	ctx: MutationCtx | QueryCtx,
+	ctx: GenericCtx,
 	documentId: Id<"documents">,
 ): Promise<boolean> {
 	const recipients = await ctx.db

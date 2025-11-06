@@ -3,17 +3,20 @@
  */
 
 import { ConvexError } from "convex/values";
-import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 import type { DocumentWorkflowStatus } from "../schemas/document_workflow_status";
 import { isValidWorkflowTransition } from "../schemas/document_workflow_status";
+
+// Generic context type that works with both standard and custom auth contexts
+type GenericMutationCtx = Pick<MutationCtx, "db">;
 
 /**
  * Transition a document to a new workflow status
  * Validates the transition and updates timestamps accordingly
  */
 export async function transitionWorkflowStatus(
-	ctx: MutationCtx,
+	ctx: GenericMutationCtx,
 	documentId: Id<"documents">,
 	newStatus: DocumentWorkflowStatus,
 ): Promise<void> {
@@ -71,7 +74,9 @@ export async function transitionWorkflowStatus(
 export function isTerminalWorkflowStatus(
 	status: DocumentWorkflowStatus,
 ): boolean {
-	return status === "completed" || status === "cancelled" || status === "declined";
+	return (
+		status === "completed" || status === "cancelled" || status === "declined"
+	);
 }
 
 /**
@@ -99,7 +104,7 @@ export function canCompleteDocument(status: DocumentWorkflowStatus): boolean {
  * Verify user has permission to modify document workflow
  */
 export async function verifyDocumentOwnership(
-	ctx: MutationCtx,
+	ctx: GenericMutationCtx,
 	documentId: Id<"documents">,
 	userId: Id<"users">,
 ): Promise<void> {
