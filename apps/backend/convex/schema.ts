@@ -1,6 +1,11 @@
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
 import {
+	type AuditAction,
+	type AuditResourceType,
+	auditLogsTable,
+} from "./schemas/audit_logs";
+import {
 	type DocumentPermissionLevel,
 	documentAccessTable,
 } from "./schemas/document_access";
@@ -24,6 +29,16 @@ import {
 	organizationsTable,
 	type organizationTypeTuple,
 } from "./schemas/organizations";
+import {
+	type AuthenticationMethod,
+	type RecipientStatus,
+	recipientsTable,
+} from "./schemas/recipients";
+import {
+	type FieldType,
+	signatureFieldsTable,
+} from "./schemas/signature_fields";
+import { signaturesTable } from "./schemas/signatures";
 import { subscriptionPricesTable } from "./schemas/subscription_prices";
 import { subscriptionProductsTable } from "./schemas/subscription_products";
 import { subscriptionsTable } from "./schemas/subscriptions";
@@ -47,6 +62,12 @@ export type {
 // Re-export document types
 export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus };
 
+// Re-export signature workflow types
+export type { AuthenticationMethod, FieldType, RecipientStatus };
+
+// Re-export audit types
+export type { AuditAction, AuditResourceType };
+
 export default defineSchema({
 	users: usersTable,
 	organizations: organizationsTable,
@@ -56,6 +77,14 @@ export default defineSchema({
 
 	documents: documentsTable,
 	document_access: documentAccessTable,
+
+	// Signature workflow tables
+	recipients: recipientsTable,
+	signature_fields: signatureFieldsTable,
+	signatures: signaturesTable,
+
+	// Audit and compliance
+	audit_logs: auditLogsTable,
 
 	subscriptions: subscriptionsTable,
 	subscription_products: subscriptionProductsTable,
