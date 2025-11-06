@@ -24,8 +24,10 @@ export const ALLOWED_MIME_TYPES = {
 		name: "Excel Spreadsheet",
 	},
 	"application/vnd.ms-powerpoint": { ext: ".ppt", name: "PowerPoint" },
-	"application/vnd.openxmlformats-officedocument.presentationml.presentation":
-		{ ext: ".pptx", name: "PowerPoint" },
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation": {
+		ext: ".pptx",
+		name: "PowerPoint",
+	},
 	"text/plain": { ext: ".txt", name: "Text File" },
 	"text/csv": { ext: ".csv", name: "CSV File" },
 
@@ -170,7 +172,8 @@ export function validateFileExtension(
 		};
 	}
 
-	const mimeInfo = ALLOWED_MIME_TYPES[fileType as keyof typeof ALLOWED_MIME_TYPES];
+	const mimeInfo =
+		ALLOWED_MIME_TYPES[fileType as keyof typeof ALLOWED_MIME_TYPES];
 	if (mimeInfo && mimeInfo.ext !== fileExt) {
 		return {
 			valid: false,
