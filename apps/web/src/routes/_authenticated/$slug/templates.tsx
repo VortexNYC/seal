@@ -8,7 +8,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FileText } from "lucide-react";
 import { PageWrapper } from "@/components/page-wrapper";
-import { CardSkeleton } from "@/components/skeletons";
+import { TemplatesSkeleton } from "@/components/skeletons";
 import {
 	Card,
 	CardContent,
@@ -19,7 +19,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/$slug/templates")({
 	component: TemplatesPage,
-	pendingComponent: CardSkeleton,
+	pendingComponent: TemplatesSkeleton,
 });
 
 function TemplatesPage() {

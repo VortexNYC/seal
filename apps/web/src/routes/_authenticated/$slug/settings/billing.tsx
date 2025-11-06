@@ -8,7 +8,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CreditCard } from "lucide-react";
 import { PageWrapper } from "@/components/page-wrapper";
-import { CardSkeleton } from "@/components/skeletons";
+import { BillingSkeleton } from "@/components/skeletons";
 import {
 	Card,
 	CardContent,
@@ -19,7 +19,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/billing")({
 	component: BillingSettingsPage,
-	pendingComponent: CardSkeleton,
+	pendingComponent: BillingSkeleton,
 });
 
 function BillingSettingsPage() {
