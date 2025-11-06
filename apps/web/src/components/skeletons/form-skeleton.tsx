@@ -31,7 +31,12 @@ export function FormSkeleton({
 	showSubmitButton = true,
 }: FormSkeletonProps) {
 	return (
-		<div className="space-y-6">
+		<div
+			className="space-y-6"
+			role="status"
+			aria-busy="true"
+			aria-label="Loading form"
+		>
 			{Array.from({ length: fields }).map((_, i) => (
 				<div key={i} className="space-y-2">
 					<Skeleton className="h-4 w-[120px]" />
