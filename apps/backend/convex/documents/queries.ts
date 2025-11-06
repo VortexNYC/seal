@@ -4,6 +4,7 @@
 
 import { ConvexError, v } from "convex/values";
 import { authQuery } from "../auth";
+import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
 
 /**
  * Get a single document by ID with access control
@@ -126,6 +127,7 @@ export const listDocuments = authQuery({
 				v.literal("shared"), // Documents shared with me
 			),
 		),
+		workflowStatus: v.optional(documentWorkflowStatusTuple),
 	},
 	handler: async (ctx, args) => {
 		const userId = ctx.auth.user._id;
@@ -155,11 +157,17 @@ export const listDocuments = authQuery({
 		const accessibleDocuments = [];
 
 		for (const doc of allOrgDocuments) {
-			// Skip based on filter
+			// Skip based on ownership filter
 			if (filter === "owned" && doc.ownerId !== userId) {
 				continue;
 			}
 			if (filter === "shared" && doc.ownerId === userId) {
+				continue;
+			}
+
+			// Skip based on workflow status filter (default to draft for migration)
+			const docWorkflowStatus = doc.workflowStatus ?? "draft";
+			if (args.workflowStatus && docWorkflowStatus !== args.workflowStatus) {
 				continue;
 			}
 
@@ -249,5 +257,71 @@ export const getDocumentAccessList = authQuery({
 			sharingMode: document.sharingMode,
 			specificAccess: enrichedAccess,
 		};
+	},
+});
+
+/**
+ * Get documents by workflow status for the current user
+ * Useful for dashboards and workflow-specific views
+ */
+export const getDocumentsByWorkflowStatus = authQuery({
+	args: {
+		organizationId: v.id("organizations"),
+		workflowStatus: documentWorkflowStatusTuple,
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Verify user is a member of the organization
+		const member = await ctx.db
+			.query("organization_members")
+			.withIndex("by_user_organization", (q) =>
+				q.eq("userId", userId).eq("organizationId", args.organizationId),
+			)
+			.first();
+
+		if (!member) {
+			throw new ConvexError("You are not a member of this organization");
+		}
+
+		// 2. Get documents with specific workflow status
+		const documents = await ctx.db
+			.query("documents")
+			.withIndex("by_organization_workflow", (q) =>
+				q
+					.eq("organizationId", args.organizationId)
+					.eq("workflowStatus", args.workflowStatus),
+			)
+			.filter((q) => q.eq(q.field("status"), "active"))
+			.collect();
+
+		// 3. Filter to only accessible documents
+		const accessibleDocuments = [];
+
+		for (const doc of documents) {
+			// Check access
+			let hasAccess = doc.ownerId === userId;
+
+			if (!hasAccess) {
+				// Check sharing mode
+				if (doc.sharingMode === "workspace") {
+					hasAccess = true;
+				} else if (doc.sharingMode === "specific") {
+					const access = await ctx.db
+						.query("document_access")
+						.withIndex("by_document_user", (q) =>
+							q.eq("documentId", doc._id).eq("userId", userId),
+						)
+						.first();
+					hasAccess = access !== null && access.revokedAt === undefined;
+				}
+			}
+
+			if (hasAccess) {
+				accessibleDocuments.push(doc);
+			}
+		}
+
+		return accessibleDocuments;
 	},
 });
