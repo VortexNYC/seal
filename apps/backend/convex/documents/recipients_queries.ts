@@ -248,9 +248,7 @@ export const getMyRecipientDocuments = authQuery({
 		// 2. Get all recipients with user's email
 		const recipients = await ctx.db
 			.query("document_recipients")
-			.withIndex("by_email", (q) =>
-				q.eq("email", user.email.toLowerCase()),
-			)
+			.withIndex("by_email", (q) => q.eq("email", user.email.toLowerCase()))
 			.collect();
 
 		// 3. Get documents for each recipient
