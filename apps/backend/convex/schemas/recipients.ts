@@ -42,7 +42,7 @@ export const recipientsTable = defineTable({
 
 	// Authentication
 	authenticationMethod: authenticationMethodTuple, // How recipient authenticates
-	accessToken: v.string(), // Unique token for document access
+	accessToken: v.string(), // Unique token for document access (uniqueness enforced in application logic)
 
 	// Status Tracking
 	status: recipientStatusTuple, // Current status in workflow

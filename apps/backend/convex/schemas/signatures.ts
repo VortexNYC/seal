@@ -1,5 +1,6 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authenticationMethodTuple } from "./recipients";
 
 /**
  * Signatures Table Schema
@@ -27,11 +28,7 @@ export const signaturesTable = defineTable({
 	userAgent: v.string(), // Browser/device information
 	authenticationData: v.optional(
 		v.object({
-			method: v.union(
-				v.literal("email"),
-				v.literal("sms"),
-				v.literal("none"),
-			), // Authentication method used
+			method: authenticationMethodTuple, // Authentication method used
 			verified: v.boolean(), // Whether authentication was verified
 			verifiedAt: v.optional(v.number()), // When authentication was verified
 		}),

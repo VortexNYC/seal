@@ -10,9 +10,9 @@ import {
 	documentAccessTable,
 } from "./schemas/document_access";
 import {
+	type RecipientStatus as DocumentRecipientStatus,
 	documentRecipientsTable,
 	type RecipientRole,
-	type RecipientStatus,
 } from "./schemas/document_recipients";
 import {
 	documentRemindersTable,
@@ -41,8 +41,8 @@ import {
 } from "./schemas/organizations";
 import {
 	type AuthenticationMethod,
-	type RecipientStatus,
 	recipientsTable,
+	type RecipientStatus as WorkflowRecipientStatus,
 } from "./schemas/recipients";
 import {
 	type FieldType,
@@ -71,12 +71,12 @@ export type {
 
 // Re-export document types
 export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus };
-export type { RecipientRole, RecipientStatus };
+export type { RecipientRole, DocumentRecipientStatus };
 export type { ReminderStatus, ReminderType };
 export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";
 
 // Re-export signature workflow types
-export type { AuthenticationMethod, FieldType, RecipientStatus };
+export type { AuthenticationMethod, FieldType, WorkflowRecipientStatus };
 
 // Re-export audit types
 export type { AuditAction, AuditResourceType };

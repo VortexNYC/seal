@@ -27,12 +27,13 @@ export const signatureFieldsTable = defineTable({
 	// References
 	documentId: v.id("documents"), // Document this field belongs to
 	recipientId: v.id("recipients"), // Recipient who must fill this field
-	templateFieldId: v.optional(v.id("template_fields")), // If created from template
+	// TODO: Add templateFieldId when template_fields table is implemented
+	// templateFieldId: v.optional(v.id("template_fields")), // If created from template
 
 	// Field Configuration
 	fieldType: fieldTypeTuple, // Type of field
 	label: v.string(), // Field label/name
-	isRequired: v.boolean(), // Whether field must be filled
+	isRequired: v.boolean(), // UI-level: Whether field is marked required for display purposes
 
 	// Position on Document
 	x: v.number(), // X coordinate (percentage of page width)
@@ -54,10 +55,10 @@ export const signatureFieldsTable = defineTable({
 		}),
 	),
 
-	// Validation Rules
+	// Validation Rules (backend-level validation with custom messages)
 	validationRules: v.optional(
 		v.object({
-			required: v.optional(v.boolean()),
+			required: v.optional(v.boolean()), // Backend validation: enforces required constraint
 			min: v.optional(v.number()),
 			max: v.optional(v.number()),
 			pattern: v.optional(v.string()),

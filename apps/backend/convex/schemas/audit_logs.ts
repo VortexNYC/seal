@@ -75,11 +75,15 @@ export type AuditResourceType = Infer<typeof auditResourceTypeTuple>;
 
 export const auditLogsTable = defineTable({
 	// Scoping
-	organizationId: v.id("organizations"), // Workspace context
+	organizationId: v.id("organizations"), // Organization context
 
 	// Actor Information
 	userId: v.optional(v.string()), // Clerk user ID (optional for recipient actions)
-	actorType: v.union(v.literal("user"), v.literal("recipient"), v.literal("system")), // Who performed the action
+	actorType: v.union(
+		v.literal("user"),
+		v.literal("recipient"),
+		v.literal("system"),
+	), // Who performed the action
 	actorId: v.optional(v.string()), // ID of the actor (userId or recipientId)
 
 	// Action Details
