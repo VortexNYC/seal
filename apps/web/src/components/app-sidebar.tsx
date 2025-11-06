@@ -309,7 +309,9 @@ export function AppSidebar({
 				<NavMain items={navItems} />
 			</SidebarContent>
 			<SidebarFooter>
-				{currentUser && <NavUser user={currentUser} onSignOut={signOut} />}
+				{currentUser && (
+					<NavUser user={currentUser} slug={slug} onSignOut={signOut} />
+				)}
 			</SidebarFooter>
 			<SidebarRail />
 		</Sidebar>
