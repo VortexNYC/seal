@@ -24,6 +24,7 @@ import { Route as AuthenticatedSlugDocumentsRouteImport } from './routes/_authen
 import { Route as AuthenticatedSlugAnalyticsRouteImport } from './routes/_authenticated/$slug/analytics'
 import { Route as AuthenticatedOnboardingChooseOrganizationIndexRouteImport } from './routes/_authenticated/onboarding/choose-organization/index'
 import { Route as AuthenticatedSlugSettingsIndexRouteImport } from './routes/_authenticated/$slug/settings/index'
+import { Route as AuthenticatedSlugDocumentsIndexRouteImport } from './routes/_authenticated/$slug/documents/index'
 import { Route as AuthenticatedSlugSettingsTeamRouteImport } from './routes/_authenticated/$slug/settings/team'
 import { Route as AuthenticatedSlugSettingsProfileRouteImport } from './routes/_authenticated/$slug/settings/profile'
 import { Route as AuthenticatedSlugSettingsBillingRouteImport } from './routes/_authenticated/$slug/settings/billing'
@@ -114,6 +115,12 @@ const AuthenticatedSlugSettingsIndexRoute =
     path: '/settings/',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
+const AuthenticatedSlugDocumentsIndexRoute =
+  AuthenticatedSlugDocumentsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSlugDocumentsRoute,
+  } as any)
 const AuthenticatedSlugSettingsTeamRoute =
   AuthenticatedSlugSettingsTeamRouteImport.update({
     id: '/settings/team',
@@ -197,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
+  '/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
   '/$slug/settings': typeof AuthenticatedSlugSettingsIndexRoute
   '/onboarding/choose-organization': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
   '/$slug/settings/profile/integrations': typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
@@ -214,12 +222,12 @@ export interface FileRoutesByTo {
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
-  '/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
   '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
   '/$slug': typeof AuthenticatedSlugIndexRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
+  '/$slug/documents': typeof AuthenticatedSlugDocumentsIndexRoute
   '/$slug/settings': typeof AuthenticatedSlugSettingsIndexRoute
   '/onboarding/choose-organization': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
   '/$slug/settings/profile/integrations': typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/_authenticated/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/_authenticated/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
+  '/_authenticated/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
   '/_authenticated/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
   '/_authenticated/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
   '/_authenticated/$slug/settings/profile/integrations': typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
@@ -277,6 +286,7 @@ export interface FileRouteTypes {
     | '/$slug/settings/billing'
     | '/$slug/settings/profile'
     | '/$slug/settings/team'
+    | '/$slug/documents/'
     | '/$slug/settings'
     | '/onboarding/choose-organization'
     | '/$slug/settings/profile/integrations'
@@ -294,12 +304,12 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/$slug/analytics'
-    | '/$slug/documents'
     | '/$slug/home'
     | '/$slug/templates'
     | '/$slug'
     | '/$slug/documents/$documentId'
     | '/$slug/settings/billing'
+    | '/$slug/documents'
     | '/$slug/settings'
     | '/onboarding/choose-organization'
     | '/$slug/settings/profile/integrations'
@@ -328,6 +338,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/settings/billing'
     | '/_authenticated/$slug/settings/profile'
     | '/_authenticated/$slug/settings/team'
+    | '/_authenticated/$slug/documents/'
     | '/_authenticated/$slug/settings/'
     | '/_authenticated/onboarding/choose-organization/'
     | '/_authenticated/$slug/settings/profile/integrations'
@@ -453,6 +464,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
+    '/_authenticated/$slug/documents/': {
+      id: '/_authenticated/$slug/documents/'
+      path: '/'
+      fullPath: '/$slug/documents/'
+      preLoaderRoute: typeof AuthenticatedSlugDocumentsIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugDocumentsRoute
+    }
     '/_authenticated/$slug/settings/team': {
       id: '/_authenticated/$slug/settings/team'
       path: '/settings/team'
@@ -549,12 +567,14 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface AuthenticatedSlugDocumentsRouteChildren {
   AuthenticatedSlugDocumentsDocumentIdRoute: typeof AuthenticatedSlugDocumentsDocumentIdRoute
+  AuthenticatedSlugDocumentsIndexRoute: typeof AuthenticatedSlugDocumentsIndexRoute
 }
 
 const AuthenticatedSlugDocumentsRouteChildren: AuthenticatedSlugDocumentsRouteChildren =
   {
     AuthenticatedSlugDocumentsDocumentIdRoute:
       AuthenticatedSlugDocumentsDocumentIdRoute,
+    AuthenticatedSlugDocumentsIndexRoute: AuthenticatedSlugDocumentsIndexRoute,
   }
 
 const AuthenticatedSlugDocumentsRouteWithChildren =
