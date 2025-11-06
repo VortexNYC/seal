@@ -78,6 +78,47 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 /**
+ * MIME type to file extensions mapping for react-dropzone
+ * react-dropzone expects: { 'mime/type': ['.ext1', '.ext2'] }
+ */
+export const DROPZONE_ACCEPT_TYPES: Record<string, string[]> = {
+	// Documents
+	"application/pdf": [".pdf"],
+	"application/msword": [".doc"],
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+		".docx",
+	],
+	"application/vnd.ms-excel": [".xls"],
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+		".xlsx",
+	],
+	"application/vnd.ms-powerpoint": [".ppt"],
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation": [
+		".pptx",
+	],
+	"text/plain": [".txt"],
+	"text/csv": [".csv"],
+	// Images
+	"image/jpeg": [".jpg", ".jpeg"],
+	"image/png": [".png"],
+	"image/gif": [".gif"],
+	"image/webp": [".webp"],
+	"image/svg+xml": [".svg"],
+	// Archives
+	"application/zip": [".zip"],
+	"application/x-rar-compressed": [".rar"],
+	"application/x-7z-compressed": [".7z"],
+	// Audio
+	"audio/mpeg": [".mp3"],
+	"audio/wav": [".wav"],
+	"audio/ogg": [".ogg"],
+	// Video
+	"video/mp4": [".mp4"],
+	"video/webm": [".webm"],
+	"video/ogg": [".ogv"],
+};
+
+/**
  * Format file size in human-readable format
  */
 export function formatFileSize(bytes: number): string {

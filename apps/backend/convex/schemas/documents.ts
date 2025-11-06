@@ -1,5 +1,6 @@
 import { defineTable } from "convex/server";
 import { type Infer, v } from "convex/values";
+import { documentWorkflowStatusTuple } from "./document_workflow_status";
 
 export const documentSharingModeTuple = v.union(
 	v.literal("private"), // Owner only
@@ -32,8 +33,18 @@ export const documentsTable = defineTable({
 	// Sharing configuration
 	sharingMode: documentSharingModeTuple,
 
-	// Lifecycle status
+	// Lifecycle status (active/archived/deleted)
 	status: documentStatusTuple,
+
+	// Workflow status (draft/sent/in_progress/completed/cancelled/declined)
+	// Optional to support migration from existing documents
+	workflowStatus: v.optional(documentWorkflowStatusTuple),
+
+	// Workflow timestamps
+	sentAt: v.optional(v.number()), // When document was sent to recipients
+	completedAt: v.optional(v.number()), // When all signatures were collected
+	cancelledAt: v.optional(v.number()), // When workflow was cancelled
+	declinedAt: v.optional(v.number()), // When first recipient declined
 
 	// Timestamps
 	createdAt: v.number(),
@@ -43,4 +54,7 @@ export const documentsTable = defineTable({
 	.index("by_owner", ["ownerId"])
 	.index("by_status", ["status"])
 	.index("by_sharing_mode", ["sharingMode"])
-	.index("by_organization_status", ["organizationId", "status"]);
+	.index("by_organization_status", ["organizationId", "status"])
+	.index("by_workflow_status", ["workflowStatus"])
+	.index("by_organization_workflow", ["organizationId", "workflowStatus"])
+	.index("by_owner_workflow", ["ownerId", "workflowStatus"]);

@@ -10,6 +10,16 @@ import {
 	documentAccessTable,
 } from "./schemas/document_access";
 import {
+	documentRecipientsTable,
+	type RecipientRole,
+	type RecipientStatus,
+} from "./schemas/document_recipients";
+import {
+	documentRemindersTable,
+	type ReminderStatus,
+	type ReminderType,
+} from "./schemas/document_reminders";
+import {
 	type DocumentSharingMode,
 	type DocumentStatus,
 	documentsTable,
@@ -61,6 +71,9 @@ export type {
 
 // Re-export document types
 export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus };
+export type { RecipientRole, RecipientStatus };
+export type { ReminderStatus, ReminderType };
+export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";
 
 // Re-export signature workflow types
 export type { AuthenticationMethod, FieldType, RecipientStatus };
@@ -77,6 +90,8 @@ export default defineSchema({
 
 	documents: documentsTable,
 	document_access: documentAccessTable,
+	document_recipients: documentRecipientsTable,
+	document_reminders: documentRemindersTable,
 
 	// Signature workflow tables
 	recipients: recipientsTable,

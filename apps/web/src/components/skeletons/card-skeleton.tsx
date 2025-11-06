@@ -42,7 +42,7 @@ export function CardSkeleton({
 	showFooter = false,
 }: CardSkeletonProps) {
 	return (
-		<Card>
+		<Card role="status" aria-label="Loading card content">
 			<CardHeader>
 				<CardTitle>
 					<Skeleton className="h-5 w-[200px]" />
@@ -53,9 +53,25 @@ export function CardSkeleton({
 					</CardDescription>
 				)}
 			</CardHeader>
-			<CardContent className="space-y-2">
-				<Skeleton className="h-8 w-full" />
-				<Skeleton className="h-4 w-3/4" />
+			<CardContent>
+				<div className="space-y-2">
+					<div className="flex items-center justify-between text-sm">
+						<Skeleton className="h-4 w-16" />
+						<Skeleton className="h-5 w-20" />
+					</div>
+					<div className="flex items-center justify-between text-sm">
+						<Skeleton className="h-4 w-16" />
+						<Skeleton className="h-4 w-24" />
+					</div>
+					<div className="flex items-center justify-between text-sm">
+						<Skeleton className="h-4 w-20" />
+						<Skeleton className="h-4 w-32" />
+					</div>
+					<div className="flex items-center justify-between text-sm">
+						<Skeleton className="h-4 w-16" />
+						<Skeleton className="h-5 w-20" />
+					</div>
+				</div>
 			</CardContent>
 			{showFooter && (
 				<div className="px-6 pb-6">

@@ -3,10 +3,10 @@
  * These functions are called by scheduled tasks and cannot be called directly from the client
  */
 
-import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
-import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
+import { internalMutation } from "../_generated/server";
 
 /**
  * Helper function to perform the actual cleanup logic
@@ -50,18 +50,11 @@ export const cleanupDocumentStorage = internalMutation({
 	},
 	handler: async (ctx, args) => {
 		try {
-			const result = await performCleanup(
-				ctx,
-				args.storageId,
-				args.documentId,
-			);
+			const result = await performCleanup(ctx, args.storageId, args.documentId);
 
 			return { success: true, ...result };
 		} catch (error) {
-			console.error(
-				`Storage cleanup error for ${args.storageId}:`,
-				error,
-			);
+			console.error(`Storage cleanup error for ${args.storageId}:`, error);
 			throw error;
 		}
 	},
@@ -102,10 +95,7 @@ export const batchCleanupDocumentStorage = internalMutation({
 					results.skipped++;
 				}
 			} catch (error) {
-				console.error(
-					`Batch cleanup error for ${item.storageId}:`,
-					error,
-				);
+				console.error(`Batch cleanup error for ${item.storageId}:`, error);
 				results.errors++;
 			}
 		}
