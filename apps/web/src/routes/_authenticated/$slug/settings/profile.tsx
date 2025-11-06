@@ -5,20 +5,17 @@
  * Route: /{slug}/settings/profile/*
  */
 
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { PageWrapper } from "@/components/page-wrapper";
 import {
-	User,
-	Bell,
-	Shield,
-	Plug,
-	BarChart3
-} from "lucide-react";
+	createFileRoute,
+	Link,
+	Outlet,
+	useLocation,
+} from "@tanstack/react-router";
+import { BarChart3, Bell, Plug, Shield, User } from "lucide-react";
+import { PageWrapper } from "@/components/page-wrapper";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute(
-	"/_authenticated/$slug/settings/profile",
-)({
+export const Route = createFileRoute("/_authenticated/$slug/settings/profile")({
 	component: ProfileLayout,
 });
 
@@ -64,7 +61,7 @@ function ProfileLayout() {
 			icon: BarChart3,
 			description: "View your usage statistics",
 		},
-	]
+	];
 
 	return (
 		<PageWrapper title="Profile Settings">
@@ -95,7 +92,7 @@ function ProfileLayout() {
 										</div>
 									</div>
 								</Link>
-							)
+							);
 						})}
 					</nav>
 				</aside>
@@ -106,5 +103,5 @@ function ProfileLayout() {
 				</div>
 			</div>
 		</PageWrapper>
-	)
+	);
 }

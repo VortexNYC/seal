@@ -20,12 +20,12 @@ import {
 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
-import { PageWrapper } from "@/components/page-wrapper";
-import { CardSkeleton } from "@/components/skeletons/card-skeleton";
-import { DocumentsSkeleton } from "@/components/skeletons/documents-skeleton";
 import { ShareDialog } from "@/components/documents/share-dialog";
 import { UploadDialog } from "@/components/documents/upload-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
+import { PageWrapper } from "@/components/page-wrapper";
+import { CardSkeleton } from "@/components/skeletons/card-skeleton";
+import { DocumentsSkeleton } from "@/components/skeletons/documents-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,7 +80,7 @@ function DocumentsList({
 			organizationId,
 			filter,
 		}),
-	)
+	);
 
 	// Filter documents by workflow status on the client side
 	const documents =
@@ -89,7 +89,7 @@ function DocumentsList({
 			: allDocuments.filter((doc) => {
 					const docWorkflowStatus = doc.workflowStatus ?? "draft";
 					return docWorkflowStatus === workflowStatusFilter;
-				})
+				});
 
 	const deleteDocument = useMutation(api.documents.mutations.deleteDocument);
 	const sendDocument = useMutation(api.documents.mutations.sendDocument);
@@ -97,7 +97,7 @@ function DocumentsList({
 
 	const handleDelete = async (documentId: Id<"documents">) => {
 		if (!confirm("Are you sure you want to delete this document?")) {
-			return
+			return;
 		}
 
 		try {
@@ -107,7 +107,7 @@ function DocumentsList({
 		} catch (_error) {
 			toast.error("Failed to delete document");
 		}
-	}
+	};
 
 	const handleSendDocument = async (documentId: Id<"documents">) => {
 		if (
@@ -115,7 +115,7 @@ function DocumentsList({
 				"Send this document? Once sent, recipients will be notified to take action.",
 			)
 		) {
-			return
+			return;
 		}
 
 		try {
@@ -127,7 +127,7 @@ function DocumentsList({
 				error instanceof Error ? error.message : "Failed to send document";
 			toast.error(errorMessage);
 		}
-	}
+	};
 
 	const handleCancelDocument = async (documentId: Id<"documents">) => {
 		if (
@@ -135,7 +135,7 @@ function DocumentsList({
 				"Cancel this document? This action cannot be undone and recipients will be notified.",
 			)
 		) {
-			return
+			return;
 		}
 
 		try {
@@ -147,7 +147,7 @@ function DocumentsList({
 				error instanceof Error ? error.message : "Failed to cancel document";
 			toast.error(errorMessage);
 		}
-	}
+	};
 
 	const handleDownload = async (documentId: Id<"documents">) => {
 		try {
@@ -156,12 +156,12 @@ function DocumentsList({
 				{
 					documentId,
 				},
-			)
+			);
 			window.open(url, "_blank");
 		} catch (_error) {
 			toast.error("Failed to download document");
 		}
-	}
+	};
 
 	const formatBytes = (bytes: number) => {
 		if (bytes === 0) return "0 Bytes";
@@ -169,15 +169,15 @@ function DocumentsList({
 		const sizes = ["Bytes", "KB", "MB", "GB"];
 		const i = Math.floor(Math.log(bytes) / Math.log(k));
 		return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
-	}
+	};
 
 	const formatDate = (timestamp: number) => {
 		return new Date(timestamp).toLocaleDateString("en-US", {
 			year: "numeric",
 			month: "short",
 			day: "numeric",
-		})
-	}
+		});
+	};
 
 	return (
 		<>
@@ -255,7 +255,7 @@ function DocumentsList({
 											</DropdownMenuItem>
 											<DropdownMenuItem
 												onClick={() => {
-													onShareClick(doc._id)
+													onShareClick(doc._id);
 												}}
 											>
 												<Share2Icon className="mr-2 h-4 w-4" />
@@ -310,7 +310,7 @@ function DocumentsList({
 				</div>
 			)}
 		</>
-	)
+	);
 }
 
 function DocumentsPage() {
@@ -326,16 +326,16 @@ function DocumentsPage() {
 
 	const { data: organization } = useSuspenseQuery(
 		convexQuery(api.organizations.queries.getOrganization, { slug }),
-	)
+	);
 
 	const handleRefetch = () => {
 		setRefreshKey((prev) => prev + 1);
-	}
+	};
 
 	const handleShareClick = (documentId: Id<"documents">) => {
 		setSelectedDocumentId(documentId);
 		setShareDialogOpen(true);
-	}
+	};
 
 	return (
 		<PageWrapper
@@ -467,5 +467,5 @@ function DocumentsPage() {
 				)}
 			</div>
 		</PageWrapper>
-	)
+	);
 }
