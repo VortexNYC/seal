@@ -12,14 +12,14 @@
 		"clean": "git clean -xdf .cache .turbo node_modules convex/_generate"
 	},
 	"dependencies": {
-		"@clerk/backend": "^2.19.0",
-		"convex": "^1.28.0",
+		"@clerk/backend": "^2.20.0",
+		"convex": "^1.28.2",
 		"convex-helpers": "^0.1.104",
-		"stripe": "^19.1.0",
-		"svix": "^1.77.0",
+		"stripe": "^19.3.0",
+		"svix": "^1.81.0",
 		"zod": "^3.25.76"
 	},
 	"devDependencies": {
-		"@clerk/types": "^4.95.0"
+		"@clerk/types": "^4.97.2"
 	}
 }
