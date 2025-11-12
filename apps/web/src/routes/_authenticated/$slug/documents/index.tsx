@@ -70,7 +70,6 @@ interface DocumentsListProps {
 	organizationId: Id<"organizations">;
 	filter: FilterType;
 	workflowStatusFilter: WorkflowStatusFilter;
-	onRefetch: () => void;
 	onShareClick: (documentId: Id<"documents">) => void;
 }
 
@@ -78,7 +77,6 @@ function DocumentsList({
 	organizationId,
 	filter,
 	workflowStatusFilter,
-	onRefetch,
 	onShareClick,
 }: DocumentsListProps) {
 	const { slug } = Route.useParams();
@@ -521,7 +519,6 @@ function DocumentsPage() {
 						organizationId={organization._id}
 						filter={filter}
 						workflowStatusFilter={workflowStatusFilter}
-						onRefetch={handleRefetch}
 						onShareClick={handleShareClick}
 					/>
 				</Suspense>
