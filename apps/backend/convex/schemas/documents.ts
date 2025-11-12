@@ -27,6 +27,7 @@ export const documentsTable = defineTable({
 	fileSize: v.number(),
 	fileType: v.string(), // MIME type (e.g., "application/pdf")
 	pageCount: v.optional(v.number()), // Number of pages in the PDF (SEA-64)
+	thumbnailDataUrl: v.optional(v.string()), // Base64 data URL of first page thumbnail (SEA-69)
 
 	// Convex Storage reference
 	storageId: v.string(), // ID returned from storage.store()
