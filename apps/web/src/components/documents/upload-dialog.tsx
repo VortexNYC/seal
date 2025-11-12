@@ -194,6 +194,7 @@ export function UploadDialog({
 					fileType: file.type,
 					storageId,
 					pageCount: fileWithStatus.pageCount, // SEA-64: Include page count
+					thumbnailDataUrl: fileWithStatus.thumbnail || undefined, // SEA-69: Include thumbnail
 				});
 
 				// Update status to success (100% progress)

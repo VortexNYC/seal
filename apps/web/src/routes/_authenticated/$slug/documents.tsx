@@ -313,8 +313,16 @@ function DocumentsList({
 											}
 										>
 											<TableCell>
-												<div className="w-16 h-20 bg-muted rounded border border-border flex items-center justify-center">
-													<FileIcon className="h-8 w-8 text-muted-foreground" />
+												<div className="w-16 h-20 bg-muted rounded border border-border flex items-center justify-center overflow-hidden">
+													{doc.thumbnailDataUrl ? (
+														<img
+															src={doc.thumbnailDataUrl}
+															alt={`${doc.name} thumbnail`}
+															className="w-full h-full object-cover"
+														/>
+													) : (
+														<FileIcon className="h-8 w-8 text-muted-foreground" />
+													)}
 												</div>
 											</TableCell>
 											<TableCell>
@@ -420,6 +428,15 @@ function DocumentsList({
 										})
 									}
 								>
+									{doc.thumbnailDataUrl && (
+										<div className="w-full h-32 bg-muted flex items-center justify-center overflow-hidden border-b">
+											<img
+												src={doc.thumbnailDataUrl}
+												alt={`${doc.name} thumbnail`}
+												className="max-w-full max-h-full object-contain"
+											/>
+										</div>
+									)}
 									<CardHeader>
 										<div className="flex items-start justify-between">
 											<div className="flex items-center gap-2">

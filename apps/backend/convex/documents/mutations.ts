@@ -39,6 +39,7 @@ export const createDocument = authMutation({
 		fileType: v.string(),
 		storageId: v.string(), // ID returned from storage upload
 		pageCount: v.optional(v.number()), // Number of pages in PDF (SEA-64)
+		thumbnailDataUrl: v.optional(v.string()), // Base64 data URL of thumbnail (SEA-69)
 	},
 	handler: async (ctx, args) => {
 		const userId = ctx.auth.user._id;
@@ -77,6 +78,7 @@ export const createDocument = authMutation({
 			fileType: args.fileType,
 			storageId: args.storageId,
 			pageCount: args.pageCount, // SEA-64: Store page count
+			thumbnailDataUrl: args.thumbnailDataUrl, // SEA-69: Store thumbnail
 			sharingMode: "private", // Default to private
 			status: "active",
 			workflowStatus: "draft", // Default to draft workflow status
