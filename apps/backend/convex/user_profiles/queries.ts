@@ -37,6 +37,12 @@ export const getUserProfile = query({
 		clerkUserId: v.string(),
 	},
 	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+
+		if (!identity) {
+			return null;
+		}
+
 		const profile = await ctx.db
 			.query("user_profiles")
 			.withIndex("by_clerk_user_id", (q) =>

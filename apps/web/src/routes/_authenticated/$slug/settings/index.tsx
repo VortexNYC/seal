@@ -83,6 +83,7 @@ function GeneralSettings() {
 		name: "",
 		timezone: "UTC",
 		currency: "BRL",
+		currencyKind: "normal",
 	});
 
 	// Initialize form data when organization loads
@@ -92,6 +93,7 @@ function GeneralSettings() {
 				name: organization.name || "",
 				timezone: organization.timezone || "UTC",
 				currency: organization.currency || "BRL",
+				currencyKind: organization.currencyKind || "normal",
 			});
 		}
 	}, [organization]);
@@ -111,6 +113,7 @@ function GeneralSettings() {
 				name: formData.name.trim(),
 				timezone: formData.timezone,
 				currency: formData.currency,
+				currencyKind: formData.currencyKind,
 			});
 
 			toast.success("Workspace settings updated successfully");

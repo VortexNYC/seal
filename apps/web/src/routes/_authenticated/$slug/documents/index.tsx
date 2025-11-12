@@ -26,6 +26,16 @@ import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badg
 import { PageWrapper } from "@/components/page-wrapper";
 import { CardSkeleton } from "@/components/skeletons/card-skeleton";
 import { DocumentsSkeleton } from "@/components/skeletons/documents-skeleton";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -95,57 +105,66 @@ function DocumentsList({
 	const sendDocument = useMutation(api.documents.mutations.sendDocument);
 	const cancelDocument = useMutation(api.documents.mutations.cancelDocument);
 
-	const handleDelete = async (documentId: Id<"documents">) => {
-		if (!confirm("Are you sure you want to delete this document?")) {
-			return;
-		}
+	// Confirmation dialog state
+	const [confirmDialog, setConfirmDialog] = useState<{
+		open: boolean;
+		type: "delete" | "send" | "cancel";
+		documentId: Id<"documents"> | null;
+	}>({
+		open: false,
+		type: "delete",
+		documentId: null,
+	});
 
-		try {
-			await deleteDocument({ documentId });
-			toast.success("Document deleted");
-			onRefetch();
-		} catch (_error) {
-			toast.error("Failed to delete document");
-		}
+	const handleDelete = (documentId: Id<"documents">) => {
+		setConfirmDialog({
+			open: true,
+			type: "delete",
+			documentId,
+		});
 	};
 
-	const handleSendDocument = async (documentId: Id<"documents">) => {
-		if (
-			!confirm(
-				"Send this document? Once sent, recipients will be notified to take action.",
-			)
-		) {
-			return;
-		}
-
-		try {
-			await sendDocument({ documentId });
-			toast.success("Document sent successfully");
-			refetch();
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Failed to send document";
-			toast.error(errorMessage);
-		}
+	const handleSendDocument = (documentId: Id<"documents">) => {
+		setConfirmDialog({
+			open: true,
+			type: "send",
+			documentId,
+		});
 	};
 
-	const handleCancelDocument = async (documentId: Id<"documents">) => {
-		if (
-			!confirm(
-				"Cancel this document? This action cannot be undone and recipients will be notified.",
-			)
-		) {
-			return;
-		}
+	const handleCancelDocument = (documentId: Id<"documents">) => {
+		setConfirmDialog({
+			open: true,
+			type: "cancel",
+			documentId,
+		});
+	};
+
+	const handleConfirmAction = async () => {
+		if (!confirmDialog.documentId) return;
 
 		try {
-			await cancelDocument({ documentId });
-			toast.success("Document cancelled");
-			refetch();
+			if (confirmDialog.type === "delete") {
+				await deleteDocument({ documentId: confirmDialog.documentId });
+				toast.success("Document deleted");
+				onRefetch();
+			} else if (confirmDialog.type === "send") {
+				await sendDocument({ documentId: confirmDialog.documentId });
+				toast.success("Document sent successfully");
+				refetch();
+			} else if (confirmDialog.type === "cancel") {
+				await cancelDocument({ documentId: confirmDialog.documentId });
+				toast.success("Document cancelled");
+				refetch();
+			}
 		} catch (error) {
 			const errorMessage =
-				error instanceof Error ? error.message : "Failed to cancel document";
+				error instanceof Error
+					? error.message
+					: `Failed to ${confirmDialog.type} document`;
 			toast.error(errorMessage);
+		} finally {
+			setConfirmDialog({ open: false, type: "delete", documentId: null });
 		}
 	};
 
@@ -178,6 +197,31 @@ function DocumentsList({
 			day: "numeric",
 		});
 	};
+
+	const getConfirmDialogContent = () => {
+		switch (confirmDialog.type) {
+			case "delete":
+				return {
+					title: "Delete Document",
+					description:
+						"Are you sure you want to delete this document? This action cannot be undone.",
+				};
+			case "send":
+				return {
+					title: "Send Document",
+					description:
+						"Send this document? Once sent, recipients will be notified to take action.",
+				};
+			case "cancel":
+				return {
+					title: "Cancel Document",
+					description:
+						"Cancel this document? This action cannot be undone and recipients will be notified.",
+				};
+		}
+	};
+
+	const dialogContent = getConfirmDialogContent();
 
 	return (
 		<>
@@ -309,6 +353,39 @@ function DocumentsList({
 					))}
 				</div>
 			)}
+
+			{/* Confirmation Dialog */}
+			<AlertDialog
+				open={confirmDialog.open}
+				onOpenChange={(open) =>
+					setConfirmDialog({ open, type: "delete", documentId: null })
+				}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
+						<AlertDialogDescription>
+							{dialogContent.description}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleConfirmAction}
+							className={
+								confirmDialog.type === "delete" ||
+								confirmDialog.type === "cancel"
+									? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+									: ""
+							}
+						>
+							{confirmDialog.type === "delete" && "Delete"}
+							{confirmDialog.type === "send" && "Send"}
+							{confirmDialog.type === "cancel" && "Cancel Document"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</>
 	);
 }
