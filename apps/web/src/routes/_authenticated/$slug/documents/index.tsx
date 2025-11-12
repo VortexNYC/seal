@@ -147,7 +147,7 @@ function DocumentsList({
 			if (confirmDialog.type === "delete") {
 				await deleteDocument({ documentId: confirmDialog.documentId });
 				toast.success("Document deleted");
-				onRefetch();
+				refetch();
 			} else if (confirmDialog.type === "send") {
 				await sendDocument({ documentId: confirmDialog.documentId });
 				toast.success("Document sent successfully");
