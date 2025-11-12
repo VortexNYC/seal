@@ -14,13 +14,14 @@
 - `bun run lint`, `bun run format`, and `bun run typecheck` enforce Biome linting/formatting and TS checks.
 
 ## Coding Style & Naming Conventions
-- TypeScript everywhere; avoid `any` and lean on strict typings—Biome flags violations.
+- TypeScript everywhere; avoid `any` (Biome error) and lean on strict typings.
 - React components and Convex actions use PascalCase filenames (`TeamDashboard.tsx`), while shared utilities stay kebab-case.
 - Let Biome formatters decide spacing/quotes. Run `bun run format` before pushing.
 - Prefer descriptive names (`useBillingPortal`, `upsertOrganization`) and colocate related hooks, styles, and tests.
+- Import organization: external libs first, then internal workspace packages, then relative imports.
 
 ## Testing Guidelines
-- Frontend unit/integration tests use Vitest + Testing Library. Run `bun run --filter @seal/web test`.
+- Frontend unit/integration tests use Vitest + Testing Library. Run `bun run --filter @seal/web test` or `bun run --filter @seal/web test path/to/test.test.tsx` for single test.
 - Place specs alongside source as `*.test.tsx` or within `__tests__/`; mirror component or route names.
 - Stub Convex and Clerk boundaries with provided mocks to keep tests deterministic.
 - Target meaningful coverage for new hooks/components; use `bun run --filter @seal/web test -- --coverage` when refactoring.
@@ -31,6 +32,7 @@
 - Pull requests should link Linear tickets, describe backend schema or env changes, and include UI screenshots when applicable.
 - Request review once a Vercel preview (or local equivalent) passes and secrets/config updates are documented.
 
-## Environment & Security Notes
+## Error Handling & Security
+- Use try/catch for async operations, prefer error boundaries in React.
 - Required keys live in `.env` files (`VITE_CONVEX_URL`, `VITE_CLERK_PUBLISHABLE_KEY`, Stripe secrets). Never commit credentials.
 - Use `convex dev` for local data and Stripe test keys by default; production tokens belong only in Vercel-managed env vars.

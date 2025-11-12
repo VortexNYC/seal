@@ -85,9 +85,24 @@ function formatRole(value: string | undefined) {
 	return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function isPathActive(currentPath: string, targetPath: string) {
+function isPathActive(
+	currentPath: string,
+	targetPath: string,
+	exactMatch = false,
+) {
 	// Exact match - this is the primary check
-	return currentPath === targetPath;
+	if (currentPath === targetPath) {
+		return true;
+	}
+
+	// If exactMatch is required, don't check for child routes
+	if (exactMatch) {
+		return false;
+	}
+
+	// Check if the current path is a child route of the target path
+	// For example: /org/settings/team/123 should match /org/settings/team
+	return currentPath.startsWith(`${targetPath}/`);
 }
 
 function buildNavSections({
@@ -131,11 +146,17 @@ function buildNavSections({
 			title: "General",
 			url: buildOrganizationPath(slug, "/settings"),
 			visible: canView(permissionFlags?.canViewSettings),
+			exactMatch: true, // General should only match /settings, not child routes
 		},
 		{
 			title: "Team",
 			url: buildOrganizationPath(slug, "/settings/team"),
 			visible: canView(permissionFlags?.canViewMembers),
+		},
+		{
+			title: "Profile",
+			url: buildOrganizationPath(slug, "/settings/profile"),
+			visible: true, // Profile settings are always visible to the user
 		},
 	].filter((item) => item.visible);
 
@@ -161,7 +182,11 @@ function buildNavSections({
 			const items = section.items.map((item) => ({
 				title: item.title,
 				url: item.url,
-				isActive: isPathActive(currentPath, item.url),
+				isActive: isPathActive(
+					currentPath,
+					item.url,
+					"exactMatch" in item ? Boolean(item.exactMatch) : false,
+				),
 			}));
 
 			return {
@@ -309,7 +334,9 @@ export function AppSidebar({
 				<NavMain items={navItems} />
 			</SidebarContent>
 			<SidebarFooter>
-				{currentUser && <NavUser user={currentUser} onSignOut={signOut} />}
+				{currentUser && (
+					<NavUser user={currentUser} slug={slug} onSignOut={signOut} />
+				)}
 			</SidebarFooter>
 			<SidebarRail />
 		</Sidebar>
