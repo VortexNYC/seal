@@ -19,10 +19,12 @@ import {
 	LayoutGridIcon,
 	LayoutListIcon,
 	MoreVerticalIcon,
+	SearchIcon,
 	SendIcon,
 	Share2Icon,
 	TrashIcon,
 	UploadIcon,
+	XIcon,
 } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -47,6 +49,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu";
+import { Input } from "../../../components/ui/input";
 import {
 	Table,
 	TableBody,
@@ -81,6 +84,7 @@ interface DocumentsListProps {
 	viewMode: ViewMode;
 	sortField: SortField;
 	sortDirection: SortDirection;
+	searchQuery: string; // SEA-70: Search query
 	onRefetch: () => void;
 	onShareClick: (documentId: Id<"documents">) => void;
 	onSortChange: (field: SortField) => void;
@@ -93,6 +97,7 @@ function DocumentsList({
 	viewMode,
 	sortField,
 	sortDirection,
+	searchQuery,
 	onRefetch,
 	onShareClick,
 	onSortChange,
@@ -121,9 +126,23 @@ function DocumentsList({
 					return docWorkflowStatus === workflowStatusFilter;
 				});
 
+	// SEA-70: Filter documents by search query (name and description)
+	const searchedDocuments = useMemo(() => {
+		if (!searchQuery.trim()) {
+			return filteredDocuments;
+		}
+
+		const query = searchQuery.toLowerCase().trim();
+		return filteredDocuments.filter((doc) => {
+			const nameMatch = doc.name.toLowerCase().includes(query);
+			const descriptionMatch = doc.description?.toLowerCase().includes(query);
+			return nameMatch || descriptionMatch;
+		});
+	}, [filteredDocuments, searchQuery]);
+
 	// Sort documents (SEA-68: sorting by name and date)
 	const sortedDocuments = useMemo(() => {
-		const docs = [...filteredDocuments];
+		const docs = [...searchedDocuments];
 		docs.sort((a, b) => {
 			let comparison = 0;
 
@@ -140,7 +159,7 @@ function DocumentsList({
 			return sortDirection === "asc" ? comparison : -comparison;
 		});
 		return docs;
-	}, [filteredDocuments, sortField, sortDirection]);
+	}, [searchedDocuments, sortField, sortDirection]);
 
 	// Pagination logic (SEA-68)
 	const totalPages = Math.ceil(sortedDocuments.length / ITEMS_PER_PAGE);
@@ -149,11 +168,11 @@ function DocumentsList({
 		return sortedDocuments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 	}, [sortedDocuments, currentPage]);
 
-	// Reset to page 1 when filters change
+	// Reset to page 1 when filters change (SEA-70: includes search)
 	// biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset page when filters change
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [filter, workflowStatusFilter, sortField, sortDirection]);
+	}, [filter, workflowStatusFilter, sortField, sortDirection, searchQuery]);
 
 	const deleteDocument = useMutation(api.documents.mutations.deleteDocument);
 	const sendDocument = useMutation(api.documents.mutations.sendDocument);
@@ -268,19 +287,41 @@ function DocumentsList({
 
 	return (
 		<div className="space-y-4">
-			{/* Empty state */}
+			{/* Empty state (SEA-70: search-aware messaging) */}
 			{sortedDocuments.length === 0 ? (
 				<Card>
 					<CardContent className="flex flex-col items-center justify-center py-12">
 						<FileIcon className="h-12 w-12 text-muted-foreground mb-4" />
-						<p className="text-lg font-medium">No documents yet</p>
-						<p className="text-sm text-muted-foreground mb-4">
-							Upload your first document to get started
-						</p>
+						{searchQuery ? (
+							<>
+								<p className="text-lg font-medium">No documents found</p>
+								<p className="text-sm text-muted-foreground mb-4">
+									No documents match "{searchQuery}"
+								</p>
+								<p className="text-xs text-muted-foreground">
+									Try different keywords or clear the search
+								</p>
+							</>
+						) : (
+							<>
+								<p className="text-lg font-medium">No documents yet</p>
+								<p className="text-sm text-muted-foreground mb-4">
+									Upload your first document to get started
+								</p>
+							</>
+						)}
 					</CardContent>
 				</Card>
 			) : (
 				<>
+					{/* SEA-70: Search results counter */}
+					{searchQuery && (
+						<div className="text-sm text-muted-foreground">
+							Found {sortedDocuments.length} document
+							{sortedDocuments.length === 1 ? "" : "s"} matching "{searchQuery}"
+						</div>
+					)}
+
 					{/* Table View (SEA-68) */}
 					{viewMode === "table" ? (
 						<div className="border rounded-lg">
@@ -613,6 +654,9 @@ function DocumentsPage() {
 	const [sortField, setSortField] = useState<SortField>("createdAt");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
+	// SEA-70: Search state
+	const [searchQuery, setSearchQuery] = useState("");
+
 	const handleSortChange = (field: SortField) => {
 		if (sortField === field) {
 			// Toggle direction if clicking same field
@@ -669,6 +713,28 @@ function DocumentsPage() {
 							Upload Document
 						</Button>
 					</div>
+				</div>
+
+				{/* SEA-70: Search Input */}
+				<div className="relative max-w-md">
+					<SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+					<Input
+						type="text"
+						placeholder="Search documents by name or description..."
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+						className="pl-10 pr-10"
+					/>
+					{searchQuery && (
+						<Button
+							variant="ghost"
+							size="icon"
+							className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+							onClick={() => setSearchQuery("")}
+						>
+							<XIcon className="h-4 w-4" />
+						</Button>
+					)}
 				</div>
 
 				{/* Filter Tabs */}
@@ -777,6 +843,7 @@ function DocumentsPage() {
 						viewMode={viewMode}
 						sortField={sortField}
 						sortDirection={sortDirection}
+						searchQuery={searchQuery}
 						onRefetch={handleRefetch}
 						onShareClick={handleShareClick}
 						onSortChange={handleSortChange}
