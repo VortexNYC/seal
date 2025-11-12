@@ -43,6 +43,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../../../components/ui/card";
+import { Checkbox } from "../../../components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -110,6 +111,11 @@ function DocumentsList({
 	const [currentPage, setCurrentPage] = useState(1);
 	const ITEMS_PER_PAGE = 20;
 
+	// SEA-71: Bulk selection state
+	const [selectedDocumentIds, setSelectedDocumentIds] = useState<
+		Set<Id<"documents">>
+	>(new Set());
+
 	const { data: allDocuments, refetch } = useSuspenseQuery(
 		convexQuery(api.documents.queries.listDocuments, {
 			organizationId,
@@ -168,15 +174,41 @@ function DocumentsList({
 		return sortedDocuments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 	}, [sortedDocuments, currentPage]);
 
-	// Reset to page 1 when filters change (SEA-70: includes search)
+	// Reset to page 1 and clear selection when filters change (SEA-70: includes search, SEA-71: clear selection)
 	// biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset page when filters change
 	useEffect(() => {
 		setCurrentPage(1);
+		setSelectedDocumentIds(new Set());
 	}, [filter, workflowStatusFilter, sortField, sortDirection, searchQuery]);
 
 	const deleteDocument = useMutation(api.documents.mutations.deleteDocument);
 	const sendDocument = useMutation(api.documents.mutations.sendDocument);
 	const cancelDocument = useMutation(api.documents.mutations.cancelDocument);
+
+	// SEA-71: Selection handlers
+	const handleToggleSelect = (documentId: Id<"documents">) => {
+		setSelectedDocumentIds((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(documentId)) {
+				newSet.delete(documentId);
+			} else {
+				newSet.add(documentId);
+			}
+			return newSet;
+		});
+	};
+
+	const handleSelectAll = () => {
+		setSelectedDocumentIds(new Set(paginatedDocuments.map((doc) => doc._id)));
+	};
+
+	const handleClearSelection = () => {
+		setSelectedDocumentIds(new Set());
+	};
+
+	const isAllSelected =
+		paginatedDocuments.length > 0 &&
+		paginatedDocuments.every((doc) => selectedDocumentIds.has(doc._id));
 
 	const handleDelete = async (documentId: Id<"documents">) => {
 		if (!confirm("Are you sure you want to delete this document?")) {
@@ -190,6 +222,45 @@ function DocumentsList({
 		} catch (_error) {
 			toast.error("Failed to delete document");
 		}
+	};
+
+	// SEA-71: Bulk delete handler
+	const handleBulkDelete = async () => {
+		const count = selectedDocumentIds.size;
+		if (
+			!confirm(
+				`Are you sure you want to delete ${count} document${count === 1 ? "" : "s"}? This action cannot be undone.`,
+			)
+		) {
+			return;
+		}
+
+		const idsToDelete = Array.from(selectedDocumentIds);
+		let successCount = 0;
+		let failCount = 0;
+
+		for (const documentId of idsToDelete) {
+			try {
+				await deleteDocument({ documentId });
+				successCount++;
+			} catch (_error) {
+				failCount++;
+			}
+		}
+
+		if (successCount > 0) {
+			toast.success(
+				`${successCount} document${successCount === 1 ? "" : "s"} deleted`,
+			);
+		}
+		if (failCount > 0) {
+			toast.error(
+				`Failed to delete ${failCount} document${failCount === 1 ? "" : "s"}`,
+			);
+		}
+
+		setSelectedDocumentIds(new Set());
+		onRefetch();
 	};
 
 	const handleSendDocument = async (documentId: Id<"documents">) => {
@@ -322,12 +393,53 @@ function DocumentsList({
 						</div>
 					)}
 
+					{/* SEA-71: Bulk actions bar */}
+					{selectedDocumentIds.size > 0 && (
+						<div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
+							<div className="flex items-center gap-4">
+								<span className="text-sm font-medium">
+									{selectedDocumentIds.size} document
+									{selectedDocumentIds.size === 1 ? "" : "s"} selected
+								</span>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={handleClearSelection}
+								>
+									Clear Selection
+								</Button>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="destructive"
+									size="sm"
+									onClick={handleBulkDelete}
+								>
+									<TrashIcon className="mr-2 h-4 w-4" />
+									Delete Selected
+								</Button>
+							</div>
+						</div>
+					)}
+
 					{/* Table View (SEA-68) */}
 					{viewMode === "table" ? (
 						<div className="border rounded-lg">
 							<Table>
 								<TableHeader>
 									<TableRow>
+										<TableHead className="w-[50px]">
+											<Checkbox
+												checked={isAllSelected}
+												onCheckedChange={(checked) => {
+													if (checked) {
+														handleSelectAll();
+													} else {
+														handleClearSelection();
+													}
+												}}
+											/>
+										</TableHead>
 										<TableHead className="w-[100px]">Thumbnail</TableHead>
 										<TableHead>
 											<SortHeader field="name" label="Title" />
@@ -353,6 +465,12 @@ function DocumentsList({
 												})
 											}
 										>
+											<TableCell onClick={(e) => e.stopPropagation()}>
+												<Checkbox
+													checked={selectedDocumentIds.has(doc._id)}
+													onCheckedChange={() => handleToggleSelect(doc._id)}
+												/>
+											</TableCell>
 											<TableCell>
 												<div className="w-16 h-20 bg-muted rounded border border-border flex items-center justify-center overflow-hidden">
 													{doc.thumbnailDataUrl ? (
@@ -481,6 +599,11 @@ function DocumentsList({
 									<CardHeader>
 										<div className="flex items-start justify-between">
 											<div className="flex items-center gap-2">
+												<Checkbox
+													checked={selectedDocumentIds.has(doc._id)}
+													onCheckedChange={() => handleToggleSelect(doc._id)}
+													onClick={(e) => e.stopPropagation()}
+												/>
 												<FileIcon className="h-5 w-5 text-muted-foreground" />
 												<CardTitle className="text-base truncate">
 													{doc.name}
