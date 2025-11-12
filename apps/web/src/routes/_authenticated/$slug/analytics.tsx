@@ -31,10 +31,6 @@ function AnalyticsPage() {
 	return (
 		<PageWrapper title="Analytics">
 			<div className="space-y-6">
-				<p className="text-muted-foreground">
-					Track document activity and team performance
-				</p>
-
 				<div className="grid gap-4 md:grid-cols-2">
 					<Card>
 						<CardHeader>

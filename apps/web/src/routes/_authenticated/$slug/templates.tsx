@@ -26,10 +26,6 @@ function TemplatesPage() {
 	return (
 		<PageWrapper title="Templates">
 			<div className="space-y-6">
-				<p className="text-muted-foreground">
-					Manage and create document templates
-				</p>
-
 				<Card>
 					<CardHeader>
 						<div className="flex items-center gap-2">
