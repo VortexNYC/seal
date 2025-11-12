@@ -38,6 +38,7 @@ export const createDocument = authMutation({
 		fileSize: v.number(),
 		fileType: v.string(),
 		storageId: v.string(), // ID returned from storage upload
+		pageCount: v.optional(v.number()), // Number of pages in PDF (SEA-64)
 	},
 	handler: async (ctx, args) => {
 		const userId = ctx.auth.user._id;
@@ -75,6 +76,7 @@ export const createDocument = authMutation({
 			fileSize: args.fileSize,
 			fileType: args.fileType,
 			storageId: args.storageId,
+			pageCount: args.pageCount, // SEA-64: Store page count
 			sharingMode: "private", // Default to private
 			status: "active",
 			workflowStatus: "draft", // Default to draft workflow status
