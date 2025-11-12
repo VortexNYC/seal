@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import {
 	BadgeCheck,
 	Bell,
@@ -26,6 +27,7 @@ import {
 
 export function NavUser({
 	user,
+	slug,
 	onSignOut,
 }: {
 	user: {
@@ -34,9 +36,11 @@ export function NavUser({
 		avatar: string;
 		initials?: string;
 	};
+	slug: string;
 	onSignOut?: () => Promise<void> | void;
 }) {
 	const { isMobile } = useSidebar();
+	const navigate = useNavigate();
 
 	return (
 		<SidebarMenu>
@@ -89,11 +93,19 @@ export function NavUser({
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
-							<DropdownMenuItem>
+							<DropdownMenuItem
+								onSelect={() =>
+									navigate({ to: "/$slug/settings/profile", params: { slug } })
+								}
+							>
 								<BadgeCheck />
 								Account
 							</DropdownMenuItem>
-							<DropdownMenuItem>
+							<DropdownMenuItem
+								onSelect={() =>
+									navigate({ to: "/$slug/settings/billing", params: { slug } })
+								}
+							>
 								<CreditCard />
 								Billing
 							</DropdownMenuItem>
