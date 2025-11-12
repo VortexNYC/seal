@@ -85,10 +85,19 @@ function formatRole(value: string | undefined) {
 	return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function isPathActive(currentPath: string, targetPath: string) {
+function isPathActive(
+	currentPath: string,
+	targetPath: string,
+	exactMatch = false,
+) {
 	// Exact match - this is the primary check
 	if (currentPath === targetPath) {
 		return true;
+	}
+
+	// If exactMatch is required, don't check for child routes
+	if (exactMatch) {
+		return false;
 	}
 
 	// Check if the current path is a child route of the target path
@@ -137,6 +146,7 @@ function buildNavSections({
 			title: "General",
 			url: buildOrganizationPath(slug, "/settings"),
 			visible: canView(permissionFlags?.canViewSettings),
+			exactMatch: true, // General should only match /settings, not child routes
 		},
 		{
 			title: "Team",
@@ -172,7 +182,11 @@ function buildNavSections({
 			const items = section.items.map((item) => ({
 				title: item.title,
 				url: item.url,
-				isActive: isPathActive(currentPath, item.url),
+				isActive: isPathActive(
+					currentPath,
+					item.url,
+					"exactMatch" in item ? Boolean(item.exactMatch) : false,
+				),
 			}));
 
 			return {
