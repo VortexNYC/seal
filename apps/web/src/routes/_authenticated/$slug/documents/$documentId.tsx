@@ -196,7 +196,16 @@ function DocumentDetailPage() {
 	};
 
 	return (
-		<PageWrapper title={document.name}>
+		<PageWrapper
+			title={document.name}
+			action={{
+				label: "Back to Documents",
+				onClick: () =>
+					router.navigate({ to: "/$slug/documents", params: { slug } }),
+				icon: ArrowLeftIcon,
+				variant: "ghost",
+			}}
+		>
 			<div className="space-y-6">
 				<div className="flex items-center justify-between">
 					<Button
