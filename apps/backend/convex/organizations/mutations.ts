@@ -13,7 +13,13 @@ import { organizationBaseSchema } from "../validations/organizations";
 type OrganizationUpdateData = Partial<
 	Pick<
 		Doc<"organizations">,
-		"name" | "logo" | "metadata" | "timezone" | "isActive"
+		| "name"
+		| "logo"
+		| "metadata"
+		| "timezone"
+		| "isActive"
+		| "currency"
+		| "currencyKind"
 	>
 > & {
 	updatedAt: number;
@@ -280,6 +286,9 @@ export const updateWorkspace = adminMutation({
 		if (args.logo !== undefined) updateData.logo = args.logo;
 		if (args.metadata !== undefined) updateData.metadata = args.metadata;
 		if (args.timezone !== undefined) updateData.timezone = args.timezone;
+		if (args.currency !== undefined) updateData.currency = args.currency;
+		if (args.currencyKind !== undefined)
+			updateData.currencyKind = args.currencyKind;
 		if (args.isActive !== undefined) updateData.isActive = args.isActive;
 
 		await ctx.db.patch(organization._id, updateData);
