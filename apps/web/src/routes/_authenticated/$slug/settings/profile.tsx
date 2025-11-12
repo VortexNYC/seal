@@ -38,16 +38,16 @@ function ProfileLayout() {
 			description: "Manage your personal information and avatar",
 		},
 		{
-			title: "Notifications",
-			href: `/${slug}/settings/profile/notifications`,
-			icon: Bell,
-			description: "Configure your notification preferences",
-		},
-		{
 			title: "Security",
 			href: `/${slug}/settings/profile/security`,
 			icon: Shield,
 			description: "Password, MFA, and session management",
+		},
+		{
+			title: "Notifications",
+			href: `/${slug}/settings/profile/notifications`,
+			icon: Bell,
+			description: "Configure your notification preferences",
 		},
 		{
 			title: "Integrations",
