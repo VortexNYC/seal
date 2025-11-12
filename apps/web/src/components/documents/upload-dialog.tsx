@@ -5,6 +5,7 @@ import { AlertCircle, CheckCircle2, FileIcon, Upload, X } from "lucide-react";
 import { useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
+import { extractPdfMetadata } from "../../lib/pdf-utils";
 import {
 	DROPZONE_ACCEPT_TYPES,
 	formatFileSize,
@@ -48,6 +49,8 @@ interface FileWithStatus {
 	error?: string;
 	progress?: number; // Upload progress percentage (0-100)
 	retryCount?: number; // Number of retry attempts
+	pageCount?: number; // Number of pages in PDF (SEA-64)
+	thumbnail?: string | null; // PDF thumbnail data URL (SEA-64)
 }
 
 // Constants for retry logic (SEA-63)
@@ -78,7 +81,10 @@ export function UploadDialog({
 	);
 	const createDocument = useMutation(api.documents.mutations.createDocument);
 
-	const onDrop = (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+	const onDrop = async (
+		acceptedFiles: File[],
+		rejectedFiles: FileRejection[],
+	) => {
 		// Handle rejected files
 		if (rejectedFiles.length > 0) {
 			const errorMessages = rejectedFiles.map((rejection) => {
@@ -93,9 +99,14 @@ export function UploadDialog({
 		for (const file of acceptedFiles) {
 			const validation = validateFileForUpload(file);
 			if (validation.valid) {
+				// SEA-64: Extract PDF metadata (page count and thumbnail)
+				const metadata = await extractPdfMetadata(file);
+
 				validatedFiles.push({
 					file,
 					status: "pending",
+					pageCount: metadata.pageCount,
+					thumbnail: metadata.thumbnail,
 				});
 			} else {
 				toast.error(`${file.name}: ${validation.errors.join(", ")}`);
@@ -182,6 +193,7 @@ export function UploadDialog({
 					fileSize: file.size,
 					fileType: file.type,
 					storageId,
+					pageCount: fileWithStatus.pageCount, // SEA-64: Include page count
 				});
 
 				// Update status to success (100% progress)
@@ -387,7 +399,18 @@ export function UploadDialog({
 												key={index}
 												className="flex items-start gap-3 p-3 bg-muted/50 rounded-md"
 											>
-												{getStatusIcon(fileWithStatus.status)}
+												{/* SEA-64: PDF Thumbnail */}
+												{fileWithStatus.thumbnail ? (
+													<div className="flex-shrink-0">
+														<img
+															src={fileWithStatus.thumbnail}
+															alt="PDF Preview"
+															className="w-16 h-20 object-cover rounded border border-border"
+														/>
+													</div>
+												) : (
+													getStatusIcon(fileWithStatus.status)
+												)}
 												<div className="flex-1 min-w-0">
 													<div className="flex items-center justify-between gap-2 mb-1">
 														<p className="text-sm font-medium truncate">
@@ -402,6 +425,15 @@ export function UploadDialog({
 													</div>
 													<p className="text-xs text-muted-foreground mb-2">
 														{formatFileSize(fileWithStatus.file.size)}
+														{fileWithStatus.pageCount !== undefined &&
+															fileWithStatus.pageCount > 0 && (
+																<span className="ml-2">
+																	• {fileWithStatus.pageCount}{" "}
+																	{fileWithStatus.pageCount === 1
+																		? "page"
+																		: "pages"}
+																</span>
+															)}
 														{fileWithStatus.retryCount !== undefined &&
 															fileWithStatus.retryCount > 0 && (
 																<span className="ml-2 text-orange-500">
