@@ -94,7 +94,8 @@ export function UploadDialog({
 		onDrop,
 		accept: DROPZONE_ACCEPT_TYPES,
 		disabled: uploading,
-		multiple: true,
+		multiple: false, // SEA-62: One file at a time
+		maxFiles: 1, // SEA-62: One file at a time
 	});
 
 	const removeFile = (index: number) => {
@@ -265,10 +266,10 @@ export function UploadDialog({
 								) : (
 									<>
 										<p className="text-sm font-medium mb-1">
-											Drag & drop files here, or click to select
+											Drag & drop a PDF file here, or click to select
 										</p>
 										<p className="text-xs text-muted-foreground">
-											Supports multiple files
+											PDF files only, one at a time
 										</p>
 									</>
 								)}
@@ -277,9 +278,7 @@ export function UploadDialog({
 							{/* Description Field */}
 							{files.length > 0 && (
 								<div className="grid gap-2">
-									<Label htmlFor="description">
-										Description (optional, applies to all files)
-									</Label>
+									<Label htmlFor="description">Description (optional)</Label>
 									<Input
 										id="description"
 										type="text"
@@ -294,7 +293,7 @@ export function UploadDialog({
 							{/* File List */}
 							{files.length > 0 && (
 								<div className="space-y-2">
-									<Label>Selected Files ({files.length})</Label>
+									<Label>Selected File</Label>
 									<div className="space-y-2 max-h-[300px] overflow-y-auto border rounded-md p-2">
 										{files.map((fileWithStatus, index) => (
 											<div
@@ -351,9 +350,7 @@ export function UploadDialog({
 								Cancel
 							</Button>
 							<Button type="submit" disabled={uploading || files.length === 0}>
-								{uploading
-									? `Uploading ${files.filter((f) => f.status === "uploading").length}/${files.length}...`
-									: `Upload ${files.length} ${files.length === 1 ? "File" : "Files"}`}
+								{uploading ? "Uploading..." : "Upload PDF"}
 							</Button>
 						</DialogFooter>
 					</form>

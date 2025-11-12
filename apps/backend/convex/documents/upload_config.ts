@@ -4,54 +4,17 @@
 
 /**
  * Maximum file size in bytes (50MB)
+ * SEA-62: Maximum 50MB enforced
  */
 export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 /**
  * Allowed MIME types organized by category
+ * SEA-62: PDF only
  */
 export const ALLOWED_MIME_TYPES = {
-	// Documents
+	// Documents - PDF only (SEA-62)
 	"application/pdf": { ext: ".pdf", name: "PDF" },
-	"application/msword": { ext: ".doc", name: "Word Document" },
-	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
-		ext: ".docx",
-		name: "Word Document",
-	},
-	"application/vnd.ms-excel": { ext: ".xls", name: "Excel Spreadsheet" },
-	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
-		ext: ".xlsx",
-		name: "Excel Spreadsheet",
-	},
-	"application/vnd.ms-powerpoint": { ext: ".ppt", name: "PowerPoint" },
-	"application/vnd.openxmlformats-officedocument.presentationml.presentation": {
-		ext: ".pptx",
-		name: "PowerPoint",
-	},
-	"text/plain": { ext: ".txt", name: "Text File" },
-	"text/csv": { ext: ".csv", name: "CSV File" },
-
-	// Images
-	"image/jpeg": { ext: ".jpg", name: "JPEG Image" },
-	"image/png": { ext: ".png", name: "PNG Image" },
-	"image/gif": { ext: ".gif", name: "GIF Image" },
-	"image/webp": { ext: ".webp", name: "WebP Image" },
-	"image/svg+xml": { ext: ".svg", name: "SVG Image" },
-
-	// Archives
-	"application/zip": { ext: ".zip", name: "ZIP Archive" },
-	"application/x-rar-compressed": { ext: ".rar", name: "RAR Archive" },
-	"application/x-7z-compressed": { ext: ".7z", name: "7-Zip Archive" },
-
-	// Audio
-	"audio/mpeg": { ext: ".mp3", name: "MP3 Audio" },
-	"audio/wav": { ext: ".wav", name: "WAV Audio" },
-	"audio/ogg": { ext: ".ogg", name: "OGG Audio" },
-
-	// Video
-	"video/mp4": { ext: ".mp4", name: "MP4 Video" },
-	"video/webm": { ext: ".webm", name: "WebM Video" },
-	"video/ogg": { ext: ".ogv", name: "OGG Video" },
 } as const;
 
 /**
@@ -90,22 +53,15 @@ export function getMaxFileSizeDisplay(): string {
 
 /**
  * Get user-friendly list of supported file types
+ * SEA-62: PDF only
  */
 export function getSupportedFileTypesDisplay(): string {
-	const categories = {
-		Documents: ["PDF", "Word", "Excel", "PowerPoint", "Text", "CSV"],
-		Images: ["JPEG", "PNG", "GIF", "WebP", "SVG"],
-		Archives: ["ZIP", "RAR", "7-Zip"],
-		Media: ["MP3", "WAV", "MP4", "WebM"],
-	};
-
-	return Object.entries(categories)
-		.map(([category, types]) => `${category}: ${types.join(", ")}`)
-		.join(" • ");
+	return "PDF only";
 }
 
 /**
  * Validate file size
+ * SEA-62: Maximum 50MB enforced
  */
 export function validateFileSize(fileSize: number): {
 	valid: boolean;
@@ -114,7 +70,7 @@ export function validateFileSize(fileSize: number): {
 	if (fileSize > MAX_FILE_SIZE) {
 		return {
 			valid: false,
-			error: `File size exceeds maximum allowed size of ${getMaxFileSizeDisplay()}`,
+			error: "File size must be under 50MB",
 		};
 	}
 
@@ -130,6 +86,7 @@ export function validateFileSize(fileSize: number): {
 
 /**
  * Validate file type
+ * SEA-62: PDF only
  */
 export function validateFileType(fileType: string): {
 	valid: boolean;
@@ -146,7 +103,7 @@ export function validateFileType(fileType: string): {
 	if (!allowedTypes.includes(fileType)) {
 		return {
 			valid: false,
-			error: `File type '${fileType}' is not supported. Supported types: ${getSupportedFileTypesDisplay()}`,
+			error: "Only PDF files are supported",
 		};
 	}
 
