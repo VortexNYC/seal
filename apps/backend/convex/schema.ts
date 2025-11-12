@@ -52,6 +52,7 @@ import { signaturesTable } from "./schemas/signatures";
 import { subscriptionPricesTable } from "./schemas/subscription_prices";
 import { subscriptionProductsTable } from "./schemas/subscription_products";
 import { subscriptionsTable } from "./schemas/subscriptions";
+import { userProfilesTable } from "./schemas/user_profiles";
 import { type UserStatus, usersTable } from "./schemas/users";
 
 // Re-export types for use in other files
@@ -83,6 +84,7 @@ export type { AuditAction, AuditResourceType };
 
 export default defineSchema({
 	users: usersTable,
+	user_profiles: userProfilesTable,
 	organizations: organizationsTable,
 	organization_members: organizationMembersTable,
 	organization_invitations: organizationInvitationsTable,

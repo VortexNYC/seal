@@ -123,21 +123,17 @@ function DocumentDetailPage() {
 	const canEdit = document.status === "active"; // Only edit active documents
 
 	return (
-		<PageWrapper title={document.name}>
+		<PageWrapper
+			title={document.name}
+			action={{
+				label: "Back to Documents",
+				onClick: () =>
+					router.navigate({ to: "/$slug/documents", params: { slug } }),
+				icon: ArrowLeftIcon,
+				variant: "ghost",
+			}}
+		>
 			<div className="space-y-6">
-				<div>
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={() =>
-							router.navigate({ to: "/$slug/documents", params: { slug } })
-						}
-					>
-						<ArrowLeftIcon className="mr-2 h-4 w-4" />
-						Back to Documents
-					</Button>
-				</div>
-
 				<div className="grid gap-6 lg:grid-cols-2">
 					<div className="space-y-6">
 						<div className="flex items-center justify-between">
