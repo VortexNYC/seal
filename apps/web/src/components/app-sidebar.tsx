@@ -87,7 +87,13 @@ function formatRole(value: string | undefined) {
 
 function isPathActive(currentPath: string, targetPath: string) {
 	// Exact match - this is the primary check
-	return currentPath === targetPath;
+	if (currentPath === targetPath) {
+		return true;
+	}
+
+	// Check if the current path is a child route of the target path
+	// For example: /org/settings/team/123 should match /org/settings/team
+	return currentPath.startsWith(`${targetPath}/`);
 }
 
 function buildNavSections({
