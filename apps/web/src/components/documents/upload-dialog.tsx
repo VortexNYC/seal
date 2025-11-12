@@ -33,6 +33,7 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { Progress } from "../ui/progress";
 
 interface UploadDialogProps {
 	organizationId: Id<"organizations">;
@@ -45,7 +46,21 @@ interface FileWithStatus {
 	file: File;
 	status: "pending" | "uploading" | "success" | "error";
 	error?: string;
+	progress?: number; // Upload progress percentage (0-100)
+	retryCount?: number; // Number of retry attempts
 }
+
+// Constants for retry logic (SEA-63)
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+
+// Helper: Sleep function for retry delays
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Helper: Calculate exponential backoff delay
+const getRetryDelay = (retryCount: number): number => {
+	return INITIAL_RETRY_DELAY * 2 ** retryCount; // 1s, 2s, 4s
+};
 
 export function UploadDialog({
 	organizationId,
@@ -107,64 +122,136 @@ export function UploadDialog({
 		index: number,
 	): Promise<boolean> => {
 		const { file } = fileWithStatus;
+		let retryCount = 0;
 
-		try {
-			// Update status to uploading
-			setFiles((prev) =>
-				prev.map((f, i) =>
-					i === index ? { ...f, status: "uploading" as const } : f,
-				),
-			);
+		while (retryCount <= MAX_RETRIES) {
+			try {
+				// Update status to uploading with progress
+				setFiles((prev) =>
+					prev.map((f, i) =>
+						i === index
+							? {
+									...f,
+									status: "uploading" as const,
+									progress: 0,
+									retryCount,
+								}
+							: f,
+					),
+				);
 
-			// Step 1: Generate upload URL
-			const uploadUrl = await generateUploadUrl({});
+				// Step 1: Generate upload URL (10% progress)
+				setFiles((prev) =>
+					prev.map((f, i) => (i === index ? { ...f, progress: 10 } : f)),
+				);
+				const uploadUrl = await generateUploadUrl({});
 
-			// Step 2: Upload file to Convex Storage
-			const result = await fetch(uploadUrl, {
-				method: "POST",
-				headers: { "Content-Type": file.type },
-				body: file,
-			});
+				// Step 2: Upload file to Convex Storage with progress tracking (SEA-63)
+				setFiles((prev) =>
+					prev.map((f, i) => (i === index ? { ...f, progress: 20 } : f)),
+				);
 
-			if (!result.ok) {
-				throw new Error("Upload failed");
+				const result = await fetch(uploadUrl, {
+					method: "POST",
+					headers: { "Content-Type": file.type },
+					body: file,
+				});
+
+				if (!result.ok) {
+					throw new Error(
+						`Upload failed with status ${result.status}: ${result.statusText}`,
+					);
+				}
+
+				// Update progress to 70% after successful upload
+				setFiles((prev) =>
+					prev.map((f, i) => (i === index ? { ...f, progress: 70 } : f)),
+				);
+
+				const { storageId } = await result.json();
+
+				// Step 3: Create document record (90% progress)
+				setFiles((prev) =>
+					prev.map((f, i) => (i === index ? { ...f, progress: 90 } : f)),
+				);
+
+				await createDocument({
+					organizationId,
+					name: file.name,
+					description: description || undefined,
+					fileSize: file.size,
+					fileType: file.type,
+					storageId,
+				});
+
+				// Update status to success (100% progress)
+				setFiles((prev) =>
+					prev.map((f, i) =>
+						i === index
+							? { ...f, status: "success" as const, progress: 100 }
+							: f,
+					),
+				);
+
+				return true;
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error ? error.message : "Upload failed";
+
+				// Check if we should retry (SEA-63: Network interruptions trigger retry)
+				const isNetworkError =
+					error instanceof TypeError ||
+					errorMessage.includes("fetch") ||
+					errorMessage.includes("network") ||
+					errorMessage.includes("Failed to fetch");
+
+				if (isNetworkError && retryCount < MAX_RETRIES) {
+					retryCount++;
+					const delay = getRetryDelay(retryCount - 1);
+
+					// Show retry notification
+					toast.info(
+						`Network error. Retrying upload (${retryCount}/${MAX_RETRIES})...`,
+					);
+
+					// Update file with retry count
+					setFiles((prev) =>
+						prev.map((f, i) =>
+							i === index
+								? {
+										...f,
+										status: "uploading" as const,
+										progress: 0,
+										retryCount,
+									}
+								: f,
+						),
+					);
+
+					// Wait with exponential backoff
+					await sleep(delay);
+					continue; // Retry the upload
+				}
+
+				// No more retries or non-network error - mark as failed
+				setFiles((prev) =>
+					prev.map((f, i) =>
+						i === index
+							? {
+									...f,
+									status: "error" as const,
+									error: errorMessage,
+									progress: 0,
+								}
+							: f,
+					),
+				);
+
+				return false;
 			}
-
-			const { storageId } = await result.json();
-
-			// Step 3: Create document record
-			await createDocument({
-				organizationId,
-				name: file.name,
-				description: description || undefined,
-				fileSize: file.size,
-				fileType: file.type,
-				storageId,
-			});
-
-			// Update status to success
-			setFiles((prev) =>
-				prev.map((f, i) =>
-					i === index ? { ...f, status: "success" as const } : f,
-				),
-			);
-
-			return true;
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Upload failed";
-
-			// Update status to error
-			setFiles((prev) =>
-				prev.map((f, i) =>
-					i === index
-						? { ...f, status: "error" as const, error: errorMessage }
-						: f,
-				),
-			);
-
-			return false;
 		}
+
+		return false;
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -302,12 +389,34 @@ export function UploadDialog({
 											>
 												{getStatusIcon(fileWithStatus.status)}
 												<div className="flex-1 min-w-0">
-													<p className="text-sm font-medium truncate">
-														{fileWithStatus.file.name}
-													</p>
-													<p className="text-xs text-muted-foreground">
+													<div className="flex items-center justify-between gap-2 mb-1">
+														<p className="text-sm font-medium truncate">
+															{fileWithStatus.file.name}
+														</p>
+														{fileWithStatus.status === "uploading" &&
+															fileWithStatus.progress !== undefined && (
+																<span className="text-xs font-medium text-primary">
+																	{fileWithStatus.progress}%
+																</span>
+															)}
+													</div>
+													<p className="text-xs text-muted-foreground mb-2">
 														{formatFileSize(fileWithStatus.file.size)}
+														{fileWithStatus.retryCount !== undefined &&
+															fileWithStatus.retryCount > 0 && (
+																<span className="ml-2 text-orange-500">
+																	(Retry {fileWithStatus.retryCount}/
+																	{MAX_RETRIES})
+																</span>
+															)}
 													</p>
+													{fileWithStatus.status === "uploading" &&
+														fileWithStatus.progress !== undefined && (
+															<Progress
+																value={fileWithStatus.progress}
+																className="h-1.5"
+															/>
+														)}
 													{fileWithStatus.status === "error" &&
 														fileWithStatus.error && (
 															<p className="text-xs text-red-500 mt-1">
