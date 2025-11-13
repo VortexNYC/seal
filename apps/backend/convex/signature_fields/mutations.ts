@@ -1,14 +1,14 @@
 import { v } from "convex/values";
-import { mutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { mutation } from "../_generated/server";
+import { logFieldAction } from "../audit_logs/helpers";
 import { fieldTypeTuple } from "../schemas/signature_fields";
 import {
-	validateFieldPosition,
 	validateFieldAssignment,
+	validateFieldPosition,
 	validateFieldType,
 	validatePageNumber,
 } from "./helpers";
-import { logFieldAction } from "../audit_logs/helpers";
 
 /**
  * Signature Field Mutations
@@ -189,7 +189,10 @@ export const updateField = mutation({
 
 		// Validate field type if properties are being updated
 		if (args.properties) {
-			const typeValidation = validateFieldType(field.fieldType, args.properties);
+			const typeValidation = validateFieldType(
+				field.fieldType,
+				args.properties,
+			);
 			if (!typeValidation.valid) {
 				throw new Error(typeValidation.error);
 			}
@@ -381,7 +384,12 @@ export const deleteField = mutation({
 		const oldValues = {
 			fieldType: field.fieldType,
 			label: field.label,
-			position: { x: field.x, y: field.y, width: field.width, height: field.height },
+			position: {
+				x: field.x,
+				y: field.y,
+				width: field.width,
+				height: field.height,
+			},
 		};
 
 		// Delete field

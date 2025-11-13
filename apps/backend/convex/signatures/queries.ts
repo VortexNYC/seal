@@ -1,10 +1,7 @@
 import { v } from "convex/values";
-import { query } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
-import {
-	getDocumentCompletionStatus,
-	checkRecipientComplete,
-} from "./helpers";
+import { query } from "../_generated/server";
+import { checkRecipientComplete, getDocumentCompletionStatus } from "./helpers";
 
 /**
  * Signature Queries

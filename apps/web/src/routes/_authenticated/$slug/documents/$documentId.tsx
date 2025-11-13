@@ -14,14 +14,17 @@ import {
 	FileTextIcon,
 	UserPlusIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
+import { useEffect, useRef, useState } from "react";
+import { Document, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { ActivityFeed } from "../../../../components/documents/activity-feed";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
+import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
+import { PdfZoomControls } from "../../../../components/documents/pdf-zoom-controls";
 import { RecipientList } from "../../../../components/documents/recipient-list";
 import { SigningProgress } from "../../../../components/documents/signing-progress";
 import { WorkflowStatusBadge } from "../../../../components/documents/workflow-status-badge";
@@ -51,6 +54,10 @@ function DocumentDetailPage() {
 	// SEA-72: PDF viewer state
 	const [numPages, setNumPages] = useState<number | null>(null);
 	const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+	// SEA-84: Responsive PDF width with window resize handling
+	const [pdfWidth, setPdfWidth] = useState(700);
+	const containerRef = useRef<HTMLDivElement>(null);
 
 	const { data: document } = useSuspenseQuery(
 		convexQuery(api.documents.queries.getDocument, {
@@ -91,6 +98,38 @@ function DocumentDetailPage() {
 		};
 		fetchPdfUrl();
 	}, [convexClient, documentId]);
+
+	// SEA-84: Handle window resize to maintain canvas-PDF alignment
+	useEffect(() => {
+		const updatePdfWidth = () => {
+			if (containerRef.current) {
+				// Calculate optimal width based on container size
+				// Leave some padding for scrollbar and borders
+				const containerWidth = containerRef.current.clientWidth;
+				const optimalWidth = Math.min(containerWidth - 40, 900);
+				setPdfWidth(optimalWidth);
+			}
+		};
+
+		// Set initial width after a short delay to ensure container is rendered
+		const timeoutId = setTimeout(updatePdfWidth, 100);
+
+		// Add resize listener with debouncing
+		let resizeTimeoutId: NodeJS.Timeout;
+		const handleResize = () => {
+			clearTimeout(resizeTimeoutId);
+			resizeTimeoutId = setTimeout(updatePdfWidth, 150);
+		};
+
+		window.addEventListener("resize", handleResize);
+
+		// Cleanup
+		return () => {
+			clearTimeout(timeoutId);
+			clearTimeout(resizeTimeoutId);
+			window.removeEventListener("resize", handleResize);
+		};
+	}, []);
 
 	// SEA-72: Download handler
 	const handleDownload = () => {
@@ -230,43 +269,66 @@ function DocumentDetailPage() {
 					<div className="lg:col-span-2 space-y-6">
 						<Card>
 							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<FileTextIcon className="h-5 w-5" />
-									PDF Preview
-								</CardTitle>
-								<CardDescription>
-									{numPages ? `${numPages} pages` : "Loading..."}
-								</CardDescription>
+								<div className="flex items-center justify-between">
+									<div>
+										<CardTitle className="flex items-center gap-2">
+											<FileTextIcon className="h-5 w-5" />
+											PDF Preview
+										</CardTitle>
+										<CardDescription>
+											{numPages ? `${numPages} pages` : "Loading..."}
+										</CardDescription>
+									</div>
+								</div>
 							</CardHeader>
 							<CardContent>
 								{pdfUrl ? (
-									<div className="border rounded-lg overflow-auto max-h-[800px] bg-gray-50">
-										<Document
-											file={pdfUrl}
-											onLoadSuccess={onDocumentLoadSuccess}
-											loading={
-												<div className="p-12 text-center text-muted-foreground">
-													Loading PDF...
-												</div>
-											}
-											error={
-												<div className="p-12 text-center text-destructive">
-													Failed to load PDF
-												</div>
-											}
+									<TransformWrapper
+										initialScale={1}
+										minScale={0.5}
+										maxScale={2}
+										centerOnInit={true}
+										limitToBounds={true}
+										doubleClick={{ disabled: false }}
+										wheel={{ step: 0.1 }}
+									>
+										<div className="mb-4 flex justify-center">
+											<PdfZoomControls />
+										</div>
+										<TransformComponent
+											wrapperClass="border rounded-lg overflow-auto max-h-[800px] bg-gray-50"
+											contentClass="flex flex-col items-center"
+											wrapperStyle={{ width: "100%" }}
 										>
-											{Array.from(new Array(numPages), (_el, index) => (
-												<Page
-													key={`page_${index + 1}`}
-													pageNumber={index + 1}
-													renderTextLayer={true}
-													renderAnnotationLayer={true}
-													className="mb-4"
-													width={700}
-												/>
-											))}
-										</Document>
-									</div>
+											<div ref={containerRef}>
+												<Document
+													file={pdfUrl}
+													onLoadSuccess={onDocumentLoadSuccess}
+													loading={
+														<div className="p-12 text-center text-muted-foreground">
+															Loading PDF...
+														</div>
+													}
+													error={
+														<div className="p-12 text-center text-destructive">
+															Failed to load PDF
+														</div>
+													}
+												>
+													{Array.from(new Array(numPages), (_el, index) => (
+														<PdfPageWithCanvas
+															key={`page_${index + 1}`}
+															pageNumber={index + 1}
+															width={pdfWidth}
+															renderTextLayer={true}
+															renderAnnotationLayer={true}
+															className="mb-4"
+														/>
+													))}
+												</Document>
+											</div>
+										</TransformComponent>
+									</TransformWrapper>
 								) : (
 									<div className="p-12 text-center text-muted-foreground">
 										Loading PDF...
