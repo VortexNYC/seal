@@ -1,4 +1,9 @@
-import { MinusIcon, PlusIcon, Maximize2Icon, RotateCcwIcon } from "lucide-react";
+import {
+	Maximize2Icon,
+	MinusIcon,
+	PlusIcon,
+	RotateCcwIcon,
+} from "lucide-react";
 import { useControls } from "react-zoom-pan-pinch";
 import { Button } from "../ui/button";
 import {

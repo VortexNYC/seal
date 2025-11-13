@@ -1,5 +1,5 @@
+import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
-import type { Id, Doc } from "../_generated/dataModel";
 
 /**
  * Signature Helper Functions
@@ -44,7 +44,10 @@ export function validateSignature(
 	// Dropdown and radio must have a value
 	if (fieldType === "dropdown" || fieldType === "radio") {
 		if (!value || value.trim() === "") {
-			return { valid: false, error: `${fieldType} field must have a selection` };
+			return {
+				valid: false,
+				error: `${fieldType} field must have a selection`,
+			};
 		}
 		return { valid: true };
 	}
@@ -123,7 +126,8 @@ export function validateAgainstRules(
 			return {
 				valid: false,
 				error:
-					validationRules.customMessage || "Value does not match required pattern",
+					validationRules.customMessage ||
+					"Value does not match required pattern",
 			};
 		}
 	}

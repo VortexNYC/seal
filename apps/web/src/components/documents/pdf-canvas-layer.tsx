@@ -1,4 +1,4 @@
-import Konva from "konva";
+import type Konva from "konva";
 import { useEffect, useRef, useState } from "react";
 import { Circle, Layer, Rect, Stage, Text } from "react-konva";
 
@@ -16,11 +16,11 @@ interface PdfCanvasLayerProps {
  * Syncs dimensions, zoom, and position with the underlying PDF page
  */
 export function PdfCanvasLayer({
-	pageNumber,
+	pageNumber: _pageNumber,
 	pdfWidth,
 	pdfHeight,
 	zoom = 1,
-	scrollOffset = { x: 0, y: 0 },
+	scrollOffset: _scrollOffset = { x: 0, y: 0 },
 	onCanvasReady,
 }: PdfCanvasLayerProps) {
 	const stageRef = useRef<Konva.Stage>(null);
@@ -68,13 +68,7 @@ export function PdfCanvasLayer({
 					{/* TODO: Remove these test markers once field placement is implemented and tested */}
 
 					{/* Top-left corner marker (0, 0) */}
-					<Circle
-						x={10}
-						y={10}
-						radius={5}
-						fill="red"
-						opacity={0.5}
-					/>
+					<Circle x={10} y={10} radius={5} fill="red" opacity={0.5} />
 					<Text
 						x={20}
 						y={5}

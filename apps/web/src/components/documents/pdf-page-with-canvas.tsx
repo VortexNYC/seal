@@ -1,4 +1,4 @@
-import Konva from "konva";
+import type Konva from "konva";
 import { useState } from "react";
 import { Page } from "react-pdf";
 import { useTransformContext } from "react-zoom-pan-pinch";
@@ -31,12 +31,11 @@ export function PdfPageWithCanvas({
 
 	// Get zoom/pan state from TransformWrapper context
 	const transformContext = useTransformContext();
-	const { scale, positionX, positionY } =
-		transformContext?.transformState || {
-			scale: 1,
-			positionX: 0,
-			positionY: 0,
-		};
+	const { scale, positionX, positionY } = transformContext?.transformState || {
+		scale: 1,
+		positionX: 0,
+		positionY: 0,
+	};
 
 	const handlePageLoadSuccess = (page: { width: number; height: number }) => {
 		// Calculate actual rendered dimensions based on the width prop

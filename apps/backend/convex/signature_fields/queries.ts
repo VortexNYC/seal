@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { query } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
+import { query } from "../_generated/server";
 
 /**
  * Signature Field Queries
@@ -91,10 +91,7 @@ export const getFieldById = query({
 	args: {
 		fieldId: v.id("signature_fields"),
 	},
-	handler: async (
-		ctx,
-		args,
-	): Promise<Doc<"signature_fields"> | null> => {
+	handler: async (ctx, args): Promise<Doc<"signature_fields"> | null> => {
 		const field = await ctx.db.get(args.fieldId);
 		return field;
 	},
