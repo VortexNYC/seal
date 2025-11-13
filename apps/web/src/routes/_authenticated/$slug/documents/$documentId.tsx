@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { ActivityFeed } from "../../../../components/documents/activity-feed";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
+import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
 import { RecipientList } from "../../../../components/documents/recipient-list";
 import { SigningProgress } from "../../../../components/documents/signing-progress";
 import { WorkflowStatusBadge } from "../../../../components/documents/workflow-status-badge";
@@ -256,13 +257,13 @@ function DocumentDetailPage() {
 											}
 										>
 											{Array.from(new Array(numPages), (_el, index) => (
-												<Page
+												<PdfPageWithCanvas
 													key={`page_${index + 1}`}
 													pageNumber={index + 1}
+													width={700}
 													renderTextLayer={true}
 													renderAnnotationLayer={true}
 													className="mb-4"
-													width={700}
 												/>
 											))}
 										</Document>
