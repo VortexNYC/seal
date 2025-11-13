@@ -325,3 +325,257 @@ export const getDocumentsByWorkflowStatus = authQuery({
 		return accessibleDocuments;
 	},
 });
+
+/**
+ * SEA-32: Composite Queries for Testing Related Data
+ * These queries retrieve documents with all their related data
+ */
+
+/**
+ * Get document with all its signatures
+ * SEA-32: Composite query to retrieve document and related signatures
+ */
+export const getDocumentWithSignatures = authQuery({
+	args: { documentId: v.id("documents") },
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Get the document with access control
+		const document = await ctx.db.get(args.documentId);
+		if (!document || document.status === "deleted") {
+			throw new ConvexError("Document not found");
+		}
+
+		// 2. Check access
+		let hasAccess = document.ownerId === userId;
+		if (!hasAccess) {
+			const member = await ctx.db
+				.query("organization_members")
+				.withIndex("by_user_organization", (q) =>
+					q.eq("userId", userId).eq("organizationId", document.organizationId),
+				)
+				.first();
+
+			if (member && member.status === "active") {
+				if (document.sharingMode === "workspace") {
+					hasAccess = true;
+				} else if (document.sharingMode === "specific") {
+					const access = await ctx.db
+						.query("document_access")
+						.withIndex("by_document_user", (q) =>
+							q.eq("documentId", document._id).eq("userId", userId),
+						)
+						.first();
+					hasAccess = access !== null && access.revokedAt === undefined;
+				}
+			}
+		}
+
+		if (!hasAccess) {
+			throw new ConvexError("You don't have access to this document");
+		}
+
+		// 3. Get all signatures for this document
+		const signatures = await ctx.db
+			.query("signatures")
+			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+			.collect();
+
+		// 4. Get all signature fields for this document
+		const fields = await ctx.db
+			.query("signature_fields")
+			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+			.collect();
+
+		// 5. Enrich signatures with field and recipient information
+		const enrichedSignatures = await Promise.all(
+			signatures.map(async (signature) => {
+				const field = await ctx.db.get(signature.fieldId);
+				const recipient = await ctx.db.get(signature.recipientId);
+
+				return {
+					...signature,
+					field,
+					recipient,
+				};
+			}),
+		);
+
+		return {
+			document,
+			signatures: enrichedSignatures,
+			fields,
+			signatureCount: signatures.length,
+			fieldCount: fields.length,
+		};
+	},
+});
+
+/**
+ * Get document with its complete audit trail
+ * SEA-32: Composite query to retrieve document and audit history
+ */
+export const getDocumentWithAuditTrail = authQuery({
+	args: { documentId: v.id("documents") },
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Get the document with access control
+		const document = await ctx.db.get(args.documentId);
+		if (!document || document.status === "deleted") {
+			throw new ConvexError("Document not found");
+		}
+
+		// 2. Check access
+		let hasAccess = document.ownerId === userId;
+		if (!hasAccess) {
+			const member = await ctx.db
+				.query("organization_members")
+				.withIndex("by_user_organization", (q) =>
+					q.eq("userId", userId).eq("organizationId", document.organizationId),
+				)
+				.first();
+
+			if (member && member.status === "active") {
+				if (document.sharingMode === "workspace") {
+					hasAccess = true;
+				} else if (document.sharingMode === "specific") {
+					const access = await ctx.db
+						.query("document_access")
+						.withIndex("by_document_user", (q) =>
+							q.eq("documentId", document._id).eq("userId", userId),
+						)
+						.first();
+					hasAccess = access !== null && access.revokedAt === undefined;
+				}
+			}
+		}
+
+		if (!hasAccess) {
+			throw new ConvexError("You don't have access to this document");
+		}
+
+		// 3. Get audit trail for this document
+		const auditLogs = await ctx.db
+			.query("audit_logs")
+			.withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
+			.order("desc")
+			.collect();
+
+		return {
+			document,
+			auditLogs,
+			auditLogCount: auditLogs.length,
+		};
+	},
+});
+
+/**
+ * Get complete document data with all relationships
+ * SEA-32: Comprehensive query for full document context
+ * Useful for document detail pages that need all related data
+ */
+export const getDocumentComplete = authQuery({
+	args: { documentId: v.id("documents") },
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Get the document with access control
+		const document = await ctx.db.get(args.documentId);
+		if (!document || document.status === "deleted") {
+			throw new ConvexError("Document not found");
+		}
+
+		// 2. Check access
+		let hasAccess = document.ownerId === userId;
+		if (!hasAccess) {
+			const member = await ctx.db
+				.query("organization_members")
+				.withIndex("by_user_organization", (q) =>
+					q.eq("userId", userId).eq("organizationId", document.organizationId),
+				)
+				.first();
+
+			if (member && member.status === "active") {
+				if (document.sharingMode === "workspace") {
+					hasAccess = true;
+				} else if (document.sharingMode === "specific") {
+					const access = await ctx.db
+						.query("document_access")
+						.withIndex("by_document_user", (q) =>
+							q.eq("documentId", document._id).eq("userId", userId),
+						)
+						.first();
+					hasAccess = access !== null && access.revokedAt === undefined;
+				}
+			}
+		}
+
+		if (!hasAccess) {
+			throw new ConvexError("You don't have access to this document");
+		}
+
+		// 3. Get all related data in parallel for performance
+		const [signatures, fields, recipients, auditLogs] = await Promise.all([
+			ctx.db
+				.query("signatures")
+				.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+				.collect(),
+			ctx.db
+				.query("signature_fields")
+				.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+				.collect(),
+			ctx.db
+				.query("recipients")
+				.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+				.collect(),
+			ctx.db
+				.query("audit_logs")
+				.withIndex("by_document_created", (q) =>
+					q.eq("documentId", args.documentId),
+				)
+				.order("desc")
+				.take(50), // Limit audit logs to most recent 50
+		]);
+
+		// 4. Enrich signatures with field and recipient information
+		const enrichedSignatures = await Promise.all(
+			signatures.map(async (signature) => {
+				const field = await ctx.db.get(signature.fieldId);
+				const recipient = await ctx.db.get(signature.recipientId);
+
+				return {
+					...signature,
+					field,
+					recipient,
+				};
+			}),
+		);
+
+		// 5. Calculate completion statistics
+		const requiredFields = fields.filter((f) => f.isRequired);
+		const completedFields = fields.filter((f) =>
+			signatures.some((s) => s.fieldId === f._id),
+		);
+
+		return {
+			document,
+			signatures: enrichedSignatures,
+			fields,
+			recipients,
+			auditLogs,
+			statistics: {
+				totalFields: fields.length,
+				requiredFields: requiredFields.length,
+				completedFields: completedFields.length,
+				signatureCount: signatures.length,
+				recipientCount: recipients.length,
+				auditLogCount: auditLogs.length,
+				completionPercentage:
+					fields.length > 0
+						? Math.round((completedFields.length / fields.length) * 100)
+						: 0,
+			},
+		};
+	},
+});
