@@ -14,7 +14,7 @@ import {
 	FileTextIcon,
 	UserPlusIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Document, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -93,9 +93,24 @@ function DocumentDetailPage() {
 		}),
 	);
 
+	// SEA-91: Load signature fields from database
+	const { data: signatureFields = [], refetch: refetchFields } =
+		useSuspenseQuery(
+			convexQuery(api.signature_fields.queries.getFieldsByDocument, {
+				documentId: documentId as Id<"documents">,
+			}),
+		);
+
 	const removeRecipient = useMutation(
 		api.documents.recipients_mutations.removeRecipient,
 	);
+
+	// SEA-91: Field mutations
+	const createField = useMutation(api.signature_fields.mutations.createField);
+	const repositionField = useMutation(
+		api.signature_fields.mutations.repositionField,
+	);
+	const deleteField = useMutation(api.signature_fields.mutations.deleteField);
 
 	// SEA-72: Fetch PDF URL on mount
 	const { convexClient } = useRouteContext({ from: "__root__" });
@@ -113,6 +128,21 @@ function DocumentDetailPage() {
 		};
 		fetchPdfUrl();
 	}, [convexClient, documentId]);
+
+	// SEA-91: Sync database fields to local state
+	useEffect(() => {
+		const fields: PlacedField[] = signatureFields.map((field) => ({
+			id: field._id,
+			fieldType: field.fieldType as FieldType,
+			x: field.x,
+			y: field.y,
+			width: field.width,
+			height: field.height,
+			pageNumber: field.page,
+			recipientId: field.recipientId,
+		}));
+		setPlacedFields(fields);
+	}, [signatureFields]);
 
 	// SEA-84: Handle window resize to maintain canvas-PDF alignment
 	useEffect(() => {
@@ -158,17 +188,24 @@ function DocumentDetailPage() {
 		setNumPages(numPages);
 	};
 
-	// SEA-90: Field drop handlers
+	// SEA-91: Field drop handlers with database persistence
 	const handleFieldDragOver = (e: React.DragEvent) => {
 		e.preventDefault();
 		e.dataTransfer.dropEffect = "copy";
 	};
 
-	const handleFieldDrop = (e: React.DragEvent) => {
+	const handleFieldDrop = async (e: React.DragEvent) => {
 		e.preventDefault();
 		const fieldType = e.dataTransfer.getData("fieldType") as FieldType;
 
 		if (!fieldType) return;
+
+		// Check if we have recipients
+		if (recipients.length === 0) {
+			toast.error("Please add at least one recipient before placing fields");
+			setDraggingFieldType(null);
+			return;
+		}
 
 		// Get the container and calculate drop position
 		const container = containerRef.current;
@@ -186,42 +223,126 @@ function DocumentDetailPage() {
 		// TODO: Implement multi-page detection based on scroll position
 		const pageNumber = 1;
 
-		// Create new field
-		const newField: PlacedField = {
-			id: `temp-${Date.now()}-${Math.random()}`,
-			fieldType,
-			x: dropX,
-			y: dropY,
-			width,
-			height,
-			pageNumber,
-		};
+		// Use first recipient by default
+		// TODO SEA-91: Add recipient selector UI and map document_recipients to recipients
+		const recipientId = recipients[0]._id;
 
-		setPlacedFields((prev) => [...prev, newField]);
-		setSelectedFieldId(newField.id);
-		setDraggingFieldType(null);
+		try {
+			// Save field to database
+			// NOTE: signature_fields expects Id<"recipients">, but we have Id<"document_recipients">
+			// This is a schema mismatch that needs to be resolved
+			const fieldId = await createField({
+				documentId: documentId as Id<"documents">,
+				recipientId: recipientId as unknown as Id<"recipients">,
+				fieldType,
+				label: `${fieldType} field`,
+				isRequired: true, // Default to required
+				x: dropX,
+				y: dropY,
+				width,
+				height,
+				page: pageNumber,
+			});
 
-		toast.success(`${fieldType} field placed`);
+			// Select the newly created field
+			setSelectedFieldId(fieldId);
+			setDraggingFieldType(null);
+
+			// Refetch fields to sync with database
+			await refetchFields();
+
+			toast.success(`${fieldType} field placed`);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to create field";
+			toast.error(errorMessage);
+			setDraggingFieldType(null);
+		}
 	};
 
-	// SEA-90: Field update handlers
-	const handleFieldUpdate = (
+	// SEA-91: Field update handlers with database persistence
+	const handleFieldUpdate = async (
 		fieldId: string,
 		x: number,
 		y: number,
 		width: number,
 		height: number,
 	) => {
+		// Optimistically update local state
 		setPlacedFields((prev) =>
 			prev.map((field) =>
 				field.id === fieldId ? { ...field, x, y, width, height } : field,
 			),
 		);
+
+		try {
+			// Persist to database
+			await repositionField({
+				fieldId: fieldId as Id<"signature_fields">,
+				x,
+				y,
+				width,
+				height,
+			});
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to update field";
+			toast.error(errorMessage);
+			// Revert by refetching
+			await refetchFields();
+		}
 	};
 
 	const handleFieldSelect = (fieldId: string | null) => {
 		setSelectedFieldId(fieldId);
 	};
+
+	// SEA-91: Field delete handler
+	const handleFieldDelete = useCallback(async () => {
+		if (!selectedFieldId) return;
+
+		if (!confirm("Delete this field?")) return;
+
+		try {
+			await deleteField({
+				fieldId: selectedFieldId as Id<"signature_fields">,
+			});
+
+			setSelectedFieldId(null);
+			await refetchFields();
+
+			toast.success("Field deleted");
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to delete field";
+			toast.error(errorMessage);
+		}
+	}, [selectedFieldId, deleteField, refetchFields]);
+
+	// SEA-91: Keyboard shortcuts for field operations
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// Delete or Backspace to delete selected field
+			if (
+				selectedFieldId &&
+				(e.key === "Delete" || e.key === "Backspace") &&
+				!e.metaKey &&
+				!e.ctrlKey
+			) {
+				// Only if not in an input field
+				if (
+					window.document.activeElement?.tagName !== "INPUT" &&
+					window.document.activeElement?.tagName !== "TEXTAREA"
+				) {
+					e.preventDefault();
+					handleFieldDelete();
+				}
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [selectedFieldId, handleFieldDelete]);
 
 	const handleRemoveRecipient = async (
 		recipientId: Id<"document_recipients">,
@@ -440,6 +561,30 @@ function DocumentDetailPage() {
 								}
 								onFieldDragEnd={() => setDraggingFieldType(null)}
 							/>
+						)}
+
+						{/* SEA-91: Field controls (when field is selected) */}
+						{canEdit && selectedFieldId && (
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-sm">Selected Field</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-3">
+									<div className="flex items-center justify-between">
+										<span className="text-sm text-muted-foreground">
+											Field ID: {selectedFieldId.slice(0, 8)}...
+										</span>
+									</div>
+									<Button
+										variant="destructive"
+										size="sm"
+										className="w-full"
+										onClick={handleFieldDelete}
+									>
+										Delete Field
+									</Button>
+								</CardContent>
+							</Card>
 						)}
 
 						{/* SEA-72: Document metadata */}
