@@ -1,6 +1,7 @@
 import Konva from "konva";
 import { useState } from "react";
 import { Page } from "react-pdf";
+import { useTransformContext } from "react-zoom-pan-pinch";
 import { PdfCanvasLayer } from "./pdf-canvas-layer";
 
 interface PdfPageWithCanvasProps {
@@ -14,6 +15,7 @@ interface PdfPageWithCanvasProps {
 /**
  * Wrapper component that combines a PDF page with an interactive canvas layer
  * Handles dimension synchronization between PDF and canvas
+ * Syncs with zoom/pan state from react-zoom-pan-pinch
  */
 export function PdfPageWithCanvas({
 	pageNumber,
@@ -26,6 +28,15 @@ export function PdfPageWithCanvas({
 		width: number;
 		height: number;
 	} | null>(null);
+
+	// Get zoom/pan state from TransformWrapper context
+	const transformContext = useTransformContext();
+	const { scale, positionX, positionY } =
+		transformContext?.transformState || {
+			scale: 1,
+			positionX: 0,
+			positionY: 0,
+		};
 
 	const handlePageLoadSuccess = (page: { width: number; height: number }) => {
 		// Calculate actual rendered dimensions based on the width prop
@@ -57,6 +68,8 @@ export function PdfPageWithCanvas({
 					pageNumber={pageNumber}
 					pdfWidth={pageDimensions.width}
 					pdfHeight={pageDimensions.height}
+					zoom={scale}
+					scrollOffset={{ x: positionX, y: positionY }}
 					onCanvasReady={handleCanvasReady}
 				/>
 			)}

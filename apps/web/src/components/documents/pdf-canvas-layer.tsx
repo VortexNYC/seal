@@ -6,17 +6,21 @@ interface PdfCanvasLayerProps {
 	pageNumber: number;
 	pdfWidth: number;
 	pdfHeight: number;
+	zoom?: number;
+	scrollOffset?: { x: number; y: number };
 	onCanvasReady?: (stage: Konva.Stage) => void;
 }
 
 /**
  * Canvas layer component that overlays the PDF for interactive field placement
- * Syncs dimensions and position with the underlying PDF page
+ * Syncs dimensions, zoom, and position with the underlying PDF page
  */
 export function PdfCanvasLayer({
 	pageNumber,
 	pdfWidth,
 	pdfHeight,
+	zoom = 1,
+	scrollOffset = { x: 0, y: 0 },
 	onCanvasReady,
 }: PdfCanvasLayerProps) {
 	const stageRef = useRef<Konva.Stage>(null);
@@ -25,7 +29,7 @@ export function PdfCanvasLayer({
 		height: pdfHeight,
 	});
 
-	// Sync canvas dimensions with PDF dimensions
+	// Sync canvas dimensions with PDF dimensions and zoom
 	useEffect(() => {
 		setDimensions({
 			width: pdfWidth,
@@ -53,6 +57,8 @@ export function PdfCanvasLayer({
 				width={dimensions.width}
 				height={dimensions.height}
 				className="pointer-events-auto"
+				scaleX={zoom}
+				scaleY={zoom}
 			>
 				<Layer>
 					{/* Fields will be added here dynamically */}
