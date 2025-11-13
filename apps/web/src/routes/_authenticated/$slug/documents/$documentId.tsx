@@ -14,7 +14,7 @@ import {
 	FileTextIcon,
 	UserPlusIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -55,6 +55,10 @@ function DocumentDetailPage() {
 	const [numPages, setNumPages] = useState<number | null>(null);
 	const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
+	// SEA-84: Responsive PDF width with window resize handling
+	const [pdfWidth, setPdfWidth] = useState(700);
+	const containerRef = useRef<HTMLDivElement>(null);
+
 	const { data: document } = useSuspenseQuery(
 		convexQuery(api.documents.queries.getDocument, {
 			documentId: documentId as Id<"documents">,
@@ -94,6 +98,38 @@ function DocumentDetailPage() {
 		};
 		fetchPdfUrl();
 	}, [convexClient, documentId]);
+
+	// SEA-84: Handle window resize to maintain canvas-PDF alignment
+	useEffect(() => {
+		const updatePdfWidth = () => {
+			if (containerRef.current) {
+				// Calculate optimal width based on container size
+				// Leave some padding for scrollbar and borders
+				const containerWidth = containerRef.current.clientWidth;
+				const optimalWidth = Math.min(containerWidth - 40, 900);
+				setPdfWidth(optimalWidth);
+			}
+		};
+
+		// Set initial width after a short delay to ensure container is rendered
+		const timeoutId = setTimeout(updatePdfWidth, 100);
+
+		// Add resize listener with debouncing
+		let resizeTimeoutId: NodeJS.Timeout;
+		const handleResize = () => {
+			clearTimeout(resizeTimeoutId);
+			resizeTimeoutId = setTimeout(updatePdfWidth, 150);
+		};
+
+		window.addEventListener("resize", handleResize);
+
+		// Cleanup
+		return () => {
+			clearTimeout(timeoutId);
+			clearTimeout(resizeTimeoutId);
+			window.removeEventListener("resize", handleResize);
+		};
+	}, []);
 
 	// SEA-72: Download handler
 	const handleDownload = () => {
@@ -262,32 +298,35 @@ function DocumentDetailPage() {
 										<TransformComponent
 											wrapperClass="border rounded-lg overflow-auto max-h-[800px] bg-gray-50"
 											contentClass="flex flex-col items-center"
+											wrapperStyle={{ width: "100%" }}
 										>
-											<Document
-												file={pdfUrl}
-												onLoadSuccess={onDocumentLoadSuccess}
-												loading={
-													<div className="p-12 text-center text-muted-foreground">
-														Loading PDF...
-													</div>
-												}
-												error={
-													<div className="p-12 text-center text-destructive">
-														Failed to load PDF
-													</div>
-												}
-											>
-												{Array.from(new Array(numPages), (_el, index) => (
-													<PdfPageWithCanvas
-														key={`page_${index + 1}`}
-														pageNumber={index + 1}
-														width={700}
-														renderTextLayer={true}
-														renderAnnotationLayer={true}
-														className="mb-4"
-													/>
-												))}
-											</Document>
+											<div ref={containerRef}>
+												<Document
+													file={pdfUrl}
+													onLoadSuccess={onDocumentLoadSuccess}
+													loading={
+														<div className="p-12 text-center text-muted-foreground">
+															Loading PDF...
+														</div>
+													}
+													error={
+														<div className="p-12 text-center text-destructive">
+															Failed to load PDF
+														</div>
+													}
+												>
+													{Array.from(new Array(numPages), (_el, index) => (
+														<PdfPageWithCanvas
+															key={`page_${index + 1}`}
+															pageNumber={index + 1}
+															width={pdfWidth}
+															renderTextLayer={true}
+															renderAnnotationLayer={true}
+															className="mb-4"
+														/>
+													))}
+												</Document>
+											</div>
 										</TransformComponent>
 									</TransformWrapper>
 								) : (
