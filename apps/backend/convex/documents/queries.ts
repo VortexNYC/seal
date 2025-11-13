@@ -458,7 +458,9 @@ export const getDocumentWithAuditTrail = authQuery({
 		// 3. Get audit trail for this document
 		const auditLogs = await ctx.db
 			.query("audit_logs")
-			.withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
+			.withIndex("by_document_created", (q) =>
+				q.eq("documentId", args.documentId),
+			)
 			.order("desc")
 			.collect();
 
