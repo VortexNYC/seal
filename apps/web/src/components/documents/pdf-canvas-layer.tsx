@@ -1,6 +1,7 @@
 import type Konva from "konva";
 import { useEffect, useRef, useState } from "react";
 import { Circle, Layer, Rect, Stage, Text } from "react-konva";
+import { DraggableField, type PlacedField } from "./draggable-field";
 
 interface PdfCanvasLayerProps {
 	pageNumber: number;
@@ -9,6 +10,16 @@ interface PdfCanvasLayerProps {
 	zoom?: number;
 	scrollOffset?: { x: number; y: number };
 	onCanvasReady?: (stage: Konva.Stage) => void;
+	fields?: PlacedField[];
+	selectedFieldId?: string | null;
+	onFieldSelect?: (fieldId: string | null) => void;
+	onFieldUpdate?: (
+		fieldId: string,
+		x: number,
+		y: number,
+		width: number,
+		height: number,
+	) => void;
 }
 
 /**
@@ -16,12 +27,16 @@ interface PdfCanvasLayerProps {
  * Syncs dimensions, zoom, and position with the underlying PDF page
  */
 export function PdfCanvasLayer({
-	pageNumber: _pageNumber,
+	pageNumber,
 	pdfWidth,
 	pdfHeight,
 	zoom = 1,
 	scrollOffset: _scrollOffset = { x: 0, y: 0 },
 	onCanvasReady,
+	fields = [],
+	selectedFieldId,
+	onFieldSelect,
+	onFieldUpdate,
 }: PdfCanvasLayerProps) {
 	const stageRef = useRef<Konva.Stage>(null);
 	const [dimensions, setDimensions] = useState({
@@ -44,6 +59,17 @@ export function PdfCanvasLayer({
 		}
 	}, [onCanvasReady]);
 
+	// Filter fields for this page
+	const pageFields = fields.filter((field) => field.pageNumber === pageNumber);
+
+	// Handle stage click to deselect fields
+	const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+		// Deselect when clicking on empty area
+		if (e.target === e.target.getStage()) {
+			onFieldSelect?.(null);
+		}
+	};
+
 	return (
 		<div
 			className="absolute inset-0 pointer-events-none"
@@ -59,9 +85,25 @@ export function PdfCanvasLayer({
 				className="pointer-events-auto"
 				scaleX={zoom}
 				scaleY={zoom}
+				onClick={handleStageClick}
+				onTap={handleStageClick}
 			>
 				<Layer>
-					{/* Fields will be added here dynamically */}
+					{/* SEA-90: Render placed fields */}
+					{pageFields.map((field) => (
+						<DraggableField
+							key={field.id}
+							field={field}
+							isSelected={selectedFieldId === field.id}
+							onSelect={() => onFieldSelect?.(field.id)}
+							onDragEnd={(x, y) => {
+								onFieldUpdate?.(field.id, x, y, field.width, field.height);
+							}}
+							onTransformEnd={(x, y, width, height) => {
+								onFieldUpdate?.(field.id, x, y, width, height);
+							}}
+						/>
+					))}
 
 					{/* SEA-84: Coordinate system test markers */}
 					{/* These test elements verify that canvas coordinates map correctly to PDF */}
