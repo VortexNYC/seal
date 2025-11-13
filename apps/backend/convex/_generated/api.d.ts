@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as audit_logs_helpers from "../audit_logs/helpers.js";
 import type * as auth from "../auth.js";
 import type * as auth_guards from "../auth/guards.js";
 import type * as auth_permissions from "../auth/permissions.js";
@@ -52,6 +53,12 @@ import type * as schemas_subscription_products from "../schemas/subscription_pro
 import type * as schemas_subscriptions from "../schemas/subscriptions.js";
 import type * as schemas_user_profiles from "../schemas/user_profiles.js";
 import type * as schemas_users from "../schemas/users.js";
+import type * as signature_fields_helpers from "../signature_fields/helpers.js";
+import type * as signature_fields_mutations from "../signature_fields/mutations.js";
+import type * as signature_fields_queries from "../signature_fields/queries.js";
+import type * as signatures_helpers from "../signatures/helpers.js";
+import type * as signatures_mutations from "../signatures/mutations.js";
+import type * as signatures_queries from "../signatures/queries.js";
 import type * as stripe_handlers from "../stripe/handlers.js";
 import type * as stripe_helpers from "../stripe/helpers.js";
 import type * as stripe_sync from "../stripe/sync.js";
@@ -69,6 +76,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "audit_logs/helpers": typeof audit_logs_helpers;
   auth: typeof auth;
   "auth/guards": typeof auth_guards;
   "auth/permissions": typeof auth_permissions;
@@ -113,6 +121,12 @@ declare const fullApi: ApiFromModules<{
   "schemas/subscriptions": typeof schemas_subscriptions;
   "schemas/user_profiles": typeof schemas_user_profiles;
   "schemas/users": typeof schemas_users;
+  "signature_fields/helpers": typeof signature_fields_helpers;
+  "signature_fields/mutations": typeof signature_fields_mutations;
+  "signature_fields/queries": typeof signature_fields_queries;
+  "signatures/helpers": typeof signatures_helpers;
+  "signatures/mutations": typeof signatures_mutations;
+  "signatures/queries": typeof signatures_queries;
   "stripe/handlers": typeof stripe_handlers;
   "stripe/helpers": typeof stripe_helpers;
   "stripe/sync": typeof stripe_sync;
