@@ -44,7 +44,8 @@ import {
 } from "../../../../components/ui/card";
 
 // SEA-72: Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Use unpkg CDN which has reliable pdf.js worker files
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export const Route = createFileRoute(
 	"/_authenticated/$slug/documents/$documentId",
