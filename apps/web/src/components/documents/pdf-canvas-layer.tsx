@@ -92,8 +92,6 @@ export function PdfCanvasLayer({
 				width={dimensions.width}
 				height={dimensions.height}
 				className="pointer-events-auto"
-				scaleX={zoom}
-				scaleY={zoom}
 				onClick={handleStageClick}
 				onTap={handleStageClick}
 			>
