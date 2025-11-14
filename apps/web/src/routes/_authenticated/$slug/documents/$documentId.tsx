@@ -64,6 +64,7 @@ function DocumentDetailPage() {
 
 	// SEA-84: Responsive PDF width with window resize handling
 	const [pdfWidth, setPdfWidth] = useState(700);
+	const [pdfHeight, setPdfHeight] = useState(900); // Default height, updated on page load
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	// SEA-89: Field drag state
@@ -189,6 +190,13 @@ function DocumentDetailPage() {
 		setNumPages(numPages);
 	};
 
+	// SEA-91: Page dimensions handler - captures first page dimensions for coordinate conversion
+	const handlePageDimensions = (pageNumber: number, width: number, height: number) => {
+		if (pageNumber === 1) {
+			setPdfHeight(height);
+		}
+	};
+
 	// SEA-91: Field drop handlers with database persistence
 	const handleFieldDragOver = (e: React.DragEvent) => {
 		e.preventDefault();
@@ -213,11 +221,12 @@ function DocumentDetailPage() {
 		if (!container) return;
 
 		const containerRect = container.getBoundingClientRect();
-		const dropX = e.clientX - containerRect.left;
-		const dropY = e.clientY - containerRect.top;
+		const dropXPixels = e.clientX - containerRect.left;
+		const dropYPixels = e.clientY - containerRect.top;
 
 		// Get field dimensions based on type
-		const { width, height } = FIELD_DIMENSIONS[fieldType];
+		const { width: widthPixels, height: heightPixels } =
+			FIELD_DIMENSIONS[fieldType];
 
 		// Calculate which page was dropped on
 		// For now, we'll assume single page or use the first visible page
@@ -228,18 +237,25 @@ function DocumentDetailPage() {
 		// TODO SEA-91: Add recipient selector UI
 		const recipientId = recipients[0]._id;
 
+		// Convert pixel coordinates to percentages
+		// Database stores coordinates as percentages (0-100) for resolution independence
+		const xPercent = (dropXPixels / pdfWidth) * 100;
+		const yPercent = (dropYPixels / pdfHeight) * 100;
+		const widthPercent = (widthPixels / pdfWidth) * 100;
+		const heightPercent = (heightPixels / pdfHeight) * 100;
+
 		try {
-			// Save field to database
+			// Save field to database with percentage coordinates
 			const fieldId = await createField({
 				documentId: documentId as Id<"documents">,
 				recipientId: recipientId as Id<"document_recipients">,
 				fieldType,
 				label: `${fieldType} field`,
 				isRequired: true, // Default to required
-				x: dropX,
-				y: dropY,
-				width,
-				height,
+				x: xPercent,
+				y: yPercent,
+				width: widthPercent,
+				height: heightPercent,
 				page: pageNumber,
 			});
 
@@ -535,6 +551,7 @@ function DocumentDetailPage() {
 															selectedFieldId={selectedFieldId}
 															onFieldSelect={handleFieldSelect}
 															onFieldUpdate={handleFieldUpdate}
+															onPageDimensions={handlePageDimensions}
 														/>
 													))}
 												</Document>
