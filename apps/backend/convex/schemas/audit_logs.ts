@@ -98,8 +98,8 @@ export const auditLogsTable = defineTable({
 	recipientId: v.optional(v.id("document_recipients")), // If action performed by recipient
 
 	// Change Tracking
-	oldValues: v.optional(v.object({})), // Previous state (for updates/deletes)
-	newValues: v.optional(v.object({})), // New state (for creates/updates)
+	oldValues: v.optional(v.any()), // Previous state (for updates/deletes)
+	newValues: v.optional(v.any()), // New state (for creates/updates)
 
 	// Additional Context
 	metadata: v.optional(

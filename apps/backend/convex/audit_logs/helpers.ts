@@ -89,8 +89,8 @@ export async function logFieldAction(
 		resourceId: params.fieldId,
 		documentId: params.documentId,
 		recipientId: params.recipientId,
-		oldValues: params.oldValues as Record<string, unknown>,
-		newValues: params.newValues as Record<string, unknown>,
+		oldValues: params.oldValues,
+		newValues: params.newValues,
 		metadata: {
 			description: `Field ${params.action.split(".")[1]} for document`,
 			source: "web",
@@ -127,8 +127,8 @@ export async function logSignatureAction(
 		resourceId: params.signatureId,
 		documentId: params.documentId,
 		recipientId: params.recipientId,
-		oldValues: params.oldValues as Record<string, unknown>,
-		newValues: params.newValues as Record<string, unknown>,
+		oldValues: params.oldValues,
+		newValues: params.newValues,
 		metadata: {
 			description: `Signature ${params.action.split(".")[1]}`,
 			source: "web",
@@ -164,8 +164,8 @@ export async function logDocumentAction(
 		resourceType: "document",
 		resourceId: params.documentId,
 		documentId: params.documentId,
-		oldValues: params.oldValues as Record<string, unknown>,
-		newValues: params.newValues as Record<string, unknown>,
+		oldValues: params.oldValues,
+		newValues: params.newValues,
 		metadata: {
 			description: params.description,
 			source: "web",
