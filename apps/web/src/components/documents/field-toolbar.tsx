@@ -40,6 +40,19 @@ function FieldButton({
 		setIsDragging(true);
 		e.dataTransfer.effectAllowed = "copy";
 		e.dataTransfer.setData("fieldType", type);
+
+		// Create a custom drag image to prevent layout shifts
+		const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+		dragImage.style.position = "absolute";
+		dragImage.style.top = "-9999px";
+		document.body.appendChild(dragImage);
+		e.dataTransfer.setDragImage(dragImage, 50, 25);
+
+		// Clean up drag image after a short delay
+		setTimeout(() => {
+			document.body.removeChild(dragImage);
+		}, 0);
+
 		onDragStart(type);
 	};
 
@@ -56,10 +69,9 @@ function FieldButton({
 			onDragEnd={handleDragEnd}
 			className={`
 				flex flex-col items-center gap-2 p-4 rounded-lg border-2
-				transition-all cursor-grab active:cursor-grabbing
+				transition-opacity cursor-grab active:cursor-grabbing
 				hover:border-${color}-500 hover:bg-${color}-50
 				${isDragging ? "opacity-50" : "opacity-100"}
-				${isDragging ? "scale-95" : "scale-100"}
 			`}
 			style={{
 				borderColor: isDragging ? `var(--${color}-500)` : "var(--border)",

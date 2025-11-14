@@ -267,13 +267,18 @@ function DocumentDetailPage() {
 		// TODO SEA-91: Add recipient selector UI
 		const recipientId = recipients[0]._id;
 
-		// Convert pixel coordinates to percentages relative to the page dimensions
-		// Database stores coordinates as percentages (0-100) for resolution independence
-		// Note: pageRect dimensions already account for zoom/scale
-		const xPercent = (dropXPixels / pageRect.width) * 100;
-		const yPercent = (dropYPixels / pageRect.height) * 100;
-		const widthPercent = (widthPixels / pageRect.width) * 100;
-		const heightPercent = (heightPixels / pageRect.height) * 100;
+		// Convert pixel coordinates to percentages relative to the UNSCALED page dimensions
+		// The pageRect dimensions include zoom, but we need percentages relative to the
+		// original PDF page size (pdfWidth x pdfHeight) for consistent storage
+		// Calculate the scale factor and adjust coordinates accordingly
+		const currentScale = pageRect.width / pdfWidth;
+		const unscaledDropX = dropXPixels / currentScale;
+		const unscaledDropY = dropYPixels / currentScale;
+
+		const xPercent = (unscaledDropX / pdfWidth) * 100;
+		const yPercent = (unscaledDropY / pdfHeight) * 100;
+		const widthPercent = (widthPixels / pdfWidth) * 100;
+		const heightPercent = (heightPixels / pdfHeight) * 100;
 
 		try {
 			// Save field to database with percentage coordinates
