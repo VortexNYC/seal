@@ -225,16 +225,14 @@ function DocumentDetailPage() {
 		const pageNumber = 1;
 
 		// Use first recipient by default
-		// TODO SEA-91: Add recipient selector UI and map document_recipients to recipients
+		// TODO SEA-91: Add recipient selector UI
 		const recipientId = recipients[0]._id;
 
 		try {
 			// Save field to database
-			// NOTE: signature_fields expects Id<"recipients">, but we have Id<"document_recipients">
-			// This is a schema mismatch that needs to be resolved
 			const fieldId = await createField({
 				documentId: documentId as Id<"documents">,
-				recipientId: recipientId as unknown as Id<"recipients">,
+				recipientId: recipientId as Id<"document_recipients">,
 				fieldType,
 				label: `${fieldType} field`,
 				isRequired: true, // Default to required

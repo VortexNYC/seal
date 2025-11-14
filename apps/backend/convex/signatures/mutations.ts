@@ -19,7 +19,7 @@ import { validateAgainstRules, validateSignature } from "./helpers";
 export const createSignature = mutation({
 	args: {
 		fieldId: v.id("signature_fields"),
-		recipientId: v.id("recipients"),
+		recipientId: v.id("document_recipients"),
 		value: v.optional(v.string()), // For text/date/checkbox fields
 		signatureImageUrl: v.optional(v.string()), // For signature fields
 		ipAddress: v.string(),

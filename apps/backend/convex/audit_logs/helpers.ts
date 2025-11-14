@@ -20,7 +20,7 @@ interface AuditLogParams {
 	resourceType: AuditResourceType;
 	resourceId?: string;
 	documentId?: Id<"documents">;
-	recipientId?: Id<"recipients">;
+	recipientId?: Id<"document_recipients">;
 	oldValues?: Record<string, unknown>;
 	newValues?: Record<string, unknown>;
 	metadata?: {
@@ -72,7 +72,7 @@ export async function logFieldAction(
 		action: "field.created" | "field.updated" | "field.deleted";
 		fieldId: Id<"signature_fields">;
 		documentId: Id<"documents">;
-		recipientId: Id<"recipients">;
+		recipientId: Id<"document_recipients">;
 		oldValues?: Partial<Doc<"signature_fields">>;
 		newValues?: Partial<Doc<"signature_fields">>;
 		ipAddress: string;
@@ -107,7 +107,7 @@ export async function logSignatureAction(
 	ctx: MutationCtx,
 	params: {
 		organizationId: Id<"organizations">;
-		recipientId: Id<"recipients">;
+		recipientId: Id<"document_recipients">;
 		action: "signature.created" | "signature.updated";
 		signatureId: Id<"signatures">;
 		fieldId: Id<"signature_fields">;
@@ -218,7 +218,7 @@ export async function getOrganizationAuditTrail(
  */
 export async function getRecipientAuditTrail(
 	ctx: QueryCtx,
-	recipientId: Id<"recipients">,
+	recipientId: Id<"document_recipients">,
 ): Promise<Doc<"audit_logs">[]> {
 	const auditLogs = await ctx.db
 		.query("audit_logs")

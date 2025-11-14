@@ -26,7 +26,7 @@ export type FieldType = Infer<typeof fieldTypeTuple>;
 export const signatureFieldsTable = defineTable({
 	// References
 	documentId: v.id("documents"), // Document this field belongs to
-	recipientId: v.id("recipients"), // Recipient who must fill this field
+	recipientId: v.id("document_recipients"), // Recipient who must fill this field
 	// TODO: Add templateFieldId when template_fields table is implemented
 	// templateFieldId: v.optional(v.id("template_fields")), // If created from template
 

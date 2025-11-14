@@ -33,7 +33,7 @@ export const getSignaturesByDocument = query({
  */
 export const getSignaturesByRecipient = query({
 	args: {
-		recipientId: v.id("recipients"),
+		recipientId: v.id("document_recipients"),
 	},
 	handler: async (ctx, args): Promise<Doc<"signatures">[]> => {
 		const signatures = await ctx.db
@@ -68,7 +68,7 @@ export const getSignatureByField = query({
 export const getSignaturesByDocumentAndRecipient = query({
 	args: {
 		documentId: v.id("documents"),
-		recipientId: v.id("recipients"),
+		recipientId: v.id("document_recipients"),
 	},
 	handler: async (ctx, args): Promise<Doc<"signatures">[]> => {
 		const signatures = await ctx.db
@@ -108,7 +108,7 @@ export const getSignatureWithDetails = query({
 	): Promise<{
 		signature: Doc<"signatures">;
 		field: Doc<"signature_fields"> | null;
-		recipient: Doc<"recipients"> | null;
+		recipient: Doc<"document_recipients"> | null;
 	} | null> => {
 		const signature = await ctx.db.get(args.signatureId);
 		if (!signature) {
@@ -145,7 +145,7 @@ export const getDocumentCompletion = query({
 export const getRecipientCompletion = query({
 	args: {
 		documentId: v.id("documents"),
-		recipientId: v.id("recipients"),
+		recipientId: v.id("document_recipients"),
 	},
 	handler: async (ctx, args) => {
 		return await checkRecipientComplete(ctx, args.documentId, args.recipientId);
@@ -167,7 +167,7 @@ export const getDocumentSignaturesWithFields = query({
 		Array<{
 			signature: Doc<"signatures">;
 			field: Doc<"signature_fields"> | null;
-			recipient: Doc<"recipients"> | null;
+			recipient: Doc<"document_recipients"> | null;
 		}>
 	> => {
 		const signatures = await ctx.db
