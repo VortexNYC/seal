@@ -220,29 +220,60 @@ function DocumentDetailPage() {
 		const container = containerRef.current;
 		if (!container) return;
 
-		const containerRect = container.getBoundingClientRect();
-		const dropXPixels = e.clientX - containerRect.left;
-		const dropYPixels = e.clientY - containerRect.top;
+		// Find which PDF page was dropped on by checking all page elements
+		const pageElements = container.querySelectorAll('.react-pdf__Page');
+		let targetPageNumber = 1;
+		let targetPageElement: Element | null = null;
+
+		for (let i = 0; i < pageElements.length; i++) {
+			const pageEl = pageElements[i];
+			const rect = pageEl.getBoundingClientRect();
+
+			// Check if drop position is within this page's bounds
+			if (
+				e.clientX >= rect.left &&
+				e.clientX <= rect.right &&
+				e.clientY >= rect.top &&
+				e.clientY <= rect.bottom
+			) {
+				targetPageNumber = i + 1;
+				targetPageElement = pageEl;
+				break;
+			}
+		}
+
+		// If no page found (dropped outside pages), default to page 1
+		if (!targetPageElement && pageElements.length > 0) {
+			targetPageElement = pageElements[0];
+			targetPageNumber = 1;
+		}
+
+		if (!targetPageElement) {
+			toast.error("Could not determine drop location");
+			setDraggingFieldType(null);
+			return;
+		}
+
+		// Calculate coordinates relative to the actual page element
+		const pageRect = targetPageElement.getBoundingClientRect();
+		const dropXPixels = e.clientX - pageRect.left;
+		const dropYPixels = e.clientY - pageRect.top;
 
 		// Get field dimensions based on type
 		const { width: widthPixels, height: heightPixels } =
 			FIELD_DIMENSIONS[fieldType];
 
-		// Calculate which page was dropped on
-		// For now, we'll assume single page or use the first visible page
-		// TODO: Implement multi-page detection based on scroll position
-		const pageNumber = 1;
-
 		// Use first recipient by default
 		// TODO SEA-91: Add recipient selector UI
 		const recipientId = recipients[0]._id;
 
-		// Convert pixel coordinates to percentages
+		// Convert pixel coordinates to percentages relative to the page dimensions
 		// Database stores coordinates as percentages (0-100) for resolution independence
-		const xPercent = (dropXPixels / pdfWidth) * 100;
-		const yPercent = (dropYPixels / pdfHeight) * 100;
-		const widthPercent = (widthPixels / pdfWidth) * 100;
-		const heightPercent = (heightPixels / pdfHeight) * 100;
+		// Note: pageRect dimensions already account for zoom/scale
+		const xPercent = (dropXPixels / pageRect.width) * 100;
+		const yPercent = (dropYPixels / pageRect.height) * 100;
+		const widthPercent = (widthPixels / pageRect.width) * 100;
+		const heightPercent = (heightPixels / pageRect.height) * 100;
 
 		try {
 			// Save field to database with percentage coordinates
@@ -256,7 +287,7 @@ function DocumentDetailPage() {
 				y: yPercent,
 				width: widthPercent,
 				height: heightPercent,
-				page: pageNumber,
+				page: targetPageNumber,
 			});
 
 			// Select the newly created field
