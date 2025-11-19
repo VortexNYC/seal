@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Card } from "../ui/card";
+import { FIELD_DIMENSIONS } from "./draggable-field";
 
 export type FieldType = "signature" | "text" | "date" | "checkbox";
 
@@ -19,9 +20,51 @@ interface FieldButtonProps {
 	icon: React.ReactNode;
 	label: string;
 	color: string;
+	bgColor: string;
+	borderColor: string;
 	onDragStart: (fieldType: FieldType) => void;
 	onDragEnd: () => void;
 }
+
+/**
+ * Map field types to colors and labels
+ */
+const FIELD_CONFIG: Record<FieldType, {
+	label: string;
+	hint: string;
+	color: string;
+	bgColor: string;
+	borderColor: string;
+}> = {
+	signature: {
+		label: "Signature",
+		hint: "",
+		color: "#3b82f6",
+		bgColor: "rgba(59, 130, 246, 0.14)",
+		borderColor: "#3b82f6",
+	},
+	text: {
+		label: "Text Input",
+		hint: "Enter details",
+		color: "#10b981",
+		bgColor: "rgba(16, 185, 129, 0.14)",
+		borderColor: "#10b981",
+	},
+	date: {
+		label: "Date",
+		hint: "",
+		color: "#8b5cf6",
+		bgColor: "rgba(139, 92, 246, 0.14)",
+		borderColor: "#8b5cf6",
+	},
+	checkbox: {
+		label: "Checkbox",
+		hint: "Tap to approve",
+		color: "#f97316",
+		bgColor: "rgba(249, 115, 22, 0.14)",
+		borderColor: "#f97316",
+	},
+};
 
 /**
  * Field button component with drag-and-drop functionality
@@ -31,6 +74,8 @@ function FieldButton({
 	icon,
 	label,
 	color,
+	bgColor,
+	borderColor,
 	onDragStart,
 	onDragEnd,
 }: FieldButtonProps) {
@@ -41,12 +86,69 @@ function FieldButton({
 		e.dataTransfer.effectAllowed = "copy";
 		e.dataTransfer.setData("fieldType", type);
 
-		// Create a custom drag image to prevent layout shifts
-		const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+		// Create a custom drag image that looks like the actual field
+		const dimensions = FIELD_DIMENSIONS[type];
+		const config = FIELD_CONFIG[type];
+
+		const dragImage = document.createElement("div");
 		dragImage.style.position = "absolute";
 		dragImage.style.top = "-9999px";
+		dragImage.style.width = `${dimensions.width}px`;
+		dragImage.style.height = `${dimensions.height}px`;
+		dragImage.style.backgroundColor = config.bgColor;
+		dragImage.style.border = `2px solid ${config.borderColor}`;
+		dragImage.style.borderRadius = "10px";
+		dragImage.style.boxShadow = "0 3px 6px rgba(0, 0, 0, 0.15)";
+		dragImage.style.display = "flex";
+		dragImage.style.flexDirection = "column";
+		dragImage.style.padding = type === "checkbox" ? "5px" : "10px";
+		dragImage.style.fontFamily = "Inter, system-ui, -apple-system, sans-serif";
+
+		// Add label for non-checkbox fields
+		if (type !== "checkbox") {
+			const labelEl = document.createElement("div");
+			labelEl.textContent = config.label;
+			labelEl.style.fontSize = "13px";
+			labelEl.style.fontWeight = "600";
+			labelEl.style.color = "#0f172a";
+			labelEl.style.opacity = "0.8";
+			labelEl.style.textAlign = "center";
+			labelEl.style.width = "100%";
+			labelEl.style.flex = "1";
+			labelEl.style.display = "flex";
+			labelEl.style.alignItems = "center";
+			labelEl.style.justifyContent = "center";
+			dragImage.appendChild(labelEl);
+		} else {
+			// Checkbox rendering
+			const checkboxContainer = document.createElement("div");
+			checkboxContainer.style.display = "flex";
+			checkboxContainer.style.alignItems = "center";
+			checkboxContainer.style.justifyContent = "center";
+			checkboxContainer.style.width = "100%";
+			checkboxContainer.style.height = "100%";
+
+			const checkbox = document.createElement("div");
+			const boxSize = Math.min(dimensions.width, dimensions.height) - 10;
+			checkbox.style.width = `${boxSize}px`;
+			checkbox.style.height = `${boxSize}px`;
+			checkbox.style.border = `2px solid ${config.color}`;
+			checkbox.style.borderRadius = "6px";
+			checkbox.style.backgroundColor = "#fff";
+			checkbox.style.display = "flex";
+			checkbox.style.alignItems = "center";
+			checkbox.style.justifyContent = "center";
+			checkbox.style.fontSize = `${boxSize - 8}px`;
+			checkbox.style.color = config.color;
+			checkbox.style.opacity = "0.8";
+			checkbox.textContent = "✓";
+
+			checkboxContainer.appendChild(checkbox);
+			dragImage.appendChild(checkboxContainer);
+		}
+
 		document.body.appendChild(dragImage);
-		e.dataTransfer.setDragImage(dragImage, 50, 25);
+		e.dataTransfer.setDragImage(dragImage, dimensions.width / 2, dimensions.height / 2);
 
 		// Clean up drag image after a short delay
 		setTimeout(() => {
@@ -124,6 +226,8 @@ export function FieldToolbar({
 						icon={<PenToolIcon className="h-5 w-5" />}
 						label="Signature"
 						color="blue"
+						bgColor={FIELD_CONFIG.signature.bgColor}
+						borderColor={FIELD_CONFIG.signature.borderColor}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}
 					/>
@@ -133,6 +237,8 @@ export function FieldToolbar({
 						icon={<TypeIcon className="h-5 w-5" />}
 						label="Text"
 						color="green"
+						bgColor={FIELD_CONFIG.text.bgColor}
+						borderColor={FIELD_CONFIG.text.borderColor}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}
 					/>
@@ -142,6 +248,8 @@ export function FieldToolbar({
 						icon={<CalendarIcon className="h-5 w-5" />}
 						label="Date"
 						color="purple"
+						bgColor={FIELD_CONFIG.date.bgColor}
+						borderColor={FIELD_CONFIG.date.borderColor}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}
 					/>
@@ -151,6 +259,8 @@ export function FieldToolbar({
 						icon={<CheckSquareIcon className="h-5 w-5" />}
 						label="Checkbox"
 						color="orange"
+						bgColor={FIELD_CONFIG.checkbox.bgColor}
+						borderColor={FIELD_CONFIG.checkbox.borderColor}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}
 					/>

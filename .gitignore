@@ -74,4 +74,6 @@ scripts/
 .env.linear
 
 # Logs
-# logs.txt
+logs.txt
+localhost-*.log
+*.log

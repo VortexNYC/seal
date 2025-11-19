@@ -85,6 +85,7 @@ export function PdfCanvasLayer({
 			style={{
 				width: dimensions.width,
 				height: dimensions.height,
+				zIndex: 10,
 			}}
 		>
 			<Stage

@@ -1,0 +1,11 @@
+/**
+ * Document Detail Page Styles
+ *
+ * Disable pointer events on PDF text and annotation layers to allow
+ * interaction with the Konva canvas overlay for field placement/editing.
+ */
+
+.react-pdf__Page__textContent,
+.react-pdf__Page__annotations {
+	pointer-events: none !important;
+}

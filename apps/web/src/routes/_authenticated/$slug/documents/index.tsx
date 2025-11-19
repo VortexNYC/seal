@@ -652,11 +652,11 @@ function DocumentsList({
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleConfirmAction}
-							className={
+							variant={
 								confirmDialog.type === "delete" ||
 								confirmDialog.type === "cancel"
-									? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-									: ""
+									? "destructive"
+									: "default"
 							}
 						>
 							{confirmDialog.type === "delete" && "Delete"}
@@ -711,13 +711,39 @@ function DocumentsPage() {
 	};
 
 	return (
-		<PageWrapper title="Documents">
+		<PageWrapper
+			title="Documents"
+			action={{
+				label: "Upload Document",
+				onClick: () => setUploadOpen(true),
+				icon: UploadIcon,
+				variant: "default",
+			}}
+		>
 			<div className="space-y-6">
-				<div className="flex items-center justify-between">
-					<p className="text-muted-foreground">
-						Manage and share documents with your team
-					</p>
-					<div className="flex items-center gap-2">
+				{/* Filter Tabs */}
+				<div className="space-y-4">
+					<div className="flex items-center justify-between gap-2 flex-wrap">
+						<div className="flex gap-2 flex-wrap">
+							<Button
+								variant={filter === "all" ? "default" : "outline"}
+								onClick={() => setFilter("all")}
+							>
+								All Documents
+							</Button>
+							<Button
+								variant={filter === "owned" ? "default" : "outline"}
+								onClick={() => setFilter("owned")}
+							>
+								My Documents
+							</Button>
+							<Button
+								variant={filter === "shared" ? "default" : "outline"}
+								onClick={() => setFilter("shared")}
+							>
+								Shared with Me
+							</Button>
+						</div>
 						{/* SEA-68: View mode toggle */}
 						<div className="flex items-center gap-1 border rounded-md">
 							<Button
@@ -737,34 +763,6 @@ function DocumentsPage() {
 								<LayoutGridIcon className="h-4 w-4" />
 							</Button>
 						</div>
-						<Button onClick={() => setUploadOpen(true)}>
-							<UploadIcon className="mr-2 h-4 w-4" />
-							Upload Document
-						</Button>
-					</div>
-				</div>
-
-				{/* Filter Tabs */}
-				<div className="space-y-4">
-					<div className="flex gap-2 flex-wrap">
-						<Button
-							variant={filter === "all" ? "default" : "outline"}
-							onClick={() => setFilter("all")}
-						>
-							All Documents
-						</Button>
-						<Button
-							variant={filter === "owned" ? "default" : "outline"}
-							onClick={() => setFilter("owned")}
-						>
-							My Documents
-						</Button>
-						<Button
-							variant={filter === "shared" ? "default" : "outline"}
-							onClick={() => setFilter("shared")}
-						>
-							Shared with Me
-						</Button>
 					</div>
 
 					{/* Workflow Status Filters */}
