@@ -23,6 +23,10 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { ActivityFeed } from "../../../../components/documents/activity-feed";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
+import {
+	FIELD_DIMENSIONS,
+	type PlacedField,
+} from "../../../../components/documents/draggable-field";
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
@@ -65,6 +69,10 @@ function DocumentDetailPage() {
 	const [draggingFieldType, setDraggingFieldType] = useState<FieldType | null>(
 		null,
 	);
+
+	// SEA-90: Field placement state
+	const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
+	const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
 
 	const { data: document } = useSuspenseQuery(
 		convexQuery(api.documents.queries.getDocument, {
@@ -150,7 +158,7 @@ function DocumentDetailPage() {
 		setNumPages(numPages);
 	};
 
-	// SEA-89: Field drop handlers
+	// SEA-90: Field drop handlers
 	const handleFieldDragOver = (e: React.DragEvent) => {
 		e.preventDefault();
 		e.dataTransfer.dropEffect = "copy";
@@ -160,11 +168,59 @@ function DocumentDetailPage() {
 		e.preventDefault();
 		const fieldType = e.dataTransfer.getData("fieldType") as FieldType;
 
-		if (fieldType) {
-			// TODO SEA-90: Implement field placement at drop coordinates
-			toast.success(`${fieldType} field dropped - placement coming in SEA-90`);
-			setDraggingFieldType(null);
-		}
+		if (!fieldType) return;
+
+		// Get the container and calculate drop position
+		const container = containerRef.current;
+		if (!container) return;
+
+		const containerRect = container.getBoundingClientRect();
+		const dropX = e.clientX - containerRect.left;
+		const dropY = e.clientY - containerRect.top;
+
+		// Get field dimensions based on type
+		const { width, height } = FIELD_DIMENSIONS[fieldType];
+
+		// Calculate which page was dropped on
+		// For now, we'll assume single page or use the first visible page
+		// TODO: Implement multi-page detection based on scroll position
+		const pageNumber = 1;
+
+		// Create new field
+		const newField: PlacedField = {
+			id: `temp-${Date.now()}-${Math.random()}`,
+			fieldType,
+			x: dropX,
+			y: dropY,
+			width,
+			height,
+			pageNumber,
+		};
+
+		setPlacedFields((prev) => [...prev, newField]);
+		setSelectedFieldId(newField.id);
+		setDraggingFieldType(null);
+
+		toast.success(`${fieldType} field placed`);
+	};
+
+	// SEA-90: Field update handlers
+	const handleFieldUpdate = (
+		fieldId: string,
+		x: number,
+		y: number,
+		width: number,
+		height: number,
+	) => {
+		setPlacedFields((prev) =>
+			prev.map((field) =>
+				field.id === fieldId ? { ...field, x, y, width, height } : field,
+			),
+		);
+	};
+
+	const handleFieldSelect = (fieldId: string | null) => {
+		setSelectedFieldId(fieldId);
 	};
 
 	const handleRemoveRecipient = async (
@@ -355,6 +411,10 @@ function DocumentDetailPage() {
 															renderTextLayer={true}
 															renderAnnotationLayer={true}
 															className="mb-4"
+															fields={placedFields}
+															selectedFieldId={selectedFieldId}
+															onFieldSelect={handleFieldSelect}
+															onFieldUpdate={handleFieldUpdate}
 														/>
 													))}
 												</Document>

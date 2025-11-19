@@ -2,6 +2,7 @@ import type Konva from "konva";
 import { useState } from "react";
 import { Page } from "react-pdf";
 import { useTransformContext } from "react-zoom-pan-pinch";
+import type { PlacedField } from "./draggable-field";
 import { PdfCanvasLayer } from "./pdf-canvas-layer";
 
 interface PdfPageWithCanvasProps {
@@ -10,6 +11,16 @@ interface PdfPageWithCanvasProps {
 	renderTextLayer?: boolean;
 	renderAnnotationLayer?: boolean;
 	className?: string;
+	fields?: PlacedField[];
+	selectedFieldId?: string | null;
+	onFieldSelect?: (fieldId: string | null) => void;
+	onFieldUpdate?: (
+		fieldId: string,
+		x: number,
+		y: number,
+		width: number,
+		height: number,
+	) => void;
 }
 
 /**
@@ -23,6 +34,10 @@ export function PdfPageWithCanvas({
 	renderTextLayer = true,
 	renderAnnotationLayer = true,
 	className,
+	fields,
+	selectedFieldId,
+	onFieldSelect,
+	onFieldUpdate,
 }: PdfPageWithCanvasProps) {
 	const [pageDimensions, setPageDimensions] = useState<{
 		width: number;
@@ -70,6 +85,10 @@ export function PdfPageWithCanvas({
 					zoom={scale}
 					scrollOffset={{ x: positionX, y: positionY }}
 					onCanvasReady={handleCanvasReady}
+					fields={fields}
+					selectedFieldId={selectedFieldId}
+					onFieldSelect={onFieldSelect}
+					onFieldUpdate={onFieldUpdate}
 				/>
 			)}
 		</div>
