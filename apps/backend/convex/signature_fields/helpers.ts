@@ -61,7 +61,7 @@ export function validateFieldPosition(
 export async function validateFieldAssignment(
 	ctx: QueryCtx,
 	documentId: Id<"documents">,
-	recipientId: Id<"recipients">,
+	recipientId: Id<"document_recipients">,
 ): Promise<{ valid: boolean; error?: string }> {
 	const recipient = await ctx.db.get(recipientId);
 

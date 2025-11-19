@@ -62,6 +62,15 @@ export function PdfCanvasLayer({
 	// Filter fields for this page
 	const pageFields = fields.filter((field) => field.pageNumber === pageNumber);
 
+	// Convert fields from percentage coordinates (stored in DB) to pixel coordinates (for rendering)
+	const pageFieldsInPixels = pageFields.map((field) => ({
+		...field,
+		x: (field.x / 100) * pdfWidth,
+		y: (field.y / 100) * pdfHeight,
+		width: (field.width / 100) * pdfWidth,
+		height: (field.height / 100) * pdfHeight,
+	}));
+
 	// Handle stage click to deselect fields
 	const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
 		// Deselect when clicking on empty area
@@ -83,24 +92,44 @@ export function PdfCanvasLayer({
 				width={dimensions.width}
 				height={dimensions.height}
 				className="pointer-events-auto"
-				scaleX={zoom}
-				scaleY={zoom}
 				onClick={handleStageClick}
 				onTap={handleStageClick}
 			>
 				<Layer>
 					{/* SEA-90: Render placed fields */}
-					{pageFields.map((field) => (
+					{pageFieldsInPixels.map((field) => (
 						<DraggableField
 							key={field.id}
 							field={field}
 							isSelected={selectedFieldId === field.id}
 							onSelect={() => onFieldSelect?.(field.id)}
-							onDragEnd={(x, y) => {
-								onFieldUpdate?.(field.id, x, y, field.width, field.height);
+							onDragEnd={(xPixels, yPixels) => {
+								// Convert pixel coordinates back to percentages for database storage
+								const xPercent = (xPixels / pdfWidth) * 100;
+								const yPercent = (yPixels / pdfHeight) * 100;
+								const widthPercent = (field.width / pdfWidth) * 100;
+								const heightPercent = (field.height / pdfHeight) * 100;
+								onFieldUpdate?.(
+									field.id,
+									xPercent,
+									yPercent,
+									widthPercent,
+									heightPercent,
+								);
 							}}
-							onTransformEnd={(x, y, width, height) => {
-								onFieldUpdate?.(field.id, x, y, width, height);
+							onTransformEnd={(xPixels, yPixels, widthPixels, heightPixels) => {
+								// Convert pixel coordinates back to percentages for database storage
+								const xPercent = (xPixels / pdfWidth) * 100;
+								const yPercent = (yPixels / pdfHeight) * 100;
+								const widthPercent = (widthPixels / pdfWidth) * 100;
+								const heightPercent = (heightPixels / pdfHeight) * 100;
+								onFieldUpdate?.(
+									field.id,
+									xPercent,
+									yPercent,
+									widthPercent,
+									heightPercent,
+								);
 							}}
 						/>
 					))}

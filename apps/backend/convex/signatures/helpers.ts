@@ -187,7 +187,7 @@ export async function getDocumentCompletionStatus(
 export async function checkRecipientComplete(
 	ctx: QueryCtx,
 	documentId: Id<"documents">,
-	recipientId: Id<"recipients">,
+	recipientId: Id<"document_recipients">,
 ): Promise<{
 	complete: boolean;
 	totalFields: number;

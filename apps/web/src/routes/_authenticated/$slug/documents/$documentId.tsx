@@ -14,7 +14,7 @@ import {
 	FileTextIcon,
 	UserPlusIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Document, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -44,7 +44,8 @@ import {
 } from "../../../../components/ui/card";
 
 // SEA-72: Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Use unpkg CDN which has reliable pdf.js worker files
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export const Route = createFileRoute(
 	"/_authenticated/$slug/documents/$documentId",
@@ -63,6 +64,7 @@ function DocumentDetailPage() {
 
 	// SEA-84: Responsive PDF width with window resize handling
 	const [pdfWidth, setPdfWidth] = useState(700);
+	const [pdfHeight, setPdfHeight] = useState(900); // Default height, updated on page load
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	// SEA-89: Field drag state
@@ -93,9 +95,24 @@ function DocumentDetailPage() {
 		}),
 	);
 
+	// SEA-91: Load signature fields from database
+	const { data: signatureFields = [], refetch: refetchFields } =
+		useSuspenseQuery(
+			convexQuery(api.signature_fields.queries.getFieldsByDocument, {
+				documentId: documentId as Id<"documents">,
+			}),
+		);
+
 	const removeRecipient = useMutation(
 		api.documents.recipients_mutations.removeRecipient,
 	);
+
+	// SEA-91: Field mutations
+	const createField = useMutation(api.signature_fields.mutations.createField);
+	const repositionField = useMutation(
+		api.signature_fields.mutations.repositionField,
+	);
+	const deleteField = useMutation(api.signature_fields.mutations.deleteField);
 
 	// SEA-72: Fetch PDF URL on mount
 	const { convexClient } = useRouteContext({ from: "__root__" });
@@ -113,6 +130,21 @@ function DocumentDetailPage() {
 		};
 		fetchPdfUrl();
 	}, [convexClient, documentId]);
+
+	// SEA-91: Sync database fields to local state
+	useEffect(() => {
+		const fields: PlacedField[] = signatureFields.map((field) => ({
+			id: field._id,
+			fieldType: field.fieldType as FieldType,
+			x: field.x,
+			y: field.y,
+			width: field.width,
+			height: field.height,
+			pageNumber: field.page,
+			recipientId: field.recipientId,
+		}));
+		setPlacedFields(fields);
+	}, [signatureFields]);
 
 	// SEA-84: Handle window resize to maintain canvas-PDF alignment
 	useEffect(() => {
@@ -158,70 +190,210 @@ function DocumentDetailPage() {
 		setNumPages(numPages);
 	};
 
-	// SEA-90: Field drop handlers
+	// SEA-91: Page dimensions handler - captures first page dimensions for coordinate conversion
+	const handlePageDimensions = (pageNumber: number, width: number, height: number) => {
+		if (pageNumber === 1) {
+			setPdfHeight(height);
+		}
+	};
+
+	// SEA-91: Field drop handlers with database persistence
 	const handleFieldDragOver = (e: React.DragEvent) => {
 		e.preventDefault();
 		e.dataTransfer.dropEffect = "copy";
 	};
 
-	const handleFieldDrop = (e: React.DragEvent) => {
+	const handleFieldDrop = async (e: React.DragEvent) => {
 		e.preventDefault();
 		const fieldType = e.dataTransfer.getData("fieldType") as FieldType;
 
 		if (!fieldType) return;
 
+		// Check if we have recipients
+		if (recipients.length === 0) {
+			toast.error("Please add at least one recipient before placing fields");
+			setDraggingFieldType(null);
+			return;
+		}
+
 		// Get the container and calculate drop position
 		const container = containerRef.current;
 		if (!container) return;
 
-		const containerRect = container.getBoundingClientRect();
-		const dropX = e.clientX - containerRect.left;
-		const dropY = e.clientY - containerRect.top;
+		// Find which PDF page was dropped on by checking all page elements
+		const pageElements = container.querySelectorAll('.react-pdf__Page');
+		let targetPageNumber = 1;
+		let targetPageElement: Element | null = null;
+
+		for (let i = 0; i < pageElements.length; i++) {
+			const pageEl = pageElements[i];
+			const rect = pageEl.getBoundingClientRect();
+
+			// Check if drop position is within this page's bounds
+			if (
+				e.clientX >= rect.left &&
+				e.clientX <= rect.right &&
+				e.clientY >= rect.top &&
+				e.clientY <= rect.bottom
+			) {
+				targetPageNumber = i + 1;
+				targetPageElement = pageEl;
+				break;
+			}
+		}
+
+		// If no page found (dropped outside pages), default to page 1
+		if (!targetPageElement && pageElements.length > 0) {
+			targetPageElement = pageElements[0];
+			targetPageNumber = 1;
+		}
+
+		if (!targetPageElement) {
+			toast.error("Could not determine drop location");
+			setDraggingFieldType(null);
+			return;
+		}
+
+		// Calculate coordinates relative to the actual page element
+		const pageRect = targetPageElement.getBoundingClientRect();
+		const dropXPixels = e.clientX - pageRect.left;
+		const dropYPixels = e.clientY - pageRect.top;
 
 		// Get field dimensions based on type
-		const { width, height } = FIELD_DIMENSIONS[fieldType];
+		const { width: widthPixels, height: heightPixels } =
+			FIELD_DIMENSIONS[fieldType];
 
-		// Calculate which page was dropped on
-		// For now, we'll assume single page or use the first visible page
-		// TODO: Implement multi-page detection based on scroll position
-		const pageNumber = 1;
+		// Use first recipient by default
+		// TODO SEA-91: Add recipient selector UI
+		const recipientId = recipients[0]._id;
 
-		// Create new field
-		const newField: PlacedField = {
-			id: `temp-${Date.now()}-${Math.random()}`,
-			fieldType,
-			x: dropX,
-			y: dropY,
-			width,
-			height,
-			pageNumber,
-		};
+		// Convert pixel coordinates to percentages relative to the UNSCALED page dimensions
+		// The pageRect dimensions include zoom, but we need percentages relative to the
+		// original PDF page size (pdfWidth x pdfHeight) for consistent storage
+		// Calculate the scale factor and adjust coordinates accordingly
+		const currentScale = pageRect.width / pdfWidth;
+		const unscaledDropX = dropXPixels / currentScale;
+		const unscaledDropY = dropYPixels / currentScale;
 
-		setPlacedFields((prev) => [...prev, newField]);
-		setSelectedFieldId(newField.id);
-		setDraggingFieldType(null);
+		const xPercent = (unscaledDropX / pdfWidth) * 100;
+		const yPercent = (unscaledDropY / pdfHeight) * 100;
+		const widthPercent = (widthPixels / pdfWidth) * 100;
+		const heightPercent = (heightPixels / pdfHeight) * 100;
 
-		toast.success(`${fieldType} field placed`);
+		try {
+			// Save field to database with percentage coordinates
+			const fieldId = await createField({
+				documentId: documentId as Id<"documents">,
+				recipientId: recipientId as Id<"document_recipients">,
+				fieldType,
+				label: `${fieldType} field`,
+				isRequired: true, // Default to required
+				x: xPercent,
+				y: yPercent,
+				width: widthPercent,
+				height: heightPercent,
+				page: targetPageNumber,
+			});
+
+			// Select the newly created field
+			setSelectedFieldId(fieldId);
+			setDraggingFieldType(null);
+
+			// Refetch fields to sync with database
+			await refetchFields();
+
+			toast.success(`${fieldType} field placed`);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to create field";
+			toast.error(errorMessage);
+			setDraggingFieldType(null);
+		}
 	};
 
-	// SEA-90: Field update handlers
-	const handleFieldUpdate = (
+	// SEA-91: Field update handlers with database persistence
+	const handleFieldUpdate = async (
 		fieldId: string,
 		x: number,
 		y: number,
 		width: number,
 		height: number,
 	) => {
+		// Optimistically update local state
 		setPlacedFields((prev) =>
 			prev.map((field) =>
 				field.id === fieldId ? { ...field, x, y, width, height } : field,
 			),
 		);
+
+		try {
+			// Persist to database
+			await repositionField({
+				fieldId: fieldId as Id<"signature_fields">,
+				x,
+				y,
+				width,
+				height,
+			});
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to update field";
+			toast.error(errorMessage);
+			// Revert by refetching
+			await refetchFields();
+		}
 	};
 
 	const handleFieldSelect = (fieldId: string | null) => {
 		setSelectedFieldId(fieldId);
 	};
+
+	// SEA-91: Field delete handler
+	const handleFieldDelete = useCallback(async () => {
+		if (!selectedFieldId) return;
+
+		if (!confirm("Delete this field?")) return;
+
+		try {
+			await deleteField({
+				fieldId: selectedFieldId as Id<"signature_fields">,
+			});
+
+			setSelectedFieldId(null);
+			await refetchFields();
+
+			toast.success("Field deleted");
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to delete field";
+			toast.error(errorMessage);
+		}
+	}, [selectedFieldId, deleteField, refetchFields]);
+
+	// SEA-91: Keyboard shortcuts for field operations
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// Delete or Backspace to delete selected field
+			if (
+				selectedFieldId &&
+				(e.key === "Delete" || e.key === "Backspace") &&
+				!e.metaKey &&
+				!e.ctrlKey
+			) {
+				// Only if not in an input field
+				if (
+					window.document.activeElement?.tagName !== "INPUT" &&
+					window.document.activeElement?.tagName !== "TEXTAREA"
+				) {
+					e.preventDefault();
+					handleFieldDelete();
+				}
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [selectedFieldId, handleFieldDelete]);
 
 	const handleRemoveRecipient = async (
 		recipientId: Id<"document_recipients">,
@@ -415,6 +587,7 @@ function DocumentDetailPage() {
 															selectedFieldId={selectedFieldId}
 															onFieldSelect={handleFieldSelect}
 															onFieldUpdate={handleFieldUpdate}
+															onPageDimensions={handlePageDimensions}
 														/>
 													))}
 												</Document>
@@ -440,6 +613,30 @@ function DocumentDetailPage() {
 								}
 								onFieldDragEnd={() => setDraggingFieldType(null)}
 							/>
+						)}
+
+						{/* SEA-91: Field controls (when field is selected) */}
+						{canEdit && selectedFieldId && (
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-sm">Selected Field</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-3">
+									<div className="flex items-center justify-between">
+										<span className="text-sm text-muted-foreground">
+											Field ID: {selectedFieldId.slice(0, 8)}...
+										</span>
+									</div>
+									<Button
+										variant="destructive"
+										size="sm"
+										className="w-full"
+										onClick={handleFieldDelete}
+									>
+										Delete Field
+									</Button>
+								</CardContent>
+							</Card>
 						)}
 
 						{/* SEA-72: Document metadata */}

@@ -21,6 +21,7 @@ interface PdfPageWithCanvasProps {
 		width: number,
 		height: number,
 	) => void;
+	onPageDimensions?: (pageNumber: number, width: number, height: number) => void;
 }
 
 /**
@@ -38,6 +39,7 @@ export function PdfPageWithCanvas({
 	selectedFieldId,
 	onFieldSelect,
 	onFieldUpdate,
+	onPageDimensions,
 }: PdfPageWithCanvasProps) {
 	const [pageDimensions, setPageDimensions] = useState<{
 		width: number;
@@ -55,10 +57,13 @@ export function PdfPageWithCanvas({
 	const handlePageLoadSuccess = (page: { width: number; height: number }) => {
 		// Calculate actual rendered dimensions based on the width prop
 		const scale = width / page.width;
+		const renderedHeight = page.height * scale;
 		setPageDimensions({
 			width: width,
-			height: page.height * scale,
+			height: renderedHeight,
 		});
+		// Notify parent of page dimensions for coordinate conversion
+		onPageDimensions?.(pageNumber, width, renderedHeight);
 	};
 
 	const handleCanvasReady = (stage: Konva.Stage) => {
