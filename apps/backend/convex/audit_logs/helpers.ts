@@ -20,7 +20,7 @@ interface AuditLogParams {
 	resourceType: AuditResourceType;
 	resourceId?: string;
 	documentId?: Id<"documents">;
-	recipientId?: Id<"recipients">;
+	recipientId?: Id<"document_recipients">;
 	oldValues?: Record<string, unknown>;
 	newValues?: Record<string, unknown>;
 	metadata?: {
@@ -72,7 +72,7 @@ export async function logFieldAction(
 		action: "field.created" | "field.updated" | "field.deleted";
 		fieldId: Id<"signature_fields">;
 		documentId: Id<"documents">;
-		recipientId: Id<"recipients">;
+		recipientId: Id<"document_recipients">;
 		oldValues?: Partial<Doc<"signature_fields">>;
 		newValues?: Partial<Doc<"signature_fields">>;
 		ipAddress: string;
@@ -89,8 +89,8 @@ export async function logFieldAction(
 		resourceId: params.fieldId,
 		documentId: params.documentId,
 		recipientId: params.recipientId,
-		oldValues: params.oldValues as Record<string, unknown>,
-		newValues: params.newValues as Record<string, unknown>,
+		oldValues: params.oldValues,
+		newValues: params.newValues,
 		metadata: {
 			description: `Field ${params.action.split(".")[1]} for document`,
 			source: "web",
@@ -107,7 +107,7 @@ export async function logSignatureAction(
 	ctx: MutationCtx,
 	params: {
 		organizationId: Id<"organizations">;
-		recipientId: Id<"recipients">;
+		recipientId: Id<"document_recipients">;
 		action: "signature.created" | "signature.updated";
 		signatureId: Id<"signatures">;
 		fieldId: Id<"signature_fields">;
@@ -127,8 +127,8 @@ export async function logSignatureAction(
 		resourceId: params.signatureId,
 		documentId: params.documentId,
 		recipientId: params.recipientId,
-		oldValues: params.oldValues as Record<string, unknown>,
-		newValues: params.newValues as Record<string, unknown>,
+		oldValues: params.oldValues,
+		newValues: params.newValues,
 		metadata: {
 			description: `Signature ${params.action.split(".")[1]}`,
 			source: "web",
@@ -164,8 +164,8 @@ export async function logDocumentAction(
 		resourceType: "document",
 		resourceId: params.documentId,
 		documentId: params.documentId,
-		oldValues: params.oldValues as Record<string, unknown>,
-		newValues: params.newValues as Record<string, unknown>,
+		oldValues: params.oldValues,
+		newValues: params.newValues,
 		metadata: {
 			description: params.description,
 			source: "web",
@@ -218,7 +218,7 @@ export async function getOrganizationAuditTrail(
  */
 export async function getRecipientAuditTrail(
 	ctx: QueryCtx,
-	recipientId: Id<"recipients">,
+	recipientId: Id<"document_recipients">,
 ): Promise<Doc<"audit_logs">[]> {
 	const auditLogs = await ctx.db
 		.query("audit_logs")

@@ -32,7 +32,7 @@ export const getFieldsByDocument = query({
  */
 export const getFieldsByRecipient = query({
 	args: {
-		recipientId: v.id("recipients"),
+		recipientId: v.id("document_recipients"),
 	},
 	handler: async (ctx, args): Promise<Doc<"signature_fields">[]> => {
 		const fields = await ctx.db
@@ -70,7 +70,7 @@ export const getFieldsByPage = query({
 export const getFieldsByDocumentAndRecipient = query({
 	args: {
 		documentId: v.id("documents"),
-		recipientId: v.id("recipients"),
+		recipientId: v.id("document_recipients"),
 	},
 	handler: async (ctx, args): Promise<Doc<"signature_fields">[]> => {
 		const fields = await ctx.db
@@ -109,7 +109,7 @@ export const getFieldWithRecipient = query({
 		args,
 	): Promise<{
 		field: Doc<"signature_fields">;
-		recipient: Doc<"recipients"> | null;
+		recipient: Doc<"document_recipients"> | null;
 	} | null> => {
 		const field = await ctx.db.get(args.fieldId);
 		if (!field) {

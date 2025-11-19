@@ -15,7 +15,7 @@ import { authenticationMethodTuple } from "./recipients";
 export const signaturesTable = defineTable({
 	// References
 	fieldId: v.id("signature_fields"), // Which field this signature fills
-	recipientId: v.id("recipients"), // Who signed this field
+	recipientId: v.id("document_recipients"), // Who signed this field
 	documentId: v.id("documents"), // Document being signed (for quick queries)
 
 	// Signature Data

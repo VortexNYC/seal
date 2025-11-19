@@ -11,6 +11,7 @@ export interface PlacedField {
 	width: number;
 	height: number;
 	pageNumber: number;
+	recipientId?: string; // Optional for newly placed fields
 }
 
 interface DraggableFieldProps {

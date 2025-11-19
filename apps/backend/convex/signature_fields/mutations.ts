@@ -24,7 +24,7 @@ import {
 export const createField = mutation({
 	args: {
 		documentId: v.id("documents"),
-		recipientId: v.id("recipients"),
+		recipientId: v.id("document_recipients"),
 		fieldType: fieldTypeTuple,
 		label: v.string(),
 		isRequired: v.boolean(),
@@ -420,7 +420,7 @@ export const bulkCreateFields = mutation({
 		fields: v.array(
 			v.object({
 				documentId: v.id("documents"),
-				recipientId: v.id("recipients"),
+				recipientId: v.id("document_recipients"),
 				fieldType: fieldTypeTuple,
 				label: v.string(),
 				isRequired: v.boolean(),
