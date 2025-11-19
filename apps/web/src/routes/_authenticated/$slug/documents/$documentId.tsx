@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { ActivityFeed } from "../../../../components/documents/activity-feed";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
+import type { FieldType } from "../../../../components/documents/field-toolbar";
+import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
 import { PdfZoomControls } from "../../../../components/documents/pdf-zoom-controls";
 import { RecipientList } from "../../../../components/documents/recipient-list";
@@ -58,6 +60,11 @@ function DocumentDetailPage() {
 	// SEA-84: Responsive PDF width with window resize handling
 	const [pdfWidth, setPdfWidth] = useState(700);
 	const containerRef = useRef<HTMLDivElement>(null);
+
+	// SEA-89: Field drag state
+	const [draggingFieldType, setDraggingFieldType] = useState<FieldType | null>(
+		null,
+	);
 
 	const { data: document } = useSuspenseQuery(
 		convexQuery(api.documents.queries.getDocument, {
@@ -141,6 +148,23 @@ function DocumentDetailPage() {
 	// SEA-72: PDF document load handlers
 	const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
 		setNumPages(numPages);
+	};
+
+	// SEA-89: Field drop handlers
+	const handleFieldDragOver = (e: React.DragEvent) => {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "copy";
+	};
+
+	const handleFieldDrop = (e: React.DragEvent) => {
+		e.preventDefault();
+		const fieldType = e.dataTransfer.getData("fieldType") as FieldType;
+
+		if (fieldType) {
+			// TODO SEA-90: Implement field placement at drop coordinates
+			toast.success(`${fieldType} field dropped - placement coming in SEA-90`);
+			setDraggingFieldType(null);
+		}
 	};
 
 	const handleRemoveRecipient = async (
@@ -296,11 +320,19 @@ function DocumentDetailPage() {
 											<PdfZoomControls />
 										</div>
 										<TransformComponent
-											wrapperClass="border rounded-lg overflow-auto max-h-[800px] bg-gray-50"
+											wrapperClass={`border rounded-lg overflow-auto max-h-[800px] ${
+												draggingFieldType
+													? "bg-blue-50 border-blue-300"
+													: "bg-gray-50"
+											}`}
 											contentClass="flex flex-col items-center"
 											wrapperStyle={{ width: "100%" }}
 										>
-											<div ref={containerRef}>
+											<div
+												ref={containerRef}
+												onDragOver={handleFieldDragOver}
+												onDrop={handleFieldDrop}
+											>
 												<Document
 													file={pdfUrl}
 													onLoadSuccess={onDocumentLoadSuccess}
@@ -338,8 +370,18 @@ function DocumentDetailPage() {
 						</Card>
 					</div>
 
-					{/* Right column: Document info, recipients, activity */}
+					{/* Right column: Field toolbar, document info, recipients, activity */}
 					<div className="space-y-6">
+						{/* SEA-89: Field toolbar */}
+						{canEdit && (
+							<FieldToolbar
+								onFieldDragStart={(fieldType) =>
+									setDraggingFieldType(fieldType)
+								}
+								onFieldDragEnd={() => setDraggingFieldType(null)}
+							/>
+						)}
+
 						{/* SEA-72: Document metadata */}
 						<Card>
 							<CardHeader>
