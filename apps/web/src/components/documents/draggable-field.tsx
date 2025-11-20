@@ -30,6 +30,9 @@ const FIELD_COLORS: Record<FieldType, string> = {
 	text: "#10b981", // green
 	date: "#8b5cf6", // purple
 	checkbox: "#f97316", // orange
+	dropdown: "#06b6d4", // cyan
+	radio: "#ec4899", // pink
+	attachment: "#84cc16", // lime
 };
 
 /**
@@ -40,6 +43,9 @@ const FIELD_LABELS: Record<FieldType, string> = {
 	text: "Text Input",
 	date: "Date",
 	checkbox: "Checkbox",
+	dropdown: "Dropdown",
+	radio: "Radio",
+	attachment: "Attachment",
 };
 
 /**
@@ -50,6 +56,9 @@ const FIELD_HINTS: Record<FieldType, string> = {
 	text: "Enter details",
 	date: "",
 	checkbox: "Tap to approve",
+	dropdown: "Select option",
+	radio: "Select one",
+	attachment: "Upload file",
 };
 
 /**
@@ -63,6 +72,9 @@ export const FIELD_DIMENSIONS: Record<
 	text: { width: 200, height: 40 },
 	date: { width: 150, height: 40 },
 	checkbox: { width: 30, height: 30 },
+	dropdown: { width: 200, height: 40 },
+	radio: { width: 150, height: 40 },
+	attachment: { width: 200, height: 50 },
 };
 
 /**
@@ -99,17 +111,14 @@ export function DraggableField({
 	const showBadge = field.fieldType !== "checkbox";
 
 	// Debug logging
-	console.log('Field rendering:', {
+	console.log("Field rendering:", {
 		fieldType: field.fieldType,
 		width: field.width,
 		isSmallField,
-		label
+		label,
 	});
-	const badgeWidth = Math.max(
-		0,
-		Math.min(field.width - 24, 180),
-	);
-	const contentOffset = showBadge && !isSmallField ? 40 : 16;
+	const _badgeWidth = Math.max(0, Math.min(field.width - 24, 180));
+	const _contentOffset = showBadge && !isSmallField ? 40 : 16;
 
 	// Update transformer when selection changes
 	useEffect(() => {
@@ -185,7 +194,7 @@ export function DraggableField({
 		// Calculate the available space below the label for centering the hint
 		const labelHeight = 30; // Approximate height taken by the label (y=10 + fontSize~13 + padding)
 		const availableHeight = field.height - labelHeight;
-		const hintY = labelHeight + (availableHeight / 2) - 7; // Center in available space, -7 to account for fontSize/2
+		const hintY = labelHeight + availableHeight / 2 - 7; // Center in available space, -7 to account for fontSize/2
 
 		return (
 			<>
@@ -237,40 +246,40 @@ export function DraggableField({
 				/>
 
 				{/* Field label badge */}
-					{showBadge && !isSmallField && (
-						<Text
-							x={0}
-							y={0}
-							width={field.width}
-							height={field.height}
-							text={label}
-							fontSize={13}
-							fontFamily="Inter, system-ui, -apple-system, sans-serif"
-							fontStyle="600"
-							fill="#0f172a"
-							opacity={0.8}
-							align="center"
-							verticalAlign="middle"
-							listening={false}
-						/>
-					)}
-					{showBadge && isSmallField && (
-						<Text
-							x={0}
-							y={0}
-							width={field.width}
-							height={field.height}
-							text={label}
-							fontSize={11}
-							fontFamily="Inter, system-ui, -apple-system, sans-serif"
-							fontStyle="600"
-							fill="#0f172a"
-							opacity={0.8}
-							align="center"
-							verticalAlign="middle"
-							listening={false}
-						/>
-					)}
+				{showBadge && !isSmallField && (
+					<Text
+						x={0}
+						y={0}
+						width={field.width}
+						height={field.height}
+						text={label}
+						fontSize={13}
+						fontFamily="Inter, system-ui, -apple-system, sans-serif"
+						fontStyle="600"
+						fill="#0f172a"
+						opacity={0.8}
+						align="center"
+						verticalAlign="middle"
+						listening={false}
+					/>
+				)}
+				{showBadge && isSmallField && (
+					<Text
+						x={0}
+						y={0}
+						width={field.width}
+						height={field.height}
+						text={label}
+						fontSize={11}
+						fontFamily="Inter, system-ui, -apple-system, sans-serif"
+						fontStyle="600"
+						fill="#0f172a"
+						opacity={0.8}
+						align="center"
+						verticalAlign="middle"
+						listening={false}
+					/>
+				)}
 
 				{renderFieldContents()}
 			</Group>

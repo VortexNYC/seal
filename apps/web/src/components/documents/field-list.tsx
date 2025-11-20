@@ -1,3 +1,4 @@
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import {
 	CalendarIcon,
 	CheckSquareIcon,
@@ -5,10 +6,9 @@ import {
 	TrashIcon,
 	TypeIcon,
 } from "lucide-react";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import type { FieldType } from "./field-toolbar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import type { FieldType } from "./field-toolbar";
 
 interface FieldListItem {
 	_id: Id<"signature_fields">;
@@ -24,7 +24,7 @@ interface FieldListItem {
 
 interface Recipient {
 	_id: Id<"document_recipients">;
-	name: string | null;
+	name?: string;
 	email: string;
 }
 
@@ -42,6 +42,9 @@ const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
 	text: <TypeIcon className="h-4 w-4" />,
 	date: <CalendarIcon className="h-4 w-4" />,
 	checkbox: <CheckSquareIcon className="h-4 w-4" />,
+	dropdown: <TypeIcon className="h-4 w-4" />,
+	radio: <CheckSquareIcon className="h-4 w-4" />,
+	attachment: <TypeIcon className="h-4 w-4" />,
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
@@ -49,6 +52,9 @@ const FIELD_COLORS: Record<FieldType, string> = {
 	text: "bg-green-100 text-green-700 border-green-200",
 	date: "bg-purple-100 text-purple-700 border-purple-200",
 	checkbox: "bg-orange-100 text-orange-700 border-orange-200",
+	dropdown: "bg-cyan-100 text-cyan-700 border-cyan-200",
+	radio: "bg-pink-100 text-pink-700 border-pink-200",
+	attachment: "bg-lime-100 text-lime-700 border-lime-200",
 };
 
 const FIELD_LABELS: Record<FieldType, string> = {
@@ -56,6 +62,9 @@ const FIELD_LABELS: Record<FieldType, string> = {
 	text: "Text",
 	date: "Date",
 	checkbox: "Checkbox",
+	dropdown: "Dropdown",
+	radio: "Radio",
+	attachment: "Attachment",
 };
 
 export function FieldList({

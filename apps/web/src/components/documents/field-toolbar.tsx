@@ -8,7 +8,14 @@ import { useState } from "react";
 import { Card } from "../ui/card";
 import { FIELD_DIMENSIONS } from "./draggable-field";
 
-export type FieldType = "signature" | "text" | "date" | "checkbox";
+export type FieldType =
+	| "signature"
+	| "text"
+	| "date"
+	| "checkbox"
+	| "dropdown"
+	| "radio"
+	| "attachment";
 
 interface FieldToolbarProps {
 	onFieldDragStart?: (fieldType: FieldType) => void;
@@ -20,8 +27,6 @@ interface FieldButtonProps {
 	icon: React.ReactNode;
 	label: string;
 	color: string;
-	bgColor: string;
-	borderColor: string;
 	onDragStart: (fieldType: FieldType) => void;
 	onDragEnd: () => void;
 }
@@ -29,13 +34,16 @@ interface FieldButtonProps {
 /**
  * Map field types to colors and labels
  */
-const FIELD_CONFIG: Record<FieldType, {
-	label: string;
-	hint: string;
-	color: string;
-	bgColor: string;
-	borderColor: string;
-}> = {
+const FIELD_CONFIG: Record<
+	FieldType,
+	{
+		label: string;
+		hint: string;
+		color: string;
+		bgColor: string;
+		borderColor: string;
+	}
+> = {
 	signature: {
 		label: "Signature",
 		hint: "",
@@ -64,6 +72,27 @@ const FIELD_CONFIG: Record<FieldType, {
 		bgColor: "rgba(249, 115, 22, 0.14)",
 		borderColor: "#f97316",
 	},
+	dropdown: {
+		label: "Dropdown",
+		hint: "Select option",
+		color: "#06b6d4",
+		bgColor: "rgba(6, 182, 212, 0.14)",
+		borderColor: "#06b6d4",
+	},
+	radio: {
+		label: "Radio",
+		hint: "Select one",
+		color: "#ec4899",
+		bgColor: "rgba(236, 72, 153, 0.14)",
+		borderColor: "#ec4899",
+	},
+	attachment: {
+		label: "Attachment",
+		hint: "Upload file",
+		color: "#84cc16",
+		bgColor: "rgba(132, 204, 22, 0.14)",
+		borderColor: "#84cc16",
+	},
 };
 
 /**
@@ -74,8 +103,6 @@ function FieldButton({
 	icon,
 	label,
 	color,
-	bgColor,
-	borderColor,
 	onDragStart,
 	onDragEnd,
 }: FieldButtonProps) {
@@ -148,7 +175,11 @@ function FieldButton({
 		}
 
 		document.body.appendChild(dragImage);
-		e.dataTransfer.setDragImage(dragImage, dimensions.width / 2, dimensions.height / 2);
+		e.dataTransfer.setDragImage(
+			dragImage,
+			dimensions.width / 2,
+			dimensions.height / 2,
+		);
 
 		// Clean up drag image after a short delay
 		setTimeout(() => {
@@ -226,8 +257,6 @@ export function FieldToolbar({
 						icon={<PenToolIcon className="h-5 w-5" />}
 						label="Signature"
 						color="blue"
-						bgColor={FIELD_CONFIG.signature.bgColor}
-						borderColor={FIELD_CONFIG.signature.borderColor}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}
 					/>
@@ -237,8 +266,6 @@ export function FieldToolbar({
 						icon={<TypeIcon className="h-5 w-5" />}
 						label="Text"
 						color="green"
-						bgColor={FIELD_CONFIG.text.bgColor}
-						borderColor={FIELD_CONFIG.text.borderColor}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}
 					/>
@@ -248,8 +275,6 @@ export function FieldToolbar({
 						icon={<CalendarIcon className="h-5 w-5" />}
 						label="Date"
 						color="purple"
-						bgColor={FIELD_CONFIG.date.bgColor}
-						borderColor={FIELD_CONFIG.date.borderColor}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}
 					/>
@@ -259,8 +284,6 @@ export function FieldToolbar({
 						icon={<CheckSquareIcon className="h-5 w-5" />}
 						label="Checkbox"
 						color="orange"
-						bgColor={FIELD_CONFIG.checkbox.bgColor}
-						borderColor={FIELD_CONFIG.checkbox.borderColor}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}
 					/>
