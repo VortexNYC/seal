@@ -1,6 +1,7 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
+import { internal } from "../_generated/api";
+import type { Doc } from "../_generated/dataModel";
 import { action } from "../_generated/server";
-import { api } from "../_generated/api";
 import { generateFillablePdf } from "./pdf_form_generator";
 
 /**
@@ -11,27 +12,33 @@ export const generateFillablePdfAction = action({
 	args: {
 		documentId: v.id("documents"),
 	},
-	handler: async (ctx, args) => {
-		// Get document
-		const document = await ctx.runQuery(api.documents.queries.get, {
-			id: args.documentId,
-		});
+	handler: async (
+		ctx,
+		args,
+	): Promise<{ pdfBase64: string; fileName: string }> => {
+		// Get document using internal query
+		const document: Doc<"documents"> | null = await ctx.runQuery(
+			internal.documents.queries.getDocumentInternal,
+			{
+				documentId: args.documentId,
+			},
+		);
 
 		if (!document) {
-			throw new Error("Document not found");
+			throw new ConvexError("Document not found");
 		}
 
 		// Get signature fields for this document
-		const signatureFields = await ctx.runQuery(
-			api.signature_fields.queries.getFieldsByDocument,
+		const signatureFields: Doc<"signature_fields">[] = await ctx.runQuery(
+			internal.signature_fields.queries.getFieldsByDocumentInternal,
 			{
 				documentId: args.documentId,
 			},
 		);
 
 		// Get recipients for this document
-		const recipients = await ctx.runQuery(
-			api.documents.recipients_queries.getDocumentRecipients,
+		const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
+			internal.documents.recipients_queries.getDocumentRecipientsInternal,
 			{
 				documentId: args.documentId,
 			},
@@ -39,7 +46,7 @@ export const generateFillablePdfAction = action({
 
 		// Create a map of recipient IDs to recipient info
 		const recipientMap = new Map(
-			recipients.map((r) => [r._id, { name: r.name, email: r.email }]),
+			recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email }]),
 		);
 
 		// Fetch the original PDF file from storage
@@ -61,7 +68,6 @@ export const generateFillablePdfAction = action({
 			pdfArrayBuffer,
 			signatureFields,
 			recipientMap,
-			document.name,
 		);
 
 		// Convert Uint8Array to base64 for transmission

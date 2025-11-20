@@ -131,7 +131,7 @@ export const deleteDocument = authMutation({
 		const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 		await ctx.scheduler.runAfter(
 			GRACE_PERIOD_MS,
-			internal.documents.cleanup.cleanupDocumentStorage,
+			internal.documents?.cleanup.cleanupDocumentStorage,
 			{
 				storageId: document.storageId,
 				documentId: args.documentId,

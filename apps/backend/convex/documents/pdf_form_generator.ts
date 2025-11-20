@@ -1,13 +1,11 @@
-import { PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from "pdf-lib";
+import {
+	PDFDocument,
+	type PDFFont,
+	type PDFPage,
+	rgb,
+	StandardFonts,
+} from "pdf-lib";
 import type { Doc } from "../_generated/dataModel";
-
-interface FieldPosition {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-	page: number;
-}
 
 interface RecipientInfo {
 	name: string | null;
@@ -21,7 +19,6 @@ export async function generateFillablePdf(
 	originalPdfBytes: ArrayBuffer,
 	fields: Doc<"signature_fields">[],
 	recipients: Map<string, RecipientInfo>,
-	documentName: string,
 ): Promise<Uint8Array> {
 	// Load the original PDF
 	const pdfDoc = await PDFDocument.load(originalPdfBytes);
@@ -29,7 +26,6 @@ export async function generateFillablePdf(
 	const form = pdfDoc.getForm();
 
 	// Load fonts
-	const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 	const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
 	// Group fields by page for easier processing
@@ -64,31 +60,11 @@ export async function generateFillablePdf(
 			try {
 				switch (field.fieldType) {
 					case "text":
-						addTextField(
-							form,
-							page,
-							fieldName,
-							x,
-							pdfY,
-							width,
-							height,
-							helveticaFont,
-							field.label,
-						);
+						addTextField(form, page, fieldName, x, pdfY, width, height);
 						break;
 
 					case "date":
-						addTextField(
-							form,
-							page,
-							fieldName,
-							x,
-							pdfY,
-							width,
-							height,
-							helveticaFont,
-							field.label,
-						);
+						addTextField(form, page, fieldName, x, pdfY, width, height);
 						break;
 
 					case "checkbox":
@@ -99,9 +75,7 @@ export async function generateFillablePdf(
 						// For signature fields, we'll add a placeholder that can be digitally signed
 						// Note: This creates a visual placeholder, actual signing requires @signpdf/signpdf
 						await addSignaturePlaceholder(
-							pdfDoc,
 							page,
-							fieldName,
 							x,
 							pdfY,
 							width,
@@ -133,8 +107,6 @@ function addTextField(
 	y: number,
 	width: number,
 	height: number,
-	font: PDFFont,
-	label: string,
 ) {
 	const textField = form.createTextField(fieldName);
 	textField.addToPage(page, {
@@ -146,8 +118,6 @@ function addTextField(
 		backgroundColor: rgb(1, 1, 1),
 		borderColor: rgb(0.5, 0.5, 0.5),
 		borderWidth: 1,
-		font,
-		fontSize: 11,
 	});
 
 	// Set placeholder text
@@ -184,9 +154,7 @@ function addCheckboxField(
  * This creates a visual signature field that can be filled in PDF readers
  */
 async function addSignaturePlaceholder(
-	pdfDoc: PDFDocument,
 	page: PDFPage,
-	fieldName: string,
 	x: number,
 	y: number,
 	width: number,
@@ -236,17 +204,4 @@ async function addSignaturePlaceholder(
 	// Note: To make this a true digital signature field, you would need to use
 	// pdflibAddPlaceholder from @signpdf/placeholder-pdf-lib
 	// However, that requires additional setup and is typically done during the signing process
-}
-
-/**
- * Helper to convert field type to display name
- */
-function getFieldTypeDisplay(fieldType: string): string {
-	const displays: Record<string, string> = {
-		signature: "Signature",
-		text: "Text",
-		date: "Date",
-		checkbox: "Checkbox",
-	};
-	return displays[fieldType] || fieldType;
 }

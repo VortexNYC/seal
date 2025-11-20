@@ -78,7 +78,7 @@ export const sendDocument = authMutation({
 					const delayMs = scheduledFor - now;
 					await ctx.scheduler.runAfter(
 						delayMs,
-						internal.documents.reminders.processReminder,
+						internal.documents?.reminders.processReminder,
 						{
 							reminderId,
 						},
