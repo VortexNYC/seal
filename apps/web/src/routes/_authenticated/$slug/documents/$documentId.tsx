@@ -36,7 +36,6 @@ import { PdfZoomControls } from "../../../../components/documents/pdf-zoom-contr
 import { RecipientList } from "../../../../components/documents/recipient-list";
 import { SigningProgress } from "../../../../components/documents/signing-progress";
 import { WorkflowStatusBadge } from "../../../../components/documents/workflow-status-badge";
-import { Button } from "../../../../components/ui/button";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -47,6 +46,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "../../../../components/ui/alert-dialog";
+import { Button } from "../../../../components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -89,7 +89,7 @@ function DocumentDetailPage() {
 	const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
 	const [showFieldDeleteDialog, setShowFieldDeleteDialog] = useState(false);
 
-	const { data: document } = useSuspenseQuery(
+	const { data: documentData } = useSuspenseQuery(
 		convexQuery(api.documents.queries.getDocument, {
 			documentId: documentId as Id<"documents">,
 		}),
@@ -240,7 +240,11 @@ function DocumentDetailPage() {
 	};
 
 	// SEA-91: Page dimensions handler - captures first page dimensions for coordinate conversion
-	const handlePageDimensions = (pageNumber: number, width: number, height: number) => {
+	const handlePageDimensions = (
+		pageNumber: number,
+		_width: number,
+		height: number,
+	) => {
 		if (pageNumber === 1) {
 			setPdfHeight(height);
 		}
@@ -270,7 +274,7 @@ function DocumentDetailPage() {
 		if (!container) return;
 
 		// Find which PDF page was dropped on by checking all page elements
-		const pageElements = container.querySelectorAll('.react-pdf__Page');
+		const pageElements = container.querySelectorAll(".react-pdf__Page");
 		let targetPageNumber = 1;
 		let targetPageElement: Element | null = null;
 
@@ -319,8 +323,8 @@ function DocumentDetailPage() {
 
 		// Calculate drop position relative to page, centered on cursor
 		// Since the drag image is centered on the cursor, we need to offset by half the field size
-		const dropXPixels = e.clientX - pageRect.left - (scaledFieldWidth / 2);
-		const dropYPixels = e.clientY - pageRect.top - (scaledFieldHeight / 2);
+		const dropXPixels = e.clientX - pageRect.left - scaledFieldWidth / 2;
+		const dropYPixels = e.clientY - pageRect.top - scaledFieldHeight / 2;
 
 		// Use first recipient by default
 		// TODO SEA-91: Add recipient selector UI
@@ -491,8 +495,8 @@ function DocumentDetailPage() {
 	// Document created
 	activityEvents.push({
 		type: "created" as const,
-		timestamp: document.createdAt,
-		description: `Document "${document.name}" was created`,
+		timestamp: documentData.createdAt,
+		description: `Document "${documentData.name}" was created`,
 	});
 
 	// Recipients added
@@ -539,7 +543,7 @@ function DocumentDetailPage() {
 	// Sort by timestamp (newest first)
 	activityEvents.sort((a, b) => b.timestamp - a.timestamp);
 
-	const canEdit = document.status === "active"; // Only edit active documents
+	const canEdit = documentData.status === "active"; // Only edit active documents
 
 	// SEA-72: Format file size helper
 	const formatFileSize = (bytes: number) => {
@@ -560,7 +564,7 @@ function DocumentDetailPage() {
 
 	return (
 		<PageWrapper
-			title={document.name}
+			title={documentData.name}
 			actions={[
 				{
 					label: "Back",
@@ -710,34 +714,38 @@ function DocumentDetailPage() {
 									<p className="text-sm font-medium text-muted-foreground">
 										Status
 									</p>
-									<WorkflowStatusBadge status={document.workflowStatus} />
+									<WorkflowStatusBadge status={documentData.workflowStatus} />
 								</div>
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
 										File Size
 									</p>
-									<p className="text-sm">{formatFileSize(document.fileSize)}</p>
+									<p className="text-sm">
+										{formatFileSize(documentData.fileSize)}
+									</p>
 								</div>
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
 										Pages
 									</p>
 									<p className="text-sm">
-										{document.pageCount || numPages || "—"}
+										{documentData.pageCount || numPages || "—"}
 									</p>
 								</div>
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
 										Uploaded
 									</p>
-									<p className="text-sm">{formatDate(document.createdAt)}</p>
+									<p className="text-sm">
+										{formatDate(documentData.createdAt)}
+									</p>
 								</div>
-								{document.description && (
+								{documentData.description && (
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">
 											Description
 										</p>
-										<p className="text-sm">{document.description}</p>
+										<p className="text-sm">{documentData.description}</p>
 									</div>
 								)}
 							</CardContent>

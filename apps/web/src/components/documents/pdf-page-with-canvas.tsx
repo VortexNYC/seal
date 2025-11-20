@@ -21,7 +21,11 @@ interface PdfPageWithCanvasProps {
 		width: number,
 		height: number,
 	) => void;
-	onPageDimensions?: (pageNumber: number, width: number, height: number) => void;
+	onPageDimensions?: (
+		pageNumber: number,
+		width: number,
+		height: number,
+	) => void;
 }
 
 /**
@@ -48,8 +52,7 @@ export function PdfPageWithCanvas({
 
 	// Get zoom/pan state from TransformWrapper context
 	const transformContext = useTransformContext();
-	const { scale, positionX, positionY } = transformContext?.transformState || {
-		scale: 1,
+	const { positionX, positionY } = transformContext?.transformState || {
 		positionX: 0,
 		positionY: 0,
 	};
@@ -87,7 +90,6 @@ export function PdfPageWithCanvas({
 					pageNumber={pageNumber}
 					pdfWidth={pageDimensions.width}
 					pdfHeight={pageDimensions.height}
-					zoom={scale}
 					scrollOffset={{ x: positionX, y: positionY }}
 					onCanvasReady={handleCanvasReady}
 					fields={fields}
