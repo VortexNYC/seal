@@ -8,7 +8,7 @@
 
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouteContext } from "@tanstack/react-router";
 import { FileTextIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -25,6 +25,16 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -52,6 +62,8 @@ function SigningPage() {
 
 	// Signature capture state
 	const [showSignatureCapture, setShowSignatureCapture] = useState(false);
+	const [showDeclineDialog, setShowDeclineDialog] = useState(false);
+	const [declineReason, setDeclineReason] = useState("");
 
 	// Fetch PDF URL
 	useEffect(() => {
@@ -62,35 +74,86 @@ function SigningPage() {
 					{ documentId: doc._id },
 				);
 				setPdfUrl(url);
-			} catch (error) {
+			} catch (_error) {
 				toast.error("Failed to load PDF");
 			}
 		};
 		fetchPdfUrl();
 	}, [convexClient, doc._id]);
 
-	const onDocumentLoadSuccess = ({ numPages }: { numPages: number}) => {
+	// Track document view automatically when page loads (only if not already viewed)
+	useEffect(() => {
+		const markAsViewed = async () => {
+			// Only mark as viewed if status is still pending
+			if (recipient.status === "pending") {
+				try {
+					await convexClient.mutation(
+						api.documents.recipients_mutations.submitRecipientSignature,
+						{
+							signingToken: token,
+							status: "viewed",
+						},
+					);
+				} catch (error) {
+					// Silent failure - viewing tracking is not critical
+					console.error("Failed to track document view:", error);
+				}
+			}
+		};
+		markAsViewed();
+	}, [convexClient, token, recipient.status]);
+
+	const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
 		setNumPages(numPages);
 	};
+
+	// Signature submission mutation
+	const submitSignatureMutation = useMutation({
+		mutationFn: async ({
+			signatureData,
+			signatureType,
+		}: {
+			signatureData: string;
+			signatureType: "drawn" | "typed" | "uploaded";
+		}) => {
+			// Determine the appropriate status based on recipient role
+			const status =
+				recipient.role === "signer"
+					? "signed"
+					: recipient.role === "approver"
+						? "approved"
+						: "viewed";
+
+			return await convexClient.mutation(
+				api.documents.recipients_mutations.submitRecipientSignature,
+				{
+					signingToken: token,
+					status,
+					signatureData: status === "signed" ? signatureData : undefined,
+					signatureType: status === "signed" ? signatureType : undefined,
+				},
+			);
+		},
+		onSuccess: () => {
+			toast.success("Document signed successfully!");
+			setShowSignatureCapture(false);
+			// Reload the page to show updated status
+			window.location.reload();
+		},
+		onError: (error) => {
+			toast.error(
+				error instanceof Error ? error.message : "Failed to save signature",
+			);
+			console.error(error);
+		},
+	});
 
 	// Handle signature capture
 	const handleSignatureCapture = async (
 		signatureData: string,
 		signatureType: "drawn" | "typed" | "uploaded",
 	) => {
-		try {
-			// TODO: Call backend mutation to save signature
-			console.log("Signature captured:", { signatureType, signatureData });
-
-			toast.success("Signature captured successfully!");
-			setShowSignatureCapture(false);
-
-			// In the next phase, we'll add the actual backend mutation
-			// await submitSignature({ recipientId: recipient._id, signatureData, signatureType });
-		} catch (error) {
-			toast.error("Failed to save signature");
-			console.error(error);
-		}
+		submitSignatureMutation.mutate({ signatureData, signatureType });
 	};
 
 	const handleSignButtonClick = () => {
@@ -99,6 +162,49 @@ function SigningPage() {
 
 	const handleCancelSignature = () => {
 		setShowSignatureCapture(false);
+	};
+
+	// Decline mutation
+	const declineMutation = useMutation({
+		mutationFn: async (reason: string) => {
+			return await convexClient.mutation(
+				api.documents.recipients_mutations.submitRecipientSignature,
+				{
+					signingToken: token,
+					status: "declined",
+					declineReason: reason,
+				},
+			);
+		},
+		onSuccess: () => {
+			toast.success("Document declined");
+			setShowDeclineDialog(false);
+			// Reload the page to show updated status
+			window.location.reload();
+		},
+		onError: (error) => {
+			toast.error(
+				error instanceof Error ? error.message : "Failed to decline document",
+			);
+			console.error(error);
+		},
+	});
+
+	const handleDeclineClick = () => {
+		setShowDeclineDialog(true);
+	};
+
+	const handleDeclineConfirm = () => {
+		if (!declineReason.trim()) {
+			toast.error("Please provide a reason for declining");
+			return;
+		}
+		declineMutation.mutate(declineReason);
+	};
+
+	const handleDeclineCancel = () => {
+		setShowDeclineDialog(false);
+		setDeclineReason("");
 	};
 
 	// Check if recipient has already completed their action
@@ -140,7 +246,8 @@ function SigningPage() {
 								</div>
 								<div>
 									<span className="font-medium">Role:</span>{" "}
-									{recipient.role.charAt(0).toUpperCase() + recipient.role.slice(1)}
+									{recipient.role.charAt(0).toUpperCase() +
+										recipient.role.slice(1)}
 								</div>
 								<div>
 									<span className="font-medium">Status:</span>{" "}
@@ -168,7 +275,8 @@ function SigningPage() {
 								</p>
 								{recipient.signedAt && (
 									<p className="text-sm text-green-700 mt-1">
-										Signed on {new Date(recipient.signedAt).toLocaleDateString()}
+										Signed on{" "}
+										{new Date(recipient.signedAt).toLocaleDateString()}
 									</p>
 								)}
 								{recipient.approvedAt && (
@@ -241,10 +349,19 @@ function SigningPage() {
 								<Card>
 									<CardContent className="pt-6">
 										<div className="flex gap-4 justify-end">
-											<Button variant="outline" size="lg" disabled>
+											<Button
+												variant="outline"
+												size="lg"
+												onClick={handleDeclineClick}
+												disabled={declineMutation.isPending}
+											>
 												Decline
 											</Button>
-											<Button size="lg" onClick={handleSignButtonClick}>
+											<Button
+												size="lg"
+												onClick={handleSignButtonClick}
+												disabled={submitSignatureMutation.isPending}
+											>
 												{recipient.role === "signer" && "Sign Document"}
 												{recipient.role === "approver" && "Approve Document"}
 												{recipient.role === "viewer" && "Mark as Viewed"}
@@ -253,6 +370,50 @@ function SigningPage() {
 									</CardContent>
 								</Card>
 							)}
+
+							{/* Decline Dialog */}
+							<Dialog
+								open={showDeclineDialog}
+								onOpenChange={setShowDeclineDialog}
+							>
+								<DialogContent>
+									<DialogHeader>
+										<DialogTitle>Decline Document</DialogTitle>
+										<DialogDescription>
+											Please provide a reason for declining this document. This
+											will be shared with the document sender.
+										</DialogDescription>
+									</DialogHeader>
+									<div className="space-y-2">
+										<Label htmlFor="decline-reason">Reason for declining</Label>
+										<Textarea
+											id="decline-reason"
+											value={declineReason}
+											onChange={(e) => setDeclineReason(e.target.value)}
+											placeholder="Enter your reason here..."
+											rows={4}
+										/>
+									</div>
+									<DialogFooter>
+										<Button
+											variant="outline"
+											onClick={handleDeclineCancel}
+											disabled={declineMutation.isPending}
+										>
+											Cancel
+										</Button>
+										<Button
+											variant="destructive"
+											onClick={handleDeclineConfirm}
+											disabled={declineMutation.isPending}
+										>
+											{declineMutation.isPending
+												? "Declining..."
+												: "Decline Document"}
+										</Button>
+									</DialogFooter>
+								</DialogContent>
+							</Dialog>
 						</>
 					)}
 				</div>
