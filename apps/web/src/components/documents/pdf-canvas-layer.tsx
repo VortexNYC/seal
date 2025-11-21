@@ -7,7 +7,6 @@ interface PdfCanvasLayerProps {
 	pageNumber: number;
 	pdfWidth: number;
 	pdfHeight: number;
-	zoom?: number;
 	scrollOffset?: { x: number; y: number };
 	onCanvasReady?: (stage: Konva.Stage) => void;
 	fields?: PlacedField[];
@@ -30,7 +29,6 @@ export function PdfCanvasLayer({
 	pageNumber,
 	pdfWidth,
 	pdfHeight,
-	zoom = 1,
 	scrollOffset: _scrollOffset = { x: 0, y: 0 },
 	onCanvasReady,
 	fields = [],
@@ -85,6 +83,7 @@ export function PdfCanvasLayer({
 			style={{
 				width: dimensions.width,
 				height: dimensions.height,
+				zIndex: 10,
 			}}
 		>
 			<Stage

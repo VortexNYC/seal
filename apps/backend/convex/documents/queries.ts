@@ -3,6 +3,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { internalQuery } from "../_generated/server";
 import { authQuery } from "../auth";
 import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
 
@@ -579,5 +580,21 @@ export const getDocumentComplete = authQuery({
 						: 0,
 			},
 		};
+	},
+});
+
+/**
+ * Internal query to get a document by ID without access control
+ * Used by actions that need to access documents
+ */
+
+export const getDocumentInternal = internalQuery({
+	args: { documentId: v.id("documents") },
+	handler: async (ctx, args) => {
+		const document = await ctx.db.get(args.documentId);
+		if (!document || document.status === "deleted") {
+			return null;
+		}
+		return document;
 	},
 });

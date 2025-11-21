@@ -67,7 +67,7 @@ export const sendManualReminder = authMutation({
 		// When email is enabled, this will actually send the email
 		await ctx.scheduler.runAfter(
 			0,
-			internal.documents.reminders.processReminder,
+			internal.documents?.reminders.processReminder,
 			{
 				reminderId,
 			},
@@ -137,7 +137,7 @@ export const sendBulkReminder = authMutation({
 			// Schedule sending
 			await ctx.scheduler.runAfter(
 				0,
-				internal.documents.reminders.processReminder,
+				internal.documents?.reminders.processReminder,
 				{
 					reminderId,
 				},
@@ -194,7 +194,7 @@ export const scheduleAutomatedReminder = authMutation({
 		const delayMs = scheduledFor - now;
 		await ctx.scheduler.runAfter(
 			delayMs,
-			internal.documents.reminders.processReminder,
+			internal.documents?.reminders.processReminder,
 			{
 				reminderId,
 			},

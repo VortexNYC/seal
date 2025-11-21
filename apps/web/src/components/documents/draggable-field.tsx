@@ -1,5 +1,5 @@
 import type Konva from "konva";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Group, Rect, Text, Transformer } from "react-konva";
 import type { FieldType } from "./field-toolbar";
 
@@ -30,16 +30,35 @@ const FIELD_COLORS: Record<FieldType, string> = {
 	text: "#10b981", // green
 	date: "#8b5cf6", // purple
 	checkbox: "#f97316", // orange
+	dropdown: "#06b6d4", // cyan
+	radio: "#ec4899", // pink
+	attachment: "#84cc16", // lime
 };
 
 /**
- * Map field types to icons (as text for now, will render Lucide icons via HTML layer later)
+ * Friendly labels for each field type
  */
-const FIELD_ICONS: Record<FieldType, string> = {
-	signature: "✍️",
-	text: "T",
-	date: "📅",
-	checkbox: "☑",
+const FIELD_LABELS: Record<FieldType, string> = {
+	signature: "Signature",
+	text: "Text Input",
+	date: "Date",
+	checkbox: "Checkbox",
+	dropdown: "Dropdown",
+	radio: "Radio",
+	attachment: "Attachment",
+};
+
+/**
+ * Helper text inside each field to hint at its intent
+ */
+const FIELD_HINTS: Record<FieldType, string> = {
+	signature: "",
+	text: "Enter details",
+	date: "",
+	checkbox: "Tap to approve",
+	dropdown: "Select option",
+	radio: "Select one",
+	attachment: "Upload file",
 };
 
 /**
@@ -53,6 +72,20 @@ export const FIELD_DIMENSIONS: Record<
 	text: { width: 200, height: 40 },
 	date: { width: 150, height: 40 },
 	checkbox: { width: 30, height: 30 },
+	dropdown: { width: 200, height: 40 },
+	radio: { width: 150, height: 40 },
+	attachment: { width: 200, height: 50 },
+};
+
+/**
+ * Convert a hex color (#RRGGBB) to rgba so we can control transparency
+ */
+const hexToRgba = (hex: string, alpha: number) => {
+	const sanitized = hex.replace("#", "");
+	const r = Number.parseInt(sanitized.slice(0, 2), 16);
+	const g = Number.parseInt(sanitized.slice(2, 4), 16);
+	const b = Number.parseInt(sanitized.slice(4, 6), 16);
+	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
 /**
@@ -70,13 +103,31 @@ export function DraggableField({
 	const trRef = useRef<Konva.Transformer>(null);
 
 	const color = FIELD_COLORS[field.fieldType];
-	const icon = FIELD_ICONS[field.fieldType];
+	const label = FIELD_LABELS[field.fieldType];
+	const hint = FIELD_HINTS[field.fieldType];
+
+	// Always show label for non-checkbox fields, but adjust styling based on size
+	const isSmallField = field.width < 110;
+	const showBadge = field.fieldType !== "checkbox";
+
+	// Debug logging
+	console.log("Field rendering:", {
+		fieldType: field.fieldType,
+		width: field.width,
+		isSmallField,
+		label,
+	});
+	const _badgeWidth = Math.max(0, Math.min(field.width - 24, 180));
+	const _contentOffset = showBadge && !isSmallField ? 40 : 16;
 
 	// Update transformer when selection changes
-	if (isSelected && trRef.current && shapeRef.current) {
-		trRef.current.nodes([shapeRef.current]);
-		trRef.current.getLayer()?.batchDraw();
-	}
+	useEffect(() => {
+		if (isSelected && trRef.current && shapeRef.current) {
+			// Attach transformer to the shape
+			trRef.current.nodes([shapeRef.current]);
+			trRef.current.getLayer()?.batchDraw();
+		}
+	}, [isSelected]);
 
 	const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
 		const node = e.target as Konva.Group;
@@ -102,6 +153,70 @@ export function DraggableField({
 		);
 	};
 
+	const renderFieldContents = () => {
+		if (field.fieldType === "checkbox") {
+			const boxSize = Math.min(field.width, field.height) - 10;
+			const safeBoxSize = Math.max(18, boxSize);
+			const boxX = (field.width - safeBoxSize) / 2;
+			const boxY = (field.height - safeBoxSize) / 2;
+
+			return (
+				<>
+					<Rect
+						x={boxX}
+						y={boxY}
+						width={safeBoxSize}
+						height={safeBoxSize}
+						cornerRadius={6}
+						stroke={color}
+						strokeWidth={2}
+						fill="#fff"
+					/>
+					<Text
+						x={boxX}
+						y={boxY - 2}
+						width={safeBoxSize}
+						height={safeBoxSize}
+						align="center"
+						verticalAlign="middle"
+						text="✓"
+						fontSize={safeBoxSize - 8}
+						fontFamily="Inter, system-ui, -apple-system, sans-serif"
+						fill={color}
+						opacity={0.8}
+						listening={false}
+					/>
+				</>
+			);
+		}
+
+		// For non-checkbox fields with hints
+		// Calculate the available space below the label for centering the hint
+		const labelHeight = 30; // Approximate height taken by the label (y=10 + fontSize~13 + padding)
+		const availableHeight = field.height - labelHeight;
+		const hintY = labelHeight + availableHeight / 2 - 7; // Center in available space, -7 to account for fontSize/2
+
+		return (
+			<>
+				{hint && !isSmallField && (
+					<Text
+						x={16}
+						y={hintY}
+						width={field.width - 32}
+						text={hint}
+						fontSize={13}
+						fontFamily="Inter, system-ui, -apple-system, sans-serif"
+						fontStyle="500"
+						fill="#0f172a"
+						opacity={0.75}
+						align="center"
+						listening={false}
+					/>
+				)}
+			</>
+		);
+	};
+
 	return (
 		<>
 			<Group
@@ -110,7 +225,7 @@ export function DraggableField({
 				y={field.y}
 				width={field.width}
 				height={field.height}
-				draggable
+				draggable={isSelected}
 				onClick={onSelect}
 				onTap={onSelect}
 				onDragEnd={handleDragEnd}
@@ -120,31 +235,53 @@ export function DraggableField({
 				<Rect
 					width={field.width}
 					height={field.height}
-					fill={color}
-					opacity={0.2}
+					fill={hexToRgba(color, isSelected ? 0.25 : 0.14)}
 					stroke={color}
-					strokeWidth={2}
-					cornerRadius={4}
+					strokeWidth={isSelected ? 3 : 2}
+					cornerRadius={10}
+					shadowColor={hexToRgba("#000000", 0.25)}
+					shadowBlur={isSelected ? 10 : 6}
+					shadowOpacity={0.15}
+					shadowOffsetY={3}
 				/>
 
-				{/* Field icon */}
-				<Text
-					x={8}
-					y={field.height / 2 - 10}
-					text={icon}
-					fontSize={16}
-					fill={color}
-				/>
+				{/* Field label badge */}
+				{showBadge && !isSmallField && (
+					<Text
+						x={0}
+						y={0}
+						width={field.width}
+						height={field.height}
+						text={label}
+						fontSize={13}
+						fontFamily="Inter, system-ui, -apple-system, sans-serif"
+						fontStyle="600"
+						fill="#0f172a"
+						opacity={0.8}
+						align="center"
+						verticalAlign="middle"
+						listening={false}
+					/>
+				)}
+				{showBadge && isSmallField && (
+					<Text
+						x={0}
+						y={0}
+						width={field.width}
+						height={field.height}
+						text={label}
+						fontSize={11}
+						fontFamily="Inter, system-ui, -apple-system, sans-serif"
+						fontStyle="600"
+						fill="#0f172a"
+						opacity={0.8}
+						align="center"
+						verticalAlign="middle"
+						listening={false}
+					/>
+				)}
 
-				{/* Field type label */}
-				<Text
-					x={32}
-					y={field.height / 2 - 8}
-					text={field.fieldType.toUpperCase()}
-					fontSize={12}
-					fontStyle="bold"
-					fill={color}
-				/>
+				{renderFieldContents()}
 			</Group>
 
 			{/* Transformer for resize handles - only shown when selected */}

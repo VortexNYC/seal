@@ -74,4 +74,10 @@ scripts/
 .env.linear
 
 # Logs
-# logs.txt
+logs.txt
+localhost-*.log
+*.log
+# Local test files and runtime data
+.playwright-mcp/
+apps/web/.env.test
+sample-doc.pdf

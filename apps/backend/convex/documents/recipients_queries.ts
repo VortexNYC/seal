@@ -271,3 +271,19 @@ export const getMyRecipientDocuments = authQuery({
 		);
 	},
 });
+
+/**
+ * Internal query to get document recipients without access control
+ * Used by actions that need to access recipients
+ */
+import { internalQuery } from "../_generated/server";
+
+export const getDocumentRecipientsInternal = internalQuery({
+	args: { documentId: v.id("documents") },
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query("document_recipients")
+			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+			.collect();
+	},
+});

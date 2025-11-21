@@ -7,7 +7,7 @@ import {
 	useRouteContext,
 	useRouter,
 } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import {
 	ArrowLeftIcon,
 	DownloadIcon,
@@ -19,6 +19,7 @@ import { Document, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import "./document-detail.css";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { ActivityFeed } from "../../../../components/documents/activity-feed";
@@ -27,6 +28,7 @@ import {
 	FIELD_DIMENSIONS,
 	type PlacedField,
 } from "../../../../components/documents/draggable-field";
+import { FieldList } from "../../../../components/documents/field-list";
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
@@ -34,6 +36,16 @@ import { PdfZoomControls } from "../../../../components/documents/pdf-zoom-contr
 import { RecipientList } from "../../../../components/documents/recipient-list";
 import { SigningProgress } from "../../../../components/documents/signing-progress";
 import { WorkflowStatusBadge } from "../../../../components/documents/workflow-status-badge";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "../../../../components/ui/alert-dialog";
 import { Button } from "../../../../components/ui/button";
 import {
 	Card,
@@ -75,8 +87,9 @@ function DocumentDetailPage() {
 	// SEA-90: Field placement state
 	const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
 	const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+	const [showFieldDeleteDialog, setShowFieldDeleteDialog] = useState(false);
 
-	const { data: document } = useSuspenseQuery(
+	const { data: documentData } = useSuspenseQuery(
 		convexQuery(api.documents.queries.getDocument, {
 			documentId: documentId as Id<"documents">,
 		}),
@@ -178,10 +191,46 @@ function DocumentDetailPage() {
 		};
 	}, []);
 
-	// SEA-72: Download handler
-	const handleDownload = () => {
-		if (pdfUrl) {
-			window.open(pdfUrl, "_blank");
+	// SEA-72: Download handler - generates fillable PDF with form fields
+	const generateFillablePdf = useAction(
+		api.documents.generate_fillable_pdf.generateFillablePdfAction,
+	);
+
+	const handleDownload = async () => {
+		try {
+			toast.loading("Generating fillable PDF...");
+
+			// Call the Convex action to generate the fillable PDF
+			const result = await generateFillablePdf({
+				documentId: documentId as Id<"documents">,
+			});
+
+			// Convert base64 to blob
+			const binaryString = atob(result.pdfBase64);
+			const bytes = new Uint8Array(binaryString.length);
+			for (let i = 0; i < binaryString.length; i++) {
+				bytes[i] = binaryString.charCodeAt(i);
+			}
+			const blob = new Blob([bytes], { type: "application/pdf" });
+
+			// Create download link
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = result.fileName;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			URL.revokeObjectURL(url);
+
+			toast.dismiss();
+			toast.success("Fillable PDF downloaded successfully!");
+		} catch (error) {
+			toast.dismiss();
+			toast.error(
+				`Failed to generate fillable PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+			console.error("Error generating fillable PDF:", error);
 		}
 	};
 
@@ -191,7 +240,11 @@ function DocumentDetailPage() {
 	};
 
 	// SEA-91: Page dimensions handler - captures first page dimensions for coordinate conversion
-	const handlePageDimensions = (pageNumber: number, width: number, height: number) => {
+	const handlePageDimensions = (
+		pageNumber: number,
+		_width: number,
+		height: number,
+	) => {
 		if (pageNumber === 1) {
 			setPdfHeight(height);
 		}
@@ -221,7 +274,7 @@ function DocumentDetailPage() {
 		if (!container) return;
 
 		// Find which PDF page was dropped on by checking all page elements
-		const pageElements = container.querySelectorAll('.react-pdf__Page');
+		const pageElements = container.querySelectorAll(".react-pdf__Page");
 		let targetPageNumber = 1;
 		let targetPageElement: Element | null = null;
 
@@ -256,12 +309,22 @@ function DocumentDetailPage() {
 
 		// Calculate coordinates relative to the actual page element
 		const pageRect = targetPageElement.getBoundingClientRect();
-		const dropXPixels = e.clientX - pageRect.left;
-		const dropYPixels = e.clientY - pageRect.top;
 
 		// Get field dimensions based on type
 		const { width: widthPixels, height: heightPixels } =
 			FIELD_DIMENSIONS[fieldType];
+
+		// Calculate the scale factor to account for zoom
+		const currentScale = pageRect.width / pdfWidth;
+
+		// Get the scaled field dimensions
+		const scaledFieldWidth = widthPixels * currentScale;
+		const scaledFieldHeight = heightPixels * currentScale;
+
+		// Calculate drop position relative to page, centered on cursor
+		// Since the drag image is centered on the cursor, we need to offset by half the field size
+		const dropXPixels = e.clientX - pageRect.left - scaledFieldWidth / 2;
+		const dropYPixels = e.clientY - pageRect.top - scaledFieldHeight / 2;
 
 		// Use first recipient by default
 		// TODO SEA-91: Add recipient selector UI
@@ -270,8 +333,6 @@ function DocumentDetailPage() {
 		// Convert pixel coordinates to percentages relative to the UNSCALED page dimensions
 		// The pageRect dimensions include zoom, but we need percentages relative to the
 		// original PDF page size (pdfWidth x pdfHeight) for consistent storage
-		// Calculate the scale factor and adjust coordinates accordingly
-		const currentScale = pageRect.width / pdfWidth;
 		const unscaledDropX = dropXPixels / currentScale;
 		const unscaledDropY = dropYPixels / currentScale;
 
@@ -352,8 +413,6 @@ function DocumentDetailPage() {
 	const handleFieldDelete = useCallback(async () => {
 		if (!selectedFieldId) return;
 
-		if (!confirm("Delete this field?")) return;
-
 		try {
 			await deleteField({
 				fieldId: selectedFieldId as Id<"signature_fields">,
@@ -369,6 +428,23 @@ function DocumentDetailPage() {
 			toast.error(errorMessage);
 		}
 	}, [selectedFieldId, deleteField, refetchFields]);
+
+	const requestFieldDelete = useCallback(() => {
+		if (selectedFieldId) {
+			setShowFieldDeleteDialog(true);
+		}
+	}, [selectedFieldId]);
+
+	const handleFieldDeleteConfirm = useCallback(async () => {
+		await handleFieldDelete();
+		setShowFieldDeleteDialog(false);
+	}, [handleFieldDelete]);
+
+	useEffect(() => {
+		if (!selectedFieldId) {
+			setShowFieldDeleteDialog(false);
+		}
+	}, [selectedFieldId]);
 
 	// SEA-91: Keyboard shortcuts for field operations
 	useEffect(() => {
@@ -386,14 +462,14 @@ function DocumentDetailPage() {
 					window.document.activeElement?.tagName !== "TEXTAREA"
 				) {
 					e.preventDefault();
-					handleFieldDelete();
+					requestFieldDelete();
 				}
 			}
 		};
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [selectedFieldId, handleFieldDelete]);
+	}, [selectedFieldId, requestFieldDelete]);
 
 	const handleRemoveRecipient = async (
 		recipientId: Id<"document_recipients">,
@@ -419,8 +495,8 @@ function DocumentDetailPage() {
 	// Document created
 	activityEvents.push({
 		type: "created" as const,
-		timestamp: document.createdAt,
-		description: `Document "${document.name}" was created`,
+		timestamp: documentData.createdAt,
+		description: `Document "${documentData.name}" was created`,
 	});
 
 	// Recipients added
@@ -467,7 +543,7 @@ function DocumentDetailPage() {
 	// Sort by timestamp (newest first)
 	activityEvents.sort((a, b) => b.timestamp - a.timestamp);
 
-	const canEdit = document.status === "active"; // Only edit active documents
+	const canEdit = documentData.status === "active"; // Only edit active documents
 
 	// SEA-72: Format file size helper
 	const formatFileSize = (bytes: number) => {
@@ -488,33 +564,24 @@ function DocumentDetailPage() {
 
 	return (
 		<PageWrapper
-			title={document.name}
-			action={{
-				label: "Back to Documents",
-				onClick: () =>
-					router.navigate({ to: "/$slug/documents", params: { slug } }),
-				icon: ArrowLeftIcon,
-				variant: "ghost",
-			}}
+			title={documentData.name}
+			actions={[
+				{
+					label: "Back",
+					onClick: () =>
+						router.navigate({ to: "/$slug/documents", params: { slug } }),
+					icon: ArrowLeftIcon,
+					variant: "ghost",
+				},
+				{
+					label: "Download PDF",
+					onClick: handleDownload,
+					icon: DownloadIcon,
+					variant: "default",
+				},
+			]}
 		>
 			<div className="space-y-6">
-				<div className="flex items-center justify-between">
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={() =>
-							router.navigate({ to: "/$slug/documents", params: { slug } })
-						}
-					>
-						<ArrowLeftIcon className="mr-2 h-4 w-4" />
-						Back to Documents
-					</Button>
-					<Button onClick={handleDownload}>
-						<DownloadIcon className="mr-2 h-4 w-4" />
-						Download PDF
-					</Button>
-				</div>
-
 				{/* SEA-72: Main content grid with PDF preview */}
 				<div className="grid gap-6 lg:grid-cols-3">
 					{/* Left column: PDF Preview */}
@@ -543,12 +610,13 @@ function DocumentDetailPage() {
 										limitToBounds={true}
 										doubleClick={{ disabled: false }}
 										wheel={{ step: 0.1 }}
+										panning={{ disabled: selectedFieldId !== null }}
 									>
 										<div className="mb-4 flex justify-center">
 											<PdfZoomControls />
 										</div>
 										<TransformComponent
-											wrapperClass={`border rounded-lg overflow-auto max-h-[800px] ${
+											wrapperClass={`border rounded-lg overflow-auto max-h-[calc(100vh-12rem)] ${
 												draggingFieldType
 													? "bg-blue-50 border-blue-300"
 													: "bg-gray-50"
@@ -615,29 +683,26 @@ function DocumentDetailPage() {
 							/>
 						)}
 
-						{/* SEA-91: Field controls (when field is selected) */}
-						{canEdit && selectedFieldId && (
-							<Card>
-								<CardHeader>
-									<CardTitle className="text-sm">Selected Field</CardTitle>
-								</CardHeader>
-								<CardContent className="space-y-3">
-									<div className="flex items-center justify-between">
-										<span className="text-sm text-muted-foreground">
-											Field ID: {selectedFieldId.slice(0, 8)}...
-										</span>
-									</div>
-									<Button
-										variant="destructive"
-										size="sm"
-										className="w-full"
-										onClick={handleFieldDelete}
-									>
-										Delete Field
-									</Button>
-								</CardContent>
-							</Card>
-						)}
+						{/* Signature Fields List */}
+						<Card>
+							<CardHeader>
+								<CardTitle>Signature Fields</CardTitle>
+								<CardDescription>
+									{signatureFields.length}{" "}
+									{signatureFields.length === 1 ? "field" : "fields"} added
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<FieldList
+									fields={signatureFields}
+									recipients={recipients}
+									selectedFieldId={selectedFieldId}
+									canEdit={canEdit}
+									onFieldSelect={handleFieldSelect}
+									onFieldDelete={requestFieldDelete}
+								/>
+							</CardContent>
+						</Card>
 
 						{/* SEA-72: Document metadata */}
 						<Card>
@@ -649,34 +714,38 @@ function DocumentDetailPage() {
 									<p className="text-sm font-medium text-muted-foreground">
 										Status
 									</p>
-									<WorkflowStatusBadge status={document.workflowStatus} />
+									<WorkflowStatusBadge status={documentData.workflowStatus} />
 								</div>
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
 										File Size
 									</p>
-									<p className="text-sm">{formatFileSize(document.fileSize)}</p>
+									<p className="text-sm">
+										{formatFileSize(documentData.fileSize)}
+									</p>
 								</div>
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
 										Pages
 									</p>
 									<p className="text-sm">
-										{document.pageCount || numPages || "—"}
+										{documentData.pageCount || numPages || "—"}
 									</p>
 								</div>
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">
 										Uploaded
 									</p>
-									<p className="text-sm">{formatDate(document.createdAt)}</p>
+									<p className="text-sm">
+										{formatDate(documentData.createdAt)}
+									</p>
 								</div>
-								{document.description && (
+								{documentData.description && (
 									<div>
 										<p className="text-sm font-medium text-muted-foreground">
 											Description
 										</p>
-										<p className="text-sm">{document.description}</p>
+										<p className="text-sm">{documentData.description}</p>
 									</div>
 								)}
 							</CardContent>
@@ -724,6 +793,30 @@ function DocumentDetailPage() {
 					onOpenChange={setAddRecipientOpen}
 					onSuccess={() => refetchRecipients()}
 				/>
+
+				<AlertDialog
+					open={showFieldDeleteDialog}
+					onOpenChange={setShowFieldDeleteDialog}
+				>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Delete field?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This action cannot be undone and will permanently remove the
+								field from the document.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={handleFieldDeleteConfirm}
+								variant="destructive"
+							>
+								Delete
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			</div>
 		</PageWrapper>
 	);

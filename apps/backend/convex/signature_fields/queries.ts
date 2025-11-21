@@ -229,3 +229,19 @@ export const checkRequiredFieldsComplete = query({
 		};
 	},
 });
+
+/**
+ * Internal query to get signature fields by document ID without access control
+ * Used by actions that need to access signature fields
+ */
+import { internalQuery } from "../_generated/server";
+
+export const getFieldsByDocumentInternal = internalQuery({
+	args: { documentId: v.id("documents") },
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query("signature_fields")
+			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+			.collect();
+	},
+});
