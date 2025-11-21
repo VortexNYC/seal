@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SignTokenRouteImport } from './routes/sign.$token'
 import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
@@ -53,6 +54,11 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignTokenRoute = SignTokenRouteImport.update({
+  id: '/sign/$token',
+  path: '/sign/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSlugRoute = AuthenticatedSlugRouteImport.update({
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/$slug': typeof AuthenticatedSlugRouteWithChildren
+  '/sign/$token': typeof SignTokenRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/sign/$token': typeof SignTokenRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
   '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
@@ -248,6 +256,7 @@ export interface FileRoutesById {
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_authenticated/$slug': typeof AuthenticatedSlugRouteWithChildren
+  '/sign/$token': typeof SignTokenRoute
   '/_authenticated/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/_authenticated/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
   '/_authenticated/$slug/home': typeof AuthenticatedSlugHomeRoute
@@ -277,6 +286,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/$slug'
+    | '/sign/$token'
     | '/$slug/analytics'
     | '/$slug/documents'
     | '/$slug/home'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/accept-invite'
     | '/sign-in'
     | '/sign-up'
+    | '/sign/$token'
     | '/$slug/analytics'
     | '/$slug/home'
     | '/$slug/templates'
@@ -329,6 +340,7 @@ export interface FileRouteTypes {
     | '/_auth/sign-in'
     | '/_auth/sign-up'
     | '/_authenticated/$slug'
+    | '/sign/$token'
     | '/_authenticated/$slug/analytics'
     | '/_authenticated/$slug/documents'
     | '/_authenticated/$slug/home'
@@ -355,6 +367,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AppRoute: typeof AppRoute
+  SignTokenRoute: typeof SignTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -385,6 +398,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign/$token': {
+      id: '/sign/$token'
+      path: '/sign/$token'
+      fullPath: '/sign/$token'
+      preLoaderRoute: typeof SignTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/$slug': {
@@ -676,6 +696,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AppRoute: AppRoute,
+  SignTokenRoute: SignTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
