@@ -3,6 +3,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { mutation } from "../_generated/server";
 import { authMutation } from "../auth";
 import {
 	recipientRoleTuple,
@@ -135,6 +136,116 @@ export const removeRecipient = authMutation({
  * This mutation can be called by anyone with a valid signing token
  */
 export const updateRecipientStatus = authMutation({
+	args: {
+		signingToken: v.string(),
+		status: recipientStatusTuple,
+		signatureData: v.optional(v.string()),
+		signatureType: v.optional(
+			v.union(v.literal("drawn"), v.literal("typed"), v.literal("uploaded")),
+		),
+		declineReason: v.optional(v.string()),
+		ipAddress: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		// 1. Find recipient by signing token
+		const recipient = await ctx.db
+			.query("document_recipients")
+			.withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
+			.first();
+
+		if (!recipient) {
+			throw new ConvexError("Invalid signing token");
+		}
+
+		// 2. Check token expiration
+		if (recipient.tokenExpiresAt < Date.now()) {
+			throw new ConvexError("Signing token has expired");
+		}
+
+		// 3. Validate status transition
+		// Cannot change status if already in terminal state
+		if (
+			recipient.status === "signed" ||
+			recipient.status === "approved" ||
+			recipient.status === "declined"
+		) {
+			throw new ConvexError(
+				`Cannot update status - recipient has already ${recipient.status}`,
+			);
+		}
+
+		// 4. Validate status change is appropriate for role
+		if (args.status === "signed" && recipient.role !== "signer") {
+			throw new ConvexError("Only signers can have status 'signed'");
+		}
+		if (args.status === "approved" && recipient.role !== "approver") {
+			throw new ConvexError("Only approvers can have status 'approved'");
+		}
+
+		// 5. Validate required data
+		if (args.status === "signed") {
+			if (!args.signatureData || !args.signatureType) {
+				throw new ConvexError(
+					"Signature data and type are required for signing",
+				);
+			}
+		}
+		if (args.status === "declined" && !args.declineReason) {
+			throw new ConvexError("Decline reason is required");
+		}
+
+		// 6. Update the recipient
+		const now = Date.now();
+		const updateData: Record<string, unknown> = {
+			status: args.status,
+			updatedAt: now,
+		};
+
+		// Set appropriate timestamp
+		switch (args.status) {
+			case "viewed":
+				if (!recipient.viewedAt) {
+					updateData.viewedAt = now;
+				}
+				break;
+			case "signed":
+				updateData.signedAt = now;
+				updateData.signatureData = args.signatureData;
+				updateData.signatureType = args.signatureType;
+				if (!recipient.viewedAt) {
+					updateData.viewedAt = now;
+				}
+				break;
+			case "approved":
+				updateData.approvedAt = now;
+				if (!recipient.viewedAt) {
+					updateData.viewedAt = now;
+				}
+				break;
+			case "declined":
+				updateData.declinedAt = now;
+				updateData.declineReason = args.declineReason;
+				if (!recipient.viewedAt) {
+					updateData.viewedAt = now;
+				}
+				break;
+		}
+
+		if (args.ipAddress) {
+			updateData.ipAddress = args.ipAddress;
+		}
+
+		await ctx.db.patch(recipient._id, updateData);
+
+		return { success: true, recipientId: recipient._id };
+	},
+});
+
+/**
+ * Submit recipient signature (public mutation - no auth required)
+ * Called by recipients on the public signing page using their signing token
+ */
+export const submitRecipientSignature = mutation({
 	args: {
 		signingToken: v.string(),
 		status: recipientStatusTuple,
