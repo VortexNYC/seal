@@ -65,13 +65,13 @@ function SigningPage() {
 	const [showDeclineDialog, setShowDeclineDialog] = useState(false);
 	const [declineReason, setDeclineReason] = useState("");
 
-	// Fetch PDF URL
+	// Fetch PDF URL using signing token (no auth required)
 	useEffect(() => {
 		const fetchPdfUrl = async () => {
 			try {
 				const url = await convexClient.query(
-					api.documents.queries.getDocumentUrl,
-					{ documentId: doc._id },
+					api.documents.queries.getDocumentUrlByToken,
+					{ signingToken: token },
 				);
 				setPdfUrl(url);
 			} catch (_error) {
@@ -79,7 +79,7 @@ function SigningPage() {
 			}
 		};
 		fetchPdfUrl();
-	}, [convexClient, doc._id]);
+	}, [convexClient, token]);
 
 	// Track document view automatically when page loads (only if not already viewed)
 	useEffect(() => {

@@ -3,7 +3,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
-import { internalQuery } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 import { authQuery } from "../auth";
 import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
 
@@ -580,6 +580,44 @@ export const getDocumentComplete = authQuery({
 						: 0,
 			},
 		};
+	},
+});
+
+/**
+ * Get document URL for public signing page (no auth required)
+ * Validates access via signing token
+ */
+export const getDocumentUrlByToken = query({
+	args: { signingToken: v.string() },
+	handler: async (ctx, args) => {
+		// 1. Find recipient by signing token
+		const recipient = await ctx.db
+			.query("document_recipients")
+			.withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
+			.first();
+
+		if (!recipient) {
+			throw new ConvexError("Invalid signing token");
+		}
+
+		// 2. Check token expiration
+		if (recipient.tokenExpiresAt < Date.now()) {
+			throw new ConvexError("Signing token has expired");
+		}
+
+		// 3. Get the document
+		const document = await ctx.db.get(recipient.documentId);
+		if (!document || document.status === "deleted") {
+			throw new ConvexError("Document not found");
+		}
+
+		// 4. Generate download URL from storage
+		const url = await ctx.storage.getUrl(document.storageId);
+		if (!url) {
+			throw new ConvexError("File not found in storage");
+		}
+
+		return url;
 	},
 });
 
