@@ -9,7 +9,13 @@
 		"lint": "biome check .",
 		"format": "biome format --write .",
 		"typecheck": "tsc --noEmit",
-		"clean": "git clean -xdf .cache .turbo node_modules convex/_generate"
+		"clean": "git clean -xdf .cache .turbo node_modules convex/_generate",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:headed": "playwright test --headed",
+		"test:e2e:debug": "playwright test --debug",
+		"test:e2e:report": "playwright show-report",
+		"test:e2e:codegen": "playwright codegen http://localhost:5173"
 	},
 	"dependencies": {
 		"@clerk/clerk-react": "^5.53.8",
@@ -55,6 +61,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.2.4",
+		"@playwright/test": "^1.56.1",
 		"@sentry/vite-plugin": "^4.6.0",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/react": "^16.3.0",
