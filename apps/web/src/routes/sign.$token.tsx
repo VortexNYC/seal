@@ -16,6 +16,7 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { toast } from "sonner";
+import { SignatureCapture } from "@/components/documents/signature-capture";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -49,6 +50,9 @@ function SigningPage() {
 	const [numPages, setNumPages] = useState<number | null>(null);
 	const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
+	// Signature capture state
+	const [showSignatureCapture, setShowSignatureCapture] = useState(false);
+
 	// Fetch PDF URL
 	useEffect(() => {
 		const fetchPdfUrl = async () => {
@@ -65,8 +69,36 @@ function SigningPage() {
 		fetchPdfUrl();
 	}, [convexClient, doc._id]);
 
-	const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+	const onDocumentLoadSuccess = ({ numPages }: { numPages: number}) => {
 		setNumPages(numPages);
+	};
+
+	// Handle signature capture
+	const handleSignatureCapture = async (
+		signatureData: string,
+		signatureType: "drawn" | "typed" | "uploaded",
+	) => {
+		try {
+			// TODO: Call backend mutation to save signature
+			console.log("Signature captured:", { signatureType, signatureData });
+
+			toast.success("Signature captured successfully!");
+			setShowSignatureCapture(false);
+
+			// In the next phase, we'll add the actual backend mutation
+			// await submitSignature({ recipientId: recipient._id, signatureData, signatureType });
+		} catch (error) {
+			toast.error("Failed to save signature");
+			console.error(error);
+		}
+	};
+
+	const handleSignButtonClick = () => {
+		setShowSignatureCapture(true);
+	};
+
+	const handleCancelSignature = () => {
+		setShowSignatureCapture(false);
 	};
 
 	// Check if recipient has already completed their action
@@ -196,25 +228,32 @@ function SigningPage() {
 						</CardContent>
 					</Card>
 
-					{/* Action Buttons */}
+					{/* Signature Capture Modal or Action Buttons */}
 					{!isCompleted && (
-						<Card>
-							<CardContent className="pt-6">
-								<div className="flex gap-4 justify-end">
-									<Button variant="outline" size="lg" disabled>
-										Decline
-									</Button>
-									<Button size="lg" disabled>
-										{recipient.role === "signer" && "Sign Document"}
-										{recipient.role === "approver" && "Approve Document"}
-										{recipient.role === "viewer" && "Mark as Viewed"}
-									</Button>
-								</div>
-								<p className="text-sm text-muted-foreground mt-4 text-center">
-									Signature capture UI will be implemented in next phase
-								</p>
-							</CardContent>
-						</Card>
+						<>
+							{showSignatureCapture ? (
+								<SignatureCapture
+									recipientName={recipient.name}
+									onSignatureCapture={handleSignatureCapture}
+									onCancel={handleCancelSignature}
+								/>
+							) : (
+								<Card>
+									<CardContent className="pt-6">
+										<div className="flex gap-4 justify-end">
+											<Button variant="outline" size="lg" disabled>
+												Decline
+											</Button>
+											<Button size="lg" onClick={handleSignButtonClick}>
+												{recipient.role === "signer" && "Sign Document"}
+												{recipient.role === "approver" && "Approve Document"}
+												{recipient.role === "viewer" && "Mark as Viewed"}
+											</Button>
+										</div>
+									</CardContent>
+								</Card>
+							)}
+						</>
 					)}
 				</div>
 			</main>
