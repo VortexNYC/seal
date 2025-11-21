@@ -7,7 +7,13 @@
  * 3. Upload - Upload existing signature image
  */
 
-import { CheckIcon, ImageIcon, PencilIcon, TypeIcon, XIcon } from "lucide-react";
+import {
+	CheckIcon,
+	ImageIcon,
+	PencilIcon,
+	TypeIcon,
+	XIcon,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import { Button } from "@/components/ui/button";
@@ -124,7 +130,10 @@ export function SignatureCapture({
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SignatureType)}>
+				<Tabs
+					value={activeTab}
+					onValueChange={(v) => setActiveTab(v as SignatureType)}
+				>
 					<TabsList className="grid w-full grid-cols-3">
 						<TabsTrigger value="drawn" className="flex items-center gap-2">
 							<PencilIcon className="h-4 w-4" />
