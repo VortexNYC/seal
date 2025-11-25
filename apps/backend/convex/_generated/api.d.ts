@@ -15,6 +15,7 @@ import type * as auth_permissions from "../auth/permissions.js";
 import type * as auth_wrappers from "../auth/wrappers.js";
 import type * as check_membership from "../check_membership.js";
 import type * as documents_cleanup from "../documents/cleanup.js";
+import type * as documents_email from "../documents/email.js";
 import type * as documents_generate_fillable_pdf from "../documents/generate_fillable_pdf.js";
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_pdf_form_generator from "../documents/pdf_form_generator.js";
@@ -24,6 +25,7 @@ import type * as documents_recipients_mutations from "../documents/recipients_mu
 import type * as documents_recipients_queries from "../documents/recipients_queries.js";
 import type * as documents_reminders from "../documents/reminders.js";
 import type * as documents_reminders_queries from "../documents/reminders_queries.js";
+import type * as documents_send_document_action from "../documents/send_document_action.js";
 import type * as documents_sharing from "../documents/sharing.js";
 import type * as documents_upload_config from "../documents/upload_config.js";
 import type * as documents_workflow_helpers from "../documents/workflow_helpers.js";
@@ -85,6 +87,7 @@ declare const fullApi: ApiFromModules<{
   "auth/wrappers": typeof auth_wrappers;
   check_membership: typeof check_membership;
   "documents/cleanup": typeof documents_cleanup;
+  "documents/email": typeof documents_email;
   "documents/generate_fillable_pdf": typeof documents_generate_fillable_pdf;
   "documents/mutations": typeof documents_mutations;
   "documents/pdf_form_generator": typeof documents_pdf_form_generator;
@@ -94,6 +97,7 @@ declare const fullApi: ApiFromModules<{
   "documents/recipients_queries": typeof documents_recipients_queries;
   "documents/reminders": typeof documents_reminders;
   "documents/reminders_queries": typeof documents_reminders_queries;
+  "documents/send_document_action": typeof documents_send_document_action;
   "documents/sharing": typeof documents_sharing;
   "documents/upload_config": typeof documents_upload_config;
   "documents/workflow_helpers": typeof documents_workflow_helpers;
