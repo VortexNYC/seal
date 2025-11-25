@@ -370,6 +370,20 @@ function DocumentDetailPage() {
 		setDraggingFieldType(null);
 	};
 
+	// Helper to format field type as label
+	const formatFieldTypeLabel = (fieldType: FieldType): string => {
+		const typeLabels: Record<FieldType, string> = {
+			signature: "Signature",
+			text: "Text",
+			date: "Date",
+			checkbox: "Checkbox",
+			dropdown: "Dropdown",
+			radio: "Radio",
+			attachment: "Attachment",
+		};
+		return `${typeLabels[fieldType]} Field`;
+	};
+
 	// Handle field creation after recipient selection
 	const handleConfirmFieldPlacement = async () => {
 		if (!pendingFieldData || !selectedRecipientId) return;
@@ -380,7 +394,7 @@ function DocumentDetailPage() {
 				documentId: documentId as Id<"documents">,
 				recipientId: selectedRecipientId as Id<"document_recipients">,
 				fieldType: pendingFieldData.fieldType,
-				label: `${pendingFieldData.fieldType} field`,
+				label: formatFieldTypeLabel(pendingFieldData.fieldType),
 				isRequired: true, // Default to required
 				x: pendingFieldData.x,
 				y: pendingFieldData.y,
@@ -397,7 +411,7 @@ function DocumentDetailPage() {
 			await refetchFields();
 
 			toast.success(
-				`${pendingFieldData.fieldType} field assigned to recipient`,
+				`${formatFieldTypeLabel(pendingFieldData.fieldType)} assigned to recipient`,
 			);
 
 			// Close dialog and clear pending data
