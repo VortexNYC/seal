@@ -24,7 +24,15 @@ export async function sendDocumentInvitation(
 	params: SendDocumentInvitationParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
 	try {
-		const { to, recipientName, documentName, senderName, signingUrl, customMessage, expiresAt } = params;
+		const {
+			to,
+			recipientName,
+			documentName,
+			senderName,
+			signingUrl,
+			customMessage,
+			expiresAt,
+		} = params;
 
 		// Format expiration date if provided
 		const expirationText = expiresAt
@@ -133,12 +141,16 @@ export async function sendDocumentInvitation(
 								<strong>${senderName}</strong> has sent you a document to sign.
 							</p>
 
-							${customMessage ? `
+							${
+								customMessage
+									? `
 								<div class="message">
 									<strong>Message from ${senderName}:</strong><br>
 									${customMessage}
 								</div>
-							` : ""}
+							`
+									: ""
+							}
 
 							<div class="document-info">
 								<div class="document-name">📄 ${documentName}</div>

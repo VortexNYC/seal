@@ -4,9 +4,9 @@
  */
 
 import { ConvexError, v } from "convex/values";
-import { action, internalMutation } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+import { action, internalMutation } from "../_generated/server";
 import { sendDocumentInvitation } from "./email";
 
 /**
@@ -71,9 +71,12 @@ export const sendDocumentEmails = action({
 		// TODO: Add field assignment validation here
 
 		// 4. Mark document as sent
-		await ctx.runMutation(internal.documents.send_document_action.markDocumentAsSent, {
-			documentId: args.documentId,
-		});
+		await ctx.runMutation(
+			internal.documents.send_document_action.markDocumentAsSent,
+			{
+				documentId: args.documentId,
+			},
+		);
 
 		// 5. Get sender information from document owner
 		// For now, we'll get it from the document query
@@ -98,7 +101,8 @@ export const sendDocumentEmails = action({
 			}
 
 			// Generate signing URL
-			const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+			const baseUrl =
+				process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
 			const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
 
 			// Send email

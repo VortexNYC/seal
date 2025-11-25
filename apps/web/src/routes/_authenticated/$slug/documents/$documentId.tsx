@@ -12,6 +12,7 @@ import {
 	ArrowLeftIcon,
 	DownloadIcon,
 	FileTextIcon,
+	SendIcon,
 	UserPlusIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -35,6 +36,7 @@ import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-wit
 import { PdfZoomControls } from "../../../../components/documents/pdf-zoom-controls";
 import { RecipientList } from "../../../../components/documents/recipient-list";
 import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
+import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
 import { SigningProgress } from "../../../../components/documents/signing-progress";
 import { WorkflowStatusBadge } from "../../../../components/documents/workflow-status-badge";
 import {
@@ -70,6 +72,7 @@ function DocumentDetailPage() {
 	const { slug, documentId } = Route.useParams();
 	const router = useRouter();
 	const [addRecipientOpen, setAddRecipientOpen] = useState(false);
+	const [sendDocumentOpen, setSendDocumentOpen] = useState(false);
 
 	// SEA-72: PDF viewer state
 	const [numPages, setNumPages] = useState<number | null>(null);
@@ -616,6 +619,12 @@ function DocumentDetailPage() {
 		});
 	};
 
+	// Check if document can be sent
+	const canSendDocument =
+		documentData.workflowStatus === "draft" &&
+		recipients.length > 0 &&
+		canEdit;
+
 	return (
 		<PageWrapper
 			title={documentData.name}
@@ -627,11 +636,21 @@ function DocumentDetailPage() {
 					icon: ArrowLeftIcon,
 					variant: "ghost",
 				},
+				...(canSendDocument
+					? [
+							{
+								label: "Send Document",
+								onClick: () => setSendDocumentOpen(true),
+								icon: SendIcon,
+								variant: "default" as const,
+							},
+						]
+					: []),
 				{
 					label: "Download PDF",
 					onClick: handleDownload,
 					icon: DownloadIcon,
-					variant: "default",
+					variant: "outline" as const,
 				},
 			]}
 		>
@@ -857,6 +876,19 @@ function DocumentDetailPage() {
 					onRecipientSelect={setSelectedRecipientId}
 					onConfirm={handleConfirmFieldPlacement}
 					fieldType={pendingFieldData?.fieldType || "field"}
+				/>
+
+				{/* Send document dialog */}
+				<SendDocumentDialog
+					documentId={documentId as Id<"documents">}
+					documentName={documentData.name}
+					recipients={recipients}
+					open={sendDocumentOpen}
+					onOpenChange={setSendDocumentOpen}
+					onSuccess={() => {
+						refetchDocument();
+						refetchRecipients();
+					}}
 				/>
 
 				<AlertDialog
