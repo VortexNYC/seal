@@ -79,9 +79,13 @@ export const getDocumentRecipients = authQuery({
 				approvedAt: r.approvedAt,
 				declinedAt: r.declinedAt,
 				createdAt: r.createdAt,
+				// Include signature data for viewing
+				signatureData: r.signatureData,
+				signatureType: r.signatureType,
 			}));
 		}
 
+		// Owner sees everything including signing tokens
 		return recipients;
 	},
 });

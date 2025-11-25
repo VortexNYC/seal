@@ -3,9 +3,11 @@ import {
 	CheckCircle2Icon,
 	CircleIcon,
 	ClockIcon,
+	CopyIcon,
 	EyeIcon,
 	XCircleIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
@@ -37,6 +39,9 @@ interface Recipient {
 	approvedAt?: number;
 	declinedAt?: number;
 	createdAt: number;
+	signingToken?: string;
+	signatureData?: string;
+	signatureType?: "drawn" | "typed" | "uploaded";
 }
 
 interface RecipientListProps {
@@ -106,6 +111,24 @@ export function RecipientList({
 	onRemoveRecipient,
 	canEdit = false,
 }: RecipientListProps) {
+	const handleCopySigningLink = (recipient: Recipient) => {
+		if (!recipient.signingToken) {
+			toast.error("Signing token not available");
+			return;
+		}
+
+		const signingUrl = `${window.location.origin}/sign/${recipient.signingToken}`;
+
+		navigator.clipboard
+			.writeText(signingUrl)
+			.then(() => {
+				toast.success("Signing link copied to clipboard!");
+			})
+			.catch(() => {
+				toast.error("Failed to copy link");
+			});
+	};
+
 	if (recipients.length === 0) {
 		return (
 			<div className="text-center py-8 text-muted-foreground">
@@ -124,7 +147,7 @@ export function RecipientList({
 						<TableHead>Role</TableHead>
 						<TableHead>Status</TableHead>
 						<TableHead>Activity</TableHead>
-						{canEdit && <TableHead className="w-24">Actions</TableHead>}
+						<TableHead className="w-32">Actions</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
@@ -155,7 +178,18 @@ export function RecipientList({
 									<div>Viewed {formatTimestamp(recipient.viewedAt)}</div>
 								)}
 								{recipient.status === "signed" && (
-									<div>Signed {formatTimestamp(recipient.signedAt)}</div>
+									<div>
+										Signed {formatTimestamp(recipient.signedAt)}
+										{recipient.signatureData && (
+											<div className="mt-1">
+												<img
+													src={recipient.signatureData}
+													alt="Signature"
+													className="h-8 border rounded"
+												/>
+											</div>
+										)}
+									</div>
 								)}
 								{recipient.status === "approved" && (
 									<div>Approved {formatTimestamp(recipient.approvedAt)}</div>
@@ -165,9 +199,17 @@ export function RecipientList({
 								)}
 								{recipient.status === "pending" && <div>Not yet viewed</div>}
 							</TableCell>
-							{canEdit && (
-								<TableCell>
-									{onRemoveRecipient && (
+							<TableCell>
+								<div className="flex gap-1">
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => handleCopySigningLink(recipient)}
+										title="Copy signing link"
+									>
+										<CopyIcon className="h-4 w-4" />
+									</Button>
+									{canEdit && onRemoveRecipient && (
 										<Button
 											variant="ghost"
 											size="sm"
@@ -176,8 +218,8 @@ export function RecipientList({
 											Remove
 										</Button>
 									)}
-								</TableCell>
-							)}
+								</div>
+							</TableCell>
 						</TableRow>
 					))}
 				</TableBody>
