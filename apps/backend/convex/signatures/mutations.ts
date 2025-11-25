@@ -273,3 +273,179 @@ export const deleteSignature = mutation({
 		return { success: true };
 	},
 });
+
+/**
+ * Save or update a field value using signing token (unauthenticated)
+ * Used on the signing page to allow recipients to fill fields
+ */
+export const saveFieldValue = mutation({
+	args: {
+		signingToken: v.string(),
+		fieldId: v.id("signature_fields"),
+		value: v.optional(v.string()),
+		signatureImageUrl: v.optional(v.string()),
+		ipAddress: v.string(),
+		userAgent: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// 1. Validate signing token and get recipient
+		const recipient = await ctx.db
+			.query("document_recipients")
+			.withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
+			.first();
+
+		if (!recipient) {
+			throw new Error("Invalid signing token");
+		}
+
+		// 2. Check token expiration
+		if (recipient.tokenExpiresAt < Date.now()) {
+			throw new Error("Signing token has expired");
+		}
+
+		// 3. Get the field
+		const field = await ctx.db.get(args.fieldId);
+		if (!field) {
+			throw new Error("Field not found");
+		}
+
+		// 4. Verify field is assigned to this recipient
+		if (field.recipientId !== recipient._id) {
+			throw new Error("This field is not assigned to you");
+		}
+
+		// 5. Verify field belongs to the same document
+		if (field.documentId !== recipient.documentId) {
+			throw new Error("Field does not belong to this document");
+		}
+
+		// 6. Get document and verify it's not completed
+		const document = await ctx.db.get(field.documentId);
+		if (!document) {
+			throw new Error("Document not found");
+		}
+
+		if (document.workflowStatus === "completed") {
+			throw new Error("Cannot modify fields on completed document");
+		}
+
+		// 7. Validate signature data based on field type
+		const signatureValidation = validateSignature(
+			field.fieldType,
+			args.value,
+			args.signatureImageUrl,
+		);
+		if (!signatureValidation.valid) {
+			throw new Error(signatureValidation.error || "Invalid field value");
+		}
+
+		// 8. Validate against field validation rules
+		if (args.value && field.validationRules) {
+			const rulesValidation = validateAgainstRules(
+				args.value,
+				field.validationRules,
+			);
+			if (!rulesValidation.valid) {
+				throw new Error(
+					rulesValidation.error ||
+						"Value does not meet validation requirements",
+				);
+			}
+		}
+
+		// 9. Check if signature already exists
+		const existingSignature = await ctx.db
+			.query("signatures")
+			.withIndex("by_field", (q) => q.eq("fieldId", args.fieldId))
+			.first();
+
+		let signatureId: import("../_generated/dataModel").Id<"signatures">;
+
+		if (existingSignature) {
+			// Update existing signature
+			await ctx.db.patch(existingSignature._id, {
+				...(args.value !== undefined && { value: args.value }),
+				...(args.signatureImageUrl !== undefined && {
+					signatureImageUrl: args.signatureImageUrl,
+				}),
+				signedAt: Date.now(),
+				ipAddress: args.ipAddress,
+				userAgent: args.userAgent,
+				updatedAt: Date.now(),
+			});
+			signatureId = existingSignature._id;
+
+			// Log update to audit trail
+			await logSignatureAction(ctx, {
+				organizationId: document.organizationId,
+				recipientId: recipient._id,
+				action: "signature.updated",
+				signatureId: existingSignature._id,
+				fieldId: args.fieldId,
+				documentId: field.documentId,
+				oldValues: {
+					value: existingSignature.value,
+					signatureImageUrl: existingSignature.signatureImageUrl,
+				},
+				newValues: {
+					value: args.value,
+					signatureImageUrl: args.signatureImageUrl,
+				},
+				ipAddress: args.ipAddress,
+				userAgent: args.userAgent,
+			});
+		} else {
+			// Create new signature
+			signatureId = await ctx.db.insert("signatures", {
+				fieldId: args.fieldId,
+				recipientId: recipient._id,
+				documentId: field.documentId,
+				value: args.value,
+				signatureImageUrl: args.signatureImageUrl,
+				signedAt: Date.now(),
+				ipAddress: args.ipAddress,
+				userAgent: args.userAgent,
+				createdAt: Date.now(),
+				updatedAt: Date.now(),
+			});
+
+			// Log creation to audit trail
+			await logSignatureAction(ctx, {
+				organizationId: document.organizationId,
+				recipientId: recipient._id,
+				action: "signature.created",
+				signatureId,
+				fieldId: args.fieldId,
+				documentId: field.documentId,
+				newValues: {
+					value: args.value,
+					signatureImageUrl: args.signatureImageUrl,
+				},
+				ipAddress: args.ipAddress,
+				userAgent: args.userAgent,
+			});
+		}
+
+		// If this is the main signature field, auto-sign the document
+		if (field.isMainSignature === true && field.fieldType === "signature") {
+			// Determine status based on recipient role
+			const status =
+				recipient.role === "signer"
+					? "signed"
+					: recipient.role === "approver"
+						? "approved"
+						: "viewed";
+
+			// Update recipient status and signature data
+			await ctx.db.patch(recipient._id, {
+				status,
+				signatureData: args.signatureImageUrl,
+				signatureType: "drawn", // Assuming drawn for now, could be enhanced
+				signedAt: status === "signed" ? Date.now() : undefined,
+				approvedAt: status === "approved" ? Date.now() : undefined,
+			});
+		}
+
+		return { signatureId, isUpdate: !!existingSignature };
+	},
+});

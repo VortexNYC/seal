@@ -104,6 +104,26 @@ export const createField = mutation({
 			throw new Error(typeValidation.error);
 		}
 
+		// Auto-designate main signature if this is the first signature field for this recipient
+		let isMainSignature: boolean | undefined;
+		if (args.fieldType === "signature") {
+			// Check how many signature fields this recipient already has
+			const existingSignatureFields = await ctx.db
+				.query("signature_fields")
+				.withIndex("by_document_recipient", (q) =>
+					q
+						.eq("documentId", args.documentId)
+						.eq("recipientId", args.recipientId),
+				)
+				.filter((q) => q.eq(q.field("fieldType"), "signature"))
+				.collect();
+
+			// If this is the first signature field, make it the main one
+			if (existingSignatureFields.length === 0) {
+				isMainSignature = true;
+			}
+		}
+
 		// Create field
 		const fieldId = await ctx.db.insert("signature_fields", {
 			documentId: args.documentId,
@@ -111,6 +131,7 @@ export const createField = mutation({
 			fieldType: args.fieldType,
 			label: args.label,
 			isRequired: args.isRequired,
+			isMainSignature,
 			x: args.x,
 			y: args.y,
 			width: args.width,
@@ -509,5 +530,89 @@ export const bulkCreateFields = mutation({
 		}
 
 		return { fieldIds, count: fieldIds.length };
+	},
+});
+
+/**
+ * Set a signature field as the main signature for a recipient
+ * Ensures only one main signature per recipient
+ */
+export const setMainSignature = mutation({
+	args: {
+		fieldId: v.id("signature_fields"),
+	},
+	handler: async (ctx, args) => {
+		// Get authenticated user
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new Error("Unauthorized");
+		}
+
+		// Get the field
+		const field = await ctx.db.get(args.fieldId);
+		if (!field) {
+			throw new Error("Field not found");
+		}
+
+		// Verify it's a signature field
+		if (field.fieldType !== "signature") {
+			throw new Error("Only signature fields can be set as main signature");
+		}
+
+		// Get document and verify access
+		const document = await ctx.db.get(field.documentId);
+		if (!document) {
+			throw new Error("Document not found");
+		}
+
+		// If already main signature, nothing to do
+		if (field.isMainSignature === true) {
+			return { success: true, message: "Already set as main signature" };
+		}
+
+		// Find any other main signature for this recipient and unset it
+		const existingMainSignature = await ctx.db
+			.query("signature_fields")
+			.withIndex("by_document_recipient", (q) =>
+				q
+					.eq("documentId", field.documentId)
+					.eq("recipientId", field.recipientId),
+			)
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("fieldType"), "signature"),
+					q.eq(q.field("isMainSignature"), true),
+				),
+			)
+			.first();
+
+		if (existingMainSignature && existingMainSignature._id !== args.fieldId) {
+			await ctx.db.patch(existingMainSignature._id, {
+				isMainSignature: false,
+				updatedAt: Date.now(),
+			});
+		}
+
+		// Set this field as the main signature
+		await ctx.db.patch(args.fieldId, {
+			isMainSignature: true,
+			updatedAt: Date.now(),
+		});
+
+		// Log action to audit trail
+		await logFieldAction(ctx, {
+			organizationId: document.organizationId,
+			userId: identity.subject,
+			action: "field.updated",
+			fieldId: args.fieldId,
+			documentId: field.documentId,
+			recipientId: field.recipientId,
+			oldValues: { isMainSignature: field.isMainSignature },
+			newValues: { isMainSignature: true },
+			ipAddress: "0.0.0.0",
+			userAgent: "web",
+		});
+
+		return { success: true, message: "Main signature updated" };
 	},
 });

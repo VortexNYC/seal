@@ -34,6 +34,7 @@ export const signatureFieldsTable = defineTable({
 	fieldType: fieldTypeTuple, // Type of field
 	label: v.string(), // Field label/name
 	isRequired: v.boolean(), // UI-level: Whether field is marked required for display purposes
+	isMainSignature: v.optional(v.boolean()), // Only for signature fields: indicates this is the main/official document signature
 
 	// Position on Document
 	x: v.number(), // X coordinate (percentage of page width)
