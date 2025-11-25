@@ -26,7 +26,7 @@ interface SendDocumentDialogProps {
 	documentName: string;
 	recipients: Array<{
 		_id: Id<"document_recipients">;
-		name: string;
+		name?: string;
 		email: string;
 		role: "signer" | "viewer" | "approver";
 		status: "pending" | "viewed" | "signed" | "approved" | "declined";
@@ -53,7 +53,10 @@ export function SendDocumentDialog({
 
 	// Count pending recipients
 	const pendingRecipients = recipients.filter(
-		(r) => r.status !== "signed" && r.status !== "approved" && r.status !== "declined",
+		(r) =>
+			r.status !== "signed" &&
+			r.status !== "approved" &&
+			r.status !== "declined",
 	);
 
 	const handleSend = async () => {

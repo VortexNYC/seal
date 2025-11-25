@@ -106,7 +106,7 @@ function DocumentDetailPage() {
 		page: number;
 	} | null>(null);
 
-	const { data: documentData } = useSuspenseQuery(
+	const { data: documentData, refetch: refetchDocument } = useSuspenseQuery(
 		convexQuery(api.documents.queries.getDocument, {
 			documentId: documentId as Id<"documents">,
 		}),
@@ -621,9 +621,7 @@ function DocumentDetailPage() {
 
 	// Check if document can be sent
 	const canSendDocument =
-		documentData.workflowStatus === "draft" &&
-		recipients.length > 0 &&
-		canEdit;
+		documentData.workflowStatus === "draft" && recipients.length > 0 && canEdit;
 
 	return (
 		<PageWrapper

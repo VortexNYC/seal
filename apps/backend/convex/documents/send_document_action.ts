@@ -5,7 +5,7 @@
 
 import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { action, internalMutation } from "../_generated/server";
 import { sendDocumentInvitation } from "./email";
 
@@ -42,9 +42,22 @@ export const sendDocumentEmails = action({
 		documentId: v.id("documents"),
 		customMessage: v.optional(v.string()),
 	},
-	handler: async (ctx, args) => {
+	handler: async (
+		ctx,
+		args,
+	): Promise<{
+		success: boolean;
+		totalRecipients: number;
+		emailsSent: number;
+		emailsFailed: number;
+		failures: Array<{
+			recipientId: Id<"document_recipients">;
+			success: boolean;
+			error?: string;
+		}>;
+	}> => {
 		// 1. Get document details
-		const document = await ctx.runQuery(
+		const document: Doc<"documents"> | null = await ctx.runQuery(
 			internal.documents.queries.getDocumentInternal,
 			{
 				documentId: args.documentId,
@@ -56,7 +69,7 @@ export const sendDocumentEmails = action({
 		}
 
 		// 2. Get all recipients
-		const recipients = await ctx.runQuery(
+		const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
 			internal.documents.recipients_queries.getDocumentRecipientsInternal,
 			{
 				documentId: args.documentId,
