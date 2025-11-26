@@ -22,9 +22,10 @@ export const markDocumentAsSent = internalMutation({
 			throw new ConvexError("Document not found");
 		}
 
-		// Update document status to active (sent)
+		// Update document status to active and workflow status to sent
 		await ctx.db.patch(args.documentId, {
 			status: "active",
+			workflowStatus: "sent",
 			sentAt: Date.now(),
 			updatedAt: Date.now(),
 		});
