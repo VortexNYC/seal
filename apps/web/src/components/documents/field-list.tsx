@@ -33,8 +33,8 @@ interface FieldListProps {
 	recipients: Recipient[];
 	selectedFieldId: string | null;
 	canEdit: boolean;
-	onFieldSelect: (fieldId: string) => void;
-	onFieldDelete: (fieldId: string) => void;
+	onFieldSelect?: (fieldId: string) => void;
+	onFieldDelete?: (fieldId: string) => void;
 }
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
@@ -101,7 +101,7 @@ export function FieldList({
 					<button
 						key={field._id}
 						type="button"
-						onClick={() => onFieldSelect(field._id)}
+						onClick={() => onFieldSelect?.(field._id)}
 						className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
 							isSelected
 								? "border-primary bg-primary/5"
@@ -139,10 +139,10 @@ export function FieldList({
 									onClick={(e) => {
 										e.stopPropagation();
 										// First select the field, then trigger delete
-										onFieldSelect(field._id);
+										onFieldSelect?.(field._id);
 										// Use setTimeout to ensure selection happens first
 										setTimeout(() => {
-											onFieldDelete(field._id);
+											onFieldDelete?.(field._id);
 										}, 0);
 									}}
 								>

@@ -600,7 +600,10 @@ function DocumentDetailPage() {
 	// Sort by timestamp (newest first)
 	activityEvents.sort((a, b) => b.timestamp - a.timestamp);
 
-	const canEdit = documentData.status === "active"; // Only edit active documents
+	// Only edit active documents that are in draft workflow status
+	const canEdit =
+		documentData.status === "active" &&
+		(documentData.workflowStatus === "draft" || !documentData.workflowStatus);
 
 	// SEA-72: Format file size helper
 	const formatFileSize = (bytes: number) => {
@@ -723,9 +726,13 @@ function DocumentDetailPage() {
 															renderAnnotationLayer={true}
 															className="mb-4"
 															fields={placedFields}
-															selectedFieldId={selectedFieldId}
-															onFieldSelect={handleFieldSelect}
-															onFieldUpdate={handleFieldUpdate}
+															selectedFieldId={canEdit ? selectedFieldId : null}
+															onFieldSelect={
+																canEdit ? handleFieldSelect : undefined
+															}
+															onFieldUpdate={
+																canEdit ? handleFieldUpdate : undefined
+															}
 															onPageDimensions={handlePageDimensions}
 														/>
 													))}
@@ -755,25 +762,28 @@ function DocumentDetailPage() {
 						)}
 
 						{/* Signature Fields List */}
-						<Card>
-							<CardHeader>
-								<CardTitle>Signature Fields</CardTitle>
-								<CardDescription>
-									{signatureFields.length}{" "}
-									{signatureFields.length === 1 ? "field" : "fields"} added
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<FieldList
-									fields={signatureFields}
-									recipients={recipients}
-									selectedFieldId={selectedFieldId}
-									canEdit={canEdit}
-									onFieldSelect={handleFieldSelect}
-									onFieldDelete={requestFieldDelete}
-								/>
-							</CardContent>
-						</Card>
+						{signatureFields.length > 0 && (
+							<Card>
+								<CardHeader>
+									<CardTitle>Signature Fields</CardTitle>
+									<CardDescription>
+										{signatureFields.length}{" "}
+										{signatureFields.length === 1 ? "field" : "fields"} added
+										{!canEdit && " • Document locked"}
+									</CardDescription>
+								</CardHeader>
+								<CardContent>
+									<FieldList
+										fields={signatureFields}
+										recipients={recipients}
+										selectedFieldId={canEdit ? selectedFieldId : null}
+										canEdit={canEdit}
+										onFieldSelect={canEdit ? handleFieldSelect : undefined}
+										onFieldDelete={canEdit ? requestFieldDelete : undefined}
+									/>
+								</CardContent>
+							</Card>
+						)}
 
 						{/* SEA-72: Document metadata */}
 						<Card>

@@ -1,5 +1,5 @@
-import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
+import { ConvexError, v } from "convex/values";
+import type { Doc, Id } from "../_generated/dataModel";
 import { mutation } from "../_generated/server";
 import { logFieldAction } from "../audit_logs/helpers";
 import { fieldTypeTuple } from "../schemas/signature_fields";
@@ -9,6 +9,18 @@ import {
 	validateFieldType,
 	validatePageNumber,
 } from "./helpers";
+
+/**
+ * Verify that document is in draft status before allowing field modifications
+ */
+function verifyDocumentIsDraft(document: Doc<"documents">): void {
+	const workflowStatus = document.workflowStatus ?? "draft";
+	if (workflowStatus !== "draft") {
+		throw new ConvexError(
+			`Cannot modify fields - document is ${workflowStatus}. Fields can only be modified in draft status.`,
+		);
+	}
+}
 
 /**
  * Signature Field Mutations
@@ -66,6 +78,9 @@ export const createField = mutation({
 		if (!document) {
 			throw new Error("Document not found");
 		}
+
+		// Verify document is in draft status
+		verifyDocumentIsDraft(document);
 
 		// Validate field position
 		const positionValidation = validateFieldPosition(
@@ -208,6 +223,9 @@ export const updateField = mutation({
 			throw new Error("Document not found");
 		}
 
+		// Verify document is in draft status
+		verifyDocumentIsDraft(document);
+
 		// Validate field type if properties are being updated
 		if (args.properties) {
 			const typeValidation = validateFieldType(
@@ -291,6 +309,9 @@ export const repositionField = mutation({
 		if (!document) {
 			throw new Error("Document not found");
 		}
+
+		// Verify document is in draft status
+		verifyDocumentIsDraft(document);
 
 		// Calculate new position (use existing values if not provided)
 		const newX = args.x ?? field.x;
@@ -391,6 +412,9 @@ export const deleteField = mutation({
 			throw new Error("Document not found");
 		}
 
+		// Verify document is in draft status
+		verifyDocumentIsDraft(document);
+
 		// Check if field has signatures
 		const signatures = await ctx.db
 			.query("signatures")
@@ -469,6 +493,16 @@ export const bulkCreateFields = mutation({
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) {
 			throw new Error("Unauthorized");
+		}
+
+		// Verify all documents are in draft status before creating any fields
+		const documentIds = new Set(args.fields.map((f) => f.documentId));
+		for (const documentId of documentIds) {
+			const document = await ctx.db.get(documentId);
+			if (!document) {
+				throw new Error(`Document not found: ${documentId}`);
+			}
+			verifyDocumentIsDraft(document);
 		}
 
 		const fieldIds: Id<"signature_fields">[] = [];
@@ -564,6 +598,9 @@ export const setMainSignature = mutation({
 		if (!document) {
 			throw new Error("Document not found");
 		}
+
+		// Verify document is in draft status
+		verifyDocumentIsDraft(document);
 
 		// If already main signature, nothing to do
 		if (field.isMainSignature === true) {
