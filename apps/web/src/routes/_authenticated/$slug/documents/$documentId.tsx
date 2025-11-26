@@ -213,6 +213,11 @@ function DocumentDetailPage() {
 		api.documents.generate_fillable_pdf.generateFillablePdfAction,
 	);
 
+	// Resend email action
+	const resendRecipientEmail = useAction(
+		api.documents.send_document_action.resendRecipientEmail,
+	);
+
 	const handleDownload = async () => {
 		try {
 			toast.loading("Generating fillable PDF...");
@@ -546,6 +551,26 @@ function DocumentDetailPage() {
 		}
 	};
 
+	const handleResendEmail = async (recipientId: Id<"document_recipients">) => {
+		try {
+			const result = await resendRecipientEmail({
+				documentId: documentId as Id<"documents">,
+				recipientId,
+			});
+
+			if (result.success) {
+				toast.success("Email resent successfully");
+			} else {
+				toast.error(result.error || "Failed to resend email");
+			}
+		} catch (error) {
+			console.error("Error resending email:", error);
+			toast.error(
+				error instanceof Error ? error.message : "Failed to resend email",
+			);
+		}
+	};
+
 	// Build activity events from document and recipients
 	const activityEvents = [];
 
@@ -855,7 +880,9 @@ function DocumentDetailPage() {
 									onRemoveRecipient={
 										canEdit ? handleRemoveRecipient : undefined
 									}
+									onResendEmail={handleResendEmail}
 									canEdit={canEdit}
+									canResend={documentData.workflowStatus !== "draft"}
 								/>
 							</CardContent>
 						</Card>

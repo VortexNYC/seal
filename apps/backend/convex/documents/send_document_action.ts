@@ -149,3 +149,92 @@ export const sendDocumentEmails = action({
 		};
 	},
 });
+
+/**
+ * Resend email to a specific recipient
+ * This allows resending to recipients who haven't completed their action
+ */
+export const resendRecipientEmail = action({
+	args: {
+		documentId: v.id("documents"),
+		recipientId: v.id("document_recipients"),
+		customMessage: v.optional(v.string()),
+	},
+	handler: async (
+		ctx,
+		args,
+	): Promise<{
+		success: boolean;
+		error?: string;
+	}> => {
+		// 1. Get document details
+		const document: Doc<"documents"> | null = await ctx.runQuery(
+			internal.documents.queries.getDocumentInternal,
+			{
+				documentId: args.documentId,
+			},
+		);
+
+		if (!document) {
+			return { success: false, error: "Document not found" };
+		}
+
+		// 2. Verify document has been sent (not in draft)
+		const workflowStatus = document.workflowStatus ?? "draft";
+		if (workflowStatus === "draft") {
+			return {
+				success: false,
+				error: "Cannot resend email - document has not been sent yet",
+			};
+		}
+
+		// 3. Get specific recipient
+		const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
+			internal.documents.recipients_queries.getDocumentRecipientsInternal,
+			{
+				documentId: args.documentId,
+			},
+		);
+
+		const recipient = recipients.find((r) => r._id === args.recipientId);
+		if (!recipient) {
+			return { success: false, error: "Recipient not found" };
+		}
+
+		// 4. Verify recipient hasn't completed their action
+		if (
+			recipient.status === "signed" ||
+			recipient.status === "approved" ||
+			recipient.status === "declined"
+		) {
+			return {
+				success: false,
+				error: `Cannot resend - recipient has already ${recipient.status}`,
+			};
+		}
+
+		// 5. Generate signing URL
+		const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+		const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
+
+		// 6. Get sender information
+		// TODO: Get actual sender name from user
+		const senderName = "Seal User";
+
+		// 7. Send email
+		const emailResult = await sendDocumentInvitation({
+			to: recipient.email,
+			recipientName: recipient.name || recipient.email,
+			documentName: document.name,
+			senderName,
+			signingUrl,
+			customMessage: args.customMessage,
+			expiresAt: recipient.tokenExpiresAt,
+		});
+
+		return {
+			success: emailResult.success,
+			error: emailResult.error,
+		};
+	},
+});
