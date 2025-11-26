@@ -40,7 +40,7 @@ export async function sendDocumentInvitation(
 			: "";
 
 		const { data, error } = await resend.emails.send({
-			from: "Seal <noreply@seal.com>", // TODO: Update with your verified domain
+			from: process.env.RESEND_FROM_EMAIL || "Seal <onboarding@resend.dev>",
 			to: [to],
 			subject: `${senderName} sent you a document to sign: ${documentName}`,
 			html: `
@@ -214,7 +214,7 @@ export async function sendDocumentCompleted(params: {
 		const { to, senderName, documentName, documentUrl } = params;
 
 		const { data, error } = await resend.emails.send({
-			from: "Seal <noreply@seal.com>",
+			from: process.env.RESEND_FROM_EMAIL || "Seal <onboarding@resend.dev>",
 			to: [to],
 			subject: `Document Completed: ${documentName}`,
 			html: `
