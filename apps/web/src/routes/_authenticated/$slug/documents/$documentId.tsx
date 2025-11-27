@@ -9,11 +9,16 @@ import {
 } from "@tanstack/react-router";
 import { useAction, useMutation } from "convex/react";
 import {
+	ActivityIcon,
 	ArrowLeftIcon,
 	DownloadIcon,
+	FileSignatureIcon,
 	FileTextIcon,
+	InfoIcon,
+	PieChartIcon,
 	SendIcon,
 	UserPlusIcon,
+	UsersIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Document, pdfjs } from "react-pdf";
@@ -40,6 +45,12 @@ import { SendDocumentDialog } from "../../../../components/documents/send-docume
 import { SigningProgress } from "../../../../components/documents/signing-progress";
 import { WorkflowStatusBadge } from "../../../../components/documents/workflow-status-badge";
 import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "../../../../components/ui/accordion";
+import {
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
@@ -57,6 +68,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../../../../components/ui/card";
+import { Separator } from "../../../../components/ui/separator";
 
 // SEA-72: Configure PDF.js worker
 // Use unpkg CDN which has reliable pdf.js worker files
@@ -774,124 +786,220 @@ function DocumentDetailPage() {
 						</Card>
 					</div>
 
-					{/* Right column: Field toolbar, document info, recipients, activity */}
+					{/* Right column: Document options with accordion */}
 					<div className="space-y-6">
-						{/* SEA-89: Field toolbar */}
-						{canEdit && (
-							<FieldToolbar
-								onFieldDragStart={(fieldType) =>
-									setDraggingFieldType(fieldType)
-								}
-								onFieldDragEnd={() => setDraggingFieldType(null)}
-							/>
-						)}
-
-						{/* Signature Fields List */}
-						{signatureFields.length > 0 && (
-							<Card>
-								<CardHeader>
-									<CardTitle>Signature Fields</CardTitle>
-									<CardDescription>
-										{signatureFields.length}{" "}
-										{signatureFields.length === 1 ? "field" : "fields"} added
-										{!canEdit && " • Document locked"}
-									</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<FieldList
-										fields={signatureFields}
-										recipients={recipients}
-										selectedFieldId={canEdit ? selectedFieldId : null}
-										canEdit={canEdit}
-										onFieldSelect={canEdit ? handleFieldSelect : undefined}
-										onFieldDelete={canEdit ? requestFieldDelete : undefined}
-									/>
-								</CardContent>
-							</Card>
-						)}
-
-						{/* SEA-72: Document metadata */}
 						<Card>
 							<CardHeader>
-								<CardTitle>Document Details</CardTitle>
+								<CardTitle>Document Options</CardTitle>
+								<CardDescription>
+									Manage fields, recipients, and document details
+								</CardDescription>
 							</CardHeader>
-							<CardContent className="space-y-4">
-								<div>
-									<p className="text-sm font-medium text-muted-foreground">
-										Status
-									</p>
-									<WorkflowStatusBadge status={documentData.workflowStatus} />
-								</div>
-								<div>
-									<p className="text-sm font-medium text-muted-foreground">
-										File Size
-									</p>
-									<p className="text-sm">
-										{formatFileSize(documentData.fileSize)}
-									</p>
-								</div>
-								<div>
-									<p className="text-sm font-medium text-muted-foreground">
-										Pages
-									</p>
-									<p className="text-sm">
-										{documentData.pageCount || numPages || "—"}
-									</p>
-								</div>
-								<div>
-									<p className="text-sm font-medium text-muted-foreground">
-										Uploaded
-									</p>
-									<p className="text-sm">
-										{formatDate(documentData.createdAt)}
-									</p>
-								</div>
-								{documentData.description && (
-									<div>
-										<p className="text-sm font-medium text-muted-foreground">
-											Description
-										</p>
-										<p className="text-sm">{documentData.description}</p>
-									</div>
-								)}
-							</CardContent>
-						</Card>
-
-						{/* Recipients section */}
-						<Card>
-							<CardHeader>
-								<div className="flex items-center justify-between">
-									<CardTitle>Recipients</CardTitle>
-									{canEdit && (
-										<Button
-											size="sm"
-											variant="outline"
-											onClick={() => setAddRecipientOpen(true)}
+							<CardContent className="p-0">
+								<Accordion
+									type="multiple"
+									defaultValue={[
+										"signature-fields",
+										"recipients",
+										"details",
+										...(progress ? ["progress"] : []),
+									]}
+									className="w-full"
+								>
+									{/* Signature Fields Section */}
+									{(signatureFields.length > 0 || canEdit) && (
+										<AccordionItem
+											value="signature-fields"
+											className="border-0"
 										>
-											<UserPlusIcon className="mr-2 h-4 w-4" />
-											Add
-										</Button>
+											<AccordionTrigger className="px-6 hover:no-underline">
+												<div className="flex items-center gap-2">
+													<FileSignatureIcon className="h-4 w-4" />
+													<span>Signature Fields</span>
+													{signatureFields.length > 0 && (
+														<span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium">
+															{signatureFields.length}
+														</span>
+													)}
+													{!canEdit && signatureFields.length > 0 && (
+														<span className="ml-2 text-xs text-muted-foreground">
+															• Locked
+														</span>
+													)}
+												</div>
+											</AccordionTrigger>
+											<AccordionContent className="px-6 pb-4">
+												{canEdit && (
+													<div className="mb-4">
+														<FieldToolbar
+															onFieldDragStart={(fieldType) =>
+																setDraggingFieldType(fieldType)
+															}
+															onFieldDragEnd={() => setDraggingFieldType(null)}
+														/>
+													</div>
+												)}
+												{signatureFields.length > 0 ? (
+													<FieldList
+														fields={signatureFields}
+														recipients={recipients}
+														selectedFieldId={canEdit ? selectedFieldId : null}
+														canEdit={canEdit}
+														onFieldSelect={
+															canEdit ? handleFieldSelect : undefined
+														}
+														onFieldDelete={
+															canEdit ? requestFieldDelete : undefined
+														}
+													/>
+												) : (
+													<p className="text-sm text-muted-foreground">
+														Drag and drop fields from the toolbar above onto the
+														PDF to add signature fields.
+													</p>
+												)}
+											</AccordionContent>
+										</AccordionItem>
 									)}
-								</div>
-							</CardHeader>
-							<CardContent>
-								<RecipientList
-									recipients={recipients}
-									onRemoveRecipient={
-										canEdit ? handleRemoveRecipient : undefined
-									}
-									onResendEmail={handleResendEmail}
-									canEdit={canEdit}
-									canResend={documentData.workflowStatus !== "draft"}
-								/>
+									{(signatureFields.length > 0 || canEdit) && <Separator />}
+
+									{/* Recipients Section */}
+									<AccordionItem value="recipients" className="border-0">
+										<AccordionTrigger className="px-6 hover:no-underline">
+											<div className="flex items-center gap-2">
+												<UsersIcon className="h-4 w-4" />
+												<span>Recipients</span>
+												{recipients.length > 0 && (
+													<span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium">
+														{recipients.length}
+													</span>
+												)}
+											</div>
+										</AccordionTrigger>
+										<AccordionContent className="px-6 pb-4">
+											<div className="space-y-4">
+												{canEdit && (
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() => setAddRecipientOpen(true)}
+														className="w-full"
+													>
+														<UserPlusIcon className="mr-2 h-4 w-4" />
+														Add Recipient
+													</Button>
+												)}
+												<RecipientList
+													recipients={recipients}
+													onRemoveRecipient={
+														canEdit ? handleRemoveRecipient : undefined
+													}
+													onResendEmail={handleResendEmail}
+													canEdit={canEdit}
+													canResend={documentData.workflowStatus !== "draft"}
+												/>
+											</div>
+										</AccordionContent>
+									</AccordionItem>
+									<Separator />
+
+									{/* Document Details Section */}
+									<AccordionItem value="details" className="border-0">
+										<AccordionTrigger className="px-6 hover:no-underline">
+											<div className="flex items-center gap-2">
+												<InfoIcon className="h-4 w-4" />
+												<span>Document Details</span>
+											</div>
+										</AccordionTrigger>
+										<AccordionContent className="px-6 pb-4">
+											<Card>
+												<CardContent>
+													<div className="space-y-4">
+														<div>
+															<p className="text-sm font-medium text-muted-foreground">
+																Status
+															</p>
+															<WorkflowStatusBadge
+																status={documentData.workflowStatus}
+															/>
+														</div>
+														<div>
+															<p className="text-sm font-medium text-muted-foreground">
+																File Size
+															</p>
+															<p className="text-sm">
+																{formatFileSize(documentData.fileSize)}
+															</p>
+														</div>
+														<div>
+															<p className="text-sm font-medium text-muted-foreground">
+																Pages
+															</p>
+															<p className="text-sm">
+																{documentData.pageCount || numPages || "—"}
+															</p>
+														</div>
+														<div>
+															<p className="text-sm font-medium text-muted-foreground">
+																Uploaded
+															</p>
+															<p className="text-sm">
+																{formatDate(documentData.createdAt)}
+															</p>
+														</div>
+														{documentData.description && (
+															<div>
+																<p className="text-sm font-medium text-muted-foreground">
+																	Description
+																</p>
+																<p className="text-sm">
+																	{documentData.description}
+																</p>
+															</div>
+														)}
+													</div>
+												</CardContent>
+											</Card>
+										</AccordionContent>
+									</AccordionItem>
+									<Separator />
+
+									{/* Progress Section */}
+									{progress && (
+										<AccordionItem value="progress" className="border-0">
+											<AccordionTrigger className="px-6 hover:no-underline">
+												<div className="flex items-center gap-2">
+													<PieChartIcon className="h-4 w-4" />
+													<span>Signing Progress</span>
+												</div>
+											</AccordionTrigger>
+											<AccordionContent className="px-6 pb-4">
+												<SigningProgress progress={progress} />
+											</AccordionContent>
+										</AccordionItem>
+									)}
+									{progress && <Separator />}
+
+									{/* Activity Feed Section */}
+									<AccordionItem value="activity" className="border-0">
+										<AccordionTrigger className="px-6 hover:no-underline">
+											<div className="flex items-center gap-2">
+												<ActivityIcon className="h-4 w-4" />
+												<span>Activity</span>
+												{activityEvents.length > 0 && (
+													<span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium">
+														{activityEvents.length}
+													</span>
+												)}
+											</div>
+										</AccordionTrigger>
+										<AccordionContent className="px-6 pb-4">
+											<ActivityFeed events={activityEvents} />
+										</AccordionContent>
+									</AccordionItem>
+								</Accordion>
 							</CardContent>
 						</Card>
-
-						{/* Progress */}
-						{progress && <SigningProgress progress={progress} />}
-
-						{/* Activity feed */}
-						<ActivityFeed events={activityEvents} />
 					</div>
 				</div>
 
@@ -918,6 +1026,7 @@ function DocumentDetailPage() {
 					documentId={documentId as Id<"documents">}
 					documentName={documentData.name}
 					recipients={recipients}
+					signatureFieldCount={signatureFields.length}
 					open={sendDocumentOpen}
 					onOpenChange={setSendDocumentOpen}
 					onSuccess={() => {
