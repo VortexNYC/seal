@@ -245,7 +245,7 @@ export function FieldToolbar({
 		<Card className="p-4">
 			<div className="space-y-3">
 				<div>
-					<h3 className="text-sm font-semibold mb-2">Signature Fields</h3>
+					{/*<h3 className="text-sm font-semibold mb-2">Signature Fields</h3>*/}
 					<p className="text-xs text-muted-foreground mb-3">
 						Drag fields onto the document
 					</p>
@@ -287,12 +287,6 @@ export function FieldToolbar({
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}
 					/>
-				</div>
-
-				<div className="pt-2 border-t">
-					<p className="text-xs text-muted-foreground">
-						💡 Tip: Drag a field onto the PDF to place it
-					</p>
 				</div>
 			</div>
 		</Card>

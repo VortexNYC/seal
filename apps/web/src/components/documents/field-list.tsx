@@ -98,11 +98,10 @@ export function FieldList({
 				const isSelected = selectedFieldId === field._id;
 
 				return (
-					<button
+					<div
 						key={field._id}
-						type="button"
 						onClick={() => onFieldSelect?.(field._id)}
-						className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
+						className={`w-full p-3 rounded-lg border-2 transition-all cursor-pointer ${
 							isSelected
 								? "border-primary bg-primary/5"
 								: "border-border bg-background hover:border-primary/50 hover:bg-muted/50"
@@ -150,7 +149,7 @@ export function FieldList({
 								</Button>
 							)}
 						</div>
-					</button>
+					</div>
 				);
 			})}
 		</div>

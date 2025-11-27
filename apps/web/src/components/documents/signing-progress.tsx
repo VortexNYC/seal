@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
 
 interface SigningProgressProps {
@@ -25,9 +25,6 @@ export function SigningProgress({ progress }: SigningProgressProps) {
 
 	return (
 		<Card>
-			<CardHeader>
-				<CardTitle className="text-lg">Signing Progress</CardTitle>
-			</CardHeader>
 			<CardContent className="space-y-4">
 				<div>
 					<div className="flex items-center justify-between mb-2">
