@@ -1,24 +1,20 @@
 {
-  "mcpServers": {
-    "linear": {
-      "type": "http",
-      "url": "https://mcp.linear.app/mcp"
-    },
-    "playwright": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ],
-      "env": {}
-    },
-    "chrome-devtools": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "chrome-devtools-mcp@latest"
-      ],
-      "env": {}
-    }
-  }
+	"mcpServers": {
+		"linear": {
+			"type": "http",
+			"url": "https://mcp.linear.app/mcp"
+		},
+		"playwright": {
+			"type": "stdio",
+			"command": "npx",
+			"args": ["@playwright/mcp@latest"],
+			"env": {}
+		},
+		"chrome-devtools": {
+			"type": "stdio",
+			"command": "npx",
+			"args": ["chrome-devtools-mcp@latest"],
+			"env": {}
+		}
+	}
 }

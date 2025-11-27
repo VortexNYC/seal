@@ -8,6 +8,7 @@
 
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouteContext } from "@tanstack/react-router";
 import { FileTextIcon } from "lucide-react";
@@ -16,6 +17,8 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { toast } from "sonner";
+import { FieldInputManager } from "@/components/documents/field-input-manager";
+import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { SignatureCapture } from "@/components/documents/signature-capture";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +37,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 
 // Configure PDF.js worker
@@ -42,6 +46,19 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 export const Route = createFileRoute("/sign/$token")({
 	component: SigningPage,
 });
+
+// Helper to capitalize field labels for display
+const capitalizeFieldLabel = (label: string): string => {
+	// If label is already capitalized, return as-is
+	if (label && label[0] === label[0].toUpperCase()) {
+		return label;
+	}
+	// Otherwise, capitalize first letter of each word
+	return label
+		.split(" ")
+		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(" ");
+};
 
 function SigningPage() {
 	const { token } = Route.useParams();
@@ -56,9 +73,24 @@ function SigningPage() {
 
 	const { recipient, document: doc } = data;
 
+	// Fetch fields assigned to this recipient
+	const { data: fields = [], refetch: refetchFields } = useSuspenseQuery(
+		convexQuery(api.signature_fields.queries.getFieldsBySigningToken, {
+			signingToken: token,
+		}),
+	);
+
 	// PDF viewer state
 	const [numPages, setNumPages] = useState<number | null>(null);
 	const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+	const [pdfPageDimensions, setPdfPageDimensions] = useState<
+		Map<number, { width: number; height: number }>
+	>(new Map());
+
+	// Field input state
+	const [activeFieldId, setActiveFieldId] =
+		useState<Id<"signature_fields"> | null>(null);
+	const [showFieldInput, setShowFieldInput] = useState(false);
 
 	// Signature capture state
 	const [showSignatureCapture, setShowSignatureCapture] = useState(false);
@@ -157,6 +189,14 @@ function SigningPage() {
 	};
 
 	const handleSignButtonClick = () => {
+		// Check if all required fields are filled
+		if (!allRequiredFieldsFilled) {
+			const unfilledFields = requiredFields.filter((f) => !f.isFilled);
+			toast.error(
+				`Please fill all required fields first (${unfilledFields.length} remaining)`,
+			);
+			return;
+		}
 		setShowSignatureCapture(true);
 	};
 
@@ -207,6 +247,45 @@ function SigningPage() {
 		setDeclineReason("");
 	};
 
+	// Field handling
+	const handleFieldClick = (fieldId: Id<"signature_fields">) => {
+		setActiveFieldId(fieldId);
+		setShowFieldInput(true);
+	};
+
+	const handleFieldSave = async (
+		value?: string,
+		signatureImageUrl?: string,
+	) => {
+		if (!activeFieldId) return;
+
+		await convexClient.mutation(api.signatures.mutations.saveFieldValue, {
+			signingToken: token,
+			fieldId: activeFieldId,
+			value,
+			signatureImageUrl,
+			ipAddress: "0.0.0.0", // TODO: Get actual IP
+			userAgent: navigator.userAgent,
+		});
+
+		await refetchFields();
+		setShowFieldInput(false);
+		setActiveFieldId(null);
+	};
+
+	// Calculate field completion progress
+	const requiredFields = fields.filter((f) => f.isRequired);
+	const filledRequiredFields = requiredFields.filter((f) => f.isFilled);
+	const fieldCompletionPercent =
+		requiredFields.length > 0
+			? Math.round((filledRequiredFields.length / requiredFields.length) * 100)
+			: 100;
+	const allRequiredFieldsFilled = fieldCompletionPercent === 100;
+
+	// Check for main signature field
+	const mainSignatureField = fields.find((f) => f.isMainSignature === true);
+	const isMainSignatureFilled = mainSignatureField?.isFilled || false;
+
 	// Check if recipient has already completed their action
 	const isCompleted =
 		recipient.status === "signed" ||
@@ -239,29 +318,50 @@ function SigningPage() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<div className="space-y-2 text-sm">
-								<div>
-									<span className="font-medium">Recipient:</span>{" "}
-									{recipient.name || recipient.email}
+							<div className="space-y-4 text-sm">
+								<div className="space-y-2">
+									<div>
+										<span className="font-medium">Recipient:</span>{" "}
+										{recipient.name || recipient.email}
+									</div>
+									<div>
+										<span className="font-medium">Role:</span>{" "}
+										{recipient.role.charAt(0).toUpperCase() +
+											recipient.role.slice(1)}
+									</div>
+									<div>
+										<span className="font-medium">Status:</span>{" "}
+										<span
+											className={
+												isCompleted
+													? "text-green-600 font-medium"
+													: "text-yellow-600 font-medium"
+											}
+										>
+											{recipient.status.charAt(0).toUpperCase() +
+												recipient.status.slice(1)}
+										</span>
+									</div>
 								</div>
-								<div>
-									<span className="font-medium">Role:</span>{" "}
-									{recipient.role.charAt(0).toUpperCase() +
-										recipient.role.slice(1)}
-								</div>
-								<div>
-									<span className="font-medium">Status:</span>{" "}
-									<span
-										className={
-											isCompleted
-												? "text-green-600 font-medium"
-												: "text-yellow-600 font-medium"
-										}
-									>
-										{recipient.status.charAt(0).toUpperCase() +
-											recipient.status.slice(1)}
-									</span>
-								</div>
+
+								{/* Field completion progress */}
+								{!isCompleted && fields.length > 0 && (
+									<div className="space-y-2 pt-2 border-t">
+										<div className="flex items-center justify-between text-xs">
+											<span className="font-medium">Field Completion</span>
+											<span className="text-muted-foreground">
+												{filledRequiredFields.length} of {requiredFields.length}{" "}
+												required fields
+											</span>
+										</div>
+										<Progress value={fieldCompletionPercent} className="h-2" />
+										{!allRequiredFieldsFilled && (
+											<p className="text-xs text-muted-foreground">
+												Please fill all required fields before signing
+											</p>
+										)}
+									</div>
+								)}
 							</div>
 						</CardContent>
 					</Card>
@@ -316,16 +416,68 @@ function SigningPage() {
 											</div>
 										}
 									>
-										{Array.from(new Array(numPages), (_el, index) => (
-											<Page
-												key={`page_${index + 1}`}
-												pageNumber={index + 1}
-												width={700}
-												renderTextLayer={true}
-												renderAnnotationLayer={true}
-												className="mb-4 mx-auto"
-											/>
-										))}
+										{Array.from(new Array(numPages), (_el, index) => {
+											const pageNumber = index + 1;
+											const pageWidth = 700;
+											const fieldsOnPage = fields.filter(
+												(f) => f.page === pageNumber,
+											);
+
+											return (
+												<div
+													key={`page_${pageNumber}`}
+													className="relative mb-4"
+												>
+													<Page
+														pageNumber={pageNumber}
+														width={pageWidth}
+														renderTextLayer={true}
+														renderAnnotationLayer={true}
+														className="mx-auto"
+														onLoadSuccess={(page) => {
+															setPdfPageDimensions((prev) => {
+																const newMap = new Map(prev);
+																newMap.set(pageNumber, {
+																	width: page.width,
+																	height: page.height,
+																});
+																return newMap;
+															});
+														}}
+													/>
+													{/* Render field overlays on top of PDF */}
+													{!isCompleted &&
+														fieldsOnPage.map((field) => {
+															const pageDims =
+																pdfPageDimensions.get(pageNumber);
+															if (!pageDims) return null;
+
+															return (
+																<FillableFieldOverlay
+																	key={field._id}
+																	fieldId={field._id}
+																	fieldType={field.fieldType}
+																	label={field.label}
+																	isRequired={field.isRequired}
+																	isMainSignature={field.isMainSignature}
+																	x={field.x}
+																	y={field.y}
+																	width={field.width}
+																	height={field.height}
+																	page={field.page}
+																	currentPage={pageNumber}
+																	pdfPageWidth={pageDims.width}
+																	pdfPageHeight={pageDims.height}
+																	value={field.currentValue}
+																	isFilled={field.isFilled}
+																	isActive={activeFieldId === field._id}
+																	onClick={handleFieldClick}
+																/>
+															);
+														})}
+												</div>
+											);
+										})}
 									</Document>
 								</div>
 							) : (
@@ -357,15 +509,31 @@ function SigningPage() {
 											>
 												Decline
 											</Button>
-											<Button
-												size="lg"
-												onClick={handleSignButtonClick}
-												disabled={submitSignatureMutation.isPending}
-											>
-												{recipient.role === "signer" && "Sign Document"}
-												{recipient.role === "approver" && "Approve Document"}
-												{recipient.role === "viewer" && "Mark as Viewed"}
-											</Button>
+											{/* If main signature exists and is filled, show confirmation instead of signature capture */}
+											{mainSignatureField && isMainSignatureFilled ? (
+												<Button
+													size="lg"
+													onClick={() => {
+														toast.success(
+															"Document already signed via main signature field",
+														);
+													}}
+													disabled
+													variant="outline"
+												>
+													✓ Signed via Field
+												</Button>
+											) : (
+												<Button
+													size="lg"
+													onClick={handleSignButtonClick}
+													disabled={submitSignatureMutation.isPending}
+												>
+													{recipient.role === "signer" && "Sign Document"}
+													{recipient.role === "approver" && "Approve Document"}
+													{recipient.role === "viewer" && "Mark as Viewed"}
+												</Button>
+											)}
 										</div>
 									</CardContent>
 								</Card>
@@ -414,6 +582,38 @@ function SigningPage() {
 									</DialogFooter>
 								</DialogContent>
 							</Dialog>
+
+							{/* Field Input Manager */}
+							{activeFieldId && (
+								<FieldInputManager
+									open={showFieldInput}
+									onOpenChange={setShowFieldInput}
+									fieldId={activeFieldId}
+									fieldType={
+										fields.find((f) => f._id === activeFieldId)?.fieldType ||
+										"text"
+									}
+									label={capitalizeFieldLabel(
+										fields.find((f) => f._id === activeFieldId)?.label || "",
+									)}
+									isRequired={
+										fields.find((f) => f._id === activeFieldId)?.isRequired ||
+										false
+									}
+									currentValue={
+										fields.find((f) => f._id === activeFieldId)?.currentValue
+									}
+									currentSignatureImageUrl={
+										fields.find((f) => f._id === activeFieldId)
+											?.currentSignatureImageUrl
+									}
+									properties={
+										fields.find((f) => f._id === activeFieldId)?.properties
+									}
+									onSave={handleFieldSave}
+									recipientName={recipient.name}
+								/>
+							)}
 						</>
 					)}
 				</div>

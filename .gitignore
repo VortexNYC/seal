@@ -81,3 +81,10 @@ localhost-*.log
 .playwright-mcp/
 apps/web/.env.test
 sample-doc.pdf
+
+# Development documentation and notes
+*_STATUS.md
+*_TEST_GUIDE.md
+*_IMPLEMENTATION.md
+*_PLAN_*.md
+TESTING_PLAN_*.md

@@ -231,6 +231,60 @@ export const checkRequiredFieldsComplete = query({
 });
 
 /**
+ * Get all fields assigned to a recipient by signing token
+ * Returns fields with their current values from signatures table
+ * Used on the signing page to display fillable fields
+ */
+export const getFieldsBySigningToken = query({
+	args: {
+		signingToken: v.string(),
+	},
+	handler: async (ctx, args) => {
+		// 1. Find recipient by token
+		const recipient = await ctx.db
+			.query("document_recipients")
+			.withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
+			.first();
+
+		if (!recipient) {
+			throw new Error("Invalid signing token");
+		}
+
+		// 2. Get all fields assigned to this recipient
+		const fields = await ctx.db
+			.query("signature_fields")
+			.withIndex("by_document_recipient", (q) =>
+				q
+					.eq("documentId", recipient.documentId)
+					.eq("recipientId", recipient._id),
+			)
+			.collect();
+
+		// 3. Get existing signatures for these fields
+		const fieldsWithValues = await Promise.all(
+			fields.map(async (field) => {
+				const signature = await ctx.db
+					.query("signatures")
+					.withIndex("by_field", (q) => q.eq("fieldId", field._id))
+					.first();
+
+				return {
+					...field,
+					currentValue: signature?.value,
+					currentSignatureImageUrl: signature?.signatureImageUrl,
+					isFilled: !!signature,
+				};
+			}),
+		);
+
+		// 4. Sort by page number for easier rendering
+		fieldsWithValues.sort((a, b) => a.page - b.page);
+
+		return fieldsWithValues;
+	},
+});
+
+/**
  * Internal query to get signature fields by document ID without access control
  * Used by actions that need to access signature fields
  */

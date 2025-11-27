@@ -34,6 +34,7 @@ import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
 import { PdfZoomControls } from "../../../../components/documents/pdf-zoom-controls";
 import { RecipientList } from "../../../../components/documents/recipient-list";
+import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
 import { SigningProgress } from "../../../../components/documents/signing-progress";
 import { WorkflowStatusBadge } from "../../../../components/documents/workflow-status-badge";
 import {
@@ -88,6 +89,19 @@ function DocumentDetailPage() {
 	const [placedFields, setPlacedFields] = useState<PlacedField[]>([]);
 	const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
 	const [showFieldDeleteDialog, setShowFieldDeleteDialog] = useState(false);
+
+	// Recipient selector for field assignment
+	const [showRecipientSelector, setShowRecipientSelector] = useState(false);
+	const [selectedRecipientId, setSelectedRecipientId] =
+		useState<Id<"document_recipients"> | null>(null);
+	const [pendingFieldData, setPendingFieldData] = useState<{
+		fieldType: FieldType;
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+		page: number;
+	} | null>(null);
 
 	const { data: documentData } = useSuspenseQuery(
 		convexQuery(api.documents.queries.getDocument, {
@@ -326,10 +340,6 @@ function DocumentDetailPage() {
 		const dropXPixels = e.clientX - pageRect.left - scaledFieldWidth / 2;
 		const dropYPixels = e.clientY - pageRect.top - scaledFieldHeight / 2;
 
-		// Use first recipient by default
-		// TODO SEA-91: Add recipient selector UI
-		const recipientId = recipients[0]._id;
-
 		// Convert pixel coordinates to percentages relative to the UNSCALED page dimensions
 		// The pageRect dimensions include zoom, but we need percentages relative to the
 		// original PDF page size (pdfWidth x pdfHeight) for consistent storage
@@ -341,19 +351,56 @@ function DocumentDetailPage() {
 		const widthPercent = (widthPixels / pdfWidth) * 100;
 		const heightPercent = (heightPixels / pdfHeight) * 100;
 
+		// Store pending field data and show recipient selector dialog
+		setPendingFieldData({
+			fieldType,
+			x: xPercent,
+			y: yPercent,
+			width: widthPercent,
+			height: heightPercent,
+			page: targetPageNumber,
+		});
+
+		// Pre-select first recipient if available
+		if (recipients.length > 0) {
+			setSelectedRecipientId(recipients[0]._id);
+		}
+
+		setShowRecipientSelector(true);
+		setDraggingFieldType(null);
+	};
+
+	// Helper to format field type as label
+	const formatFieldTypeLabel = (fieldType: FieldType): string => {
+		const typeLabels: Record<FieldType, string> = {
+			signature: "Signature",
+			text: "Text",
+			date: "Date",
+			checkbox: "Checkbox",
+			dropdown: "Dropdown",
+			radio: "Radio",
+			attachment: "Attachment",
+		};
+		return `${typeLabels[fieldType]} Field`;
+	};
+
+	// Handle field creation after recipient selection
+	const handleConfirmFieldPlacement = async () => {
+		if (!pendingFieldData || !selectedRecipientId) return;
+
 		try {
 			// Save field to database with percentage coordinates
 			const fieldId = await createField({
 				documentId: documentId as Id<"documents">,
-				recipientId: recipientId as Id<"document_recipients">,
-				fieldType,
-				label: `${fieldType} field`,
+				recipientId: selectedRecipientId as Id<"document_recipients">,
+				fieldType: pendingFieldData.fieldType,
+				label: formatFieldTypeLabel(pendingFieldData.fieldType),
 				isRequired: true, // Default to required
-				x: xPercent,
-				y: yPercent,
-				width: widthPercent,
-				height: heightPercent,
-				page: targetPageNumber,
+				x: pendingFieldData.x,
+				y: pendingFieldData.y,
+				width: pendingFieldData.width,
+				height: pendingFieldData.height,
+				page: pendingFieldData.page,
 			});
 
 			// Select the newly created field
@@ -363,7 +410,14 @@ function DocumentDetailPage() {
 			// Refetch fields to sync with database
 			await refetchFields();
 
-			toast.success(`${fieldType} field placed`);
+			toast.success(
+				`${formatFieldTypeLabel(pendingFieldData.fieldType)} assigned to recipient`,
+			);
+
+			// Close dialog and clear pending data
+			setShowRecipientSelector(false);
+			setPendingFieldData(null);
+			setSelectedRecipientId(null);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to create field";
@@ -792,6 +846,17 @@ function DocumentDetailPage() {
 					open={addRecipientOpen}
 					onOpenChange={setAddRecipientOpen}
 					onSuccess={() => refetchRecipients()}
+				/>
+
+				{/* Recipient selector for field assignment */}
+				<RecipientSelectorDialog
+					open={showRecipientSelector}
+					onOpenChange={setShowRecipientSelector}
+					recipients={recipients}
+					selectedRecipientId={selectedRecipientId}
+					onRecipientSelect={setSelectedRecipientId}
+					onConfirm={handleConfirmFieldPlacement}
+					fieldType={pendingFieldData?.fieldType || "field"}
 				/>
 
 				<AlertDialog
