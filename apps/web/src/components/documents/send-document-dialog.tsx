@@ -31,6 +31,7 @@ interface SendDocumentDialogProps {
 		role: "signer" | "viewer" | "approver";
 		status: "pending" | "viewed" | "signed" | "approved" | "declined";
 	}>;
+	signatureFieldCount: number;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onSuccess?: () => void;
@@ -40,6 +41,7 @@ export function SendDocumentDialog({
 	documentId,
 	documentName,
 	recipients,
+	signatureFieldCount,
 	open,
 	onOpenChange,
 	onSuccess,
@@ -154,12 +156,27 @@ export function SendDocumentDialog({
 						</p>
 					</div>
 
+					{/* Error box - No signature fields */}
+					{signatureFieldCount === 0 && (
+						<div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md p-3">
+							<p className="text-sm text-red-900 dark:text-red-100 font-medium">
+								Cannot send document without signature fields.
+							</p>
+							<p className="text-xs text-red-800 dark:text-red-200 mt-1">
+								Please add at least one signature field before sending.
+							</p>
+						</div>
+					)}
+
 					{/* Info box */}
-					<div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3">
-						<p className="text-sm text-blue-900 dark:text-blue-100">
-							Recipients will receive an email with a link to sign the document.
-						</p>
-					</div>
+					{signatureFieldCount > 0 && (
+						<div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+							<p className="text-sm text-blue-900 dark:text-blue-100">
+								Recipients will receive an email with a link to sign the
+								document.
+							</p>
+						</div>
+					)}
 				</div>
 
 				<DialogFooter>
@@ -170,7 +187,10 @@ export function SendDocumentDialog({
 					>
 						Cancel
 					</Button>
-					<Button onClick={handleSend} disabled={isSending}>
+					<Button
+						onClick={handleSend}
+						disabled={isSending || signatureFieldCount === 0}
+					>
 						{isSending ? (
 							<>
 								<Loader2Icon className="mr-2 h-4 w-4 animate-spin" />

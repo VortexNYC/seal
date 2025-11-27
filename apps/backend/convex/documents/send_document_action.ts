@@ -81,8 +81,19 @@ export const sendDocumentEmails = action({
 			throw new ConvexError("No recipients found");
 		}
 
-		// 3. Validate all fields are assigned to recipients
-		// TODO: Add field assignment validation here
+		// 3. Validate document has at least one signature field
+		const signatureFields = await ctx.runQuery(
+			internal.signature_fields.queries.getFieldsByDocumentInternal,
+			{
+				documentId: args.documentId,
+			},
+		);
+
+		if (signatureFields.length === 0) {
+			throw new ConvexError(
+				"Cannot send document without signature fields. Please add at least one signature field before sending.",
+			);
+		}
 
 		// 4. Mark document as sent
 		await ctx.runMutation(

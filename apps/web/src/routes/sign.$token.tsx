@@ -333,9 +333,11 @@ function SigningPage() {
 										<span className="font-medium">Status:</span>{" "}
 										<span
 											className={
-												isCompleted
-													? "text-green-600 font-medium"
-													: "text-yellow-600 font-medium"
+												recipient.status === "declined"
+													? "text-red-600 font-medium"
+													: isCompleted
+														? "text-green-600 font-medium"
+														: "text-yellow-600 font-medium"
 											}
 										>
 											{recipient.status.charAt(0).toUpperCase() +
@@ -368,10 +370,24 @@ function SigningPage() {
 
 					{/* Completion Message */}
 					{isCompleted && (
-						<Card className="border-green-200 bg-green-50">
+						<Card
+							className={
+								recipient.status === "declined"
+									? "border-red-200 bg-red-50"
+									: "border-green-200 bg-green-50"
+							}
+						>
 							<CardContent className="pt-6">
-								<p className="text-green-800 font-medium">
-									✓ You have already completed this document.
+								<p
+									className={
+										recipient.status === "declined"
+											? "text-red-800 font-medium"
+											: "text-green-800 font-medium"
+									}
+								>
+									{recipient.status === "declined"
+										? "✗ You have declined this document."
+										: "✓ You have already completed this document."}
 								</p>
 								{recipient.signedAt && (
 									<p className="text-sm text-green-700 mt-1">
@@ -383,6 +399,12 @@ function SigningPage() {
 									<p className="text-sm text-green-700 mt-1">
 										Approved on{" "}
 										{new Date(recipient.approvedAt).toLocaleDateString()}
+									</p>
+								)}
+								{recipient.declinedAt && (
+									<p className="text-sm text-red-700 mt-1">
+										Declined on{" "}
+										{new Date(recipient.declinedAt).toLocaleDateString()}
 									</p>
 								)}
 							</CardContent>
