@@ -6,7 +6,7 @@ import {
 	UserPlusIcon,
 	XCircleIcon,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 
 interface ActivityEvent {
 	type:
@@ -76,9 +76,6 @@ export function ActivityFeed({ events }: ActivityFeedProps) {
 	if (events.length === 0) {
 		return (
 			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg">Activity</CardTitle>
-				</CardHeader>
 				<CardContent>
 					<div className="text-sm text-muted-foreground">No activity yet</div>
 				</CardContent>
@@ -88,9 +85,6 @@ export function ActivityFeed({ events }: ActivityFeedProps) {
 
 	return (
 		<Card>
-			<CardHeader>
-				<CardTitle className="text-lg">Activity</CardTitle>
-			</CardHeader>
 			<CardContent>
 				<div className="space-y-4">
 					{events.map((event, index) => (

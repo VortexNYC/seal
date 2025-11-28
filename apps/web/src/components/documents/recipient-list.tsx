@@ -5,6 +5,7 @@ import {
 	ClockIcon,
 	CopyIcon,
 	EyeIcon,
+	MailIcon,
 	XCircleIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -47,7 +48,9 @@ interface Recipient {
 interface RecipientListProps {
 	recipients: Recipient[];
 	onRemoveRecipient?: (recipientId: Id<"document_recipients">) => void;
+	onResendEmail?: (recipientId: Id<"document_recipients">) => void;
 	canEdit?: boolean;
+	canResend?: boolean;
 }
 
 function getStatusIcon(status: RecipientStatus) {
@@ -109,7 +112,9 @@ function formatTimestamp(timestamp: number | undefined) {
 export function RecipientList({
 	recipients,
 	onRemoveRecipient,
+	onResendEmail,
 	canEdit = false,
+	canResend = false,
 }: RecipientListProps) {
 	const handleCopySigningLink = (recipient: Recipient) => {
 		if (!recipient.signingToken) {
@@ -209,6 +214,19 @@ export function RecipientList({
 									>
 										<CopyIcon className="h-4 w-4" />
 									</Button>
+									{canResend &&
+										onResendEmail &&
+										(recipient.status === "pending" ||
+											recipient.status === "viewed") && (
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => onResendEmail(recipient._id)}
+												title="Resend email"
+											>
+												<MailIcon className="h-4 w-4" />
+											</Button>
+										)}
 									{canEdit && onRemoveRecipient && (
 										<Button
 											variant="ghost"
