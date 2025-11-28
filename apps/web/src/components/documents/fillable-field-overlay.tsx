@@ -30,6 +30,7 @@ interface FillableFieldOverlayProps {
 	value?: string;
 	isFilled: boolean;
 	isActive?: boolean;
+	validationError?: string;
 	onClick: (fieldId: Id<"signature_fields">) => void;
 }
 
@@ -96,6 +97,7 @@ export const FillableFieldOverlay = forwardRef<
 		value,
 		isFilled,
 		isActive = false,
+		validationError,
 		onClick,
 	},
 	ref,
@@ -170,6 +172,11 @@ export const FillableFieldOverlay = forwardRef<
 				{isFilled && value && fieldType !== "signature" && (
 					<div className="text-[10px] text-green-700 mt-1 max-w-[200px] truncate">
 						Value: {value}
+					</div>
+				)}
+				{validationError && (
+					<div className="text-[10px] text-destructive mt-1 max-w-[200px]">
+						⚠ {validationError}
 					</div>
 				)}
 			</div>

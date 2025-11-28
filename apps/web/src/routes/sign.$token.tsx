@@ -17,6 +17,8 @@ import {
 	CheckCircleIcon,
 	DownloadIcon,
 	FileTextIcon,
+	PlayCircleIcon,
+	WifiOffIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -110,6 +112,31 @@ function SigningPage() {
 
 	// Responsive PDF width
 	const [pdfWidth, setPdfWidth] = useState(700);
+
+	// Network status for session recovery
+	const [isOnline, setIsOnline] = useState(
+		typeof navigator !== "undefined" ? navigator.onLine : true,
+	);
+
+	// Track online/offline status
+	useEffect(() => {
+		const handleOnline = () => {
+			setIsOnline(true);
+			toast.success("Connection restored");
+		};
+		const handleOffline = () => {
+			setIsOnline(false);
+			toast.error("Connection lost. Your progress is saved.");
+		};
+
+		window.addEventListener("online", handleOnline);
+		window.addEventListener("offline", handleOffline);
+
+		return () => {
+			window.removeEventListener("online", handleOnline);
+			window.removeEventListener("offline", handleOffline);
+		};
+	}, []);
 
 	// Update PDF width based on container size
 	useEffect(() => {
@@ -429,9 +456,55 @@ function SigningPage() {
 				</div>
 			</header>
 
+			{/* Offline Banner */}
+			{!isOnline && (
+				<div className="bg-yellow-100 border-b border-yellow-200 px-4 py-2">
+					<div className="container mx-auto flex items-center justify-center gap-2 text-yellow-800">
+						<WifiOffIcon className="h-4 w-4" />
+						<span className="text-sm font-medium">
+							You're offline. Your progress has been saved.
+						</span>
+					</div>
+				</div>
+			)}
+
 			{/* Main Content */}
 			<main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
 				<div className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
+					{/* Resume Signing Banner */}
+					{!isCompleted &&
+						filledRequiredFields.length > 0 &&
+						filledRequiredFields.length < requiredFields.length && (
+							<Card className="border-blue-200 bg-blue-50">
+								<CardContent className="py-3">
+									<div className="flex items-center gap-3">
+										<PlayCircleIcon className="h-5 w-5 text-blue-600" />
+										<div className="flex-1">
+											<p className="text-sm font-medium text-blue-800">
+												Resume where you left off
+											</p>
+											<p className="text-xs text-blue-600">
+												You've completed {filledRequiredFields.length} of{" "}
+												{requiredFields.length} required fields
+											</p>
+										</div>
+										<Button
+											size="sm"
+											variant="outline"
+											className="border-blue-300 text-blue-700 hover:bg-blue-100"
+											onClick={() => {
+												if (unfilledFields.length > 0) {
+													scrollToField(unfilledFields[0]._id);
+												}
+											}}
+										>
+											Continue
+										</Button>
+									</div>
+								</CardContent>
+							</Card>
+						)}
+
 					{/* Document Info Card */}
 					<Card>
 						<CardHeader>
