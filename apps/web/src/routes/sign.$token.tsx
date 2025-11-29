@@ -262,6 +262,25 @@ function SigningPage() {
 			);
 			return;
 		}
+
+		// If the main signature field is already filled, submit directly
+		if (
+			mainSignatureField?.fieldType === "signature" &&
+			isMainSignatureFilled
+		) {
+			const signatureData = mainSignatureField.currentSignatureImageUrl;
+			if (!signatureData) {
+				toast.error("Main signature is missing data. Please sign again.");
+				return;
+			}
+
+			submitSignatureMutation.mutate({
+				signatureData,
+				signatureType: "drawn",
+			});
+			return;
+		}
+
 		setShowSignatureCapture(true);
 	};
 
@@ -885,33 +904,33 @@ function SigningPage() {
 											>
 												Decline
 											</Button>
-											{/* If main signature exists and is filled, show confirmation instead of signature capture */}
-											{mainSignatureField && isMainSignatureFilled ? (
-												<Button
-													size="lg"
-													className="w-full sm:w-auto h-12 sm:h-11 min-h-[44px]"
-													onClick={() => {
-														toast.success(
-															"Document already signed via main signature field",
-														);
-													}}
-													disabled
-													variant="outline"
-												>
-													✓ Signed via Field
-												</Button>
-											) : (
-												<Button
-													size="lg"
-													className="w-full sm:w-auto h-12 sm:h-11 min-h-[44px]"
-													onClick={handleSignButtonClick}
-													disabled={submitSignatureMutation.isPending}
-												>
-													{recipient.role === "signer" && "Sign Document"}
-													{recipient.role === "approver" && "Approve Document"}
-													{recipient.role === "viewer" && "Mark as Viewed"}
-												</Button>
-											)}
+											<Button
+												size="lg"
+												className="w-full sm:w-auto h-12 sm:h-11 min-h-[44px]"
+												onClick={handleSignButtonClick}
+												disabled={submitSignatureMutation.isPending}
+											>
+												{submitSignatureMutation.isPending && "Submitting..."}
+												{!submitSignatureMutation.isPending &&
+													mainSignatureField &&
+													isMainSignatureFilled &&
+													recipient.role === "signer" &&
+													"Submit Signature"}
+												{!submitSignatureMutation.isPending &&
+													!(mainSignatureField && isMainSignatureFilled) &&
+													recipient.role === "signer" &&
+													"Sign Document"}
+												{!submitSignatureMutation.isPending &&
+													recipient.role === "approver" &&
+													(mainSignatureField && isMainSignatureFilled
+														? "Submit Approval"
+														: "Approve Document")}
+												{!submitSignatureMutation.isPending &&
+													recipient.role === "viewer" &&
+													(mainSignatureField && isMainSignatureFilled
+														? "Submit Viewed Status"
+														: "Mark as Viewed")}
+											</Button>
 										</div>
 									</CardContent>
 								</Card>
