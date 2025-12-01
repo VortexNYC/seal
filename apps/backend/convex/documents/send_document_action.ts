@@ -136,20 +136,12 @@ export const sendDocumentEmails = action({
 			);
 		}
 
-		// 4. Mark document as sent
-		await ctx.runMutation(
-			internal.documents.send_document_action.markDocumentAsSent,
-			{
-				documentId: args.documentId,
-			},
-		);
-
-		// 5. Get sender information from document owner
+		// 4. Get sender information from document owner
 		// For now, we'll get it from the document query
 		// TODO: Add user query or get from context
 		const senderName = "Seal User";
 
-		// 6. Send emails to all recipients
+		// 5. Send emails to all recipients
 		const emailResults: Array<{
 			recipientId: Id<"document_recipients">;
 			success: boolean;
@@ -189,11 +181,22 @@ export const sendDocumentEmails = action({
 			});
 		}
 
-		// 7. Check if any emails failed
+		// 6. Check if any emails failed
 		const failedEmails = emailResults.filter((r) => !r.success);
+		const allEmailsSucceeded = failedEmails.length === 0;
+
+		// 7. Mark document as sent only when all emails succeed so edits remain possible on failures
+		if (allEmailsSucceeded) {
+			await ctx.runMutation(
+				internal.documents.send_document_action.markDocumentAsSent,
+				{
+					documentId: args.documentId,
+				},
+			);
+		}
 
 		return {
-			success: failedEmails.length === 0,
+			success: allEmailsSucceeded,
 			totalRecipients: recipients.length,
 			emailsSent: emailResults.filter((r) => r.success).length,
 			emailsFailed: failedEmails.length,
