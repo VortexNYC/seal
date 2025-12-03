@@ -33,6 +33,7 @@ import "./document-detail.css";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
+import { countSignatureFields } from "@/lib/signature-fields";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import {
@@ -135,6 +136,7 @@ function DocumentDetailPage() {
 				documentId: documentId as Id<"documents">,
 			}),
 		);
+	const signatureFieldCount = countSignatureFields(signatureFields);
 
 	const removeRecipient = useMutation(
 		api.documents.recipients_mutations.removeRecipient,
@@ -1430,7 +1432,7 @@ function DocumentDetailPage() {
 					documentId={documentId as Id<"documents">}
 					documentName={documentData.name}
 					recipients={recipients}
-					signatureFieldCount={signatureFields.length}
+					signatureFieldCount={signatureFieldCount}
 					open={sendDocumentOpen}
 					onOpenChange={setSendDocumentOpen}
 					onSuccess={() => {

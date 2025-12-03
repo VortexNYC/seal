@@ -130,7 +130,11 @@ export const sendDocumentEmails = action({
 			},
 		);
 
-		if (signatureFields.length === 0) {
+		const signatureFieldCount = signatureFields.filter(
+			(field) => field.fieldType === "signature",
+		).length;
+
+		if (signatureFieldCount === 0) {
 			throw new ConvexError(
 				"Cannot send document without signature fields. Please add at least one signature field before sending.",
 			);
