@@ -248,6 +248,7 @@ export const cancelReminder = authMutation({
 /**
  * Internal: Process and send a reminder
  * Called by scheduler when it's time to send the reminder
+ * This mutation validates the reminder and schedules the email action
  */
 export const processReminder = internalMutation({
 	args: {
@@ -274,7 +275,7 @@ export const processReminder = internalMutation({
 				return { success: true, skipped: true };
 			}
 
-			// 4. Get document and recipient info
+			// 4. Get document to validate it exists
 			const document = await ctx.db.get(reminder.documentId);
 			if (!document || document.status === "deleted") {
 				await ctx.db.patch(args.reminderId, {
@@ -286,7 +287,7 @@ export const processReminder = internalMutation({
 				return { success: false, error: "Document not found" };
 			}
 
-			let recipientInfo = null;
+			// 5. Validate recipient if specified
 			if (reminder.recipientId) {
 				const recipient = await ctx.db.get(reminder.recipientId);
 				if (!recipient) {
@@ -315,37 +316,21 @@ export const processReminder = internalMutation({
 					);
 					return { success: true, skipped: true };
 				}
-
-				recipientInfo = {
-					email: recipient.email,
-					name: recipient.name,
-					role: recipient.role,
-					signingToken: recipient.signingToken,
-				};
 			}
 
-			// 5. Mark as sent
-			// TODO: When email is enabled, actually send the email here
-			// For now, just mark as sent to track reminder history
-			await ctx.db.patch(args.reminderId, {
-				status: "sent",
-				sentAt: Date.now(),
-				updatedAt: Date.now(),
-			});
-
-			console.log(
-				`Reminder ${args.reminderId} processed for document ${reminder.documentId}`,
-				recipientInfo ? `to ${recipientInfo.email}` : "(bulk)",
+			// 6. Schedule the email action to send the reminder
+			// Using an action because it calls external email service
+			await ctx.scheduler.runAfter(
+				0,
+				internal.documents.reminder_email_action.sendReminderEmail,
+				{ reminderId: args.reminderId },
 			);
 
-			// TODO: When email service is configured:
-			// await sendReminderEmail({
-			//   recipient: recipientInfo,
-			//   document: document,
-			//   customMessage: reminder.customMessage
-			// });
+			console.log(
+				`Reminder ${args.reminderId} validated, email action scheduled`,
+			);
 
-			return { success: true, sent: true };
+			return { success: true, scheduled: true };
 		} catch (error) {
 			console.error(`Error processing reminder ${args.reminderId}:`, error);
 
