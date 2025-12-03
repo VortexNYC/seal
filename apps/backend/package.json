@@ -13,6 +13,7 @@
 	},
 	"dependencies": {
 		"@clerk/backend": "^2.20.0",
+		"@seal/transactional": "workspace:*",
 		"@signpdf/placeholder-pdf-lib": "^3.2.6",
 		"@signpdf/signpdf": "^3.2.5",
 		"convex": "^1.28.2",

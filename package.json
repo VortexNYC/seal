@@ -4,6 +4,7 @@
 	"private": true,
 	"workspaces": [
 		"apps/*",
+		"packages/*",
 		"tooling/*"
 	],
 	"packageManager": "bun@1.3.0",
