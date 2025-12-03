@@ -10,4 +10,11 @@ crons.interval(
 	internal.emails.email_retry.processEmailRetries,
 );
 
+// Clean up expired organization invitations daily at midnight UTC
+crons.daily(
+	"cleanup-expired-invitations",
+	{ hourUTC: 0, minuteUTC: 0 },
+	internal.organizations.mutations.cleanupExpiredInvitations,
+);
+
 export default crons;

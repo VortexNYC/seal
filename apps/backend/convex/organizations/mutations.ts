@@ -4,7 +4,11 @@
 
 import { ConvexError, v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
-import { type MutationCtx, mutation } from "../_generated/server";
+import {
+	internalMutation,
+	type MutationCtx,
+	mutation,
+} from "../_generated/server";
 import { adminMutation, authMutation } from "../auth";
 import { seedSystemRoles } from "../organization_roles/helpers";
 import { organizationBaseSchema } from "../validations/organizations";
@@ -849,5 +853,42 @@ export const bulkActivateMembers = adminMutation({
 		}
 
 		return { results };
+	},
+});
+
+/**
+ * Clean up expired invitations
+ * Called periodically via cron job to mark expired invitations
+ */
+export const cleanupExpiredInvitations = internalMutation({
+	args: {},
+	handler: async (ctx) => {
+		const now = Date.now();
+
+		// Get all pending invitations that have expired
+		const expiredInvitations = await ctx.db
+			.query("organization_invitations")
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("status"), "pending"),
+					q.lt(q.field("expiresAt"), now),
+				),
+			)
+			.collect();
+
+		// Mark each as expired
+		let expiredCount = 0;
+		for (const invitation of expiredInvitations) {
+			await ctx.db.patch(invitation._id, {
+				status: "expired",
+			});
+			expiredCount++;
+		}
+
+		console.log(
+			`[cleanupExpiredInvitations] Marked ${expiredCount} invitations as expired`,
+		);
+
+		return { expiredCount };
 	},
 });
