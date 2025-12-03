@@ -15,6 +15,7 @@ import type * as auth_permissions from "../auth/permissions.js";
 import type * as auth_wrappers from "../auth/wrappers.js";
 import type * as check_membership from "../check_membership.js";
 import type * as crons from "../crons.js";
+import type * as documents_activity_queries from "../documents/activity_queries.js";
 import type * as documents_cleanup from "../documents/cleanup.js";
 import type * as documents_email from "../documents/email.js";
 import type * as documents_generate_fillable_pdf from "../documents/generate_fillable_pdf.js";
@@ -94,6 +95,7 @@ declare const fullApi: ApiFromModules<{
   "auth/wrappers": typeof auth_wrappers;
   check_membership: typeof check_membership;
   crons: typeof crons;
+  "documents/activity_queries": typeof documents_activity_queries;
   "documents/cleanup": typeof documents_cleanup;
   "documents/email": typeof documents_email;
   "documents/generate_fillable_pdf": typeof documents_generate_fillable_pdf;
