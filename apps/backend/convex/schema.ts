@@ -24,6 +24,11 @@ import {
 	type DocumentStatus,
 	documentsTable,
 } from "./schemas/documents";
+import {
+	type EmailStatus,
+	type EmailType,
+	emailLogsTable,
+} from "./schemas/email_logs";
 import { organizationInvitationsTable } from "./schemas/organization_invitations";
 import {
 	type OrganizationMemberRole,
@@ -79,6 +84,9 @@ export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status"
 // Re-export signature workflow types
 export type { AuthenticationMethod, FieldType, WorkflowRecipientStatus };
 
+// Re-export email types
+export type { EmailStatus, EmailType };
+
 // Re-export audit types
 export type { AuditAction, AuditResourceType };
 
@@ -102,6 +110,9 @@ export default defineSchema({
 
 	// Audit and compliance
 	audit_logs: auditLogsTable,
+
+	// Email tracking
+	email_logs: emailLogsTable,
 
 	subscriptions: subscriptionsTable,
 	subscription_products: subscriptionProductsTable,
