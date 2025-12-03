@@ -1,6 +1,5 @@
 import {
 	CalendarIcon,
-	CheckSquareIcon,
 	GripVerticalIcon,
 	PenToolIcon,
 	TypeIcon,
@@ -212,6 +211,7 @@ export function FieldToolbar({
 					onDragEnd={handleDragEnd}
 				/>
 
+				{/* TODO: Re-enable checkbox field once multi-option rendering is complete
 				<FieldButton
 					type="checkbox"
 					icon={<CheckSquareIcon className="w-4 h-4" />}
@@ -219,6 +219,7 @@ export function FieldToolbar({
 					onDragStart={handleDragStart}
 					onDragEnd={handleDragEnd}
 				/>
+				*/}
 			</div>
 		</div>
 	);
