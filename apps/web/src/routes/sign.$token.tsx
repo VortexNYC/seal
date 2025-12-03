@@ -11,8 +11,16 @@ import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouteContext } from "@tanstack/react-router";
-import { FileTextIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+	ArrowDownIcon,
+	ArrowUpIcon,
+	CheckCircleIcon,
+	DownloadIcon,
+	FileTextIcon,
+	PlayCircleIcon,
+	WifiOffIcon,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -96,6 +104,63 @@ function SigningPage() {
 	const [showSignatureCapture, setShowSignatureCapture] = useState(false);
 	const [showDeclineDialog, setShowDeclineDialog] = useState(false);
 	const [declineReason, setDeclineReason] = useState("");
+
+	// Field navigation state
+	const [currentFieldIndex, setCurrentFieldIndex] = useState(0);
+	const pdfContainerRef = useRef<HTMLDivElement>(null);
+	const fieldRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+	// Responsive PDF width
+	const [pdfWidth, setPdfWidth] = useState(700);
+
+	// Network status for session recovery
+	const [isOnline, setIsOnline] = useState(
+		typeof navigator !== "undefined" ? navigator.onLine : true,
+	);
+
+	// Track online/offline status
+	useEffect(() => {
+		const handleOnline = () => {
+			setIsOnline(true);
+			toast.success("Connection restored");
+		};
+		const handleOffline = () => {
+			setIsOnline(false);
+			toast.error("Connection lost. Your progress is saved.");
+		};
+
+		window.addEventListener("online", handleOnline);
+		window.addEventListener("offline", handleOffline);
+
+		return () => {
+			window.removeEventListener("online", handleOnline);
+			window.removeEventListener("offline", handleOffline);
+		};
+	}, []);
+
+	// Update PDF width based on container size
+	useEffect(() => {
+		const updatePdfWidth = () => {
+			if (pdfContainerRef.current) {
+				const containerWidth = pdfContainerRef.current.clientWidth;
+				// Leave some padding (32px total for p-4)
+				const availableWidth = containerWidth - 32;
+				// Cap at 700px max, min at 280px for mobile
+				setPdfWidth(Math.max(280, Math.min(700, availableWidth)));
+			}
+		};
+
+		// Initial calculation after mount
+		const timer = setTimeout(updatePdfWidth, 100);
+
+		// Update on resize
+		window.addEventListener("resize", updatePdfWidth);
+
+		return () => {
+			clearTimeout(timer);
+			window.removeEventListener("resize", updatePdfWidth);
+		};
+	}, []);
 
 	// Fetch PDF URL using signing token (no auth required)
 	useEffect(() => {
@@ -197,6 +262,25 @@ function SigningPage() {
 			);
 			return;
 		}
+
+		// If the main signature field is already filled, submit directly
+		if (
+			mainSignatureField?.fieldType === "signature" &&
+			isMainSignatureFilled
+		) {
+			const signatureData = mainSignatureField.currentSignatureImageUrl;
+			if (!signatureData) {
+				toast.error("Main signature is missing data. Please sign again.");
+				return;
+			}
+
+			submitSignatureMutation.mutate({
+				signatureData,
+				signatureType: "drawn",
+			});
+			return;
+		}
+
 		setShowSignatureCapture(true);
 	};
 
@@ -292,23 +376,154 @@ function SigningPage() {
 		recipient.status === "approved" ||
 		recipient.status === "declined";
 
+	// Sort fields by page and position for navigation
+	const sortedFields = [...fields].sort((a, b) => {
+		if (a.page !== b.page) return a.page - b.page;
+		if (a.y !== b.y) return a.y - b.y;
+		return a.x - b.x;
+	});
+
+	// Get unfilled required fields for navigation
+	const unfilledFields = sortedFields.filter((f) => !f.isFilled);
+
+	// Scroll to field function
+	const scrollToField = useCallback((fieldId: Id<"signature_fields">) => {
+		const fieldElement = fieldRefs.current.get(fieldId);
+		if (fieldElement && pdfContainerRef.current) {
+			const container = pdfContainerRef.current;
+			const fieldRect = fieldElement.getBoundingClientRect();
+			const containerRect = container.getBoundingClientRect();
+
+			// Calculate scroll position to center the field
+			const scrollTop =
+				container.scrollTop +
+				(fieldRect.top - containerRect.top) -
+				containerRect.height / 2 +
+				fieldRect.height / 2;
+
+			container.scrollTo({
+				top: Math.max(0, scrollTop),
+				behavior: "smooth",
+			});
+
+			// Highlight the field
+			setActiveFieldId(fieldId);
+		}
+	}, []);
+
+	// Navigate to next unfilled field
+	const navigateToNextField = useCallback(() => {
+		if (unfilledFields.length === 0) return;
+
+		const nextIndex = (currentFieldIndex + 1) % unfilledFields.length;
+		setCurrentFieldIndex(nextIndex);
+		const nextField = unfilledFields[nextIndex];
+		if (nextField) {
+			scrollToField(nextField._id);
+		}
+	}, [currentFieldIndex, unfilledFields, scrollToField]);
+
+	// Navigate to previous unfilled field
+	const navigateToPreviousField = useCallback(() => {
+		if (unfilledFields.length === 0) return;
+
+		const prevIndex =
+			currentFieldIndex === 0
+				? unfilledFields.length - 1
+				: currentFieldIndex - 1;
+		setCurrentFieldIndex(prevIndex);
+		const prevField = unfilledFields[prevIndex];
+		if (prevField) {
+			scrollToField(prevField._id);
+		}
+	}, [currentFieldIndex, unfilledFields, scrollToField]);
+
+	// Auto-scroll to first unfilled field on load
+	useEffect(() => {
+		if (unfilledFields.length > 0 && !isCompleted) {
+			const firstUnfilledField = unfilledFields[0];
+			// Delay to allow PDF to render
+			const timer = setTimeout(() => {
+				if (firstUnfilledField) {
+					scrollToField(firstUnfilledField._id);
+				}
+			}, 1000);
+			return () => clearTimeout(timer);
+		}
+	}, [unfilledFields, isCompleted, scrollToField]);
+
 	return (
 		<div className="min-h-screen bg-background">
 			{/* Header */}
-			<header className="border-b">
-				<div className="container mx-auto px-4 py-4">
+			<header className="border-b sticky top-0 z-30 bg-background">
+				<div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-2">
-							<FileTextIcon className="h-6 w-6" />
-							<h1 className="text-xl font-semibold">Seal</h1>
+							<FileTextIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+							<h1 className="text-lg sm:text-xl font-semibold">Seal</h1>
 						</div>
+						{/* Mobile progress indicator in header */}
+						{!isCompleted && fields.length > 0 && (
+							<div className="flex items-center gap-2 sm:hidden">
+								<Progress value={fieldCompletionPercent} className="w-16 h-2" />
+								<span className="text-xs font-medium">
+									{fieldCompletionPercent}%
+								</span>
+							</div>
+						)}
 					</div>
 				</div>
 			</header>
 
+			{/* Offline Banner */}
+			{!isOnline && (
+				<div className="bg-yellow-100 border-b border-yellow-200 px-4 py-2">
+					<div className="container mx-auto flex items-center justify-center gap-2 text-yellow-800">
+						<WifiOffIcon className="h-4 w-4" />
+						<span className="text-sm font-medium">
+							You're offline. Your progress has been saved.
+						</span>
+					</div>
+				</div>
+			)}
+
 			{/* Main Content */}
-			<main className="container mx-auto px-4 py-8">
-				<div className="max-w-5xl mx-auto space-y-6">
+			<main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+				<div className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
+					{/* Resume Signing Banner */}
+					{!isCompleted &&
+						filledRequiredFields.length > 0 &&
+						filledRequiredFields.length < requiredFields.length && (
+							<Card className="border-blue-200 bg-blue-50">
+								<CardContent className="py-3">
+									<div className="flex items-center gap-3">
+										<PlayCircleIcon className="h-5 w-5 text-blue-600" />
+										<div className="flex-1">
+											<p className="text-sm font-medium text-blue-800">
+												Resume where you left off
+											</p>
+											<p className="text-xs text-blue-600">
+												You've completed {filledRequiredFields.length} of{" "}
+												{requiredFields.length} required fields
+											</p>
+										</div>
+										<Button
+											size="sm"
+											variant="outline"
+											className="border-blue-300 text-blue-700 hover:bg-blue-100"
+											onClick={() => {
+												if (unfilledFields.length > 0) {
+													scrollToField(unfilledFields[0]._id);
+												}
+											}}
+										>
+											Continue
+										</Button>
+									</div>
+								</CardContent>
+							</Card>
+						)}
+
 					{/* Document Info Card */}
 					<Card>
 						<CardHeader>
@@ -368,7 +583,7 @@ function SigningPage() {
 						</CardContent>
 					</Card>
 
-					{/* Completion Message */}
+					{/* Completion Screen */}
 					{isCompleted && (
 						<Card
 							className={
@@ -377,53 +592,204 @@ function SigningPage() {
 									: "border-green-200 bg-green-50"
 							}
 						>
-							<CardContent className="pt-6">
-								<p
+							<CardHeader>
+								<CardTitle
 									className={
 										recipient.status === "declined"
-											? "text-red-800 font-medium"
-											: "text-green-800 font-medium"
+											? "text-red-800 flex items-center gap-2"
+											: "text-green-800 flex items-center gap-2"
 									}
 								>
+									{recipient.status === "declined" ? (
+										<>
+											<span className="text-2xl">✗</span>
+											Document Declined
+										</>
+									) : (
+										<>
+											<CheckCircleIcon className="h-6 w-6" />
+											Document Completed
+										</>
+									)}
+								</CardTitle>
+								<CardDescription>
 									{recipient.status === "declined"
-										? "✗ You have declined this document."
-										: "✓ You have already completed this document."}
-								</p>
-								{recipient.signedAt && (
-									<p className="text-sm text-green-700 mt-1">
-										Signed on{" "}
-										{new Date(recipient.signedAt).toLocaleDateString()}
-									</p>
+										? "You have declined to sign this document."
+										: "Thank you for completing this document."}
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								{/* Completion details */}
+								<div className="grid gap-2 text-sm">
+									<div className="flex items-center justify-between py-2 border-b">
+										<span className="text-muted-foreground">Document</span>
+										<span className="font-medium">{doc.name}</span>
+									</div>
+									<div className="flex items-center justify-between py-2 border-b">
+										<span className="text-muted-foreground">Your Role</span>
+										<span className="font-medium capitalize">
+											{recipient.role}
+										</span>
+									</div>
+									<div className="flex items-center justify-between py-2 border-b">
+										<span className="text-muted-foreground">Status</span>
+										<span
+											className={
+												recipient.status === "declined"
+													? "font-medium text-red-600 capitalize"
+													: "font-medium text-green-600 capitalize"
+											}
+										>
+											{recipient.status}
+										</span>
+									</div>
+									{recipient.signedAt && (
+										<div className="flex items-center justify-between py-2 border-b">
+											<span className="text-muted-foreground">Signed At</span>
+											<span className="font-medium">
+												{new Date(recipient.signedAt).toLocaleString()}
+											</span>
+										</div>
+									)}
+									{recipient.approvedAt && (
+										<div className="flex items-center justify-between py-2 border-b">
+											<span className="text-muted-foreground">Approved At</span>
+											<span className="font-medium">
+												{new Date(recipient.approvedAt).toLocaleString()}
+											</span>
+										</div>
+									)}
+									{recipient.declinedAt && (
+										<div className="flex items-center justify-between py-2 border-b">
+											<span className="text-muted-foreground">Declined At</span>
+											<span className="font-medium">
+												{new Date(recipient.declinedAt).toLocaleString()}
+											</span>
+										</div>
+									)}
+								</div>
+
+								{/* Download button for completed documents */}
+								{recipient.status !== "declined" && pdfUrl && (
+									<div className="pt-4">
+										<Button
+											variant="outline"
+											className="w-full"
+											onClick={() => {
+												// Create a download link
+												const link = document.createElement("a");
+												link.href = pdfUrl;
+												link.download = `${doc.name || "document"}.pdf`;
+												document.body.appendChild(link);
+												link.click();
+												document.body.removeChild(link);
+												toast.success("Download started");
+											}}
+										>
+											<DownloadIcon className="h-4 w-4 mr-2" />
+											Download Document
+										</Button>
+									</div>
 								)}
-								{recipient.approvedAt && (
-									<p className="text-sm text-green-700 mt-1">
-										Approved on{" "}
-										{new Date(recipient.approvedAt).toLocaleDateString()}
-									</p>
+
+								{/* Confirmation message */}
+								{recipient.status !== "declined" && (
+									<div className="pt-2 text-sm text-muted-foreground text-center">
+										A confirmation email has been sent to your email address.
+									</div>
 								)}
-								{recipient.declinedAt && (
-									<p className="text-sm text-red-700 mt-1">
-										Declined on{" "}
-										{new Date(recipient.declinedAt).toLocaleDateString()}
-									</p>
-								)}
+							</CardContent>
+						</Card>
+					)}
+
+					{/* Field Navigation Bar - Hidden on very small screens, shown in header instead */}
+					{!isCompleted && fields.length > 0 && (
+						<Card className="sticky top-12 sm:top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+							<CardContent className="py-2 sm:py-3">
+								<div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
+									{/* Progress info - hidden on mobile since it's in header */}
+									<div className="hidden sm:flex items-center gap-3">
+										<div className="flex items-center gap-2">
+											<Progress
+												value={fieldCompletionPercent}
+												className="w-24 h-2"
+											/>
+											<span className="text-sm font-medium">
+												{fieldCompletionPercent}%
+											</span>
+										</div>
+										<span className="text-sm text-muted-foreground">
+											{filledRequiredFields.length} of {requiredFields.length}{" "}
+											fields
+										</span>
+									</div>
+
+									{/* Navigation controls - Full width on mobile */}
+									<div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
+										{unfilledFields.length > 0 ? (
+											<>
+												<Button
+													variant="outline"
+													size="default"
+													className="h-11 min-w-[44px] sm:h-9"
+													onClick={navigateToPreviousField}
+													disabled={unfilledFields.length <= 1}
+												>
+													<ArrowUpIcon className="h-4 w-4 sm:mr-1" />
+													<span className="hidden sm:inline">Prev</span>
+												</Button>
+												<span className="text-sm text-muted-foreground px-2 min-w-[60px] text-center">
+													{currentFieldIndex + 1} / {unfilledFields.length}
+												</span>
+												<Button
+													variant="outline"
+													size="default"
+													className="h-11 min-w-[44px] sm:h-9"
+													onClick={navigateToNextField}
+													disabled={unfilledFields.length <= 1}
+												>
+													<span className="hidden sm:inline">Next</span>
+													<ArrowDownIcon className="h-4 w-4 sm:ml-1" />
+												</Button>
+											</>
+										) : (
+											<div className="flex items-center gap-2 text-green-600">
+												<CheckCircleIcon className="h-5 w-5" />
+												<span className="text-sm font-medium">
+													All fields completed
+												</span>
+											</div>
+										)}
+									</div>
+								</div>
 							</CardContent>
 						</Card>
 					)}
 
 					{/* PDF Viewer */}
 					<Card>
-						<CardHeader>
-							<CardTitle>Document Preview</CardTitle>
-							<CardDescription>
-								{numPages
-									? `${numPages} page${numPages > 1 ? "s" : ""}`
-									: "Loading..."}
-							</CardDescription>
+						<CardHeader className="flex flex-row items-center justify-between">
+							<div>
+								<CardTitle>Document Preview</CardTitle>
+								<CardDescription>
+									{numPages
+										? `${numPages} page${numPages > 1 ? "s" : ""}`
+										: "Loading..."}
+								</CardDescription>
+							</div>
+							{/* Page indicator */}
+							{numPages && numPages > 1 && (
+								<div className="text-sm text-muted-foreground">
+									Scroll to view all pages
+								</div>
+							)}
 						</CardHeader>
 						<CardContent>
 							{pdfUrl ? (
-								<div className="border rounded-lg overflow-auto max-h-[600px] bg-gray-50 p-4">
+								<div
+									ref={pdfContainerRef}
+									className="border rounded-lg overflow-auto max-h-[600px] bg-gray-50 p-4"
+								>
 									<Document
 										file={pdfUrl}
 										onLoadSuccess={onDocumentLoadSuccess}
@@ -440,7 +806,6 @@ function SigningPage() {
 									>
 										{Array.from(new Array(numPages), (_el, index) => {
 											const pageNumber = index + 1;
-											const pageWidth = 700;
 											const fieldsOnPage = fields.filter(
 												(f) => f.page === pageNumber,
 											);
@@ -452,7 +817,7 @@ function SigningPage() {
 												>
 													<Page
 														pageNumber={pageNumber}
-														width={pageWidth}
+														width={pdfWidth}
 														renderTextLayer={true}
 														renderAnnotationLayer={true}
 														className="mx-auto"
@@ -477,6 +842,13 @@ function SigningPage() {
 															return (
 																<FillableFieldOverlay
 																	key={field._id}
+																	ref={(el) => {
+																		if (el) {
+																			fieldRefs.current.set(field._id, el);
+																		} else {
+																			fieldRefs.current.delete(field._id);
+																		}
+																	}}
 																	fieldId={field._id}
 																	fieldType={field.fieldType}
 																	label={field.label}
@@ -520,42 +892,45 @@ function SigningPage() {
 									onCancel={handleCancelSignature}
 								/>
 							) : (
-								<Card>
-									<CardContent className="pt-6">
-										<div className="flex gap-4 justify-end">
+								<Card className="sticky bottom-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:relative sm:bg-background">
+									<CardContent className="py-4 sm:pt-6">
+										<div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 sm:justify-end">
 											<Button
 												variant="outline"
 												size="lg"
+												className="w-full sm:w-auto h-12 sm:h-11 min-h-[44px]"
 												onClick={handleDeclineClick}
 												disabled={declineMutation.isPending}
 											>
 												Decline
 											</Button>
-											{/* If main signature exists and is filled, show confirmation instead of signature capture */}
-											{mainSignatureField && isMainSignatureFilled ? (
-												<Button
-													size="lg"
-													onClick={() => {
-														toast.success(
-															"Document already signed via main signature field",
-														);
-													}}
-													disabled
-													variant="outline"
-												>
-													✓ Signed via Field
-												</Button>
-											) : (
-												<Button
-													size="lg"
-													onClick={handleSignButtonClick}
-													disabled={submitSignatureMutation.isPending}
-												>
-													{recipient.role === "signer" && "Sign Document"}
-													{recipient.role === "approver" && "Approve Document"}
-													{recipient.role === "viewer" && "Mark as Viewed"}
-												</Button>
-											)}
+											<Button
+												size="lg"
+												className="w-full sm:w-auto h-12 sm:h-11 min-h-[44px]"
+												onClick={handleSignButtonClick}
+												disabled={submitSignatureMutation.isPending}
+											>
+												{submitSignatureMutation.isPending && "Submitting..."}
+												{!submitSignatureMutation.isPending &&
+													mainSignatureField &&
+													isMainSignatureFilled &&
+													recipient.role === "signer" &&
+													"Submit Signature"}
+												{!submitSignatureMutation.isPending &&
+													!(mainSignatureField && isMainSignatureFilled) &&
+													recipient.role === "signer" &&
+													"Sign Document"}
+												{!submitSignatureMutation.isPending &&
+													recipient.role === "approver" &&
+													(mainSignatureField && isMainSignatureFilled
+														? "Submit Approval"
+														: "Approve Document")}
+												{!submitSignatureMutation.isPending &&
+													recipient.role === "viewer" &&
+													(mainSignatureField && isMainSignatureFilled
+														? "Submit Viewed Status"
+														: "Mark as Viewed")}
+											</Button>
 										</div>
 									</CardContent>
 								</Card>

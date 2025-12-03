@@ -1,11 +1,10 @@
 import {
 	CalendarIcon,
-	CheckSquareIcon,
+	GripVerticalIcon,
 	PenToolIcon,
 	TypeIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Card } from "../ui/card";
 import { FIELD_DIMENSIONS } from "./draggable-field";
 
 export type FieldType =
@@ -26,153 +25,91 @@ interface FieldButtonProps {
 	type: FieldType;
 	icon: React.ReactNode;
 	label: string;
-	color: string;
 	onDragStart: (fieldType: FieldType) => void;
 	onDragEnd: () => void;
 }
 
 /**
- * Map field types to colors and labels
+ * Field type configurations
  */
 const FIELD_CONFIG: Record<
 	FieldType,
 	{
 		label: string;
-		hint: string;
-		color: string;
-		bgColor: string;
-		borderColor: string;
+		accentColor: string;
 	}
 > = {
 	signature: {
 		label: "Signature",
-		hint: "",
-		color: "#3b82f6",
-		bgColor: "rgba(59, 130, 246, 0.14)",
-		borderColor: "#3b82f6",
+		accentColor: "#3b82f6",
 	},
 	text: {
-		label: "Text Input",
-		hint: "Enter details",
-		color: "#10b981",
-		bgColor: "rgba(16, 185, 129, 0.14)",
-		borderColor: "#10b981",
+		label: "Text",
+		accentColor: "#22c55e",
 	},
 	date: {
 		label: "Date",
-		hint: "",
-		color: "#8b5cf6",
-		bgColor: "rgba(139, 92, 246, 0.14)",
-		borderColor: "#8b5cf6",
+		accentColor: "#8b5cf6",
 	},
 	checkbox: {
-		label: "Checkbox",
-		hint: "Tap to approve",
-		color: "#f97316",
-		bgColor: "rgba(249, 115, 22, 0.14)",
-		borderColor: "#f97316",
+		label: "Check",
+		accentColor: "#f97316",
 	},
 	dropdown: {
-		label: "Dropdown",
-		hint: "Select option",
-		color: "#06b6d4",
-		bgColor: "rgba(6, 182, 212, 0.14)",
-		borderColor: "#06b6d4",
+		label: "Select",
+		accentColor: "#06b6d4",
 	},
 	radio: {
-		label: "Radio",
-		hint: "Select one",
-		color: "#ec4899",
-		bgColor: "rgba(236, 72, 153, 0.14)",
-		borderColor: "#ec4899",
+		label: "Choice",
+		accentColor: "#ec4899",
 	},
 	attachment: {
-		label: "Attachment",
-		hint: "Upload file",
-		color: "#84cc16",
-		bgColor: "rgba(132, 204, 22, 0.14)",
-		borderColor: "#84cc16",
+		label: "File",
+		accentColor: "#84cc16",
 	},
 };
 
 /**
- * Field button component with drag-and-drop functionality
+ * Draggable field button
  */
 function FieldButton({
 	type,
 	icon,
 	label,
-	color,
 	onDragStart,
 	onDragEnd,
 }: FieldButtonProps) {
 	const [isDragging, setIsDragging] = useState(false);
+	const [isHovered, setIsHovered] = useState(false);
+	const config = FIELD_CONFIG[type];
 
 	const handleDragStart = (e: React.DragEvent) => {
 		setIsDragging(true);
 		e.dataTransfer.effectAllowed = "copy";
 		e.dataTransfer.setData("fieldType", type);
 
-		// Create a custom drag image that looks like the actual field
+		// Create drag image
 		const dimensions = FIELD_DIMENSIONS[type];
-		const config = FIELD_CONFIG[type];
-
 		const dragImage = document.createElement("div");
-		dragImage.style.position = "absolute";
-		dragImage.style.top = "-9999px";
-		dragImage.style.width = `${dimensions.width}px`;
-		dragImage.style.height = `${dimensions.height}px`;
-		dragImage.style.backgroundColor = config.bgColor;
-		dragImage.style.border = `2px solid ${config.borderColor}`;
-		dragImage.style.borderRadius = "10px";
-		dragImage.style.boxShadow = "0 3px 6px rgba(0, 0, 0, 0.15)";
-		dragImage.style.display = "flex";
-		dragImage.style.flexDirection = "column";
-		dragImage.style.padding = type === "checkbox" ? "5px" : "10px";
-		dragImage.style.fontFamily = "Inter, system-ui, -apple-system, sans-serif";
-
-		// Add label for non-checkbox fields
-		if (type !== "checkbox") {
-			const labelEl = document.createElement("div");
-			labelEl.textContent = config.label;
-			labelEl.style.fontSize = "13px";
-			labelEl.style.fontWeight = "600";
-			labelEl.style.color = "#0f172a";
-			labelEl.style.opacity = "0.8";
-			labelEl.style.textAlign = "center";
-			labelEl.style.width = "100%";
-			labelEl.style.flex = "1";
-			labelEl.style.display = "flex";
-			labelEl.style.alignItems = "center";
-			labelEl.style.justifyContent = "center";
-			dragImage.appendChild(labelEl);
-		} else {
-			// Checkbox rendering
-			const checkboxContainer = document.createElement("div");
-			checkboxContainer.style.display = "flex";
-			checkboxContainer.style.alignItems = "center";
-			checkboxContainer.style.justifyContent = "center";
-			checkboxContainer.style.width = "100%";
-			checkboxContainer.style.height = "100%";
-
-			const checkbox = document.createElement("div");
-			const boxSize = Math.min(dimensions.width, dimensions.height) - 10;
-			checkbox.style.width = `${boxSize}px`;
-			checkbox.style.height = `${boxSize}px`;
-			checkbox.style.border = `2px solid ${config.color}`;
-			checkbox.style.borderRadius = "6px";
-			checkbox.style.backgroundColor = "#fff";
-			checkbox.style.display = "flex";
-			checkbox.style.alignItems = "center";
-			checkbox.style.justifyContent = "center";
-			checkbox.style.fontSize = `${boxSize - 8}px`;
-			checkbox.style.color = config.color;
-			checkbox.style.opacity = "0.8";
-			checkbox.textContent = "✓";
-
-			checkboxContainer.appendChild(checkbox);
-			dragImage.appendChild(checkboxContainer);
-		}
+		dragImage.style.cssText = `
+			position: absolute;
+			top: -9999px;
+			width: ${dimensions.width}px;
+			height: ${dimensions.height}px;
+			background: ${config.accentColor}10;
+			border: 2px dashed ${config.accentColor};
+			border-radius: 6px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-family: system-ui, sans-serif;
+			font-size: 12px;
+			font-weight: 600;
+			color: #374151;
+			letter-spacing: 0.5px;
+			text-transform: uppercase;
+		`;
+		dragImage.textContent = config.label;
 
 		document.body.appendChild(dragImage);
 		e.dataTransfer.setDragImage(
@@ -181,10 +118,9 @@ function FieldButton({
 			dimensions.height / 2,
 		);
 
-		// Clean up drag image after a short delay
-		setTimeout(() => {
+		requestAnimationFrame(() => {
 			document.body.removeChild(dragImage);
-		}, 0);
+		});
 
 		onDragStart(type);
 	};
@@ -200,34 +136,32 @@ function FieldButton({
 			draggable
 			onDragStart={handleDragStart}
 			onDragEnd={handleDragEnd}
-			className={`
-				flex flex-col items-center gap-2 p-4 rounded-lg border-2
-				transition-opacity cursor-grab active:cursor-grabbing
-				hover:border-${color}-500 hover:bg-${color}-50
-				${isDragging ? "opacity-50" : "opacity-100"}
-			`}
-			style={{
-				borderColor: isDragging ? `var(--${color}-500)` : "var(--border)",
-			}}
+			onMouseEnter={() => setIsHovered(true)}
+			onMouseLeave={() => setIsHovered(false)}
+			className={`group relative flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg cursor-grab transition-colors hover:border-gray-300 active:cursor-grabbing ${
+				isDragging ? "opacity-40 scale-95 border-dashed" : ""
+			}`}
 		>
+			<div className="flex items-center text-gray-400 group-hover:text-gray-500 transition-colors">
+				<GripVerticalIcon className="w-3 h-3" />
+			</div>
 			<div
-				className={`
-				p-2 rounded-md
-				${isDragging ? `bg-${color}-100` : "bg-muted"}
-			`}
+				className="flex items-center justify-center w-7 h-7 border rounded-md transition-colors"
+				style={{
+					backgroundColor: isHovered ? config.accentColor : "white",
+					borderColor: isHovered ? config.accentColor : "#e5e7eb",
+					color: isHovered ? "white" : "#4b5563",
+				}}
 			>
 				{icon}
 			</div>
-			<span className="text-sm font-medium">{label}</span>
+			<span className="text-sm font-medium text-gray-700">{label}</span>
 		</button>
 	);
 }
 
 /**
- * Field toolbar component for signature field placement
- * Provides draggable field types: Signature, Text, Date, Checkbox
- *
- * SEA-89: Field toolbar with drag-and-drop functionality
+ * Field toolbar - Provides draggable field types for document annotation
  */
 export function FieldToolbar({
 	onFieldDragStart,
@@ -242,53 +176,51 @@ export function FieldToolbar({
 	};
 
 	return (
-		<Card className="p-4">
-			<div className="space-y-3">
-				<div>
-					{/*<h3 className="text-sm font-semibold mb-2">Signature Fields</h3>*/}
-					<p className="text-xs text-muted-foreground mb-3">
-						Drag fields onto the document
-					</p>
-				</div>
-
-				<div className="grid grid-cols-2 gap-3">
-					<FieldButton
-						type="signature"
-						icon={<PenToolIcon className="h-5 w-5" />}
-						label="Signature"
-						color="blue"
-						onDragStart={handleDragStart}
-						onDragEnd={handleDragEnd}
-					/>
-
-					<FieldButton
-						type="text"
-						icon={<TypeIcon className="h-5 w-5" />}
-						label="Text"
-						color="green"
-						onDragStart={handleDragStart}
-						onDragEnd={handleDragEnd}
-					/>
-
-					<FieldButton
-						type="date"
-						icon={<CalendarIcon className="h-5 w-5" />}
-						label="Date"
-						color="purple"
-						onDragStart={handleDragStart}
-						onDragEnd={handleDragEnd}
-					/>
-
-					<FieldButton
-						type="checkbox"
-						icon={<CheckSquareIcon className="h-5 w-5" />}
-						label="Checkbox"
-						color="orange"
-						onDragStart={handleDragStart}
-						onDragEnd={handleDragEnd}
-					/>
-				</div>
+		<div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+			<div className="flex items-baseline justify-between mb-3 pb-2.5 border-b border-dashed border-gray-300">
+				<span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+					Fields
+				</span>
+				<span className="text-[9px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+					Drag to place
+				</span>
 			</div>
-		</Card>
+
+			<div className="grid grid-cols-2 gap-2">
+				<FieldButton
+					type="signature"
+					icon={<PenToolIcon className="w-4 h-4" />}
+					label="Signature"
+					onDragStart={handleDragStart}
+					onDragEnd={handleDragEnd}
+				/>
+
+				<FieldButton
+					type="text"
+					icon={<TypeIcon className="w-4 h-4" />}
+					label="Text"
+					onDragStart={handleDragStart}
+					onDragEnd={handleDragEnd}
+				/>
+
+				<FieldButton
+					type="date"
+					icon={<CalendarIcon className="w-4 h-4" />}
+					label="Date"
+					onDragStart={handleDragStart}
+					onDragEnd={handleDragEnd}
+				/>
+
+				{/* TODO: Re-enable checkbox field once multi-option rendering is complete
+				<FieldButton
+					type="checkbox"
+					icon={<CheckSquareIcon className="w-4 h-4" />}
+					label="Checkbox"
+					onDragStart={handleDragStart}
+					onDragEnd={handleDragEnd}
+				/>
+				*/}
+			</div>
+		</div>
 	);
 }

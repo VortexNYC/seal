@@ -10,6 +10,7 @@ import {
 	StarIcon,
 	TypeIcon,
 } from "lucide-react";
+import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface FillableFieldOverlayProps {
@@ -29,6 +30,7 @@ interface FillableFieldOverlayProps {
 	value?: string;
 	isFilled: boolean;
 	isActive?: boolean;
+	validationError?: string;
 	onClick: (fieldId: Id<"signature_fields">) => void;
 }
 
@@ -74,25 +76,32 @@ function getFieldTypeLabel(fieldType: FieldType): string {
 	}
 }
 
-export function FillableFieldOverlay({
-	fieldId,
-	fieldType,
-	label,
-	isRequired,
-	isMainSignature = false,
-	x,
-	y,
-	width,
-	height,
-	page,
-	currentPage,
-	pdfPageWidth,
-	pdfPageHeight,
-	value,
-	isFilled,
-	isActive = false,
-	onClick,
-}: FillableFieldOverlayProps) {
+export const FillableFieldOverlay = forwardRef<
+	HTMLButtonElement,
+	FillableFieldOverlayProps
+>(function FillableFieldOverlay(
+	{
+		fieldId,
+		fieldType,
+		label,
+		isRequired,
+		isMainSignature = false,
+		x,
+		y,
+		width,
+		height,
+		page,
+		currentPage,
+		pdfPageWidth,
+		pdfPageHeight,
+		value,
+		isFilled,
+		isActive = false,
+		validationError,
+		onClick,
+	},
+	ref,
+) {
 	// Only render on the correct page
 	if (page !== currentPage) {
 		return null;
@@ -106,6 +115,7 @@ export function FillableFieldOverlay({
 
 	return (
 		<button
+			ref={ref}
 			type="button"
 			onClick={() => onClick(fieldId)}
 			className={cn(
@@ -117,8 +127,9 @@ export function FillableFieldOverlay({
 					: isRequired
 						? "border-red-400 bg-red-50/30"
 						: "border-blue-400 bg-blue-50/30",
-				isActive && "ring-2 ring-primary ring-offset-2 border-primary",
-				isMainSignature && "ring-2 ring-yellow-500",
+				isActive &&
+					"ring-2 ring-primary ring-offset-2 border-primary animate-pulse",
+				isMainSignature && !isActive && "ring-2 ring-yellow-500",
 			)}
 			style={{
 				left: `${absoluteX}px`,
@@ -163,7 +174,12 @@ export function FillableFieldOverlay({
 						Value: {value}
 					</div>
 				)}
+				{validationError && (
+					<div className="text-[10px] text-destructive mt-1 max-w-[200px]">
+						⚠ {validationError}
+					</div>
+				)}
 			</div>
 		</button>
 	);
-}
+});

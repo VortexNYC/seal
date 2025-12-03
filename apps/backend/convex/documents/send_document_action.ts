@@ -6,8 +6,58 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { action, internalMutation } from "../_generated/server";
+import { type ActionCtx, action, internalMutation } from "../_generated/server";
 import { sendDocumentInvitation } from "./email";
+
+async function authorizeDocumentOwner(
+	ctx: ActionCtx,
+	documentId: Id<"documents">,
+): Promise<{ document: Doc<"documents">; userId: Id<"users"> }> {
+	const identity = await ctx.auth.getUserIdentity();
+	if (!identity) {
+		throw new ConvexError("Authentication required");
+	}
+
+	const user = await ctx.runQuery(
+		internal.organizations.helpers.getUserByClerkId,
+		{
+			clerkId: identity.subject,
+		},
+	);
+
+	if (!user) {
+		throw new ConvexError("User not found");
+	}
+
+	const document = await ctx.runQuery(
+		internal.documents.queries.getDocumentInternal,
+		{
+			documentId,
+		},
+	);
+
+	if (!document) {
+		throw new ConvexError("Document not found");
+	}
+
+	const membership = await ctx.runQuery(
+		internal.organizations.helpers.getActiveMembershipByUserAndOrganization,
+		{
+			userId: user._id,
+			organizationId: document.organizationId,
+		},
+	);
+
+	if (!membership) {
+		throw new ConvexError("You don't have access to this document");
+	}
+
+	if (document.ownerId !== user._id) {
+		throw new ConvexError("Only the document owner can perform this action");
+	}
+
+	return { document, userId: user._id };
+}
 
 /**
  * Internal mutation to update document status to sent
@@ -57,17 +107,8 @@ export const sendDocumentEmails = action({
 			error?: string;
 		}>;
 	}> => {
-		// 1. Get document details
-		const document: Doc<"documents"> | null = await ctx.runQuery(
-			internal.documents.queries.getDocumentInternal,
-			{
-				documentId: args.documentId,
-			},
-		);
-
-		if (!document) {
-			throw new ConvexError("Document not found");
-		}
+		// 1. Authenticate and authorize
+		const { document } = await authorizeDocumentOwner(ctx, args.documentId);
 
 		// 2. Get all recipients
 		const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
@@ -89,26 +130,22 @@ export const sendDocumentEmails = action({
 			},
 		);
 
-		if (signatureFields.length === 0) {
+		const signatureFieldCount = signatureFields.filter(
+			(field) => field.fieldType === "signature",
+		).length;
+
+		if (signatureFieldCount === 0) {
 			throw new ConvexError(
 				"Cannot send document without signature fields. Please add at least one signature field before sending.",
 			);
 		}
 
-		// 4. Mark document as sent
-		await ctx.runMutation(
-			internal.documents.send_document_action.markDocumentAsSent,
-			{
-				documentId: args.documentId,
-			},
-		);
-
-		// 5. Get sender information from document owner
+		// 4. Get sender information from document owner
 		// For now, we'll get it from the document query
 		// TODO: Add user query or get from context
 		const senderName = "Seal User";
 
-		// 6. Send emails to all recipients
+		// 5. Send emails to all recipients
 		const emailResults: Array<{
 			recipientId: Id<"document_recipients">;
 			success: boolean;
@@ -148,11 +185,22 @@ export const sendDocumentEmails = action({
 			});
 		}
 
-		// 7. Check if any emails failed
+		// 6. Check if any emails failed
 		const failedEmails = emailResults.filter((r) => !r.success);
+		const allEmailsSucceeded = failedEmails.length === 0;
+
+		// 7. Mark document as sent only when all emails succeed so edits remain possible on failures
+		if (allEmailsSucceeded) {
+			await ctx.runMutation(
+				internal.documents.send_document_action.markDocumentAsSent,
+				{
+					documentId: args.documentId,
+				},
+			);
+		}
 
 		return {
-			success: failedEmails.length === 0,
+			success: allEmailsSucceeded,
 			totalRecipients: recipients.length,
 			emailsSent: emailResults.filter((r) => r.success).length,
 			emailsFailed: failedEmails.length,
@@ -178,17 +226,8 @@ export const resendRecipientEmail = action({
 		success: boolean;
 		error?: string;
 	}> => {
-		// 1. Get document details
-		const document: Doc<"documents"> | null = await ctx.runQuery(
-			internal.documents.queries.getDocumentInternal,
-			{
-				documentId: args.documentId,
-			},
-		);
-
-		if (!document) {
-			return { success: false, error: "Document not found" };
-		}
+		// 1. Authenticate and authorize
+		const { document } = await authorizeDocumentOwner(ctx, args.documentId);
 
 		// 2. Verify document has been sent (not in draft)
 		const workflowStatus = document.workflowStatus ?? "draft";

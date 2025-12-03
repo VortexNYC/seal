@@ -1,11 +1,877 @@
 /**
  * Document Detail Page Styles
  *
- * Disable pointer events on PDF text and annotation layers to allow
- * interaction with the Konva canvas overlay for field placement/editing.
+ * Editorial-inspired design for document signing experience
  */
 
+/* ============================================
+   FONTS - Import distinctive typography
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
+
+/* ============================================
+   PDF LAYER OVERRIDES
+   ============================================ */
 .react-pdf__Page__textContent,
 .react-pdf__Page__annotations {
 	pointer-events: none !important;
+}
+
+/* ============================================
+   DOCUMENT PREVIEW AREA
+   ============================================ */
+.document-preview-wrapper {
+	position: relative;
+	background: hsl(45 18% 96%);
+	border-radius: 16px;
+	padding: 24px;
+	min-height: 600px;
+}
+
+.document-preview-wrapper::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+	opacity: 0.03;
+	pointer-events: none;
+	border-radius: 16px;
+}
+
+.document-preview-header {
+	font-family: 'Newsreader', Georgia, serif;
+	font-size: 1.125rem;
+	font-weight: 500;
+	color: hsl(30 10% 20%);
+	margin-bottom: 16px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.document-preview-header .page-count {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.75rem;
+	font-weight: 500;
+	color: hsl(30 5% 50%);
+	background: hsl(45 20% 92%);
+	padding: 4px 10px;
+	border-radius: 20px;
+}
+
+.document-canvas-container {
+	position: relative;
+	background: white;
+	border-radius: 8px;
+	box-shadow:
+		0 1px 3px rgba(0, 0, 0, 0.04),
+		0 4px 12px rgba(0, 0, 0, 0.03),
+		0 0 0 1px rgba(0, 0, 0, 0.04);
+	overflow: hidden;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Drop zone active state - craft paper studio feel */
+.document-canvas-container.drag-active {
+	box-shadow:
+		0 1px 3px rgba(0, 0, 0, 0.04),
+		0 8px 24px rgba(59, 130, 246, 0.15),
+		0 0 0 2px hsl(220 90% 56%),
+		0 0 0 6px hsl(220 90% 56% / 0.08);
+	transform: scale(1.002);
+}
+
+.document-canvas-container.drag-active::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: hsl(220 90% 56% / 0.03);
+	pointer-events: none;
+	z-index: 10;
+	animation: drop-zone-shimmer 2s ease infinite;
+}
+
+@keyframes drop-zone-shimmer {
+	0%, 100% {
+		opacity: 0.5;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+/* Drop zone guide overlay */
+.document-canvas-container.drag-active::before {
+	content: 'Drop field here';
+	position: absolute;
+	top: 16px;
+	left: 50%;
+	transform: translateX(-50%);
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	color: hsl(220 90% 45%);
+	background: hsl(220 90% 97%);
+	padding: 6px 14px;
+	border-radius: 20px;
+	border: 1px dashed hsl(220 70% 70%);
+	z-index: 20;
+	animation: drop-hint-bounce 1s ease infinite;
+}
+
+@keyframes drop-hint-bounce {
+	0%, 100% {
+		transform: translateX(-50%) translateY(0);
+	}
+	50% {
+		transform: translateX(-50%) translateY(-3px);
+	}
+}
+
+/* Zoom controls styling */
+.zoom-controls-bar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	background: white;
+	padding: 6px 8px;
+	border-radius: 10px;
+	box-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.04),
+		0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+/* ============================================
+   DOCUMENT OPTIONS PANEL
+   ============================================ */
+.document-options-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+/* Status Hero Section */
+.status-hero {
+	background: hsl(220 22% 96%);
+	border-radius: 16px;
+	padding: 24px;
+	text-align: center;
+	border: 1px solid hsl(220 20% 92%);
+}
+
+.status-hero.status-draft {
+	background: hsl(45 28% 96%);
+	border-color: hsl(45 25% 88%);
+}
+
+.status-hero.status-sent {
+	background: hsl(210 48% 96%);
+	border-color: hsl(210 40% 88%);
+}
+
+.status-hero.status-in_progress {
+	background: hsl(35 58% 95%);
+	border-color: hsl(35 50% 85%);
+}
+
+.status-hero.status-completed {
+	background: hsl(145 32% 94%);
+	border-color: hsl(145 25% 85%);
+}
+
+.status-hero .status-label {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.625rem;
+	font-weight: 600;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: hsl(220 10% 50%);
+	margin-bottom: 8px;
+}
+
+.status-hero .status-value {
+	font-family: 'Newsreader', Georgia, serif;
+	font-size: 1.75rem;
+	font-weight: 500;
+	color: hsl(220 15% 20%);
+	margin-bottom: 4px;
+}
+
+.status-hero.status-completed .status-value {
+	color: hsl(145 50% 30%);
+}
+
+.status-hero .status-date {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.8125rem;
+	color: hsl(220 10% 55%);
+}
+
+/* Progress Ring */
+.progress-ring-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+	padding: 24px;
+	background: white;
+	border-radius: 16px;
+	border: 1px solid hsl(220 15% 92%);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.progress-ring {
+	position: relative;
+	width: 120px;
+	height: 120px;
+}
+
+.progress-ring svg {
+	transform: rotate(-90deg);
+}
+
+.progress-ring .ring-bg {
+	fill: none;
+	stroke: hsl(220 15% 92%);
+	stroke-width: 8;
+}
+
+.progress-ring .ring-progress {
+	fill: none;
+	stroke: hsl(145 55% 45%);
+	stroke-width: 8;
+	stroke-linecap: round;
+	transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-ring .ring-center {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+.progress-ring .ring-percent {
+	font-family: 'Newsreader', Georgia, serif;
+	font-size: 1.75rem;
+	font-weight: 600;
+	color: hsl(220 15% 20%);
+	line-height: 1;
+}
+
+.progress-ring .ring-label {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.6875rem;
+	color: hsl(220 10% 55%);
+	margin-top: 2px;
+}
+
+.progress-stats {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 12px;
+	width: 100%;
+}
+
+.progress-stat {
+	text-align: center;
+	padding: 12px 8px;
+	background: hsl(220 20% 98%);
+	border-radius: 10px;
+}
+
+.progress-stat .stat-value {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: hsl(220 15% 25%);
+}
+
+.progress-stat .stat-label {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.6875rem;
+	color: hsl(220 10% 55%);
+	margin-top: 2px;
+}
+
+.progress-stat.stat-signed .stat-value {
+	color: hsl(145 55% 35%);
+}
+
+.progress-stat.stat-pending .stat-value {
+	color: hsl(35 70% 45%);
+}
+
+.progress-stat.stat-declined .stat-value {
+	color: hsl(0 65% 50%);
+}
+
+/* Section Cards */
+.options-section {
+	background: white;
+	border-radius: 16px;
+	border: 1px solid hsl(220 15% 92%);
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.options-section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 20px;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+	user-select: none;
+}
+
+.options-section-header:hover {
+	background: hsl(220 20% 98%);
+}
+
+.options-section-header .section-title-group {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.options-section-header .section-icon {
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 10px;
+	background: hsl(220 20% 96%);
+	color: hsl(220 15% 40%);
+}
+
+.options-section-header .section-icon svg {
+	width: 18px;
+	height: 18px;
+}
+
+.options-section-header .section-title {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	color: hsl(220 15% 20%);
+}
+
+.options-section-header .section-count {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	color: hsl(220 10% 55%);
+	background: hsl(220 20% 95%);
+	padding: 3px 8px;
+	border-radius: 12px;
+	margin-left: 8px;
+}
+
+.options-section-header .section-chevron {
+	color: hsl(220 10% 60%);
+	transition: transform 0.2s ease;
+}
+
+.options-section[data-state="open"] .section-chevron {
+	transform: rotate(180deg);
+}
+
+.options-section-content {
+	padding: 0 20px 20px;
+	border-top: 1px solid hsl(220 15% 94%);
+}
+
+/* Recipients Section Specific */
+.options-section.section-recipients .section-icon {
+	background: hsl(220 60% 95%);
+	color: hsl(220 70% 50%);
+}
+
+/* Fields Section Specific */
+.options-section.section-fields .section-icon {
+	background: hsl(270 50% 95%);
+	color: hsl(270 60% 50%);
+}
+
+/* Activity Section Specific */
+.options-section.section-activity .section-icon {
+	background: hsl(35 50% 95%);
+	color: hsl(35 70% 45%);
+}
+
+/* Details Section Specific */
+.options-section.section-details .section-icon {
+	background: hsl(180 40% 95%);
+	color: hsl(180 50% 40%);
+}
+
+/* ============================================
+   RECIPIENT CARDS (replaces table)
+   ============================================ */
+.recipient-cards {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 16px;
+}
+
+.recipient-card {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 14px 16px;
+	background: hsl(220 20% 98%);
+	border-radius: 12px;
+	border: 1px solid transparent;
+	transition: all 0.15s ease;
+}
+
+.recipient-card:hover {
+	background: hsl(220 25% 96%);
+	border-color: hsl(220 20% 90%);
+}
+
+.recipient-avatar {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.875rem;
+	font-weight: 600;
+	flex-shrink: 0;
+}
+
+.recipient-avatar.status-pending {
+	background: hsl(220 20% 92%);
+	color: hsl(220 15% 45%);
+}
+
+.recipient-avatar.status-viewed {
+	background: hsl(210 70% 92%);
+	color: hsl(210 80% 40%);
+}
+
+.recipient-avatar.status-signed,
+.recipient-avatar.status-approved {
+	background: hsl(145 50% 90%);
+	color: hsl(145 60% 35%);
+}
+
+.recipient-avatar.status-declined {
+	background: hsl(0 60% 93%);
+	color: hsl(0 70% 45%);
+}
+
+.recipient-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.recipient-name {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: hsl(220 15% 20%);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.recipient-email {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.75rem;
+	color: hsl(220 10% 55%);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.recipient-status-badge {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	padding: 4px 10px;
+	border-radius: 20px;
+	white-space: nowrap;
+}
+
+.recipient-status-badge.status-pending {
+	background: hsl(220 15% 92%);
+	color: hsl(220 15% 45%);
+}
+
+.recipient-status-badge.status-viewed {
+	background: hsl(210 70% 92%);
+	color: hsl(210 80% 35%);
+}
+
+.recipient-status-badge.status-signed,
+.recipient-status-badge.status-approved {
+	background: hsl(145 50% 90%);
+	color: hsl(145 65% 30%);
+}
+
+.recipient-status-badge.status-declined {
+	background: hsl(0 60% 93%);
+	color: hsl(0 70% 40%);
+}
+
+.recipient-actions {
+	display: flex;
+	gap: 4px;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.recipient-card:hover .recipient-actions {
+	opacity: 1;
+}
+
+/* ============================================
+   FIELD TOOLBAR REDESIGN
+   ============================================ */
+.field-toolbar-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.field-toolbar-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 16px 12px;
+	background: hsl(220 20% 98%);
+	border: 2px dashed hsl(220 15% 88%);
+	border-radius: 12px;
+	cursor: grab;
+	transition: all 0.15s ease;
+}
+
+.field-toolbar-item:hover {
+	background: white;
+	border-style: solid;
+	border-color: hsl(220 60% 70%);
+	box-shadow: 0 2px 8px hsl(220 60% 70% / 0.15);
+}
+
+.field-toolbar-item:active {
+	cursor: grabbing;
+	transform: scale(0.98);
+}
+
+.field-toolbar-item .field-icon {
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 8px;
+}
+
+.field-toolbar-item .field-label {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: hsl(220 15% 35%);
+}
+
+/* Field type colors */
+.field-toolbar-item[data-type="signature"] .field-icon {
+	background: hsl(220 70% 94%);
+	color: hsl(220 80% 50%);
+}
+
+.field-toolbar-item[data-type="text"] .field-icon {
+	background: hsl(145 50% 92%);
+	color: hsl(145 65% 40%);
+}
+
+.field-toolbar-item[data-type="date"] .field-icon {
+	background: hsl(270 50% 94%);
+	color: hsl(270 65% 50%);
+}
+
+.field-toolbar-item[data-type="checkbox"] .field-icon {
+	background: hsl(30 70% 93%);
+	color: hsl(30 80% 45%);
+}
+
+/* ============================================
+   ACTIVITY TIMELINE
+   ============================================ */
+.activity-timeline {
+	position: relative;
+	margin-top: 16px;
+}
+
+.activity-timeline::before {
+	content: '';
+	position: absolute;
+	left: 15px;
+	top: 8px;
+	bottom: 8px;
+	width: 2px;
+	background: hsl(220 15% 92%);
+	border-radius: 1px;
+}
+
+.activity-item {
+	position: relative;
+	display: flex;
+	gap: 16px;
+	padding: 12px 0;
+}
+
+.activity-item:first-child {
+	padding-top: 0;
+}
+
+.activity-item:last-child {
+	padding-bottom: 0;
+}
+
+.activity-dot {
+	position: relative;
+	z-index: 1;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: white;
+	border-radius: 50%;
+	border: 2px solid hsl(220 15% 90%);
+	flex-shrink: 0;
+}
+
+.activity-dot svg {
+	width: 14px;
+	height: 14px;
+	color: hsl(220 15% 55%);
+}
+
+.activity-item.type-signed .activity-dot,
+.activity-item.type-approved .activity-dot,
+.activity-item.type-completed .activity-dot {
+	border-color: hsl(145 50% 75%);
+	background: hsl(145 50% 96%);
+}
+
+.activity-item.type-signed .activity-dot svg,
+.activity-item.type-approved .activity-dot svg,
+.activity-item.type-completed .activity-dot svg {
+	color: hsl(145 60% 40%);
+}
+
+.activity-item.type-viewed .activity-dot {
+	border-color: hsl(210 60% 80%);
+	background: hsl(210 60% 96%);
+}
+
+.activity-item.type-viewed .activity-dot svg {
+	color: hsl(210 70% 50%);
+}
+
+.activity-item.type-declined .activity-dot {
+	border-color: hsl(0 55% 80%);
+	background: hsl(0 55% 96%);
+}
+
+.activity-item.type-declined .activity-dot svg {
+	color: hsl(0 65% 50%);
+}
+
+.activity-content {
+	flex: 1;
+	min-width: 0;
+	padding-top: 4px;
+}
+
+.activity-description {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.8125rem;
+	color: hsl(220 15% 25%);
+	line-height: 1.4;
+}
+
+.activity-timestamp {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.6875rem;
+	color: hsl(220 10% 55%);
+	margin-top: 4px;
+}
+
+/* ============================================
+   DOCUMENT DETAILS GRID
+   ============================================ */
+.details-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 16px;
+	margin-top: 16px;
+}
+
+.details-item {
+	padding: 14px;
+	background: hsl(220 20% 98%);
+	border-radius: 10px;
+}
+
+.details-item .details-label {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.625rem;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: hsl(220 10% 55%);
+	margin-bottom: 4px;
+}
+
+.details-item .details-value {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: hsl(220 15% 20%);
+}
+
+/* ============================================
+   ADD BUTTON STYLES
+   ============================================ */
+.add-item-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: 100%;
+	padding: 12px;
+	background: transparent;
+	border: 2px dashed hsl(220 15% 88%);
+	border-radius: 10px;
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	color: hsl(220 15% 50%);
+	cursor: pointer;
+	transition: all 0.15s ease;
+	margin-top: 12px;
+}
+
+.add-item-button:hover {
+	background: hsl(220 30% 97%);
+	border-color: hsl(220 60% 70%);
+	color: hsl(220 70% 50%);
+}
+
+.add-item-button svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* ============================================
+   EMPTY STATES
+   ============================================ */
+.empty-state {
+	text-align: center;
+	padding: 32px 16px;
+}
+
+.empty-state .empty-icon {
+	width: 48px;
+	height: 48px;
+	margin: 0 auto 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: hsl(220 20% 96%);
+	border-radius: 12px;
+	color: hsl(220 15% 60%);
+}
+
+.empty-state .empty-title {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: hsl(220 15% 35%);
+	margin-bottom: 4px;
+}
+
+.empty-state .empty-description {
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 0.75rem;
+	color: hsl(220 10% 55%);
+	line-height: 1.5;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes scaleIn {
+	from {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+.animate-fade-in-up {
+	animation: fadeInUp 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+	animation: scaleIn 0.2s ease-out forwards;
+}
+
+/* Staggered animation delays */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 1024px) {
+	.document-preview-wrapper {
+		padding: 16px;
+	}
+
+	.status-hero {
+		padding: 20px;
+	}
+
+	.progress-ring {
+		width: 100px;
+		height: 100px;
+	}
+
+	.progress-ring .ring-percent {
+		font-size: 1.5rem;
+	}
 }

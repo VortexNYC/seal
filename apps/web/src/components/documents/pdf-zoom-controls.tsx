@@ -16,15 +16,22 @@ import {
 
 const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
+interface PdfZoomControlsProps {
+	currentZoom?: number;
+}
+
 /**
  * Zoom controls toolbar for PDF viewer
  * Integrates with react-zoom-pan-pinch for zoom/pan management
  */
-export function PdfZoomControls() {
+export function PdfZoomControls({
+	currentZoom: externalZoom,
+}: PdfZoomControlsProps) {
 	const { zoomIn, zoomOut, resetTransform, zoomToElement, instance } =
 		useControls();
 
-	const currentZoom = instance.transformState.scale;
+	// Use external zoom if provided, otherwise fall back to instance state
+	const currentZoom = externalZoom ?? instance.transformState.scale;
 	const zoomPercentage = Math.round(currentZoom * 100);
 
 	const handleZoomChange = (zoom: number) => {
