@@ -7,6 +7,9 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import type { ConvexReactClient } from "convex/react";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { NotFoundPage } from "@/components/not-found-page";
+import { RouteErrorComponent } from "@/components/route-error-component";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -24,12 +27,16 @@ export const Route = createRootRouteWithContext<{
 	}),
 
 	component: RootComponent,
+	notFoundComponent: NotFoundPage,
+	errorComponent: RouteErrorComponent,
 });
 
 function RootComponent() {
 	return (
 		<RootDocument>
-			<Outlet />
+			<ErrorBoundary>
+				<Outlet />
+			</ErrorBoundary>
 		</RootDocument>
 	);
 }
