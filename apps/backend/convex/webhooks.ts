@@ -43,13 +43,24 @@ export const syncUser = mutation({
 		if (existingUser) {
 			// Update existing user
 			await ctx.db.patch(existingUser._id, userData);
-			return { userId: existingUser._id };
+			return { userId: existingUser._id, isNewUser: false };
 		} else {
 			// Create new user
 			// Note: Organization creation is handled by ensureMyMembership mutation
 			// which runs automatically when user first accesses the app
 			const userId = await ctx.db.insert("users", userData);
-			return { userId };
+
+			// Send welcome email to new user
+			await ctx.scheduler.runAfter(
+				0,
+				internal.emails.user_email_actions.sendWelcomeEmail,
+				{
+					userEmail: args.email,
+					userName: args.name,
+				},
+			);
+
+			return { userId, isNewUser: true };
 		}
 	},
 });
@@ -671,6 +682,13 @@ export const handleInvitationCreated = internalMutation({
 			return { created: false };
 		}
 
+		// Get inviter user info for email
+		const inviterUser = await ctx.db.get(inviter.userId);
+
+		const expiresAt = args.createdAt
+			? args.createdAt + 30 * 24 * 60 * 60 * 1000
+			: Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+
 		// Create invitation record
 		const invitationId = await ctx.db.insert("organization_invitations", {
 			organizationId: organization._id,
@@ -679,13 +697,28 @@ export const handleInvitationCreated = internalMutation({
 			status: "pending",
 			token: args.clerkInvitationId, // Use Clerk ID as token
 			invitedBy: inviter.userId,
-			expiresAt: args.createdAt
-				? args.createdAt + 30 * 24 * 60 * 60 * 1000
-				: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+			expiresAt,
 			createdAt: args.createdAt || Date.now(),
 			clerkInvitationId: args.clerkInvitationId,
 			clerkOrganizationId: args.clerkOrganizationId,
 		});
+
+		// Send team invitation email
+		if (inviterUser) {
+			await ctx.scheduler.runAfter(
+				0,
+				internal.emails.user_email_actions.sendTeamInvitationEmail,
+				{
+					inviteeEmail: args.emailAddress.toLowerCase(),
+					inviterName: inviterUser.name || inviterUser.email || "Team Admin",
+					inviterEmail: inviterUser.email,
+					organizationName: organization.name,
+					role: role.charAt(0).toUpperCase() + role.slice(1), // Capitalize role
+					clerkInvitationId: args.clerkInvitationId,
+					expiresAt,
+				},
+			);
+		}
 
 		console.log(
 			`✅ Created invitation record: ${args.emailAddress} -> ${organization.name}`,
