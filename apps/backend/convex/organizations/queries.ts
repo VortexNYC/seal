@@ -418,6 +418,32 @@ export const getOrganizationMember = authQuery({
 });
 
 /**
+ * Get invitation by ID (internal only)
+ * Used by actions that need to lookup invitations without auth
+ */
+export const getInvitationById = internalQuery({
+	args: {
+		invitationId: v.id("organization_invitations"),
+	},
+	handler: async (ctx, args) => {
+		const invitation = await ctx.db.get(args.invitationId);
+
+		if (!invitation) {
+			return null;
+		}
+
+		return {
+			_id: invitation._id,
+			organizationId: invitation.organizationId,
+			emailAddress: invitation.email,
+			role: invitation.role,
+			status: invitation.status,
+			clerkInvitationId: invitation.clerkInvitationId,
+		};
+	},
+});
+
+/**
  * Get invitation by Clerk invitation ID (internal only)
  * Used by actions that need to lookup invitations without auth
  */

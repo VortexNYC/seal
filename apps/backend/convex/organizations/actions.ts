@@ -168,6 +168,108 @@ export const getInvitationEmailByClerkId = action({
 });
 
 /**
+ * Resend an organization invitation via Clerk backend API
+ * Since Clerk doesn't have a resend endpoint, we revoke the existing invitation
+ * and create a new one with the same email and role
+ */
+export const clerkResendInvitation = action({
+	args: {
+		invitationId: v.id("organization_invitations"),
+	},
+	handler: async (ctx, args): Promise<{ ok: boolean; message: string }> => {
+		// Get the authenticated user
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			throw new ConvexError("Authentication required");
+		}
+
+		if (!process.env.CLERK_SECRET_KEY) {
+			throw new ConvexError({
+				code: "MISSING_CONFIG",
+				message: "CLERK_SECRET_KEY environment variable is not set",
+			});
+		}
+
+		// Get the invitation from our database
+		const invitation = await ctx.runQuery(
+			internal.organizations.queries.getInvitationById,
+			{
+				invitationId: args.invitationId,
+			},
+		);
+
+		if (!invitation) {
+			throw new ConvexError("Invitation not found");
+		}
+
+		if (invitation.status !== "pending") {
+			throw new ConvexError({
+				code: "INVALID_STATUS",
+				message: "Only pending invitations can be resent",
+			});
+		}
+
+		// Get organization to get the Clerk organization ID
+		const organization = await ctx.runQuery(
+			internal.organizations.helpers.getOrganizationById,
+			{
+				organizationId: invitation.organizationId,
+			},
+		);
+
+		if (!organization || !organization.clerkId) {
+			throw new ConvexError("Organization not found or not synced with Clerk");
+		}
+
+		try {
+			const clerk = createClerkClient({
+				secretKey: process.env.CLERK_SECRET_KEY,
+			});
+
+			// Step 1: Revoke the existing invitation
+			if (invitation.clerkInvitationId) {
+				try {
+					await clerk.organizations.revokeOrganizationInvitation({
+						invitationId: invitation.clerkInvitationId,
+						organizationId: organization.clerkId,
+					});
+				} catch (revokeError) {
+					// If revoke fails (e.g., invitation already revoked/expired in Clerk),
+					// we still try to create a new one
+					console.warn(
+						"[clerkResendInvitation] Revoke failed (may be already revoked):",
+						revokeError,
+					);
+				}
+			}
+
+			// Step 2: Create a new invitation with the same email and role
+			await clerk.organizations.createOrganizationInvitation({
+				organizationId: organization.clerkId,
+				emailAddress: invitation.emailAddress,
+				role: "org:member",
+				publicMetadata: {
+					role: invitation.role,
+				},
+			});
+
+			// The webhook will handle updating our database with the new invitation
+
+			return { ok: true, message: "Invitation resent successfully" };
+		} catch (error) {
+			console.error("[clerkResendInvitation] Error:", error);
+			throw new ConvexError({
+				code: "RESEND_ERROR",
+				message:
+					error instanceof Error
+						? error.message
+						: "Failed to resend invitation",
+			});
+		}
+	},
+});
+
+/**
  * Delete a user via Clerk backend API
  * This will trigger the user.deleted webhook which will clean up the user in Convex
  */
