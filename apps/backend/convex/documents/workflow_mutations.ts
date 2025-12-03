@@ -5,14 +5,15 @@
 
 import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
-import { authMutation } from "../auth";
+import { permissionMutation } from "../auth";
 import { verifyDocumentOwnership } from "./recipient_helpers";
 
 /**
  * Send document to recipients
  * Transitions document from draft to sent status and schedules automated reminders
+ * Requires documents:edit permission
  */
-export const sendDocument = authMutation({
+export const sendDocument = permissionMutation("documents:edit")({
 	args: {
 		documentId: v.id("documents"),
 		autoRemindAfterDays: v.optional(v.number()), // Optional: schedule automated reminder (e.g., 3 days)
@@ -98,8 +99,9 @@ export const sendDocument = authMutation({
 /**
  * Mark document as completed
  * Called when all recipients have taken their required actions
+ * Requires documents:edit permission
  */
-export const completeDocument = authMutation({
+export const completeDocument = permissionMutation("documents:edit")({
 	args: {
 		documentId: v.id("documents"),
 	},
@@ -173,8 +175,9 @@ export const completeDocument = authMutation({
 /**
  * Cancel a document that's been sent
  * Prevents recipients from taking further action
+ * Requires documents:edit permission
  */
-export const cancelDocument = authMutation({
+export const cancelDocument = permissionMutation("documents:edit")({
 	args: {
 		documentId: v.id("documents"),
 		reason: v.optional(v.string()),
@@ -228,8 +231,9 @@ export const cancelDocument = authMutation({
 /**
  * Check if document workflow is complete
  * Used to automatically transition document to completed state
+ * Requires documents:edit permission
  */
-export const checkAndCompleteWorkflow = authMutation({
+export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
 	args: {
 		documentId: v.id("documents"),
 	},

@@ -5,7 +5,7 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import { mutation } from "../_generated/server";
-import { authMutation } from "../auth";
+import { authMutation, permissionMutation } from "../auth";
 import {
 	isRecipientComplete,
 	recipientRoleTuple,
@@ -28,8 +28,9 @@ function generateSigningToken(): string {
 /**
  * Add recipients to a document
  * Can only be called on draft documents by the owner
+ * Requires documents:edit permission
  */
-export const addRecipients = authMutation({
+export const addRecipients = permissionMutation("documents:edit")({
 	args: {
 		documentId: v.id("documents"),
 		recipients: v.array(
@@ -98,8 +99,9 @@ export const addRecipients = authMutation({
 /**
  * Remove a recipient from a document
  * Can only be called on draft documents by the owner
+ * Requires documents:edit permission
  */
-export const removeRecipient = authMutation({
+export const removeRecipient = permissionMutation("documents:edit")({
 	args: {
 		recipientId: v.id("document_recipients"),
 	},
@@ -369,8 +371,9 @@ export const submitRecipientSignature = mutation({
 /**
  * Regenerate signing token for a recipient (if expired or compromised)
  * Can only be called by document owner
+ * Requires documents:edit permission
  */
-export const regenerateSigningToken = authMutation({
+export const regenerateSigningToken = permissionMutation("documents:edit")({
 	args: {
 		recipientId: v.id("document_recipients"),
 	},

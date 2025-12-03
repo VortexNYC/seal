@@ -4,7 +4,7 @@
 
 import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
-import { authMutation } from "../auth";
+import { authMutation, permissionMutation } from "../auth";
 import { validateFile } from "./upload_config";
 import {
 	canCancelDocument,
@@ -29,8 +29,9 @@ export const generateUploadUrl = authMutation({
 /**
  * Create a document record after file upload
  * Called after the client successfully uploads the file to Convex Storage
+ * Requires documents:create permission
  */
-export const createDocument = authMutation({
+export const createDocument = permissionMutation("documents:create")({
 	args: {
 		organizationId: v.id("organizations"),
 		name: v.string(),
@@ -92,8 +93,9 @@ export const createDocument = authMutation({
 
 /**
  * Delete a document (marks as deleted, can archive storage later)
+ * Requires documents:delete permission
  */
-export const deleteDocument = authMutation({
+export const deleteDocument = permissionMutation("documents:delete")({
 	args: {
 		documentId: v.id("documents"),
 	},
@@ -144,8 +146,9 @@ export const deleteDocument = authMutation({
 
 /**
  * Update document metadata (name, description)
+ * Requires documents:edit permission
  */
-export const updateDocument = authMutation({
+export const updateDocument = permissionMutation("documents:edit")({
 	args: {
 		documentId: v.id("documents"),
 		name: v.optional(v.string()),
@@ -205,8 +208,9 @@ export const updateDocument = authMutation({
 /**
  * Send a document to recipients
  * Transitions workflow status from draft to sent
+ * Requires documents:edit permission (owner operation)
  */
-export const sendDocument = authMutation({
+export const sendDocument = permissionMutation("documents:edit")({
 	args: {
 		documentId: v.id("documents"),
 	},
@@ -245,8 +249,9 @@ export const sendDocument = authMutation({
 /**
  * Cancel a document workflow
  * Can be called by owner at any time before completion
+ * Requires documents:edit permission
  */
-export const cancelDocument = authMutation({
+export const cancelDocument = permissionMutation("documents:edit")({
 	args: {
 		documentId: v.id("documents"),
 		reason: v.optional(v.string()),
@@ -285,8 +290,9 @@ export const cancelDocument = authMutation({
 /**
  * Mark a document as completed
  * Called when all required signatures have been collected
+ * Requires documents:edit permission
  */
-export const completeDocument = authMutation({
+export const completeDocument = permissionMutation("documents:edit")({
 	args: {
 		documentId: v.id("documents"),
 	},

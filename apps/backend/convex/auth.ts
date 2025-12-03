@@ -389,3 +389,73 @@ export const memberMutation = customMutation(
 );
 
 export type MemberMutationCtx = Awaited<ReturnType<typeof memberMutation>>;
+
+/**
+ * Permission-based mutation wrapper
+ * Requires a specific permission to execute
+ *
+ * @param requiredPermission - The permission to check for
+ * @returns A custom mutation that checks the permission before executing
+ *
+ * @example
+ * export const create = permissionMutation("documents:create")({
+ *   args: { title: v.string() },
+ *   handler: async (ctx, args) => {
+ *     // Permission already checked
+ *     const id = await ctx.db.insert("documents", { title: args.title });
+ *     return { id };
+ *   },
+ * });
+ */
+export const permissionMutation = (requiredPermission: string) =>
+	customMutation(
+		mutation,
+		customCtx(async (ctx) => {
+			const auth = await getAuthContext(ctx);
+
+			if (!auth.hasPermission(requiredPermission)) {
+				throw new ConvexError(
+					createAuthError("INSUFFICIENT_PERMISSIONS", undefined, {
+						userId: auth.user._id,
+						requiredPermission,
+					}).message,
+				);
+			}
+
+			return { auth };
+		}),
+	);
+
+export type PermissionMutationCtx = Awaited<
+	ReturnType<ReturnType<typeof permissionMutation>>
+>;
+
+/**
+ * Permission-based query wrapper
+ * Requires a specific permission to execute
+ *
+ * @param requiredPermission - The permission to check for
+ * @returns A custom query that checks the permission before executing
+ */
+export const permissionQuery = (requiredPermission: string) =>
+	customQuery(
+		query,
+		customCtx(async (ctx) => {
+			const auth = await getAuthContext(ctx);
+
+			if (!auth.hasPermission(requiredPermission)) {
+				throw new ConvexError(
+					createAuthError("INSUFFICIENT_PERMISSIONS", undefined, {
+						userId: auth.user._id,
+						requiredPermission,
+					}).message,
+				);
+			}
+
+			return { auth };
+		}),
+	);
+
+export type PermissionQueryCtx = Awaited<
+	ReturnType<ReturnType<typeof permissionQuery>>
+>;
