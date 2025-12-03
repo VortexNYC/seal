@@ -1,4 +1,8 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
 import {
+	BellIcon,
 	CheckCircle2Icon,
 	EyeIcon,
 	FileTextIcon,
@@ -6,7 +10,8 @@ import {
 	UserPlusIcon,
 	XCircleIcon,
 } from "lucide-react";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Skeleton } from "../ui/skeleton";
 
 interface ActivityEvent {
 	type:
@@ -18,7 +23,8 @@ interface ActivityEvent {
 		| "approved"
 		| "declined"
 		| "completed"
-		| "cancelled";
+		| "cancelled"
+		| "reminder_sent";
 	timestamp: number;
 	description: string;
 	actor?: string;
@@ -26,6 +32,13 @@ interface ActivityEvent {
 
 interface ActivityFeedProps {
 	events: ActivityEvent[];
+}
+
+interface ConnectedActivityFeedProps {
+	documentId: Id<"documents">;
+	limit?: number;
+	showHeader?: boolean;
+	className?: string;
 }
 
 function getEventIcon(type: ActivityEvent["type"]) {
@@ -47,6 +60,8 @@ function getEventIcon(type: ActivityEvent["type"]) {
 			return <CheckCircle2Icon className="h-4 w-4 text-green-500" />;
 		case "cancelled":
 			return <XCircleIcon className="h-4 w-4 text-muted-foreground" />;
+		case "reminder_sent":
+			return <BellIcon className="h-4 w-4 text-amber-500" />;
 		default:
 			return <FileTextIcon className="h-4 w-4 text-muted-foreground" />;
 	}
@@ -95,6 +110,95 @@ export function ActivityFeed({ events }: ActivityFeedProps) {
 								<p className="text-xs text-muted-foreground">
 									{formatTimestamp(event.timestamp)}
 								</p>
+							</div>
+						</div>
+					))}
+				</div>
+			</CardContent>
+		</Card>
+	);
+}
+
+/**
+ * ConnectedActivityFeed - ActivityFeed that fetches its own data
+ *
+ * A self-contained component that queries the document activity
+ * and displays it in the ActivityFeed format.
+ */
+export function ConnectedActivityFeed({
+	documentId,
+	limit = 20,
+	showHeader = true,
+	className,
+}: ConnectedActivityFeedProps) {
+	const events = useQuery(api.documents.activity_queries.getDocumentActivity, {
+		documentId,
+		limit,
+	});
+
+	if (events === undefined) {
+		return <ActivityFeedSkeleton showHeader={showHeader} />;
+	}
+
+	if (events.length === 0) {
+		return (
+			<Card className={className}>
+				{showHeader && (
+					<CardHeader className="pb-3">
+						<CardTitle className="text-base font-medium">Activity</CardTitle>
+					</CardHeader>
+				)}
+				<CardContent>
+					<div className="text-sm text-muted-foreground text-center py-4">
+						No activity yet
+					</div>
+				</CardContent>
+			</Card>
+		);
+	}
+
+	return (
+		<Card className={className}>
+			{showHeader && (
+				<CardHeader className="pb-3">
+					<CardTitle className="text-base font-medium">Activity</CardTitle>
+				</CardHeader>
+			)}
+			<CardContent>
+				<div className="space-y-4">
+					{events.map((event, index) => (
+						<div key={index} className="flex gap-3">
+							<div className="mt-0.5">{getEventIcon(event.type)}</div>
+							<div className="flex-1 space-y-1">
+								<p className="text-sm">{event.description}</p>
+								<p className="text-xs text-muted-foreground">
+									{formatTimestamp(event.timestamp)}
+								</p>
+							</div>
+						</div>
+					))}
+				</div>
+			</CardContent>
+		</Card>
+	);
+}
+
+function ActivityFeedSkeleton({ showHeader }: { showHeader: boolean }) {
+	return (
+		<Card>
+			{showHeader && (
+				<CardHeader className="pb-3">
+					<Skeleton className="h-5 w-20" />
+				</CardHeader>
+			)}
+			<CardContent>
+				<div className="space-y-4" role="status" aria-label="Loading activity">
+					{Array.from({ length: 3 }).map((_, i) => (
+						<div key={i} className="flex gap-3">
+							<Skeleton className="h-4 w-4 rounded-full" />
+							<div className="flex-1 space-y-2">
+								<Skeleton className="h-4 w-3/4" />
+								<Skeleton className="h-3 w-16" />
 							</div>
 						</div>
 					))}
