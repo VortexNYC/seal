@@ -3,9 +3,11 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { internal } from "../_generated/api";
 import { mutation } from "../_generated/server";
 import { authMutation } from "../auth";
 import {
+	isRecipientComplete,
 	recipientRoleTuple,
 	recipientStatusTuple,
 } from "../schemas/document_recipients";
@@ -346,6 +348,19 @@ export const submitRecipientSignature = mutation({
 		}
 
 		await ctx.db.patch(recipient._id, updateData);
+
+		// 7. Schedule post-signature emails if recipient completed their action
+		// (signed, approved, or declined - but not just viewed)
+		if (isRecipientComplete(recipient.role, args.status)) {
+			await ctx.scheduler.runAfter(
+				0,
+				internal.documents.recipient_email_action.sendPostSignatureEmails,
+				{
+					recipientId: recipient._id,
+					documentId: recipient.documentId,
+				},
+			);
+		}
 
 		return { success: true, recipientId: recipient._id };
 	},
