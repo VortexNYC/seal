@@ -39,6 +39,10 @@ import {
 	type PlacedField,
 } from "../../../../components/documents/draggable-field";
 import { FieldList } from "../../../../components/documents/field-list";
+import {
+	type FieldOptionsConfig,
+	FieldOptionsDialog,
+} from "../../../../components/documents/field-options-dialog";
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
@@ -108,6 +112,11 @@ function DocumentDetailPage() {
 		height: number;
 		page: number;
 	} | null>(null);
+
+	// Field options dialog for checkbox/dropdown/radio configuration
+	const [showFieldOptions, setShowFieldOptions] = useState(false);
+	const [pendingFieldOptions, setPendingFieldOptions] =
+		useState<FieldOptionsConfig | null>(null);
 
 	const { data: documentData, refetch: refetchDocument } = useSuspenseQuery(
 		convexQuery(api.documents.queries.getDocument, {
@@ -395,8 +404,49 @@ function DocumentDetailPage() {
 		return `${typeLabels[fieldType]} Field`;
 	};
 
+	// Check if field type requires options configuration
+	const fieldTypeRequiresOptions = (fieldType: FieldType): boolean => {
+		return (
+			fieldType === "checkbox" ||
+			fieldType === "dropdown" ||
+			fieldType === "radio"
+		);
+	};
+
 	// Handle field creation after recipient selection
 	const handleConfirmFieldPlacement = async () => {
+		if (!pendingFieldData || !selectedRecipientId) return;
+
+		// For checkbox, dropdown, radio - show options dialog first
+		if (fieldTypeRequiresOptions(pendingFieldData.fieldType)) {
+			setShowRecipientSelector(false);
+			setShowFieldOptions(true);
+			return;
+		}
+
+		// For other field types, create immediately
+		await createFieldWithOptions(null);
+	};
+
+	// Handle field options confirmation
+	const handleFieldOptionsConfirm = async (config: FieldOptionsConfig) => {
+		setPendingFieldOptions(config);
+		setShowFieldOptions(false);
+		await createFieldWithOptions(config);
+	};
+
+	// Handle field options cancel
+	const handleFieldOptionsCancel = () => {
+		setShowFieldOptions(false);
+		// Clear all pending data
+		setPendingFieldData(null);
+		setSelectedRecipientId(null);
+		setPendingFieldOptions(null);
+		setDraggingFieldType(null);
+	};
+
+	// Create field with optional options configuration
+	const createFieldWithOptions = async (options: FieldOptionsConfig | null) => {
 		if (!pendingFieldData || !selectedRecipientId) return;
 
 		try {
@@ -412,6 +462,13 @@ function DocumentDetailPage() {
 				width: pendingFieldData.width,
 				height: pendingFieldData.height,
 				page: pendingFieldData.page,
+				// Include options for multi-choice fields
+				...(options && {
+					options: options.options.map((opt) => ({
+						label: opt.label,
+						value: opt.value,
+					})),
+				}),
 			});
 
 			// Select the newly created field
@@ -429,6 +486,7 @@ function DocumentDetailPage() {
 			setShowRecipientSelector(false);
 			setPendingFieldData(null);
 			setSelectedRecipientId(null);
+			setPendingFieldOptions(null);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to create field";
@@ -1333,6 +1391,22 @@ function DocumentDetailPage() {
 					onConfirm={handleConfirmFieldPlacement}
 					fieldType={pendingFieldData?.fieldType || "field"}
 				/>
+
+				{/* Field options dialog for checkbox/dropdown/radio */}
+				{pendingFieldData &&
+					(pendingFieldData.fieldType === "checkbox" ||
+						pendingFieldData.fieldType === "dropdown" ||
+						pendingFieldData.fieldType === "radio") && (
+						<FieldOptionsDialog
+							open={showFieldOptions}
+							onOpenChange={(open) => {
+								if (!open) handleFieldOptionsCancel();
+							}}
+							fieldType={pendingFieldData.fieldType}
+							onConfirm={handleFieldOptionsConfirm}
+							initialConfig={pendingFieldOptions ?? undefined}
+						/>
+					)}
 
 				{/* Send document dialog */}
 				<SendDocumentDialog
