@@ -3,6 +3,7 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -73,9 +74,9 @@ export function AddRecipientDialog({
 			onOpenChange(false);
 			onSuccess?.();
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Failed to add recipient";
-			toast.error(errorMessage);
+			toast.error("Failed to add recipient", {
+				description: getErrorMessage(error),
+			});
 		} finally {
 			setLoading(false);
 		}

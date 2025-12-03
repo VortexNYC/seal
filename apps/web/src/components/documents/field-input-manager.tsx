@@ -2,6 +2,7 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 import { useState } from "react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -88,9 +89,9 @@ export function FieldInputManager({
 			toast.success("Field saved successfully");
 			onOpenChange(false);
 		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : "Failed to save field",
-			);
+			toast.error("Failed to save field", {
+				description: getErrorMessage(error),
+			});
 		} finally {
 			setIsSaving(false);
 		}
@@ -116,9 +117,9 @@ export function FieldInputManager({
 			toast.success("Signature saved successfully");
 			onOpenChange(false);
 		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : "Failed to save signature",
-			);
+			toast.error("Failed to save signature", {
+				description: getErrorMessage(error),
+			});
 		} finally {
 			setIsSaving(false);
 		}

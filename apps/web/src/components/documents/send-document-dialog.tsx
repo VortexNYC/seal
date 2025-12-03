@@ -9,6 +9,7 @@ import { useAction } from "convex/react";
 import { Loader2Icon, MailIcon, SendIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -89,9 +90,9 @@ export function SendDocumentDialog({
 			}
 		} catch (error) {
 			console.error("Error sending document:", error);
-			toast.error(
-				error instanceof Error ? error.message : "Failed to send document",
-			);
+			toast.error("Failed to send document", {
+				description: getErrorMessage(error),
+			});
 		} finally {
 			setIsSending(false);
 		}

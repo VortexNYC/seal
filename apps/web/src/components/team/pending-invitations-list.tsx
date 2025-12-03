@@ -20,6 +20,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { getErrorMessage } from "@/lib/utils";
 
 interface Invitation {
 	id: Id<"organization_invitations">;
@@ -78,10 +79,8 @@ export function PendingInvitationsList({
 				description: `The invitation for ${email} has been revoked`,
 			});
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Failed to revoke invitation";
 			toast.error("Failed to revoke invitation", {
-				description: errorMessage,
+				description: getErrorMessage(error),
 			});
 		} finally {
 			setRevokingId(null);
@@ -99,10 +98,8 @@ export function PendingInvitationsList({
 				description: `A new invitation has been sent to ${email}`,
 			});
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Failed to resend invitation";
 			toast.error("Failed to resend invitation", {
-				description: errorMessage,
+				description: getErrorMessage(error),
 			});
 		} finally {
 			setResendingId(null);

@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { BellRingIcon, Loader2Icon, UsersIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 
@@ -67,8 +68,7 @@ export function BulkReminderDialog({
 			onSuccess?.();
 		} catch (error) {
 			toast.error("Failed to send reminders", {
-				description:
-					error instanceof Error ? error.message : "Please try again.",
+				description: getErrorMessage(error),
 			});
 			setIsSending(false);
 		}

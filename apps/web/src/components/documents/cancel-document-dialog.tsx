@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { BanIcon, Loader2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 
@@ -61,8 +62,7 @@ export function CancelDocumentDialog({
 			onSuccess?.();
 		} catch (error) {
 			toast.error("Failed to cancel document", {
-				description:
-					error instanceof Error ? error.message : "Please try again.",
+				description: getErrorMessage(error),
 			});
 			setIsCancelling(false);
 		}

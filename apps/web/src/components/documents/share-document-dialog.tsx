@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import {
@@ -98,8 +98,7 @@ export function ShareDocumentDialog({
 			toast.success("Sharing settings updated");
 		} catch (error) {
 			toast.error("Failed to update sharing settings", {
-				description:
-					error instanceof Error ? error.message : "Please try again.",
+				description: getErrorMessage(error),
 			});
 		} finally {
 			setIsUpdating(false);
@@ -120,8 +119,7 @@ export function ShareDocumentDialog({
 			setSelectedMemberId(null);
 		} catch (error) {
 			toast.error("Failed to grant access", {
-				description:
-					error instanceof Error ? error.message : "Please try again.",
+				description: getErrorMessage(error),
 			});
 		} finally {
 			setIsUpdating(false);
@@ -135,8 +133,7 @@ export function ShareDocumentDialog({
 			toast.success("Access revoked");
 		} catch (error) {
 			toast.error("Failed to revoke access", {
-				description:
-					error instanceof Error ? error.message : "Please try again.",
+				description: getErrorMessage(error),
 			});
 		} finally {
 			setIsUpdating(false);
@@ -157,8 +154,7 @@ export function ShareDocumentDialog({
 			toast.success("Permission updated");
 		} catch (error) {
 			toast.error("Failed to update permission", {
-				description:
-					error instanceof Error ? error.message : "Please try again.",
+				description: getErrorMessage(error),
 			});
 		} finally {
 			setIsUpdating(false);
