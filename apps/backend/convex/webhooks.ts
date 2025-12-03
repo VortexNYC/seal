@@ -685,9 +685,12 @@ export const handleInvitationCreated = internalMutation({
 		// Get inviter user info for email
 		const inviterUser = await ctx.db.get(inviter.userId);
 
+		// Team invitations expire in 7 days
+		const INVITATION_EXPIRATION_DAYS = 7;
+		const expirationMs = INVITATION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000;
 		const expiresAt = args.createdAt
-			? args.createdAt + 30 * 24 * 60 * 60 * 1000
-			: Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+			? args.createdAt + expirationMs
+			: Date.now() + expirationMs;
 
 		// Create invitation record
 		const invitationId = await ctx.db.insert("organization_invitations", {
