@@ -12,6 +12,13 @@ export interface PlacedField {
 	height: number;
 	pageNumber: number;
 	recipientId?: string;
+	label?: string;
+	properties?: {
+		options?: string[];
+		placeholder?: string;
+		defaultValue?: string;
+		helpText?: string;
+	};
 }
 
 interface DraggableFieldProps {
@@ -146,39 +153,135 @@ export function DraggableField({
 	};
 
 	const renderCheckbox = () => {
-		const size = Math.min(field.width, field.height) - 6;
-		const safeSize = Math.max(16, size);
-		const x = (field.width - safeSize) / 2;
-		const y = (field.height - safeSize) / 2;
+		const options = field.properties?.options;
+
+		// If no options, render single checkbox
+		if (!options || options.length === 0) {
+			const size = Math.min(field.width, field.height) - 6;
+			const safeSize = Math.max(16, size);
+			const x = (field.width - safeSize) / 2;
+			const y = (field.height - safeSize) / 2;
+
+			return (
+				<>
+					<Rect
+						x={x}
+						y={y}
+						width={safeSize}
+						height={safeSize}
+						cornerRadius={4}
+						stroke={colors.accent}
+						strokeWidth={isSelected ? 2 : 1.5}
+						fill="#ffffff"
+					/>
+					<Text
+						x={x}
+						y={y}
+						width={safeSize}
+						height={safeSize}
+						align="center"
+						verticalAlign="middle"
+						text="✓"
+						fontSize={safeSize * 0.65}
+						fontFamily="system-ui, sans-serif"
+						fill={colors.accent}
+						opacity={0.5}
+						listening={false}
+					/>
+				</>
+			);
+		}
+
+		// Render checkbox group with options
+		const checkboxSize = 14;
+		const rowHeight = 22;
+		const padding = 8;
 
 		return (
 			<>
-				{/* Checkbox outer border */}
+				{/* Background */}
 				<Rect
-					x={x}
-					y={y}
-					width={safeSize}
-					height={safeSize}
-					cornerRadius={4}
-					stroke={colors.accent}
-					strokeWidth={isSelected ? 2 : 1.5}
+					width={field.width}
+					height={field.height}
 					fill="#ffffff"
+					stroke={isSelected ? colors.accent : colors.ink}
+					strokeWidth={isSelected ? 2 : 1}
+					cornerRadius={6}
+					shadowColor={isSelected ? colors.glow : "rgba(0,0,0,0.08)"}
+					shadowBlur={isSelected ? 12 : 4}
+					shadowOpacity={1}
+					shadowOffsetY={isSelected ? 0 : 2}
+					dash={[6, 3]}
+					dashEnabled={!isSelected}
 				/>
-				{/* Checkmark */}
-				<Text
-					x={x}
-					y={y}
-					width={safeSize}
-					height={safeSize}
-					align="center"
-					verticalAlign="middle"
-					text="✓"
-					fontSize={safeSize * 0.65}
-					fontFamily="system-ui, sans-serif"
+
+				{/* Accent stripe */}
+				<Rect
+					x={0}
+					y={0}
+					width={4}
+					height={field.height}
 					fill={colors.accent}
-					opacity={0.5}
-					listening={false}
+					cornerRadius={[6, 0, 0, 6]}
+					opacity={isSelected ? 1 : 0.7}
 				/>
+
+				{/* Title */}
+				{field.label && (
+					<Text
+						x={padding + 4}
+						y={padding}
+						text={field.label}
+						fontSize={10}
+						fontFamily="'DM Sans', system-ui, sans-serif"
+						fontStyle="600"
+						fill={colors.ink}
+						opacity={0.7}
+						listening={false}
+					/>
+				)}
+
+				{/* Options */}
+				{options.map((option, index) => {
+					const yPos =
+						(field.label ? padding + 16 : padding) + index * rowHeight;
+					return (
+						<Group key={option} x={padding + 4} y={yPos}>
+							{/* Checkbox box */}
+							<Rect
+								width={checkboxSize}
+								height={checkboxSize}
+								cornerRadius={3}
+								stroke={colors.accent}
+								strokeWidth={1.5}
+								fill="#ffffff"
+							/>
+							{/* Checkbox checkmark (faded) */}
+							<Text
+								width={checkboxSize}
+								height={checkboxSize}
+								align="center"
+								verticalAlign="middle"
+								text="✓"
+								fontSize={10}
+								fontFamily="system-ui, sans-serif"
+								fill={colors.accent}
+								opacity={0.3}
+								listening={false}
+							/>
+							{/* Option label */}
+							<Text
+								x={checkboxSize + 6}
+								y={1}
+								text={option}
+								fontSize={11}
+								fontFamily="'DM Sans', system-ui, sans-serif"
+								fill="#374151"
+								listening={false}
+							/>
+						</Group>
+					);
+				})}
 			</>
 		);
 	};

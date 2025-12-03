@@ -34,6 +34,7 @@ import * as Collapsible from "@radix-ui/react-collapsible";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
+import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import {
 	FIELD_DIMENSIONS,
 	type PlacedField,
@@ -50,16 +51,6 @@ import { PdfZoomControls } from "../../../../components/documents/pdf-zoom-contr
 import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
 import type { DocumentWorkflowStatus } from "../../../../components/documents/workflow-status-badge";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "../../../../components/ui/alert-dialog";
 import { Button } from "../../../../components/ui/button";
 
 // SEA-72: Configure PDF.js worker
@@ -184,6 +175,8 @@ function DocumentDetailPage() {
 			height: field.height,
 			pageNumber: field.page,
 			recipientId: field.recipientId,
+			label: field.label,
+			properties: field.properties,
 		}));
 		setPlacedFields(fields);
 	}, [signatureFields]);
@@ -446,10 +439,34 @@ function DocumentDetailPage() {
 	};
 
 	// Create field with optional options configuration
-	const createFieldWithOptions = async (options: FieldOptionsConfig | null) => {
+	const createFieldWithOptions = async (
+		optionsConfig: FieldOptionsConfig | null,
+	) => {
 		if (!pendingFieldData || !selectedRecipientId) return;
 
 		try {
+			// Calculate dimensions for multi-option fields
+			let finalWidth = pendingFieldData.width;
+			let finalHeight = pendingFieldData.height;
+
+			if (optionsConfig && optionsConfig.options.length > 0) {
+				// For checkbox/radio/dropdown with options, calculate proper size
+				// Based on the rendering: 22px per row + padding + title
+				const optionCount = optionsConfig.options.length;
+				const rowHeight = 22; // matches renderCheckbox rowHeight
+				const padding = 16; // top + bottom padding
+				const titleHeight = 16; // space for title
+				const minWidth = 140; // minimum width for option labels
+
+				// Calculate pixel dimensions needed
+				const heightPixels = titleHeight + padding + optionCount * rowHeight;
+				const widthPixels = Math.max(minWidth, 150);
+
+				// Convert to percentage using pdfWidth/pdfHeight
+				finalWidth = (widthPixels / pdfWidth) * 100;
+				finalHeight = (heightPixels / pdfHeight) * 100;
+			}
+
 			// Save field to database with percentage coordinates
 			const fieldId = await createField({
 				documentId: documentId as Id<"documents">,
@@ -459,16 +476,16 @@ function DocumentDetailPage() {
 				isRequired: true, // Default to required
 				x: pendingFieldData.x,
 				y: pendingFieldData.y,
-				width: pendingFieldData.width,
-				height: pendingFieldData.height,
+				width: finalWidth,
+				height: finalHeight,
 				page: pendingFieldData.page,
-				// Include options for multi-choice fields
-				...(options && {
-					options: options.options.map((opt) => ({
-						label: opt.label,
-						value: opt.value,
-					})),
-				}),
+				// Include options for multi-choice fields inside properties
+				...(optionsConfig &&
+					optionsConfig.options.length > 0 && {
+						properties: {
+							options: optionsConfig.options.map((opt) => opt.label),
+						},
+					}),
 			});
 
 			// Select the newly created field
@@ -1422,29 +1439,16 @@ function DocumentDetailPage() {
 					}}
 				/>
 
-				<AlertDialog
+				<DeleteFieldDialog
 					open={showFieldDeleteDialog}
 					onOpenChange={setShowFieldDeleteDialog}
-				>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Delete field?</AlertDialogTitle>
-							<AlertDialogDescription>
-								This action cannot be undone and will permanently remove the
-								field from the document.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
-							<AlertDialogAction
-								onClick={handleFieldDeleteConfirm}
-								variant="destructive"
-							>
-								Delete
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
+					onConfirm={handleFieldDeleteConfirm}
+					fieldType={
+						selectedFieldId
+							? placedFields.find((f) => f.id === selectedFieldId)?.fieldType
+							: undefined
+					}
+				/>
 			</div>
 		</PageWrapper>
 	);
