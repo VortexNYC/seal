@@ -22,11 +22,7 @@
    ============================================ */
 .document-preview-wrapper {
 	position: relative;
-	background: linear-gradient(
-		180deg,
-		hsl(45 20% 97%) 0%,
-		hsl(45 15% 94%) 100%
-	);
+	background: hsl(45 18% 96%);
 	border-radius: 16px;
 	padding: 24px;
 	min-height: 600px;
@@ -64,6 +60,7 @@
 }
 
 .document-canvas-container {
+	position: relative;
 	background: white;
 	border-radius: 8px;
 	box-shadow:
@@ -71,14 +68,66 @@
 		0 4px 12px rgba(0, 0, 0, 0.03),
 		0 0 0 1px rgba(0, 0, 0, 0.04);
 	overflow: hidden;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Drop zone active state - craft paper studio feel */
 .document-canvas-container.drag-active {
 	box-shadow:
 		0 1px 3px rgba(0, 0, 0, 0.04),
-		0 4px 12px rgba(0, 0, 0, 0.03),
+		0 8px 24px rgba(59, 130, 246, 0.15),
 		0 0 0 2px hsl(220 90% 56%),
-		0 0 0 4px hsl(220 90% 56% / 0.15);
+		0 0 0 6px hsl(220 90% 56% / 0.08);
+	transform: scale(1.002);
+}
+
+.document-canvas-container.drag-active::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: hsl(220 90% 56% / 0.03);
+	pointer-events: none;
+	z-index: 10;
+	animation: drop-zone-shimmer 2s ease infinite;
+}
+
+@keyframes drop-zone-shimmer {
+	0%, 100% {
+		opacity: 0.5;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+/* Drop zone guide overlay */
+.document-canvas-container.drag-active::before {
+	content: 'Drop field here';
+	position: absolute;
+	top: 16px;
+	left: 50%;
+	transform: translateX(-50%);
+	font-family: 'DM Sans', system-ui, sans-serif;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	color: hsl(220 90% 45%);
+	background: hsl(220 90% 97%);
+	padding: 6px 14px;
+	border-radius: 20px;
+	border: 1px dashed hsl(220 70% 70%);
+	z-index: 20;
+	animation: drop-hint-bounce 1s ease infinite;
+}
+
+@keyframes drop-hint-bounce {
+	0%, 100% {
+		transform: translateX(-50%) translateY(0);
+	}
+	50% {
+		transform: translateX(-50%) translateY(-3px);
+	}
 }
 
 /* Zoom controls styling */
@@ -106,11 +155,7 @@
 
 /* Status Hero Section */
 .status-hero {
-	background: linear-gradient(
-		135deg,
-		hsl(220 25% 97%) 0%,
-		hsl(220 20% 95%) 100%
-	);
+	background: hsl(220 22% 96%);
 	border-radius: 16px;
 	padding: 24px;
 	text-align: center;
@@ -118,22 +163,22 @@
 }
 
 .status-hero.status-draft {
-	background: linear-gradient(135deg, hsl(45 30% 97%) 0%, hsl(45 25% 94%) 100%);
+	background: hsl(45 28% 96%);
 	border-color: hsl(45 25% 88%);
 }
 
 .status-hero.status-sent {
-	background: linear-gradient(135deg, hsl(210 50% 97%) 0%, hsl(210 45% 94%) 100%);
+	background: hsl(210 48% 96%);
 	border-color: hsl(210 40% 88%);
 }
 
 .status-hero.status-in_progress {
-	background: linear-gradient(135deg, hsl(35 60% 97%) 0%, hsl(35 55% 93%) 100%);
+	background: hsl(35 58% 95%);
 	border-color: hsl(35 50% 85%);
 }
 
 .status-hero.status-completed {
-	background: linear-gradient(135deg, hsl(145 35% 96%) 0%, hsl(145 30% 92%) 100%);
+	background: hsl(145 32% 94%);
 	border-color: hsl(145 25% 85%);
 }
 
@@ -579,11 +624,7 @@
 	top: 8px;
 	bottom: 8px;
 	width: 2px;
-	background: linear-gradient(
-		to bottom,
-		hsl(220 15% 90%) 0%,
-		hsl(220 15% 95%) 100%
-	);
+	background: hsl(220 15% 92%);
 	border-radius: 1px;
 }
 
