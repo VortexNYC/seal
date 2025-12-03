@@ -7,7 +7,7 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useAction } from "convex/react";
-import { Ban } from "lucide-react";
+import { Ban, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -45,9 +45,14 @@ export function PendingInvitationsList({
 }: PendingInvitationsListProps) {
 	const [revokingId, setRevokingId] =
 		useState<Id<"organization_invitations"> | null>(null);
+	const [resendingId, setResendingId] =
+		useState<Id<"organization_invitations"> | null>(null);
 
 	const revokeInvitation = useAction(
 		api.organizations.actions.clerkRevokeInvitation,
+	);
+	const resendInvitation = useAction(
+		api.organizations.actions.clerkResendInvitation,
 	);
 
 	const handleRevokeInvitation = async (
@@ -80,6 +85,27 @@ export function PendingInvitationsList({
 			});
 		} finally {
 			setRevokingId(null);
+		}
+	};
+
+	const handleResendInvitation = async (
+		invitationId: Id<"organization_invitations">,
+		email: string,
+	) => {
+		setResendingId(invitationId);
+		try {
+			await resendInvitation({ invitationId });
+			toast.success("Invitation resent", {
+				description: `A new invitation has been sent to ${email}`,
+			});
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to resend invitation";
+			toast.error("Failed to resend invitation", {
+				description: errorMessage,
+			});
+		} finally {
+			setResendingId(null);
 		}
 	};
 
@@ -165,22 +191,43 @@ export function PendingInvitationsList({
 							)}
 						</TableCell>
 						<TableCell className="text-right">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() =>
-									handleRevokeInvitation(
-										invitation.id,
-										invitation.email,
-										invitation.clerkInvitationId,
-										invitation.clerkOrganizationId,
-									)
-								}
-								disabled={revokingId === invitation.id}
-							>
-								<Ban className="mr-2 h-4 w-4" />
-								{revokingId === invitation.id ? "Revoking..." : "Revoke"}
-							</Button>
+							<div className="flex items-center justify-end gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() =>
+										handleResendInvitation(invitation.id, invitation.email)
+									}
+									disabled={
+										resendingId === invitation.id ||
+										revokingId === invitation.id
+									}
+								>
+									<RefreshCw
+										className={`mr-2 h-4 w-4 ${resendingId === invitation.id ? "animate-spin" : ""}`}
+									/>
+									{resendingId === invitation.id ? "Sending..." : "Resend"}
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() =>
+										handleRevokeInvitation(
+											invitation.id,
+											invitation.email,
+											invitation.clerkInvitationId,
+											invitation.clerkOrganizationId,
+										)
+									}
+									disabled={
+										revokingId === invitation.id ||
+										resendingId === invitation.id
+									}
+								>
+									<Ban className="mr-2 h-4 w-4" />
+									{revokingId === invitation.id ? "Revoking..." : "Revoke"}
+								</Button>
+							</div>
 						</TableCell>
 					</TableRow>
 				))}
