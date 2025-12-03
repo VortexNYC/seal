@@ -1,6 +1,7 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Link, rootRouteId, useMatch, useRouter } from "@tanstack/react-router";
 import { AlertCircle, Home, RefreshCw, Undo2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,7 @@ import {
 
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 	const router = useRouter();
+	const cardRef = useRef<HTMLDivElement>(null);
 	const isRoot = useMatch({
 		strict: false,
 		select: (state) => state.id === rootRouteId,
@@ -25,9 +27,24 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 		error instanceof Error ? error.message : "An unexpected error occurred";
 	const errorStack = error instanceof Error ? error.stack : undefined;
 
+	// Focus management: move focus to the error card when it appears
+	useEffect(() => {
+		if (cardRef.current) {
+			cardRef.current.focus();
+		}
+	}, []);
+
 	return (
-		<div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
-			<Card className="w-full max-w-2xl">
+		<div
+			className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8"
+			role="alert"
+			aria-live="assertive"
+		>
+			<Card
+				ref={cardRef}
+				tabIndex={-1}
+				className="w-full max-w-2xl focus:outline-none"
+			>
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
 						<AlertCircle className="h-6 w-6 text-destructive" />

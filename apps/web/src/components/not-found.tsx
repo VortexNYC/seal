@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
-import { FileQuestion, Home, Undo2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { Link, useRouter } from "@tanstack/react-router";
+import { FileQuestion, Home, RefreshCw, Undo2 } from "lucide-react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -12,9 +12,27 @@ import {
 } from "@/components/ui/card";
 
 export function NotFound({ children }: { children?: ReactNode }) {
+	const router = useRouter();
+	const cardRef = useRef<HTMLDivElement>(null);
+
+	// Focus management: move focus to the card when it appears
+	useEffect(() => {
+		if (cardRef.current) {
+			cardRef.current.focus();
+		}
+	}, []);
+
 	return (
-		<div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
-			<Card className="w-full max-w-2xl">
+		<div
+			className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8"
+			role="alert"
+			aria-live="polite"
+		>
+			<Card
+				ref={cardRef}
+				tabIndex={-1}
+				className="w-full max-w-2xl focus:outline-none"
+			>
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
 						<FileQuestion className="h-6 w-6 text-muted-foreground" />
@@ -34,8 +52,16 @@ export function NotFound({ children }: { children?: ReactNode }) {
 
 				<CardFooter className="flex flex-col sm:flex-row gap-2">
 					<Button
-						onClick={() => window.history.back()}
+						onClick={() => router.invalidate()}
 						variant="default"
+						className="w-full sm:w-auto"
+					>
+						<RefreshCw className="mr-2 h-4 w-4" />
+						Try Again
+					</Button>
+					<Button
+						onClick={() => window.history.back()}
+						variant="outline"
 						className="w-full sm:w-auto"
 					>
 						<Undo2 className="mr-2 h-4 w-4" />
