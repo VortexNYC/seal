@@ -7,6 +7,8 @@ import {
 	EyeIcon,
 	FileTextIcon,
 	SendIcon,
+	Share2Icon,
+	UserMinusIcon,
 	UserPlusIcon,
 	XCircleIcon,
 } from "lucide-react";
@@ -24,7 +26,9 @@ interface ActivityEvent {
 		| "declined"
 		| "completed"
 		| "cancelled"
-		| "reminder_sent";
+		| "reminder_sent"
+		| "shared"
+		| "access_revoked";
 	timestamp: number;
 	description: string;
 	actor?: string;
@@ -62,6 +66,10 @@ function getEventIcon(type: ActivityEvent["type"]) {
 			return <XCircleIcon className="h-4 w-4 text-muted-foreground" />;
 		case "reminder_sent":
 			return <BellIcon className="h-4 w-4 text-amber-500" />;
+		case "shared":
+			return <Share2Icon className="h-4 w-4 text-indigo-500" />;
+		case "access_revoked":
+			return <UserMinusIcon className="h-4 w-4 text-gray-500" />;
 		default:
 			return <FileTextIcon className="h-4 w-4 text-muted-foreground" />;
 	}

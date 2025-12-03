@@ -21,7 +21,9 @@ export type ActivityEventType =
 	| "declined"
 	| "completed"
 	| "cancelled"
-	| "reminder_sent";
+	| "reminder_sent"
+	| "shared"
+	| "access_revoked";
 
 interface ActivityEvent {
 	type: ActivityEventType;
@@ -199,6 +201,39 @@ export const getDocumentActivity = authQuery({
 					type: "reminder_sent",
 					timestamp: reminder.sentAt,
 					description: `Reminder sent to ${recipientName}`,
+					actor: ownerName,
+				});
+			}
+		}
+
+		// Get document access events (sharing)
+		const accessRecords = await ctx.db
+			.query("document_access")
+			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+			.collect();
+
+		for (const access of accessRecords) {
+			// Get user and granter info
+			const accessUser = await ctx.db.get(access.userId);
+			const grantedByUser = await ctx.db.get(access.grantedBy);
+			const accessUserName = accessUser?.name || accessUser?.email || "User";
+			const grantedByName =
+				grantedByUser?.name || grantedByUser?.email || "Someone";
+
+			// Access granted event
+			events.push({
+				type: "shared",
+				timestamp: access.grantedAt,
+				description: `${accessUserName} was given ${access.permissionLevel} access`,
+				actor: grantedByName,
+			});
+
+			// Access revoked event
+			if (access.revokedAt) {
+				events.push({
+					type: "access_revoked",
+					timestamp: access.revokedAt,
+					description: `${accessUserName}'s access was revoked`,
 					actor: ownerName,
 				});
 			}
