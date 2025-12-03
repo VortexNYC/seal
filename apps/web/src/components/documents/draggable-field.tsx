@@ -11,7 +11,7 @@ export interface PlacedField {
 	width: number;
 	height: number;
 	pageNumber: number;
-	recipientId?: string; // Optional for newly placed fields
+	recipientId?: string;
 }
 
 interface DraggableFieldProps {
@@ -23,42 +23,61 @@ interface DraggableFieldProps {
 }
 
 /**
- * Map field types to colors
+ * Craft-inspired field color palette
+ * Deep ink colors with vibrant accents
  */
-const FIELD_COLORS: Record<FieldType, string> = {
-	signature: "#3b82f6", // blue
-	text: "#10b981", // green
-	date: "#8b5cf6", // purple
-	checkbox: "#f97316", // orange
-	dropdown: "#06b6d4", // cyan
-	radio: "#ec4899", // pink
-	attachment: "#84cc16", // lime
+const FIELD_COLORS: Record<
+	FieldType,
+	{ ink: string; accent: string; glow: string }
+> = {
+	signature: {
+		ink: "#1e3a5f",
+		accent: "#3b82f6",
+		glow: "rgba(59, 130, 246, 0.25)",
+	},
+	text: {
+		ink: "#14532d",
+		accent: "#22c55e",
+		glow: "rgba(34, 197, 94, 0.25)",
+	},
+	date: {
+		ink: "#4c1d95",
+		accent: "#8b5cf6",
+		glow: "rgba(139, 92, 246, 0.25)",
+	},
+	checkbox: {
+		ink: "#7c2d12",
+		accent: "#f97316",
+		glow: "rgba(249, 115, 22, 0.25)",
+	},
+	dropdown: {
+		ink: "#164e63",
+		accent: "#06b6d4",
+		glow: "rgba(6, 182, 212, 0.25)",
+	},
+	radio: {
+		ink: "#831843",
+		accent: "#ec4899",
+		glow: "rgba(236, 72, 153, 0.25)",
+	},
+	attachment: {
+		ink: "#3f6212",
+		accent: "#84cc16",
+		glow: "rgba(132, 204, 22, 0.25)",
+	},
 };
 
 /**
- * Friendly labels for each field type
+ * Field type labels
  */
 const FIELD_LABELS: Record<FieldType, string> = {
 	signature: "Signature",
-	text: "Text Input",
+	text: "Text",
 	date: "Date",
-	checkbox: "Checkbox",
-	dropdown: "Dropdown",
-	radio: "Radio",
-	attachment: "Attachment",
-};
-
-/**
- * Helper text inside each field to hint at its intent
- */
-const FIELD_HINTS: Record<FieldType, string> = {
-	signature: "",
-	text: "Enter details",
-	date: "",
-	checkbox: "Tap to approve",
-	dropdown: "Select option",
-	radio: "Select one",
-	attachment: "Upload file",
+	checkbox: "",
+	dropdown: "Select",
+	radio: "Choice",
+	attachment: "File",
 };
 
 /**
@@ -68,29 +87,18 @@ export const FIELD_DIMENSIONS: Record<
 	FieldType,
 	{ width: number; height: number }
 > = {
-	signature: { width: 200, height: 60 },
-	text: { width: 200, height: 40 },
-	date: { width: 150, height: 40 },
-	checkbox: { width: 30, height: 30 },
-	dropdown: { width: 200, height: 40 },
-	radio: { width: 150, height: 40 },
-	attachment: { width: 200, height: 50 },
+	signature: { width: 200, height: 50 },
+	text: { width: 180, height: 36 },
+	date: { width: 140, height: 36 },
+	checkbox: { width: 28, height: 28 },
+	dropdown: { width: 180, height: 36 },
+	radio: { width: 140, height: 36 },
+	attachment: { width: 180, height: 44 },
 };
 
 /**
- * Convert a hex color (#RRGGBB) to rgba so we can control transparency
- */
-const hexToRgba = (hex: string, alpha: number) => {
-	const sanitized = hex.replace("#", "");
-	const r = Number.parseInt(sanitized.slice(0, 2), 16);
-	const g = Number.parseInt(sanitized.slice(2, 4), 16);
-	const b = Number.parseInt(sanitized.slice(4, 6), 16);
-	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-/**
- * Draggable and resizable field component on the canvas
- * SEA-90: Field placement, repositioning, and resizing
+ * Draggable field component with craft-paper aesthetic
+ * Renders on Konva canvas with transform handles
  */
 export function DraggableField({
 	field,
@@ -102,28 +110,13 @@ export function DraggableField({
 	const shapeRef = useRef<Konva.Group>(null);
 	const trRef = useRef<Konva.Transformer>(null);
 
-	const color = FIELD_COLORS[field.fieldType];
+	const colors = FIELD_COLORS[field.fieldType];
 	const label = FIELD_LABELS[field.fieldType];
-	const hint = FIELD_HINTS[field.fieldType];
-
-	// Always show label for non-checkbox fields, but adjust styling based on size
-	const isSmallField = field.width < 110;
-	const showBadge = field.fieldType !== "checkbox";
-
-	// Debug logging
-	console.log("Field rendering:", {
-		fieldType: field.fieldType,
-		width: field.width,
-		isSmallField,
-		label,
-	});
-	const _badgeWidth = Math.max(0, Math.min(field.width - 24, 180));
-	const _contentOffset = showBadge && !isSmallField ? 40 : 16;
+	const isCheckbox = field.fieldType === "checkbox";
 
 	// Update transformer when selection changes
 	useEffect(() => {
 		if (isSelected && trRef.current && shapeRef.current) {
-			// Attach transformer to the shape
 			trRef.current.nodes([shapeRef.current]);
 			trRef.current.getLayer()?.batchDraw();
 		}
@@ -141,7 +134,6 @@ export function DraggableField({
 		const scaleX = node.scaleX();
 		const scaleY = node.scaleY();
 
-		// Reset scale and apply to width/height instead
 		node.scaleX(1);
 		node.scaleY(1);
 
@@ -153,63 +145,90 @@ export function DraggableField({
 		);
 	};
 
-	const renderFieldContents = () => {
-		if (field.fieldType === "checkbox") {
-			const boxSize = Math.min(field.width, field.height) - 10;
-			const safeBoxSize = Math.max(18, boxSize);
-			const boxX = (field.width - safeBoxSize) / 2;
-			const boxY = (field.height - safeBoxSize) / 2;
-
-			return (
-				<>
-					<Rect
-						x={boxX}
-						y={boxY}
-						width={safeBoxSize}
-						height={safeBoxSize}
-						cornerRadius={6}
-						stroke={color}
-						strokeWidth={2}
-						fill="#fff"
-					/>
-					<Text
-						x={boxX}
-						y={boxY - 2}
-						width={safeBoxSize}
-						height={safeBoxSize}
-						align="center"
-						verticalAlign="middle"
-						text="✓"
-						fontSize={safeBoxSize - 8}
-						fontFamily="Inter, system-ui, -apple-system, sans-serif"
-						fill={color}
-						opacity={0.8}
-						listening={false}
-					/>
-				</>
-			);
-		}
-
-		// For non-checkbox fields with hints
-		// Calculate the available space below the label for centering the hint
-		const labelHeight = 30; // Approximate height taken by the label (y=10 + fontSize~13 + padding)
-		const availableHeight = field.height - labelHeight;
-		const hintY = labelHeight + availableHeight / 2 - 7; // Center in available space, -7 to account for fontSize/2
+	const renderCheckbox = () => {
+		const size = Math.min(field.width, field.height) - 6;
+		const safeSize = Math.max(16, size);
+		const x = (field.width - safeSize) / 2;
+		const y = (field.height - safeSize) / 2;
 
 		return (
 			<>
-				{hint && !isSmallField && (
+				{/* Checkbox outer border */}
+				<Rect
+					x={x}
+					y={y}
+					width={safeSize}
+					height={safeSize}
+					cornerRadius={4}
+					stroke={colors.accent}
+					strokeWidth={isSelected ? 2 : 1.5}
+					fill="#ffffff"
+				/>
+				{/* Checkmark */}
+				<Text
+					x={x}
+					y={y}
+					width={safeSize}
+					height={safeSize}
+					align="center"
+					verticalAlign="middle"
+					text="✓"
+					fontSize={safeSize * 0.65}
+					fontFamily="system-ui, sans-serif"
+					fill={colors.accent}
+					opacity={0.5}
+					listening={false}
+				/>
+			</>
+		);
+	};
+
+	const renderField = () => {
+		return (
+			<>
+				{/* Field background */}
+				<Rect
+					width={field.width}
+					height={field.height}
+					fill="#ffffff"
+					stroke={isSelected ? colors.accent : colors.ink}
+					strokeWidth={isSelected ? 2 : 1}
+					cornerRadius={6}
+					shadowColor={isSelected ? colors.glow : "rgba(0,0,0,0.08)"}
+					shadowBlur={isSelected ? 12 : 4}
+					shadowOpacity={1}
+					shadowOffsetY={isSelected ? 0 : 2}
+					dash={[6, 3]}
+					dashEnabled={!isSelected}
+				/>
+
+				{/* Accent stripe on left */}
+				<Rect
+					x={0}
+					y={0}
+					width={4}
+					height={field.height}
+					fill={colors.accent}
+					cornerRadius={[6, 0, 0, 6]}
+					opacity={isSelected ? 1 : 0.7}
+				/>
+
+				{/* Field label */}
+				{label && (
 					<Text
-						x={16}
-						y={hintY}
-						width={field.width - 32}
-						text={hint}
-						fontSize={13}
-						fontFamily="Inter, system-ui, -apple-system, sans-serif"
-						fontStyle="500"
-						fill="#0f172a"
-						opacity={0.75}
-						align="center"
+						x={12}
+						y={0}
+						width={field.width - 16}
+						height={field.height}
+						text={label}
+						fontSize={11}
+						fontFamily="'DM Sans', system-ui, sans-serif"
+						fontStyle="600"
+						fill={colors.ink}
+						opacity={0.85}
+						align="left"
+						verticalAlign="middle"
+						letterSpacing={0.3}
 						listening={false}
 					/>
 				)}
@@ -231,77 +250,37 @@ export function DraggableField({
 				onDragEnd={handleDragEnd}
 				onTransformEnd={handleTransformEnd}
 			>
-				{/* Field background */}
-				<Rect
-					width={field.width}
-					height={field.height}
-					fill={hexToRgba(color, isSelected ? 0.25 : 0.14)}
-					stroke={color}
-					strokeWidth={isSelected ? 3 : 2}
-					cornerRadius={10}
-					shadowColor={hexToRgba("#000000", 0.25)}
-					shadowBlur={isSelected ? 10 : 6}
-					shadowOpacity={0.15}
-					shadowOffsetY={3}
-				/>
-
-				{/* Field label badge */}
-				{showBadge && !isSmallField && (
-					<Text
-						x={0}
-						y={0}
-						width={field.width}
-						height={field.height}
-						text={label}
-						fontSize={13}
-						fontFamily="Inter, system-ui, -apple-system, sans-serif"
-						fontStyle="600"
-						fill="#0f172a"
-						opacity={0.8}
-						align="center"
-						verticalAlign="middle"
-						listening={false}
-					/>
-				)}
-				{showBadge && isSmallField && (
-					<Text
-						x={0}
-						y={0}
-						width={field.width}
-						height={field.height}
-						text={label}
-						fontSize={11}
-						fontFamily="Inter, system-ui, -apple-system, sans-serif"
-						fontStyle="600"
-						fill="#0f172a"
-						opacity={0.8}
-						align="center"
-						verticalAlign="middle"
-						listening={false}
-					/>
-				)}
-
-				{renderFieldContents()}
+				{isCheckbox ? renderCheckbox() : renderField()}
 			</Group>
 
-			{/* Transformer for resize handles - only shown when selected */}
+			{/* Transformer for resize handles */}
 			{isSelected && (
 				<Transformer
 					ref={trRef}
 					boundBoxFunc={(oldBox, newBox) => {
-						// Limit minimum size
-						if (newBox.width < 30 || newBox.height < 20) {
+						if (newBox.width < 24 || newBox.height < 20) {
 							return oldBox;
 						}
 						return newBox;
 					}}
 					enabledAnchors={[
 						"top-left",
+						"top-center",
 						"top-right",
+						"middle-left",
+						"middle-right",
 						"bottom-left",
+						"bottom-center",
 						"bottom-right",
 					]}
 					rotateEnabled={false}
+					borderStroke={colors.accent}
+					borderStrokeWidth={1.5}
+					anchorFill="#ffffff"
+					anchorStroke={colors.accent}
+					anchorStrokeWidth={1.5}
+					anchorSize={8}
+					anchorCornerRadius={2}
 				/>
 			)}
 		</>
