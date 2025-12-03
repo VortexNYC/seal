@@ -12,6 +12,10 @@ import {
 	type DocumentReminderProps,
 } from "./emails/document-reminder.js";
 import {
+	DocumentShared,
+	type DocumentSharedProps,
+} from "./emails/document-shared.js";
+import {
 	SigningComplete,
 	type SigningCompleteProps,
 } from "./emails/signing-complete.js";
@@ -26,6 +30,7 @@ export {
 	DocumentInvitation,
 	DocumentCompleted,
 	DocumentReminder,
+	DocumentShared,
 	SigningComplete,
 	TeamInvitation,
 	Welcome,
@@ -37,6 +42,7 @@ export type {
 	SigningCompleteProps,
 	DocumentCompletedProps,
 	DocumentReminderProps,
+	DocumentSharedProps,
 	TeamInvitationProps,
 	WelcomeProps,
 };
@@ -91,4 +97,13 @@ export async function renderTeamInvitation(
 	props: TeamInvitationProps,
 ): Promise<string> {
 	return render(TeamInvitation(props));
+}
+
+/**
+ * Render DocumentShared email to HTML string
+ */
+export async function renderDocumentShared(
+	props: DocumentSharedProps,
+): Promise<string> {
+	return render(DocumentShared(props));
 }

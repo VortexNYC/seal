@@ -17,6 +17,7 @@ import type * as check_membership from "../check_membership.js";
 import type * as crons from "../crons.js";
 import type * as documents_activity_queries from "../documents/activity_queries.js";
 import type * as documents_cleanup from "../documents/cleanup.js";
+import type * as documents_document_shared_action from "../documents/document_shared_action.js";
 import type * as documents_email from "../documents/email.js";
 import type * as documents_generate_fillable_pdf from "../documents/generate_fillable_pdf.js";
 import type * as documents_mutations from "../documents/mutations.js";
@@ -97,6 +98,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   "documents/activity_queries": typeof documents_activity_queries;
   "documents/cleanup": typeof documents_cleanup;
+  "documents/document_shared_action": typeof documents_document_shared_action;
   "documents/email": typeof documents_email;
   "documents/generate_fillable_pdf": typeof documents_generate_fillable_pdf;
   "documents/mutations": typeof documents_mutations;

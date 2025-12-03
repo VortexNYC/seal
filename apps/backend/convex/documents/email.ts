@@ -6,6 +6,7 @@ import {
 	renderDocumentCompleted,
 	renderDocumentInvitation,
 	renderDocumentReminder,
+	renderDocumentShared,
 	renderSigningComplete,
 	renderTeamInvitation,
 	renderWelcome,
@@ -347,6 +348,65 @@ export async function sendTeamInvitation(
 		return { success: true, messageId: data?.id };
 	} catch (error) {
 		console.error("Unexpected error sending team invitation email:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Unknown error",
+		};
+	}
+}
+
+export interface SendDocumentSharedParams {
+	to: string;
+	recipientName: string;
+	sharerName: string;
+	sharerEmail: string;
+	documentName: string;
+	permissionLevel: "view" | "edit" | "manage";
+	documentUrl: string;
+}
+
+/**
+ * Send document shared notification email
+ */
+export async function sendDocumentShared(
+	params: SendDocumentSharedParams,
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+	try {
+		const {
+			to,
+			recipientName,
+			sharerName,
+			sharerEmail,
+			documentName,
+			permissionLevel,
+			documentUrl,
+		} = params;
+
+		const html = await renderDocumentShared({
+			recipientEmail: to,
+			recipientName,
+			sharerName,
+			sharerEmail,
+			documentName,
+			permissionLevel,
+			documentUrl,
+		});
+
+		const { data, error } = await resend.emails.send({
+			from: FROM_EMAIL,
+			to: [to],
+			subject: `${sharerName} shared "${documentName}" with you`,
+			html,
+		});
+
+		if (error) {
+			console.error("Error sending document shared email:", error);
+			return { success: false, error: error.message };
+		}
+
+		return { success: true, messageId: data?.id };
+	} catch (error) {
+		console.error("Unexpected error sending document shared email:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",

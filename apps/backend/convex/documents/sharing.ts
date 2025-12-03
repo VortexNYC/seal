@@ -3,6 +3,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { internal } from "../_generated/api";
 import { authQuery, permissionMutation } from "../auth";
 
 /**
@@ -168,6 +169,18 @@ export const grantAccess = permissionMutation("documents:share")({
 				grantedAt: Date.now(),
 			});
 		}
+
+		// Schedule email notification to the recipient
+		await ctx.scheduler.runAfter(
+			0,
+			internal.documents.document_shared_action.sendDocumentSharedEmail,
+			{
+				documentId: args.documentId,
+				recipientUserId: args.userId,
+				sharedByUserId: currentUserId,
+				permissionLevel: args.permissionLevel,
+			},
+		);
 
 		return { success: true };
 	},
