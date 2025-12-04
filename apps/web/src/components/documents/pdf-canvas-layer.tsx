@@ -70,7 +70,9 @@ export function PdfCanvasLayer({
 	}));
 
 	// Handle stage click to deselect fields
-	const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+	const handleStageClick = (
+		e: Konva.KonvaEventObject<MouseEvent | TouchEvent>,
+	) => {
 		// Deselect when clicking on empty area
 		if (e.target === e.target.getStage()) {
 			onFieldSelect?.(null);
