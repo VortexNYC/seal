@@ -1,6 +1,12 @@
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
 import {
+	type ApiKeyScope,
+	apiKeysTable,
+	connectedAppsTable,
+	integrationActivityLogsTable,
+} from "./schemas/api_keys";
+import {
 	type AuditAction,
 	type AuditResourceType,
 	auditLogsTable,
@@ -59,12 +65,6 @@ import { subscriptionProductsTable } from "./schemas/subscription_products";
 import { subscriptionsTable } from "./schemas/subscriptions";
 import { userProfilesTable } from "./schemas/user_profiles";
 import { type UserStatus, usersTable } from "./schemas/users";
-import {
-	apiKeysTable,
-	type ApiKeyScope,
-	connectedAppsTable,
-	integrationActivityLogsTable,
-} from "./schemas/api_keys";
 
 // Re-export types for use in other files
 export type MemberStatus = UserStatus; // Member status uses the same values as user status

@@ -6,8 +6,8 @@
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
-import type { ApiKeyScope } from "@seal/backend/convex/schema";
 import type { Doc } from "@seal/backend/convex/_generated/dataModel";
+import type { ApiKeyScope } from "@seal/backend/convex/schema";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -69,14 +69,46 @@ export const Route = createFileRoute(
 	pendingComponent: FormSkeleton,
 });
 
-const AVAILABLE_SCOPES: { value: ApiKeyScope; label: string; description: string }[] = [
-	{ value: "documents:read", label: "Read Documents", description: "View documents and their metadata" },
-	{ value: "documents:write", label: "Write Documents", description: "Create and modify documents" },
-	{ value: "templates:read", label: "Read Templates", description: "View templates" },
-	{ value: "templates:write", label: "Write Templates", description: "Create and modify templates" },
-	{ value: "recipients:read", label: "Read Recipients", description: "View recipient information" },
-	{ value: "recipients:write", label: "Write Recipients", description: "Add and modify recipients" },
-	{ value: "signatures:read", label: "Read Signatures", description: "View signature data" },
+const AVAILABLE_SCOPES: {
+	value: ApiKeyScope;
+	label: string;
+	description: string;
+}[] = [
+	{
+		value: "documents:read",
+		label: "Read Documents",
+		description: "View documents and their metadata",
+	},
+	{
+		value: "documents:write",
+		label: "Write Documents",
+		description: "Create and modify documents",
+	},
+	{
+		value: "templates:read",
+		label: "Read Templates",
+		description: "View templates",
+	},
+	{
+		value: "templates:write",
+		label: "Write Templates",
+		description: "Create and modify templates",
+	},
+	{
+		value: "recipients:read",
+		label: "Read Recipients",
+		description: "View recipient information",
+	},
+	{
+		value: "recipients:write",
+		label: "Write Recipients",
+		description: "Add and modify recipients",
+	},
+	{
+		value: "signatures:read",
+		label: "Read Signatures",
+		description: "View signature data",
+	},
 ];
 
 function formatDate(timestamp: number): string {
@@ -165,7 +197,9 @@ function ApiKeysSection({ apiKeys }: { apiKeys: ApiKeyData[] }) {
 			setNewKey(result.key);
 			toast.success("API key created successfully");
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to create API key");
+			toast.error(
+				error instanceof Error ? error.message : "Failed to create API key",
+			);
 		}
 	};
 
@@ -191,7 +225,9 @@ function ApiKeysSection({ apiKeys }: { apiKeys: ApiKeyData[] }) {
 			await revokeApiKey({ keyId });
 			toast.success("API key revoked");
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to revoke API key");
+			toast.error(
+				error instanceof Error ? error.message : "Failed to revoke API key",
+			);
 		}
 	};
 
@@ -200,15 +236,15 @@ function ApiKeysSection({ apiKeys }: { apiKeys: ApiKeyData[] }) {
 			await deleteApiKey({ keyId });
 			toast.success("API key deleted");
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to delete API key");
+			toast.error(
+				error instanceof Error ? error.message : "Failed to delete API key",
+			);
 		}
 	};
 
 	const toggleScope = (scope: ApiKeyScope) => {
 		setSelectedScopes((prev) =>
-			prev.includes(scope)
-				? prev.filter((s) => s !== scope)
-				: [...prev, scope]
+			prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
 		);
 	};
 
@@ -223,10 +259,13 @@ function ApiKeysSection({ apiKeys }: { apiKeys: ApiKeyData[] }) {
 						<Key className="h-5 w-5" />
 						<CardTitle>API Keys</CardTitle>
 					</div>
-					<Dialog open={isCreating} onOpenChange={(open) => {
-						if (!open) handleCloseDialog();
-						else setIsCreating(true);
-					}}>
+					<Dialog
+						open={isCreating}
+						onOpenChange={(open) => {
+							if (!open) handleCloseDialog();
+							else setIsCreating(true);
+						}}
+					>
 						<DialogTrigger asChild>
 							<Button size="sm">
 								<Plus className="mr-1 h-4 w-4" />
@@ -268,7 +307,8 @@ function ApiKeysSection({ apiKeys }: { apiKeys: ApiKeyData[] }) {
 									<div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/20">
 										<AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
 										<p className="text-sm text-amber-800 dark:text-amber-200">
-											Make sure to copy your API key now. You won't be able to see it again!
+											Make sure to copy your API key now. You won't be able to
+											see it again!
 										</p>
 									</div>
 									<DialogFooter>
@@ -320,9 +360,7 @@ function ApiKeysSection({ apiKeys }: { apiKeys: ApiKeyData[] }) {
 										<Button variant="outline" onClick={handleCloseDialog}>
 											Cancel
 										</Button>
-										<Button onClick={handleCreateKey}>
-											Create Key
-										</Button>
+										<Button onClick={handleCreateKey}>Create Key</Button>
 									</DialogFooter>
 								</div>
 							)}
@@ -388,7 +426,9 @@ function ApiKeyRow({
 	const [showPrefix, setShowPrefix] = useState(false);
 
 	return (
-		<div className={`flex items-center justify-between rounded-lg border p-4 ${apiKey.revoked ? "opacity-60" : ""}`}>
+		<div
+			className={`flex items-center justify-between rounded-lg border p-4 ${apiKey.revoked ? "opacity-60" : ""}`}
+		>
 			<div className="space-y-1">
 				<div className="flex items-center gap-2">
 					<span className="font-medium">{apiKey.name}</span>
@@ -451,7 +491,8 @@ function ApiKeyRow({
 							<AlertDialogHeader>
 								<AlertDialogTitle>Revoke API Key</AlertDialogTitle>
 								<AlertDialogDescription>
-									This will immediately revoke access for this API key. Any applications using this key will stop working.
+									This will immediately revoke access for this API key. Any
+									applications using this key will stop working.
 								</AlertDialogDescription>
 							</AlertDialogHeader>
 							<AlertDialogFooter>
@@ -473,12 +514,16 @@ function ApiKeyRow({
 						<AlertDialogHeader>
 							<AlertDialogTitle>Delete API Key</AlertDialogTitle>
 							<AlertDialogDescription>
-								This will permanently delete this API key. This action cannot be undone.
+								This will permanently delete this API key. This action cannot be
+								undone.
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
 							<AlertDialogCancel>Cancel</AlertDialogCancel>
-							<AlertDialogAction onClick={onDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+							<AlertDialogAction
+								onClick={onDelete}
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							>
 								Delete Key
 							</AlertDialogAction>
 						</AlertDialogFooter>
@@ -497,7 +542,9 @@ function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
 			await disconnectApp({ appId });
 			toast.success("App disconnected");
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to disconnect app");
+			toast.error(
+				error instanceof Error ? error.message : "Failed to disconnect app",
+			);
 		}
 	};
 
@@ -546,7 +593,10 @@ function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
 									<p className="text-sm text-muted-foreground">
 										Connected {formatDate(app.connectedAt)}
 										{app.lastActivityAt && (
-											<> • Last active {formatRelativeTime(app.lastActivityAt)}</>
+											<>
+												{" "}
+												• Last active {formatRelativeTime(app.lastActivityAt)}
+											</>
 										)}
 									</p>
 									<div className="flex flex-wrap gap-1 pt-1">
@@ -566,14 +616,19 @@ function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
 									</AlertDialogTrigger>
 									<AlertDialogContent>
 										<AlertDialogHeader>
-											<AlertDialogTitle>Disconnect {app.appName}</AlertDialogTitle>
+											<AlertDialogTitle>
+												Disconnect {app.appName}
+											</AlertDialogTitle>
 											<AlertDialogDescription>
-												This will revoke {app.appName}'s access to your account. The app will no longer be able to access your data.
+												This will revoke {app.appName}'s access to your account.
+												The app will no longer be able to access your data.
 											</AlertDialogDescription>
 										</AlertDialogHeader>
 										<AlertDialogFooter>
 											<AlertDialogCancel>Cancel</AlertDialogCancel>
-											<AlertDialogAction onClick={() => handleDisconnect(app._id)}>
+											<AlertDialogAction
+												onClick={() => handleDisconnect(app._id)}
+											>
 												Disconnect
 											</AlertDialogAction>
 										</AlertDialogFooter>
@@ -588,7 +643,11 @@ function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
 	);
 }
 
-function ActivityLogsSection({ logs }: { logs: Doc<"integration_activity_logs">[] }) {
+function ActivityLogsSection({
+	logs,
+}: {
+	logs: Doc<"integration_activity_logs">[];
+}) {
 	return (
 		<Card>
 			<CardHeader>
