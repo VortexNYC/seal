@@ -7,8 +7,8 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import { Navigate, useLocation } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
-import type { ReactNode } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
 	buildOrganizationPath,
 	isPathWithinOrganization,
@@ -21,12 +21,44 @@ interface EnforceOrganizationProps {
 export function EnforceOrganization({ children }: EnforceOrganizationProps) {
 	const location = useLocation();
 	const organizationStatus = useQuery(api.check_membership.hasOrganization);
+	const ensureActiveOrganization = useMutation(
+		api.check_membership.ensureActiveOrganization,
+	);
 	const isOnboardingRoute = location.pathname.startsWith("/onboarding");
+
+	const [isFixingOrg, setIsFixingOrg] = useState(false);
+	const [fixedSlug, setFixedSlug] = useState<string | null>(null);
 
 	const isLoading = organizationStatus === undefined;
 	const hasOrganization = organizationStatus?.hasOrganization ?? false;
+	const needsActiveOrgFix = organizationStatus?.needsActiveOrgFix ?? false;
 	const activeOrganizationSlug =
-		organizationStatus?.activeOrganizationSlug ?? null;
+		fixedSlug ?? organizationStatus?.activeOrganizationSlug ?? null;
+
+	// Auto-fix activeOrganizationId if user has membership but no active org set
+	useEffect(() => {
+		if (!isLoading && needsActiveOrgFix && !isFixingOrg && !fixedSlug) {
+			setIsFixingOrg(true);
+			ensureActiveOrganization({})
+				.then((result) => {
+					if (result.success && result.activeOrganizationSlug) {
+						setFixedSlug(result.activeOrganizationSlug);
+					}
+				})
+				.catch((error) => {
+					console.error("Failed to fix active organization:", error);
+				})
+				.finally(() => {
+					setIsFixingOrg(false);
+				});
+		}
+	}, [
+		isLoading,
+		needsActiveOrgFix,
+		isFixingOrg,
+		fixedSlug,
+		ensureActiveOrganization,
+	]);
 
 	console.log("[EnforceOrganization]", {
 		pathname: location.pathname,
@@ -34,9 +66,11 @@ export function EnforceOrganization({ children }: EnforceOrganizationProps) {
 		hasOrganization,
 		activeOrganizationSlug,
 		isOnboardingRoute,
+		needsActiveOrgFix,
+		isFixingOrg,
 	});
 
-	if (isLoading) {
+	if (isLoading || isFixingOrg) {
 		console.log("[EnforceOrganization] Loading...");
 		return null;
 	}

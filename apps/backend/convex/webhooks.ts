@@ -818,6 +818,14 @@ export const handleInvitationAccepted = internalMutation({
 				`ℹ️ Membership already exists for user ${user.email}, updating invitation status`,
 			);
 
+			// Set as active organization if user doesn't have one
+			if (!user.activeOrganizationId) {
+				await ctx.db.patch(user._id, {
+					activeOrganizationId: invitation.organizationId,
+					updatedAt: Date.now(),
+				});
+			}
+
 			// Update invitation status
 			await ctx.db.patch(invitation._id, {
 				status: "accepted",
@@ -837,6 +845,14 @@ export const handleInvitationAccepted = internalMutation({
 			isPrimary: false,
 			permissions: [],
 		});
+
+		// Set as active organization if user doesn't have one
+		if (!user.activeOrganizationId) {
+			await ctx.db.patch(user._id, {
+				activeOrganizationId: invitation.organizationId,
+				updatedAt: Date.now(),
+			});
+		}
 
 		// Update invitation status
 		await ctx.db.patch(invitation._id, {
