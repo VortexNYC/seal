@@ -56,6 +56,10 @@ import {
 	type RecipientStatus as WorkflowRecipientStatus,
 } from "./schemas/recipients";
 import {
+	type SignatureType,
+	savedSignaturesTable,
+} from "./schemas/saved_signatures";
+import {
 	type FieldType,
 	signatureFieldsTable,
 } from "./schemas/signature_fields";
@@ -93,7 +97,12 @@ export type { ReminderStatus, ReminderType };
 export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";
 
 // Re-export signature workflow types
-export type { AuthenticationMethod, FieldType, WorkflowRecipientStatus };
+export type {
+	AuthenticationMethod,
+	FieldType,
+	SignatureType,
+	WorkflowRecipientStatus,
+};
 
 // Re-export template types
 export type { TemplateStatus };
@@ -124,6 +133,7 @@ export default defineSchema({
 	recipients: recipientsTable,
 	signature_fields: signatureFieldsTable,
 	signatures: signaturesTable,
+	saved_signatures: savedSignaturesTable,
 
 	// Audit and compliance
 	audit_logs: auditLogsTable,
