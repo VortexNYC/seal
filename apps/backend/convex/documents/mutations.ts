@@ -334,6 +334,69 @@ export const completeDocument = permissionMutation("documents:edit")({
 });
 
 /**
+ * Internal mutation to update the document hash
+ * Called by hashDocument action
+ *
+ * SEA-108: Digital Signature Implementation
+ */
+export const updateDocumentHash = internalMutation({
+	args: {
+		documentId: v.id("documents"),
+		documentHash: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const document = await ctx.db.get(args.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		await ctx.db.patch(args.documentId, {
+			documentHash: args.documentHash,
+			updatedAt: Date.now(),
+		});
+
+		return { success: true };
+	},
+});
+
+/**
+ * Internal mutation to update the signed storage ID
+ * Called by PDF signing actions
+ *
+ * SEA-108: Digital Signature Implementation
+ */
+export const updateSignedStorageId = internalMutation({
+	args: {
+		documentId: v.id("documents"),
+		signedStorageId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const document = await ctx.db.get(args.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		// Delete old signed PDF if it exists
+		if (document.signedStorageId) {
+			try {
+				await ctx.storage.delete(document.signedStorageId as Id<"_storage">);
+			} catch {
+				console.warn(
+					`Could not delete old signed PDF: ${document.signedStorageId}`,
+				);
+			}
+		}
+
+		await ctx.db.patch(args.documentId, {
+			signedStorageId: args.signedStorageId,
+			updatedAt: Date.now(),
+		});
+
+		return { success: true };
+	},
+});
+
+/**
  * Internal mutation to update the fillable storage ID
  * Called by generateAndStoreFillablePdf action
  *

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
-import { query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 import { checkRecipientComplete, getDocumentCompletionStatus } from "./helpers";
 
 /**
@@ -206,5 +206,21 @@ export const getSignatureCountByDocument = query({
 			.collect();
 
 		return signatures.length;
+	},
+});
+
+/**
+ * Internal query to get signatures by document ID without access control
+ * Used by actions that need to access signatures
+ *
+ * SEA-108: Digital Signature Implementation
+ */
+export const getSignaturesByDocumentInternal = internalQuery({
+	args: { documentId: v.id("documents") },
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query("signatures")
+			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+			.collect();
 	},
 });

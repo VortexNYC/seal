@@ -22,6 +22,17 @@ export const signaturesTable = defineTable({
 	value: v.optional(v.string()), // For text/date/checkbox fields
 	signatureImageUrl: v.optional(v.string()), // For signature fields (stored in Convex Storage)
 
+	// Cryptographic signature data (SEA-108)
+	signatureHash: v.optional(v.string()), // SHA-256 hash of signature data for verification
+	documentHashAtSigning: v.optional(v.string()), // Document hash at time of signing (tamper detection)
+	signatureMethod: v.optional(
+		v.union(
+			v.literal("draw"), // Hand-drawn signature
+			v.literal("type"), // Typed signature
+			v.literal("upload"), // Uploaded signature image
+		),
+	),
+
 	// Audit Information
 	signedAt: v.number(), // Timestamp when signed
 	ipAddress: v.string(), // IP address of signer

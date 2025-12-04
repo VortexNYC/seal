@@ -1,8 +1,16 @@
 import { v } from "convex/values";
 import { mutation } from "../_generated/server";
 import { logSignatureAction } from "../audit_logs/helpers";
+import { generateSignatureHash } from "../crypto/helpers";
 import { authenticationMethodTuple } from "../schemas/recipients";
 import { validateAgainstRules, validateSignature } from "./helpers";
+
+// Signature method type
+const signatureMethodTuple = v.union(
+	v.literal("draw"),
+	v.literal("type"),
+	v.literal("upload"),
+);
 
 /**
  * Signature Mutations
@@ -277,6 +285,8 @@ export const deleteSignature = mutation({
 /**
  * Save or update a field value using signing token (unauthenticated)
  * Used on the signing page to allow recipients to fill fields
+ *
+ * SEA-108: Now includes cryptographic signature hash for verification
  */
 export const saveFieldValue = mutation({
 	args: {
@@ -284,6 +294,7 @@ export const saveFieldValue = mutation({
 		fieldId: v.id("signature_fields"),
 		value: v.optional(v.string()),
 		signatureImageUrl: v.optional(v.string()),
+		signatureMethod: v.optional(signatureMethodTuple), // SEA-108: draw, type, or upload
 		ipAddress: v.string(),
 		userAgent: v.string(),
 	},
@@ -361,6 +372,18 @@ export const saveFieldValue = mutation({
 
 		let signatureId: import("../_generated/dataModel").Id<"signatures">;
 
+		// SEA-108: Compute signature hash for cryptographic verification
+		const signedAt = Date.now();
+		const signatureData = args.value || args.signatureImageUrl || "";
+		const documentHash = document.documentHash || "";
+		const signatureHash = generateSignatureHash(
+			signatureData,
+			recipient._id,
+			args.fieldId,
+			documentHash,
+			signedAt,
+		);
+
 		if (existingSignature) {
 			// Update existing signature
 			await ctx.db.patch(existingSignature._id, {
@@ -368,9 +391,13 @@ export const saveFieldValue = mutation({
 				...(args.signatureImageUrl !== undefined && {
 					signatureImageUrl: args.signatureImageUrl,
 				}),
-				signedAt: Date.now(),
+				signedAt,
 				ipAddress: args.ipAddress,
 				userAgent: args.userAgent,
+				// SEA-108: Update cryptographic fields
+				signatureHash,
+				documentHashAtSigning: documentHash,
+				signatureMethod: args.signatureMethod,
 				updatedAt: Date.now(),
 			});
 			signatureId = existingSignature._id;
@@ -390,19 +417,24 @@ export const saveFieldValue = mutation({
 				newValues: {
 					value: args.value,
 					signatureImageUrl: args.signatureImageUrl,
+					signatureHash,
 				},
 				ipAddress: args.ipAddress,
 				userAgent: args.userAgent,
 			});
 		} else {
-			// Create new signature
+			// Create new signature with cryptographic hash
 			signatureId = await ctx.db.insert("signatures", {
 				fieldId: args.fieldId,
 				recipientId: recipient._id,
 				documentId: field.documentId,
 				value: args.value,
 				signatureImageUrl: args.signatureImageUrl,
-				signedAt: Date.now(),
+				// SEA-108: Cryptographic signature data
+				signatureHash,
+				documentHashAtSigning: documentHash,
+				signatureMethod: args.signatureMethod,
+				signedAt,
 				ipAddress: args.ipAddress,
 				userAgent: args.userAgent,
 				createdAt: Date.now(),
@@ -420,6 +452,7 @@ export const saveFieldValue = mutation({
 				newValues: {
 					value: args.value,
 					signatureImageUrl: args.signatureImageUrl,
+					signatureHash,
 				},
 				ipAddress: args.ipAddress,
 				userAgent: args.userAgent,

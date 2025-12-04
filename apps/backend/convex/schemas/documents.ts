@@ -32,6 +32,10 @@ export const documentsTable = defineTable({
 	// Convex Storage reference
 	storageId: v.string(), // ID returned from storage.store() - Original uploaded PDF
 	fillableStorageId: v.optional(v.string()), // ID of the fillable PDF with embedded form fields (SEA-100)
+	signedStorageId: v.optional(v.string()), // ID of the digitally signed PDF (SEA-108)
+
+	// Cryptographic hash for document integrity verification (SEA-108)
+	documentHash: v.optional(v.string()), // SHA-256 hash of original PDF
 
 	// Sharing configuration
 	sharingMode: documentSharingModeTuple,
