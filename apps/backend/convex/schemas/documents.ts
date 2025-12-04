@@ -30,7 +30,8 @@ export const documentsTable = defineTable({
 	thumbnailDataUrl: v.optional(v.string()), // Base64 data URL of first page thumbnail (SEA-69)
 
 	// Convex Storage reference
-	storageId: v.string(), // ID returned from storage.store()
+	storageId: v.string(), // ID returned from storage.store() - Original uploaded PDF
+	fillableStorageId: v.optional(v.string()), // ID of the fillable PDF with embedded form fields (SEA-100)
 
 	// Sharing configuration
 	sharingMode: documentSharingModeTuple,

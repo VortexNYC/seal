@@ -84,6 +84,44 @@ export async function generateFillablePdf(
 							recipient,
 						);
 						break;
+
+					case "dropdown":
+						addDropdownField(
+							form,
+							page,
+							fieldName,
+							x,
+							pdfY,
+							width,
+							height,
+							field.properties?.options || [],
+						);
+						break;
+
+					case "radio":
+						addRadioField(
+							form,
+							page,
+							fieldName,
+							x,
+							pdfY,
+							width,
+							height,
+							field.properties?.options || [],
+						);
+						break;
+
+					case "attachment":
+						// Attachment fields are handled separately - draw a placeholder
+						addAttachmentPlaceholder(
+							page,
+							x,
+							pdfY,
+							width,
+							height,
+							helveticaBold,
+						);
+						break;
 				}
 			} catch (error) {
 				console.error(`Failed to add field ${fieldName}:`, error);
@@ -204,4 +242,105 @@ async function addSignaturePlaceholder(
 	// Note: To make this a true digital signature field, you would need to use
 	// pdflibAddPlaceholder from @signpdf/placeholder-pdf-lib
 	// However, that requires additional setup and is typically done during the signing process
+}
+
+/**
+ * Add a dropdown field to the PDF form
+ */
+function addDropdownField(
+	form: ReturnType<PDFDocument["getForm"]>,
+	page: PDFPage,
+	fieldName: string,
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+	options: string[],
+) {
+	const dropdown = form.createDropdown(fieldName);
+	dropdown.addOptions(options.length > 0 ? options : ["Select an option"]);
+	dropdown.addToPage(page, {
+		x,
+		y,
+		width,
+		height,
+		textColor: rgb(0, 0, 0),
+		backgroundColor: rgb(1, 1, 1),
+		borderColor: rgb(0.5, 0.5, 0.5),
+		borderWidth: 1,
+	});
+}
+
+/**
+ * Add a radio button group to the PDF form
+ * Radio buttons are arranged vertically within the field bounds
+ */
+function addRadioField(
+	form: ReturnType<PDFDocument["getForm"]>,
+	page: PDFPage,
+	fieldName: string,
+	x: number,
+	y: number,
+	_width: number,
+	height: number,
+	options: string[],
+) {
+	if (options.length === 0) {
+		options = ["Option 1", "Option 2"];
+	}
+
+	const radioGroup = form.createRadioGroup(fieldName);
+
+	// Calculate spacing for radio buttons
+	const optionHeight = Math.min(height / options.length, 20);
+	const radioSize = Math.min(optionHeight * 0.8, 12);
+
+	for (let i = 0; i < options.length; i++) {
+		const option = options[i];
+		if (!option) continue;
+		const optionY = y + height - (i + 1) * optionHeight;
+		radioGroup.addOptionToPage(option, page, {
+			x: x + 2,
+			y: optionY,
+			width: radioSize,
+			height: radioSize,
+			borderColor: rgb(0.5, 0.5, 0.5),
+			borderWidth: 1,
+		});
+	}
+}
+
+/**
+ * Add an attachment placeholder to the PDF
+ */
+async function addAttachmentPlaceholder(
+	page: PDFPage,
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+	font: PDFFont,
+) {
+	// Draw a dashed rectangle border for the attachment field
+	page.drawRectangle({
+		x,
+		y,
+		width,
+		height,
+		borderColor: rgb(0.6, 0.6, 0.6),
+		borderWidth: 1,
+		color: rgb(0.97, 0.97, 0.97),
+		borderDashArray: [4, 2],
+	});
+
+	// Add "Attach file" text
+	const attachText = "Attach file";
+	const textWidth = font.widthOfTextAtSize(attachText, 10);
+	page.drawText(attachText, {
+		x: x + (width - textWidth) / 2,
+		y: y + height / 2 - 3,
+		size: 10,
+		font,
+		color: rgb(0.5, 0.5, 0.5),
+	});
 }

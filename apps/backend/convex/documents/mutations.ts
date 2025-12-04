@@ -4,6 +4,8 @@
 
 import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import { internalMutation } from "../_generated/server";
 import { authMutation, permissionMutation } from "../auth";
 import { validateFile } from "./upload_config";
 import {
@@ -326,6 +328,44 @@ export const completeDocument = permissionMutation("documents:edit")({
 		// TODO: When email is implemented:
 		// - Notify all participants about completion
 		// - Send final signed document copy
+
+		return { success: true };
+	},
+});
+
+/**
+ * Internal mutation to update the fillable storage ID
+ * Called by generateAndStoreFillablePdf action
+ *
+ * SEA-100: Embed Fields in PDF
+ */
+export const updateFillableStorageId = internalMutation({
+	args: {
+		documentId: v.id("documents"),
+		fillableStorageId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const document = await ctx.db.get(args.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		// Delete the old fillable PDF if it exists
+		if (document.fillableStorageId) {
+			try {
+				await ctx.storage.delete(document.fillableStorageId as Id<"_storage">);
+			} catch {
+				// Ignore errors if the old file doesn't exist
+				console.warn(
+					`Could not delete old fillable PDF: ${document.fillableStorageId}`,
+				);
+			}
+		}
+
+		await ctx.db.patch(args.documentId, {
+			fillableStorageId: args.fillableStorageId,
+			updatedAt: Date.now(),
+		});
 
 		return { success: true };
 	},
