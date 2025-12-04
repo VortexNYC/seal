@@ -1,3 +1,4 @@
+import { useUser } from "@clerk/clerk-react";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -38,6 +39,7 @@ export const Route = createFileRoute(
 
 function MemberDetails() {
 	const { slug, memberId } = Route.useParams();
+	const { user } = useUser();
 	const navigate = useNavigate();
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -157,6 +159,19 @@ function MemberDetails() {
 		});
 	};
 
+	const isCurrentUser = () => {
+		if (!user) return false;
+
+		const currentEmail =
+			user.primaryEmailAddress?.emailAddress ||
+			user.emailAddresses[0]?.emailAddress;
+
+		return (
+			Boolean(currentEmail) &&
+			member.email.toLowerCase() === currentEmail.toLowerCase()
+		);
+	};
+
 	return (
 		<PageWrapper
 			title="Member Details"
@@ -184,8 +199,13 @@ function MemberDetails() {
 								</AvatarFallback>
 							</Avatar>
 							<div className="flex-1">
-								<CardTitle className="text-2xl">
-									{member.name || "Unknown User"}
+								<CardTitle className="flex items-center gap-2 text-2xl">
+									<span>{member.name || "Unknown User"}</span>
+									{isCurrentUser() ? (
+										<Badge variant="secondary" className="shrink-0">
+											You
+										</Badge>
+									) : null}
 								</CardTitle>
 								<CardDescription className="mt-1 flex items-center gap-2">
 									<Mail className="h-4 w-4" />

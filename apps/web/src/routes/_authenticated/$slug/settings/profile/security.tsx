@@ -47,7 +47,13 @@ function SecuritySettings() {
           }
         `}
 			</style>
-			<UserProfile />
+			<UserProfile
+				appearance={{
+					elements: {
+						cardBox: "!shadow-sm !bg-card !rounded-xl !border",
+					},
+				}}
+			/>
 		</div>
 	);
 }

@@ -32,7 +32,7 @@ export function PageWrapper({
 	const allActions = action ? [action, ...(actions || [])] : actions || [];
 
 	return (
-		<div className="flex h-full min-h-0 flex-col overflow-hidden">
+		<div className="flex h-full min-h-0 flex-col overflow-auto overscroll-contain scroll-pb-24 sm:scroll-pb-28">
 			<div className="sticky top-0 z-10 border-b bg-background">
 				<div className="flex min-h-16 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-0">
 					<div className="flex items-center gap-4 flex-1 min-w-0">
@@ -71,7 +71,10 @@ export function PageWrapper({
 					)}
 				</div>
 			</div>
-			<div className="flex-1 overflow-auto p-4 sm:p-6">{children}</div>
+			<div className="flex-1 min-h-0 p-4 sm:p-6 pb-12 sm:pb-16">
+				{children}
+				<div className="h-6 sm:h-10" aria-hidden />
+			</div>
 		</div>
 	);
 }

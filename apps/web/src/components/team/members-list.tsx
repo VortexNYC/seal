@@ -4,6 +4,7 @@
  * Displays organization members in a table with role management
  */
 
+import { useUser } from "@clerk/clerk-react";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { Filter, SearchIcon, UsersIcon, X } from "lucide-react";
@@ -57,6 +58,7 @@ export function MembersList({
 	canManageRoles,
 	canRemove: _canRemove,
 }: MembersListProps) {
+	const { user } = useUser();
 	const { slug } = useParams({ strict: false });
 	const navigate = useNavigate();
 	const [searchQuery, setSearchQuery] = useState("");
@@ -142,6 +144,19 @@ export function MembersList({
 			<Badge variant={variants[status]} className="capitalize">
 				{status}
 			</Badge>
+		);
+	};
+
+	const isCurrentUser = (member: Member) => {
+		if (!user) return false;
+
+		const currentEmail =
+			user.primaryEmailAddress?.emailAddress ||
+			user.emailAddresses[0]?.emailAddress;
+
+		return (
+			Boolean(currentEmail) &&
+			member.email.toLowerCase() === currentEmail.toLowerCase()
 		);
 	};
 
@@ -303,8 +318,15 @@ export function MembersList({
 													</AvatarFallback>
 												</Avatar>
 												<div className="min-w-0">
-													<div className="font-medium truncate">
-														{member.name || "Unknown"}
+													<div className="flex items-center gap-2 font-medium truncate">
+														<span className="truncate">
+															{member.name || "Unknown"}
+														</span>
+														{isCurrentUser(member) ? (
+															<Badge variant="secondary" className="shrink-0">
+																You
+															</Badge>
+														) : null}
 													</div>
 													<div className="text-xs sm:text-sm text-muted-foreground truncate">
 														{member.email}

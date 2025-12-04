@@ -646,9 +646,9 @@ function DocumentsList({
 									</div>
 									<CardHeader>
 										<div className="flex items-start justify-between">
-											<div className="flex items-center gap-2">
+											<div className="flex items-start gap-2 min-w-0 flex-1">
 												<FileIcon className="h-5 w-5 text-muted-foreground" />
-												<CardTitle className="text-base truncate">
+												<CardTitle className="text-base leading-5 line-clamp-2 break-all">
 													<HighlightedText
 														text={doc.name}
 														matches={matchesMap.get(doc._id)}
@@ -661,7 +661,7 @@ function DocumentsList({
 													<Button
 														variant="ghost"
 														size="icon"
-														className="h-8 w-8"
+														className="h-8 w-8 shrink-0"
 														onClick={(e) => e.stopPropagation()}
 													>
 														<MoreVerticalIcon className="h-4 w-4" />
