@@ -32,6 +32,7 @@ import {
 import { Suspense, useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
+import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDialog } from "@/components/documents/share-dialog";
 import { UploadDialog } from "@/components/documents/upload-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
@@ -514,17 +515,12 @@ function DocumentsList({
 											}
 										>
 											<TableCell>
-												<div className="w-12 h-16 sm:w-16 sm:h-20 bg-muted rounded border border-border flex items-center justify-center overflow-hidden">
-													{doc.thumbnailDataUrl ? (
-														<img
-															src={doc.thumbnailDataUrl}
-															alt={`${doc.name} thumbnail`}
-															className="w-full h-full object-cover"
-														/>
-													) : (
-														<FileIcon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
-													)}
-												</div>
+												<DocumentThumbnail
+													documentId={doc._id}
+													storageId={doc.storageId}
+													thumbnailDataUrl={doc.thumbnailDataUrl}
+													name={doc.name}
+												/>
 											</TableCell>
 											<TableCell>
 												<div>
@@ -639,15 +635,15 @@ function DocumentsList({
 										})
 									}
 								>
-									{doc.thumbnailDataUrl && (
-										<div className="w-full h-32 bg-muted flex items-center justify-center overflow-hidden border-b">
-											<img
-												src={doc.thumbnailDataUrl}
-												alt={`${doc.name} thumbnail`}
-												className="max-w-full max-h-full object-contain"
-											/>
-										</div>
-									)}
+									<div className="w-full h-32 bg-muted flex items-center justify-center overflow-hidden border-b">
+										<DocumentThumbnail
+											documentId={doc._id}
+											storageId={doc.storageId}
+											thumbnailDataUrl={doc.thumbnailDataUrl}
+											name={doc.name}
+											className="w-full h-full"
+										/>
+									</div>
 									<CardHeader>
 										<div className="flex items-start justify-between">
 											<div className="flex items-center gap-2">
