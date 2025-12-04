@@ -100,6 +100,7 @@ export const addRecipients = permissionMutation("documents:edit")({
  * Remove a recipient from a document
  * Can only be called on draft documents by the owner
  * Requires documents:edit permission
+ * Also removes all signature fields assigned to the recipient
  */
 export const removeRecipient = permissionMutation("documents:edit")({
 	args: {
@@ -128,10 +129,20 @@ export const removeRecipient = permissionMutation("documents:edit")({
 			throw new ConvexError("Cannot remove recipients from deleted document");
 		}
 
-		// 5. Delete the recipient
+		// 5. Find and delete all signature fields assigned to this recipient
+		const fieldsToDelete = await ctx.db
+			.query("signature_fields")
+			.withIndex("by_recipient", (q) => q.eq("recipientId", args.recipientId))
+			.collect();
+
+		for (const field of fieldsToDelete) {
+			await ctx.db.delete(field._id);
+		}
+
+		// 6. Delete the recipient
 		await ctx.db.delete(args.recipientId);
 
-		return { success: true };
+		return { success: true, deletedFieldsCount: fieldsToDelete.length };
 	},
 });
 

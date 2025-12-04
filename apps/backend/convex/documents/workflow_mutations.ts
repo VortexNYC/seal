@@ -43,7 +43,72 @@ export const sendDocument = permissionMutation("documents:edit")({
 			);
 		}
 
-		// 4. Update document status
+		// 4. Share document with recipients who have existing accounts
+		let sharedWithCount = 0;
+		for (const recipient of recipients) {
+			// Look up user by email
+			const existingUser = await ctx.db
+				.query("users")
+				.withIndex("by_email", (q) => q.eq("email", recipient.email))
+				.first();
+
+			if (existingUser) {
+				// Check if user is a member of the document's organization
+				const orgMember = await ctx.db
+					.query("organization_members")
+					.withIndex("by_user_organization", (q) =>
+						q
+							.eq("userId", existingUser._id)
+							.eq("organizationId", document.organizationId),
+					)
+					.first();
+
+				if (orgMember && orgMember.status === "active") {
+					// Check if access already exists
+					const existingAccess = await ctx.db
+						.query("document_access")
+						.withIndex("by_document_user", (q) =>
+							q
+								.eq("documentId", args.documentId)
+								.eq("userId", existingUser._id),
+						)
+						.first();
+
+					// Only create access if it doesn't exist or was revoked
+					if (!existingAccess || existingAccess.revokedAt !== undefined) {
+						if (existingAccess) {
+							// Reactivate revoked access
+							await ctx.db.patch(existingAccess._id, {
+								permissionLevel: "view",
+								grantedBy: userId,
+								grantedAt: Date.now(),
+								revokedAt: undefined,
+							});
+						} else {
+							// Create new access record
+							await ctx.db.insert("document_access", {
+								documentId: args.documentId,
+								userId: existingUser._id,
+								permissionLevel: "view",
+								grantedBy: userId,
+								grantedAt: Date.now(),
+							});
+						}
+						sharedWithCount++;
+					}
+				}
+
+				// Link the userId to the recipient record for easier tracking
+				if (!recipient.userId) {
+					await ctx.db.patch(recipient._id, {
+						userId: existingUser._id,
+						updatedAt: Date.now(),
+					});
+				}
+			}
+		}
+
+		// 5. Update document status
 		const now = Date.now();
 		await ctx.db.patch(args.documentId, {
 			status: "active",
@@ -51,7 +116,7 @@ export const sendDocument = permissionMutation("documents:edit")({
 			updatedAt: now,
 		});
 
-		// 5. Schedule automated reminders if requested
+		// 6. Schedule automated reminders if requested
 		if (args.autoRemindAfterDays && args.autoRemindAfterDays > 0) {
 			// Schedule reminder for each pending recipient
 			for (const recipient of recipients) {
@@ -91,6 +156,7 @@ export const sendDocument = permissionMutation("documents:edit")({
 		return {
 			success: true,
 			recipientCount: recipients.length,
+			sharedWithCount,
 			remindersScheduled: args.autoRemindAfterDays ? recipients.length : 0,
 		};
 	},

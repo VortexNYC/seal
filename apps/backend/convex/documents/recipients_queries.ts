@@ -162,9 +162,37 @@ export const getRecipientProgress = authQuery({
 			throw new ConvexError("Document not found");
 		}
 
-		// 2. Verify ownership
-		if (document.ownerId !== userId) {
-			throw new ConvexError("Only the document owner can view progress");
+		// 2. Verify access (owner or has document_access)
+		let hasAccess = document.ownerId === userId;
+
+		if (!hasAccess) {
+			// Check if user has access via document_access
+			if (document.sharingMode === "workspace") {
+				// Check organization membership
+				const member = await ctx.db
+					.query("organization_members")
+					.withIndex("by_user_organization", (q) =>
+						q
+							.eq("userId", userId)
+							.eq("organizationId", document.organizationId),
+					)
+					.first();
+				hasAccess = member !== null && member.status === "active";
+			} else if (document.sharingMode === "specific") {
+				const access = await ctx.db
+					.query("document_access")
+					.withIndex("by_document_user", (q) =>
+						q.eq("documentId", args.documentId).eq("userId", userId),
+					)
+					.first();
+				hasAccess = access !== null && access.revokedAt === undefined;
+			}
+		}
+
+		if (!hasAccess) {
+			throw new ConvexError(
+				"You don't have access to view this document's progress",
+			);
 		}
 
 		// 3. Get all recipients

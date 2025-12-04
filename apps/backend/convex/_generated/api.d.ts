@@ -50,6 +50,7 @@ import type * as documents_workflow_mutations from "../documents/workflow_mutati
 import type * as emails_email_logs from "../emails/email_logs.js";
 import type * as emails_email_retry from "../emails/email_retry.js";
 import type * as emails_user_email_actions from "../emails/user_email_actions.js";
+import type * as fix_user_org from "../fix_user_org.js";
 import type * as http from "../http.js";
 import type * as organization_roles_helpers from "../organization_roles/helpers.js";
 import type * as organization_roles_migrations from "../organization_roles/migrations.js";
@@ -152,6 +153,7 @@ declare const fullApi: ApiFromModules<{
   "emails/email_logs": typeof emails_email_logs;
   "emails/email_retry": typeof emails_email_retry;
   "emails/user_email_actions": typeof emails_user_email_actions;
+  fix_user_org: typeof fix_user_org;
   http: typeof http;
   "organization_roles/helpers": typeof organization_roles_helpers;
   "organization_roles/migrations": typeof organization_roles_migrations;

@@ -34,6 +34,7 @@ export const documentRecipientsTable = defineTable({
 	// Recipient information
 	email: v.string(),
 	name: v.optional(v.string()),
+	userId: v.optional(v.id("users")), // Link to user account if recipient has one
 
 	// Role and status
 	role: recipientRoleTuple,

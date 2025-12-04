@@ -62,6 +62,7 @@ async function authorizeDocumentOwner(
 /**
  * Internal mutation to update document status to sent
  * SEA-119: Also saves optional deadline
+ * Also shares document with recipients who have existing user accounts
  */
 export const markDocumentAsSent = internalMutation({
 	args: {
@@ -72,6 +73,85 @@ export const markDocumentAsSent = internalMutation({
 		const document = await ctx.db.get(args.documentId);
 		if (!document || document.status === "deleted") {
 			throw new ConvexError("Document not found");
+		}
+
+		// Get all recipients for this document
+		const recipients = await ctx.db
+			.query("document_recipients")
+			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+			.collect();
+
+		// Share document with recipients who have existing accounts
+		let sharedWithAnyUser = false;
+		for (const recipient of recipients) {
+			// Look up user by email
+			const existingUser = await ctx.db
+				.query("users")
+				.withIndex("by_email", (q) => q.eq("email", recipient.email))
+				.first();
+
+			if (existingUser) {
+				// Check if user is a member of the document's organization
+				const orgMember = await ctx.db
+					.query("organization_members")
+					.withIndex("by_user_organization", (q) =>
+						q
+							.eq("userId", existingUser._id)
+							.eq("organizationId", document.organizationId),
+					)
+					.first();
+
+				if (orgMember && orgMember.status === "active") {
+					// Check if access already exists
+					const existingAccess = await ctx.db
+						.query("document_access")
+						.withIndex("by_document_user", (q) =>
+							q
+								.eq("documentId", args.documentId)
+								.eq("userId", existingUser._id),
+						)
+						.first();
+
+					// Only create access if it doesn't exist or was revoked
+					if (!existingAccess || existingAccess.revokedAt !== undefined) {
+						if (existingAccess) {
+							// Reactivate revoked access
+							await ctx.db.patch(existingAccess._id, {
+								permissionLevel: "view",
+								grantedBy: document.ownerId,
+								grantedAt: Date.now(),
+								revokedAt: undefined,
+							});
+						} else {
+							// Create new access record
+							await ctx.db.insert("document_access", {
+								documentId: args.documentId,
+								userId: existingUser._id,
+								permissionLevel: "view",
+								grantedBy: document.ownerId,
+								grantedAt: Date.now(),
+							});
+						}
+						sharedWithAnyUser = true;
+					}
+				}
+
+				// Link the userId to the recipient record for easier tracking
+				if (!recipient.userId) {
+					await ctx.db.patch(recipient._id, {
+						userId: existingUser._id,
+						updatedAt: Date.now(),
+					});
+				}
+			}
+		}
+
+		// If we shared with any user, update the sharing mode to "specific"
+		// so the document_access records are respected by queries
+		if (sharedWithAnyUser && document.sharingMode === "private") {
+			await ctx.db.patch(args.documentId, {
+				sharingMode: "specific",
+			});
 		}
 
 		// Update document status to active and workflow status to sent
