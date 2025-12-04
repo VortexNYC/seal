@@ -27,7 +27,7 @@ import {
 	TypeIcon,
 	XIcon,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -106,6 +106,33 @@ export function SignatureCapture({
 		useState<SignatureFont>("dancing-script");
 	const [uploadedImage, setUploadedImage] = useState<string | null>(null);
 	const signaturePadRef = useRef<SignatureCanvas>(null);
+	const canvasContainerRef = useRef<HTMLDivElement>(null);
+
+	// SEA-116: Responsive canvas width for mobile
+	const [canvasWidth, setCanvasWidth] = useState(600);
+
+	// SEA-116: Update canvas width on mount and resize
+	useEffect(() => {
+		const updateCanvasWidth = () => {
+			if (canvasContainerRef.current) {
+				// Get container width minus padding (16px on each side)
+				const containerWidth = canvasContainerRef.current.offsetWidth - 4;
+				// Clamp between 280px (mobile min) and 600px (desktop max)
+				setCanvasWidth(Math.max(280, Math.min(600, containerWidth)));
+			}
+		};
+
+		updateCanvasWidth();
+
+		// Handle resize and orientation change
+		window.addEventListener("resize", updateCanvasWidth);
+		window.addEventListener("orientationchange", updateCanvasWidth);
+
+		return () => {
+			window.removeEventListener("resize", updateCanvasWidth);
+			window.removeEventListener("orientationchange", updateCanvasWidth);
+		};
+	}, []);
 
 	// Undo history for drawn signatures
 	const [signatureHistory, setSignatureHistory] = useState<string[]>([]);
@@ -378,26 +405,39 @@ export function SignatureCapture({
 					value={activeTab}
 					onValueChange={(v) => setActiveTab(v as TabType)}
 				>
+					{/* SEA-116: Mobile-optimized tabs with icon-only on small screens */}
 					<TabsList
-						className={`grid w-full ${showLibrary ? "grid-cols-4" : "grid-cols-3"}`}
+						className={`grid w-full ${showLibrary ? "grid-cols-4" : "grid-cols-3"} h-auto`}
 					>
 						{showLibrary && (
-							<TabsTrigger value="saved" className="flex items-center gap-2">
-								<BookmarkIcon className="h-4 w-4" />
-								Saved
+							<TabsTrigger
+								value="saved"
+								className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px]"
+							>
+								<BookmarkIcon className="h-4 w-4 shrink-0" />
+								<span className="hidden sm:inline">Saved</span>
 							</TabsTrigger>
 						)}
-						<TabsTrigger value="drawn" className="flex items-center gap-2">
-							<PencilIcon className="h-4 w-4" />
-							Draw
+						<TabsTrigger
+							value="drawn"
+							className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px]"
+						>
+							<PencilIcon className="h-4 w-4 shrink-0" />
+							<span className="hidden sm:inline">Draw</span>
 						</TabsTrigger>
-						<TabsTrigger value="typed" className="flex items-center gap-2">
-							<TypeIcon className="h-4 w-4" />
-							Type
+						<TabsTrigger
+							value="typed"
+							className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px]"
+						>
+							<TypeIcon className="h-4 w-4 shrink-0" />
+							<span className="hidden sm:inline">Type</span>
 						</TabsTrigger>
-						<TabsTrigger value="uploaded" className="flex items-center gap-2">
-							<ImageIcon className="h-4 w-4" />
-							Upload
+						<TabsTrigger
+							value="uploaded"
+							className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px]"
+						>
+							<ImageIcon className="h-4 w-4 shrink-0" />
+							<span className="hidden sm:inline">Upload</span>
 						</TabsTrigger>
 					</TabsList>
 
@@ -487,24 +527,31 @@ export function SignatureCapture({
 					<TabsContent value="drawn" className="space-y-4">
 						<div className="space-y-2">
 							<Label>Draw your signature</Label>
-							<div className="border-2 border-dashed border-gray-300 rounded-lg bg-white">
+							{/* SEA-116: Responsive container for signature canvas */}
+							<div
+								ref={canvasContainerRef}
+								className="border-2 border-dashed border-gray-300 rounded-lg bg-white overflow-hidden"
+							>
 								<SignatureCanvas
 									ref={signaturePadRef}
 									canvasProps={{
-										width: 600,
+										width: canvasWidth,
 										height: 200,
-										className: "w-full h-[200px] cursor-crosshair touch-none",
+										className:
+											"w-full h-[200px] cursor-crosshair touch-none select-none",
+										style: { touchAction: "none" },
 									}}
 									backgroundColor="rgb(255, 255, 255)"
 									penColor="rgb(0, 0, 0)"
 								/>
 							</div>
+							{/* SEA-116: Larger touch targets for mobile */}
 							<div className="flex gap-2">
 								<Button
 									variant="outline"
-									size="sm"
+									size="default"
 									onClick={handleUndoDrawn}
-									className="flex-1"
+									className="flex-1 h-11 min-h-[44px]"
 									disabled={signatureHistory.length === 0}
 								>
 									<RotateCcwIcon className="h-4 w-4 mr-2" />
@@ -512,9 +559,9 @@ export function SignatureCapture({
 								</Button>
 								<Button
 									variant="outline"
-									size="sm"
+									size="default"
 									onClick={handleClearDrawn}
-									className="flex-1"
+									className="flex-1 h-11 min-h-[44px]"
 								>
 									<XIcon className="h-4 w-4 mr-2" />
 									Clear
@@ -530,12 +577,16 @@ export function SignatureCapture({
 					<TabsContent value="typed" className="space-y-4">
 						<div className="space-y-2">
 							<Label htmlFor="typed-name">Type your full name</Label>
+							{/* SEA-116: Larger input for mobile with proper virtual keyboard handling */}
 							<Input
 								id="typed-name"
 								value={typedName}
 								onChange={(e) => setTypedName(e.target.value)}
 								placeholder="John Doe"
-								className="text-lg"
+								className="text-lg h-12 sm:h-10"
+								autoComplete="name"
+								autoCapitalize="words"
+								enterKeyHint="done"
 							/>
 						</div>
 						<div className="space-y-2">
@@ -544,7 +595,7 @@ export function SignatureCapture({
 								value={selectedFont}
 								onValueChange={(v) => setSelectedFont(v as SignatureFont)}
 							>
-								<SelectTrigger id="font-select">
+								<SelectTrigger id="font-select" className="h-11 sm:h-10">
 									<SelectValue placeholder="Select a font" />
 								</SelectTrigger>
 								<SelectContent>
@@ -559,9 +610,10 @@ export function SignatureCapture({
 							</Select>
 						</div>
 						{typedName && (
-							<div className="border-2 border-gray-300 rounded-lg bg-white p-8">
+							<div className="border-2 border-gray-300 rounded-lg bg-white p-4 sm:p-8 overflow-hidden">
+								{/* SEA-116: Responsive font size for mobile */}
 								<p
-									className="text-5xl text-center"
+									className="text-3xl sm:text-5xl text-center truncate"
 									style={{ fontFamily: currentFontFamily }}
 								>
 									{typedName}
@@ -602,9 +654,13 @@ export function SignatureCapture({
 					</TabsContent>
 				</Tabs>
 
-				{/* Action Buttons */}
-				<div className="flex gap-4 mt-6">
-					<Button variant="outline" onClick={onCancel} className="flex-1">
+				{/* SEA-116: Mobile-optimized action buttons with proper touch targets */}
+				<div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 mt-6">
+					<Button
+						variant="outline"
+						onClick={onCancel}
+						className="flex-1 h-12 sm:h-11 min-h-[44px]"
+					>
 						Cancel
 					</Button>
 					<Button
@@ -614,7 +670,7 @@ export function SignatureCapture({
 							else if (activeTab === "typed") handleTypedSignature();
 							else handleUploadedSignature();
 						}}
-						className="flex-1"
+						className="flex-1 h-12 sm:h-11 min-h-[44px]"
 					>
 						<CheckIcon className="h-4 w-4 mr-2" />
 						Accept & Sign
