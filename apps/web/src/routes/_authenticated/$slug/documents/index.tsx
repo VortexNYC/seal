@@ -13,6 +13,7 @@ import {
 	ArrowDownIcon,
 	ArrowUpIcon,
 	BanIcon,
+	CalendarIcon,
 	ChevronLeftIcon,
 	ChevronRightIcon,
 	DownloadIcon,
@@ -29,6 +30,7 @@ import {
 	XIcon,
 } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 import { ShareDialog } from "@/components/documents/share-dialog";
 import { UploadDialog } from "@/components/documents/upload-dialog";
@@ -47,6 +49,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
 	Card,
 	CardContent,
@@ -62,6 +65,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import {
 	Table,
 	TableBody,
@@ -152,6 +160,8 @@ interface DocumentsListProps {
 	sortField: SortField;
 	sortDirection: SortDirection;
 	searchQuery: string;
+	/** SEA-74: Date range filter */
+	dateRange: DateRange | undefined;
 	onShareClick: (documentId: Id<"documents">) => void;
 	onSortChange: (field: SortField) => void;
 	/** SEA-140: Callback to open upload dialog from empty state */
@@ -166,6 +176,7 @@ function DocumentsList({
 	sortField,
 	sortDirection,
 	searchQuery,
+	dateRange,
 	onShareClick,
 	onSortChange,
 	onUploadClick,
@@ -186,13 +197,31 @@ function DocumentsList({
 	);
 
 	// Filter documents by workflow status on the client side
-	const filteredByStatus =
-		workflowStatusFilter === "all"
-			? allDocuments
-			: allDocuments.filter((doc) => {
-					const docWorkflowStatus = doc.workflowStatus ?? "draft";
-					return docWorkflowStatus === workflowStatusFilter;
-				});
+	const filteredByStatus = useMemo(() => {
+		let filtered = allDocuments;
+
+		// Apply workflow status filter
+		if (workflowStatusFilter !== "all") {
+			filtered = filtered.filter((doc) => {
+				const docWorkflowStatus = doc.workflowStatus ?? "draft";
+				return docWorkflowStatus === workflowStatusFilter;
+			});
+		}
+
+		// SEA-74: Apply date range filter
+		if (dateRange?.from) {
+			const fromDate = new Date(dateRange.from);
+			fromDate.setHours(0, 0, 0, 0);
+			filtered = filtered.filter((doc) => doc.createdAt >= fromDate.getTime());
+		}
+		if (dateRange?.to) {
+			const toDate = new Date(dateRange.to);
+			toDate.setHours(23, 59, 59, 999);
+			filtered = filtered.filter((doc) => doc.createdAt <= toDate.getTime());
+		}
+
+		return filtered;
+	}, [allDocuments, workflowStatusFilter, dateRange]);
 
 	// SEA-73: Fuzzy search with Fuse.js
 	const fuse = useMemo(
@@ -265,7 +294,14 @@ function DocumentsList({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset page when filters/search change
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [filter, workflowStatusFilter, sortField, sortDirection, searchQuery]);
+	}, [
+		filter,
+		workflowStatusFilter,
+		sortField,
+		sortDirection,
+		searchQuery,
+		dateRange,
+	]);
 
 	const deleteDocument = useMutation(api.documents.mutations.deleteDocument);
 	const sendDocument = useMutation(api.documents.mutations.sendDocument);
@@ -414,7 +450,11 @@ function DocumentsList({
 
 	// SEA-140: Determine if we're showing filtered results vs truly empty
 	const hasFiltersOrSearch =
-		searchQuery.trim() || filter !== "all" || workflowStatusFilter !== "all";
+		searchQuery.trim() ||
+		filter !== "all" ||
+		workflowStatusFilter !== "all" ||
+		dateRange?.from ||
+		dateRange?.to;
 
 	return (
 		<>
@@ -826,6 +866,9 @@ function DocumentsPage() {
 	// SEA-73: Fuzzy search state
 	const [searchQuery, setSearchQuery] = useState("");
 
+	// SEA-74: Date range filter state
+	const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
 	const handleSortChange = (field: SortField) => {
 		if (sortField === field) {
 			// Toggle direction if clicking same field
@@ -929,7 +972,7 @@ function DocumentsPage() {
 					</div>
 
 					{/* Workflow Status Filters */}
-					<div className="flex gap-2 flex-wrap">
+					<div className="flex gap-2 flex-wrap items-center">
 						<span className="text-sm text-muted-foreground self-center">
 							Status:
 						</span>
@@ -981,7 +1024,150 @@ function DocumentsPage() {
 						>
 							Cancelled
 						</Button>
+
+						{/* SEA-74: Date Range Filter */}
+						<div className="border-l pl-2 ml-2">
+							<Popover>
+								<PopoverTrigger asChild>
+									<Button
+										variant={dateRange?.from ? "default" : "outline"}
+										size="sm"
+										className="gap-2"
+									>
+										<CalendarIcon className="h-4 w-4" />
+										{dateRange?.from ? (
+											dateRange.to ? (
+												<>
+													{dateRange.from.toLocaleDateString("en-US", {
+														month: "short",
+														day: "numeric",
+													})}{" "}
+													-{" "}
+													{dateRange.to.toLocaleDateString("en-US", {
+														month: "short",
+														day: "numeric",
+													})}
+												</>
+											) : (
+												dateRange.from.toLocaleDateString("en-US", {
+													month: "short",
+													day: "numeric",
+													year: "numeric",
+												})
+											)
+										) : (
+											"Date Range"
+										)}
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent className="w-auto p-0" align="start">
+									<Calendar
+										mode="range"
+										selected={dateRange}
+										onSelect={setDateRange}
+										numberOfMonths={2}
+									/>
+									{dateRange?.from && (
+										<div className="p-3 border-t">
+											<Button
+												variant="outline"
+												size="sm"
+												className="w-full"
+												onClick={() => setDateRange(undefined)}
+											>
+												Clear Date Range
+											</Button>
+										</div>
+									)}
+								</PopoverContent>
+							</Popover>
+						</div>
 					</div>
+
+					{/* SEA-75: Active Filter Chips */}
+					{(searchQuery.trim() ||
+						filter !== "all" ||
+						workflowStatusFilter !== "all" ||
+						dateRange?.from) && (
+						<div className="flex items-center gap-2 flex-wrap">
+							<span className="text-sm text-muted-foreground">
+								Active filters:
+							</span>
+							{searchQuery.trim() && (
+								<Badge variant="secondary" className="gap-1 pl-2">
+									Search: "{searchQuery}"
+									<button
+										type="button"
+										onClick={() => setSearchQuery("")}
+										className="ml-1 rounded-full hover:bg-muted p-0.5"
+									>
+										<XIcon className="h-3 w-3" />
+									</button>
+								</Badge>
+							)}
+							{filter !== "all" && (
+								<Badge variant="secondary" className="gap-1 pl-2 capitalize">
+									{filter === "owned" ? "My Documents" : "Shared with Me"}
+									<button
+										type="button"
+										onClick={() => setFilter("all")}
+										className="ml-1 rounded-full hover:bg-muted p-0.5"
+									>
+										<XIcon className="h-3 w-3" />
+									</button>
+								</Badge>
+							)}
+							{workflowStatusFilter !== "all" && (
+								<Badge variant="secondary" className="gap-1 pl-2 capitalize">
+									Status:{" "}
+									{workflowStatusFilter === "in_progress"
+										? "In Progress"
+										: workflowStatusFilter}
+									<button
+										type="button"
+										onClick={() => setWorkflowStatusFilter("all")}
+										className="ml-1 rounded-full hover:bg-muted p-0.5"
+									>
+										<XIcon className="h-3 w-3" />
+									</button>
+								</Badge>
+							)}
+							{dateRange?.from && (
+								<Badge variant="secondary" className="gap-1 pl-2">
+									Date:{" "}
+									{dateRange.from.toLocaleDateString("en-US", {
+										month: "short",
+										day: "numeric",
+									})}
+									{dateRange.to &&
+										` - ${dateRange.to.toLocaleDateString("en-US", {
+											month: "short",
+											day: "numeric",
+										})}`}
+									<button
+										type="button"
+										onClick={() => setDateRange(undefined)}
+										className="ml-1 rounded-full hover:bg-muted p-0.5"
+									>
+										<XIcon className="h-3 w-3" />
+									</button>
+								</Badge>
+							)}
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-6 px-2 text-muted-foreground"
+								onClick={() => {
+									setSearchQuery("");
+									setFilter("all");
+									setWorkflowStatusFilter("all");
+									setDateRange(undefined);
+								}}
+							>
+								Clear all
+							</Button>
+						</div>
+					)}
 				</div>
 
 				{/* Documents List with Suspense */}
@@ -1012,6 +1198,7 @@ function DocumentsPage() {
 						sortField={sortField}
 						sortDirection={sortDirection}
 						searchQuery={searchQuery}
+						dateRange={dateRange}
 						onShareClick={handleShareClick}
 						onSortChange={handleSortChange}
 						onUploadClick={() => setUploadOpen(true)}
