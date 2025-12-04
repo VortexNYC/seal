@@ -19,6 +19,7 @@ import {
 	InfoIcon,
 	MailIcon,
 	PlusIcon,
+	SaveIcon,
 	SendIcon,
 	Trash2Icon,
 	UserPlusIcon,
@@ -50,6 +51,7 @@ import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
 import { PdfZoomControls } from "../../../../components/documents/pdf-zoom-controls";
 import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
+import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
 import type { DocumentWorkflowStatus } from "../../../../components/documents/workflow-status-badge";
 import { Button } from "../../../../components/ui/button";
@@ -69,6 +71,7 @@ function DocumentDetailPage() {
 	const router = useRouter();
 	const [addRecipientOpen, setAddRecipientOpen] = useState(false);
 	const [sendDocumentOpen, setSendDocumentOpen] = useState(false);
+	const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
 
 	// SEA-72: PDF viewer state
 	const [numPages, setNumPages] = useState<number | null>(null);
@@ -909,6 +912,16 @@ function DocumentDetailPage() {
 							},
 						]
 					: []),
+				...(canEdit && signatureFields.length > 0
+					? [
+							{
+								label: "Save as Template",
+								onClick: () => setSaveAsTemplateOpen(true),
+								icon: SaveIcon,
+								variant: "outline" as const,
+							},
+						]
+					: []),
 				{
 					label: "Download PDF",
 					onClick: handleDownload,
@@ -1439,6 +1452,14 @@ function DocumentDetailPage() {
 						refetchDocument();
 						refetchRecipients();
 					}}
+				/>
+
+				{/* Save as template dialog */}
+				<SaveAsTemplateDialog
+					documentId={documentId as Id<"documents">}
+					documentName={documentData.name}
+					open={saveAsTemplateOpen}
+					onOpenChange={setSaveAsTemplateOpen}
 				/>
 
 				<DeleteFieldDialog

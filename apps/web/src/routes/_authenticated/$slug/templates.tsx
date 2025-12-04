@@ -1,14 +1,47 @@
 /**
  * Templates Page
  *
- * Manage document templates
+ * SEA-80/82: Document Templates Library
+ *
+ * Manage document templates - view, create from documents, and use templates
  * Route: /{slug}/templates
  */
 
-import { createFileRoute } from "@tanstack/react-router";
-import { FileText } from "lucide-react";
+import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Doc } from "@seal/backend/convex/_generated/dataModel";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useMutation } from "convex/react";
+import {
+	ArrowDownIcon,
+	ArrowUpIcon,
+	ChevronLeftIcon,
+	ChevronRightIcon,
+	CopyIcon,
+	FileTextIcon,
+	LayoutGridIcon,
+	LayoutListIcon,
+	MoreVerticalIcon,
+	PencilIcon,
+	SearchIcon,
+	TrashIcon,
+} from "lucide-react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { TemplatesSkeleton } from "@/components/skeletons";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -16,32 +49,773 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/$slug/templates")({
 	component: TemplatesPage,
 	pendingComponent: TemplatesSkeleton,
 });
 
+type ViewMode = "grid" | "table";
+type SortField = "name" | "createdAt" | "useCount";
+type SortDirection = "asc" | "desc";
+
+interface TemplatesListProps {
+	viewMode: ViewMode;
+	sortField: SortField;
+	sortDirection: SortDirection;
+	searchQuery: string;
+	onSortChange: (field: SortField) => void;
+	onUseTemplate: (template: Doc<"templates">) => void;
+	onEditTemplate: (template: Doc<"templates">) => void;
+	onDeleteTemplate: (template: Doc<"templates">) => void;
+}
+
+function TemplatesList({
+	viewMode,
+	sortField,
+	sortDirection,
+	searchQuery,
+	onSortChange,
+	onUseTemplate,
+	onEditTemplate,
+	onDeleteTemplate,
+}: TemplatesListProps) {
+	// Pagination state
+	const [currentPage, setCurrentPage] = useState(1);
+	const ITEMS_PER_PAGE = 20;
+
+	const { data: templates } = useSuspenseQuery(
+		convexQuery(api.templates.queries.getOrganizationTemplates, {}),
+	);
+
+	// Filter by search query
+	const filteredTemplates = useMemo(() => {
+		if (!searchQuery) return templates;
+		const query = searchQuery.toLowerCase();
+		return templates.filter(
+			(t) =>
+				t.name.toLowerCase().includes(query) ||
+				t.description?.toLowerCase().includes(query),
+		);
+	}, [templates, searchQuery]);
+
+	// Sort templates
+	const sortedTemplates = useMemo(() => {
+		const sorted = [...filteredTemplates];
+		sorted.sort((a, b) => {
+			let comparison = 0;
+			if (sortField === "name") {
+				comparison = a.name.localeCompare(b.name);
+			} else if (sortField === "createdAt") {
+				comparison = a.createdAt - b.createdAt;
+			} else if (sortField === "useCount") {
+				comparison = a.useCount - b.useCount;
+			}
+			return sortDirection === "asc" ? comparison : -comparison;
+		});
+		return sorted;
+	}, [filteredTemplates, sortField, sortDirection]);
+
+	// Pagination
+	const totalPages = Math.ceil(sortedTemplates.length / ITEMS_PER_PAGE);
+	const paginatedTemplates = useMemo(() => {
+		const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+		return sortedTemplates.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+	}, [sortedTemplates, currentPage]);
+
+	// Reset page when filters change
+	// biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset page when filters change
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [searchQuery, sortField, sortDirection]);
+
+	const formatDate = (timestamp: number) => {
+		return new Date(timestamp).toLocaleDateString("en-US", {
+			year: "numeric",
+			month: "short",
+			day: "numeric",
+		});
+	};
+
+	const formatBytes = (bytes: number) => {
+		if (bytes === 0) return "0 Bytes";
+		const k = 1024;
+		const sizes = ["Bytes", "KB", "MB", "GB"];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
+	};
+
+	// Sort header component
+	const SortHeader = ({
+		field,
+		label,
+	}: {
+		field: SortField;
+		label: string;
+	}) => (
+		<Button
+			variant="ghost"
+			onClick={() => onSortChange(field)}
+			className="h-auto p-0 hover:bg-transparent"
+		>
+			<span className="font-medium">{label}</span>
+			{sortField === field &&
+				(sortDirection === "asc" ? (
+					<ArrowUpIcon className="ml-2 h-4 w-4" />
+				) : (
+					<ArrowDownIcon className="ml-2 h-4 w-4" />
+				))}
+		</Button>
+	);
+
+	return (
+		<>
+			{/* Empty state */}
+			{sortedTemplates.length === 0 ? (
+				<Card>
+					<CardContent className="flex flex-col items-center justify-center py-12">
+						<FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" />
+						<p className="text-lg font-medium">No templates yet</p>
+						<p className="text-sm text-muted-foreground mb-4 text-center max-w-md">
+							{searchQuery
+								? "No templates match your search. Try a different query."
+								: "Create templates from your documents to save time. Templates preserve signature fields and can be reused."}
+						</p>
+					</CardContent>
+				</Card>
+			) : (
+				<div className="space-y-4">
+					{/* Table View */}
+					{viewMode === "table" ? (
+						<div className="border rounded-lg">
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead className="w-[100px]">Preview</TableHead>
+										<TableHead>
+											<SortHeader field="name" label="Name" />
+										</TableHead>
+										<TableHead>
+											<SortHeader field="createdAt" label="Created" />
+										</TableHead>
+										<TableHead>
+											<SortHeader field="useCount" label="Times Used" />
+										</TableHead>
+										<TableHead className="text-right">Actions</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{paginatedTemplates.map((template) => (
+										<TableRow key={template._id} className="hover:bg-muted/50">
+											<TableCell>
+												<div className="w-16 h-20 bg-muted rounded border border-border flex items-center justify-center overflow-hidden">
+													{template.thumbnailDataUrl ? (
+														<img
+															src={template.thumbnailDataUrl}
+															alt={`${template.name} thumbnail`}
+															className="w-full h-full object-cover"
+														/>
+													) : (
+														<FileTextIcon className="h-8 w-8 text-muted-foreground" />
+													)}
+												</div>
+											</TableCell>
+											<TableCell>
+												<div>
+													<p className="font-medium">{template.name}</p>
+													{template.description && (
+														<p className="text-sm text-muted-foreground line-clamp-1">
+															{template.description}
+														</p>
+													)}
+													{template.pageCount !== undefined &&
+														template.pageCount > 0 && (
+															<p className="text-xs text-muted-foreground mt-1">
+																{template.pageCount}{" "}
+																{template.pageCount === 1 ? "page" : "pages"}
+															</p>
+														)}
+												</div>
+											</TableCell>
+											<TableCell>
+												<div className="text-sm">
+													<p>{formatDate(template.createdAt)}</p>
+													<p className="text-muted-foreground">
+														{formatBytes(template.fileSize)}
+													</p>
+												</div>
+											</TableCell>
+											<TableCell>
+												<span className="text-sm font-medium">
+													{template.useCount}
+												</span>
+											</TableCell>
+											<TableCell className="text-right">
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button
+															variant="ghost"
+															size="icon"
+															className="h-8 w-8"
+														>
+															<MoreVerticalIcon className="h-4 w-4" />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end">
+														<DropdownMenuItem
+															onClick={() => onUseTemplate(template)}
+														>
+															<CopyIcon className="mr-2 h-4 w-4" />
+															Use Template
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															onClick={() => onEditTemplate(template)}
+														>
+															<PencilIcon className="mr-2 h-4 w-4" />
+															Edit Details
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															onClick={() => onDeleteTemplate(template)}
+															className="text-destructive"
+														>
+															<TrashIcon className="mr-2 h-4 w-4" />
+															Delete
+														</DropdownMenuItem>
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</div>
+					) : (
+						/* Grid View */
+						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+							{paginatedTemplates.map((template) => (
+								<Card
+									key={template._id}
+									className="hover:shadow-lg transition-shadow"
+								>
+									{template.thumbnailDataUrl && (
+										<div className="w-full h-32 bg-muted flex items-center justify-center overflow-hidden border-b">
+											<img
+												src={template.thumbnailDataUrl}
+												alt={`${template.name} thumbnail`}
+												className="max-w-full max-h-full object-contain"
+											/>
+										</div>
+									)}
+									<CardHeader>
+										<div className="flex items-start justify-between">
+											<div className="flex items-center gap-2">
+												<FileTextIcon className="h-5 w-5 text-muted-foreground" />
+												<CardTitle className="text-base truncate">
+													{template.name}
+												</CardTitle>
+											</div>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8"
+													>
+														<MoreVerticalIcon className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end">
+													<DropdownMenuItem
+														onClick={() => onUseTemplate(template)}
+													>
+														<CopyIcon className="mr-2 h-4 w-4" />
+														Use Template
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														onClick={() => onEditTemplate(template)}
+													>
+														<PencilIcon className="mr-2 h-4 w-4" />
+														Edit Details
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														onClick={() => onDeleteTemplate(template)}
+														className="text-destructive"
+													>
+														<TrashIcon className="mr-2 h-4 w-4" />
+														Delete
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</div>
+										{template.description && (
+											<CardDescription className="line-clamp-2">
+												{template.description}
+											</CardDescription>
+										)}
+									</CardHeader>
+									<CardContent>
+										<div className="space-y-2">
+											<div className="flex items-center justify-between text-sm">
+												<span className="text-muted-foreground">Created</span>
+												<span>{formatDate(template.createdAt)}</span>
+											</div>
+											<div className="flex items-center justify-between text-sm">
+												<span className="text-muted-foreground">
+													Times Used
+												</span>
+												<span className="font-medium">{template.useCount}</span>
+											</div>
+											<div className="flex items-center justify-between text-sm">
+												<span className="text-muted-foreground">Pages</span>
+												<span>{template.pageCount ?? "-"}</span>
+											</div>
+										</div>
+										<Button
+											className="w-full mt-4"
+											onClick={() => onUseTemplate(template)}
+										>
+											<CopyIcon className="mr-2 h-4 w-4" />
+											Use Template
+										</Button>
+									</CardContent>
+								</Card>
+							))}
+						</div>
+					)}
+
+					{/* Pagination */}
+					{totalPages > 1 && (
+						<div className="flex items-center justify-between">
+							<p className="text-sm text-muted-foreground">
+								Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+								{Math.min(currentPage * ITEMS_PER_PAGE, sortedTemplates.length)}{" "}
+								of {sortedTemplates.length} templates
+							</p>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() =>
+										setCurrentPage((prev) => Math.max(1, prev - 1))
+									}
+									disabled={currentPage === 1}
+								>
+									<ChevronLeftIcon className="h-4 w-4" />
+									Previous
+								</Button>
+								<div className="flex items-center gap-1">
+									{Array.from({ length: totalPages }, (_, i) => i + 1).map(
+										(page) => (
+											<Button
+												key={page}
+												variant={page === currentPage ? "default" : "outline"}
+												size="sm"
+												onClick={() => setCurrentPage(page)}
+												className="w-8 h-8 p-0"
+											>
+												{page}
+											</Button>
+										),
+									)}
+								</div>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() =>
+										setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+									}
+									disabled={currentPage === totalPages}
+								>
+									Next
+									<ChevronRightIcon className="h-4 w-4" />
+								</Button>
+							</div>
+						</div>
+					)}
+				</div>
+			)}
+		</>
+	);
+}
+
 function TemplatesPage() {
+	const { slug } = Route.useParams();
+	const router = useRouter();
+
+	// State
+	const [viewMode, setViewMode] = useState<ViewMode>("grid");
+	const [sortField, setSortField] = useState<SortField>("createdAt");
+	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+	const [searchQuery, setSearchQuery] = useState("");
+	const [refreshKey, setRefreshKey] = useState(0);
+
+	// Dialog states
+	const [useTemplateDialog, setUseTemplateDialog] = useState<{
+		open: boolean;
+		template: Doc<"templates"> | null;
+	}>({ open: false, template: null });
+	const [editTemplateDialog, setEditTemplateDialog] = useState<{
+		open: boolean;
+		template: Doc<"templates"> | null;
+	}>({ open: false, template: null });
+	const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
+		open: boolean;
+		template: Doc<"templates"> | null;
+	}>({ open: false, template: null });
+
+	// Form state for use template
+	const [newDocumentName, setNewDocumentName] = useState("");
+	const [isCreating, setIsCreating] = useState(false);
+
+	// Form state for edit template
+	const [editName, setEditName] = useState("");
+	const [editDescription, setEditDescription] = useState("");
+	const [isEditing, setIsEditing] = useState(false);
+
+	// Mutations
+	const createFromTemplate = useMutation(
+		api.templates.mutations.createFromTemplate,
+	);
+	const updateTemplate = useMutation(api.templates.mutations.updateTemplate);
+	const deleteTemplate = useMutation(api.templates.mutations.deleteTemplate);
+
+	const handleSortChange = (field: SortField) => {
+		if (sortField === field) {
+			setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+		} else {
+			setSortField(field);
+			setSortDirection("desc");
+		}
+	};
+
+	const handleUseTemplate = (template: Doc<"templates">) => {
+		setNewDocumentName(`${template.name} - Copy`);
+		setUseTemplateDialog({ open: true, template });
+	};
+
+	const handleEditTemplate = (template: Doc<"templates">) => {
+		setEditName(template.name);
+		setEditDescription(template.description ?? "");
+		setEditTemplateDialog({ open: true, template });
+	};
+
+	const handleDeleteTemplate = (template: Doc<"templates">) => {
+		setDeleteConfirmDialog({ open: true, template });
+	};
+
+	const handleConfirmUseTemplate = async () => {
+		if (!useTemplateDialog.template) return;
+
+		setIsCreating(true);
+		try {
+			const result = await createFromTemplate({
+				templateId: useTemplateDialog.template._id,
+				documentName: newDocumentName || undefined,
+			});
+
+			toast.success("Document created from template");
+			setUseTemplateDialog({ open: false, template: null });
+
+			// Navigate to the new document
+			router.navigate({
+				to: "/$slug/documents/$documentId",
+				params: { slug, documentId: result.documentId },
+			});
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: "Failed to create document from template";
+			toast.error(errorMessage);
+		} finally {
+			setIsCreating(false);
+		}
+	};
+
+	const handleConfirmEditTemplate = async () => {
+		if (!editTemplateDialog.template) return;
+
+		setIsEditing(true);
+		try {
+			await updateTemplate({
+				templateId: editTemplateDialog.template._id,
+				name: editName,
+				description: editDescription || undefined,
+			});
+
+			toast.success("Template updated");
+			setEditTemplateDialog({ open: false, template: null });
+			setRefreshKey((prev) => prev + 1);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to update template";
+			toast.error(errorMessage);
+		} finally {
+			setIsEditing(false);
+		}
+	};
+
+	const handleConfirmDeleteTemplate = async () => {
+		if (!deleteConfirmDialog.template) return;
+
+		try {
+			await deleteTemplate({
+				templateId: deleteConfirmDialog.template._id,
+			});
+
+			toast.success("Template deleted");
+			setDeleteConfirmDialog({ open: false, template: null });
+			setRefreshKey((prev) => prev + 1);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to delete template";
+			toast.error(errorMessage);
+		}
+	};
+
 	return (
 		<PageWrapper title="Templates">
 			<div className="space-y-6">
-				<Card>
-					<CardHeader>
-						<div className="flex items-center gap-2">
-							<FileText className="h-5 w-5 text-muted-foreground" />
-							<CardTitle>Document Templates</CardTitle>
-						</div>
-						<CardDescription>
-							Create reusable templates for your documents
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-							Templates functionality coming soon
+				{/* Search and View Controls */}
+				<div className="flex items-center justify-between gap-4 flex-wrap">
+					{/* Search */}
+					<div className="relative flex-1 max-w-sm">
+						<SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<Input
+							placeholder="Search templates..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="pl-9"
+						/>
+					</div>
+
+					{/* View mode toggle */}
+					<div className="flex items-center gap-1 border rounded-md">
+						<Button
+							variant={viewMode === "table" ? "default" : "ghost"}
+							size="icon"
+							className="h-9 w-9"
+							onClick={() => setViewMode("table")}
+						>
+							<LayoutListIcon className="h-4 w-4" />
+						</Button>
+						<Button
+							variant={viewMode === "grid" ? "default" : "ghost"}
+							size="icon"
+							className="h-9 w-9"
+							onClick={() => setViewMode("grid")}
+						>
+							<LayoutGridIcon className="h-4 w-4" />
+						</Button>
+					</div>
+				</div>
+
+				{/* Info card */}
+				<Card className="bg-muted/50">
+					<CardContent className="py-4">
+						<div className="flex items-start gap-3">
+							<FileTextIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
+							<div>
+								<p className="text-sm font-medium">
+									Templates save time on recurring documents
+								</p>
+								<p className="text-sm text-muted-foreground">
+									To create a template, prepare a document with signature
+									fields, then click "Save as Template" from the document
+									actions menu.
+								</p>
+							</div>
 						</div>
 					</CardContent>
 				</Card>
+
+				{/* Templates List */}
+				<Suspense
+					key={refreshKey}
+					fallback={
+						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+							{Array.from({ length: 6 }).map((_, i) => (
+								<Card key={i} className="animate-pulse">
+									<div className="h-32 bg-muted" />
+									<CardHeader>
+										<div className="h-4 bg-muted rounded w-3/4" />
+										<div className="h-3 bg-muted rounded w-1/2 mt-2" />
+									</CardHeader>
+									<CardContent>
+										<div className="space-y-2">
+											<div className="h-3 bg-muted rounded" />
+											<div className="h-3 bg-muted rounded" />
+										</div>
+									</CardContent>
+								</Card>
+							))}
+						</div>
+					}
+				>
+					<TemplatesList
+						viewMode={viewMode}
+						sortField={sortField}
+						sortDirection={sortDirection}
+						searchQuery={searchQuery}
+						onSortChange={handleSortChange}
+						onUseTemplate={handleUseTemplate}
+						onEditTemplate={handleEditTemplate}
+						onDeleteTemplate={handleDeleteTemplate}
+					/>
+				</Suspense>
+
+				{/* Use Template Dialog */}
+				<Dialog
+					open={useTemplateDialog.open}
+					onOpenChange={(open) =>
+						setUseTemplateDialog({ open, template: null })
+					}
+				>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Create Document from Template</DialogTitle>
+							<DialogDescription>
+								Create a new document using "{useTemplateDialog.template?.name}
+								". The new document will have all the signature fields from the
+								template.
+							</DialogDescription>
+						</DialogHeader>
+						<div className="space-y-4 py-4">
+							<div className="space-y-2">
+								<Label htmlFor="documentName">Document Name</Label>
+								<Input
+									id="documentName"
+									value={newDocumentName}
+									onChange={(e) => setNewDocumentName(e.target.value)}
+									placeholder="Enter document name..."
+								/>
+							</div>
+						</div>
+						<DialogFooter>
+							<Button
+								variant="outline"
+								onClick={() =>
+									setUseTemplateDialog({ open: false, template: null })
+								}
+								disabled={isCreating}
+							>
+								Cancel
+							</Button>
+							<Button onClick={handleConfirmUseTemplate} disabled={isCreating}>
+								{isCreating ? "Creating..." : "Create Document"}
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+
+				{/* Edit Template Dialog */}
+				<Dialog
+					open={editTemplateDialog.open}
+					onOpenChange={(open) =>
+						setEditTemplateDialog({ open, template: null })
+					}
+				>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Edit Template</DialogTitle>
+							<DialogDescription>
+								Update the template name and description.
+							</DialogDescription>
+						</DialogHeader>
+						<div className="space-y-4 py-4">
+							<div className="space-y-2">
+								<Label htmlFor="editName">Name</Label>
+								<Input
+									id="editName"
+									value={editName}
+									onChange={(e) => setEditName(e.target.value)}
+									placeholder="Template name..."
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="editDescription">Description (optional)</Label>
+								<Textarea
+									id="editDescription"
+									value={editDescription}
+									onChange={(e) => setEditDescription(e.target.value)}
+									placeholder="Describe this template..."
+									rows={3}
+								/>
+							</div>
+						</div>
+						<DialogFooter>
+							<Button
+								variant="outline"
+								onClick={() =>
+									setEditTemplateDialog({ open: false, template: null })
+								}
+								disabled={isEditing}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={handleConfirmEditTemplate}
+								disabled={isEditing || !editName.trim()}
+							>
+								{isEditing ? "Saving..." : "Save Changes"}
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+
+				{/* Delete Confirmation Dialog */}
+				<AlertDialog
+					open={deleteConfirmDialog.open}
+					onOpenChange={(open) =>
+						setDeleteConfirmDialog({ open, template: null })
+					}
+				>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Delete Template</AlertDialogTitle>
+							<AlertDialogDescription>
+								Are you sure you want to delete "
+								{deleteConfirmDialog.template?.name}"? This action cannot be
+								undone. Documents created from this template will not be
+								affected.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={handleConfirmDeleteTemplate}
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							>
+								Delete
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			</div>
 		</PageWrapper>
 	);

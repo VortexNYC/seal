@@ -25,6 +25,7 @@ export const PERMISSIONS = {
 
 	// Templates
 	"templates:view": "View templates",
+	"templates:read": "Read templates", // Alias for view
 	"templates:create": "Create templates",
 	"templates:edit": "Edit templates",
 	"templates:delete": "Delete templates",
@@ -93,6 +94,7 @@ export const ROLE_TEMPLATES = {
 			"documents:share",
 			"documents:export",
 			"templates:view",
+			"templates:read",
 			"templates:use",
 			"templates:create",
 			"settings:view",
@@ -106,6 +108,7 @@ export const ROLE_TEMPLATES = {
 			"organization:view",
 			"documents:view",
 			"templates:view",
+			"templates:read",
 			"settings:view",
 			"users:view",
 		] as const,

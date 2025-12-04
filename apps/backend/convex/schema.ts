@@ -63,6 +63,11 @@ import { signaturesTable } from "./schemas/signatures";
 import { subscriptionPricesTable } from "./schemas/subscription_prices";
 import { subscriptionProductsTable } from "./schemas/subscription_products";
 import { subscriptionsTable } from "./schemas/subscriptions";
+import {
+	type TemplateStatus,
+	templateFieldsTable,
+	templatesTable,
+} from "./schemas/templates";
 import { userProfilesTable } from "./schemas/user_profiles";
 import { type UserStatus, usersTable } from "./schemas/users";
 
@@ -89,6 +94,9 @@ export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status"
 
 // Re-export signature workflow types
 export type { AuthenticationMethod, FieldType, WorkflowRecipientStatus };
+
+// Re-export template types
+export type { TemplateStatus };
 
 // Re-export email types
 export type { EmailStatus, EmailType };
@@ -131,4 +139,8 @@ export default defineSchema({
 	api_keys: apiKeysTable,
 	connected_apps: connectedAppsTable,
 	integration_activity_logs: integrationActivityLogsTable,
+
+	// Templates
+	templates: templatesTable,
+	template_fields: templateFieldsTable,
 });
