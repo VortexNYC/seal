@@ -34,18 +34,24 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 		"subscription:manage",
 		"subscription:billing:read",
 		"subscription:billing:update",
-		// Documents (full access)
+		// Documents (full access) - includes both old and new permission naming
 		"documents:read",
+		"documents:view", // New naming convention
 		"documents:create",
 		"documents:update",
+		"documents:edit", // New naming convention
 		"documents:delete",
 		"documents:send",
 		"documents:cancel",
 		"documents:download",
-		// Templates (full access)
+		"documents:share",
+		"documents:export",
+		// Templates (full access) - includes both old and new permission naming
 		"templates:read",
+		"templates:view", // New naming convention
 		"templates:create",
 		"templates:update",
+		"templates:edit", // New naming convention
 		"templates:delete",
 		"templates:use",
 		// Signatures (view all org signatures)
@@ -53,6 +59,7 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 		"signatures:download",
 		// Audit & Compliance
 		"audit:read",
+		"audit:view", // New naming convention
 		"audit:export",
 		// API & Webhooks
 		"api:read",
@@ -69,6 +76,12 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 		// Data management
 		"data:export",
 		"data:backup",
+		// Users & Roles
+		"users:view",
+		"users:create",
+		"users:edit",
+		"users:delete",
+		"users:roles",
 	],
 
 	admin: [
@@ -78,18 +91,24 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 		"org:users:invite",
 		// Subscription view
 		"subscription:billing:read",
-		// Documents (full access)
+		// Documents (full access) - includes both old and new permission naming
 		"documents:read",
+		"documents:view", // New naming convention
 		"documents:create",
 		"documents:update",
+		"documents:edit", // New naming convention
 		"documents:delete",
 		"documents:send",
 		"documents:cancel",
 		"documents:download",
-		// Templates (full access)
+		"documents:share",
+		"documents:export",
+		// Templates (full access) - includes both old and new permission naming
 		"templates:read",
+		"templates:view", // New naming convention
 		"templates:create",
 		"templates:update",
+		"templates:edit", // New naming convention
 		"templates:delete",
 		"templates:use",
 		// Signatures (view all)
@@ -97,6 +116,7 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 		"signatures:download",
 		// Audit (read only)
 		"audit:read",
+		"audit:view", // New naming convention
 		"audit:export",
 		// API & Webhooks (manage)
 		"api:read",
@@ -112,18 +132,29 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 		"reports:generate",
 		// Data export
 		"data:export",
+		// Users & Roles
+		"users:view",
+		"users:create",
+		"users:edit",
+		"users:delete",
+		"users:roles",
 	],
 
 	member: [
-		// Documents (create and manage own)
+		// Documents (create and manage own) - includes both old and new permission naming
 		"documents:read",
+		"documents:view", // New naming convention
 		"documents:create",
 		"documents:update",
+		"documents:edit", // New naming convention
 		"documents:send",
 		"documents:cancel",
 		"documents:download",
-		// Templates (use existing, create own)
+		"documents:share",
+		"documents:export",
+		// Templates (use existing, create own) - includes both old and new permission naming
 		"templates:read",
+		"templates:view", // New naming convention
 		"templates:create",
 		"templates:use",
 		// Signatures (own documents only)
@@ -134,16 +165,21 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 		"reports:read",
 		// Personal data
 		"data:export",
+		// Users (view only)
+		"users:view",
 	],
 
 	viewer: [
-		// Read-only access
+		// Read-only access - includes both old and new permission naming
 		"documents:read",
+		"documents:view", // New naming convention
 		"documents:download",
 		"templates:read",
+		"templates:view", // New naming convention
 		"signatures:read",
 		"analytics:read",
 		"reports:read",
+		"users:view",
 	],
 };
 
