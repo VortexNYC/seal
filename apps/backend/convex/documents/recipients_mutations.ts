@@ -369,6 +369,102 @@ export const submitRecipientSignature = mutation({
 });
 
 /**
+ * Update recipient information
+ * Can only be called on draft/pending_signature documents by the owner
+ * Requires documents:edit permission
+ */
+export const updateRecipient = permissionMutation("documents:edit")({
+	args: {
+		recipientId: v.id("document_recipients"),
+		name: v.optional(v.string()),
+		email: v.optional(v.string()),
+		role: v.optional(recipientRoleTuple),
+		order: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Get the recipient
+		const recipient = await ctx.db.get(args.recipientId);
+		if (!recipient) {
+			throw new ConvexError("Recipient not found");
+		}
+
+		// 2. Verify ownership of the document
+		await verifyDocumentOwnership(ctx, recipient.documentId, userId);
+
+		// 3. Get the document
+		const document = await ctx.db.get(recipient.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		// 4. Verify document is editable (not deleted or workflow completed)
+		if (
+			document.status === "deleted" ||
+			document.workflowStatus === "completed"
+		) {
+			throw new ConvexError(
+				"Cannot edit recipients on deleted or completed documents",
+			);
+		}
+
+		// 5. Check recipient hasn't already completed their action
+		if (
+			recipient.status === "signed" ||
+			recipient.status === "approved" ||
+			recipient.status === "declined"
+		) {
+			throw new ConvexError(
+				"Cannot edit recipient who has already completed their action",
+			);
+		}
+
+		// 6. Validate email if changing
+		if (args.email !== undefined) {
+			const newEmail = args.email.toLowerCase();
+			// Check for duplicate email among other recipients
+			const existingRecipients = await ctx.db
+				.query("document_recipients")
+				.withIndex("by_document", (q) =>
+					q.eq("documentId", recipient.documentId),
+				)
+				.collect();
+
+			const duplicateEmail = existingRecipients.find(
+				(r) => r._id !== args.recipientId && r.email === newEmail,
+			);
+			if (duplicateEmail) {
+				throw new ConvexError("A recipient with this email already exists");
+			}
+		}
+
+		// 7. Build update object
+		const updates: Record<string, unknown> = {
+			updatedAt: Date.now(),
+		};
+
+		if (args.name !== undefined) {
+			updates.name = args.name;
+		}
+		if (args.email !== undefined) {
+			updates.email = args.email.toLowerCase();
+		}
+		if (args.role !== undefined) {
+			updates.role = args.role;
+		}
+		if (args.order !== undefined) {
+			updates.order = args.order;
+		}
+
+		// 8. Update the recipient
+		await ctx.db.patch(args.recipientId, updates);
+
+		return { success: true };
+	},
+});
+
+/**
  * Regenerate signing token for a recipient (if expired or compromised)
  * Can only be called by document owner
  * Requires documents:edit permission
