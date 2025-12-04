@@ -46,6 +46,7 @@ import {
 	type FieldOptionsConfig,
 	FieldOptionsDialog,
 } from "../../../../components/documents/field-options-dialog";
+import { FieldPropertiesPanel } from "../../../../components/documents/field-properties-panel";
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
@@ -1169,14 +1170,34 @@ function DocumentDetailPage() {
 										</div>
 									)}
 									{signatureFields.length > 0 ? (
-										<FieldList
-											fields={signatureFields}
-											recipients={recipients}
-											selectedFieldId={canEdit ? selectedFieldId : null}
-											canEdit={canEdit}
-											onFieldSelect={canEdit ? handleFieldSelect : undefined}
-											onFieldDelete={canEdit ? requestFieldDelete : undefined}
-										/>
+										<>
+											<FieldList
+												fields={signatureFields}
+												recipients={recipients}
+												selectedFieldId={canEdit ? selectedFieldId : null}
+												canEdit={canEdit}
+												onFieldSelect={canEdit ? handleFieldSelect : undefined}
+												onFieldDelete={canEdit ? requestFieldDelete : undefined}
+											/>
+											{/* SEA-92: Field Properties Panel */}
+											{canEdit &&
+												selectedFieldId &&
+												(() => {
+													const selectedField = signatureFields.find(
+														(f) => f._id === selectedFieldId,
+													);
+													if (!selectedField) return null;
+													return (
+														<div className="mt-4 border-t pt-4">
+															<FieldPropertiesPanel
+																field={selectedField}
+																recipients={recipients}
+																onClose={() => setSelectedFieldId(null)}
+															/>
+														</div>
+													);
+												})()}
+										</>
 									) : (
 										<div className="empty-state">
 											<div className="empty-icon">
