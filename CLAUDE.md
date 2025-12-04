@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 This is a TanStack-based monorepo for Seal, a document signature and workflow management application. The project uses:
-- **Frontend**: React with TanStack Router (file-based routing), Vite, Tailwind CSS, Shadcn UI
+- **Frontend**: React 19 with TanStack Router (file-based routing), Vite, Tailwind CSS v4, Shadcn UI
 - **Backend**: Convex (serverless backend-as-a-service)
 - **Auth**: Clerk
 - **Build System**: Turborepo with Bun
@@ -17,6 +17,8 @@ This is a TanStack-based monorepo for Seal, a document signature and workflow ma
 apps/
   web/          - Frontend React application
   backend/      - Convex backend with schemas, queries, mutations, actions
+packages/
+  transactional/ - React Email templates for transactional emails
 tooling/
   typescript/   - Shared TypeScript configuration
 scripts/
@@ -51,11 +53,20 @@ turbo run build --filter=@seal/web
 
 ### Testing
 ```bash
-# Run all tests
-bun --bun run test
+# Run E2E tests (Playwright)
+cd apps/web && bun --bun run test:e2e
 
-# Run tests in specific workspace
-cd apps/web && bun --bun run test
+# Run E2E tests with UI
+cd apps/web && bun --bun run test:e2e:ui
+
+# Run E2E tests in headed mode
+cd apps/web && bun --bun run test:e2e:headed
+
+# Debug E2E tests
+cd apps/web && bun --bun run test:e2e:debug
+
+# Generate Playwright test code
+cd apps/web && bun --bun run test:e2e:codegen
 ```
 
 ### Linting & Formatting
@@ -110,7 +121,7 @@ bun --bun run clean:workspaces
 ### Backend (`apps/backend/convex`)
 
 **Structure**: Domain-driven organization with separation of concerns
-- `schema.ts` - Main Convex schema definition
+- `schema.ts` - Main Convex schema definition (imports from `schemas/`)
 - `schemas/` - Individual table schemas (documents, organizations, recipients, etc.)
 - `auth/` - Authentication guards, permissions, and wrappers
 - `documents/` - Document-related queries, mutations, and actions
@@ -120,13 +131,43 @@ bun --bun run clean:workspaces
 - `validations/` - Zod validation schemas
 - `webhooks.ts` - Webhook handlers (Clerk, Stripe)
 - `http.ts` - HTTP endpoint definitions
+- `crons.ts` - Scheduled job definitions
 
 **Key Patterns**:
-- Queries: Read-only data fetching
-- Mutations: Data modifications
-- Actions: External API calls, side effects
-- Guards: Permission checking wrappers for queries/mutations
-- Helpers: Shared utility functions
+- **Queries**: Read-only data fetching
+- **Mutations**: Data modifications
+- **Actions**: External API calls, side effects (used for Resend emails, PDF generation, etc.)
+- **Wrappers**: Permission-based access control wrappers in `auth/wrappers.ts`
+- **Guards**: Helper functions for additional permission checks in `auth/guards.ts`
+- **Helpers**: Shared utility functions per domain
+
+**Permission-Based Wrappers** (use instead of raw `query`/`mutation`):
+```typescript
+// Basic authenticated (no permission check)
+authQuery, authMutation
+
+// Single permission required
+permissionQuery("documents:view"), permissionMutation("documents:create")
+
+// Multiple permissions (OR logic)
+permissionAnyQuery(["documents:edit", "documents:delete"])
+
+// Multiple permissions (AND logic)
+permissionAllMutation(["documents:edit", "documents:share"])
+
+// Role-based
+adminQuery, adminMutation  // Admin or owner required
+ownerQuery, ownerMutation  // Owner only
+```
+
+**Guard Functions** (for additional checks inside handlers):
+```typescript
+ensureOwner(auth)
+ensureAdmin(auth)
+ensureOrganizationScope(auth, targetOrgId)
+ensurePermission(auth, "permission:name")
+ensureResourceOwnerOrAdmin(auth, resourceOwnerId)
+```
 
 ### Environment Variables
 
@@ -176,6 +217,21 @@ When modifying Convex schemas:
 - Use Convex auth guards in `auth/guards.ts` for permission checking
 - Organization-based access control via `organization_roles/`
 
+### E2E Testing (`apps/web/e2e`)
+
+Tests use Playwright with Page Object Model pattern:
+- `e2e/tests/` - Test spec files
+- `e2e/pages/` - Page object classes
+- `e2e/fixtures/` - Test fixtures (auth, convex helpers)
+- `e2e/utils/` - Test utilities and helpers
+
+### Transactional Emails (`packages/transactional`)
+
+React Email templates for:
+- Document invitations, reminders, completion notifications
+- Team invitations
+- Welcome emails
+
 ## Key Technologies
 
 - **Runtime**: Bun (package manager and runtime)
@@ -183,8 +239,10 @@ When modifying Convex schemas:
 - **Frontend Framework**: React 19
 - **Routing**: TanStack Router v1 (file-based)
 - **Styling**: Tailwind CSS v4 with Shadcn UI
-- **Backend**: Convex (serverless BaaS with GraphQL-like API)
+- **Backend**: Convex (serverless BaaS)
 - **Auth**: Clerk
-- **Testing**: Vitest with React Testing Library
+- **E2E Testing**: Playwright
 - **Payments**: Stripe
+- **Emails**: Resend with React Email
+- **PDF**: pdf-lib for generation, pdfjs-dist for rendering
 - **Code Quality**: Biome (linting + formatting)
