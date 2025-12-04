@@ -25,5 +25,18 @@ export default defineConfig({
 
 	build: {
 		sourcemap: true,
+		// SEA-136: Mobile performance optimization - chunk splitting for lazy loading
+		rollupOptions: {
+			output: {
+				manualChunks: {
+					// Large PDF library - lazy loaded on signing/document pages
+					"pdf-viewer": ["react-pdf", "pdfjs-dist"],
+					// Charts library - only used on dashboard
+					charts: ["recharts"],
+					// Date utilities
+					"date-utils": ["date-fns"],
+				},
+			},
+		},
 	},
 });
