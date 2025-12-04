@@ -8,6 +8,7 @@ import {
 	useRouter,
 } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
+import Fuse, { type FuseResultMatch } from "fuse.js";
 import {
 	ArrowDownIcon,
 	ArrowUpIcon,
@@ -19,10 +20,12 @@ import {
 	LayoutGridIcon,
 	LayoutListIcon,
 	MoreVerticalIcon,
+	SearchIcon,
 	SendIcon,
 	Share2Icon,
 	TrashIcon,
 	UploadIcon,
+	XIcon,
 } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -56,6 +59,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
 	Table,
 	TableBody,
@@ -82,6 +86,62 @@ type ViewMode = "grid" | "table";
 type SortField = "name" | "createdAt" | "workflowStatus";
 type SortDirection = "asc" | "desc";
 
+// SEA-73: Fuse.js options for fuzzy search
+const fuseOptions = {
+	keys: ["name", "description"],
+	threshold: 0.4, // 0 = exact match, 1 = match anything
+	includeMatches: true,
+	minMatchCharLength: 2,
+};
+
+// SEA-73: Highlight matching text component
+function HighlightedText({
+	text,
+	matches,
+	fieldKey,
+}: {
+	text: string;
+	matches?: readonly FuseResultMatch[];
+	fieldKey: string;
+}) {
+	if (!matches || !text) {
+		return <>{text}</>;
+	}
+
+	const fieldMatch = matches.find((m) => m.key === fieldKey);
+	if (!fieldMatch || !fieldMatch.indices || fieldMatch.indices.length === 0) {
+		return <>{text}</>;
+	}
+
+	// Build highlighted string from indices
+	const parts: React.ReactNode[] = [];
+	let lastIndex = 0;
+
+	for (const [start, end] of fieldMatch.indices) {
+		// Add non-matching text before this match
+		if (start > lastIndex) {
+			parts.push(text.slice(lastIndex, start));
+		}
+		// Add highlighted matching text
+		parts.push(
+			<mark
+				key={`${start}-${end}`}
+				className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5"
+			>
+				{text.slice(start, end + 1)}
+			</mark>,
+		);
+		lastIndex = end + 1;
+	}
+
+	// Add remaining text after last match
+	if (lastIndex < text.length) {
+		parts.push(text.slice(lastIndex));
+	}
+
+	return <>{parts}</>;
+}
+
 interface DocumentsListProps {
 	organizationId: Id<"organizations">;
 	filter: FilterType;
@@ -89,6 +149,7 @@ interface DocumentsListProps {
 	viewMode: ViewMode;
 	sortField: SortField;
 	sortDirection: SortDirection;
+	searchQuery: string;
 	onShareClick: (documentId: Id<"documents">) => void;
 	onSortChange: (field: SortField) => void;
 }
@@ -100,6 +161,7 @@ function DocumentsList({
 	viewMode,
 	sortField,
 	sortDirection,
+	searchQuery,
 	onShareClick,
 	onSortChange,
 }: DocumentsListProps) {
@@ -119,7 +181,7 @@ function DocumentsList({
 	);
 
 	// Filter documents by workflow status on the client side
-	const filteredDocuments =
+	const filteredByStatus =
 		workflowStatusFilter === "all"
 			? allDocuments
 			: allDocuments.filter((doc) => {
@@ -127,8 +189,47 @@ function DocumentsList({
 					return docWorkflowStatus === workflowStatusFilter;
 				});
 
+	// SEA-73: Fuzzy search with Fuse.js
+	const fuse = useMemo(
+		() => new Fuse(filteredByStatus, fuseOptions),
+		[filteredByStatus],
+	);
+
+	// SEA-73: Apply fuzzy search and track matches for highlighting
+	const searchResults = useMemo(() => {
+		if (!searchQuery.trim()) {
+			// No search - return all documents without matches
+			return filteredByStatus.map((doc) => ({ item: doc, matches: undefined }));
+		}
+		// Return fuse results with match info
+		return fuse.search(searchQuery);
+	}, [fuse, searchQuery, filteredByStatus]);
+
+	// Extract just the documents for sorting
+	const filteredDocuments = useMemo(
+		() => searchResults.map((r) => r.item),
+		[searchResults],
+	);
+
+	// Create a map of document ID to matches for highlighting
+	const matchesMap = useMemo(() => {
+		const map = new Map<
+			Id<"documents">,
+			readonly FuseResultMatch[] | undefined
+		>();
+		for (const result of searchResults) {
+			map.set(result.item._id, result.matches);
+		}
+		return map;
+	}, [searchResults]);
+
 	// Sort documents (SEA-68: sorting by name and date)
 	const sortedDocuments = useMemo(() => {
+		// If searching, keep search relevance order unless explicitly sorting
+		if (searchQuery.trim() && sortField === "createdAt") {
+			return filteredDocuments;
+		}
+
 		const docs = [...filteredDocuments];
 		docs.sort((a, b) => {
 			let comparison = 0;
@@ -146,7 +247,7 @@ function DocumentsList({
 			return sortDirection === "asc" ? comparison : -comparison;
 		});
 		return docs;
-	}, [filteredDocuments, sortField, sortDirection]);
+	}, [filteredDocuments, sortField, sortDirection, searchQuery]);
 
 	// Pagination logic (SEA-68)
 	const totalPages = Math.ceil(sortedDocuments.length / ITEMS_PER_PAGE);
@@ -156,10 +257,10 @@ function DocumentsList({
 	}, [sortedDocuments, currentPage]);
 
 	// Reset to page 1 when filters change
-	// biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset page when filters change
+	// biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset page when filters/search change
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [filter, workflowStatusFilter, sortField, sortDirection]);
+	}, [filter, workflowStatusFilter, sortField, sortDirection, searchQuery]);
 
 	const deleteDocument = useMutation(api.documents.mutations.deleteDocument);
 	const sendDocument = useMutation(api.documents.mutations.sendDocument);
@@ -367,10 +468,20 @@ function DocumentsList({
 											</TableCell>
 											<TableCell>
 												<div>
-													<p className="font-medium">{doc.name}</p>
+													<p className="font-medium">
+														<HighlightedText
+															text={doc.name}
+															matches={matchesMap.get(doc._id)}
+															fieldKey="name"
+														/>
+													</p>
 													{doc.description && (
 														<p className="text-sm text-muted-foreground line-clamp-1">
-															{doc.description}
+															<HighlightedText
+																text={doc.description}
+																matches={matchesMap.get(doc._id)}
+																fieldKey="description"
+															/>
 														</p>
 													)}
 													{doc.pageCount !== undefined && doc.pageCount > 0 && (
@@ -482,7 +593,11 @@ function DocumentsList({
 											<div className="flex items-center gap-2">
 												<FileIcon className="h-5 w-5 text-muted-foreground" />
 												<CardTitle className="text-base truncate">
-													{doc.name}
+													<HighlightedText
+														text={doc.name}
+														matches={matchesMap.get(doc._id)}
+														fieldKey="name"
+													/>
 												</CardTitle>
 											</div>
 											<DropdownMenu>
@@ -543,7 +658,11 @@ function DocumentsList({
 										</div>
 										{doc.description && (
 											<CardDescription className="line-clamp-2">
-												{doc.description}
+												<HighlightedText
+													text={doc.description}
+													matches={matchesMap.get(doc._id)}
+													fieldKey="description"
+												/>
 											</CardDescription>
 										)}
 									</CardHeader>
@@ -686,6 +805,9 @@ function DocumentsPage() {
 	const [sortField, setSortField] = useState<SortField>("createdAt");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
+	// SEA-73: Fuzzy search state
+	const [searchQuery, setSearchQuery] = useState("");
+
 	const handleSortChange = (field: SortField) => {
 		if (sortField === field) {
 			// Toggle direction if clicking same field
@@ -721,6 +843,29 @@ function DocumentsPage() {
 			}}
 		>
 			<div className="space-y-6">
+				{/* SEA-73: Search Input */}
+				<div className="relative">
+					<SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+					<Input
+						type="text"
+						placeholder="Search documents by name or description..."
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+						className="pl-9 pr-9"
+					/>
+					{searchQuery && (
+						<Button
+							variant="ghost"
+							size="icon"
+							className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+							onClick={() => setSearchQuery("")}
+						>
+							<XIcon className="h-4 w-4" />
+							<span className="sr-only">Clear search</span>
+						</Button>
+					)}
+				</div>
+
 				{/* Filter Tabs */}
 				<div className="space-y-4">
 					<div className="flex items-center justify-between gap-2 flex-wrap">
@@ -848,6 +993,7 @@ function DocumentsPage() {
 						viewMode={viewMode}
 						sortField={sortField}
 						sortDirection={sortDirection}
+						searchQuery={searchQuery}
 						onShareClick={handleShareClick}
 						onSortChange={handleSortChange}
 					/>
