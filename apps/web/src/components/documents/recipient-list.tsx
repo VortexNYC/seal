@@ -6,6 +6,7 @@ import {
 	CopyIcon,
 	EyeIcon,
 	MailIcon,
+	PencilIcon,
 	XCircleIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +20,13 @@ import {
 	TableHeader,
 	TableRow,
 } from "../ui/table";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "../ui/tooltip";
+import { getRecipientColor } from "./recipient-colors";
 
 type RecipientStatus =
 	| "pending"
@@ -47,7 +55,10 @@ interface Recipient {
 
 interface RecipientListProps {
 	recipients: Recipient[];
+	/** Map of recipientId to field count */
+	fieldCounts?: Map<string, number>;
 	onRemoveRecipient?: (recipientId: Id<"document_recipients">) => void;
+	onEditRecipient?: (recipient: Recipient) => void;
 	onResendEmail?: (recipientId: Id<"document_recipients">) => void;
 	canEdit?: boolean;
 	canResend?: boolean;
@@ -111,7 +122,9 @@ function formatTimestamp(timestamp: number | undefined) {
 
 export function RecipientList({
 	recipients,
+	fieldCounts,
 	onRemoveRecipient,
+	onEditRecipient,
 	onResendEmail,
 	canEdit = false,
 	canResend = false,
@@ -143,105 +156,151 @@ export function RecipientList({
 	}
 
 	return (
-		<div className="border rounded-lg">
-			<Table>
-				<TableHeader>
-					<TableRow>
-						<TableHead className="w-12">#</TableHead>
-						<TableHead>Name/Email</TableHead>
-						<TableHead>Role</TableHead>
-						<TableHead>Status</TableHead>
-						<TableHead>Activity</TableHead>
-						<TableHead className="w-32">Actions</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{recipients.map((recipient, index) => (
-						<TableRow key={recipient._id}>
-							<TableCell className="font-medium">
-								{recipient.order ?? index + 1}
-							</TableCell>
-							<TableCell>
-								<div className="flex flex-col">
-									{recipient.name && (
-										<span className="font-medium">{recipient.name}</span>
-									)}
-									<span className="text-sm text-muted-foreground">
-										{recipient.email}
-									</span>
-								</div>
-							</TableCell>
-							<TableCell>{getRoleLabel(recipient.role)}</TableCell>
-							<TableCell>
-								<div className="flex items-center gap-2">
-									{getStatusIcon(recipient.status)}
-									{getStatusBadge(recipient.status)}
-								</div>
-							</TableCell>
-							<TableCell className="text-sm text-muted-foreground">
-								{recipient.status === "viewed" && (
-									<div>Viewed {formatTimestamp(recipient.viewedAt)}</div>
-								)}
-								{recipient.status === "signed" && (
-									<div>
-										Signed {formatTimestamp(recipient.signedAt)}
-										{recipient.signatureData && (
-											<div className="mt-1">
-												<img
-													src={recipient.signatureData}
-													alt="Signature"
-													className="h-8 border rounded"
-												/>
+		<TooltipProvider>
+			<div className="border rounded-lg">
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead className="w-12">#</TableHead>
+							<TableHead>Name/Email</TableHead>
+							<TableHead>Role</TableHead>
+							<TableHead>Fields</TableHead>
+							<TableHead>Status</TableHead>
+							<TableHead>Activity</TableHead>
+							<TableHead className="w-32">Actions</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{recipients.map((recipient, index) => {
+							const color = getRecipientColor(index);
+							const fieldCount = fieldCounts?.get(recipient._id) ?? 0;
+
+							return (
+								<TableRow key={recipient._id}>
+									<TableCell className="font-medium">
+										<div className="flex items-center gap-2">
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<span
+														className={`inline-block w-3 h-3 rounded-full ${color.bg}`}
+														role="img"
+														aria-label={`${color.name} color indicator`}
+													/>
+												</TooltipTrigger>
+												<TooltipContent>
+													<p>{color.name} - fields will appear in this color</p>
+												</TooltipContent>
+											</Tooltip>
+											<span>{recipient.order ?? index + 1}</span>
+										</div>
+									</TableCell>
+									<TableCell>
+										<div className="flex flex-col">
+											{recipient.name && (
+												<span className="font-medium">{recipient.name}</span>
+											)}
+											<span className="text-sm text-muted-foreground">
+												{recipient.email}
+											</span>
+										</div>
+									</TableCell>
+									<TableCell>{getRoleLabel(recipient.role)}</TableCell>
+									<TableCell>
+										<Badge
+											variant="outline"
+											className={`${color.border} ${color.text}`}
+										>
+											{fieldCount} {fieldCount === 1 ? "field" : "fields"}
+										</Badge>
+									</TableCell>
+									<TableCell>
+										<div className="flex items-center gap-2">
+											{getStatusIcon(recipient.status)}
+											{getStatusBadge(recipient.status)}
+										</div>
+									</TableCell>
+									<TableCell className="text-sm text-muted-foreground">
+										{recipient.status === "viewed" && (
+											<div>Viewed {formatTimestamp(recipient.viewedAt)}</div>
+										)}
+										{recipient.status === "signed" && (
+											<div>
+												Signed {formatTimestamp(recipient.signedAt)}
+												{recipient.signatureData && (
+													<div className="mt-1">
+														<img
+															src={recipient.signatureData}
+															alt="Signature"
+															className="h-8 border rounded"
+														/>
+													</div>
+												)}
 											</div>
 										)}
-									</div>
-								)}
-								{recipient.status === "approved" && (
-									<div>Approved {formatTimestamp(recipient.approvedAt)}</div>
-								)}
-								{recipient.status === "declined" && (
-									<div>Declined {formatTimestamp(recipient.declinedAt)}</div>
-								)}
-								{recipient.status === "pending" && <div>Not yet viewed</div>}
-							</TableCell>
-							<TableCell>
-								<div className="flex gap-1">
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={() => handleCopySigningLink(recipient)}
-										title="Copy signing link"
-									>
-										<CopyIcon className="h-4 w-4" />
-									</Button>
-									{canResend &&
-										onResendEmail &&
-										(recipient.status === "pending" ||
-											recipient.status === "viewed") && (
+										{recipient.status === "approved" && (
+											<div>
+												Approved {formatTimestamp(recipient.approvedAt)}
+											</div>
+										)}
+										{recipient.status === "declined" && (
+											<div>
+												Declined {formatTimestamp(recipient.declinedAt)}
+											</div>
+										)}
+										{recipient.status === "pending" && (
+											<div>Not yet viewed</div>
+										)}
+									</TableCell>
+									<TableCell>
+										<div className="flex gap-1">
+											{canEdit && onEditRecipient && (
+												<Button
+													variant="ghost"
+													size="sm"
+													onClick={() => onEditRecipient(recipient)}
+													title="Edit recipient"
+												>
+													<PencilIcon className="h-4 w-4" />
+												</Button>
+											)}
 											<Button
 												variant="ghost"
 												size="sm"
-												onClick={() => onResendEmail(recipient._id)}
-												title="Resend email"
+												onClick={() => handleCopySigningLink(recipient)}
+												title="Copy signing link"
 											>
-												<MailIcon className="h-4 w-4" />
+												<CopyIcon className="h-4 w-4" />
 											</Button>
-										)}
-									{canEdit && onRemoveRecipient && (
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() => onRemoveRecipient(recipient._id)}
-										>
-											Remove
-										</Button>
-									)}
-								</div>
-							</TableCell>
-						</TableRow>
-					))}
-				</TableBody>
-			</Table>
-		</div>
+											{canResend &&
+												onResendEmail &&
+												(recipient.status === "pending" ||
+													recipient.status === "viewed") && (
+													<Button
+														variant="ghost"
+														size="sm"
+														onClick={() => onResendEmail(recipient._id)}
+														title="Resend email"
+													>
+														<MailIcon className="h-4 w-4" />
+													</Button>
+												)}
+											{canEdit && onRemoveRecipient && (
+												<Button
+													variant="ghost"
+													size="sm"
+													onClick={() => onRemoveRecipient(recipient._id)}
+												>
+													Remove
+												</Button>
+											)}
+										</div>
+									</TableCell>
+								</TableRow>
+							);
+						})}
+					</TableBody>
+				</Table>
+			</div>
+		</TooltipProvider>
 	);
 }

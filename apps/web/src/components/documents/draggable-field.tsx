@@ -2,6 +2,11 @@ import type Konva from "konva";
 import { useEffect, useRef } from "react";
 import { Group, Rect, Text, Transformer } from "react-konva";
 import type { FieldType } from "./field-toolbar";
+import {
+	getRecipientColorById,
+	type RecipientColor,
+	UNASSIGNED_COLOR,
+} from "./recipient-colors";
 
 export interface PlacedField {
 	id: string;
@@ -27,6 +32,10 @@ interface DraggableFieldProps {
 	onSelect: () => void;
 	onDragEnd: (x: number, y: number) => void;
 	onTransformEnd: (x: number, y: number, width: number, height: number) => void;
+	/** Map of recipientId to index for color assignment */
+	recipientIndexMap?: Map<string, number>;
+	/** If true, use recipient colors instead of field type colors */
+	useRecipientColors?: boolean;
 }
 
 /**
@@ -104,6 +113,24 @@ export const FIELD_DIMENSIONS: Record<
 };
 
 /**
+ * Convert RecipientColor to the color format used by field rendering
+ */
+function recipientColorToFieldColors(recipientColor: RecipientColor): {
+	ink: string;
+	accent: string;
+	glow: string;
+} {
+	// Create a darker version of the hex color for the ink
+	const hex = recipientColor.hex;
+	// Simple darkening - we'll use the hex color as accent and a darker version as ink
+	return {
+		ink: hex,
+		accent: hex,
+		glow: recipientColor.hexLight,
+	};
+}
+
+/**
  * Draggable field component with craft-paper aesthetic
  * Renders on Konva canvas with transform handles
  */
@@ -113,11 +140,25 @@ export function DraggableField({
 	onSelect,
 	onDragEnd,
 	onTransformEnd,
+	recipientIndexMap,
+	useRecipientColors = false,
 }: DraggableFieldProps) {
 	const shapeRef = useRef<Konva.Group>(null);
 	const trRef = useRef<Konva.Transformer>(null);
 
-	const colors = FIELD_COLORS[field.fieldType];
+	// Determine colors: use recipient colors if enabled, otherwise use field type colors
+	const recipientColor = useRecipientColors
+		? getRecipientColorById(field.recipientId, recipientIndexMap ?? new Map())
+		: null;
+
+	const colors = recipientColor
+		? recipientColorToFieldColors(recipientColor)
+		: FIELD_COLORS[field.fieldType];
+
+	const isUnassigned =
+		useRecipientColors &&
+		(!field.recipientId || recipientColor === UNASSIGNED_COLOR);
+
 	const label = FIELD_LABELS[field.fieldType];
 	const isCheckbox = field.fieldType === "checkbox";
 
@@ -293,7 +334,7 @@ export function DraggableField({
 				<Rect
 					width={field.width}
 					height={field.height}
-					fill="#ffffff"
+					fill={isUnassigned ? "#fafafa" : "#ffffff"}
 					stroke={isSelected ? colors.accent : colors.ink}
 					strokeWidth={isSelected ? 2 : 1}
 					cornerRadius={6}
@@ -301,8 +342,8 @@ export function DraggableField({
 					shadowBlur={isSelected ? 12 : 4}
 					shadowOpacity={1}
 					shadowOffsetY={isSelected ? 0 : 2}
-					dash={[6, 3]}
-					dashEnabled={!isSelected}
+					dash={isUnassigned ? [4, 4] : [6, 3]}
+					dashEnabled={isUnassigned || !isSelected}
 				/>
 
 				{/* Accent stripe on left */}
@@ -313,7 +354,7 @@ export function DraggableField({
 					height={field.height}
 					fill={colors.accent}
 					cornerRadius={[6, 0, 0, 6]}
-					opacity={isSelected ? 1 : 0.7}
+					opacity={isSelected ? 1 : isUnassigned ? 0.5 : 0.7}
 				/>
 
 				{/* Field label */}
@@ -323,12 +364,12 @@ export function DraggableField({
 						y={0}
 						width={field.width - 16}
 						height={field.height}
-						text={label}
+						text={isUnassigned ? `${label} (unassigned)` : label}
 						fontSize={11}
 						fontFamily="'DM Sans', system-ui, sans-serif"
 						fontStyle="600"
 						fill={colors.ink}
-						opacity={0.85}
+						opacity={isUnassigned ? 0.6 : 0.85}
 						align="left"
 						verticalAlign="middle"
 						letterSpacing={0.3}

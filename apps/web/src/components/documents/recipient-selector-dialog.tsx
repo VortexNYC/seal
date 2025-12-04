@@ -16,6 +16,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../ui/select";
+import { getRecipientColor } from "./recipient-colors";
 
 type RecipientRole = "signer" | "viewer" | "approver";
 
@@ -81,19 +82,28 @@ export function RecipientSelectorDialog({
 								<SelectValue placeholder="Select a recipient..." />
 							</SelectTrigger>
 							<SelectContent>
-								{recipients.map((recipient) => (
-									<SelectItem key={recipient._id} value={recipient._id}>
-										<div className="flex flex-col">
-											<span className="font-medium">
-												{recipient.name || recipient.email}
-											</span>
-											<span className="text-xs text-muted-foreground">
-												{getRoleLabel(recipient.role)}
-												{recipient.name && ` • ${recipient.email}`}
-											</span>
-										</div>
-									</SelectItem>
-								))}
+								{recipients.map((recipient, index) => {
+									const color = getRecipientColor(index);
+									return (
+										<SelectItem key={recipient._id} value={recipient._id}>
+											<div className="flex items-center gap-3">
+												<div
+													className={`w-3 h-3 rounded-full flex-shrink-0 ${color.bg}`}
+													aria-hidden="true"
+												/>
+												<div className="flex flex-col">
+													<span className="font-medium">
+														{recipient.name || recipient.email}
+													</span>
+													<span className="text-xs text-muted-foreground">
+														{getRoleLabel(recipient.role)}
+														{recipient.name && ` • ${recipient.email}`}
+													</span>
+												</div>
+											</div>
+										</SelectItem>
+									);
+								})}
 							</SelectContent>
 						</Select>
 						<p className="text-xs text-muted-foreground">
