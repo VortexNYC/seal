@@ -17,6 +17,7 @@ import {
 	ChevronRightIcon,
 	DownloadIcon,
 	FileIcon,
+	FileTextIcon,
 	LayoutGridIcon,
 	LayoutListIcon,
 	MoreVerticalIcon,
@@ -59,6 +60,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import {
 	Table,
@@ -152,6 +154,8 @@ interface DocumentsListProps {
 	searchQuery: string;
 	onShareClick: (documentId: Id<"documents">) => void;
 	onSortChange: (field: SortField) => void;
+	/** SEA-140: Callback to open upload dialog from empty state */
+	onUploadClick: () => void;
 }
 
 function DocumentsList({
@@ -164,6 +168,7 @@ function DocumentsList({
 	searchQuery,
 	onShareClick,
 	onSortChange,
+	onUploadClick,
 }: DocumentsListProps) {
 	const { slug } = Route.useParams();
 	const router = useRouter();
@@ -407,19 +412,32 @@ function DocumentsList({
 		</Button>
 	);
 
+	// SEA-140: Determine if we're showing filtered results vs truly empty
+	const hasFiltersOrSearch =
+		searchQuery.trim() || filter !== "all" || workflowStatusFilter !== "all";
+
 	return (
 		<>
-			{/* Empty state */}
+			{/* SEA-140: Enhanced empty state with helpful CTAs */}
 			{sortedDocuments.length === 0 ? (
-				<Card>
-					<CardContent className="flex flex-col items-center justify-center py-12">
-						<FileIcon className="h-12 w-12 text-muted-foreground mb-4" />
-						<p className="text-lg font-medium">No documents yet</p>
-						<p className="text-sm text-muted-foreground mb-4">
-							Upload your first document to get started
-						</p>
-					</CardContent>
-				</Card>
+				hasFiltersOrSearch ? (
+					<EmptyState
+						icon={SearchIcon}
+						title="No documents found"
+						description="Try adjusting your search or filters to find what you're looking for."
+					/>
+				) : (
+					<EmptyState
+						icon={FileTextIcon}
+						title="No documents yet"
+						description="Upload your first document to get started. You can send documents for signature, share with your team, and track their status."
+						action={{
+							label: "Upload Document",
+							onClick: onUploadClick,
+							icon: UploadIcon,
+						}}
+					/>
+				)
 			) : (
 				<div className="space-y-4">
 					{/* Table View (SEA-68) */}
@@ -996,6 +1014,7 @@ function DocumentsPage() {
 						searchQuery={searchQuery}
 						onShareClick={handleShareClick}
 						onSortChange={handleSortChange}
+						onUploadClick={() => setUploadOpen(true)}
 					/>
 				</Suspense>
 

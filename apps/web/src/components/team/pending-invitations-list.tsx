@@ -7,11 +7,12 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useAction } from "convex/react";
-import { Ban, RefreshCw } from "lucide-react";
+import { Ban, MailIcon, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
 	Table,
 	TableBody,
@@ -142,11 +143,15 @@ export function PendingInvitationsList({
 		return Date.now() > expiresAt;
 	};
 
+	// SEA-140: Enhanced empty state for invitations
 	if (invitations.length === 0) {
 		return (
-			<div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-				No pending invitations
-			</div>
+			<EmptyState
+				icon={MailIcon}
+				title="No pending invitations"
+				description="All invitations have been accepted or there are no pending invitations. Use the 'Invite Member' button to add new team members."
+				withCard={false}
+			/>
 		);
 	}
 

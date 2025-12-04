@@ -6,7 +6,7 @@
 
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { Filter, X } from "lucide-react";
+import { Filter, SearchIcon, UsersIcon, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import {
 	Table,
@@ -247,13 +248,23 @@ export function MembersList({
 				)}
 			</div>
 
-			{/* Members Table */}
+			{/* SEA-140: Enhanced empty state for members */}
 			{filteredMembers.length === 0 ? (
-				<div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-					{searchQuery
-						? "No members found matching your search"
-						: "No members found"}
-				</div>
+				searchQuery || selectedRoles.size > 0 ? (
+					<EmptyState
+						icon={SearchIcon}
+						title="No members found"
+						description="No members match your search or filters. Try adjusting your criteria."
+						withCard={false}
+					/>
+				) : (
+					<EmptyState
+						icon={UsersIcon}
+						title="No team members"
+						description="Your team is empty. Invite colleagues to collaborate on documents and manage your workspace together."
+						withCard={false}
+					/>
+				)
 			) : (
 				<div className="rounded-md border overflow-hidden">
 					<div className="overflow-x-auto">

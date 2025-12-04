@@ -20,6 +20,7 @@ import {
 	ChevronRightIcon,
 	CopyIcon,
 	FileTextIcon,
+	FolderOpenIcon,
 	LayoutGridIcon,
 	LayoutListIcon,
 	MoreVerticalIcon,
@@ -63,6 +64,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -105,6 +107,9 @@ function TemplatesList({
 	onEditTemplate,
 	onDeleteTemplate,
 }: TemplatesListProps) {
+	const { slug } = Route.useParams();
+	const router = useRouter();
+
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
 	const ITEMS_PER_PAGE = 20;
@@ -195,19 +200,31 @@ function TemplatesList({
 
 	return (
 		<>
-			{/* Empty state */}
+			{/* SEA-140: Enhanced empty state with helpful CTAs */}
 			{sortedTemplates.length === 0 ? (
-				<Card>
-					<CardContent className="flex flex-col items-center justify-center py-12">
-						<FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" />
-						<p className="text-lg font-medium">No templates yet</p>
-						<p className="text-sm text-muted-foreground mb-4 text-center max-w-md">
-							{searchQuery
-								? "No templates match your search. Try a different query."
-								: "Create templates from your documents to save time. Templates preserve signature fields and can be reused."}
-						</p>
-					</CardContent>
-				</Card>
+				searchQuery ? (
+					<EmptyState
+						icon={SearchIcon}
+						title="No templates found"
+						description="No templates match your search. Try a different query."
+					/>
+				) : (
+					<EmptyState
+						icon={FileTextIcon}
+						title="No templates yet"
+						description="Create templates from your documents to save time. Templates preserve signature fields and can be reused for recurring documents."
+						action={{
+							label: "Go to Documents",
+							onClick: () => {
+								router.navigate({
+									to: "/$slug/documents",
+									params: { slug },
+								});
+							},
+							icon: FolderOpenIcon,
+						}}
+					/>
+				)
 			) : (
 				<div className="space-y-4">
 					{/* Table View */}
