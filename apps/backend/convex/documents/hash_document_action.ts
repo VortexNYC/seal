@@ -1,3 +1,5 @@
+"use node";
+
 /**
  * Action to compute and store document hash for integrity verification
  *
@@ -11,7 +13,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { action } from "../_generated/server";
-import { generateSHA256Hash } from "../crypto/helpers";
+import { generateSHA256Hash } from "../crypto/node_helpers";
 
 /**
  * Compute and store the SHA-256 hash of a document
