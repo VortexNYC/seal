@@ -49,7 +49,7 @@ import {
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
-import { PdfZoomControls } from "../../../../components/documents/pdf-zoom-controls";
+import { PdfViewerControls } from "../../../../components/documents/pdf-viewer-controls";
 import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
 import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
@@ -77,10 +77,14 @@ function DocumentDetailPage() {
 	const [numPages, setNumPages] = useState<number | null>(null);
 	const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
+	// SEA-78: Current page for navigation
+	const [currentPage, setCurrentPage] = useState(1);
+
 	// SEA-84: Responsive PDF width with window resize handling
 	const [pdfWidth, setPdfWidth] = useState(700);
 	const [pdfHeight, setPdfHeight] = useState(900); // Default height, updated on page load
 	const containerRef = useRef<HTMLDivElement>(null);
+	const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
 	// SEA-89: Field drag state
 	const [draggingFieldType, setDraggingFieldType] = useState<FieldType | null>(
@@ -270,6 +274,16 @@ function DocumentDetailPage() {
 	const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
 		setNumPages(numPages);
 	};
+
+	// SEA-78: Page navigation handler - scrolls to the selected page
+	const handlePageChange = useCallback((page: number) => {
+		setCurrentPage(page);
+		// Scroll to the page element
+		const pageElement = pageRefs.current.get(page);
+		if (pageElement) {
+			pageElement.scrollIntoView({ behavior: "smooth", block: "start" });
+		}
+	}, []);
 
 	// SEA-91: Page dimensions handler - captures first page dimensions for coordinate conversion
 	const handlePageDimensions = (
@@ -961,7 +975,13 @@ function DocumentDetailPage() {
 								>
 									<div className="mb-4 flex justify-center">
 										<div className="zoom-controls-bar">
-											<PdfZoomControls currentZoom={currentZoom} />
+											<PdfViewerControls
+												currentZoom={currentZoom}
+												currentPage={currentPage}
+												totalPages={numPages ?? 1}
+												onPageChange={handlePageChange}
+												enableKeyboardShortcuts={true}
+											/>
 										</div>
 									</div>
 									<TransformComponent
@@ -1014,6 +1034,13 @@ function DocumentDetailPage() {
 															canEdit ? handleFieldUpdate : undefined
 														}
 														onPageDimensions={handlePageDimensions}
+														onPageRef={(pageNumber, element) => {
+															if (element) {
+																pageRefs.current.set(pageNumber, element);
+															} else {
+																pageRefs.current.delete(pageNumber);
+															}
+														}}
 													/>
 												))}
 											</Document>

@@ -26,6 +26,8 @@ interface PdfPageWithCanvasProps {
 		width: number,
 		height: number,
 	) => void;
+	/** SEA-78: Callback to register page ref for scroll navigation */
+	onPageRef?: (pageNumber: number, element: HTMLDivElement | null) => void;
 }
 
 /**
@@ -44,6 +46,7 @@ export function PdfPageWithCanvas({
 	onFieldSelect,
 	onFieldUpdate,
 	onPageDimensions,
+	onPageRef,
 }: PdfPageWithCanvasProps) {
 	const [pageDimensions, setPageDimensions] = useState<{
 		width: number;
@@ -75,8 +78,13 @@ export function PdfPageWithCanvas({
 		console.log(`Canvas ready for page ${pageNumber}`, stage);
 	};
 
+	// SEA-78: Ref callback for page scroll navigation
+	const handleRef = (element: HTMLDivElement | null) => {
+		onPageRef?.(pageNumber, element);
+	};
+
 	return (
-		<div className="relative">
+		<div className="relative" ref={handleRef} data-page-number={pageNumber}>
 			<Page
 				pageNumber={pageNumber}
 				width={width}
