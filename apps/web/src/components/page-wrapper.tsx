@@ -12,7 +12,7 @@ interface PageAction {
 }
 
 interface PageWrapperProps {
-	children: React.ReactNode;
+	children: ReactNode;
 	title: string;
 	description?: string;
 	action?: PageAction;
@@ -32,8 +32,8 @@ export function PageWrapper({
 	const allActions = action ? [action, ...(actions || [])] : actions || [];
 
 	return (
-		<>
-			<div className="border-b">
+		<div className="flex h-full min-h-0 flex-col overflow-hidden">
+			<div className="sticky top-0 z-10 border-b bg-background">
 				<div className="flex min-h-16 flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-0">
 					<div className="flex items-center gap-4 flex-1 min-w-0">
 						<SidebarTrigger />
@@ -71,7 +71,7 @@ export function PageWrapper({
 					)}
 				</div>
 			</div>
-			<div className="p-4 sm:p-6">{children}</div>
-		</>
+			<div className="flex-1 overflow-auto p-4 sm:p-6">{children}</div>
+		</div>
 	);
 }

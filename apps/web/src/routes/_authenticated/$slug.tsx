@@ -39,7 +39,7 @@ function WorkspaceLayout() {
 
 	return (
 		<SidebarProvider>
-			<div className="flex min-h-screen w-full">
+			<div className="flex h-screen w-full overflow-hidden">
 				<AppSidebar
 					slug={slug}
 					organization={{
@@ -49,7 +49,7 @@ function WorkspaceLayout() {
 					}}
 					permissions={permissions}
 				/>
-				<main className="flex-1">
+				<main className="flex-1 h-full min-h-0 overflow-hidden">
 					<Outlet />
 				</main>
 			</div>

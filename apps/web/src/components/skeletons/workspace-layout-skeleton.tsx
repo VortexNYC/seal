@@ -21,7 +21,7 @@ export function WorkspaceLayoutSkeleton() {
 	return (
 		<SidebarProvider>
 			<div
-				className="flex min-h-screen w-full"
+				className="flex h-screen w-full overflow-hidden"
 				role="status"
 				aria-label="Loading workspace"
 			>
@@ -56,7 +56,7 @@ export function WorkspaceLayoutSkeleton() {
 				</aside>
 
 				{/* Main Content Skeleton */}
-				<main className="flex-1 p-6">
+				<main className="flex-1 h-full min-h-0 overflow-hidden p-6">
 					<div className="space-y-4">
 						<Skeleton className="h-8 w-[200px]" />
 						<Skeleton className="h-4 w-[300px]" />
