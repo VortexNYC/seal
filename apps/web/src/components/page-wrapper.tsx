@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -16,6 +17,8 @@ interface PageWrapperProps {
 	description?: string;
 	action?: PageAction;
 	actions?: PageAction[];
+	/** SEA-132: Custom header actions (e.g., export dialog) */
+	headerActions?: ReactNode;
 }
 
 export function PageWrapper({
@@ -24,6 +27,7 @@ export function PageWrapper({
 	description,
 	action,
 	actions,
+	headerActions,
 }: PageWrapperProps) {
 	const allActions = action ? [action, ...(actions || [])] : actions || [];
 
@@ -45,8 +49,9 @@ export function PageWrapper({
 							)}
 						</div>
 					</div>
-					{allActions.length > 0 && (
+					{(allActions.length > 0 || headerActions) && (
 						<div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+							{headerActions}
 							{allActions.map((actionItem, index) => {
 								const Icon = actionItem.icon;
 								return (

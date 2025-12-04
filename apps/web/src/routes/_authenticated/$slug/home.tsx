@@ -31,6 +31,7 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { ExportDataDialog } from "@/components/dashboard/export-data-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { PageWrapper } from "@/components/page-wrapper";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
@@ -134,17 +135,23 @@ function TrendChart() {
 	const hasData = chartData.some((d) => d.created > 0 || d.completed > 0);
 
 	return (
-		<Card className="col-span-2">
-			<CardHeader>
-				<CardTitle>Document Activity</CardTitle>
-				<CardDescription>
+		<Card className="lg:col-span-2">
+			<CardHeader className="pb-2 sm:pb-6">
+				<CardTitle className="text-base sm:text-lg">
+					Document Activity
+				</CardTitle>
+				<CardDescription className="text-xs sm:text-sm">
 					Documents created and completed over the last 30 days
 				</CardDescription>
 			</CardHeader>
-			<CardContent>
+			<CardContent className="pl-0 sm:pl-6">
 				{hasData ? (
-					<ResponsiveContainer width="100%" height={250}>
-						<AreaChart data={chartData}>
+					<ResponsiveContainer
+						width="100%"
+						height={200}
+						className="sm:h-[250px]"
+					>
+						<AreaChart data={chartData} margin={{ left: 0, right: 8 }}>
 							<defs>
 								<linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
 									<stop
@@ -165,22 +172,24 @@ function TrendChart() {
 							</defs>
 							<XAxis
 								dataKey="displayDate"
-								tick={{ fontSize: 12 }}
+								tick={{ fontSize: 10 }}
 								tickLine={false}
 								axisLine={false}
 								interval="preserveStartEnd"
 							/>
 							<YAxis
-								tick={{ fontSize: 12 }}
+								tick={{ fontSize: 10 }}
 								tickLine={false}
 								axisLine={false}
 								allowDecimals={false}
+								width={30}
 							/>
 							<Tooltip
 								contentStyle={{
 									backgroundColor: "hsl(var(--background))",
 									border: "1px solid hsl(var(--border))",
 									borderRadius: "6px",
+									fontSize: "12px",
 								}}
 							/>
 							<Area
@@ -202,7 +211,7 @@ function TrendChart() {
 						</AreaChart>
 					</ResponsiveContainer>
 				) : (
-					<div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
+					<div className="flex h-[200px] sm:h-[250px] items-center justify-center text-sm text-muted-foreground">
 						No document activity yet. Create your first document to see trends.
 					</div>
 				)}
@@ -438,7 +447,7 @@ function WorkspaceHome() {
 	}
 
 	return (
-		<PageWrapper title="Dashboard">
+		<PageWrapper title="Dashboard" headerActions={<ExportDataDialog />}>
 			<div className="space-y-6">
 				{/* Stats Cards */}
 				<Suspense
@@ -462,17 +471,17 @@ function WorkspaceHome() {
 				</Suspense>
 
 				{/* Charts and Recent Activity */}
-				<div className="grid gap-6 lg:grid-cols-3">
+				<div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
 					{/* Trend Chart */}
 					<Suspense
 						fallback={
-							<Card className="col-span-2">
-								<CardHeader>
+							<Card className="lg:col-span-2">
+								<CardHeader className="pb-2 sm:pb-6">
 									<div className="h-5 bg-muted rounded w-1/3 mb-2" />
 									<div className="h-4 bg-muted rounded w-1/2" />
 								</CardHeader>
 								<CardContent>
-									<div className="h-[250px] bg-muted rounded animate-pulse" />
+									<div className="h-[200px] sm:h-[250px] bg-muted rounded animate-pulse" />
 								</CardContent>
 							</Card>
 						}
@@ -503,7 +512,7 @@ function WorkspaceHome() {
 				</div>
 
 				{/* Recent Documents and Quick Actions */}
-				<div className="grid gap-6 lg:grid-cols-3">
+				<div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
 					<div className="lg:col-span-2">
 						<Suspense
 							fallback={

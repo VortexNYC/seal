@@ -350,3 +350,93 @@ export const getPeriodStats = permissionQuery("documents:view")({
 		};
 	},
 });
+
+/**
+ * SEA-132: Get documents data for export (CSV/PDF)
+ * Returns detailed document data with recipients for reporting
+ */
+export const getDocumentsForExport = permissionQuery("documents:view")({
+	args: {
+		workflowStatus: v.optional(
+			v.union(
+				v.literal("draft"),
+				v.literal("sent"),
+				v.literal("in_progress"),
+				v.literal("completed"),
+				v.literal("cancelled"),
+				v.literal("declined"),
+			),
+		),
+		startDate: v.optional(v.number()),
+		endDate: v.optional(v.number()),
+	},
+	handler: async (ctx, args) => {
+		const organizationId = ctx.auth.organization._id;
+
+		// Get all non-deleted documents
+		let documents = await ctx.db
+			.query("documents")
+			.withIndex("by_organization", (q) =>
+				q.eq("organizationId", organizationId),
+			)
+			.filter((q) => q.neq(q.field("status"), "deleted"))
+			.collect();
+
+		// Apply filters
+		if (args.workflowStatus) {
+			documents = documents.filter(
+				(d) => (d.workflowStatus ?? "draft") === args.workflowStatus,
+			);
+		}
+
+		if (args.startDate !== undefined) {
+			const startDate = args.startDate;
+			documents = documents.filter((d) => d.createdAt >= startDate);
+		}
+
+		if (args.endDate !== undefined) {
+			const endDate = args.endDate;
+			documents = documents.filter((d) => d.createdAt <= endDate);
+		}
+
+		// Enrich with recipient data
+		const enrichedDocs = await Promise.all(
+			documents.map(async (doc) => {
+				const recipients = await ctx.db
+					.query("document_recipients")
+					.withIndex("by_document", (q) => q.eq("documentId", doc._id))
+					.collect();
+
+				const owner = await ctx.db.get(doc.ownerId);
+
+				return {
+					id: doc._id,
+					name: doc.name,
+					status: doc.workflowStatus ?? "draft",
+					createdAt: doc.createdAt,
+					sentAt: doc.sentAt,
+					completedAt: doc.completedAt,
+					deadline: doc.deadline,
+					ownerName: owner?.name ?? owner?.email ?? "Unknown",
+					ownerEmail: owner?.email ?? "",
+					recipientCount: recipients.length,
+					signedCount: recipients.filter((r) => r.status === "signed").length,
+					pendingCount: recipients.filter((r) => r.status === "pending").length,
+					recipients: recipients.map((r) => ({
+						email: r.email,
+						name: r.name ?? "",
+						role: r.role,
+						status: r.status,
+						signedAt: r.signedAt,
+						viewedAt: r.viewedAt,
+					})),
+				};
+			}),
+		);
+
+		// Sort by createdAt descending
+		enrichedDocs.sort((a, b) => b.createdAt - a.createdAt);
+
+		return enrichedDocs;
+	},
+});
