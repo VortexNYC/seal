@@ -53,7 +53,7 @@ export type {
 export async function renderDocumentInvitation(
 	props: DocumentInvitationProps,
 ): Promise<string> {
-	return render(DocumentInvitation(props));
+	return render(<DocumentInvitation {...props} />);
 }
 
 /**
@@ -62,7 +62,7 @@ export async function renderDocumentInvitation(
 export async function renderSigningComplete(
 	props: SigningCompleteProps,
 ): Promise<string> {
-	return render(SigningComplete(props));
+	return render(<SigningComplete {...props} />);
 }
 
 /**
@@ -71,7 +71,7 @@ export async function renderSigningComplete(
 export async function renderDocumentCompleted(
 	props: DocumentCompletedProps,
 ): Promise<string> {
-	return render(DocumentCompleted(props));
+	return render(<DocumentCompleted {...props} />);
 }
 
 /**
@@ -80,14 +80,14 @@ export async function renderDocumentCompleted(
 export async function renderDocumentReminder(
 	props: DocumentReminderProps,
 ): Promise<string> {
-	return render(DocumentReminder(props));
+	return render(<DocumentReminder {...props} />);
 }
 
 /**
  * Render Welcome email to HTML string
  */
 export async function renderWelcome(props: WelcomeProps): Promise<string> {
-	return render(Welcome(props));
+	return render(<Welcome {...props} />);
 }
 
 /**
@@ -96,7 +96,7 @@ export async function renderWelcome(props: WelcomeProps): Promise<string> {
 export async function renderTeamInvitation(
 	props: TeamInvitationProps,
 ): Promise<string> {
-	return render(TeamInvitation(props));
+	return render(<TeamInvitation {...props} />);
 }
 
 /**
@@ -105,5 +105,5 @@ export async function renderTeamInvitation(
 export async function renderDocumentShared(
 	props: DocumentSharedProps,
 ): Promise<string> {
-	return render(DocumentShared(props));
+	return render(<DocumentShared {...props} />);
 }
