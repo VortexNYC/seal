@@ -318,14 +318,14 @@ export function ExportDataDialog() {
 					</div>
 
 					{/* Custom Date Range */}
-					<div className="grid grid-cols-2 gap-4">
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 						<div className="space-y-2">
 							<Label>From</Label>
 							<Popover>
 								<PopoverTrigger asChild>
 									<Button
 										variant="outline"
-										className="w-full justify-start text-left font-normal"
+										className="w-full justify-start text-left font-normal min-h-[44px] sm:min-h-0"
 									>
 										<CalendarIcon className="mr-2 h-4 w-4" />
 										{dateRange.from ? (
@@ -355,7 +355,7 @@ export function ExportDataDialog() {
 								<PopoverTrigger asChild>
 									<Button
 										variant="outline"
-										className="w-full justify-start text-left font-normal"
+										className="w-full justify-start text-left font-normal min-h-[44px] sm:min-h-0"
 									>
 										<CalendarIcon className="mr-2 h-4 w-4" />
 										{dateRange.to ? (
@@ -400,7 +400,7 @@ export function ExportDataDialog() {
 					{/* Export Buttons */}
 					<div className="space-y-2">
 						<Button
-							className="w-full"
+							className="w-full min-h-[44px]"
 							onClick={handleExportCSV}
 							disabled={isExporting || !exportData || exportData.length === 0}
 						>
@@ -412,7 +412,7 @@ export function ExportDataDialog() {
 							Export Summary CSV
 						</Button>
 						<Button
-							className="w-full"
+							className="w-full min-h-[44px]"
 							variant="outline"
 							onClick={handleExportDetailedCSV}
 							disabled={isExporting || !exportData || exportData.length === 0}

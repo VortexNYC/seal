@@ -427,11 +427,11 @@ function ApiKeyRow({
 
 	return (
 		<div
-			className={`flex items-center justify-between rounded-lg border p-4 ${apiKey.revoked ? "opacity-60" : ""}`}
+			className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border p-4 gap-4 ${apiKey.revoked ? "opacity-60" : ""}`}
 		>
-			<div className="space-y-1">
-				<div className="flex items-center gap-2">
-					<span className="font-medium">{apiKey.name}</span>
+			<div className="space-y-1 min-w-0 flex-1">
+				<div className="flex items-center gap-2 flex-wrap">
+					<span className="font-medium truncate">{apiKey.name}</span>
 					{apiKey.revoked && (
 						<Badge variant="destructive" className="text-xs">
 							Revoked
@@ -443,11 +443,11 @@ function ApiKeyRow({
 						</Badge>
 					)}
 				</div>
-				<div className="flex items-center gap-2 text-sm text-muted-foreground">
+				<div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-muted-foreground">
 					<button
 						type="button"
 						onClick={() => setShowPrefix(!showPrefix)}
-						className="flex items-center gap-1 font-mono hover:text-foreground"
+						className="flex items-center gap-1 font-mono hover:text-foreground min-h-[44px] sm:min-h-0"
 					>
 						{showPrefix ? (
 							<>
@@ -461,11 +461,11 @@ function ApiKeyRow({
 							</>
 						)}
 					</button>
-					<span>•</span>
+					<span className="hidden sm:inline">•</span>
 					<span>Created {formatDate(apiKey.createdAt)}</span>
 					{apiKey.lastUsedAt && (
 						<>
-							<span>•</span>
+							<span className="hidden sm:inline">•</span>
 							<span>Last used {formatRelativeTime(apiKey.lastUsedAt)}</span>
 						</>
 					)}
@@ -478,11 +478,15 @@ function ApiKeyRow({
 					))}
 				</div>
 			</div>
-			<div className="flex items-center gap-2">
+			<div className="flex items-center gap-2 self-end sm:self-center">
 				{!apiKey.revoked && (
 					<AlertDialog>
 						<AlertDialogTrigger asChild>
-							<Button variant="outline" size="sm">
+							<Button
+								variant="outline"
+								size="sm"
+								className="min-h-[44px] sm:min-h-0"
+							>
 								<RefreshCw className="mr-1 h-3 w-3" />
 								Revoke
 							</Button>
@@ -506,7 +510,11 @@ function ApiKeyRow({
 				)}
 				<AlertDialog>
 					<AlertDialogTrigger asChild>
-						<Button variant="ghost" size="icon">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+						>
 							<Trash2 className="h-4 w-4 text-destructive" />
 						</Button>
 					</AlertDialogTrigger>
@@ -575,11 +583,11 @@ function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
 						{apps.map((app) => (
 							<div
 								key={app._id}
-								className="flex items-center justify-between rounded-lg border p-4"
+								className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border p-4 gap-4"
 							>
-								<div className="space-y-1">
-									<div className="flex items-center gap-2">
-										<span className="font-medium">{app.appName}</span>
+								<div className="space-y-1 min-w-0 flex-1">
+									<div className="flex items-center gap-2 flex-wrap">
+										<span className="font-medium truncate">{app.appName}</span>
 										{app.active ? (
 											<Badge variant="default" className="text-xs">
 												Active
@@ -590,15 +598,17 @@ function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
 											</Badge>
 										)}
 									</div>
-									<p className="text-sm text-muted-foreground">
-										Connected {formatDate(app.connectedAt)}
+									<div className="flex flex-col sm:flex-row sm:items-center gap-1 text-sm text-muted-foreground">
+										<span>Connected {formatDate(app.connectedAt)}</span>
 										{app.lastActivityAt && (
 											<>
-												{" "}
-												• Last active {formatRelativeTime(app.lastActivityAt)}
+												<span className="hidden sm:inline">•</span>
+												<span>
+													Last active {formatRelativeTime(app.lastActivityAt)}
+												</span>
 											</>
 										)}
-									</p>
+									</div>
 									<div className="flex flex-wrap gap-1 pt-1">
 										{app.scopes.map((scope) => (
 											<Badge key={scope} variant="outline" className="text-xs">
@@ -609,7 +619,11 @@ function ConnectedAppsSection({ apps }: { apps: Doc<"connected_apps">[] }) {
 								</div>
 								<AlertDialog>
 									<AlertDialogTrigger asChild>
-										<Button variant="outline" size="sm">
+										<Button
+											variant="outline"
+											size="sm"
+											className="min-h-[44px] sm:min-h-0 self-end sm:self-center"
+										>
 											<Unplug className="mr-1 h-3 w-3" />
 											Disconnect
 										</Button>

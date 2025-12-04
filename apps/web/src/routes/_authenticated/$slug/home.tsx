@@ -274,11 +274,11 @@ function RecentDocuments() {
 						No documents yet
 					</div>
 				) : (
-					<div className="space-y-4">
+					<div className="space-y-2 sm:space-y-4">
 						{recentDocs.map((doc) => (
 							<div
 								key={doc._id}
-								className="flex items-center justify-between cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-2 rounded-lg transition-colors"
+								className="flex items-center justify-between cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-3 sm:py-2 rounded-lg transition-colors min-h-[56px]"
 								onClick={() =>
 									router.navigate({
 										to: "/$slug/documents/$documentId",
@@ -294,8 +294,8 @@ function RecentDocuments() {
 									}
 								}}
 							>
-								<div className="flex items-center gap-3">
-									<div className="h-10 w-10 rounded bg-muted flex items-center justify-center overflow-hidden">
+								<div className="flex items-center gap-3 min-w-0 flex-1">
+									<div className="h-10 w-10 rounded bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
 										{doc.thumbnailDataUrl ? (
 											<img
 												src={doc.thumbnailDataUrl}
@@ -306,8 +306,8 @@ function RecentDocuments() {
 											<FileTextIcon className="h-5 w-5 text-muted-foreground" />
 										)}
 									</div>
-									<div>
-										<p className="text-sm font-medium line-clamp-1">
+									<div className="min-w-0 flex-1">
+										<p className="text-sm font-medium line-clamp-1 truncate">
 											{doc.name}
 										</p>
 										<p className="text-xs text-muted-foreground">
@@ -338,7 +338,7 @@ function QuickActions() {
 			</CardHeader>
 			<CardContent className="space-y-2">
 				<Button
-					className="w-full justify-start"
+					className="w-full justify-start min-h-[44px]"
 					onClick={() =>
 						router.navigate({ to: "/$slug/documents", params: { slug } })
 					}
@@ -348,7 +348,7 @@ function QuickActions() {
 				</Button>
 				<Button
 					variant="outline"
-					className="w-full justify-start"
+					className="w-full justify-start min-h-[44px]"
 					onClick={() =>
 						router.navigate({ to: "/$slug/templates", params: { slug } })
 					}
@@ -358,7 +358,7 @@ function QuickActions() {
 				</Button>
 				<Button
 					variant="outline"
-					className="w-full justify-start"
+					className="w-full justify-start min-h-[44px]"
 					onClick={() =>
 						router.navigate({
 							to: "/$slug/settings/team",

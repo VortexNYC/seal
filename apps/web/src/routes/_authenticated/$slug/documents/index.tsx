@@ -482,15 +482,17 @@ function DocumentsList({
 				<div className="space-y-4">
 					{/* Table View (SEA-68) */}
 					{viewMode === "table" ? (
-						<div className="border rounded-lg">
-							<Table>
+						<div className="border rounded-lg overflow-x-auto">
+							<Table className="min-w-[600px]">
 								<TableHeader>
 									<TableRow>
-										<TableHead className="w-[100px]">Thumbnail</TableHead>
+										<TableHead className="w-[80px] sm:w-[100px]">
+											Thumbnail
+										</TableHead>
 										<TableHead>
 											<SortHeader field="name" label="Title" />
 										</TableHead>
-										<TableHead>
+										<TableHead className="hidden sm:table-cell">
 											<SortHeader field="createdAt" label="Upload Date" />
 										</TableHead>
 										<TableHead>
@@ -512,7 +514,7 @@ function DocumentsList({
 											}
 										>
 											<TableCell>
-												<div className="w-16 h-20 bg-muted rounded border border-border flex items-center justify-center overflow-hidden">
+												<div className="w-12 h-16 sm:w-16 sm:h-20 bg-muted rounded border border-border flex items-center justify-center overflow-hidden">
 													{doc.thumbnailDataUrl ? (
 														<img
 															src={doc.thumbnailDataUrl}
@@ -520,7 +522,7 @@ function DocumentsList({
 															className="w-full h-full object-cover"
 														/>
 													) : (
-														<FileIcon className="h-8 w-8 text-muted-foreground" />
+														<FileIcon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
 													)}
 												</div>
 											</TableCell>
@@ -550,7 +552,7 @@ function DocumentsList({
 													)}
 												</div>
 											</TableCell>
-											<TableCell>
+											<TableCell className="hidden sm:table-cell">
 												<div className="text-sm">
 													<p>{formatDate(doc.createdAt)}</p>
 													<p className="text-muted-foreground">
@@ -761,8 +763,8 @@ function DocumentsList({
 
 					{/* Pagination (SEA-68: 20 items per page) */}
 					{totalPages > 1 && (
-						<div className="flex items-center justify-between">
-							<p className="text-sm text-muted-foreground">
+						<div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+							<p className="text-sm text-muted-foreground text-center sm:text-left">
 								Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
 								{Math.min(currentPage * ITEMS_PER_PAGE, sortedDocuments.length)}{" "}
 								of {sortedDocuments.length} documents
@@ -775,9 +777,10 @@ function DocumentsList({
 										setCurrentPage((prev) => Math.max(1, prev - 1))
 									}
 									disabled={currentPage === 1}
+									className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
 								>
 									<ChevronLeftIcon className="h-4 w-4" />
-									Previous
+									<span className="hidden sm:inline">Previous</span>
 								</Button>
 								<div className="flex items-center gap-1">
 									{Array.from({ length: totalPages }, (_, i) => i + 1).map(
@@ -787,7 +790,7 @@ function DocumentsList({
 												variant={page === currentPage ? "default" : "outline"}
 												size="sm"
 												onClick={() => setCurrentPage(page)}
-												className="w-8 h-8 p-0"
+												className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-[32px] sm:h-8 p-0"
 											>
 												{page}
 											</Button>
@@ -801,8 +804,9 @@ function DocumentsList({
 										setCurrentPage((prev) => Math.min(totalPages, prev + 1))
 									}
 									disabled={currentPage === totalPages}
+									className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
 								>
-									Next
+									<span className="hidden sm:inline">Next</span>
 									<ChevronRightIcon className="h-4 w-4" />
 								</Button>
 							</div>
@@ -1026,13 +1030,13 @@ function DocumentsPage() {
 						</Button>
 
 						{/* SEA-74: Date Range Filter */}
-						<div className="border-l pl-2 ml-2">
+						<div className="sm:border-l sm:pl-2 sm:ml-2 w-full sm:w-auto">
 							<Popover>
 								<PopoverTrigger asChild>
 									<Button
 										variant={dateRange?.from ? "default" : "outline"}
 										size="sm"
-										className="gap-2"
+										className="gap-2 w-full sm:w-auto min-h-[44px] sm:min-h-0"
 									>
 										<CalendarIcon className="h-4 w-4" />
 										{dateRange?.from ? (
@@ -1065,7 +1069,15 @@ function DocumentsPage() {
 										mode="range"
 										selected={dateRange}
 										onSelect={setDateRange}
+										numberOfMonths={1}
+										className="sm:hidden"
+									/>
+									<Calendar
+										mode="range"
+										selected={dateRange}
+										onSelect={setDateRange}
 										numberOfMonths={2}
+										className="hidden sm:block"
 									/>
 									{dateRange?.from && (
 										<div className="p-3 border-t">
