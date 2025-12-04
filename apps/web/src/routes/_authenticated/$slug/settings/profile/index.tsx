@@ -81,6 +81,40 @@ function ProfileSettings() {
 
 	return (
 		<div className="space-y-6">
+			{/* Clerk UserProfile for account settings */}
+			<Card>
+				<CardHeader>
+					<CardTitle>Account Settings</CardTitle>
+					<CardDescription>
+						Manage your name, email, profile picture, and other account details
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<style>
+						{`
+              /* Hide the entire navbar/sidebar */
+              .cl-navbar,
+              .cl-userProfile__navbar {
+                display: none !important;
+              }
+
+              /* Remove card styling from Clerk component */
+              .cl-userProfile-root .cl-card {
+                box-shadow: none !important;
+                border: none !important;
+              }
+
+              /* Add padding to the left side of the content area */
+              .cl-pageScrollBox,
+              .cl-userProfile__pageScrollBox {
+                padding-left: 0 !important;
+              }
+            `}
+					</style>
+					<UserProfile />
+				</CardContent>
+			</Card>
+
 			{/* Bio Card - Custom Convex-backed field */}
 			<Card>
 				<CardHeader>
@@ -129,40 +163,6 @@ function ProfileSettings() {
 							{isSubmitting ? "Saving..." : "Save Bio"}
 						</Button>
 					</div>
-				</CardContent>
-			</Card>
-
-			{/* Clerk UserProfile for account settings */}
-			<Card>
-				<CardHeader>
-					<CardTitle>Account Settings</CardTitle>
-					<CardDescription>
-						Manage your name, email, profile picture, and other account details
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<style>
-						{`
-              /* Hide the entire navbar/sidebar */
-              .cl-navbar,
-              .cl-userProfile__navbar {
-                display: none !important;
-              }
-
-              /* Remove card styling from Clerk component */
-              .cl-userProfile-root .cl-card {
-                box-shadow: none !important;
-                border: none !important;
-              }
-
-              /* Add padding to the left side of the content area */
-              .cl-pageScrollBox,
-              .cl-userProfile__pageScrollBox {
-                padding-left: 0 !important;
-              }
-            `}
-					</style>
-					<UserProfile />
 				</CardContent>
 			</Card>
 		</div>

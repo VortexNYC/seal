@@ -8,7 +8,7 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { Building2, Globe, Save } from "lucide-react";
+import { Building2, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
@@ -23,49 +23,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/")({
 	component: GeneralSettings,
 	pendingComponent: FormSkeleton,
 });
-
-// Common timezones
-const TIMEZONES = [
-	{ value: "UTC", label: "UTC (Coordinated Universal Time)" },
-	{ value: "America/New_York", label: "Eastern Time (US & Canada)" },
-	{ value: "America/Chicago", label: "Central Time (US & Canada)" },
-	{ value: "America/Denver", label: "Mountain Time (US & Canada)" },
-	{ value: "America/Los_Angeles", label: "Pacific Time (US & Canada)" },
-	{ value: "America/Sao_Paulo", label: "Brasília (Brazil)" },
-	{ value: "Europe/London", label: "London (UK)" },
-	{ value: "Europe/Paris", label: "Paris (Central European)" },
-	{ value: "Europe/Berlin", label: "Berlin (Germany)" },
-	{ value: "Asia/Tokyo", label: "Tokyo (Japan)" },
-	{ value: "Asia/Shanghai", label: "Shanghai (China)" },
-	{ value: "Asia/Dubai", label: "Dubai (UAE)" },
-	{ value: "Australia/Sydney", label: "Sydney (Australia)" },
-];
-
-// Common currencies
-const CURRENCIES = [
-	{ value: "USD", label: "USD - US Dollar" },
-	{ value: "EUR", label: "EUR - Euro" },
-	{ value: "GBP", label: "GBP - British Pound" },
-	{ value: "BRL", label: "BRL - Brazilian Real" },
-	{ value: "JPY", label: "JPY - Japanese Yen" },
-	{ value: "CNY", label: "CNY - Chinese Yuan" },
-	{ value: "AUD", label: "AUD - Australian Dollar" },
-	{ value: "CAD", label: "CAD - Canadian Dollar" },
-	{ value: "CHF", label: "CHF - Swiss Franc" },
-	{ value: "INR", label: "INR - Indian Rupee" },
-];
 
 function GeneralSettings() {
 	const { slug } = Route.useParams();
@@ -134,9 +96,9 @@ function GeneralSettings() {
 
 	return (
 		<PageWrapper title="General Settings">
-			<form onSubmit={handleSubmit} className="space-y-6">
+			<form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
 				{/* Workspace Information */}
-				<Card>
+				<Card className="md:col-span-2">
 					<CardHeader>
 						<div className="flex items-center gap-2">
 							<Building2 className="h-5 w-5" />
@@ -180,70 +142,8 @@ function GeneralSettings() {
 					</CardContent>
 				</Card>
 
-				{/* Regional Settings */}
-				<Card>
-					<CardHeader>
-						<div className="flex items-center gap-2">
-							<Globe className="h-5 w-5" />
-							<CardTitle>Regional Settings</CardTitle>
-						</div>
-						<CardDescription>
-							Configure timezone and currency preferences
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="timezone">Timezone</Label>
-							<Select
-								value={formData.timezone}
-								onValueChange={(value) =>
-									setFormData({ ...formData, timezone: value })
-								}
-							>
-								<SelectTrigger id="timezone">
-									<SelectValue placeholder="Select timezone" />
-								</SelectTrigger>
-								<SelectContent>
-									{TIMEZONES.map((tz) => (
-										<SelectItem key={tz.value} value={tz.value}>
-											{tz.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<p className="text-sm text-muted-foreground">
-								Default timezone for dates and times in this workspace
-							</p>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="currency">Currency</Label>
-							<Select
-								value={formData.currency}
-								onValueChange={(value) =>
-									setFormData({ ...formData, currency: value })
-								}
-							>
-								<SelectTrigger id="currency">
-									<SelectValue placeholder="Select currency" />
-								</SelectTrigger>
-								<SelectContent>
-									{CURRENCIES.map((curr) => (
-										<SelectItem key={curr.value} value={curr.value}>
-											{curr.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<p className="text-sm text-muted-foreground">
-								Default currency for billing and pricing
-							</p>
-						</div>
-					</CardContent>
-				</Card>
-
 				{/* Save Button */}
-				<div className="flex justify-end">
+				<div className="flex justify-end md:col-span-2">
 					<Button type="submit" disabled={isSubmitting}>
 						<Save className="mr-2 h-4 w-4" />
 						{isSubmitting ? "Saving..." : "Save Changes"}
