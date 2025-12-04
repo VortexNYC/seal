@@ -8,6 +8,9 @@
  * @module
  */
 
+import type * as api_keys_index from "../api_keys/index.js";
+import type * as api_keys_mutations from "../api_keys/mutations.js";
+import type * as api_keys_queries from "../api_keys/queries.js";
 import type * as audit_logs_helpers from "../audit_logs/helpers.js";
 import type * as auth from "../auth.js";
 import type * as auth_guards from "../auth/guards.js";
@@ -47,6 +50,7 @@ import type * as organizations_actions from "../organizations/actions.js";
 import type * as organizations_helpers from "../organizations/helpers.js";
 import type * as organizations_mutations from "../organizations/mutations.js";
 import type * as organizations_queries from "../organizations/queries.js";
+import type * as schemas_api_keys from "../schemas/api_keys.js";
 import type * as schemas_audit_logs from "../schemas/audit_logs.js";
 import type * as schemas_document_access from "../schemas/document_access.js";
 import type * as schemas_document_recipients from "../schemas/document_recipients.js";
@@ -89,6 +93,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "api_keys/index": typeof api_keys_index;
+  "api_keys/mutations": typeof api_keys_mutations;
+  "api_keys/queries": typeof api_keys_queries;
   "audit_logs/helpers": typeof audit_logs_helpers;
   auth: typeof auth;
   "auth/guards": typeof auth_guards;
@@ -128,6 +135,7 @@ declare const fullApi: ApiFromModules<{
   "organizations/helpers": typeof organizations_helpers;
   "organizations/mutations": typeof organizations_mutations;
   "organizations/queries": typeof organizations_queries;
+  "schemas/api_keys": typeof schemas_api_keys;
   "schemas/audit_logs": typeof schemas_audit_logs;
   "schemas/document_access": typeof schemas_document_access;
   "schemas/document_recipients": typeof schemas_document_recipients;

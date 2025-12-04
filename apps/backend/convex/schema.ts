@@ -59,6 +59,12 @@ import { subscriptionProductsTable } from "./schemas/subscription_products";
 import { subscriptionsTable } from "./schemas/subscriptions";
 import { userProfilesTable } from "./schemas/user_profiles";
 import { type UserStatus, usersTable } from "./schemas/users";
+import {
+	apiKeysTable,
+	type ApiKeyScope,
+	connectedAppsTable,
+	integrationActivityLogsTable,
+} from "./schemas/api_keys";
 
 // Re-export types for use in other files
 export type MemberStatus = UserStatus; // Member status uses the same values as user status
@@ -90,6 +96,9 @@ export type { EmailStatus, EmailType };
 // Re-export audit types
 export type { AuditAction, AuditResourceType };
 
+// Re-export integration types
+export type { ApiKeyScope };
+
 export default defineSchema({
 	users: usersTable,
 	user_profiles: userProfilesTable,
@@ -117,4 +126,9 @@ export default defineSchema({
 	subscriptions: subscriptionsTable,
 	subscription_products: subscriptionProductsTable,
 	subscription_prices: subscriptionPricesTable,
+
+	// Integrations
+	api_keys: apiKeysTable,
+	connected_apps: connectedAppsTable,
+	integration_activity_logs: integrationActivityLogsTable,
 });
