@@ -1,3 +1,4 @@
+import { useUser } from "@clerk/clerk-react";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
@@ -12,29 +13,29 @@ import {
 	ActivityIcon,
 	ArrowLeftIcon,
 	ChevronDownIcon,
-	CopyIcon,
+	ChevronLeftIcon,
+	ChevronRightIcon,
 	DownloadIcon,
 	FileSignatureIcon,
 	FileTextIcon,
 	InfoIcon,
-	MailIcon,
 	PlusIcon,
 	SaveIcon,
 	SendIcon,
-	Trash2Icon,
+	SettingsIcon,
+	UserIcon,
 	UserPlusIcon,
 	UsersIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
-import "./document-detail.css";
-import * as Collapsible from "@radix-ui/react-collapsible";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { countSignatureFields } from "@/lib/signature-fields";
+import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import {
@@ -46,16 +47,23 @@ import {
 	type FieldOptionsConfig,
 	FieldOptionsDialog,
 } from "../../../../components/documents/field-options-dialog";
-import { FieldPropertiesPanel } from "../../../../components/documents/field-properties-panel";
+import { FieldPropertiesDialog } from "../../../../components/documents/field-properties-dialog";
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
 import { PdfViewerControls } from "../../../../components/documents/pdf-viewer-controls";
+import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";
 import { RecipientSelectorDialog } from "../../../../components/documents/recipient-selector-dialog";
+import { RemoveRecipientDialog } from "../../../../components/documents/remove-recipient-dialog";
 import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
 import type { DocumentWorkflowStatus } from "../../../../components/documents/workflow-status-badge";
 import { Button } from "../../../../components/ui/button";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "../../../../components/ui/collapsible";
 
 // SEA-72: Configure PDF.js worker
 // Use unpkg CDN which has reliable pdf.js worker files
@@ -71,6 +79,25 @@ function DocumentDetailPage() {
 	const { slug, documentId } = Route.useParams();
 	const router = useRouter();
 	const [addRecipientOpen, setAddRecipientOpen] = useState(false);
+	const [addMyselfOpen, setAddMyselfOpen] = useState(false);
+	const [removeRecipientOpen, setRemoveRecipientOpen] = useState(false);
+	const [recipientToRemove, setRecipientToRemove] = useState<{
+		id: Id<"document_recipients">;
+		email: string;
+		name?: string;
+		role: string;
+		fieldCount: number;
+	} | null>(null);
+	const [recipientOptionsOpen, setRecipientOptionsOpen] = useState(false);
+	const [selectedRecipientForOptions, setSelectedRecipientForOptions] =
+		useState<{
+			_id: Id<"document_recipients">;
+			email: string;
+			name?: string;
+			role: "signer" | "viewer" | "approver";
+			status: "pending" | "viewed" | "signed" | "approved" | "declined";
+			signingToken?: string;
+		} | null>(null);
 	const [sendDocumentOpen, setSendDocumentOpen] = useState(false);
 	const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
 
@@ -118,6 +145,15 @@ function DocumentDetailPage() {
 	const [pendingFieldOptions, setPendingFieldOptions] =
 		useState<FieldOptionsConfig | null>(null);
 
+	// Pending field name from recipient selector dialog
+	const [pendingFieldName, setPendingFieldName] = useState<string | null>(null);
+
+	// Field properties dialog
+	const [showFieldProperties, setShowFieldProperties] = useState(false);
+	const [fieldPropertiesId, setFieldPropertiesId] = useState<string | null>(
+		null,
+	);
+
 	const { data: documentData, refetch: refetchDocument } = useSuspenseQuery(
 		convexQuery(api.documents.queries.getDocument, {
 			documentId: documentId as Id<"documents">,
@@ -146,9 +182,45 @@ function DocumentDetailPage() {
 		);
 	const signatureFieldCount = countSignatureFields(signatureFields);
 
+	// Load signatures to display filled signature images
+	const { data: documentSignatures = [] } = useSuspenseQuery(
+		convexQuery(api.signatures.queries.getSignaturesByDocument, {
+			documentId: documentId as Id<"documents">,
+		}),
+	);
+
+	// Create a map of fieldId to signature data for easy lookup (memoized to prevent infinite loops)
+	const signaturesByFieldId = useMemo(
+		() =>
+			new Map(
+				documentSignatures.map((sig) => [
+					sig.fieldId,
+					{
+						signatureImageUrl: sig.signatureImageUrl,
+						value: sig.value,
+						signedAt: sig.signedAt,
+					},
+				]),
+			),
+		[documentSignatures],
+	);
+
+	// Compute field counts per recipient for the send dialog
+	const fieldCountsByRecipient = new Map<string, number>();
+	for (const field of signatureFields) {
+		const count = fieldCountsByRecipient.get(field.recipientId) ?? 0;
+		fieldCountsByRecipient.set(field.recipientId, count + 1);
+	}
+
 	const removeRecipient = useMutation(
 		api.documents.recipients_mutations.removeRecipient,
 	);
+	const addRecipients = useMutation(
+		api.documents.recipients_mutations.addRecipients,
+	);
+
+	// Current user for "Add myself" functionality
+	const { user } = useUser();
 
 	// SEA-91: Field mutations
 	const createField = useMutation(api.signature_fields.mutations.createField);
@@ -174,7 +246,7 @@ function DocumentDetailPage() {
 		fetchPdfUrl();
 	}, [convexClient, documentId]);
 
-	// SEA-91: Sync database fields to local state
+	// SEA-91: Sync database fields to local state, including signature data
 	useEffect(() => {
 		const fields: PlacedField[] = signatureFields.map((field) => ({
 			id: field._id,
@@ -187,9 +259,10 @@ function DocumentDetailPage() {
 			recipientId: field.recipientId,
 			label: field.label,
 			properties: field.properties,
+			signatureData: signaturesByFieldId.get(field._id),
 		}));
 		setPlacedFields(fields);
-	}, [signatureFields]);
+	}, [signatureFields, signaturesByFieldId]);
 
 	// SEA-84: Handle window resize to maintain canvas-PDF alignment
 	useEffect(() => {
@@ -276,14 +349,9 @@ function DocumentDetailPage() {
 		setNumPages(numPages);
 	};
 
-	// SEA-78: Page navigation handler - scrolls to the selected page
+	// SEA-78: Page navigation handler - updates current page for single-page view
 	const handlePageChange = useCallback((page: number) => {
 		setCurrentPage(page);
-		// Scroll to the page element
-		const pageElement = pageRefs.current.get(page);
-		if (pageElement) {
-			pageElement.scrollIntoView({ behavior: "smooth", block: "start" });
-		}
 	}, []);
 
 	// SEA-91: Page dimensions handler - captures first page dimensions for coordinate conversion
@@ -309,9 +377,12 @@ function DocumentDetailPage() {
 
 		if (!fieldType) return;
 
-		// Check if we have recipients
-		if (recipients.length === 0) {
-			toast.error("Please add at least one recipient before placing fields");
+		// Check if we have signers (only signers can have fields assigned)
+		const signers = recipients.filter((r) => r.role === "signer");
+		if (signers.length === 0) {
+			toast.error(
+				"Please add at least one signer before placing fields. Approvers and viewers cannot have fields assigned.",
+			);
 			setDraggingFieldType(null);
 			return;
 		}
@@ -320,33 +391,10 @@ function DocumentDetailPage() {
 		const container = containerRef.current;
 		if (!container) return;
 
-		// Find which PDF page was dropped on by checking all page elements
-		const pageElements = container.querySelectorAll(".react-pdf__Page");
-		let targetPageNumber = 1;
-		let targetPageElement: Element | null = null;
-
-		for (let i = 0; i < pageElements.length; i++) {
-			const pageEl = pageElements[i];
-			const rect = pageEl.getBoundingClientRect();
-
-			// Check if drop position is within this page's bounds
-			if (
-				e.clientX >= rect.left &&
-				e.clientX <= rect.right &&
-				e.clientY >= rect.top &&
-				e.clientY <= rect.bottom
-			) {
-				targetPageNumber = i + 1;
-				targetPageElement = pageEl;
-				break;
-			}
-		}
-
-		// If no page found (dropped outside pages), default to page 1
-		if (!targetPageElement && pageElements.length > 0) {
-			targetPageElement = pageElements[0];
-			targetPageNumber = 1;
-		}
+		// With single-page view, there's only one page element rendered at a time
+		// The target page is always the currentPage being displayed
+		const targetPageNumber = currentPage;
+		const targetPageElement = container.querySelector(".react-pdf__Page");
 
 		if (!targetPageElement) {
 			toast.error("Could not determine drop location");
@@ -394,9 +442,9 @@ function DocumentDetailPage() {
 			page: targetPageNumber,
 		});
 
-		// Pre-select first recipient if available
-		if (recipients.length > 0) {
-			setSelectedRecipientId(recipients[0]._id);
+		// Pre-select first signer if available
+		if (signers.length > 0) {
+			setSelectedRecipientId(signers[0]._id);
 		}
 
 		setShowRecipientSelector(true);
@@ -427,8 +475,11 @@ function DocumentDetailPage() {
 	};
 
 	// Handle field creation after recipient selection
-	const handleConfirmFieldPlacement = async () => {
+	const handleConfirmFieldPlacement = async (fieldName: string) => {
 		if (!pendingFieldData || !selectedRecipientId) return;
+
+		// Store the field name for use in createFieldWithOptions
+		setPendingFieldName(fieldName);
 
 		// For checkbox, dropdown, radio - show options dialog first
 		if (fieldTypeRequiresOptions(pendingFieldData.fieldType)) {
@@ -438,14 +489,14 @@ function DocumentDetailPage() {
 		}
 
 		// For other field types, create immediately
-		await createFieldWithOptions(null);
+		await createFieldWithOptions(null, fieldName);
 	};
 
 	// Handle field options confirmation
 	const handleFieldOptionsConfirm = async (config: FieldOptionsConfig) => {
 		setPendingFieldOptions(config);
 		setShowFieldOptions(false);
-		await createFieldWithOptions(config);
+		await createFieldWithOptions(config, pendingFieldName);
 	};
 
 	// Handle field options cancel
@@ -455,12 +506,14 @@ function DocumentDetailPage() {
 		setPendingFieldData(null);
 		setSelectedRecipientId(null);
 		setPendingFieldOptions(null);
+		setPendingFieldName(null);
 		setDraggingFieldType(null);
 	};
 
 	// Create field with optional options configuration
 	const createFieldWithOptions = async (
 		optionsConfig: FieldOptionsConfig | null,
+		fieldName?: string | null,
 	) => {
 		if (!pendingFieldData || !selectedRecipientId) return;
 
@@ -487,12 +540,16 @@ function DocumentDetailPage() {
 				finalHeight = (heightPixels / pdfHeight) * 100;
 			}
 
+			// Use provided field name or fall back to default
+			const label =
+				fieldName || formatFieldTypeLabel(pendingFieldData.fieldType);
+
 			// Save field to database with percentage coordinates
 			const fieldId = await createField({
 				documentId: documentId as Id<"documents">,
 				recipientId: selectedRecipientId as Id<"document_recipients">,
 				fieldType: pendingFieldData.fieldType,
-				label: formatFieldTypeLabel(pendingFieldData.fieldType),
+				label,
 				isRequired: true, // Default to required
 				x: pendingFieldData.x,
 				y: pendingFieldData.y,
@@ -515,15 +572,14 @@ function DocumentDetailPage() {
 			// Refetch fields to sync with database
 			await refetchFields();
 
-			toast.success(
-				`${formatFieldTypeLabel(pendingFieldData.fieldType)} assigned to recipient`,
-			);
+			toast.success(`${label} assigned to recipient`);
 
 			// Close dialog and clear pending data
 			setShowRecipientSelector(false);
 			setPendingFieldData(null);
 			setSelectedRecipientId(null);
 			setPendingFieldOptions(null);
+			setPendingFieldName(null);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to create field";
@@ -631,21 +687,48 @@ function DocumentDetailPage() {
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [selectedFieldId, requestFieldDelete]);
 
-	const handleRemoveRecipient = async (
-		recipientId: Id<"document_recipients">,
-	) => {
-		if (!confirm("Remove this recipient?")) {
-			return;
-		}
+	const openRemoveRecipientDialog = (recipient: {
+		_id: Id<"document_recipients">;
+		email: string;
+		name?: string;
+		role: string;
+	}) => {
+		// Count fields assigned to this recipient
+		const fieldCount = signatureFields.filter(
+			(f) => f.recipientId === recipient._id,
+		).length;
+
+		setRecipientToRemove({
+			id: recipient._id,
+			email: recipient.email,
+			name: recipient.name,
+			role: recipient.role,
+			fieldCount,
+		});
+		setRemoveRecipientOpen(true);
+	};
+
+	const handleRemoveRecipientConfirm = async () => {
+		if (!recipientToRemove) return;
 
 		try {
-			await removeRecipient({ recipientId });
-			toast.success("Recipient removed");
+			await removeRecipient({ recipientId: recipientToRemove.id });
+			const hasFields = recipientToRemove.fieldCount > 0;
+			toast.success(
+				hasFields
+					? `Recipient and ${recipientToRemove.fieldCount} ${recipientToRemove.fieldCount === 1 ? "field" : "fields"} removed`
+					: "Recipient removed",
+			);
+			setRemoveRecipientOpen(false);
+			setRecipientToRemove(null);
 			refetchRecipients();
+			refetchFields(); // Also refetch fields since they may have been deleted
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to remove recipient";
 			toast.error(errorMessage);
+			setRemoveRecipientOpen(false);
+			setRecipientToRemove(null);
 		}
 	};
 
@@ -666,6 +749,41 @@ function DocumentDetailPage() {
 			toast.error(
 				error instanceof Error ? error.message : "Failed to resend email",
 			);
+		}
+	};
+
+	// Check if current user is already a recipient
+	const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase();
+	const isUserAlreadyRecipient = userEmail
+		? recipients.some((r) => r.email.toLowerCase() === userEmail)
+		: false;
+
+	const handleAddMyselfConfirm = async () => {
+		if (!user?.primaryEmailAddress?.emailAddress) {
+			toast.error("Could not get your email address");
+			setAddMyselfOpen(false);
+			return;
+		}
+
+		try {
+			await addRecipients({
+				documentId: documentId as Id<"documents">,
+				recipients: [
+					{
+						email: user.primaryEmailAddress.emailAddress,
+						name: user.fullName || undefined,
+						role: "signer",
+					},
+				],
+			});
+			toast.success("Added yourself as a signer");
+			setAddMyselfOpen(false);
+			refetchRecipients();
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to add yourself";
+			toast.error(errorMessage);
+			setAddMyselfOpen(false);
 		}
 	};
 
@@ -860,19 +978,6 @@ function DocumentDetailPage() {
 		}
 	};
 
-	// Copy signing link handler
-	const handleCopySigningLink = (signingToken?: string) => {
-		if (!signingToken) {
-			toast.error("Signing link not available");
-			return;
-		}
-		const signingUrl = `${window.location.origin}/sign/${signingToken}`;
-		navigator.clipboard.writeText(signingUrl).then(
-			() => toast.success("Signing link copied!"),
-			() => toast.error("Failed to copy link"),
-		);
-	};
-
 	// Only edit active documents that are in draft workflow status
 	const canEdit =
 		documentData.status === "active" &&
@@ -950,11 +1055,11 @@ function DocumentDetailPage() {
 				<div className="grid gap-6 lg:grid-cols-3">
 					{/* Left column: PDF Preview */}
 					<div className="lg:col-span-2">
-						<div className="document-preview-wrapper">
-							<div className="document-preview-header">
+						<div className="relative rounded-2xl bg-stone-100 p-6 min-h-[600px] md:p-4 sm:p-3 sm:rounded-xl sm:min-h-[400px]">
+							<div className="font-serif text-lg font-medium text-stone-800 mb-4 flex items-center gap-3 sm:text-base sm:flex-wrap">
 								<span>Document Preview</span>
 								{numPages && (
-									<span className="page-count">
+									<span className="font-sans text-xs font-medium text-stone-500 bg-stone-200 px-2.5 py-1 rounded-full">
 										{numPages} {numPages === 1 ? "page" : "pages"}
 									</span>
 								)}
@@ -975,7 +1080,7 @@ function DocumentDetailPage() {
 									}}
 								>
 									<div className="mb-4 flex justify-center">
-										<div className="zoom-controls-bar">
+										<div className="flex items-center justify-center gap-1 bg-white px-2 py-1.5 rounded-lg shadow-sm border border-stone-200">
 											<PdfViewerControls
 												currentZoom={currentZoom}
 												currentPage={currentPage}
@@ -994,7 +1099,7 @@ function DocumentDetailPage() {
 											ref={containerRef}
 											onDragOver={handleFieldDragOver}
 											onDrop={handleFieldDrop}
-											className={`document-canvas-container ${draggingFieldType ? "drag-active" : ""}`}
+											className={`relative bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden transition-all duration-300 ${draggingFieldType ? "shadow-lg border-blue-500 ring-4 ring-blue-500/10 scale-[1.002]" : ""}`}
 										>
 											<Document
 												file={pdfUrl}
@@ -1018,41 +1123,67 @@ function DocumentDetailPage() {
 													</div>
 												}
 											>
-												{Array.from(new Array(numPages), (_el, index) => (
-													<PdfPageWithCanvas
-														key={`page_${index + 1}`}
-														pageNumber={index + 1}
-														width={pdfWidth}
-														renderTextLayer={true}
-														renderAnnotationLayer={true}
-														className="mb-1 last:mb-0"
-														fields={placedFields}
-														selectedFieldId={canEdit ? selectedFieldId : null}
-														onFieldSelect={
-															canEdit ? handleFieldSelect : undefined
+												{/* Single page view - only render current page */}
+												<PdfPageWithCanvas
+													key={`page_${currentPage}`}
+													pageNumber={currentPage}
+													width={pdfWidth}
+													renderTextLayer={true}
+													renderAnnotationLayer={true}
+													fields={placedFields}
+													selectedFieldId={canEdit ? selectedFieldId : null}
+													onFieldSelect={
+														canEdit ? handleFieldSelect : undefined
+													}
+													onFieldUpdate={
+														canEdit ? handleFieldUpdate : undefined
+													}
+													onPageDimensions={handlePageDimensions}
+													onPageRef={(pageNumber, element) => {
+														if (element) {
+															pageRefs.current.set(pageNumber, element);
+														} else {
+															pageRefs.current.delete(pageNumber);
 														}
-														onFieldUpdate={
-															canEdit ? handleFieldUpdate : undefined
-														}
-														onPageDimensions={handlePageDimensions}
-														onPageRef={(pageNumber, element) => {
-															if (element) {
-																pageRefs.current.set(pageNumber, element);
-															} else {
-																pageRefs.current.delete(pageNumber);
-															}
-														}}
-													/>
-												))}
+													}}
+												/>
 											</Document>
 										</div>
 									</TransformComponent>
+
+									{/* Bottom page navigation controls */}
+									{numPages && numPages > 1 && (
+										<div className="mt-4 flex justify-center">
+											<div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-stone-200">
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => handlePageChange(currentPage - 1)}
+													disabled={currentPage <= 1}
+												>
+													<ChevronLeftIcon className="h-4 w-4 mr-1" />
+													Previous
+												</Button>
+
+												<span className="text-sm text-muted-foreground font-medium min-w-[60px] text-center">
+													{currentPage} of {numPages}
+												</span>
+
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => handlePageChange(currentPage + 1)}
+													disabled={currentPage >= numPages}
+												>
+													Next
+													<ChevronRightIcon className="h-4 w-4 ml-1" />
+												</Button>
+											</div>
+										</div>
+									)}
 								</TransformWrapper>
 							) : (
-								<div
-									className="document-canvas-container p-16 text-center"
-									style={{ color: "hsl(220 10% 55%)" }}
-								>
+								<div className="relative bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden p-16 text-center text-stone-500">
 									<div className="animate-pulse">Loading document...</div>
 								</div>
 							)}
@@ -1060,73 +1191,110 @@ function DocumentDetailPage() {
 					</div>
 
 					{/* Right column: Document Options Panel */}
-					<div className="document-options-panel">
+					<div className="flex flex-col gap-5 sm:gap-4">
 						{/* Status Hero */}
 						<div
-							className={`status-hero status-${documentData.workflowStatus ?? "draft"}`}
+							className={`rounded-2xl p-6 text-center border sm:p-4 sm:rounded-xl ${
+								documentData.workflowStatus === "completed"
+									? "bg-emerald-50 border-emerald-200"
+									: documentData.workflowStatus === "in_progress"
+										? "bg-amber-50 border-amber-200"
+										: documentData.workflowStatus === "sent"
+											? "bg-blue-50 border-blue-200"
+											: "bg-amber-50/50 border-amber-200/50"
+							}`}
 						>
-							<div className="status-label">Document Status</div>
-							<div className="status-value">
+							<div className="font-sans text-[10px] font-semibold tracking-widest uppercase text-stone-500 mb-2">
+								Document Status
+							</div>
+							<div
+								className={`font-serif text-3xl font-medium mb-1 sm:text-2xl ${
+									documentData.workflowStatus === "completed"
+										? "text-emerald-700"
+										: "text-stone-800"
+								}`}
+							>
 								{getStatusLabel(documentData.workflowStatus)}
 							</div>
-							<div className="status-date">
+							<div className="font-sans text-sm text-stone-500 sm:text-xs">
 								Created {formatDate(documentData.createdAt)}
 							</div>
 						</div>
 
 						{/* Progress Ring - Only show when document is sent */}
 						{progress && documentData.workflowStatus !== "draft" && (
-							<div className="progress-ring-container animate-fade-in-up">
-								<div className="progress-ring">
+							<div className="flex flex-col items-center gap-4 p-6 bg-white rounded-2xl border border-slate-200 shadow-sm sm:p-4 sm:rounded-xl animate-[fadeInUp_0.3s_ease-out_forwards]">
+								<div className="relative w-[120px] h-[120px] sm:w-[90px] sm:h-[90px]">
 									<svg
 										width="120"
 										height="120"
 										viewBox="0 0 120 120"
 										aria-hidden="true"
+										className="-rotate-90 sm:w-[90px] sm:h-[90px]"
 									>
 										<circle
-											className="ring-bg"
 											cx="60"
 											cy="60"
 											r={ringRadius}
+											fill="none"
+											stroke="hsl(220 15% 92%)"
+											strokeWidth="8"
 										/>
 										<circle
-											className="ring-progress"
 											cx="60"
 											cy="60"
 											r={ringRadius}
+											fill="none"
+											stroke="hsl(145 55% 45%)"
+											strokeWidth="8"
+											strokeLinecap="round"
 											strokeDasharray={ringCircumference}
 											strokeDashoffset={progressOffset}
+											className="transition-[stroke-dashoffset] duration-500 ease-out"
 										/>
 									</svg>
-									<div className="ring-center">
-										<span className="ring-percent">
+									<div className="absolute inset-0 flex flex-col items-center justify-center">
+										<span className="font-serif text-[1.75rem] font-semibold text-slate-800 leading-none sm:text-xl">
 											{progress.percentComplete}%
 										</span>
-										<span className="ring-label">Complete</span>
+										<span className="font-sans text-[0.6875rem] text-slate-500 mt-0.5">
+											Complete
+										</span>
 									</div>
 								</div>
-								<div className="progress-stats">
-									<div className="progress-stat stat-signed">
-										<div className="stat-value">{progress.byStatus.signed}</div>
-										<div className="stat-label">Signed</div>
+								<div className="grid grid-cols-2 gap-3 w-full sm:gap-2">
+									<div className="text-center py-3 px-2 bg-slate-50 rounded-[10px] sm:py-2.5 sm:px-1.5">
+										<div className="font-sans text-xl font-semibold text-emerald-600 sm:text-base">
+											{progress.byStatus.signed}
+										</div>
+										<div className="font-sans text-[0.6875rem] text-slate-500 mt-0.5">
+											Signed
+										</div>
 									</div>
-									<div className="progress-stat stat-pending">
-										<div className="stat-value">
+									<div className="text-center py-3 px-2 bg-slate-50 rounded-[10px] sm:py-2.5 sm:px-1.5">
+										<div className="font-sans text-xl font-semibold text-amber-600 sm:text-base">
 											{progress.byStatus.pending}
 										</div>
-										<div className="stat-label">Pending</div>
+										<div className="font-sans text-[0.6875rem] text-slate-500 mt-0.5">
+											Pending
+										</div>
 									</div>
-									<div className="progress-stat">
-										<div className="stat-value">{progress.byStatus.viewed}</div>
-										<div className="stat-label">Viewed</div>
+									<div className="text-center py-3 px-2 bg-slate-50 rounded-[10px] sm:py-2.5 sm:px-1.5">
+										<div className="font-sans text-xl font-semibold text-slate-700 sm:text-base">
+											{progress.byStatus.viewed}
+										</div>
+										<div className="font-sans text-[0.6875rem] text-slate-500 mt-0.5">
+											Viewed
+										</div>
 									</div>
 									{progress.byStatus.declined > 0 && (
-										<div className="progress-stat stat-declined">
-											<div className="stat-value">
+										<div className="text-center py-3 px-2 bg-slate-50 rounded-[10px] sm:py-2.5 sm:px-1.5">
+											<div className="font-sans text-xl font-semibold text-red-500 sm:text-base">
 												{progress.byStatus.declined}
 											</div>
-											<div className="stat-label">Declined</div>
+											<div className="font-sans text-[0.6875rem] text-slate-500 mt-0.5">
+												Declined
+											</div>
 										</div>
 									)}
 								</div>
@@ -1135,30 +1303,35 @@ function DocumentDetailPage() {
 
 						{/* Signature Fields Section */}
 						{(signatureFields.length > 0 || canEdit) && (
-							<Collapsible.Root
+							<Collapsible
 								open={openSections.has("fields")}
 								onOpenChange={() => toggleSection("fields")}
-								className="options-section section-fields"
+								className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm sm:rounded-xl"
 							>
-								<Collapsible.Trigger asChild>
-									<button type="button" className="options-section-header">
-										<div className="section-title-group">
-											<div className="section-icon">
-												<FileSignatureIcon />
+								<CollapsibleTrigger asChild>
+									<button
+										type="button"
+										className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 sm:px-4 sm:py-3.5"
+									>
+										<div className="flex items-center gap-3">
+											<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-violet-100 text-violet-600 sm:w-8 sm:h-8 sm:rounded-lg">
+												<FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
 											</div>
-											<span className="section-title">Signature Fields</span>
+											<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm">
+												Signature Fields
+											</span>
 											{signatureFields.length > 0 && (
-												<span className="section-count">
+												<span className="font-sans text-[0.6875rem] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-xl ml-2">
 													{signatureFields.length}
 												</span>
 											)}
 										</div>
 										<ChevronDownIcon
-											className={`section-chevron h-4 w-4 transition-transform ${openSections.has("fields") ? "rotate-180" : ""}`}
+											className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${openSections.has("fields") ? "rotate-180" : ""}`}
 										/>
 									</button>
-								</Collapsible.Trigger>
-								<Collapsible.Content className="options-section-content">
+								</CollapsibleTrigger>
+								<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 sm:px-4 sm:pb-4">
 									{canEdit && (
 										<div className="mt-4 mb-4">
 											<FieldToolbar
@@ -1166,153 +1339,172 @@ function DocumentDetailPage() {
 													setDraggingFieldType(fieldType)
 												}
 												onFieldDragEnd={() => setDraggingFieldType(null)}
+												disabled={
+													recipients.filter((r) => r.role === "signer")
+														.length === 0
+												}
 											/>
 										</div>
 									)}
 									{signatureFields.length > 0 ? (
-										<>
-											<FieldList
-												fields={signatureFields}
-												recipients={recipients}
-												selectedFieldId={canEdit ? selectedFieldId : null}
-												canEdit={canEdit}
-												onFieldSelect={canEdit ? handleFieldSelect : undefined}
-												onFieldDelete={canEdit ? requestFieldDelete : undefined}
-											/>
-											{/* SEA-92: Field Properties Panel */}
-											{canEdit &&
-												selectedFieldId &&
-												(() => {
-													const selectedField = signatureFields.find(
-														(f) => f._id === selectedFieldId,
-													);
-													if (!selectedField) return null;
-													return (
-														<div className="mt-4 border-t pt-4">
-															<FieldPropertiesPanel
-																field={selectedField}
-																recipients={recipients}
-																onClose={() => setSelectedFieldId(null)}
-															/>
-														</div>
-													);
-												})()}
-										</>
+										<FieldList
+											fields={signatureFields}
+											recipients={recipients}
+											selectedFieldId={canEdit ? selectedFieldId : null}
+											canEdit={canEdit}
+											onFieldSelect={canEdit ? handleFieldSelect : undefined}
+											onFieldDelete={canEdit ? requestFieldDelete : undefined}
+											onFieldProperties={
+												canEdit
+													? (fieldId) => {
+															setFieldPropertiesId(fieldId);
+															setShowFieldProperties(true);
+														}
+													: undefined
+											}
+										/>
 									) : (
-										<div className="empty-state">
-											<div className="empty-icon">
+										<div className="text-center py-8 px-4 sm:py-6 sm:px-3">
+											<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-slate-100 rounded-xl text-slate-500 sm:w-10 sm:h-10 sm:rounded-[10px]">
 												<FileSignatureIcon className="h-6 w-6" />
 											</div>
-											<div className="empty-title">No fields yet</div>
-											<div className="empty-description">
+											<div className="font-sans text-sm font-semibold text-slate-700 mb-1 sm:text-[0.8125rem]">
+												No fields yet
+											</div>
+											<div className="font-sans text-xs text-slate-500 leading-relaxed sm:text-[0.6875rem]">
 												Drag fields from above onto the document to mark where
 												recipients should sign or fill in information.
 											</div>
 										</div>
 									)}
-								</Collapsible.Content>
-							</Collapsible.Root>
+								</CollapsibleContent>
+							</Collapsible>
 						)}
 
 						{/* Recipients Section */}
-						<Collapsible.Root
+						<Collapsible
 							open={openSections.has("recipients")}
 							onOpenChange={() => toggleSection("recipients")}
-							className="options-section section-recipients"
+							className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm sm:rounded-xl"
 						>
-							<Collapsible.Trigger asChild>
-								<button type="button" className="options-section-header">
-									<div className="section-title-group">
-										<div className="section-icon">
-											<UsersIcon />
+							<CollapsibleTrigger asChild>
+								<button
+									type="button"
+									className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 sm:px-4 sm:py-3.5"
+								>
+									<div className="flex items-center gap-3">
+										<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-blue-100 text-blue-600 sm:w-8 sm:h-8 sm:rounded-lg">
+											<UsersIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
 										</div>
-										<span className="section-title">Recipients</span>
+										<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm">
+											Recipients
+										</span>
 										{recipients.length > 0 && (
-											<span className="section-count">{recipients.length}</span>
+											<span className="font-sans text-[0.6875rem] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-xl ml-2">
+												{recipients.length}
+											</span>
 										)}
 									</div>
 									<ChevronDownIcon
-										className={`section-chevron h-4 w-4 transition-transform ${openSections.has("recipients") ? "rotate-180" : ""}`}
+										className={`h-4 w-4 text-slate-500 transition-transform ${openSections.has("recipients") ? "rotate-180" : ""}`}
 									/>
 								</button>
-							</Collapsible.Trigger>
-							<Collapsible.Content className="options-section-content">
+							</CollapsibleTrigger>
+							<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 sm:px-4 sm:pb-4">
+								{canEdit && !isUserAlreadyRecipient && (
+									<Button
+										variant="outline"
+										size="sm"
+										className="w-full mt-3 mb-3"
+										onClick={() => setAddMyselfOpen(true)}
+									>
+										<UserIcon className="h-4 w-4 mr-2" />
+										Add myself as signer
+									</Button>
+								)}
 								{recipients.length > 0 ? (
-									<div className="recipient-cards">
+									<div className="flex flex-col gap-2.5 mt-4 sm:gap-2">
 										{recipients.map((recipient) => (
-											<div key={recipient._id} className="recipient-card">
+											<div
+												key={recipient._id}
+												className="flex items-center gap-3.5 p-3.5 bg-slate-50 rounded-xl border border-transparent transition-all hover:bg-slate-100 hover:border-slate-200 sm:p-3 sm:gap-2.5 sm:flex-wrap"
+											>
 												<div
-													className={`recipient-avatar status-${recipient.status}`}
+													className={`w-10 h-10 rounded-full flex items-center justify-center font-sans text-sm font-semibold shrink-0 sm:w-9 sm:h-9 sm:text-[0.8125rem] ${
+														recipient.status === "pending"
+															? "bg-slate-200 text-slate-600"
+															: recipient.status === "viewed"
+																? "bg-blue-100 text-blue-700"
+																: recipient.status === "signed" ||
+																		recipient.status === "approved"
+																	? "bg-emerald-100 text-emerald-700"
+																	: recipient.status === "declined"
+																		? "bg-red-100 text-red-700"
+																		: "bg-slate-200 text-slate-600"
+													}`}
 												>
 													{getInitials(recipient.name, recipient.email)}
 												</div>
-												<div className="recipient-info">
-													<div className="recipient-name">
+												<div className="flex-1 min-w-0">
+													<div className="font-sans text-sm font-semibold text-slate-800 truncate sm:text-[0.8125rem]">
 														{recipient.name || recipient.email}
 													</div>
 													{recipient.name && (
-														<div className="recipient-email">
+														<div className="font-sans text-xs text-slate-500 truncate sm:text-[0.6875rem]">
 															{recipient.email}
 														</div>
 													)}
 												</div>
 												<span
-													className={`recipient-status-badge status-${recipient.status}`}
+													className={`font-sans text-[0.6875rem] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap sm:text-[0.625rem] sm:px-2 sm:py-0.5 ${
+														recipient.status === "pending"
+															? "bg-slate-200 text-slate-600"
+															: recipient.status === "viewed"
+																? "bg-blue-100 text-blue-700"
+																: recipient.status === "signed" ||
+																		recipient.status === "approved"
+																	? "bg-emerald-100 text-emerald-700"
+																	: recipient.status === "declined"
+																		? "bg-red-100 text-red-700"
+																		: "bg-slate-200 text-slate-600"
+													}`}
 												>
 													{recipient.status.charAt(0).toUpperCase() +
 														recipient.status.slice(1)}
 												</span>
-												<div className="recipient-actions">
-													{"signingToken" in recipient &&
-														recipient.signingToken && (
-															<Button
-																variant="ghost"
-																size="icon-sm"
-																onClick={() =>
-																	handleCopySigningLink(
-																		recipient.signingToken as string,
-																	)
-																}
-																title="Copy signing link"
-															>
-																<CopyIcon className="h-4 w-4" />
-															</Button>
-														)}
-													{documentData.workflowStatus !== "draft" &&
-														(recipient.status === "pending" ||
-															recipient.status === "viewed") && (
-															<Button
-																variant="ghost"
-																size="icon-sm"
-																onClick={() => handleResendEmail(recipient._id)}
-																title="Resend email"
-															>
-																<MailIcon className="h-4 w-4" />
-															</Button>
-														)}
-													{canEdit && (
-														<Button
-															variant="ghost"
-															size="icon-sm"
-															onClick={() =>
-																handleRemoveRecipient(recipient._id)
-															}
-															title="Remove recipient"
-														>
-															<Trash2Icon className="h-4 w-4" />
-														</Button>
-													)}
-												</div>
+												<Button
+													variant="ghost"
+													size="icon-sm"
+													onClick={() => {
+														setSelectedRecipientForOptions({
+															_id: recipient._id,
+															email: recipient.email,
+															name: recipient.name,
+															role: recipient.role,
+															status: recipient.status,
+															signingToken:
+																"signingToken" in recipient
+																	? (recipient.signingToken as string)
+																	: undefined,
+														});
+														setRecipientOptionsOpen(true);
+													}}
+													title="Recipient options"
+												>
+													<SettingsIcon className="h-4 w-4 text-muted-foreground" />
+												</Button>
 											</div>
 										))}
 									</div>
 								) : (
-									<div className="empty-state">
-										<div className="empty-icon">
+									<div className="text-center py-8 px-4 sm:py-6 sm:px-3">
+										<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-slate-100 rounded-xl text-slate-500 sm:w-10 sm:h-10 sm:rounded-[10px]">
 											<UsersIcon className="h-6 w-6" />
 										</div>
-										<div className="empty-title">No recipients</div>
-										<div className="empty-description">
+										<div className="font-sans text-sm font-semibold text-slate-700 mb-1 sm:text-[0.8125rem]">
+											No recipients
+										</div>
+										<div className="font-sans text-xs text-slate-500 leading-relaxed sm:text-[0.6875rem]">
 											Add recipients who need to sign or view this document.
 										</div>
 									</div>
@@ -1320,117 +1512,144 @@ function DocumentDetailPage() {
 								{canEdit && (
 									<button
 										type="button"
-										className="add-item-button"
+										className="flex items-center justify-center gap-2 w-full p-3 bg-transparent border-2 border-dashed border-slate-200 rounded-[10px] font-sans text-[0.8125rem] font-semibold text-slate-500 cursor-pointer transition-all mt-3 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 sm:p-2.5 sm:text-xs sm:rounded-lg"
 										onClick={() => setAddRecipientOpen(true)}
 									>
-										<PlusIcon />
+										<PlusIcon className="h-4 w-4" />
 										Add Recipient
 									</button>
 								)}
-							</Collapsible.Content>
-						</Collapsible.Root>
+							</CollapsibleContent>
+						</Collapsible>
 
 						{/* Document Details Section */}
-						<Collapsible.Root
+						<Collapsible
 							open={openSections.has("details")}
 							onOpenChange={() => toggleSection("details")}
-							className="options-section section-details"
+							className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm sm:rounded-xl"
 						>
-							<Collapsible.Trigger asChild>
-								<button type="button" className="options-section-header">
-									<div className="section-title-group">
-										<div className="section-icon">
-											<InfoIcon />
+							<CollapsibleTrigger asChild>
+								<button
+									type="button"
+									className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 sm:px-4 sm:py-3.5"
+								>
+									<div className="flex items-center gap-3">
+										<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-teal-100 text-teal-600 sm:w-8 sm:h-8 sm:rounded-lg">
+											<InfoIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
 										</div>
-										<span className="section-title">Details</span>
+										<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm">
+											Details
+										</span>
 									</div>
 									<ChevronDownIcon
-										className={`section-chevron h-4 w-4 transition-transform ${openSections.has("details") ? "rotate-180" : ""}`}
+										className={`h-4 w-4 text-slate-500 transition-transform ${openSections.has("details") ? "rotate-180" : ""}`}
 									/>
 								</button>
-							</Collapsible.Trigger>
-							<Collapsible.Content className="options-section-content">
-								<div className="details-grid">
-									<div className="details-item">
-										<div className="details-label">File Size</div>
-										<div className="details-value">
+							</CollapsibleTrigger>
+							<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 sm:px-4 sm:pb-4">
+								<div className="grid grid-cols-2 gap-4 mt-4 sm:gap-2.5">
+									<div className="p-3.5 bg-slate-50 rounded-[10px] sm:p-3 sm:rounded-lg">
+										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 mb-1 sm:text-[0.5625rem]">
+											File Size
+										</div>
+										<div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem]">
 											{formatFileSize(documentData.fileSize)}
 										</div>
 									</div>
-									<div className="details-item">
-										<div className="details-label">Pages</div>
-										<div className="details-value">
+									<div className="p-3.5 bg-slate-50 rounded-[10px] sm:p-3 sm:rounded-lg">
+										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 mb-1 sm:text-[0.5625rem]">
+											Pages
+										</div>
+										<div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem]">
 											{documentData.pageCount || numPages || "—"}
 										</div>
 									</div>
-									<div className="details-item">
-										<div className="details-label">Uploaded</div>
-										<div className="details-value">
+									<div className="p-3.5 bg-slate-50 rounded-[10px] sm:p-3 sm:rounded-lg">
+										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 mb-1 sm:text-[0.5625rem]">
+											Uploaded
+										</div>
+										<div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem]">
 											{formatDate(documentData.createdAt)}
 										</div>
 									</div>
-									<div className="details-item">
-										<div className="details-label">Fields</div>
-										<div className="details-value">
+									<div className="p-3.5 bg-slate-50 rounded-[10px] sm:p-3 sm:rounded-lg">
+										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 mb-1 sm:text-[0.5625rem]">
+											Fields
+										</div>
+										<div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem]">
 											{signatureFields.length}
 										</div>
 									</div>
 								</div>
 								{documentData.description && (
-									<div
-										className="details-item mt-4"
-										style={{ gridColumn: "1 / -1" }}
-									>
-										<div className="details-label">Description</div>
-										<div className="details-value">
+									<div className="p-3.5 bg-slate-50 rounded-[10px] mt-4 col-span-2 sm:p-3 sm:rounded-lg">
+										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 mb-1 sm:text-[0.5625rem]">
+											Description
+										</div>
+										<div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem]">
 											{documentData.description}
 										</div>
 									</div>
 								)}
-							</Collapsible.Content>
-						</Collapsible.Root>
+							</CollapsibleContent>
+						</Collapsible>
 
 						{/* Activity Section */}
-						<Collapsible.Root
+						<Collapsible
 							open={openSections.has("activity")}
 							onOpenChange={() => toggleSection("activity")}
-							className="options-section section-activity"
+							className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm sm:rounded-xl"
 						>
-							<Collapsible.Trigger asChild>
-								<button type="button" className="options-section-header">
-									<div className="section-title-group">
-										<div className="section-icon">
-											<ActivityIcon />
+							<CollapsibleTrigger asChild>
+								<button
+									type="button"
+									className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 sm:px-4 sm:py-3.5"
+								>
+									<div className="flex items-center gap-3">
+										<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-amber-100 text-amber-600 sm:w-8 sm:h-8 sm:rounded-lg">
+											<ActivityIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
 										</div>
-										<span className="section-title">Activity</span>
+										<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm">
+											Activity
+										</span>
 										{activityEvents.length > 0 && (
-											<span className="section-count">
+											<span className="font-sans text-[0.6875rem] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-xl ml-2">
 												{activityEvents.length}
 											</span>
 										)}
 									</div>
 									<ChevronDownIcon
-										className={`section-chevron h-4 w-4 transition-transform ${openSections.has("activity") ? "rotate-180" : ""}`}
+										className={`h-4 w-4 text-slate-500 transition-transform ${openSections.has("activity") ? "rotate-180" : ""}`}
 									/>
 								</button>
-							</Collapsible.Trigger>
-							<Collapsible.Content className="options-section-content">
+							</CollapsibleTrigger>
+							<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 sm:px-4 sm:pb-4">
 								{activityEvents.length > 0 ? (
-									<div className="activity-timeline">
+									<div className="relative mt-4 before:content-[''] before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 before:rounded-sm sm:before:left-[13px]">
 										{activityEvents.slice(0, 10).map((event, index) => (
 											<div
 												key={`${event.type}-${event.timestamp}`}
-												className={`activity-item type-${event.type}`}
+												className={`relative flex gap-4 py-3 first:pt-0 last:pb-0 ${
+													event.type === "signed" ||
+													event.type === "approved" ||
+													event.type === "completed"
+														? "[&_.activity-dot]:border-emerald-300 [&_.activity-dot]:bg-emerald-50 [&_.activity-dot]:text-emerald-600"
+														: event.type === "viewed"
+															? "[&_.activity-dot]:border-blue-300 [&_.activity-dot]:bg-blue-50 [&_.activity-dot]:text-blue-600"
+															: event.type === "declined"
+																? "[&_.activity-dot]:border-red-300 [&_.activity-dot]:bg-red-50 [&_.activity-dot]:text-red-600"
+																: "[&_.activity-dot]:border-slate-200 [&_.activity-dot]:bg-white [&_.activity-dot]:text-slate-500"
+												}`}
 												style={{ animationDelay: `${index * 0.05}s` }}
 											>
-												<div className="activity-dot">
+												<div className="activity-dot relative z-10 w-8 h-8 flex items-center justify-center rounded-full border-2 shrink-0 sm:w-7 sm:h-7">
 													{getActivityIcon(event.type)}
 												</div>
-												<div className="activity-content">
-													<div className="activity-description">
+												<div className="flex-1 min-w-0 pt-1">
+													<div className="font-sans text-[0.8125rem] text-slate-700 leading-snug sm:text-xs">
 														{event.description}
 													</div>
-													<div className="activity-timestamp">
+													<div className="font-sans text-[0.6875rem] text-slate-500 mt-1 sm:text-[0.625rem]">
 														{formatRelativeTime(event.timestamp)}
 													</div>
 												</div>
@@ -1438,27 +1657,55 @@ function DocumentDetailPage() {
 										))}
 									</div>
 								) : (
-									<div className="empty-state">
-										<div className="empty-icon">
+									<div className="text-center py-8 px-4 sm:py-6 sm:px-3">
+										<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-slate-100 rounded-xl text-slate-500 sm:w-10 sm:h-10 sm:rounded-[10px]">
 											<ActivityIcon className="h-6 w-6" />
 										</div>
-										<div className="empty-title">No activity yet</div>
-										<div className="empty-description">
+										<div className="font-sans text-sm font-semibold text-slate-700 mb-1 sm:text-[0.8125rem]">
+											No activity yet
+										</div>
+										<div className="font-sans text-xs text-slate-500 leading-relaxed sm:text-[0.6875rem]">
 											Activity will appear here as recipients interact with this
 											document.
 										</div>
 									</div>
 								)}
-							</Collapsible.Content>
-						</Collapsible.Root>
+							</CollapsibleContent>
+						</Collapsible>
 					</div>
 				</div>
 
 				<AddRecipientDialog
 					documentId={documentId as Id<"documents">}
+					organizationId={documentData.organizationId}
 					open={addRecipientOpen}
 					onOpenChange={setAddRecipientOpen}
 					onSuccess={() => refetchRecipients()}
+					existingRecipientEmails={recipients.map((r) => r.email)}
+					currentUserEmail={userEmail}
+				/>
+
+				{/* Add myself confirmation dialog */}
+				<AddMyselfDialog
+					open={addMyselfOpen}
+					onOpenChange={setAddMyselfOpen}
+					onConfirm={handleAddMyselfConfirm}
+					userEmail={user?.primaryEmailAddress?.emailAddress}
+					userName={user?.fullName || undefined}
+				/>
+
+				{/* Remove recipient confirmation dialog */}
+				<RemoveRecipientDialog
+					open={removeRecipientOpen}
+					onOpenChange={(open) => {
+						setRemoveRecipientOpen(open);
+						if (!open) setRecipientToRemove(null);
+					}}
+					onConfirm={handleRemoveRecipientConfirm}
+					recipientEmail={recipientToRemove?.email}
+					recipientName={recipientToRemove?.name}
+					recipientRole={recipientToRemove?.role}
+					fieldCount={recipientToRemove?.fieldCount}
 				/>
 
 				{/* Recipient selector for field assignment */}
@@ -1470,6 +1717,7 @@ function DocumentDetailPage() {
 					onRecipientSelect={setSelectedRecipientId}
 					onConfirm={handleConfirmFieldPlacement}
 					fieldType={pendingFieldData?.fieldType || "field"}
+					pageNumber={pendingFieldData?.page || 1}
 				/>
 
 				{/* Field options dialog for checkbox/dropdown/radio */}
@@ -1488,12 +1736,32 @@ function DocumentDetailPage() {
 						/>
 					)}
 
+				{/* Field properties dialog */}
+				<FieldPropertiesDialog
+					open={showFieldProperties}
+					onOpenChange={(open) => {
+						setShowFieldProperties(open);
+						if (!open) setFieldPropertiesId(null);
+					}}
+					field={
+						fieldPropertiesId
+							? (signatureFields.find((f) => f._id === fieldPropertiesId) ??
+								null)
+							: null
+					}
+					recipients={recipients}
+					onSave={() => {
+						refetchFields();
+					}}
+				/>
+
 				{/* Send document dialog */}
 				<SendDocumentDialog
 					documentId={documentId as Id<"documents">}
 					documentName={documentData.name}
 					recipients={recipients}
 					signatureFieldCount={signatureFieldCount}
+					fieldCountsByRecipient={fieldCountsByRecipient}
 					open={sendDocumentOpen}
 					onOpenChange={setSendDocumentOpen}
 					onSuccess={() => {
@@ -1519,6 +1787,19 @@ function DocumentDetailPage() {
 							? placedFields.find((f) => f.id === selectedFieldId)?.fieldType
 							: undefined
 					}
+				/>
+
+				{/* Recipient options dialog */}
+				<RecipientOptionsDialog
+					open={recipientOptionsOpen}
+					onOpenChange={setRecipientOptionsOpen}
+					recipient={selectedRecipientForOptions}
+					documentStatus={documentData.workflowStatus}
+					canEdit={canEdit}
+					onResendEmail={handleResendEmail}
+					onRemove={(recipient) => {
+						openRemoveRecipientDialog(recipient);
+					}}
 				/>
 			</div>
 		</PageWrapper>

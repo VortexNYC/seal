@@ -3,6 +3,7 @@ import {
 	CalendarIcon,
 	CheckSquareIcon,
 	PenToolIcon,
+	SettingsIcon,
 	TrashIcon,
 	TypeIcon,
 } from "lucide-react";
@@ -33,8 +34,9 @@ interface FieldListProps {
 	recipients: Recipient[];
 	selectedFieldId: string | null;
 	canEdit: boolean;
-	onFieldSelect?: (fieldId: string) => void;
+	onFieldSelect?: (fieldId: string | null) => void;
 	onFieldDelete?: (fieldId: string) => void;
+	onFieldProperties?: (fieldId: string) => void;
 }
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
@@ -74,6 +76,7 @@ export function FieldList({
 	canEdit,
 	onFieldSelect,
 	onFieldDelete,
+	onFieldProperties,
 }: FieldListProps) {
 	// Create a map of recipient IDs to recipient info for quick lookup
 	const recipientMap = new Map(
@@ -100,7 +103,7 @@ export function FieldList({
 				return (
 					<div
 						key={field._id}
-						onClick={() => onFieldSelect?.(field._id)}
+						onClick={() => onFieldSelect?.(isSelected ? null : field._id)}
 						className={`w-full p-3 rounded-lg border-2 transition-all cursor-pointer ${
 							isSelected
 								? "border-primary bg-primary/5"
@@ -117,36 +120,56 @@ export function FieldList({
 								<div className="flex-1 min-w-0">
 									<div className="flex items-center gap-2 flex-wrap">
 										<span className="text-sm font-medium">
-											{FIELD_LABELS[field.fieldType]}
+											{field.label || FIELD_LABELS[field.fieldType]}
 										</span>
 										<Badge variant="outline" className="text-xs">
 											Page {field.page}
 										</Badge>
 									</div>
 									{recipient && (
-										<p className="text-xs text-muted-foreground mt-1 truncate">
-											{recipient.name || recipient.email}
-										</p>
+										<div className="text-xs text-muted-foreground mt-1">
+											{recipient.name && (
+												<p className="truncate font-medium text-foreground/80">
+													{recipient.name}
+												</p>
+											)}
+											<p className="truncate">{recipient.email}</p>
+										</div>
 									)}
 								</div>
 							</div>
 							{canEdit && (
-								<Button
-									variant="ghost"
-									size="icon"
-									className="h-8 w-8 shrink-0"
-									onClick={(e) => {
-										e.stopPropagation();
-										// First select the field, then trigger delete
-										onFieldSelect?.(field._id);
-										// Use setTimeout to ensure selection happens first
-										setTimeout(() => {
-											onFieldDelete?.(field._id);
-										}, 0);
-									}}
-								>
-									<TrashIcon className="h-4 w-4 text-destructive" />
-								</Button>
+								<div className="flex items-center gap-1 shrink-0">
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-8 w-8"
+										title="Field properties"
+										onClick={(e) => {
+											e.stopPropagation();
+											onFieldProperties?.(field._id);
+										}}
+									>
+										<SettingsIcon className="h-4 w-4 text-muted-foreground" />
+									</Button>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-8 w-8"
+										title="Delete field"
+										onClick={(e) => {
+											e.stopPropagation();
+											// First select the field, then trigger delete
+											onFieldSelect?.(field._id);
+											// Use setTimeout to ensure selection happens first
+											setTimeout(() => {
+												onFieldDelete?.(field._id);
+											}, 0);
+										}}
+									>
+										<TrashIcon className="h-4 w-4 text-destructive" />
+									</Button>
+								</div>
 							)}
 						</div>
 					</div>

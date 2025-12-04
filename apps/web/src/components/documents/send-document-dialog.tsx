@@ -13,7 +13,6 @@ import {
 	ChevronDownIcon,
 	ChevronUpIcon,
 	Loader2Icon,
-	MailIcon,
 	SendIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -49,43 +48,19 @@ interface SendDocumentDialogProps {
 		status: "pending" | "viewed" | "signed" | "approved" | "declined";
 	}>;
 	signatureFieldCount: number;
+	/** Map of recipientId to field count */
+	fieldCountsByRecipient?: Map<string, number>;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onSuccess?: () => void;
 }
-
-// SEA-119: Message templates
-const MESSAGE_TEMPLATES = [
-	{
-		id: "default",
-		name: "Default",
-		message: "",
-	},
-	{
-		id: "urgent",
-		name: "Urgent",
-		message:
-			"This document requires your immediate attention. Please review and sign at your earliest convenience.",
-	},
-	{
-		id: "reminder",
-		name: "Friendly Reminder",
-		message:
-			"Just a friendly reminder to review and sign this document when you have a moment. Thank you!",
-	},
-	{
-		id: "formal",
-		name: "Formal Request",
-		message:
-			"Please review the attached document carefully. Your signature is required to proceed with this agreement.",
-	},
-];
 
 export function SendDocumentDialog({
 	documentId,
 	documentName,
 	recipients,
 	signatureFieldCount,
+	fieldCountsByRecipient,
 	open,
 	onOpenChange,
 	onSuccess,
@@ -127,14 +102,6 @@ export function SendDocumentDialog({
 			...prev,
 			[recipientId]: message,
 		}));
-	};
-
-	// SEA-119: Apply template to recipient
-	const applyTemplate = (recipientId: string, templateId: string) => {
-		const template = MESSAGE_TEMPLATES.find((t) => t.id === templateId);
-		if (template) {
-			setRecipientMessage(recipientId, template.message);
-		}
 	};
 
 	const handleSend = async () => {
@@ -226,27 +193,46 @@ export function SendDocumentDialog({
 												type="button"
 												className="flex items-center justify-between w-full p-3 bg-muted hover:bg-muted/80 transition-colors"
 											>
-												<div className="flex items-center gap-2">
-													<MailIcon className="h-4 w-4 text-muted-foreground" />
-													<div className="text-left">
-														<p className="text-sm font-medium">
+												<div className="flex items-center gap-3 min-w-0 flex-1">
+													<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium shrink-0">
+														{(recipient.name ||
+															recipient.email)[0].toUpperCase()}
+													</div>
+													<div className="text-left min-w-0 flex-1">
+														<p className="text-sm font-medium truncate">
 															{recipient.name || recipient.email}
 														</p>
-														<p className="text-xs text-muted-foreground">
-															{recipient.role.charAt(0).toUpperCase() +
-																recipient.role.slice(1)}
-															{getRecipientMessage(recipient._id) && (
-																<span className="ml-2 text-primary">
-																	• Custom message
+														<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+															{recipient.name && (
+																<span className="truncate max-w-[180px]">
+																	{recipient.email}
 																</span>
 															)}
-														</p>
+															{recipient.name && <span>•</span>}
+															<span className="capitalize shrink-0">
+																{recipient.role}
+															</span>
+															{getRecipientMessage(recipient._id) && (
+																<>
+																	<span>•</span>
+																	<span className="text-primary shrink-0">
+																		Custom message
+																	</span>
+																</>
+															)}
+														</div>
 													</div>
 												</div>
-												<div className="flex items-center gap-2">
-													<span className="text-xs text-muted-foreground px-2 py-1 bg-background rounded">
-														{recipient.status}
-													</span>
+												<div className="flex items-center gap-2 shrink-0 ml-2">
+													{fieldCountsByRecipient && (
+														<span className="text-xs font-medium px-2 py-1 bg-background rounded border">
+															{fieldCountsByRecipient.get(recipient._id) ?? 0}{" "}
+															{(fieldCountsByRecipient.get(recipient._id) ??
+																0) === 1
+																? "field"
+																: "fields"}
+														</span>
+													)}
 													{expandedRecipient === recipient._id ? (
 														<ChevronUpIcon className="h-4 w-4 text-muted-foreground" />
 													) : (
@@ -256,29 +242,7 @@ export function SendDocumentDialog({
 											</button>
 										</CollapsibleTrigger>
 										<CollapsibleContent>
-											<div className="p-3 border-t space-y-3">
-												{/* Template selector */}
-												<div className="flex flex-wrap gap-2">
-													<span className="text-xs text-muted-foreground self-center">
-														Templates:
-													</span>
-													{MESSAGE_TEMPLATES.filter(
-														(t) => t.id !== "default",
-													).map((template) => (
-														<Button
-															key={template.id}
-															variant="outline"
-															size="sm"
-															className="h-7 text-xs"
-															onClick={() =>
-																applyTemplate(recipient._id, template.id)
-															}
-														>
-															{template.name}
-														</Button>
-													))}
-												</div>
-												{/* Message textarea */}
+											<div className="p-3 border-t space-y-2">
 												<Textarea
 													placeholder={`Custom message for ${recipient.name || recipient.email}...`}
 													value={getRecipientMessage(recipient._id)}

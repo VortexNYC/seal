@@ -18,9 +18,8 @@ import {
 	TypeIcon,
 	XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -43,7 +42,7 @@ type ValidationPatternOption = {
 };
 
 const VALIDATION_PATTERNS: ValidationPatternOption[] = [
-	{ value: "", label: "None" },
+	{ value: "none", label: "None" },
 	{ value: "email", label: "Email", pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" },
 	{ value: "phone", label: "Phone Number", pattern: "^[+]?[0-9\\s\\-()]+$" },
 	{ value: "number", label: "Numbers Only", pattern: "^[0-9]+$" },
@@ -86,6 +85,7 @@ interface FieldPropertiesPanelProps {
 	field: FieldData;
 	recipients: Recipient[];
 	onClose: () => void;
+	onSave?: () => void;
 }
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
@@ -122,6 +122,7 @@ export function FieldPropertiesPanel({
 	field,
 	recipients,
 	onClose,
+	onSave,
 }: FieldPropertiesPanelProps) {
 	// Local state for form fields
 	const [label, setLabel] = useState(field.label);
@@ -138,7 +139,7 @@ export function FieldPropertiesPanel({
 	);
 	const [validationPattern, setValidationPattern] = useState(() => {
 		const pattern = field.properties?.pattern;
-		if (!pattern) return "";
+		if (!pattern) return "none";
 		const found = VALIDATION_PATTERNS.find((p) => p.pattern === pattern);
 		return found ? found.value : "custom";
 	});
@@ -149,7 +150,7 @@ export function FieldPropertiesPanel({
 		field.validationRules?.customMessage ?? "",
 	);
 
-	// Track if there are unsaved changes
+	// Track saving state
 	const [isSaving, setIsSaving] = useState(false);
 
 	// Update local state when field changes
@@ -164,7 +165,7 @@ export function FieldPropertiesPanel({
 
 		const pattern = field.properties?.pattern;
 		if (!pattern) {
-			setValidationPattern("");
+			setValidationPattern("none");
 			setCustomPattern("");
 		} else {
 			const found = VALIDATION_PATTERNS.find((p) => p.pattern === pattern);
@@ -180,15 +181,19 @@ export function FieldPropertiesPanel({
 
 	const updateField = useMutation(api.signature_fields.mutations.updateField);
 
-	// Debounced save function
-	const saveChanges = useCallback(async () => {
+	// Save function
+	const handleSave = async () => {
 		setIsSaving(true);
 
 		// Determine the pattern to use
 		let patternToSave: string | undefined;
 		if (validationPattern === "custom" && customPattern) {
 			patternToSave = customPattern;
-		} else if (validationPattern && validationPattern !== "custom") {
+		} else if (
+			validationPattern &&
+			validationPattern !== "custom" &&
+			validationPattern !== "none"
+		) {
 			const found = VALIDATION_PATTERNS.find(
 				(p) => p.value === validationPattern,
 			);
@@ -221,6 +226,8 @@ export function FieldPropertiesPanel({
 			});
 
 			toast.success("Field updated");
+			onSave?.();
+			onClose();
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to update field";
@@ -228,28 +235,7 @@ export function FieldPropertiesPanel({
 		} finally {
 			setIsSaving(false);
 		}
-	}, [
-		field._id,
-		field.properties?.options,
-		field.properties?.defaultValue,
-		field.validationRules?.min,
-		field.validationRules?.max,
-		label,
-		isRequired,
-		placeholder,
-		helpText,
-		maxLength,
-		minLength,
-		validationPattern,
-		customPattern,
-		customMessage,
-		updateField,
-	]);
-
-	// Auto-save on blur or after a delay
-	const handleBlur = useCallback(() => {
-		saveChanges();
-	}, [saveChanges]);
+	};
 
 	// Get recipient info
 	const recipient = recipients.find((r) => r._id === field.recipientId);
@@ -261,7 +247,7 @@ export function FieldPropertiesPanel({
 	const showLengthLimits = field.fieldType === "text";
 
 	return (
-		<div className="field-properties-panel border-l bg-background h-full flex flex-col">
+		<div className="field-properties-panel bg-background h-full flex flex-col">
 			{/* Header */}
 			<div className="flex items-center justify-between p-4 border-b">
 				<div className="flex items-center gap-2">
@@ -289,12 +275,21 @@ export function FieldPropertiesPanel({
 					<div className="space-y-2">
 						<Label className="text-xs text-muted-foreground">Assigned to</Label>
 						<div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-							<div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+							<div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium shrink-0">
 								{(recipient.name || recipient.email)[0].toUpperCase()}
 							</div>
-							<span className="text-sm truncate">
-								{recipient.name || recipient.email}
-							</span>
+							<div className="flex flex-col min-w-0">
+								{recipient.name && (
+									<span className="text-sm font-medium truncate">
+										{recipient.name}
+									</span>
+								)}
+								<span
+									className={`text-xs truncate ${recipient.name ? "text-muted-foreground" : "text-sm"}`}
+								>
+									{recipient.email}
+								</span>
+							</div>
 						</div>
 					</div>
 				)}
@@ -306,7 +301,6 @@ export function FieldPropertiesPanel({
 						id="field-label"
 						value={label}
 						onChange={(e) => setLabel(e.target.value)}
-						onBlur={handleBlur}
 						placeholder="Enter field label"
 					/>
 					<p className="text-xs text-muted-foreground">
@@ -325,11 +319,7 @@ export function FieldPropertiesPanel({
 					<Switch
 						id="field-required"
 						checked={isRequired}
-						onCheckedChange={(checked) => {
-							setIsRequired(checked);
-							// Save immediately on toggle
-							setTimeout(() => saveChanges(), 0);
-						}}
+						onCheckedChange={setIsRequired}
 					/>
 				</div>
 
@@ -341,7 +331,6 @@ export function FieldPropertiesPanel({
 							id="field-placeholder"
 							value={placeholder}
 							onChange={(e) => setPlaceholder(e.target.value)}
-							onBlur={handleBlur}
 							placeholder="Enter placeholder text"
 						/>
 						<p className="text-xs text-muted-foreground">
@@ -362,7 +351,6 @@ export function FieldPropertiesPanel({
 						id="field-help"
 						value={helpText}
 						onChange={(e) => setHelpText(e.target.value)}
-						onBlur={handleBlur}
 						placeholder="Add instructions for the signer"
 						rows={2}
 					/>
@@ -388,8 +376,6 @@ export function FieldPropertiesPanel({
 									setValidationPattern(value);
 									if (value !== "custom") {
 										setCustomPattern("");
-										// Save after pattern change
-										setTimeout(() => saveChanges(), 0);
 									}
 								}}
 							>
@@ -416,7 +402,6 @@ export function FieldPropertiesPanel({
 									id="field-custom-pattern"
 									value={customPattern}
 									onChange={(e) => setCustomPattern(e.target.value)}
-									onBlur={handleBlur}
 									placeholder="^[a-zA-Z]+$"
 									className="font-mono text-sm"
 								/>
@@ -424,14 +409,13 @@ export function FieldPropertiesPanel({
 						)}
 
 						{/* Custom Error Message */}
-						{validationPattern && (
+						{validationPattern && validationPattern !== "none" && (
 							<div className="space-y-2">
 								<Label htmlFor="field-error-message">Error Message</Label>
 								<Input
 									id="field-error-message"
 									value={customMessage}
 									onChange={(e) => setCustomMessage(e.target.value)}
-									onBlur={handleBlur}
 									placeholder="Please enter a valid value"
 								/>
 								<p className="text-xs text-muted-foreground">
@@ -462,7 +446,6 @@ export function FieldPropertiesPanel({
 												: undefined,
 										)
 									}
-									onBlur={handleBlur}
 									placeholder="0"
 								/>
 							</div>
@@ -480,7 +463,6 @@ export function FieldPropertiesPanel({
 												: undefined,
 										)
 									}
-									onBlur={handleBlur}
 									placeholder="No limit"
 								/>
 							</div>
@@ -491,12 +473,12 @@ export function FieldPropertiesPanel({
 
 			{/* Footer */}
 			<div className="p-4 border-t bg-muted/30">
-				<div className="flex items-center justify-between">
-					<Badge variant="outline" className="text-xs">
-						{isSaving ? "Saving..." : "Auto-saved"}
-					</Badge>
+				<div className="flex items-center justify-end gap-3">
 					<Button variant="outline" size="sm" onClick={onClose}>
-						Done
+						Cancel
+					</Button>
+					<Button size="sm" onClick={handleSave} disabled={isSaving}>
+						{isSaving ? "Saving..." : "Save"}
 					</Button>
 				</div>
 			</div>

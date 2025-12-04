@@ -1,6 +1,12 @@
 import type Konva from "konva";
-import { useEffect, useRef } from "react";
-import { Group, Rect, Text, Transformer } from "react-konva";
+import { useEffect, useRef, useState } from "react";
+import {
+	Group,
+	Image as KonvaImage,
+	Rect,
+	Text,
+	Transformer,
+} from "react-konva";
 import type { FieldType } from "./field-toolbar";
 import {
 	getRecipientColorById,
@@ -23,6 +29,12 @@ export interface PlacedField {
 		placeholder?: string;
 		defaultValue?: string;
 		helpText?: string;
+	};
+	/** Signature data if field has been filled */
+	signatureData?: {
+		signatureImageUrl?: string;
+		value?: string;
+		signedAt?: number;
 	};
 }
 
@@ -159,8 +171,27 @@ export function DraggableField({
 		useRecipientColors &&
 		(!field.recipientId || recipientColor === UNASSIGNED_COLOR);
 
-	const label = FIELD_LABELS[field.fieldType];
+	const label = field.label || FIELD_LABELS[field.fieldType];
 	const isCheckbox = field.fieldType === "checkbox";
+	const hasSignatureImage = !!field.signatureData?.signatureImageUrl;
+
+	// Load signature image if available
+	const [signatureImage, setSignatureImage] = useState<HTMLImageElement | null>(
+		null,
+	);
+
+	useEffect(() => {
+		if (field.signatureData?.signatureImageUrl) {
+			const img = new window.Image();
+			img.crossOrigin = "anonymous";
+			img.onload = () => {
+				setSignatureImage(img);
+			};
+			img.src = field.signatureData.signatureImageUrl;
+		} else {
+			setSignatureImage(null);
+		}
+	}, [field.signatureData?.signatureImageUrl]);
 
 	// Update transformer when selection changes
 	useEffect(() => {
@@ -380,6 +411,79 @@ export function DraggableField({
 		);
 	};
 
+	const renderFilledSignature = () => {
+		// Calculate image dimensions to fit within field while maintaining aspect ratio
+		const padding = 4;
+		const availableWidth = field.width - padding * 2;
+		const availableHeight = field.height - padding * 2;
+
+		let imgWidth = availableWidth;
+		let imgHeight = availableHeight;
+		let imgX = padding;
+		let imgY = padding;
+
+		if (signatureImage) {
+			const aspectRatio = signatureImage.width / signatureImage.height;
+			const fieldAspectRatio = availableWidth / availableHeight;
+
+			if (aspectRatio > fieldAspectRatio) {
+				// Image is wider - fit to width
+				imgWidth = availableWidth;
+				imgHeight = availableWidth / aspectRatio;
+				imgY = padding + (availableHeight - imgHeight) / 2;
+			} else {
+				// Image is taller - fit to height
+				imgHeight = availableHeight;
+				imgWidth = availableHeight * aspectRatio;
+				imgX = padding + (availableWidth - imgWidth) / 2;
+			}
+		}
+
+		return (
+			<>
+				{/* Field background with green border indicating completion */}
+				<Rect
+					width={field.width}
+					height={field.height}
+					fill="#ffffff"
+					stroke={isSelected ? colors.accent : "#22c55e"}
+					strokeWidth={isSelected ? 2 : 1.5}
+					cornerRadius={6}
+					shadowColor={isSelected ? colors.glow : "rgba(34, 197, 94, 0.15)"}
+					shadowBlur={isSelected ? 12 : 6}
+					shadowOpacity={1}
+					shadowOffsetY={isSelected ? 0 : 2}
+				/>
+
+				{/* Green accent stripe indicating signed */}
+				<Rect
+					x={0}
+					y={0}
+					width={4}
+					height={field.height}
+					fill="#22c55e"
+					cornerRadius={[6, 0, 0, 6]}
+				/>
+
+				{/* Signature image */}
+				{signatureImage && (
+					<KonvaImage
+						x={imgX}
+						y={imgY}
+						width={imgWidth}
+						height={imgHeight}
+						image={signatureImage}
+						listening={false}
+					/>
+				)}
+			</>
+		);
+	};
+
+	// Determine which renderer to use
+	const shouldShowFilledSignature =
+		field.fieldType === "signature" && hasSignatureImage && signatureImage;
+
 	return (
 		<>
 			<Group
@@ -394,7 +498,11 @@ export function DraggableField({
 				onDragEnd={handleDragEnd}
 				onTransformEnd={handleTransformEnd}
 			>
-				{isCheckbox ? renderCheckbox() : renderField()}
+				{shouldShowFilledSignature
+					? renderFilledSignature()
+					: isCheckbox
+						? renderCheckbox()
+						: renderField()}
 			</Group>
 
 			{/* Transformer for resize handles */}

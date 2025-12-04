@@ -19,6 +19,7 @@ export type FieldType =
 interface FieldToolbarProps {
 	onFieldDragStart?: (fieldType: FieldType) => void;
 	onFieldDragEnd?: () => void;
+	disabled?: boolean;
 }
 
 interface FieldButtonProps {
@@ -27,6 +28,7 @@ interface FieldButtonProps {
 	label: string;
 	onDragStart: (fieldType: FieldType) => void;
 	onDragEnd: () => void;
+	disabled?: boolean;
 }
 
 /**
@@ -78,12 +80,17 @@ function FieldButton({
 	label,
 	onDragStart,
 	onDragEnd,
+	disabled,
 }: FieldButtonProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const [isHovered, setIsHovered] = useState(false);
 	const config = FIELD_CONFIG[type];
 
 	const handleDragStart = (e: React.DragEvent) => {
+		if (disabled) {
+			e.preventDefault();
+			return;
+		}
 		setIsDragging(true);
 		e.dataTransfer.effectAllowed = "copy";
 		e.dataTransfer.setData("fieldType", type);
@@ -133,14 +140,17 @@ function FieldButton({
 	return (
 		<button
 			type="button"
-			draggable
+			draggable={!disabled}
 			onDragStart={handleDragStart}
 			onDragEnd={handleDragEnd}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
-			className={`group relative flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg cursor-grab transition-colors hover:border-gray-300 active:cursor-grabbing ${
-				isDragging ? "opacity-40 scale-95 border-dashed" : ""
-			}`}
+			disabled={disabled}
+			className={`group relative flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg transition-colors ${
+				disabled
+					? "opacity-50 cursor-not-allowed"
+					: "cursor-grab hover:border-gray-300 active:cursor-grabbing"
+			} ${isDragging ? "opacity-40 scale-95 border-dashed" : ""}`}
 		>
 			<div className="flex items-center text-gray-400 group-hover:text-gray-500 transition-colors">
 				<GripVerticalIcon className="w-3 h-3" />
@@ -166,6 +176,7 @@ function FieldButton({
 export function FieldToolbar({
 	onFieldDragStart,
 	onFieldDragEnd,
+	disabled,
 }: FieldToolbarProps) {
 	const handleDragStart = (fieldType: FieldType) => {
 		onFieldDragStart?.(fieldType);
@@ -182,7 +193,7 @@ export function FieldToolbar({
 					Fields
 				</span>
 				<span className="text-[9px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-					Drag to place
+					{disabled ? "Add a signer first" : "Drag to place"}
 				</span>
 			</div>
 
@@ -193,6 +204,7 @@ export function FieldToolbar({
 					label="Signature"
 					onDragStart={handleDragStart}
 					onDragEnd={handleDragEnd}
+					disabled={disabled}
 				/>
 
 				<FieldButton
@@ -201,6 +213,7 @@ export function FieldToolbar({
 					label="Text"
 					onDragStart={handleDragStart}
 					onDragEnd={handleDragEnd}
+					disabled={disabled}
 				/>
 
 				<FieldButton
@@ -209,6 +222,7 @@ export function FieldToolbar({
 					label="Date"
 					onDragStart={handleDragStart}
 					onDragEnd={handleDragEnd}
+					disabled={disabled}
 				/>
 
 				{/* TODO: Re-enable checkbox field once multi-option rendering is complete
@@ -218,6 +232,7 @@ export function FieldToolbar({
 					label="Checkbox"
 					onDragStart={handleDragStart}
 					onDragEnd={handleDragEnd}
+					disabled={disabled}
 				/>
 				*/}
 			</div>
