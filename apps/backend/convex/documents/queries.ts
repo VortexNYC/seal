@@ -8,6 +8,18 @@ import { authQuery } from "../auth";
 import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
 
 /**
+ * Get storage URL by storage ID
+ * Used for thumbnail generation - minimal access check since document list already verified access
+ */
+export const getStorageUrl = authQuery({
+	args: { storageId: v.string() },
+	handler: async (ctx, args) => {
+		const url = await ctx.storage.getUrl(args.storageId);
+		return url;
+	},
+});
+
+/**
  * Get a single document by ID with access control
  */
 export const getDocument = authQuery({

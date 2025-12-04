@@ -208,6 +208,52 @@ export const updateDocument = permissionMutation("documents:edit")({
 });
 
 /**
+ * Update document thumbnail
+ * Used for lazy thumbnail generation from existing documents
+ */
+export const updateThumbnail = authMutation({
+	args: {
+		documentId: v.id("documents"),
+		thumbnailDataUrl: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Get the document
+		const document = await ctx.db.get(args.documentId);
+		if (!document || document.status === "deleted") {
+			throw new ConvexError("Document not found");
+		}
+
+		// 2. Verify user has access (owner or org member)
+		let hasAccess = document.ownerId === userId;
+
+		if (!hasAccess) {
+			const member = await ctx.db
+				.query("organization_members")
+				.withIndex("by_user_organization", (q) =>
+					q.eq("userId", userId).eq("organizationId", document.organizationId),
+				)
+				.first();
+
+			hasAccess = member !== null && member.status === "active";
+		}
+
+		if (!hasAccess) {
+			throw new ConvexError("You don't have access to this document");
+		}
+
+		// 3. Update thumbnail
+		await ctx.db.patch(args.documentId, {
+			thumbnailDataUrl: args.thumbnailDataUrl,
+			updatedAt: Date.now(),
+		});
+
+		return { success: true };
+	},
+});
+
+/**
  * Send a document to recipients
  * Transitions workflow status from draft to sent
  * Requires documents:edit permission (owner operation)
