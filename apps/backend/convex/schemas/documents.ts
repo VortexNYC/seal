@@ -53,6 +53,9 @@ export const documentsTable = defineTable({
 	cancelledAt: v.optional(v.number()), // When workflow was cancelled
 	declinedAt: v.optional(v.number()), // When first recipient declined
 
+	// SEA-119: Signing deadline for recipients
+	deadline: v.optional(v.number()), // Timestamp when signing must be completed by
+
 	// Timestamps
 	createdAt: v.number(),
 	updatedAt: v.number(),

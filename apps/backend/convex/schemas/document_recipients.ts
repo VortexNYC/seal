@@ -56,6 +56,9 @@ export const documentRecipientsTable = defineTable({
 	// Decline information
 	declineReason: v.optional(v.string()),
 
+	// SEA-119: Per-recipient custom message for email
+	customMessage: v.optional(v.string()), // Custom message included in email to this recipient
+
 	// Signature data (for signers)
 	signatureData: v.optional(v.string()), // Base64 encoded signature image or typed name
 	signatureType: v.optional(

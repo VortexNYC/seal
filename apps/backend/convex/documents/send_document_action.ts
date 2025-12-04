@@ -61,10 +61,12 @@ async function authorizeDocumentOwner(
 
 /**
  * Internal mutation to update document status to sent
+ * SEA-119: Also saves optional deadline
  */
 export const markDocumentAsSent = internalMutation({
 	args: {
 		documentId: v.id("documents"),
+		deadline: v.optional(v.number()), // SEA-119: Signing deadline
 	},
 	handler: async (ctx, args) => {
 		const document = await ctx.db.get(args.documentId);
@@ -78,6 +80,7 @@ export const markDocumentAsSent = internalMutation({
 			workflowStatus: "sent",
 			sentAt: Date.now(),
 			updatedAt: Date.now(),
+			...(args.deadline && { deadline: args.deadline }), // SEA-119: Save deadline if provided
 		});
 
 		return { success: true };
@@ -87,11 +90,21 @@ export const markDocumentAsSent = internalMutation({
 /**
  * Send document to all recipients via email
  * This is an action (not mutation) because it calls external email service
+ * SEA-119: Supports per-recipient custom messages and document deadline
  */
 export const sendDocumentEmails = action({
 	args: {
 		documentId: v.id("documents"),
-		customMessage: v.optional(v.string()),
+		customMessage: v.optional(v.string()), // Default message for all recipients
+		recipientMessages: v.optional(
+			v.array(
+				v.object({
+					recipientId: v.id("document_recipients"),
+					message: v.string(),
+				}),
+			),
+		), // SEA-119: Per-recipient custom messages
+		deadline: v.optional(v.number()), // SEA-119: Signing deadline timestamp
 	},
 	handler: async (
 		ctx,
@@ -145,7 +158,15 @@ export const sendDocumentEmails = action({
 		// TODO: Add user query or get from context
 		const senderName = "Seal User";
 
-		// 5. Send emails to all recipients
+		// 5. Build a map of per-recipient messages (SEA-119)
+		const recipientMessageMap = new Map<Id<"document_recipients">, string>();
+		if (args.recipientMessages) {
+			for (const rm of args.recipientMessages) {
+				recipientMessageMap.set(rm.recipientId, rm.message);
+			}
+		}
+
+		// 6. Send emails to all recipients
 		const emailResults: Array<{
 			recipientId: Id<"document_recipients">;
 			success: boolean;
@@ -167,6 +188,13 @@ export const sendDocumentEmails = action({
 				process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
 			const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
 
+			// SEA-119: Use per-recipient message if available, otherwise fallback to default
+			const messageForRecipient =
+				recipientMessageMap.get(recipient._id) || args.customMessage;
+
+			// SEA-119: Use deadline if provided, otherwise use token expiration
+			const expiresAt = args.deadline || recipient.tokenExpiresAt;
+
 			// Send email
 			const emailResult = await sendDocumentInvitation({
 				to: recipient.email,
@@ -174,8 +202,8 @@ export const sendDocumentEmails = action({
 				documentName: document.name,
 				senderName,
 				signingUrl,
-				customMessage: args.customMessage,
-				expiresAt: recipient.tokenExpiresAt,
+				customMessage: messageForRecipient,
+				expiresAt,
 			});
 
 			emailResults.push({
@@ -185,16 +213,17 @@ export const sendDocumentEmails = action({
 			});
 		}
 
-		// 6. Check if any emails failed
+		// 7. Check if any emails failed
 		const failedEmails = emailResults.filter((r) => !r.success);
 		const allEmailsSucceeded = failedEmails.length === 0;
 
-		// 7. Mark document as sent only when all emails succeed so edits remain possible on failures
+		// 8. Mark document as sent only when all emails succeed so edits remain possible on failures
 		if (allEmailsSucceeded) {
 			await ctx.runMutation(
 				internal.documents.send_document_action.markDocumentAsSent,
 				{
 					documentId: args.documentId,
+					deadline: args.deadline, // SEA-119: Pass deadline to be saved
 				},
 			);
 		}

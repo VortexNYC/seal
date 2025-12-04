@@ -1,16 +1,31 @@
 /**
  * Send Document Dialog Component
- * Allows users to send documents to recipients with optional custom message
+ * SEA-119: Allows users to send documents to recipients with per-recipient custom messages
+ * and optional signing deadline
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useAction } from "convex/react";
-import { Loader2Icon, MailIcon, SendIcon } from "lucide-react";
+import { addDays, format } from "date-fns";
+import {
+	CalendarIcon,
+	ChevronDownIcon,
+	ChevronUpIcon,
+	Loader2Icon,
+	MailIcon,
+	SendIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils";
 import { Button } from "../ui/button";
+import { Calendar } from "../ui/calendar";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "../ui/collapsible";
 import {
 	Dialog,
 	DialogContent,
@@ -20,6 +35,7 @@ import {
 	DialogTitle,
 } from "../ui/dialog";
 import { Label } from "../ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Textarea } from "../ui/textarea";
 
 interface SendDocumentDialogProps {
@@ -38,6 +54,33 @@ interface SendDocumentDialogProps {
 	onSuccess?: () => void;
 }
 
+// SEA-119: Message templates
+const MESSAGE_TEMPLATES = [
+	{
+		id: "default",
+		name: "Default",
+		message: "",
+	},
+	{
+		id: "urgent",
+		name: "Urgent",
+		message:
+			"This document requires your immediate attention. Please review and sign at your earliest convenience.",
+	},
+	{
+		id: "reminder",
+		name: "Friendly Reminder",
+		message:
+			"Just a friendly reminder to review and sign this document when you have a moment. Thank you!",
+	},
+	{
+		id: "formal",
+		name: "Formal Request",
+		message:
+			"Please review the attached document carefully. Your signature is required to proceed with this agreement.",
+	},
+];
+
 export function SendDocumentDialog({
 	documentId,
 	documentName,
@@ -49,6 +92,17 @@ export function SendDocumentDialog({
 }: SendDocumentDialogProps) {
 	const [customMessage, setCustomMessage] = useState("");
 	const [isSending, setIsSending] = useState(false);
+
+	// SEA-119: Per-recipient messages
+	const [recipientMessages, setRecipientMessages] = useState<
+		Record<string, string>
+	>({});
+	const [expandedRecipient, setExpandedRecipient] = useState<string | null>(
+		null,
+	);
+
+	// SEA-119: Deadline picker state
+	const [deadline, setDeadline] = useState<Date | undefined>(undefined);
 
 	const sendDocumentEmails = useAction(
 		api.documents.send_document_action.sendDocumentEmails,
@@ -62,18 +116,59 @@ export function SendDocumentDialog({
 			r.status !== "declined",
 	);
 
+	// SEA-119: Get message for a specific recipient
+	const getRecipientMessage = (recipientId: string) => {
+		return recipientMessages[recipientId] ?? "";
+	};
+
+	// SEA-119: Set message for a specific recipient
+	const setRecipientMessage = (recipientId: string, message: string) => {
+		setRecipientMessages((prev) => ({
+			...prev,
+			[recipientId]: message,
+		}));
+	};
+
+	// SEA-119: Apply template to recipient
+	const applyTemplate = (recipientId: string, templateId: string) => {
+		const template = MESSAGE_TEMPLATES.find((t) => t.id === templateId);
+		if (template) {
+			setRecipientMessage(recipientId, template.message);
+		}
+	};
+
 	const handleSend = async () => {
 		if (pendingRecipients.length === 0) {
 			toast.error("All recipients have already completed their actions");
 			return;
 		}
 
+		// SEA-119: Validate deadline is at least 24 hours in the future
+		if (deadline) {
+			const minDeadline = addDays(new Date(), 1);
+			if (deadline < minDeadline) {
+				toast.error("Deadline must be at least 24 hours from now");
+				return;
+			}
+		}
+
 		setIsSending(true);
 
 		try {
+			// SEA-119: Build per-recipient messages array
+			const perRecipientMessages = pendingRecipients
+				.filter((r) => recipientMessages[r._id]?.trim())
+				.map((r) => ({
+					recipientId: r._id,
+					message: recipientMessages[r._id].trim(),
+				}));
+
 			const result = await sendDocumentEmails({
 				documentId,
 				customMessage: customMessage.trim() || undefined,
+				recipientMessages:
+					perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
+				deadline: deadline?.getTime(),
 			});
 
 			if (result.success) {
@@ -82,7 +177,10 @@ export function SendDocumentDialog({
 				);
 				onSuccess?.();
 				onOpenChange(false);
+				// Reset state
 				setCustomMessage("");
+				setRecipientMessages({});
+				setDeadline(undefined);
 			} else {
 				toast.error(
 					`Failed to send to ${result.emailsFailed} recipient${result.emailsFailed !== 1 ? "s" : ""}`,
@@ -100,7 +198,7 @@ export function SendDocumentDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[500px]">
+			<DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>Send Document</DialogTitle>
 					<DialogDescription>
@@ -110,51 +208,165 @@ export function SendDocumentDialog({
 				</DialogHeader>
 
 				<div className="space-y-4 py-4">
-					{/* Recipients list */}
+					{/* SEA-119: Recipients list with per-recipient message */}
 					<div>
 						<Label className="text-sm font-medium mb-2">Recipients</Label>
 						<div className="space-y-2 mt-2">
 							{pendingRecipients.map((recipient) => (
-								<div
+								<Collapsible
 									key={recipient._id}
-									className="flex items-center justify-between p-2 bg-muted rounded-md"
+									open={expandedRecipient === recipient._id}
+									onOpenChange={(open) =>
+										setExpandedRecipient(open ? recipient._id : null)
+									}
 								>
-									<div className="flex items-center gap-2">
-										<MailIcon className="h-4 w-4 text-muted-foreground" />
-										<div>
-											<p className="text-sm font-medium">
-												{recipient.name || recipient.email}
-											</p>
-											<p className="text-xs text-muted-foreground">
-												{recipient.role.charAt(0).toUpperCase() +
-													recipient.role.slice(1)}
-											</p>
-										</div>
+									<div className="border rounded-md overflow-hidden">
+										<CollapsibleTrigger asChild>
+											<button
+												type="button"
+												className="flex items-center justify-between w-full p-3 bg-muted hover:bg-muted/80 transition-colors"
+											>
+												<div className="flex items-center gap-2">
+													<MailIcon className="h-4 w-4 text-muted-foreground" />
+													<div className="text-left">
+														<p className="text-sm font-medium">
+															{recipient.name || recipient.email}
+														</p>
+														<p className="text-xs text-muted-foreground">
+															{recipient.role.charAt(0).toUpperCase() +
+																recipient.role.slice(1)}
+															{getRecipientMessage(recipient._id) && (
+																<span className="ml-2 text-primary">
+																	• Custom message
+																</span>
+															)}
+														</p>
+													</div>
+												</div>
+												<div className="flex items-center gap-2">
+													<span className="text-xs text-muted-foreground px-2 py-1 bg-background rounded">
+														{recipient.status}
+													</span>
+													{expandedRecipient === recipient._id ? (
+														<ChevronUpIcon className="h-4 w-4 text-muted-foreground" />
+													) : (
+														<ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+													)}
+												</div>
+											</button>
+										</CollapsibleTrigger>
+										<CollapsibleContent>
+											<div className="p-3 border-t space-y-3">
+												{/* Template selector */}
+												<div className="flex flex-wrap gap-2">
+													<span className="text-xs text-muted-foreground self-center">
+														Templates:
+													</span>
+													{MESSAGE_TEMPLATES.filter(
+														(t) => t.id !== "default",
+													).map((template) => (
+														<Button
+															key={template.id}
+															variant="outline"
+															size="sm"
+															className="h-7 text-xs"
+															onClick={() =>
+																applyTemplate(recipient._id, template.id)
+															}
+														>
+															{template.name}
+														</Button>
+													))}
+												</div>
+												{/* Message textarea */}
+												<Textarea
+													placeholder={`Custom message for ${recipient.name || recipient.email}...`}
+													value={getRecipientMessage(recipient._id)}
+													onChange={(e) =>
+														setRecipientMessage(recipient._id, e.target.value)
+													}
+													className="min-h-[80px]"
+													maxLength={500}
+												/>
+												<p className="text-xs text-muted-foreground">
+													{getRecipientMessage(recipient._id).length}/500
+													characters (leave empty to use default message)
+												</p>
+											</div>
+										</CollapsibleContent>
 									</div>
-									<div className="text-xs text-muted-foreground px-2 py-1 bg-background rounded">
-										{recipient.status}
-									</div>
-								</div>
+								</Collapsible>
 							))}
 						</div>
 					</div>
 
-					{/* Custom message */}
+					{/* Default message for all (used when no per-recipient message) */}
 					<div>
 						<Label htmlFor="message" className="text-sm font-medium">
-							Custom Message (Optional)
+							Default Message (Optional)
 						</Label>
+						<p className="text-xs text-muted-foreground mb-2">
+							Used for recipients without a custom message
+						</p>
 						<Textarea
 							id="message"
-							placeholder="Add a personal message for recipients..."
+							placeholder="Add a personal message for all recipients..."
 							value={customMessage}
 							onChange={(e) => setCustomMessage(e.target.value)}
-							className="mt-2 min-h-[100px]"
+							className="min-h-[80px]"
 							maxLength={500}
 						/>
 						<p className="text-xs text-muted-foreground mt-1">
 							{customMessage.length}/500 characters
 						</p>
+					</div>
+
+					{/* SEA-119: Deadline picker */}
+					<div>
+						<Label className="text-sm font-medium">
+							Signing Deadline (Optional)
+						</Label>
+						<p className="text-xs text-muted-foreground mb-2">
+							Recipients must sign by this date
+						</p>
+						<Popover>
+							<PopoverTrigger asChild>
+								<Button
+									variant="outline"
+									className="w-full justify-start text-left font-normal"
+								>
+									<CalendarIcon className="mr-2 h-4 w-4" />
+									{deadline ? (
+										format(deadline, "PPP")
+									) : (
+										<span className="text-muted-foreground">
+											No deadline set
+										</span>
+									)}
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent className="w-auto p-0" align="start">
+								<Calendar
+									mode="single"
+									selected={deadline}
+									onSelect={setDeadline}
+									disabled={(date) => date < addDays(new Date(), 1)}
+									initialFocus
+								/>
+								{deadline && (
+									<div className="p-3 border-t">
+										<Button
+											variant="outline"
+											size="sm"
+											className="w-full"
+											onClick={() => setDeadline(undefined)}
+										>
+											Clear Deadline
+										</Button>
+									</div>
+								)}
+							</PopoverContent>
+						</Popover>
 					</div>
 
 					{/* Error box - No signature fields */}
@@ -175,6 +387,11 @@ export function SendDocumentDialog({
 							<p className="text-sm text-blue-900 dark:text-blue-100">
 								Recipients will receive an email with a link to sign the
 								document.
+								{deadline && (
+									<span className="block mt-1">
+										Deadline: {format(deadline, "PPP")}
+									</span>
+								)}
 							</p>
 						</div>
 					)}
