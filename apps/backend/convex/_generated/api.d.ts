@@ -23,6 +23,8 @@ import type * as crons from "../crons.js";
 import type * as crypto_helpers from "../crypto/helpers.js";
 import type * as crypto_index from "../crypto/index.js";
 import type * as crypto_node_helpers from "../crypto/node_helpers.js";
+import type * as dashboard_index from "../dashboard/index.js";
+import type * as dashboard_queries from "../dashboard/queries.js";
 import type * as documents_activity_queries from "../documents/activity_queries.js";
 import type * as documents_cleanup from "../documents/cleanup.js";
 import type * as documents_document_shared_action from "../documents/document_shared_action.js";
@@ -119,6 +121,8 @@ declare const fullApi: ApiFromModules<{
   "crypto/helpers": typeof crypto_helpers;
   "crypto/index": typeof crypto_index;
   "crypto/node_helpers": typeof crypto_node_helpers;
+  "dashboard/index": typeof dashboard_index;
+  "dashboard/queries": typeof dashboard_queries;
   "documents/activity_queries": typeof documents_activity_queries;
   "documents/cleanup": typeof documents_cleanup;
   "documents/document_shared_action": typeof documents_document_shared_action;
