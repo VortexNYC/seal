@@ -548,6 +548,26 @@ function SigningPage() {
 							<span className="text-sm font-medium truncate max-w-[300px]">
 								{doc.name}
 							</span>
+							{/* Completion status inline with document title */}
+							{isCompleted && (
+								<>
+									<span className="text-muted-foreground/40">·</span>
+									<span
+										className={`inline-flex items-center gap-1.5 text-sm font-medium ${
+											recipient.status === "declined"
+												? "text-red-600 dark:text-red-400"
+												: "text-emerald-600 dark:text-emerald-400"
+										}`}
+									>
+										{recipient.status === "declined" ? (
+											<XCircleIcon className="h-4 w-4" />
+										) : (
+											<CheckCircleIcon className="h-4 w-4" />
+										)}
+										{recipient.status === "declined" ? "Declined" : "Completed"}
+									</span>
+								</>
+							)}
 						</div>
 					</div>
 
@@ -600,6 +620,23 @@ function SigningPage() {
 									{fieldCompletionPercent}%
 								</span>
 							</div>
+						)}
+						{/* Completion status on mobile header */}
+						{isCompleted && (
+							<span
+								className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+									recipient.status === "declined"
+										? "text-red-600 dark:text-red-400"
+										: "text-emerald-600 dark:text-emerald-400"
+								}`}
+							>
+								{recipient.status === "declined" ? (
+									<XCircleIcon className="h-3.5 w-3.5" />
+								) : (
+									<CheckCircleIcon className="h-3.5 w-3.5" />
+								)}
+								{recipient.status === "declined" ? "Declined" : "Completed"}
+							</span>
 						)}
 					</div>
 				</div>
@@ -924,35 +961,6 @@ function SigningPage() {
 
 				{/* Main Content Area - PDF Viewer (now on left with order-1) */}
 				<main className="flex-1 flex flex-col min-h-0 lg:order-1 overflow-hidden">
-					{/* Completion Banner - Shows when document is completed */}
-					{isCompleted && (
-						<div
-							className={`px-4 py-3 ${
-								recipient.status === "declined"
-									? "bg-red-50 dark:bg-red-950/20 border-b border-red-200 dark:border-red-900/50"
-									: "bg-emerald-50 dark:bg-emerald-950/20 border-b border-emerald-200 dark:border-emerald-900/50"
-							}`}
-						>
-							<div className="flex items-center justify-center gap-2">
-								{recipient.status === "declined" ? (
-									<>
-										<XCircleIcon className="h-5 w-5 text-red-600 dark:text-red-400" />
-										<span className="font-medium text-red-800 dark:text-red-200">
-											Document Declined
-										</span>
-									</>
-								) : (
-									<>
-										<CheckCircleIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-										<span className="font-medium text-emerald-800 dark:text-emerald-200">
-											Document Completed
-										</span>
-									</>
-								)}
-							</div>
-						</div>
-					)}
-
 					{/* Field Navigation Bar */}
 					{!isCompleted && fields.length > 0 && (
 						<div className="sticky top-0 lg:top-0 z-30 bg-white/80 dark:bg-background/80 backdrop-blur-xl border-b border-border/50 px-4 py-2.5">
@@ -1226,15 +1234,18 @@ function SigningPage() {
 			</div>
 
 			{/* Signature Capture Modal */}
-			{!isCompleted && showSignatureCapture && (
-				<div className="fixed inset-0 z-50 bg-background">
+			<Dialog
+				open={!isCompleted && showSignatureCapture}
+				onOpenChange={(open) => !open && handleCancelSignature()}
+			>
+				<DialogContent className="sm:max-w-2xl p-0 gap-0 overflow-hidden">
 					<SignatureCapture
 						recipientName={recipient.name}
 						onSignatureCapture={handleSignatureCapture}
 						onCancel={handleCancelSignature}
 					/>
-				</div>
-			)}
+				</DialogContent>
+			</Dialog>
 
 			{/* Decline Dialog */}
 			<Dialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
