@@ -27,8 +27,8 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.8",
 		"@seal/tsconfig": "workspace:*",
-		"@types/bun": "^1.3.3",
-		"@types/node": "^24.10.1",
+		"@types/bun": "^1.3.4",
+		"@types/node": "^24.10.3",
 		"turbo": "^2.6.3",
 		"typescript": "^5.9.3"
 	}
