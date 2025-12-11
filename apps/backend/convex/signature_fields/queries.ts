@@ -260,7 +260,7 @@ export const getFieldsBySigningToken = query({
 			)
 			.collect();
 
-		// 3. Get existing signatures for these fields
+		// 3. Get existing signatures for these fields with full details
 		const fieldsWithValues = await Promise.all(
 			fields.map(async (field) => {
 				const signature = await ctx.db
@@ -268,11 +268,32 @@ export const getFieldsBySigningToken = query({
 					.withIndex("by_field", (q) => q.eq("fieldId", field._id))
 					.first();
 
+				// Get recipient info for this signature if it exists
+				let signerName: string | undefined;
+				let signerEmail: string | undefined;
+
+				if (signature) {
+					const signerRecipient = await ctx.db.get(signature.recipientId);
+					if (signerRecipient) {
+						signerName = signerRecipient.name ?? undefined;
+						signerEmail = signerRecipient.email;
+					}
+				}
+
 				return {
 					...field,
 					currentValue: signature?.value,
 					currentSignatureImageUrl: signature?.signatureImageUrl,
 					isFilled: !!signature,
+					// Include signature details for display
+					signatureDetails: signature
+						? {
+								signedAt: signature.signedAt,
+								signerName,
+								signerEmail,
+								signatureMethod: signature.signatureMethod,
+							}
+						: undefined,
 				};
 			}),
 		);

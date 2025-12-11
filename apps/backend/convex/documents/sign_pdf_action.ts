@@ -85,6 +85,22 @@ export const signPdfDocument = action({
 		const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
 		const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
+		// Signature stamp configuration
+		const stampConfig = {
+			bgColor: rgb(0.98, 0.98, 0.98),
+			borderColor: rgb(0.85, 0.85, 0.85),
+			labelColor: rgb(0.4, 0.4, 0.4),
+			valueColor: rgb(0.15, 0.15, 0.15),
+			accentColor: rgb(0.13, 0.55, 0.13), // Green accent for "Signed"
+			fontSize: {
+				label: 6,
+				value: 7,
+				signed: 7,
+			},
+			padding: 4,
+			lineHeight: 9,
+		};
+
 		// Embed each signature image into the PDF
 		for (const signature of signatures) {
 			// Find the field for this signature
@@ -104,18 +120,52 @@ export const signPdfDocument = action({
 			const height = (field.height / 100) * pageHeight;
 			const pdfY = pageHeight - y - height;
 
-			// Draw a light background for the signature area
+			// Get recipient info for signature stamp
+			const recipient = recipientMap.get(
+				signature.recipientId as Id<"document_recipients">,
+			);
+
+			const signerName = recipient?.name || recipient?.email || "Unknown";
+			const signerEmail = recipient?.email || "";
+
+			// Format date and time separately for better readability
+			const signedDate = new Date(signature.signedAt);
+			const dateStr = signedDate.toLocaleDateString("en-US", {
+				year: "numeric",
+				month: "short",
+				day: "numeric",
+			});
+			const timeStr = signedDate.toLocaleTimeString("en-US", {
+				hour: "2-digit",
+				minute: "2-digit",
+				hour12: true,
+			});
+
+			// Calculate stamp dimensions
+			// The stamp will be placed below the signature, containing signer details
+			const stampHeight = 36; // Height for the info stamp area
+			const signatureAreaHeight = height - stampHeight;
+
+			// Draw a light background for the entire signature + stamp area
 			page.drawRectangle({
 				x,
 				y: pdfY,
 				width,
 				height,
-				color: rgb(0.98, 0.98, 0.98),
-				borderColor: rgb(0.8, 0.8, 0.8),
+				color: stampConfig.bgColor,
+				borderColor: stampConfig.borderColor,
 				borderWidth: 0.5,
 			});
 
-			// If there's a signature image URL, embed it
+			// Draw separator line between signature and stamp info
+			page.drawLine({
+				start: { x: x + 2, y: pdfY + stampHeight },
+				end: { x: x + width - 2, y: pdfY + stampHeight },
+				thickness: 0.5,
+				color: stampConfig.borderColor,
+			});
+
+			// If there's a signature image URL, embed it in the upper area
 			if (signature.signatureImageUrl) {
 				try {
 					// Handle base64 data URLs
@@ -139,12 +189,16 @@ export const signPdfDocument = action({
 										}
 									})();
 
-							// Calculate dimensions to fit while maintaining aspect ratio
-							const imgDims = embeddedImage.scaleToFit(width - 10, height - 20);
+							// Calculate dimensions to fit in signature area (above stamp)
+							const imgDims = embeddedImage.scaleToFit(
+								width - 10,
+								signatureAreaHeight - 6,
+							);
 
-							// Center the image in the field (leave room for info text below)
+							// Center the image in the signature area
 							const imgX = x + (width - imgDims.width) / 2;
-							const imgY = pdfY + 15 + (height - 15 - imgDims.height) / 2;
+							const imgY =
+								pdfY + stampHeight + (signatureAreaHeight - imgDims.height) / 2;
 
 							// Draw the signature image
 							page.drawImage(embeddedImage, {
@@ -172,9 +226,13 @@ export const signPdfDocument = action({
 										}
 									})();
 
-							const imgDims = embeddedImage.scaleToFit(width - 10, height - 20);
+							const imgDims = embeddedImage.scaleToFit(
+								width - 10,
+								signatureAreaHeight - 6,
+							);
 							const imgX = x + (width - imgDims.width) / 2;
-							const imgY = pdfY + 15 + (height - 15 - imgDims.height) / 2;
+							const imgY =
+								pdfY + stampHeight + (signatureAreaHeight - imgDims.height) / 2;
 
 							page.drawImage(embeddedImage, {
 								x: imgX,
@@ -190,17 +248,18 @@ export const signPdfDocument = action({
 				}
 			}
 
-			// For typed signatures or as fallback, draw the text
+			// For typed signatures or as fallback, draw the text in signature area
 			if (signature.value && !signature.signatureImageUrl) {
-				const fontSize = Math.min(height * 0.4, 20);
+				const fontSize = Math.min(signatureAreaHeight * 0.5, 20);
 				const textWidth = helveticaBold.widthOfTextAtSize(
 					signature.value,
 					fontSize,
 				);
 
-				// Center the text
+				// Center the text in signature area
 				const textX = x + (width - textWidth) / 2;
-				const textY = pdfY + height / 2 - fontSize / 3;
+				const textY =
+					pdfY + stampHeight + signatureAreaHeight / 2 - fontSize / 3;
 
 				page.drawText(signature.value, {
 					x: textX,
@@ -211,34 +270,69 @@ export const signPdfDocument = action({
 				});
 			}
 
-			// Add signer info at the bottom of the signature field
-			const recipient = recipientMap.get(
-				signature.recipientId as Id<"document_recipients">,
+			// === Draw the signature stamp info below ===
+			const stampX = x + stampConfig.padding;
+			let stampY = pdfY + stampHeight - stampConfig.padding - 2;
+
+			// Row 1: "Signed by:" label + name (bold)
+			page.drawText("Signed by:", {
+				x: stampX,
+				y: stampY,
+				size: stampConfig.fontSize.label,
+				font: helvetica,
+				color: stampConfig.labelColor,
+			});
+
+			const signedByLabelWidth = helvetica.widthOfTextAtSize(
+				"Signed by: ",
+				stampConfig.fontSize.label,
 			);
-			if (recipient) {
-				const signerName = recipient.name || recipient.email;
-				const signDate = new Date(signature.signedAt).toLocaleDateString(
-					"en-US",
-					{
-						year: "numeric",
-						month: "short",
-						day: "numeric",
-						hour: "2-digit",
-						minute: "2-digit",
-					},
-				);
+			page.drawText(signerName, {
+				x: stampX + signedByLabelWidth,
+				y: stampY,
+				size: stampConfig.fontSize.value,
+				font: helveticaBold,
+				color: stampConfig.valueColor,
+			});
 
-				const infoFontSize = 7;
-				const infoText = `${signerName} - ${signDate}`;
+			stampY -= stampConfig.lineHeight;
 
-				page.drawText(infoText, {
-					x: x + 3,
-					y: pdfY + 3,
-					size: infoFontSize,
+			// Row 2: Email (if different from name and fits)
+			if (signerEmail && signerEmail !== signerName) {
+				const emailDisplay =
+					signerEmail.length > 35
+						? `${signerEmail.substring(0, 32)}...`
+						: signerEmail;
+				page.drawText(emailDisplay, {
+					x: stampX,
+					y: stampY,
+					size: stampConfig.fontSize.label,
 					font: helvetica,
-					color: rgb(0.4, 0.4, 0.4),
+					color: stampConfig.labelColor,
 				});
+				stampY -= stampConfig.lineHeight;
 			}
+
+			// Row 3: Date and time
+			page.drawText("Date:", {
+				x: stampX,
+				y: stampY,
+				size: stampConfig.fontSize.label,
+				font: helvetica,
+				color: stampConfig.labelColor,
+			});
+
+			const dateLabelWidth = helvetica.widthOfTextAtSize(
+				"Date: ",
+				stampConfig.fontSize.label,
+			);
+			page.drawText(`${dateStr} at ${timeStr}`, {
+				x: stampX + dateLabelWidth,
+				y: stampY,
+				size: stampConfig.fontSize.value,
+				font: helvetica,
+				color: stampConfig.valueColor,
+			});
 		}
 
 		// 5. Add verification footer to the last page

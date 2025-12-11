@@ -1102,42 +1102,49 @@ function SigningPage() {
 															}}
 														/>
 														{/* Render field overlays on top of PDF */}
-														{!isCompleted &&
-															fieldsOnPage.map((field) => {
-																const pageDims =
-																	pdfPageDimensions.get(pageNumber);
-																if (!pageDims) return null;
+														{fieldsOnPage.map((field) => {
+															const pageDims =
+																pdfPageDimensions.get(pageNumber);
+															if (!pageDims) return null;
 
-																return (
-																	<FillableFieldOverlay
-																		key={field._id}
-																		ref={(el) => {
-																			if (el) {
-																				fieldRefs.current.set(field._id, el);
-																			} else {
-																				fieldRefs.current.delete(field._id);
-																			}
-																		}}
-																		fieldId={field._id}
-																		fieldType={field.fieldType}
-																		label={field.label}
-																		isRequired={field.isRequired}
-																		isMainSignature={field.isMainSignature}
-																		x={field.x}
-																		y={field.y}
-																		width={field.width}
-																		height={field.height}
-																		page={field.page}
-																		currentPage={pageNumber}
-																		pdfPageWidth={pageDims.width}
-																		pdfPageHeight={pageDims.height}
-																		value={field.currentValue}
-																		isFilled={field.isFilled}
-																		isActive={activeFieldId === field._id}
-																		onClick={handleFieldClick}
-																	/>
-																);
-															})}
+															return (
+																<FillableFieldOverlay
+																	key={field._id}
+																	ref={(el) => {
+																		if (el) {
+																			fieldRefs.current.set(field._id, el);
+																		} else {
+																			fieldRefs.current.delete(field._id);
+																		}
+																	}}
+																	fieldId={field._id}
+																	fieldType={field.fieldType}
+																	label={field.label}
+																	isRequired={field.isRequired}
+																	isMainSignature={field.isMainSignature}
+																	x={field.x}
+																	y={field.y}
+																	width={field.width}
+																	height={field.height}
+																	page={field.page}
+																	currentPage={pageNumber}
+																	pdfPageWidth={pageDims.width}
+																	pdfPageHeight={pageDims.height}
+																	value={field.currentValue}
+																	signatureImageUrl={
+																		field.currentSignatureImageUrl
+																	}
+																	isFilled={field.isFilled}
+																	isActive={
+																		!isCompleted && activeFieldId === field._id
+																	}
+																	signatureDetails={field.signatureDetails}
+																	onClick={
+																		isCompleted ? () => {} : handleFieldClick
+																	}
+																/>
+															);
+														})}
 														{/* Page number indicator */}
 														{numPages && numPages > 1 && (
 															<div className="absolute bottom-3 right-3 px-2 py-1 bg-black/60 text-white text-xs rounded-md backdrop-blur-sm">
@@ -1148,6 +1155,76 @@ function SigningPage() {
 												);
 											})}
 										</Document>
+
+										{/* Signature Stamp - shown when document is completed with no positioned fields */}
+										{isCompleted &&
+											fields.length === 0 &&
+											recipient.status === "signed" && (
+												<div className="mt-4 bg-white dark:bg-card rounded-lg shadow-sm border border-border/50 p-4 max-w-md mx-auto">
+													<div className="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+														{/* Signature image area */}
+														<div className="bg-gray-50/50 dark:bg-gray-800/50 p-4 flex items-center justify-center min-h-[80px]">
+															{recipient.signatureData ? (
+																recipient.signatureData.startsWith("data:") ? (
+																	<img
+																		src={recipient.signatureData}
+																		alt="Signature"
+																		className="max-w-full max-h-[100px] object-contain"
+																	/>
+																) : (
+																	<span className="text-xl font-semibold text-gray-800 dark:text-gray-200 italic">
+																		{recipient.signatureData}
+																	</span>
+																)
+															) : (
+																<div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+																	<CheckCircleIcon className="h-6 w-6" />
+																	<span className="text-lg font-medium">
+																		Document Signed
+																	</span>
+																</div>
+															)}
+														</div>
+														{/* Signature details stamp */}
+														<div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
+															<div className="flex flex-col gap-1">
+																<div className="flex items-baseline gap-1.5">
+																	<span className="text-[10px] text-gray-500 dark:text-gray-400">
+																		Signed by:
+																	</span>
+																	<span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+																		{recipient.name || recipient.email}
+																	</span>
+																</div>
+																{recipient.signedAt && (
+																	<div className="flex items-baseline gap-1.5">
+																		<span className="text-[10px] text-gray-500 dark:text-gray-400">
+																			Date:
+																		</span>
+																		<span className="text-[10px] text-gray-700 dark:text-gray-300">
+																			{new Date(
+																				recipient.signedAt,
+																			).toLocaleDateString("en-US", {
+																				year: "numeric",
+																				month: "short",
+																				day: "numeric",
+																			})}{" "}
+																			at{" "}
+																			{new Date(
+																				recipient.signedAt,
+																			).toLocaleTimeString("en-US", {
+																				hour: "2-digit",
+																				minute: "2-digit",
+																				hour12: true,
+																			})}
+																		</span>
+																	</div>
+																)}
+															</div>
+														</div>
+													</div>
+												</div>
+											)}
 									</div>
 								) : (
 									<div className="bg-white dark:bg-card rounded-lg shadow-sm border border-border/50 p-16 text-center">
