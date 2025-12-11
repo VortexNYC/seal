@@ -133,6 +133,8 @@ export const getRecipientByToken = query({
 				signedAt: recipient.signedAt,
 				approvedAt: recipient.approvedAt,
 				declinedAt: recipient.declinedAt,
+				signatureData: recipient.signatureData,
+				signatureType: recipient.signatureType,
 			},
 			document: {
 				_id: document._id,
