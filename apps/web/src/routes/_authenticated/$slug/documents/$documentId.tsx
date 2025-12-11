@@ -15,7 +15,6 @@ import {
 	ChevronDownIcon,
 	ChevronLeftIcon,
 	ChevronRightIcon,
-	DownloadIcon,
 	FileSignatureIcon,
 	FileTextIcon,
 	InfoIcon,
@@ -34,6 +33,11 @@ import "react-pdf/dist/Page/TextLayer.css";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { countSignatureFields } from "@/lib/signature-fields";
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
@@ -297,52 +301,11 @@ function DocumentDetailPage() {
 	}, []);
 
 	// SEA-72: Download handler - generates fillable PDF with form fields
-	const generateFillablePdf = useAction(
-		api.documents.generate_fillable_pdf.generateFillablePdfAction,
-	);
 
 	// Resend email action
 	const resendRecipientEmail = useAction(
 		api.documents.send_document_action.resendRecipientEmail,
 	);
-
-	const handleDownload = async () => {
-		try {
-			toast.loading("Generating fillable PDF...");
-
-			// Call the Convex action to generate the fillable PDF
-			const result = await generateFillablePdf({
-				documentId: documentId as Id<"documents">,
-			});
-
-			// Convert base64 to blob
-			const binaryString = atob(result.pdfBase64);
-			const bytes = new Uint8Array(binaryString.length);
-			for (let i = 0; i < binaryString.length; i++) {
-				bytes[i] = binaryString.charCodeAt(i);
-			}
-			const blob = new Blob([bytes], { type: "application/pdf" });
-
-			// Create download link
-			const url = URL.createObjectURL(blob);
-			const link = document.createElement("a");
-			link.href = url;
-			link.download = result.fileName;
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-			URL.revokeObjectURL(url);
-
-			toast.dismiss();
-			toast.success("Fillable PDF downloaded successfully!");
-		} catch (error) {
-			toast.dismiss();
-			toast.error(
-				`Failed to generate fillable PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
-			);
-			console.error("Error generating fillable PDF:", error);
-		}
-	};
 
 	// SEA-72: PDF document load handlers
 	const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
@@ -1001,8 +964,80 @@ function DocumentDetailPage() {
 	};
 
 	// Check if document can be sent
-	const canSendDocument =
-		documentData.workflowStatus === "draft" && recipients.length > 0 && canEdit;
+	const getSendDocumentValidation = () => {
+		// Basic checks
+		if (
+			documentData.workflowStatus !== "draft" ||
+			recipients.length === 0 ||
+			!canEdit
+		) {
+			return {
+				canSend: false,
+				tooltip:
+					"Document must be in draft status with recipients and edit permissions to send",
+			};
+		}
+
+		// Check that all signers have at least one signature field
+		const signers = recipients.filter((r) => r.role === "signer");
+		const signersWithoutFields = signers.filter(
+			(signer) =>
+				!signatureFields.some((field) => field.recipientId === signer._id),
+		);
+
+		if (signersWithoutFields.length > 0) {
+			const signerNames = signersWithoutFields
+				.map((s) => s.name || s.email)
+				.join(", ");
+			return {
+				canSend: false,
+				tooltip: `The following signers need at least one signature field: ${signerNames}`,
+			};
+		}
+
+		return { canSend: true };
+	};
+
+	const sendDocumentValidation = getSendDocumentValidation();
+
+	// Create conditional buttons
+	const saveAsTemplateButton =
+		canEdit && signatureFields.length > 0 ? (
+			<Button
+				key="save-template"
+				onClick={() => setSaveAsTemplateOpen(true)}
+				size="sm"
+				variant="outline"
+				className="flex-1 sm:flex-none"
+			>
+				<SaveIcon className="mr-2 h-4 w-4" />
+				<span className="truncate">Save as Template</span>
+			</Button>
+		) : null;
+
+	const sendDocumentButton = sendDocumentValidation.canSend ? (
+		<Button
+			key="send-document"
+			onClick={() => setSendDocumentOpen(true)}
+			size="sm"
+			className="flex-1 sm:flex-none"
+		>
+			<SendIcon className="mr-2 h-4 w-4" />
+			<span className="truncate">Send Document</span>
+		</Button>
+	) : (
+		<Tooltip key="send-document">
+			<TooltipTrigger asChild>
+				<Button disabled size="sm" className="flex-1 sm:flex-none">
+					<SendIcon className="mr-2 h-4 w-4" />
+					<span className="truncate">Send Document</span>
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>
+				<p>{sendDocumentValidation.tooltip}</p>
+			</TooltipContent>
+		</Tooltip>
+	);
 
 	// Calculate progress ring circumference
 	const ringRadius = 52;
@@ -1022,33 +1057,13 @@ function DocumentDetailPage() {
 					icon: ArrowLeftIcon,
 					variant: "ghost",
 				},
-				...(canSendDocument
-					? [
-							{
-								label: "Send Document",
-								onClick: () => setSendDocumentOpen(true),
-								icon: SendIcon,
-								variant: "default" as const,
-							},
-						]
-					: []),
-				...(canEdit && signatureFields.length > 0
-					? [
-							{
-								label: "Save as Template",
-								onClick: () => setSaveAsTemplateOpen(true),
-								icon: SaveIcon,
-								variant: "outline" as const,
-							},
-						]
-					: []),
-				{
-					label: "Download PDF",
-					onClick: handleDownload,
-					icon: DownloadIcon,
-					variant: "outline" as const,
-				},
 			]}
+			headerActions={
+				<div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+					{saveAsTemplateButton}
+					{sendDocumentButton}
+				</div>
+			}
 		>
 			<div className="space-y-6">
 				{/* Main content grid with PDF preview */}
