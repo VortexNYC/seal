@@ -5,14 +5,15 @@ Seal: Bun + Turborepo monorepo. `apps/web` (React 19, TanStack Router, Vite), `a
 ## Commands
 - **Dev**: `bunx turbo run dev --parallel` (or `--filter=@seal/web` / `--filter=@seal/backend`)
 - **Build/Lint/Types**: `bun run build`, `bun run lint`, `bun run format`, `bun run typecheck`
-- **Unit tests**: `cd apps/web && bunx vitest` (single: `bunx vitest path/to/file.test.tsx`)
 - **E2E tests**: `cd apps/web && bun run test:e2e` (single: `bun run test:e2e e2e/tests/file.spec.ts`)
+- **E2E UI mode**: `cd apps/web && bun run test:e2e:ui` (interactive testing)
 
 ## Code Style
-- **Types**: Never use `any` (Biome error). Always explicit types.
+- **Types**: Never use `any` (Biome error). Always explicit types. No implicit `any`.
 - **Naming**: PascalCase for components/Convex files, kebab-case for utils. Descriptive names (`useBillingPortal`).
-- **Imports**: External libs → workspace packages → relative imports. Biome handles formatting.
-- **Errors**: try/catch for async; React error boundaries. Never commit secrets.
+- **Imports**: External libs → workspace packages → relative imports. Biome auto-formats.
+- **Errors**: try/catch for async operations; React error boundaries. Never commit secrets.
+- **Linting**: `noExplicitAny` error, `noUnusedVariables` error, `noUnusedImports` error.
 
 ## Convex
 - Always commit `apps/backend/convex/_generated/` folder.
