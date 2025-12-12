@@ -1,18 +1,34 @@
 import type Konva from "konva";
-import { useEffect, useRef, useState } from "react";
-import {
-	Group,
-	Image as KonvaImage,
-	Rect,
-	Text,
-	Transformer,
-} from "react-konva";
+import { useEffect, useRef } from "react";
+import { Group, Rect, Text, Transformer } from "react-konva";
 import type { FieldType } from "./field-toolbar";
 import {
 	getRecipientColorById,
 	type RecipientColor,
 	UNASSIGNED_COLOR,
 } from "./recipient-colors";
+
+// Helper to get field type label for display
+function getFieldTypeLabel(fieldType: FieldType): string {
+	switch (fieldType) {
+		case "signature":
+			return "Signature";
+		case "text":
+			return "Text";
+		case "date":
+			return "Date";
+		case "checkbox":
+			return "Checkbox";
+		case "dropdown":
+			return "Dropdown";
+		case "radio":
+			return "Radio";
+		case "attachment":
+			return "Attachment";
+		default:
+			return fieldType;
+	}
+}
 
 export interface PlacedField {
 	id: string;
@@ -35,6 +51,9 @@ export interface PlacedField {
 		signatureImageUrl?: string;
 		value?: string;
 		signedAt?: number;
+		signerName?: string;
+		signerEmail?: string;
+		signatureMethod?: string;
 	};
 }
 
@@ -173,25 +192,6 @@ export function DraggableField({
 
 	const label = field.label || FIELD_LABELS[field.fieldType];
 	const isCheckbox = field.fieldType === "checkbox";
-	const hasSignatureImage = !!field.signatureData?.signatureImageUrl;
-
-	// Load signature image if available
-	const [signatureImage, setSignatureImage] = useState<HTMLImageElement | null>(
-		null,
-	);
-
-	useEffect(() => {
-		if (field.signatureData?.signatureImageUrl) {
-			const img = new window.Image();
-			img.crossOrigin = "anonymous";
-			img.onload = () => {
-				setSignatureImage(img);
-			};
-			img.src = field.signatureData.signatureImageUrl;
-		} else {
-			setSignatureImage(null);
-		}
-	}, [field.signatureData?.signatureImageUrl]);
 
 	// Update transformer when selection changes
 	useEffect(() => {
@@ -411,33 +411,39 @@ export function DraggableField({
 		);
 	};
 
-	const renderFilledSignature = () => {
-		// Calculate image dimensions to fit within field while maintaining aspect ratio
+	const renderFilledFieldStamp = () => {
 		const padding = 4;
 		const availableWidth = field.width - padding * 2;
 		const availableHeight = field.height - padding * 2;
 
-		let imgWidth = availableWidth;
-		let imgHeight = availableHeight;
-		let imgX = padding;
-		let imgY = padding;
+		// Format date for display
+		const formatDate = (timestamp?: number) => {
+			if (!timestamp) return { date: "", time: "" };
+			const date = new Date(timestamp);
+			return {
+				date: date.toLocaleDateString("en-US", {
+					year: "numeric",
+					month: "short",
+					day: "numeric",
+				}),
+				time: date.toLocaleTimeString("en-US", {
+					hour: "2-digit",
+					minute: "2-digit",
+					hour12: true,
+				}),
+			};
+		};
 
-		if (signatureImage) {
-			const aspectRatio = signatureImage.width / signatureImage.height;
-			const fieldAspectRatio = availableWidth / availableHeight;
+		const formattedDate = formatDate(field.signatureData?.signedAt);
+		const signerName =
+			field.signatureData?.signerName ||
+			field.signatureData?.signerEmail ||
+			"Unknown";
 
-			if (aspectRatio > fieldAspectRatio) {
-				// Image is wider - fit to width
-				imgWidth = availableWidth;
-				imgHeight = availableWidth / aspectRatio;
-				imgY = padding + (availableHeight - imgHeight) / 2;
-			} else {
-				// Image is taller - fit to height
-				imgHeight = availableHeight;
-				imgWidth = availableHeight * aspectRatio;
-				imgX = padding + (availableWidth - imgWidth) / 2;
-			}
-		}
+		// Determine text size based on field height
+		const isSmallField = availableHeight < 40;
+		const titleFontSize = isSmallField ? 8 : 10;
+		const detailFontSize = isSmallField ? 7 : 9;
 
 		return (
 			<>
@@ -455,7 +461,7 @@ export function DraggableField({
 					shadowOffsetY={isSelected ? 0 : 2}
 				/>
 
-				{/* Green accent stripe indicating signed */}
+				{/* Green accent stripe indicating filled */}
 				<Rect
 					x={0}
 					y={0}
@@ -465,15 +471,53 @@ export function DraggableField({
 					cornerRadius={[6, 0, 0, 6]}
 				/>
 
-				{/* Signature image */}
-				{signatureImage && (
-					<KonvaImage
-						x={imgX}
-						y={imgY}
-						width={imgWidth}
-						height={imgHeight}
-						image={signatureImage}
-						listening={false}
+				{/* Field stamp text */}
+				<Text
+					x={padding}
+					y={padding}
+					width={availableWidth}
+					text={getFieldTypeLabel(field.fieldType)}
+					fontSize={titleFontSize}
+					fontStyle="bold"
+					fill="#374151"
+					align="left"
+				/>
+
+				{!isSmallField && (
+					<>
+						<Text
+							x={padding}
+							y={padding + titleFontSize + 2}
+							width={availableWidth}
+							text={`Signed by: ${signerName}`}
+							fontSize={detailFontSize}
+							fill="#6b7280"
+							align="left"
+						/>
+
+						{formattedDate.date && (
+							<Text
+								x={padding}
+								y={padding + titleFontSize + detailFontSize + 4}
+								width={availableWidth}
+								text={`Date: ${formattedDate.date} at ${formattedDate.time}`}
+								fontSize={detailFontSize}
+								fill="#6b7280"
+								align="left"
+							/>
+						)}
+					</>
+				)}
+
+				{isSmallField && formattedDate.date && (
+					<Text
+						x={padding}
+						y={padding + titleFontSize + 2}
+						width={availableWidth}
+						text={`${signerName} • ${formattedDate.date}`}
+						fontSize={detailFontSize}
+						fill="#6b7280"
+						align="left"
 					/>
 				)}
 			</>
@@ -481,8 +525,7 @@ export function DraggableField({
 	};
 
 	// Determine which renderer to use
-	const shouldShowFilledSignature =
-		field.fieldType === "signature" && hasSignatureImage && signatureImage;
+	const shouldShowFilledFieldStamp = field.signatureData?.signedAt;
 
 	return (
 		<>
@@ -498,8 +541,8 @@ export function DraggableField({
 				onDragEnd={handleDragEnd}
 				onTransformEnd={handleTransformEnd}
 			>
-				{shouldShowFilledSignature
-					? renderFilledSignature()
+				{shouldShowFilledFieldStamp
+					? renderFilledFieldStamp()
 					: isCheckbox
 						? renderCheckbox()
 						: renderField()}

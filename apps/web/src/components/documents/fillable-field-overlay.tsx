@@ -34,8 +34,6 @@ interface FillableFieldOverlayProps {
 	currentPage: number;
 	pdfPageWidth: number;
 	pdfPageHeight: number;
-	value?: string;
-	signatureImageUrl?: string;
 	isFilled: boolean;
 	isActive?: boolean;
 	validationError?: string;
@@ -123,8 +121,6 @@ export const FillableFieldOverlay = forwardRef<
 		currentPage,
 		pdfPageWidth,
 		pdfPageHeight,
-		value,
-		signatureImageUrl,
 		isFilled,
 		isActive = false,
 		validationError,
@@ -144,17 +140,16 @@ export const FillableFieldOverlay = forwardRef<
 	const absoluteWidth = (width / 100) * pdfPageWidth;
 	const absoluteHeight = (height / 100) * pdfPageHeight;
 
-	// Check if this is a filled signature field that should show the stamp
-	const isFilledSignature =
-		isFilled && fieldType === "signature" && signatureDetails;
+	// Check if this is a filled field that should show the stamp
+	const isFilledField = isFilled && signatureDetails;
 
 	// Format signature date if available
 	const formattedDate = signatureDetails
 		? formatSignatureDate(signatureDetails.signedAt)
 		: null;
 
-	// For filled signature fields, render a non-interactive display with signature stamp
-	if (isFilledSignature && signatureDetails) {
+	// For filled fields, render a non-interactive display with field stamp
+	if (isFilledField && signatureDetails) {
 		return (
 			<div
 				className="absolute rounded-sm overflow-hidden bg-gray-50/80 border border-gray-300"
@@ -165,40 +160,28 @@ export const FillableFieldOverlay = forwardRef<
 					height: `${absoluteHeight}px`,
 				}}
 			>
-				{/* Signature image area */}
-				<div
-					className="relative flex items-center justify-center"
-					style={{ height: `${Math.max(absoluteHeight - 36, 20)}px` }}
-				>
-					{signatureImageUrl ? (
-						<img
-							src={signatureImageUrl}
-							alt="Signature"
-							className="max-w-full max-h-full object-contain p-1"
-						/>
-					) : value ? (
-						<span className="text-lg font-semibold text-gray-800 italic">
-							{value}
-						</span>
-					) : null}
-				</div>
-
-				{/* Signature stamp details - DocuSign style */}
+				{/* Field stamp details - Field type, name, date and time */}
 				{absoluteHeight >= 50 && (
-					<div className="border-t border-gray-300 bg-white/90 px-2 py-1">
+					<div className="bg-white/90 px-2 py-2 h-full flex flex-col justify-center">
 						<div className="flex flex-col gap-0.5">
+							{/* Field type */}
+							<div className="flex items-baseline gap-1">
+								<span className="text-[9px] text-gray-500">
+									{getFieldTypeLabel(fieldType)}
+								</span>
+							</div>
 							{/* Signer name */}
 							<div className="flex items-baseline gap-1">
-								<span className="text-[8px] text-gray-500">Signed by:</span>
-								<span className="text-[9px] font-semibold text-gray-800 truncate">
+								<span className="text-[9px] text-gray-500">Signed by:</span>
+								<span className="text-[10px] font-semibold text-gray-800 truncate">
 									{signatureDetails.signerName || signatureDetails.signerEmail}
 								</span>
 							</div>
 							{/* Date and time */}
 							{formattedDate && (
 								<div className="flex items-baseline gap-1">
-									<span className="text-[8px] text-gray-500">Date:</span>
-									<span className="text-[8px] text-gray-700">
+									<span className="text-[9px] text-gray-500">Date:</span>
+									<span className="text-[9px] text-gray-700">
 										{formattedDate.date} at {formattedDate.time}
 									</span>
 								</div>
@@ -209,10 +192,19 @@ export const FillableFieldOverlay = forwardRef<
 
 				{/* Compact stamp for smaller fields */}
 				{absoluteHeight < 50 && absoluteHeight >= 30 && (
-					<div className="absolute bottom-0 left-0 right-0 bg-white/90 border-t border-gray-300 px-1 py-0.5">
-						<div className="text-[7px] text-gray-600 truncate">
-							{signatureDetails.signerName || signatureDetails.signerEmail} •{" "}
-							{formattedDate?.date}
+					<div className="bg-white/90 px-1 py-0.5 h-full flex flex-col justify-center">
+						<div className="text-[7px] text-gray-600">
+							<div className="truncate font-medium">
+								{getFieldTypeLabel(fieldType)}
+							</div>
+							<div className="truncate text-[6px] mt-0.5">
+								{signatureDetails.signerName || signatureDetails.signerEmail}
+							</div>
+							{formattedDate && (
+								<div className="truncate text-[6px] mt-0.5">
+									{formattedDate.date} at {formattedDate.time}
+								</div>
+							)}
 						</div>
 					</div>
 				)}
@@ -276,11 +268,7 @@ export const FillableFieldOverlay = forwardRef<
 					{getFieldTypeLabel(fieldType)}
 					{isRequired && " • Required"}
 				</div>
-				{isFilled && value && fieldType !== "signature" && (
-					<div className="text-[10px] text-green-700 mt-1 max-w-[200px] truncate">
-						Value: {value}
-					</div>
-				)}
+
 				{validationError && (
 					<div className="text-[10px] text-destructive mt-1 max-w-[200px]">
 						⚠ {validationError}

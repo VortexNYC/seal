@@ -54,6 +54,7 @@ import {
 import { FieldPropertiesDialog } from "../../../../components/documents/field-properties-dialog";
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
+import { InAppSigningSection } from "../../../../components/documents/in-app-signing-section";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
 import { PdfViewerControls } from "../../../../components/documents/pdf-viewer-controls";
 import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";
@@ -193,20 +194,53 @@ function DocumentDetailPage() {
 		}),
 	);
 
+	const recipientsById = useMemo(() => {
+		return new Map(recipients.map((recipient) => [recipient._id, recipient]));
+	}, [recipients]);
+
+	// In-app signing: Get current user's recipient record (if they are a recipient)
+	const { data: currentUserRecipient, refetch: refetchCurrentUserRecipient } =
+		useSuspenseQuery(
+			convexQuery(
+				api.documents.recipients_queries.getRecipientByAuthenticatedUser,
+				{
+					documentId: documentId as Id<"documents">,
+				},
+			),
+		);
+
+	// In-app signing: Get fields assigned to current user (if they are a recipient)
+	const { data: currentUserFields = [], refetch: refetchCurrentUserFields } =
+		useSuspenseQuery(
+			convexQuery(
+				api.signature_fields.queries.getFieldsForAuthenticatedRecipient,
+				{
+					documentId: documentId as Id<"documents">,
+				},
+			),
+		);
+
 	// Create a map of fieldId to signature data for easy lookup (memoized to prevent infinite loops)
 	const signaturesByFieldId = useMemo(
 		() =>
 			new Map(
-				documentSignatures.map((sig) => [
-					sig.fieldId,
-					{
-						signatureImageUrl: sig.signatureImageUrl,
-						value: sig.value,
-						signedAt: sig.signedAt,
-					},
-				]),
+				documentSignatures.map((signature) => {
+					const signer = recipientsById.get(signature.recipientId);
+
+					return [
+						signature.fieldId,
+						{
+							signatureImageUrl: signature.signatureImageUrl,
+							value: signature.value,
+							signedAt: signature.signedAt,
+							signatureMethod: signature.signatureMethod,
+							signerName: signer?.name,
+							signerEmail: signer?.email,
+						},
+					];
+				}),
 			),
-		[documentSignatures],
+		[documentSignatures, recipientsById],
 	);
 
 	// Compute field counts per recipient for the send dialog
@@ -821,7 +855,7 @@ function DocumentDetailPage() {
 
 	// Collapsible section state
 	const [openSections, setOpenSections] = useState<Set<string>>(
-		new Set(["fields", "recipients"]),
+		new Set(["fields", "recipients", "your-signature"]),
 	);
 
 	const toggleSection = (section: string) => {
@@ -1315,6 +1349,27 @@ function DocumentDetailPage() {
 								</div>
 							</div>
 						)}
+
+						{/* In-App Signing Section - Show when user is a recipient who needs to sign */}
+						{currentUserRecipient &&
+							documentData.workflowStatus !== "draft" &&
+							documentData.workflowStatus !== "completed" &&
+							(currentUserRecipient.role === "signer" ||
+								currentUserRecipient.role === "approver") && (
+								<InAppSigningSection
+									documentId={documentId as Id<"documents">}
+									recipient={currentUserRecipient}
+									fields={currentUserFields}
+									isOpen={openSections.has("your-signature")}
+									onOpenChange={() => toggleSection("your-signature")}
+									onFieldsRefetch={() => {
+										refetchCurrentUserFields();
+										refetchCurrentUserRecipient();
+										refetchRecipients();
+										refetchFields();
+									}}
+								/>
+							)}
 
 						{/* Signature Fields Section */}
 						{(signatureFields.length > 0 || canEdit) && (

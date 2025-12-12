@@ -1130,10 +1130,6 @@ function SigningPage() {
 																	currentPage={pageNumber}
 																	pdfPageWidth={pageDims.width}
 																	pdfPageHeight={pageDims.height}
-																	value={field.currentValue}
-																	signatureImageUrl={
-																		field.currentSignatureImageUrl
-																	}
 																	isFilled={field.isFilled}
 																	isActive={
 																		!isCompleted && activeFieldId === field._id
@@ -1162,46 +1158,29 @@ function SigningPage() {
 											recipient.status === "signed" && (
 												<div className="mt-4 bg-white dark:bg-card rounded-lg shadow-sm border border-border/50 p-4 max-w-md mx-auto">
 													<div className="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
-														{/* Signature image area */}
-														<div className="bg-gray-50/50 dark:bg-gray-800/50 p-4 flex items-center justify-center min-h-[80px]">
-															{recipient.signatureData ? (
-																recipient.signatureData.startsWith("data:") ? (
-																	<img
-																		src={recipient.signatureData}
-																		alt="Signature"
-																		className="max-w-full max-h-[100px] object-contain"
-																	/>
-																) : (
-																	<span className="text-xl font-semibold text-gray-800 dark:text-gray-200 italic">
-																		{recipient.signatureData}
-																	</span>
-																)
-															) : (
-																<div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-																	<CheckCircleIcon className="h-6 w-6" />
-																	<span className="text-lg font-medium">
-																		Document Signed
-																	</span>
-																</div>
-															)}
-														</div>
-														{/* Signature details stamp */}
-														<div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2">
-															<div className="flex flex-col gap-1">
-																<div className="flex items-baseline gap-1.5">
-																	<span className="text-[10px] text-gray-500 dark:text-gray-400">
+														{/* Signature details stamp - Name, date and time only */}
+														<div className="bg-white dark:bg-gray-900 px-4 py-4">
+															<div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 mb-3">
+																<CheckCircleIcon className="h-6 w-6" />
+																<span className="text-lg font-medium">
+																	Document Signed
+																</span>
+															</div>
+															<div className="flex flex-col gap-2">
+																<div className="flex items-baseline gap-2">
+																	<span className="text-sm text-gray-500 dark:text-gray-400">
 																		Signed by:
 																	</span>
-																	<span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+																	<span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
 																		{recipient.name || recipient.email}
 																	</span>
 																</div>
 																{recipient.signedAt && (
-																	<div className="flex items-baseline gap-1.5">
-																		<span className="text-[10px] text-gray-500 dark:text-gray-400">
+																	<div className="flex items-baseline gap-2">
+																		<span className="text-sm text-gray-500 dark:text-gray-400">
 																			Date:
 																		</span>
-																		<span className="text-[10px] text-gray-700 dark:text-gray-300">
+																		<span className="text-sm text-gray-700 dark:text-gray-300">
 																			{new Date(
 																				recipient.signedAt,
 																			).toLocaleDateString("en-US", {
