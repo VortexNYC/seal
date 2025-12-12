@@ -20,6 +20,7 @@
 		"format": "turbo run format --continue",
 		"biome:check": "biome check .",
 		"biome:fix": "biome check --write .",
+		"static-analysis": "bun run biome:check && bun run typecheck",
 		"typecheck": "turbo run typecheck",
 		"clean": "git clean -xdf .cache .turbo dist node_modules",
 		"clean:workspaces": "turbo run clean"
