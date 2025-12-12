@@ -307,6 +307,65 @@ export const getMyRecipientDocuments = authQuery({
 });
 
 /**
+ * Get the current authenticated user's recipient record for a document
+ * Returns null if the user is not a recipient on this document
+ * Used for in-app signing when the user is both authenticated and a recipient
+ */
+export const getRecipientByAuthenticatedUser = authQuery({
+	args: {
+		documentId: v.id("documents"),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Get user email
+		const user = await ctx.db.get(userId);
+		if (!user || !user.email) {
+			return null;
+		}
+
+		const userEmail = user.email.toLowerCase();
+
+		// 2. Find recipient by document + email match
+		const recipient = await ctx.db
+			.query("document_recipients")
+			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+			.filter((q) => q.eq(q.field("email"), userEmail))
+			.first();
+
+		if (!recipient) {
+			return null;
+		}
+
+		// 3. Get the document to verify it exists and check workflow status
+		const document = await ctx.db.get(args.documentId);
+		if (!document || document.status === "deleted") {
+			return null;
+		}
+
+		// 4. Return recipient with document workflow status for client-side logic
+		return {
+			_id: recipient._id,
+			documentId: recipient.documentId,
+			email: recipient.email,
+			name: recipient.name,
+			role: recipient.role,
+			status: recipient.status,
+			order: recipient.order,
+			viewedAt: recipient.viewedAt,
+			signedAt: recipient.signedAt,
+			approvedAt: recipient.approvedAt,
+			declinedAt: recipient.declinedAt,
+			createdAt: recipient.createdAt,
+			signatureData: recipient.signatureData,
+			signatureType: recipient.signatureType,
+			// Include document workflow status so client can determine if signing is allowed
+			documentWorkflowStatus: document.workflowStatus,
+		};
+	},
+});
+
+/**
  * Internal query to get document recipients without access control
  * Used by actions that need to access recipients
  */

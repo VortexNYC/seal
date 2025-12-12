@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
+import { authQuery } from "../auth";
 
 /**
  * Signature Field Queries
@@ -275,8 +276,20 @@ export const getFieldsBySigningToken = query({
 				if (signature) {
 					const signerRecipient = await ctx.db.get(signature.recipientId);
 					if (signerRecipient) {
-						signerName = signerRecipient.name ?? undefined;
 						signerEmail = signerRecipient.email;
+						// Try recipient name first, then look up user by email for their name
+						if (signerRecipient.name) {
+							signerName = signerRecipient.name;
+						} else {
+							// Try to get user's name from users table by email
+							const signerUser = await ctx.db
+								.query("users")
+								.withIndex("by_email", (q) =>
+									q.eq("email", signerRecipient.email),
+								)
+								.first();
+							signerName = signerUser?.name ?? undefined;
+						}
 					}
 				}
 
@@ -299,6 +312,102 @@ export const getFieldsBySigningToken = query({
 		);
 
 		// 4. Sort by page number for easier rendering
+		fieldsWithValues.sort((a, b) => a.page - b.page);
+
+		return fieldsWithValues;
+	},
+});
+
+/**
+ * Get all fields assigned to the current authenticated user for a document
+ * Returns fields with their current values from signatures table
+ * Used for in-app signing when the user is both authenticated and a recipient
+ */
+export const getFieldsForAuthenticatedRecipient = authQuery({
+	args: {
+		documentId: v.id("documents"),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Get user email
+		const user = await ctx.db.get(userId);
+		if (!user || !user.email) {
+			return [];
+		}
+
+		const userEmail = user.email.toLowerCase();
+
+		// 2. Find recipient by document + email match
+		const recipient = await ctx.db
+			.query("document_recipients")
+			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+			.filter((q) => q.eq(q.field("email"), userEmail))
+			.first();
+
+		if (!recipient) {
+			return [];
+		}
+
+		// 3. Get all fields assigned to this recipient
+		const fields = await ctx.db
+			.query("signature_fields")
+			.withIndex("by_document_recipient", (q) =>
+				q.eq("documentId", args.documentId).eq("recipientId", recipient._id),
+			)
+			.collect();
+
+		// 4. Get existing signatures for these fields with full details
+		const fieldsWithValues = await Promise.all(
+			fields.map(async (field) => {
+				const signature = await ctx.db
+					.query("signatures")
+					.withIndex("by_field", (q) => q.eq("fieldId", field._id))
+					.first();
+
+				// Get recipient info for this signature if it exists
+				let signerName: string | undefined;
+				let signerEmail: string | undefined;
+
+				if (signature) {
+					const signerRecipient = await ctx.db.get(signature.recipientId);
+					if (signerRecipient) {
+						signerEmail = signerRecipient.email;
+						// Try recipient name first, then look up user by email for their name
+						if (signerRecipient.name) {
+							signerName = signerRecipient.name;
+						} else {
+							// Try to get user's name from users table by email
+							const signerUser = await ctx.db
+								.query("users")
+								.withIndex("by_email", (q) =>
+									q.eq("email", signerRecipient.email),
+								)
+								.first();
+							signerName = signerUser?.name ?? undefined;
+						}
+					}
+				}
+
+				return {
+					...field,
+					currentValue: signature?.value,
+					currentSignatureImageUrl: signature?.signatureImageUrl,
+					isFilled: !!signature,
+					// Include signature details for display
+					signatureDetails: signature
+						? {
+								signedAt: signature.signedAt,
+								signerName,
+								signerEmail,
+								signatureMethod: signature.signatureMethod,
+							}
+						: undefined,
+				};
+			}),
+		);
+
+		// 5. Sort by page number for easier rendering
 		fieldsWithValues.sort((a, b) => a.page - b.page);
 
 		return fieldsWithValues;

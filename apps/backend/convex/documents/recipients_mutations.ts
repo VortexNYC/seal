@@ -380,6 +380,151 @@ export const submitRecipientSignature = mutation({
 });
 
 /**
+ * Submit signature for authenticated users who are recipients
+ * Used for in-app signing when the user is both authenticated and a recipient
+ */
+export const submitSignatureAuthenticated = authMutation({
+	args: {
+		documentId: v.id("documents"),
+		status: recipientStatusTuple,
+		signatureData: v.optional(v.string()),
+		signatureType: v.optional(
+			v.union(v.literal("drawn"), v.literal("typed"), v.literal("uploaded")),
+		),
+		declineReason: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const userId = ctx.auth.user._id;
+
+		// 1. Get user email for recipient matching
+		const user = await ctx.db.get(userId);
+		if (!user || !user.email) {
+			throw new ConvexError("User not found or has no email");
+		}
+
+		const userEmail = user.email.toLowerCase();
+
+		// 2. Get the document and verify it's in a signable state
+		const document = await ctx.db.get(args.documentId);
+		if (!document) {
+			throw new ConvexError("Document not found");
+		}
+
+		if (document.status === "deleted") {
+			throw new ConvexError("Document has been deleted");
+		}
+
+		// Only allow signing when document is sent or in_progress (not draft or completed)
+		if (document.workflowStatus === "draft" || !document.workflowStatus) {
+			throw new ConvexError("Document must be sent before signing");
+		}
+
+		if (document.workflowStatus === "completed") {
+			throw new ConvexError("Cannot sign a completed document");
+		}
+
+		// 3. Find recipient by document + email match
+		const recipient = await ctx.db
+			.query("document_recipients")
+			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+			.filter((q) => q.eq(q.field("email"), userEmail))
+			.first();
+
+		if (!recipient) {
+			throw new ConvexError("You are not a recipient on this document");
+		}
+
+		// 4. Validate status transition
+		// Cannot change status if already in terminal state
+		if (
+			recipient.status === "signed" ||
+			recipient.status === "approved" ||
+			recipient.status === "declined"
+		) {
+			throw new ConvexError(
+				`Cannot update status - you have already ${recipient.status}`,
+			);
+		}
+
+		// 5. Validate status change is appropriate for role
+		if (args.status === "signed" && recipient.role !== "signer") {
+			throw new ConvexError("Only signers can have status 'signed'");
+		}
+		if (args.status === "approved" && recipient.role !== "approver") {
+			throw new ConvexError("Only approvers can have status 'approved'");
+		}
+
+		// 6. Validate required data
+		if (args.status === "signed") {
+			if (!args.signatureData || !args.signatureType) {
+				throw new ConvexError(
+					"Signature data and type are required for signing",
+				);
+			}
+		}
+		if (args.status === "declined" && !args.declineReason) {
+			throw new ConvexError("Decline reason is required");
+		}
+
+		// 7. Update the recipient
+		const now = Date.now();
+		const updateData: Record<string, unknown> = {
+			status: args.status,
+			updatedAt: now,
+		};
+
+		// Set appropriate timestamp
+		switch (args.status) {
+			case "viewed":
+				if (!recipient.viewedAt) {
+					updateData.viewedAt = now;
+				}
+				break;
+			case "signed":
+				updateData.signedAt = now;
+				updateData.signatureData = args.signatureData;
+				updateData.signatureType = args.signatureType;
+				if (!recipient.viewedAt) {
+					updateData.viewedAt = now;
+				}
+				break;
+			case "approved":
+				updateData.approvedAt = now;
+				if (!recipient.viewedAt) {
+					updateData.viewedAt = now;
+				}
+				break;
+			case "declined":
+				updateData.declinedAt = now;
+				updateData.declineReason = args.declineReason;
+				if (!recipient.viewedAt) {
+					updateData.viewedAt = now;
+				}
+				break;
+		}
+
+		// Set IP address for audit trail
+		updateData.ipAddress = "authenticated";
+
+		await ctx.db.patch(recipient._id, updateData);
+
+		// 8. Schedule post-signature emails if recipient completed their action
+		if (isRecipientComplete(recipient.role, args.status)) {
+			await ctx.scheduler.runAfter(
+				0,
+				internal.documents.recipient_email_action.sendPostSignatureEmails,
+				{
+					recipientId: recipient._id,
+					documentId: args.documentId,
+				},
+			);
+		}
+
+		return { success: true, recipientId: recipient._id };
+	},
+});
+
+/**
  * Update recipient information
  * Can only be called on draft/pending_signature documents by the owner
  * Requires documents:edit permission
