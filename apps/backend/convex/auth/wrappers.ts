@@ -3,6 +3,9 @@
  *
  * These wrappers automatically check permissions before executing handlers,
  * providing a clean and consistent API for protecting endpoints.
+ *
+ * RLS (Row-Level Security) is automatically applied to ctx.db through
+ * wrapDatabaseReader/wrapDatabaseWriter from convex-helpers.
  */
 
 import { ConvexError } from "convex/values";
@@ -11,30 +14,41 @@ import {
 	customMutation,
 	customQuery,
 } from "convex-helpers/server/customFunctions";
+import {
+	wrapDatabaseReader,
+	wrapDatabaseWriter,
+} from "convex-helpers/server/rowLevelSecurity";
 import { mutation, query } from "../_generated/server";
+import { rlsRules } from "../rls";
 import { getAuthContextWithPermissions } from "./auth.permissions";
 
 /**
  * Basic authenticated query (no permission check)
  * Use this when you just need to know who the user is
+ * RLS is automatically applied to ctx.db
  */
 export const authQuery = customQuery(
 	query,
 	customCtx(async (ctx) => {
 		const auth = await getAuthContextWithPermissions(ctx);
-		return { auth };
+		const rules = await rlsRules(ctx);
+		return {
+			auth,
+			db: wrapDatabaseReader(ctx, ctx.db, rules),
+		};
 	}),
 );
 
 /**
  * Single permission required for query
  * Use this for most read operations
+ * RLS is automatically applied to ctx.db
  *
  * @example
  * export const list = permissionQuery("documents:view")({
  *   args: {},
  *   handler: async (ctx) => {
- *     // Permission already checked
+ *     // Permission already checked, RLS applied to db
  *     return await ctx.db.query("documents").collect();
  *   },
  * });
@@ -53,19 +67,24 @@ export const permissionQuery = (requiredPermission: string) =>
 				});
 			}
 
-			return { auth };
+			const rules = await rlsRules(ctx);
+			return {
+				auth,
+				db: wrapDatabaseReader(ctx, ctx.db, rules),
+			};
 		}),
 	);
 
 /**
  * Any of multiple permissions required (OR logic)
  * Use when user needs at least one of several permissions
+ * RLS is automatically applied to ctx.db
  *
  * @example
  * export const myQuery = permissionAnyQuery(["documents:edit", "documents:delete"])({
  *   args: {},
  *   handler: async (ctx) => {
- *     // User has at least one of the permissions
+ *     // User has at least one of the permissions, RLS applied
  *     return data;
  *   },
  * });
@@ -84,19 +103,24 @@ export const permissionAnyQuery = (requiredPermissions: string[]) =>
 				});
 			}
 
-			return { auth };
+			const rules = await rlsRules(ctx);
+			return {
+				auth,
+				db: wrapDatabaseReader(ctx, ctx.db, rules),
+			};
 		}),
 	);
 
 /**
  * All permissions required (AND logic)
  * Use when user needs multiple specific permissions
+ * RLS is automatically applied to ctx.db
  *
  * @example
  * export const myQuery = permissionAllQuery(["documents:edit", "documents:share"])({
  *   args: {},
  *   handler: async (ctx) => {
- *     // User has all required permissions
+ *     // User has all required permissions, RLS applied
  *     return data;
  *   },
  * });
@@ -115,19 +139,24 @@ export const permissionAllQuery = (requiredPermissions: string[]) =>
 				});
 			}
 
-			return { auth };
+			const rules = await rlsRules(ctx);
+			return {
+				auth,
+				db: wrapDatabaseReader(ctx, ctx.db, rules),
+			};
 		}),
 	);
 
 /**
  * Admin-only query
  * Requires user to be an admin or owner
+ * RLS is automatically applied to ctx.db
  *
  * @example
  * export const dangerousQuery = adminQuery({
  *   args: {},
  *   handler: async (ctx) => {
- *     // Only admins and owners can execute
+ *     // Only admins and owners can execute, RLS applied
  *     return sensitiveData;
  *   },
  * });
@@ -144,13 +173,18 @@ export const adminQuery = customQuery(
 			});
 		}
 
-		return { auth };
+		const rules = await rlsRules(ctx);
+		return {
+			auth,
+			db: wrapDatabaseReader(ctx, ctx.db, rules),
+		};
 	}),
 );
 
 /**
  * Owner-only query
  * Requires user to be an owner
+ * RLS is automatically applied to ctx.db
  */
 export const ownerQuery = customQuery(
 	query,
@@ -164,7 +198,11 @@ export const ownerQuery = customQuery(
 			});
 		}
 
-		return { auth };
+		const rules = await rlsRules(ctx);
+		return {
+			auth,
+			db: wrapDatabaseReader(ctx, ctx.db, rules),
+		};
 	}),
 );
 
@@ -174,24 +212,30 @@ export const ownerQuery = customQuery(
 
 /**
  * Basic authenticated mutation (no permission check)
+ * RLS is automatically applied to ctx.db
  */
 export const authMutation = customMutation(
 	mutation,
 	customCtx(async (ctx) => {
 		const auth = await getAuthContextWithPermissions(ctx);
-		return { auth };
+		const rules = await rlsRules(ctx);
+		return {
+			auth,
+			db: wrapDatabaseWriter(ctx, ctx.db, rules),
+		};
 	}),
 );
 
 /**
  * Single permission required for mutation
  * Use this for most write operations
+ * RLS is automatically applied to ctx.db
  *
  * @example
  * export const create = permissionMutation("documents:create")({
  *   args: { title: v.string() },
  *   handler: async (ctx, args) => {
- *     // Permission already checked
+ *     // Permission already checked, RLS applied to db
  *     const id = await ctx.db.insert("documents", { title: args.title });
  *     return { id };
  *   },
@@ -211,12 +255,17 @@ export const permissionMutation = (requiredPermission: string) =>
 				});
 			}
 
-			return { auth };
+			const rules = await rlsRules(ctx);
+			return {
+				auth,
+				db: wrapDatabaseWriter(ctx, ctx.db, rules),
+			};
 		}),
 	);
 
 /**
  * Any of multiple permissions required (OR logic)
+ * RLS is automatically applied to ctx.db
  */
 export const permissionAnyMutation = (requiredPermissions: string[]) =>
 	customMutation(
@@ -232,12 +281,17 @@ export const permissionAnyMutation = (requiredPermissions: string[]) =>
 				});
 			}
 
-			return { auth };
+			const rules = await rlsRules(ctx);
+			return {
+				auth,
+				db: wrapDatabaseWriter(ctx, ctx.db, rules),
+			};
 		}),
 	);
 
 /**
  * All permissions required (AND logic)
+ * RLS is automatically applied to ctx.db
  */
 export const permissionAllMutation = (requiredPermissions: string[]) =>
 	customMutation(
@@ -253,13 +307,18 @@ export const permissionAllMutation = (requiredPermissions: string[]) =>
 				});
 			}
 
-			return { auth };
+			const rules = await rlsRules(ctx);
+			return {
+				auth,
+				db: wrapDatabaseWriter(ctx, ctx.db, rules),
+			};
 		}),
 	);
 
 /**
  * Admin-only mutation
  * Requires user to be an admin or owner
+ * RLS is automatically applied to ctx.db
  */
 export const adminMutation = customMutation(
 	mutation,
@@ -273,13 +332,18 @@ export const adminMutation = customMutation(
 			});
 		}
 
-		return { auth };
+		const rules = await rlsRules(ctx);
+		return {
+			auth,
+			db: wrapDatabaseWriter(ctx, ctx.db, rules),
+		};
 	}),
 );
 
 /**
  * Owner-only mutation
  * Requires user to be an owner
+ * RLS is automatically applied to ctx.db
  */
 export const ownerMutation = customMutation(
 	mutation,
@@ -293,6 +357,10 @@ export const ownerMutation = customMutation(
 			});
 		}
 
-		return { auth };
+		const rules = await rlsRules(ctx);
+		return {
+			auth,
+			db: wrapDatabaseWriter(ctx, ctx.db, rules),
+		};
 	}),
 );
