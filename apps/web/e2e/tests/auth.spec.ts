@@ -1,10 +1,27 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Authentication", () => {
-	test("should display login page when not authenticated", async ({ page }) => {
+	test("should display landing page with sign-in options when not authenticated", async ({
+		page,
+	}) => {
 		await page.goto("/");
 
-		// Should redirect to Clerk sign-in
+		// Should show the public landing page (not redirect to sign-in)
+		await expect(page).toHaveURL("/");
+
+		// Should show Sign In link for unauthenticated users
+		await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible();
+	});
+
+	test("should navigate to sign-in page when clicking Sign In", async ({
+		page,
+	}) => {
+		await page.goto("/");
+
+		// Click Sign In link
+		await page.getByRole("link", { name: "Sign In" }).first().click();
+
+		// Should navigate to sign-in page
 		await expect(page).toHaveURL(/sign-in/);
 
 		// Should show Clerk sign-in component
@@ -15,7 +32,13 @@ test.describe("Authentication", () => {
 		const testEmail = process.env.TEST_USER_EMAIL || "test@seal-test.com";
 		const testPassword = process.env.TEST_USER_PASSWORD || "TestPassword123!";
 
-		await page.goto("/");
+		// Navigate directly to sign-in page
+		await page.goto("/sign-in");
+
+		// Wait for Clerk sign-in component to load
+		await page.waitForSelector('[data-clerk-element="sign-in"]', {
+			timeout: 10000,
+		});
 
 		// Fill in credentials
 		await page.fill('input[name="identifier"]', testEmail);
@@ -31,7 +54,13 @@ test.describe("Authentication", () => {
 	});
 
 	test("should show error with invalid credentials", async ({ page }) => {
-		await page.goto("/");
+		// Navigate directly to sign-in page
+		await page.goto("/sign-in");
+
+		// Wait for Clerk sign-in component to load
+		await page.waitForSelector('[data-clerk-element="sign-in"]', {
+			timeout: 10000,
+		});
 
 		// Fill in invalid credentials
 		await page.fill('input[name="identifier"]', "invalid@email.com");

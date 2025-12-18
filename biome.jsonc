@@ -19,7 +19,8 @@
 			"!**/.clerk",
 			"!**/node_modules",
 			"!**/routeTree.gen.ts",
-			"!**/test-results"
+			"!**/test-results",
+			"!**/playwright-report"
 		]
 	},
 	"overrides": [

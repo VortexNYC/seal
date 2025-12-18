@@ -66,8 +66,8 @@ async function performLogin(page: Page): Promise<void> {
 	const testEmail = process.env.TEST_USER_EMAIL || "test@seal-test.com";
 	const testPassword = process.env.TEST_USER_PASSWORD || "TestPassword123!";
 
-	// Navigate to login page
-	await page.goto("/");
+	// Navigate directly to sign-in page
+	await page.goto("/sign-in");
 
 	// Wait for Clerk sign-in component
 	await page.waitForSelector('[data-clerk-element="sign-in"]', {
