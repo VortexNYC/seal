@@ -119,9 +119,9 @@ export function SealLogoBadge({
 	return (
 		<div
 			className={cn(
-				"inline-block rounded-2xl bg-gradient-to-br from-[#f3f1e9] to-white dark:from-slate-800 dark:to-slate-900",
-				"shadow-xl shadow-[#013575]/10 border border-[#013575]/5 dark:border-slate-700",
-				"transition-all duration-300 hover:shadow-2xl hover:shadow-[#013575]/15",
+				"inline-block rounded-2xl bg-gradient-to-br from-brand-50 to-white dark:from-slate-800 dark:to-slate-900",
+				"shadow-xl shadow-brand-700/10 border border-brand-700/5 dark:border-slate-700",
+				"transition-all duration-300 hover:shadow-2xl hover:shadow-brand-700/15",
 				padding,
 				className,
 			)}

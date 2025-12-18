@@ -10,7 +10,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
 	return (
-		<div className="min-h-screen flex flex-col bg-gradient-to-b from-[#f3f1e9] via-white to-white dark:from-slate-950 dark:via-background dark:to-background">
+		<div className="min-h-screen flex flex-col bg-gradient-to-b from-brand-50 via-white to-white dark:from-slate-950 dark:via-background dark:to-background">
 			{/* Subtle grain texture overlay */}
 			<div className="fixed inset-0 pointer-events-none opacity-[0.02] dark:opacity-[0.03]">
 				<svg className="w-full h-full" aria-hidden="true">
@@ -28,7 +28,7 @@ function HomePage() {
 			</div>
 
 			{/* Header */}
-			<header className="relative z-10 border-b border-[#013575]/10 dark:border-slate-800 backdrop-blur-sm bg-white/70 dark:bg-background/70">
+			<header className="relative z-10 border-b border-brand-700/10 dark:border-slate-800 backdrop-blur-sm bg-white/70 dark:bg-background/70">
 				<div className="container mx-auto px-6 py-4 flex items-center justify-between">
 					<Link
 						to="/"
@@ -40,7 +40,7 @@ function HomePage() {
 						<SignedIn>
 							<Button
 								asChild
-								className="bg-[#013575] hover:bg-[#012a5c] text-white shadow-md shadow-[#013575]/20 transition-all duration-300 hover:shadow-lg hover:shadow-[#013575]/30"
+								className="bg-brand-700 hover:bg-brand-800 text-white shadow-md shadow-brand-700/20 transition-all duration-300 hover:shadow-lg hover:shadow-brand-700/30"
 							>
 								<Link to="/app" className="flex items-center gap-2">
 									Go to App
@@ -52,13 +52,13 @@ function HomePage() {
 							<Button
 								variant="ghost"
 								asChild
-								className="text-[#013575] dark:text-slate-300 hover:text-[#012a5c] dark:hover:text-slate-200 hover:bg-[#013575]/5 dark:hover:bg-slate-800"
+								className="text-brand-700 dark:text-slate-300 hover:text-brand-800 dark:hover:text-slate-200 hover:bg-brand-50 dark:hover:bg-slate-800"
 							>
 								<Link to="/sign-in">Sign In</Link>
 							</Button>
 							<Button
 								asChild
-								className="bg-[#013575] hover:bg-[#012a5c] text-white shadow-md shadow-[#013575]/20 transition-all duration-300 hover:shadow-lg hover:shadow-[#013575]/30"
+								className="bg-brand-700 hover:bg-brand-800 text-white shadow-md shadow-brand-700/20 transition-all duration-300 hover:shadow-lg hover:shadow-brand-700/30"
 							>
 								<Link to="/sign-up">Get Started</Link>
 							</Button>
@@ -79,7 +79,7 @@ function HomePage() {
 					<h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-6 animate-[fadeIn_0.6s_ease-out_0.1s_both]">
 						Document signatures
 						<br />
-						<span className="text-[#013575] dark:text-blue-400">
+						<span className="text-brand-700 dark:text-brand-400">
 							made simple
 						</span>
 					</h1>
@@ -96,7 +96,7 @@ function HomePage() {
 							<Button
 								size="lg"
 								asChild
-								className="bg-[#013575] hover:bg-[#012a5c] text-white text-lg px-8 py-6 shadow-lg shadow-[#013575]/25 transition-all duration-300 hover:shadow-xl hover:shadow-[#013575]/30 hover:-translate-y-0.5"
+								className="bg-brand-700 hover:bg-brand-800 text-white text-lg px-8 py-6 shadow-lg shadow-brand-700/25 transition-all duration-300 hover:shadow-xl hover:shadow-brand-700/30 hover:-translate-y-0.5"
 							>
 								<Link to="/app" className="flex items-center gap-2">
 									Go to App
@@ -108,7 +108,7 @@ function HomePage() {
 							<Button
 								size="lg"
 								asChild
-								className="bg-[#013575] hover:bg-[#012a5c] text-white text-lg px-8 py-6 shadow-lg shadow-[#013575]/25 transition-all duration-300 hover:shadow-xl hover:shadow-[#013575]/30 hover:-translate-y-0.5"
+								className="bg-brand-700 hover:bg-brand-800 text-white text-lg px-8 py-6 shadow-lg shadow-brand-700/25 transition-all duration-300 hover:shadow-xl hover:shadow-brand-700/30 hover:-translate-y-0.5"
 							>
 								<Link to="/sign-up" className="flex items-center gap-2">
 									Get Started Free
@@ -119,7 +119,7 @@ function HomePage() {
 								size="lg"
 								variant="outline"
 								asChild
-								className="text-lg px-8 py-6 border-2 border-[#013575]/20 dark:border-slate-700 text-[#013575] dark:text-slate-300 hover:bg-[#013575]/5 dark:hover:bg-slate-800 hover:border-[#013575]/40 dark:hover:border-slate-600 transition-all duration-300"
+								className="text-lg px-8 py-6 border-2 border-brand-700/20 dark:border-slate-700 text-brand-700 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-slate-800 hover:border-brand-700/40 dark:hover:border-slate-600 transition-all duration-300"
 							>
 								<Link to="/sign-in">Sign In</Link>
 							</Button>
@@ -129,20 +129,20 @@ function HomePage() {
 					{/* Trust indicators */}
 					<div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto animate-[fadeIn_0.6s_ease-out_0.4s_both]">
 						<div className="flex items-center justify-center gap-3 text-gray-600 dark:text-gray-400">
-							<div className="p-2 rounded-lg bg-[#013575]/5 dark:bg-slate-800">
-								<Shield className="w-5 h-5 text-[#013575] dark:text-blue-400" />
+							<div className="p-2 rounded-lg bg-brand-50 dark:bg-slate-800">
+								<Shield className="w-5 h-5 text-brand-700 dark:text-brand-400" />
 							</div>
 							<span className="text-sm font-medium">Bank-level security</span>
 						</div>
 						<div className="flex items-center justify-center gap-3 text-gray-600 dark:text-gray-400">
-							<div className="p-2 rounded-lg bg-[#013575]/5 dark:bg-slate-800">
-								<FileText className="w-5 h-5 text-[#013575] dark:text-blue-400" />
+							<div className="p-2 rounded-lg bg-brand-50 dark:bg-slate-800">
+								<FileText className="w-5 h-5 text-brand-700 dark:text-brand-400" />
 							</div>
 							<span className="text-sm font-medium">Legally binding</span>
 						</div>
 						<div className="flex items-center justify-center gap-3 text-gray-600 dark:text-gray-400">
-							<div className="p-2 rounded-lg bg-[#013575]/5 dark:bg-slate-800">
-								<CheckCircle2 className="w-5 h-5 text-[#013575] dark:text-blue-400" />
+							<div className="p-2 rounded-lg bg-brand-50 dark:bg-slate-800">
+								<CheckCircle2 className="w-5 h-5 text-brand-700 dark:text-brand-400" />
 							</div>
 							<span className="text-sm font-medium">Easy to use</span>
 						</div>
@@ -151,7 +151,7 @@ function HomePage() {
 			</main>
 
 			{/* Footer */}
-			<footer className="relative z-10 border-t border-[#013575]/10 dark:border-slate-800 py-8 bg-white/50 dark:bg-background/50 backdrop-blur-sm">
+			<footer className="relative z-10 border-t border-brand-700/10 dark:border-slate-800 py-8 bg-white/50 dark:bg-background/50 backdrop-blur-sm">
 				<div className="container mx-auto px-6 text-center text-sm text-gray-500 dark:text-gray-400">
 					&copy; {new Date().getFullYear()} Seal. All rights reserved.
 				</div>
