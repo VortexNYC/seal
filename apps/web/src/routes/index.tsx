@@ -13,9 +13,8 @@ function HomePage() {
 			{/* Header */}
 			<header className="border-b">
 				<div className="container mx-auto px-4 py-4 flex items-center justify-between">
-					<Link to="/" className="flex items-center gap-2">
-						<SealLogoAuto size={32} />
-						<span className="text-2xl font-bold">Seal</span>
+					<Link to="/">
+						<SealLogoAuto size={72} />
 					</Link>
 					<nav className="flex items-center gap-4">
 						<SignedIn>
@@ -38,11 +37,13 @@ function HomePage() {
 			{/* Hero Section */}
 			<main className="flex-1 flex flex-col items-center justify-center px-4">
 				<div className="max-w-4xl mx-auto text-center space-y-8">
-					<h2 className="text-5xl md:text-6xl font-bold tracking-tight">
-						Welcome to Seal
-					</h2>
+					<SealLogoAuto size={120} className="mx-auto" />
+					<h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+						Document signatures made simple
+					</h1>
 					<p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-						A modern platform for team collaboration and workspace management.
+						Sign, send, and manage documents securely. A modern platform for
+						digital signatures and workflow management.
 					</p>
 					<div className="flex gap-4 justify-center">
 						<SignedIn>
