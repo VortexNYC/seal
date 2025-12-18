@@ -1,5 +1,6 @@
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SealLogoAuto } from "@/components/seal-logo";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -12,8 +13,9 @@ function HomePage() {
 			{/* Header */}
 			<header className="border-b">
 				<div className="container mx-auto px-4 py-4 flex items-center justify-between">
-					<Link to="/">
-						<h1 className="text-2xl font-bold">Seal</h1>
+					<Link to="/" className="flex items-center gap-2">
+						<SealLogoAuto size={32} />
+						<span className="text-2xl font-bold">Seal</span>
 					</Link>
 					<nav className="flex items-center gap-4">
 						<SignedIn>

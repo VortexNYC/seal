@@ -28,6 +28,7 @@ import {
 	WifiOffIcon,
 	XCircleIcon,
 } from "lucide-react";
+import { SealLogo } from "@/components/seal-logo";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -535,9 +536,7 @@ function SigningPage() {
 					{/* Left: Logo + Document context */}
 					<div className="flex items-center gap-4">
 						<div className="flex items-center gap-2.5">
-							<div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-								<FileTextIcon className="h-4 w-4 text-primary" />
-							</div>
+							<SealLogo size={32} variant="color" />
 							<span className="font-semibold tracking-tight">Seal</span>
 						</div>
 						<div className="h-5 w-px bg-border/60" />
@@ -603,9 +602,7 @@ function SigningPage() {
 				<div className="px-4 py-3">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-2.5">
-							<div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-								<FileTextIcon className="h-4 w-4 text-primary" />
-							</div>
+							<SealLogo size={32} variant="color" />
 							<span className="font-semibold text-sm tracking-tight">Seal</span>
 						</div>
 						{!isCompleted && fields.length > 0 && (
