@@ -1,7 +1,7 @@
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle2, FileText, Shield } from "lucide-react";
-import { SealLogoAuto } from "@/components/seal-logo";
+import { SealLogoBadge } from "@/components/seal-logo";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -34,7 +34,7 @@ function HomePage() {
 						to="/"
 						className="transition-transform duration-300 hover:scale-105"
 					>
-						<SealLogoAuto size={56} />
+						<SealLogoBadge />
 					</Link>
 					<nav className="flex items-center gap-3">
 						<SignedIn>
@@ -72,9 +72,7 @@ function HomePage() {
 				<div className="max-w-4xl mx-auto text-center">
 					{/* Animated logo */}
 					<div className="mb-8 animate-[fadeIn_0.6s_ease-out]">
-						<div className="inline-block p-4 rounded-2xl bg-gradient-to-br from-[#f3f1e9] to-white dark:from-slate-800 dark:to-slate-900 shadow-xl shadow-[#013575]/10 border border-[#013575]/5 dark:border-slate-700">
-							<SealLogoAuto size={80} />
-						</div>
+						<SealLogoBadge size="xl" />
 					</div>
 
 					{/* Headline */}

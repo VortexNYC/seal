@@ -91,3 +91,42 @@ export function SealLogoAuto({
 		</>
 	);
 }
+
+interface SealLogoBadgeProps {
+	className?: string;
+	/** Size of the logo inside the badge */
+	size?: "sm" | "md" | "lg" | "xl" | "header";
+}
+
+const badgeSizes = {
+	sm: { logo: 32, padding: "p-2" },
+	md: { logo: 48, padding: "p-3" },
+	lg: { logo: 80, padding: "p-4" },
+	xl: { logo: 160, padding: "p-5" },
+	header: { logo: 72, padding: "p-1" },
+};
+
+/**
+ * Seal logo in a styled badge container with gradient background,
+ * shadow, and border. Automatically switches logo variant for dark mode.
+ */
+export function SealLogoBadge({
+	className,
+	size = "header",
+}: SealLogoBadgeProps) {
+	const { logo, padding } = badgeSizes[size];
+
+	return (
+		<div
+			className={cn(
+				"inline-block rounded-2xl bg-gradient-to-br from-[#f3f1e9] to-white dark:from-slate-800 dark:to-slate-900",
+				"shadow-xl shadow-[#013575]/10 border border-[#013575]/5 dark:border-slate-700",
+				"transition-all duration-300 hover:shadow-2xl hover:shadow-[#013575]/15",
+				padding,
+				className,
+			)}
+		>
+			<SealLogoAuto size={logo} />
+		</div>
+	);
+}
