@@ -34,7 +34,6 @@ export function SealLogo({
 				return "/logo/seal-logo-white-no-background.svg";
 			case "black":
 				return "/logo/seal-logo-black-no-background.svg";
-			case "color":
 			default:
 				return "/logo/seal-logo-color-no-background.svg";
 		}
