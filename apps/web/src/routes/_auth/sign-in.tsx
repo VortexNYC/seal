@@ -6,5 +6,22 @@ export const Route = createFileRoute("/_auth/sign-in")({
 });
 
 function RouteComponent() {
-	return <SignIn routing="virtual" signUpUrl="/sign-up" />;
+	return (
+		<SignIn
+			routing="virtual"
+			signUpUrl="/sign-up"
+			appearance={{
+				elements: {
+					logoBox: {
+						height: "80px",
+						marginBottom: "16px",
+					},
+					logoImage: {
+						height: "80px",
+						width: "auto",
+					},
+				},
+			}}
+		/>
+	);
 }
