@@ -35,17 +35,17 @@ export function WorkflowStatusBadge({
 		sent: {
 			label: "Sent",
 			variant: "default",
-			className: "bg-blue-500 hover:bg-blue-600",
+			className: "bg-info hover:bg-info/90",
 		},
 		in_progress: {
 			label: "In Progress",
 			variant: "default",
-			className: "bg-yellow-500 hover:bg-yellow-600",
+			className: "bg-warning hover:bg-warning/90 text-warning-foreground",
 		},
 		completed: {
 			label: "Completed",
 			variant: "default",
-			className: "bg-green-500 hover:bg-green-600",
+			className: "bg-success hover:bg-success/90",
 		},
 		cancelled: {
 			label: "Cancelled",
@@ -54,7 +54,6 @@ export function WorkflowStatusBadge({
 		declined: {
 			label: "Declined",
 			variant: "destructive",
-			className: "bg-orange-500 hover:bg-orange-600",
 		},
 	};
 

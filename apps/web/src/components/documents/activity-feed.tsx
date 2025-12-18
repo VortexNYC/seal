@@ -105,26 +105,26 @@ function getEventIcon(type: ActivityEvent["type"]) {
 		case "created":
 			return <FileTextIcon className="h-4 w-4 text-muted-foreground" />;
 		case "recipient_added":
-			return <UserPlusIcon className="h-4 w-4 text-blue-500" />;
+			return <UserPlusIcon className="h-4 w-4 text-info" />;
 		case "sent":
-			return <SendIcon className="h-4 w-4 text-blue-500" />;
+			return <SendIcon className="h-4 w-4 text-info" />;
 		case "viewed":
-			return <EyeIcon className="h-4 w-4 text-blue-500" />;
+			return <EyeIcon className="h-4 w-4 text-info" />;
 		case "signed":
 		case "approved":
-			return <CheckCircle2Icon className="h-4 w-4 text-green-500" />;
+			return <CheckCircle2Icon className="h-4 w-4 text-success" />;
 		case "declined":
 			return <XCircleIcon className="h-4 w-4 text-destructive" />;
 		case "completed":
-			return <CheckCircle2Icon className="h-4 w-4 text-green-500" />;
+			return <CheckCircle2Icon className="h-4 w-4 text-success" />;
 		case "cancelled":
 			return <XCircleIcon className="h-4 w-4 text-muted-foreground" />;
 		case "reminder_sent":
-			return <BellIcon className="h-4 w-4 text-amber-500" />;
+			return <BellIcon className="h-4 w-4 text-warning" />;
 		case "shared":
-			return <Share2Icon className="h-4 w-4 text-indigo-500" />;
+			return <Share2Icon className="h-4 w-4 text-brand-500" />;
 		case "access_revoked":
-			return <UserMinusIcon className="h-4 w-4 text-gray-500" />;
+			return <UserMinusIcon className="h-4 w-4 text-muted-foreground" />;
 		default:
 			return <FileTextIcon className="h-4 w-4 text-muted-foreground" />;
 	}

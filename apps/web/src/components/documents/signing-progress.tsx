@@ -45,13 +45,13 @@ export function SigningProgress({ progress }: SigningProgressProps) {
 					</div>
 					<div>
 						<div className="text-muted-foreground">Viewed</div>
-						<div className="text-lg font-semibold text-blue-500">
+						<div className="text-lg font-semibold text-info">
 							{byStatus.viewed}
 						</div>
 					</div>
 					<div>
 						<div className="text-muted-foreground">Signed</div>
-						<div className="text-lg font-semibold text-green-500">
+						<div className="text-lg font-semibold text-success">
 							{byStatus.signed}
 						</div>
 					</div>

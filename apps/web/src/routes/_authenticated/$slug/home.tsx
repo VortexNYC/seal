@@ -79,7 +79,7 @@ function StatsCards() {
 					<CardTitle className="text-sm font-medium">
 						Pending Signatures
 					</CardTitle>
-					<ClockIcon className="h-4 w-4 text-amber-500" />
+					<ClockIcon className="h-4 w-4 text-warning" />
 				</CardHeader>
 				<CardContent>
 					<div className="text-2xl font-bold">{stats.pending}</div>
@@ -92,7 +92,7 @@ function StatsCards() {
 			<Card>
 				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 					<CardTitle className="text-sm font-medium">Completed</CardTitle>
-					<CheckCircle2Icon className="h-4 w-4 text-green-500" />
+					<CheckCircle2Icon className="h-4 w-4 text-success" />
 				</CardHeader>
 				<CardContent>
 					<div className="text-2xl font-bold">{stats.completed}</div>
@@ -105,7 +105,7 @@ function StatsCards() {
 			<Card>
 				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 					<CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-					<TrendingUpIcon className="h-4 w-4 text-blue-500" />
+					<TrendingUpIcon className="h-4 w-4 text-info" />
 				</CardHeader>
 				<CardContent>
 					<div className="text-2xl font-bold">{stats.completionRate}%</div>

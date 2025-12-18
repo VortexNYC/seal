@@ -50,10 +50,10 @@ export function DocumentProgressBar({
 
 	// Determine progress bar color based on status
 	const getProgressColor = () => {
-		if (byStatus.declined > 0) return "bg-red-500";
-		if (percentComplete === 100) return "bg-green-500";
-		if (percentComplete > 0) return "bg-blue-500";
-		return "bg-gray-300";
+		if (byStatus.declined > 0) return "bg-destructive";
+		if (percentComplete === 100) return "bg-success";
+		if (percentComplete > 0) return "bg-info";
+		return "bg-muted";
 	};
 
 	return (
@@ -69,7 +69,7 @@ export function DocumentProgressBar({
 			</div>
 
 			{/* Progress bar */}
-			<div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
+			<div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
 				<div
 					className={cn(
 						"h-full transition-all duration-500 ease-out rounded-full",
@@ -129,10 +129,10 @@ interface StatusPillProps {
 
 function StatusPill({ icon, label, count, variant }: StatusPillProps) {
 	const variantStyles = {
-		pending: "text-amber-700 bg-amber-50 border-amber-200",
-		viewed: "text-blue-700 bg-blue-50 border-blue-200",
-		completed: "text-green-700 bg-green-50 border-green-200",
-		declined: "text-red-700 bg-red-50 border-red-200",
+		pending: "text-warning-foreground bg-warning/10 border-warning/30",
+		viewed: "text-info-foreground bg-info/10 border-info/30",
+		completed: "text-success-foreground bg-success/10 border-success/30",
+		declined: "text-destructive bg-destructive/10 border-destructive/30",
 	};
 
 	return (
