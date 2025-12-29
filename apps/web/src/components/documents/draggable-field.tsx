@@ -1,12 +1,30 @@
 import type Konva from "konva";
-import { useEffect, useRef } from "react";
-import { Group, Rect, Text, Transformer } from "react-konva";
+import { useEffect, useRef, useState } from "react";
+import {
+	Group,
+	Image as KonvaImage,
+	Rect,
+	Text,
+	Transformer,
+} from "react-konva";
 import type { FieldType } from "./field-toolbar";
 import {
 	getRecipientColorById,
 	type RecipientColor,
 	UNASSIGNED_COLOR,
 } from "./recipient-colors";
+
+function useSealIcon(): HTMLImageElement | null {
+	const [image, setImage] = useState<HTMLImageElement | null>(null);
+
+	useEffect(() => {
+		const img = new window.Image();
+		img.src = "/logo/seal-icon-color-no-background.svg";
+		img.onload = () => setImage(img);
+	}, []);
+
+	return image;
+}
 
 // Helper to get field type label for display
 function getFieldTypeLabel(fieldType: FieldType): string {
@@ -176,6 +194,7 @@ export function DraggableField({
 }: DraggableFieldProps) {
 	const shapeRef = useRef<Konva.Group>(null);
 	const trRef = useRef<Konva.Transformer>(null);
+	const sealIcon = useSealIcon();
 
 	// Determine colors: use recipient colors if enabled, otherwise use field type colors
 	const recipientColor = useRecipientColors
@@ -359,25 +378,27 @@ export function DraggableField({
 	};
 
 	const renderField = () => {
+		const iconSize = Math.max(10, Math.min(16, field.height * 0.35));
+		const sidebarWidth = iconSize + 16;
+		const textOffsetX = sealIcon ? 4 + sidebarWidth + 10 : 12;
+
 		return (
 			<>
-				{/* Field background */}
 				<Rect
 					width={field.width}
 					height={field.height}
 					fill={isUnassigned ? "#fafafa" : "#ffffff"}
-					stroke={isSelected ? colors.accent : colors.ink}
+					stroke={isSelected ? colors.accent : "#cbd5e1"}
 					strokeWidth={isSelected ? 2 : 1}
 					cornerRadius={6}
-					shadowColor={isSelected ? colors.glow : "rgba(0,0,0,0.08)"}
+					shadowColor={isSelected ? colors.glow : "rgba(0,0,0,0.06)"}
 					shadowBlur={isSelected ? 12 : 4}
 					shadowOpacity={1}
 					shadowOffsetY={isSelected ? 0 : 2}
-					dash={isUnassigned ? [4, 4] : [6, 3]}
-					dashEnabled={isUnassigned || !isSelected}
+					dash={isUnassigned ? [4, 4] : undefined}
+					dashEnabled={isUnassigned}
 				/>
 
-				{/* Accent stripe on left */}
 				<Rect
 					x={0}
 					y={0}
@@ -385,15 +406,43 @@ export function DraggableField({
 					height={field.height}
 					fill={colors.accent}
 					cornerRadius={[6, 0, 0, 6]}
-					opacity={isSelected ? 1 : isUnassigned ? 0.5 : 0.7}
+					opacity={isSelected ? 1 : isUnassigned ? 0.5 : 0.9}
 				/>
 
-				{/* Field label */}
+				{sealIcon && (
+					<Group x={4} y={0}>
+						<Rect
+							width={sidebarWidth}
+							height={field.height}
+							fill={colors.glow}
+							opacity={0.3}
+						/>
+
+						<Rect
+							x={sidebarWidth}
+							y={0}
+							width={1}
+							height={field.height}
+							fill={colors.accent}
+							opacity={0.15}
+						/>
+
+						<KonvaImage
+							image={sealIcon}
+							x={(sidebarWidth - iconSize) / 2}
+							y={(field.height - iconSize) / 2}
+							width={iconSize}
+							height={iconSize}
+							opacity={0.85}
+						/>
+					</Group>
+				)}
+
 				{label && (
 					<Text
-						x={12}
+						x={textOffsetX}
 						y={0}
-						width={field.width - 16}
+						width={field.width - textOffsetX - 4}
 						height={field.height}
 						text={isUnassigned ? `${label} (unassigned)` : label}
 						fontSize={11}
@@ -412,11 +461,12 @@ export function DraggableField({
 	};
 
 	const renderFilledFieldStamp = () => {
-		const padding = 4;
-		const availableWidth = field.width - padding * 2;
-		const availableHeight = field.height - padding * 2;
+		const iconSize = Math.max(10, Math.min(16, field.height * 0.35));
+		const containerSize = iconSize + 4;
+		const textOffsetX = sealIcon ? 6 + containerSize + 4 : 4;
+		const availableWidth = field.width - textOffsetX - 4;
+		const availableHeight = field.height - 8;
 
-		// Format date for display
 		const formatDate = (timestamp?: number) => {
 			if (!timestamp) return { date: "", time: "" };
 			const date = new Date(timestamp);
@@ -440,14 +490,12 @@ export function DraggableField({
 			field.signatureData?.signerEmail ||
 			"Unknown";
 
-		// Determine text size based on field height
 		const isSmallField = availableHeight < 40;
 		const titleFontSize = isSmallField ? 8 : 10;
 		const detailFontSize = isSmallField ? 7 : 9;
 
 		return (
 			<>
-				{/* Field background with green border indicating completion */}
 				<Rect
 					width={field.width}
 					height={field.height}
@@ -461,7 +509,6 @@ export function DraggableField({
 					shadowOffsetY={isSelected ? 0 : 2}
 				/>
 
-				{/* Green accent stripe indicating filled */}
 				<Rect
 					x={0}
 					y={0}
@@ -471,10 +518,9 @@ export function DraggableField({
 					cornerRadius={[6, 0, 0, 6]}
 				/>
 
-				{/* Field stamp text */}
 				<Text
-					x={padding}
-					y={padding}
+					x={textOffsetX}
+					y={4}
 					width={availableWidth}
 					text={getFieldTypeLabel(field.fieldType)}
 					fontSize={titleFontSize}
@@ -486,8 +532,8 @@ export function DraggableField({
 				{!isSmallField && (
 					<>
 						<Text
-							x={padding}
-							y={padding + titleFontSize + 2}
+							x={textOffsetX}
+							y={4 + titleFontSize + 2}
 							width={availableWidth}
 							text={`Signed by: ${signerName}`}
 							fontSize={detailFontSize}
@@ -497,8 +543,8 @@ export function DraggableField({
 
 						{formattedDate.date && (
 							<Text
-								x={padding}
-								y={padding + titleFontSize + detailFontSize + 4}
+								x={textOffsetX}
+								y={4 + titleFontSize + detailFontSize + 4}
 								width={availableWidth}
 								text={`Date: ${formattedDate.date} at ${formattedDate.time}`}
 								fontSize={detailFontSize}
@@ -511,14 +557,34 @@ export function DraggableField({
 
 				{isSmallField && formattedDate.date && (
 					<Text
-						x={padding}
-						y={padding + titleFontSize + 2}
+						x={textOffsetX}
+						y={4 + titleFontSize + 2}
 						width={availableWidth}
 						text={`${signerName} • ${formattedDate.date}`}
 						fontSize={detailFontSize}
 						fill="#6b7280"
 						align="left"
 					/>
+				)}
+
+				{sealIcon && (
+					<Group x={4} y={0}>
+						<Rect
+							width={containerSize}
+							height={field.height}
+							fill="#ffffff"
+							stroke="#e5e7eb"
+							strokeWidth={0.5}
+							cornerRadius={[0, 2, 2, 0]}
+						/>
+						<KonvaImage
+							image={sealIcon}
+							x={(containerSize - iconSize) / 2}
+							y={(field.height - iconSize) / 2}
+							width={iconSize}
+							height={iconSize}
+						/>
+					</Group>
 				)}
 			</>
 		);

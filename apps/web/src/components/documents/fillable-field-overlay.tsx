@@ -103,6 +103,40 @@ function formatSignatureDate(timestamp: number): {
 	};
 }
 
+function getSealIconSize(height: number, width: number): number {
+	const baseDimension = Math.min(height, width);
+	return Math.max(10, Math.min(20, baseDimension * 0.5));
+}
+
+function SealFieldIcon({
+	size,
+	containerHeight,
+}: {
+	size: number;
+	containerHeight: number;
+}) {
+	const containerWidth = size + 6;
+	return (
+		<div
+			className="flex items-center justify-center rounded-l-sm bg-white/95 shadow-sm border-r border-gray-200/50"
+			style={{
+				width: containerWidth,
+				height: containerHeight,
+			}}
+		>
+			<img
+				src="/logo/seal-icon-color-no-background.svg"
+				alt=""
+				aria-hidden="true"
+				style={{
+					width: size,
+					height: size,
+				}}
+			/>
+		</div>
+	);
+}
+
 export const FillableFieldOverlay = forwardRef<
 	HTMLButtonElement,
 	FillableFieldOverlayProps
@@ -148,7 +182,8 @@ export const FillableFieldOverlay = forwardRef<
 		? formatSignatureDate(signatureDetails.signedAt)
 		: null;
 
-	// For filled fields, render a non-interactive display with field stamp
+	const sealIconSize = getSealIconSize(absoluteHeight, absoluteWidth);
+
 	if (isFilledField && signatureDetails) {
 		return (
 			<div
@@ -160,9 +195,14 @@ export const FillableFieldOverlay = forwardRef<
 					height: `${absoluteHeight}px`,
 				}}
 			>
-				{/* Field stamp details - Field type, name, date and time */}
+				<div className="absolute left-0 top-0 z-20">
+					<SealFieldIcon size={sealIconSize} containerHeight={absoluteHeight} />
+				</div>
 				{absoluteHeight >= 50 && (
-					<div className="bg-white/90 px-2 py-2 h-full flex flex-col justify-center">
+					<div
+						className="bg-white/90 py-2 pr-2 h-full flex flex-col justify-center"
+						style={{ paddingLeft: sealIconSize + 12 }}
+					>
 						<div className="flex flex-col gap-0.5">
 							{/* Field type */}
 							<div className="flex items-baseline gap-1">
@@ -190,9 +230,11 @@ export const FillableFieldOverlay = forwardRef<
 					</div>
 				)}
 
-				{/* Compact stamp for smaller fields */}
 				{absoluteHeight < 50 && absoluteHeight >= 30 && (
-					<div className="bg-white/90 px-1 py-0.5 h-full flex flex-col justify-center">
+					<div
+						className="bg-white/90 py-0.5 pr-1 h-full flex flex-col justify-center"
+						style={{ paddingLeft: sealIconSize + 10 }}
+					>
 						<div className="text-[7px] text-gray-600">
 							<div className="truncate font-medium">
 								{getFieldTypeLabel(fieldType)}
@@ -238,7 +280,13 @@ export const FillableFieldOverlay = forwardRef<
 			}}
 			title={`${label}${isRequired ? " (Required)" : ""}${isMainSignature ? " - Main Signature" : ""} - Click to fill`}
 		>
-			<div className="flex flex-col items-center justify-center gap-0.5 p-1">
+			<div className="absolute left-0 top-0 z-20">
+				<SealFieldIcon size={sealIconSize} containerHeight={absoluteHeight} />
+			</div>
+			<div
+				className="flex flex-col items-center justify-center gap-0.5 p-1 w-full h-full"
+				style={{ paddingLeft: sealIconSize + 10 }}
+			>
 				<div className="flex items-center gap-1">
 					{isMainSignature && <StarIcon className="h-3 w-3 text-yellow-600" />}
 					{getFieldIcon(fieldType)}
