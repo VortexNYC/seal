@@ -233,23 +233,23 @@ export function InAppSigningSection({
 	const getStatusConfig = () => {
 		if (isCompleted) {
 			return {
-				bgColor: "bg-emerald-100",
-				textColor: "text-emerald-600",
+				bgColor: "bg-emerald-100 dark:bg-emerald-900",
+				textColor: "text-emerald-600 dark:text-emerald-400",
 				icon: CheckCircleIcon,
 				label: recipient.status === "approved" ? "Approved" : "Signed",
 			};
 		}
 		if (isDeclined) {
 			return {
-				bgColor: "bg-red-100",
-				textColor: "text-red-600",
+				bgColor: "bg-red-100 dark:bg-red-900",
+				textColor: "text-red-600 dark:text-red-400",
 				icon: XCircleIcon,
 				label: "Declined",
 			};
 		}
 		return {
-			bgColor: "bg-amber-100",
-			textColor: "text-amber-600",
+			bgColor: "bg-amber-100 dark:bg-amber-900",
+			textColor: "text-amber-600 dark:text-amber-400",
 			icon: ClockIcon,
 			label: "Pending",
 		};
@@ -263,12 +263,12 @@ export function InAppSigningSection({
 			<Collapsible
 				open={isOpen}
 				onOpenChange={onOpenChange}
-				className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border-2 border-amber-200 overflow-hidden shadow-sm sm:rounded-xl"
+				className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 rounded-2xl border-2 border-amber-200 dark:border-amber-800 overflow-hidden shadow-sm sm:rounded-xl"
 			>
 				<CollapsibleTrigger asChild>
 					<button
 						type="button"
-						className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-amber-100/50 sm:px-4 sm:py-3.5"
+						className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-amber-100/50 dark:hover:bg-amber-900/50 sm:px-4 sm:py-3.5"
 					>
 						<div className="flex items-center gap-3">
 							<div
@@ -277,7 +277,7 @@ export function InAppSigningSection({
 								<PenLineIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
 							</div>
 							<div className="text-left">
-								<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm block">
+								<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 dark:text-slate-200 sm:text-sm block">
 									Your Signature
 								</span>
 								<span
@@ -289,24 +289,24 @@ export function InAppSigningSection({
 							</div>
 						</div>
 						<ChevronDownIcon
-							className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+							className={`h-4 w-4 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
 						/>
 					</button>
 				</CollapsibleTrigger>
-				<CollapsibleContent className="px-5 pb-5 border-t border-amber-200/50 sm:px-4 sm:pb-4">
+				<CollapsibleContent className="px-5 pb-5 border-t border-amber-200/50 dark:border-amber-800/50 sm:px-4 sm:pb-4">
 					{/* Progress bar */}
 					{canSign && fields.length > 0 && (
 						<div className="mt-4 mb-4">
 							<div className="flex items-center justify-between mb-2">
-								<span className="font-sans text-xs font-medium text-slate-600">
+								<span className="font-sans text-xs font-medium text-slate-600 dark:text-slate-400">
 									Progress
 								</span>
-								<span className="font-sans text-xs text-slate-500">
+								<span className="font-sans text-xs text-slate-500 dark:text-slate-400">
 									{filledRequiredFields.length} of {requiredFields.length}{" "}
 									required fields
 								</span>
 							</div>
-							<div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+							<div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
 								<div
 									className="h-full bg-amber-500 rounded-full transition-all duration-300"
 									style={{ width: `${progress}%` }}
@@ -318,7 +318,7 @@ export function InAppSigningSection({
 					{/* Fields list */}
 					{canSign && fields.length > 0 && (
 						<div className="space-y-2 mb-4">
-							<div className="font-sans text-xs font-medium text-slate-600 mb-2">
+							<div className="font-sans text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
 								Fields to complete
 							</div>
 							{fields.map((field) => (
@@ -329,15 +329,15 @@ export function InAppSigningSection({
 									disabled={!canSign}
 									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors text-left ${
 										field.isFilled
-											? "bg-emerald-50 border-emerald-200 cursor-default"
-											: "bg-white border-slate-200 hover:border-amber-300 hover:bg-amber-50 cursor-pointer"
+											? "bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800 cursor-default"
+											: "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950 cursor-pointer"
 									}`}
 								>
 									<div
 										className={`w-6 h-6 flex items-center justify-center rounded-md ${
 											field.isFilled
-												? "bg-emerald-100 text-emerald-600"
-												: "bg-slate-100 text-slate-500"
+												? "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400"
+												: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
 										}`}
 									>
 										{field.isFilled ? (
@@ -347,13 +347,15 @@ export function InAppSigningSection({
 										)}
 									</div>
 									<div className="flex-1 min-w-0">
-										<div className="font-sans text-sm text-slate-700 truncate">
+										<div className="font-sans text-sm text-slate-700 dark:text-slate-300 truncate">
 											{field.label || getFieldTypeLabel(field.fieldType)}
 										</div>
-										<div className="font-sans text-xs text-slate-500">
+										<div className="font-sans text-xs text-slate-500 dark:text-slate-400">
 											Page {field.page}
 											{field.isRequired && !field.isFilled && (
-												<span className="text-amber-600 ml-1">• Required</span>
+												<span className="text-amber-600 dark:text-amber-400 ml-1">
+													• Required
+												</span>
 											)}
 										</div>
 									</div>
@@ -365,10 +367,10 @@ export function InAppSigningSection({
 					{/* Completed state */}
 					{isCompleted && (
 						<div className="mt-4 text-center py-4">
-							<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-emerald-100 rounded-full text-emerald-600">
+							<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-emerald-100 dark:bg-emerald-900 rounded-full text-emerald-600 dark:text-emerald-400">
 								<CheckCircleIcon className="h-6 w-6" />
 							</div>
-							<div className="font-sans text-sm font-semibold text-slate-700">
+							<div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300">
 								{recipient.status === "approved"
 									? "You have approved this document"
 									: "You have signed this document"}
@@ -379,10 +381,10 @@ export function InAppSigningSection({
 					{/* Declined state */}
 					{isDeclined && (
 						<div className="mt-4 text-center py-4">
-							<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-red-100 rounded-full text-red-600">
+							<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-red-100 dark:bg-red-900 rounded-full text-red-600 dark:text-red-400">
 								<XCircleIcon className="h-6 w-6" />
 							</div>
-							<div className="font-sans text-sm font-semibold text-slate-700">
+							<div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300">
 								You have declined this document
 							</div>
 						</div>
@@ -405,7 +407,7 @@ export function InAppSigningSection({
 								variant="outline"
 								onClick={() => setShowDeclineDialog(true)}
 								disabled={isSubmitting}
-								className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+								className="w-full text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-700 dark:hover:text-red-300"
 							>
 								<XCircleIcon className="h-4 w-4 mr-2" />
 								Decline

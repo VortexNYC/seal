@@ -146,13 +146,13 @@ function FieldButton({
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
 			disabled={disabled}
-			className={`group relative flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg transition-colors ${
+			className={`group relative flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg transition-colors ${
 				disabled
 					? "opacity-50 cursor-not-allowed"
-					: "cursor-grab hover:border-gray-300 active:cursor-grabbing"
+					: "cursor-grab hover:border-gray-300 dark:hover:border-slate-600 active:cursor-grabbing"
 			} ${isDragging ? "opacity-40 scale-95 border-dashed" : ""}`}
 		>
-			<div className="flex items-center text-gray-400 group-hover:text-gray-500 transition-colors">
+			<div className="flex items-center text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors">
 				<GripVerticalIcon className="w-3 h-3" />
 			</div>
 			<div
@@ -165,7 +165,9 @@ function FieldButton({
 			>
 				{icon}
 			</div>
-			<span className="text-sm font-medium text-gray-700">{label}</span>
+			<span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+				{label}
+			</span>
 		</button>
 	);
 }
@@ -187,12 +189,12 @@ export function FieldToolbar({
 	};
 
 	return (
-		<div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-			<div className="flex items-baseline justify-between mb-3 pb-2.5 border-b border-dashed border-gray-300">
-				<span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+		<div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+			<div className="flex items-baseline justify-between mb-3 pb-2.5 border-b border-dashed border-gray-300 dark:border-slate-600">
+				<span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
 					Fields
 				</span>
-				<span className="text-[9px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+				<span className="text-[9px] font-normal text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded border border-gray-200 dark:border-slate-600">
 					{disabled ? "Add a signer first" : "Drag to place"}
 				</span>
 			</div>
