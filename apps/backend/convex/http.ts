@@ -267,7 +267,7 @@ http.route({
 		}
 
 		const stripe = new Stripe(stripeSecretKey, {
-			apiVersion: "2025-10-29.clover",
+			apiVersion: "2025-12-15.clover",
 		});
 
 		const signature = request.headers.get("stripe-signature");
