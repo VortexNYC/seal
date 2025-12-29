@@ -15,10 +15,10 @@
 		"export": "email export"
 	},
 	"dependencies": {
-		"@react-email/components": "^1.0.1",
+		"@react-email/components": "^1.0.2",
 		"@react-email/render": "^2.0.0",
-		"react": "^19.2.1",
-		"react-email": "2.0.0"
+		"react": "^19.2.3",
+		"react-email": "5.1.0"
 	},
 	"devDependencies": {
 		"@types/react": "^19.2.7"
