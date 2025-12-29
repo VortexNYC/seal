@@ -3,7 +3,7 @@
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import {
 	LayoutTemplate,
@@ -15,7 +15,7 @@ import {
 import * as React from "react";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
-import { SealLogoBadge } from "@/components/seal-logo";
+import { SealLogoBadgeFixed } from "@/components/seal-logo-fixed";
 import { TeamSwitcher } from "@/components/team-switcher";
 import { useTheme } from "@/components/theme-provider";
 import {
@@ -341,9 +341,13 @@ export function AppSidebar({
 	return (
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
-				<div className="flex items-center justify-center py-2 group-data-[collapsible=icon]:hidden">
-					<SealLogoBadge size="lg" />
-				</div>
+				<Link
+					to="/$slug/home"
+					params={{ slug: activeTeamSlug }}
+					className="flex items-center justify-center py-2 group-data-[collapsible=icon]:hidden"
+				>
+					<SealLogoBadgeFixed size={64} withText />
+				</Link>
 				{teamOptions.length > 0 && (
 					<TeamSwitcher
 						teams={teamOptions}
