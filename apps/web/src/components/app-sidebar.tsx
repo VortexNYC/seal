@@ -5,19 +5,30 @@ import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { LayoutTemplate, type LucideIcon, Settings } from "lucide-react";
+import {
+	LayoutTemplate,
+	type LucideIcon,
+	Moon,
+	Settings,
+	Sun,
+} from "lucide-react";
 import * as React from "react";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import { SealLogoBadge } from "@/components/seal-logo";
 import { TeamSwitcher } from "@/components/team-switcher";
+import { useTheme } from "@/components/theme-provider";
 import {
 	Sidebar,
 	SidebarContent,
 	SidebarFooter,
 	SidebarHeader,
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
 	SidebarRail,
 } from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
 
@@ -295,6 +306,13 @@ export function AppSidebar({
 		};
 	}, [user]);
 
+	const { resolvedTheme, setTheme } = useTheme();
+	const isDark = resolvedTheme === "dark";
+
+	const handleThemeToggle = () => {
+		setTheme(isDark ? "light" : "dark");
+	};
+
 	const handleTeamSelect = React.useCallback(
 		(nextSlug: string) => {
 			if (!nextSlug || nextSlug === slug) {
@@ -338,6 +356,30 @@ export function AppSidebar({
 				<NavMain items={navItems} />
 			</SidebarContent>
 			<SidebarFooter>
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							className="justify-between"
+							onClick={handleThemeToggle}
+						>
+							<div className="flex items-center gap-2">
+								{isDark ? (
+									<Moon className="size-4" />
+								) : (
+									<Sun className="size-4" />
+								)}
+								<span className="group-data-[collapsible=icon]:hidden">
+									Dark mode
+								</span>
+							</div>
+							<Switch
+								checked={isDark}
+								className="group-data-[collapsible=icon]:hidden"
+								aria-label="Toggle dark mode"
+							/>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				</SidebarMenu>
 				{currentUser && (
 					<NavUser user={currentUser} slug={slug} onSignOut={signOut} />
 				)}
