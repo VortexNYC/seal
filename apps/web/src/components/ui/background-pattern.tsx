@@ -36,10 +36,10 @@ export function BackgroundPattern({
 							<path
 								d={SEAL_ICON_PATH}
 								fill="currentColor"
-								className="text-brand-700 dark:text-brand-300"
+								className="text-brand-900"
 								style={{ opacity }}
 							/>
-						</g>
+						</g>{" "}
 					</pattern>
 					<pattern
 						id="dot-pattern"
@@ -53,10 +53,10 @@ export function BackgroundPattern({
 							cx="1"
 							cy="1"
 							r="1"
-							className="fill-brand-700 dark:fill-brand-300"
+							className="fill-brand-900"
 							style={{ opacity: opacity * 1.5 }}
 						/>
-					</pattern>
+					</pattern>{" "}
 				</defs>
 				<rect
 					width="100%"
