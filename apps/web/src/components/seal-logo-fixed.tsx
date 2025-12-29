@@ -43,11 +43,18 @@ export function SealLogoBadgeFixed({
 			}}
 		>
 			{withText ? (
-				<img
-					src="/logo/seal-logo-color-no-background.svg"
-					alt="Seal Logo"
-					className="h-full w-auto object-contain"
-				/>
+				<>
+					<img
+						src="/logo/seal-logo-color-no-background.svg"
+						alt="Seal Logo"
+						className="h-full w-auto object-contain dark:hidden"
+					/>
+					<img
+						src="/logo/seal-logo-white-no-background.svg"
+						alt="Seal Logo"
+						className="h-full w-auto object-contain hidden dark:block"
+					/>
+				</>
 			) : (
 				<img
 					src="/logo/seal-icon-color-no-background.svg"

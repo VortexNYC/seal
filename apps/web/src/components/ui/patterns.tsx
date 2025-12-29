@@ -10,19 +10,34 @@ export function StripeColumn({
 	position = "left",
 }: StripeColumnProps) {
 	return (
-		<div
-			className={cn(
-				"hidden md:block w-10 border-x border-brand-900/5 dark:border-white/5",
-				"bg-[size:10px_10px] bg-fixed",
-				position === "left" ? "col-start-1" : "col-start-3",
-				"row-span-full row-start-1",
-				className,
-			)}
-			style={{
-				backgroundImage:
-					"repeating-linear-gradient(315deg, rgb(0 0 0 / 0.03) 0px, rgb(0 0 0 / 0.03) 1px, transparent 0px, transparent 50%)",
-			}}
-		/>
+		<>
+			<div
+				className={cn(
+					"hidden md:block dark:hidden w-10 border-x border-brand-900/5",
+					"bg-[size:10px_10px] bg-fixed",
+					position === "left" ? "col-start-1" : "col-start-3",
+					"row-span-full row-start-1",
+					className,
+				)}
+				style={{
+					backgroundImage:
+						"repeating-linear-gradient(315deg, rgb(0 0 0 / 0.03) 0px, rgb(0 0 0 / 0.03) 1px, transparent 0px, transparent 50%)",
+				}}
+			/>
+			<div
+				className={cn(
+					"hidden dark:md:block w-10 border-x border-white/5",
+					"bg-[size:10px_10px] bg-fixed",
+					position === "left" ? "col-start-1" : "col-start-3",
+					"row-span-full row-start-1",
+					className,
+				)}
+				style={{
+					backgroundImage:
+						"repeating-linear-gradient(315deg, rgb(255 255 255 / 0.05) 0px, rgb(255 255 255 / 0.05) 1px, transparent 0px, transparent 50%)",
+				}}
+			/>
+		</>
 	);
 }
 
@@ -60,13 +75,30 @@ interface DotPatternProps {
 
 export function DotPattern({ className }: DotPatternProps) {
 	return (
-		<div
-			className={cn("pointer-events-none", "bg-[size:16px_16px]", className)}
-			style={{
-				backgroundImage:
-					"radial-gradient(circle, rgb(0 0 0 / 0.35) 1px, transparent 1px)",
-			}}
-		/>
+		<>
+			<div
+				className={cn(
+					"pointer-events-none dark:hidden",
+					"bg-[size:16px_16px]",
+					className,
+				)}
+				style={{
+					backgroundImage:
+						"radial-gradient(circle, rgb(0 0 0 / 0.35) 1px, transparent 1px)",
+				}}
+			/>
+			<div
+				className={cn(
+					"pointer-events-none hidden dark:block",
+					"bg-[size:16px_16px]",
+					className,
+				)}
+				style={{
+					backgroundImage:
+						"radial-gradient(circle, rgb(255 255 255 / 0.15) 1px, transparent 1px)",
+				}}
+			/>
+		</>
 	);
 }
 
