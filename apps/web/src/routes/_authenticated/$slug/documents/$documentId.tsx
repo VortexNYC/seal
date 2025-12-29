@@ -1104,11 +1104,11 @@ function DocumentDetailPage() {
 				<div className="grid gap-6 lg:grid-cols-3">
 					{/* Left column: PDF Preview */}
 					<div className="lg:col-span-2">
-						<div className="relative rounded-2xl bg-stone-100 p-6 min-h-[600px] md:p-4 sm:p-3 sm:rounded-xl sm:min-h-[400px]">
-							<div className="font-serif text-lg font-medium text-stone-800 mb-4 flex items-center gap-3 sm:text-base sm:flex-wrap">
+						<div className="relative rounded-2xl bg-stone-100 dark:bg-stone-900 p-6 min-h-[600px] md:p-4 sm:p-3 sm:rounded-xl sm:min-h-[400px]">
+							<div className="font-serif text-lg font-medium text-stone-800 dark:text-stone-200 mb-4 flex items-center gap-3 sm:text-base sm:flex-wrap">
 								<span>Document Preview</span>
 								{numPages && (
-									<span className="font-sans text-xs font-medium text-stone-500 bg-stone-200 px-2.5 py-1 rounded-full">
+									<span className="font-sans text-xs font-medium text-stone-500 dark:text-stone-400 bg-stone-200 dark:bg-stone-700 px-2.5 py-1 rounded-full">
 										{numPages} {numPages === 1 ? "page" : "pages"}
 									</span>
 								)}
@@ -1129,7 +1129,7 @@ function DocumentDetailPage() {
 									}}
 								>
 									<div className="mb-4 flex justify-center">
-										<div className="flex items-center justify-center gap-1 bg-white px-2 py-1.5 rounded-lg shadow-sm border border-stone-200">
+										<div className="flex items-center justify-center gap-1 bg-white dark:bg-slate-900 px-2 py-1.5 rounded-lg shadow-sm border border-stone-200 dark:border-slate-700">
 											<PdfViewerControls
 												currentZoom={currentZoom}
 												currentPage={currentPage}
@@ -1148,7 +1148,7 @@ function DocumentDetailPage() {
 											ref={containerRef}
 											onDragOver={handleFieldDragOver}
 											onDrop={handleFieldDrop}
-											className={`relative bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden transition-all duration-300 ${draggingFieldType ? "shadow-lg border-blue-500 ring-4 ring-blue-500/10 scale-[1.002]" : ""}`}
+											className={`relative bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-stone-200 dark:border-slate-700 overflow-hidden transition-all duration-300 ${draggingFieldType ? "shadow-lg border-blue-500 ring-4 ring-blue-500/10 scale-[1.002]" : ""}`}
 										>
 											<Document
 												file={pdfUrl}
@@ -1203,7 +1203,7 @@ function DocumentDetailPage() {
 									{/* Bottom page navigation controls */}
 									{numPages && numPages > 1 && (
 										<div className="mt-4 flex justify-center">
-											<div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-stone-200">
+											<div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-4 py-2 rounded-lg shadow-sm border border-stone-200 dark:border-slate-700">
 												<Button
 													variant="outline"
 													size="sm"
@@ -1232,7 +1232,7 @@ function DocumentDetailPage() {
 									)}
 								</TransformWrapper>
 							) : (
-								<div className="relative bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden p-16 text-center text-stone-500">
+								<div className="relative bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-stone-200 dark:border-slate-700 overflow-hidden p-16 text-center text-stone-500 dark:text-stone-400">
 									<div className="animate-pulse">Loading document...</div>
 								</div>
 							)}
@@ -1245,34 +1245,34 @@ function DocumentDetailPage() {
 						<div
 							className={`rounded-2xl p-6 text-center border sm:p-4 sm:rounded-xl ${
 								documentData.workflowStatus === "completed"
-									? "bg-emerald-50 border-emerald-200"
+									? "bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800"
 									: documentData.workflowStatus === "in_progress"
-										? "bg-amber-50 border-amber-200"
+										? "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800"
 										: documentData.workflowStatus === "sent"
-											? "bg-blue-50 border-blue-200"
-											: "bg-amber-50/50 border-amber-200/50"
+											? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
+											: "bg-amber-50/50 dark:bg-amber-950/50 border-amber-200/50 dark:border-amber-800/50"
 							}`}
 						>
-							<div className="font-sans text-[10px] font-semibold tracking-widest uppercase text-stone-500 mb-2">
+							<div className="font-sans text-[10px] font-semibold tracking-widest uppercase text-stone-500 dark:text-stone-400 mb-2">
 								Document Status
 							</div>
 							<div
 								className={`font-serif text-3xl font-medium mb-1 sm:text-2xl ${
 									documentData.workflowStatus === "completed"
-										? "text-emerald-700"
-										: "text-stone-800"
+										? "text-emerald-700 dark:text-emerald-300"
+										: "text-stone-800 dark:text-stone-200"
 								}`}
 							>
 								{getStatusLabel(documentData.workflowStatus)}
 							</div>
-							<div className="font-sans text-sm text-stone-500 sm:text-xs">
+							<div className="font-sans text-sm text-stone-500 dark:text-stone-400 sm:text-xs">
 								Created {formatDate(documentData.createdAt)}
 							</div>
 						</div>
 
 						{/* Progress Ring - Only show when document is sent */}
 						{progress && documentData.workflowStatus !== "draft" && (
-							<div className="flex flex-col items-center gap-4 p-6 bg-white rounded-2xl border border-slate-200 shadow-sm sm:p-4 sm:rounded-xl animate-[fadeInUp_0.3s_ease-out_forwards]">
+							<div className="flex flex-col items-center gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm sm:p-4 sm:rounded-xl animate-[fadeInUp_0.3s_ease-out_forwards]">
 								<div className="relative w-[120px] h-[120px] sm:w-[90px] sm:h-[90px]">
 									<svg
 										width="120"
@@ -1303,45 +1303,45 @@ function DocumentDetailPage() {
 										/>
 									</svg>
 									<div className="absolute inset-0 flex flex-col items-center justify-center">
-										<span className="font-serif text-[1.75rem] font-semibold text-slate-800 leading-none sm:text-xl">
+										<span className="font-serif text-[1.75rem] font-semibold text-slate-800 dark:text-slate-200 leading-none sm:text-xl">
 											{progress.percentComplete}%
 										</span>
-										<span className="font-sans text-[0.6875rem] text-slate-500 mt-0.5">
+										<span className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
 											Complete
 										</span>
 									</div>
 								</div>
 								<div className="grid grid-cols-2 gap-3 w-full sm:gap-2">
-									<div className="text-center py-3 px-2 bg-slate-50 rounded-[10px] sm:py-2.5 sm:px-1.5">
-										<div className="font-sans text-xl font-semibold text-emerald-600 sm:text-base">
+									<div className="text-center py-3 px-2 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:py-2.5 sm:px-1.5">
+										<div className="font-sans text-xl font-semibold text-emerald-600 dark:text-emerald-400 sm:text-base">
 											{progress.byStatus.signed}
 										</div>
-										<div className="font-sans text-[0.6875rem] text-slate-500 mt-0.5">
+										<div className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
 											Signed
 										</div>
 									</div>
-									<div className="text-center py-3 px-2 bg-slate-50 rounded-[10px] sm:py-2.5 sm:px-1.5">
-										<div className="font-sans text-xl font-semibold text-amber-600 sm:text-base">
+									<div className="text-center py-3 px-2 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:py-2.5 sm:px-1.5">
+										<div className="font-sans text-xl font-semibold text-amber-600 dark:text-amber-400 sm:text-base">
 											{progress.byStatus.pending}
 										</div>
-										<div className="font-sans text-[0.6875rem] text-slate-500 mt-0.5">
+										<div className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
 											Pending
 										</div>
 									</div>
-									<div className="text-center py-3 px-2 bg-slate-50 rounded-[10px] sm:py-2.5 sm:px-1.5">
-										<div className="font-sans text-xl font-semibold text-slate-700 sm:text-base">
+									<div className="text-center py-3 px-2 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:py-2.5 sm:px-1.5">
+										<div className="font-sans text-xl font-semibold text-slate-700 dark:text-slate-300 sm:text-base">
 											{progress.byStatus.viewed}
 										</div>
-										<div className="font-sans text-[0.6875rem] text-slate-500 mt-0.5">
+										<div className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
 											Viewed
 										</div>
 									</div>
 									{progress.byStatus.declined > 0 && (
-										<div className="text-center py-3 px-2 bg-slate-50 rounded-[10px] sm:py-2.5 sm:px-1.5">
-											<div className="font-sans text-xl font-semibold text-red-500 sm:text-base">
+										<div className="text-center py-3 px-2 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:py-2.5 sm:px-1.5">
+											<div className="font-sans text-xl font-semibold text-red-500 dark:text-red-400 sm:text-base">
 												{progress.byStatus.declined}
 											</div>
-											<div className="font-sans text-[0.6875rem] text-slate-500 mt-0.5">
+											<div className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
 												Declined
 											</div>
 										</div>
@@ -1376,32 +1376,32 @@ function DocumentDetailPage() {
 							<Collapsible
 								open={openSections.has("fields")}
 								onOpenChange={() => toggleSection("fields")}
-								className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm sm:rounded-xl"
+								className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm sm:rounded-xl"
 							>
 								<CollapsibleTrigger asChild>
 									<button
 										type="button"
-										className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 sm:px-4 sm:py-3.5"
+										className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 sm:px-4 sm:py-3.5"
 									>
 										<div className="flex items-center gap-3">
-											<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-violet-100 text-violet-600 sm:w-8 sm:h-8 sm:rounded-lg">
+											<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-violet-100 dark:bg-violet-900 text-violet-600 dark:text-violet-400 sm:w-8 sm:h-8 sm:rounded-lg">
 												<FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
 											</div>
-											<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm">
+											<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 dark:text-slate-200 sm:text-sm">
 												Signature Fields
 											</span>
 											{signatureFields.length > 0 && (
-												<span className="font-sans text-[0.6875rem] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-xl ml-2">
+												<span className="font-sans text-[0.6875rem] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-xl ml-2">
 													{signatureFields.length}
 												</span>
 											)}
 										</div>
 										<ChevronDownIcon
-											className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${openSections.has("fields") ? "rotate-180" : ""}`}
+											className={`h-4 w-4 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${openSections.has("fields") ? "rotate-180" : ""}`}
 										/>
 									</button>
 								</CollapsibleTrigger>
-								<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 sm:px-4 sm:pb-4">
+								<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 dark:border-slate-800 sm:px-4 sm:pb-4">
 									{canEdit && (
 										<div className="mt-4 mb-4">
 											<FieldToolbar
@@ -1435,13 +1435,13 @@ function DocumentDetailPage() {
 										/>
 									) : (
 										<div className="text-center py-8 px-4 sm:py-6 sm:px-3">
-											<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-slate-100 rounded-xl text-slate-500 sm:w-10 sm:h-10 sm:rounded-[10px]">
+											<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400 sm:w-10 sm:h-10 sm:rounded-[10px]">
 												<FileSignatureIcon className="h-6 w-6" />
 											</div>
-											<div className="font-sans text-sm font-semibold text-slate-700 mb-1 sm:text-[0.8125rem]">
+											<div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1 sm:text-[0.8125rem]">
 												No fields yet
 											</div>
-											<div className="font-sans text-xs text-slate-500 leading-relaxed sm:text-[0.6875rem]">
+											<div className="font-sans text-xs text-slate-500 dark:text-slate-400 leading-relaxed sm:text-[0.6875rem]">
 												Drag fields from above onto the document to mark where
 												recipients should sign or fill in information.
 											</div>
@@ -1455,32 +1455,32 @@ function DocumentDetailPage() {
 						<Collapsible
 							open={openSections.has("recipients")}
 							onOpenChange={() => toggleSection("recipients")}
-							className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm sm:rounded-xl"
+							className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm sm:rounded-xl"
 						>
 							<CollapsibleTrigger asChild>
 								<button
 									type="button"
-									className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 sm:px-4 sm:py-3.5"
+									className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 sm:px-4 sm:py-3.5"
 								>
 									<div className="flex items-center gap-3">
-										<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-blue-100 text-blue-600 sm:w-8 sm:h-8 sm:rounded-lg">
+										<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 sm:w-8 sm:h-8 sm:rounded-lg">
 											<UsersIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
 										</div>
-										<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm">
+										<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 dark:text-slate-200 sm:text-sm">
 											Recipients
 										</span>
 										{recipients.length > 0 && (
-											<span className="font-sans text-[0.6875rem] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-xl ml-2">
+											<span className="font-sans text-[0.6875rem] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-xl ml-2">
 												{recipients.length}
 											</span>
 										)}
 									</div>
 									<ChevronDownIcon
-										className={`h-4 w-4 text-slate-500 transition-transform ${openSections.has("recipients") ? "rotate-180" : ""}`}
+										className={`h-4 w-4 text-slate-500 dark:text-slate-400 transition-transform ${openSections.has("recipients") ? "rotate-180" : ""}`}
 									/>
 								</button>
 							</CollapsibleTrigger>
-							<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 sm:px-4 sm:pb-4">
+							<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 dark:border-slate-800 sm:px-4 sm:pb-4">
 								{canEdit && !isUserAlreadyRecipient && (
 									<Button
 										variant="outline"
@@ -1497,30 +1497,30 @@ function DocumentDetailPage() {
 										{recipients.map((recipient) => (
 											<div
 												key={recipient._id}
-												className="flex items-center gap-3.5 p-3.5 bg-slate-50 rounded-xl border border-transparent transition-all hover:bg-slate-100 hover:border-slate-200 sm:p-3 sm:gap-2.5 sm:flex-wrap"
+												className="flex items-center gap-3.5 p-3.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-transparent transition-all hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-200 dark:hover:border-slate-600 sm:p-3 sm:gap-2.5 sm:flex-wrap"
 											>
 												<div
 													className={`w-10 h-10 rounded-full flex items-center justify-center font-sans text-sm font-semibold shrink-0 sm:w-9 sm:h-9 sm:text-[0.8125rem] ${
 														recipient.status === "pending"
-															? "bg-slate-200 text-slate-600"
+															? "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
 															: recipient.status === "viewed"
-																? "bg-blue-100 text-blue-700"
+																? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
 																: recipient.status === "signed" ||
 																		recipient.status === "approved"
-																	? "bg-emerald-100 text-emerald-700"
+																	? "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300"
 																	: recipient.status === "declined"
-																		? "bg-red-100 text-red-700"
-																		: "bg-slate-200 text-slate-600"
+																		? "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300"
+																		: "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
 													}`}
 												>
 													{getInitials(recipient.name, recipient.email)}
 												</div>
 												<div className="flex-1 min-w-0">
-													<div className="font-sans text-sm font-semibold text-slate-800 truncate sm:text-[0.8125rem]">
+													<div className="font-sans text-sm font-semibold text-slate-800 dark:text-slate-200 truncate sm:text-[0.8125rem]">
 														{recipient.name || recipient.email}
 													</div>
 													{recipient.name && (
-														<div className="font-sans text-xs text-slate-500 truncate sm:text-[0.6875rem]">
+														<div className="font-sans text-xs text-slate-500 dark:text-slate-400 truncate sm:text-[0.6875rem]">
 															{recipient.email}
 														</div>
 													)}
@@ -1528,15 +1528,15 @@ function DocumentDetailPage() {
 												<span
 													className={`font-sans text-[0.6875rem] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap sm:text-[0.625rem] sm:px-2 sm:py-0.5 ${
 														recipient.status === "pending"
-															? "bg-slate-200 text-slate-600"
+															? "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
 															: recipient.status === "viewed"
-																? "bg-blue-100 text-blue-700"
+																? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
 																: recipient.status === "signed" ||
 																		recipient.status === "approved"
-																	? "bg-emerald-100 text-emerald-700"
+																	? "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300"
 																	: recipient.status === "declined"
-																		? "bg-red-100 text-red-700"
-																		: "bg-slate-200 text-slate-600"
+																		? "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300"
+																		: "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
 													}`}
 												>
 													{recipient.status.charAt(0).toUpperCase() +
@@ -1568,13 +1568,13 @@ function DocumentDetailPage() {
 									</div>
 								) : (
 									<div className="text-center py-8 px-4 sm:py-6 sm:px-3">
-										<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-slate-100 rounded-xl text-slate-500 sm:w-10 sm:h-10 sm:rounded-[10px]">
+										<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400 sm:w-10 sm:h-10 sm:rounded-[10px]">
 											<UsersIcon className="h-6 w-6" />
 										</div>
-										<div className="font-sans text-sm font-semibold text-slate-700 mb-1 sm:text-[0.8125rem]">
+										<div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1 sm:text-[0.8125rem]">
 											No recipients
 										</div>
-										<div className="font-sans text-xs text-slate-500 leading-relaxed sm:text-[0.6875rem]">
+										<div className="font-sans text-xs text-slate-500 dark:text-slate-400 leading-relaxed sm:text-[0.6875rem]">
 											Add recipients who need to sign or view this document.
 										</div>
 									</div>
@@ -1582,7 +1582,7 @@ function DocumentDetailPage() {
 								{canEdit && (
 									<button
 										type="button"
-										className="flex items-center justify-center gap-2 w-full p-3 bg-transparent border-2 border-dashed border-slate-200 rounded-[10px] font-sans text-[0.8125rem] font-semibold text-slate-500 cursor-pointer transition-all mt-3 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 sm:p-2.5 sm:text-xs sm:rounded-lg"
+										className="flex items-center justify-center gap-2 w-full p-3 bg-transparent border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[10px] font-sans text-[0.8125rem] font-semibold text-slate-500 dark:text-slate-400 cursor-pointer transition-all mt-3 hover:bg-blue-50 dark:hover:bg-blue-950 hover:border-blue-400 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400 sm:p-2.5 sm:text-xs sm:rounded-lg"
 										onClick={() => setAddRecipientOpen(true)}
 									>
 										<PlusIcon className="h-4 w-4" />
@@ -1596,67 +1596,67 @@ function DocumentDetailPage() {
 						<Collapsible
 							open={openSections.has("details")}
 							onOpenChange={() => toggleSection("details")}
-							className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm sm:rounded-xl"
+							className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm sm:rounded-xl"
 						>
 							<CollapsibleTrigger asChild>
 								<button
 									type="button"
-									className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 sm:px-4 sm:py-3.5"
+									className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 sm:px-4 sm:py-3.5"
 								>
 									<div className="flex items-center gap-3">
-										<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-teal-100 text-teal-600 sm:w-8 sm:h-8 sm:rounded-lg">
+										<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-teal-100 dark:bg-teal-900 text-teal-600 dark:text-teal-400 sm:w-8 sm:h-8 sm:rounded-lg">
 											<InfoIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
 										</div>
-										<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm">
+										<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 dark:text-slate-200 sm:text-sm">
 											Details
 										</span>
 									</div>
 									<ChevronDownIcon
-										className={`h-4 w-4 text-slate-500 transition-transform ${openSections.has("details") ? "rotate-180" : ""}`}
+										className={`h-4 w-4 text-slate-500 dark:text-slate-400 transition-transform ${openSections.has("details") ? "rotate-180" : ""}`}
 									/>
 								</button>
 							</CollapsibleTrigger>
-							<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 sm:px-4 sm:pb-4">
+							<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 dark:border-slate-800 sm:px-4 sm:pb-4">
 								<div className="grid grid-cols-2 gap-4 mt-4 sm:gap-2.5">
-									<div className="p-3.5 bg-slate-50 rounded-[10px] sm:p-3 sm:rounded-lg">
-										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 mb-1 sm:text-[0.5625rem]">
+									<div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:p-3 sm:rounded-lg">
+										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 dark:text-slate-400 mb-1 sm:text-[0.5625rem]">
 											File Size
 										</div>
-										<div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem]">
+										<div className="font-sans text-sm font-medium text-slate-800 dark:text-slate-200 sm:text-[0.8125rem]">
 											{formatFileSize(documentData.fileSize)}
 										</div>
 									</div>
-									<div className="p-3.5 bg-slate-50 rounded-[10px] sm:p-3 sm:rounded-lg">
-										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 mb-1 sm:text-[0.5625rem]">
+									<div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:p-3 sm:rounded-lg">
+										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 dark:text-slate-400 mb-1 sm:text-[0.5625rem]">
 											Pages
 										</div>
-										<div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem]">
+										<div className="font-sans text-sm font-medium text-slate-800 dark:text-slate-200 sm:text-[0.8125rem]">
 											{documentData.pageCount || numPages || "—"}
 										</div>
 									</div>
-									<div className="p-3.5 bg-slate-50 rounded-[10px] sm:p-3 sm:rounded-lg">
-										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 mb-1 sm:text-[0.5625rem]">
+									<div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:p-3 sm:rounded-lg">
+										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 dark:text-slate-400 mb-1 sm:text-[0.5625rem]">
 											Uploaded
 										</div>
-										<div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem]">
+										<div className="font-sans text-sm font-medium text-slate-800 dark:text-slate-200 sm:text-[0.8125rem]">
 											{formatDate(documentData.createdAt)}
 										</div>
 									</div>
-									<div className="p-3.5 bg-slate-50 rounded-[10px] sm:p-3 sm:rounded-lg">
-										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 mb-1 sm:text-[0.5625rem]">
+									<div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:p-3 sm:rounded-lg">
+										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 dark:text-slate-400 mb-1 sm:text-[0.5625rem]">
 											Fields
 										</div>
-										<div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem]">
+										<div className="font-sans text-sm font-medium text-slate-800 dark:text-slate-200 sm:text-[0.8125rem]">
 											{signatureFields.length}
 										</div>
 									</div>
 								</div>
 								{documentData.description && (
-									<div className="p-3.5 bg-slate-50 rounded-[10px] mt-4 col-span-2 sm:p-3 sm:rounded-lg">
-										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 mb-1 sm:text-[0.5625rem]">
+									<div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-[10px] mt-4 col-span-2 sm:p-3 sm:rounded-lg">
+										<div className="font-sans text-[0.625rem] font-semibold tracking-wide uppercase text-slate-500 dark:text-slate-400 mb-1 sm:text-[0.5625rem]">
 											Description
 										</div>
-										<div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem]">
+										<div className="font-sans text-sm font-medium text-slate-800 dark:text-slate-200 sm:text-[0.8125rem]">
 											{documentData.description}
 										</div>
 									</div>
@@ -1668,34 +1668,34 @@ function DocumentDetailPage() {
 						<Collapsible
 							open={openSections.has("activity")}
 							onOpenChange={() => toggleSection("activity")}
-							className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm sm:rounded-xl"
+							className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm sm:rounded-xl"
 						>
 							<CollapsibleTrigger asChild>
 								<button
 									type="button"
-									className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 sm:px-4 sm:py-3.5"
+									className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 sm:px-4 sm:py-3.5"
 								>
 									<div className="flex items-center gap-3">
-										<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-amber-100 text-amber-600 sm:w-8 sm:h-8 sm:rounded-lg">
+										<div className="w-9 h-9 flex items-center justify-center rounded-[10px] bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 sm:w-8 sm:h-8 sm:rounded-lg">
 											<ActivityIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
 										</div>
-										<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm">
+										<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 dark:text-slate-200 sm:text-sm">
 											Activity
 										</span>
 										{activityEvents.length > 0 && (
-											<span className="font-sans text-[0.6875rem] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-xl ml-2">
+											<span className="font-sans text-[0.6875rem] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-xl ml-2">
 												{activityEvents.length}
 											</span>
 										)}
 									</div>
 									<ChevronDownIcon
-										className={`h-4 w-4 text-slate-500 transition-transform ${openSections.has("activity") ? "rotate-180" : ""}`}
+										className={`h-4 w-4 text-slate-500 dark:text-slate-400 transition-transform ${openSections.has("activity") ? "rotate-180" : ""}`}
 									/>
 								</button>
 							</CollapsibleTrigger>
-							<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 sm:px-4 sm:pb-4">
+							<CollapsibleContent className="px-5 pb-5 border-t border-slate-100 dark:border-slate-800 sm:px-4 sm:pb-4">
 								{activityEvents.length > 0 ? (
-									<div className="relative mt-4 before:content-[''] before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 before:rounded-sm sm:before:left-[13px]">
+									<div className="relative mt-4 before:content-[''] before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700 before:rounded-sm sm:before:left-[13px]">
 										{activityEvents.slice(0, 10).map((event, index) => (
 											<div
 												key={`${event.type}-${event.timestamp}`}
@@ -1703,12 +1703,12 @@ function DocumentDetailPage() {
 													event.type === "signed" ||
 													event.type === "approved" ||
 													event.type === "completed"
-														? "[&_.activity-dot]:border-emerald-300 [&_.activity-dot]:bg-emerald-50 [&_.activity-dot]:text-emerald-600"
+														? "[&_.activity-dot]:border-emerald-300 dark:[&_.activity-dot]:border-emerald-700 [&_.activity-dot]:bg-emerald-50 dark:[&_.activity-dot]:bg-emerald-950 [&_.activity-dot]:text-emerald-600 dark:[&_.activity-dot]:text-emerald-400"
 														: event.type === "viewed"
-															? "[&_.activity-dot]:border-blue-300 [&_.activity-dot]:bg-blue-50 [&_.activity-dot]:text-blue-600"
+															? "[&_.activity-dot]:border-blue-300 dark:[&_.activity-dot]:border-blue-700 [&_.activity-dot]:bg-blue-50 dark:[&_.activity-dot]:bg-blue-950 [&_.activity-dot]:text-blue-600 dark:[&_.activity-dot]:text-blue-400"
 															: event.type === "declined"
-																? "[&_.activity-dot]:border-red-300 [&_.activity-dot]:bg-red-50 [&_.activity-dot]:text-red-600"
-																: "[&_.activity-dot]:border-slate-200 [&_.activity-dot]:bg-white [&_.activity-dot]:text-slate-500"
+																? "[&_.activity-dot]:border-red-300 dark:[&_.activity-dot]:border-red-700 [&_.activity-dot]:bg-red-50 dark:[&_.activity-dot]:bg-red-950 [&_.activity-dot]:text-red-600 dark:[&_.activity-dot]:text-red-400"
+																: "[&_.activity-dot]:border-slate-200 dark:[&_.activity-dot]:border-slate-700 [&_.activity-dot]:bg-white dark:[&_.activity-dot]:bg-slate-900 [&_.activity-dot]:text-slate-500 dark:[&_.activity-dot]:text-slate-400"
 												}`}
 												style={{ animationDelay: `${index * 0.05}s` }}
 											>
@@ -1716,10 +1716,10 @@ function DocumentDetailPage() {
 													{getActivityIcon(event.type)}
 												</div>
 												<div className="flex-1 min-w-0 pt-1">
-													<div className="font-sans text-[0.8125rem] text-slate-700 leading-snug sm:text-xs">
+													<div className="font-sans text-[0.8125rem] text-slate-700 dark:text-slate-300 leading-snug sm:text-xs">
 														{event.description}
 													</div>
-													<div className="font-sans text-[0.6875rem] text-slate-500 mt-1 sm:text-[0.625rem]">
+													<div className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-1 sm:text-[0.625rem]">
 														{formatRelativeTime(event.timestamp)}
 													</div>
 												</div>
@@ -1728,13 +1728,13 @@ function DocumentDetailPage() {
 									</div>
 								) : (
 									<div className="text-center py-8 px-4 sm:py-6 sm:px-3">
-										<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-slate-100 rounded-xl text-slate-500 sm:w-10 sm:h-10 sm:rounded-[10px]">
+										<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 dark:text-slate-400 sm:w-10 sm:h-10 sm:rounded-[10px]">
 											<ActivityIcon className="h-6 w-6" />
 										</div>
-										<div className="font-sans text-sm font-semibold text-slate-700 mb-1 sm:text-[0.8125rem]">
+										<div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1 sm:text-[0.8125rem]">
 											No activity yet
 										</div>
-										<div className="font-sans text-xs text-slate-500 leading-relaxed sm:text-[0.6875rem]">
+										<div className="font-sans text-xs text-slate-500 dark:text-slate-400 leading-relaxed sm:text-[0.6875rem]">
 											Activity will appear here as recipients interact with this
 											document.
 										</div>
