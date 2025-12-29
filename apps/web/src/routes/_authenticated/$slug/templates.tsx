@@ -632,7 +632,7 @@ function TemplatesPage() {
 					</div>
 
 					{/* View mode toggle */}
-					<div className="flex items-center gap-1 border rounded-md">
+					<div className="flex items-center gap-1 border rounded-md bg-background">
 						<Button
 							variant={viewMode === "table" ? "default" : "ghost"}
 							size="icon"
