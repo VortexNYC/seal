@@ -1,10 +1,11 @@
 # Repository Guidelines
 
-Seal: Bun + Turborepo monorepo. `apps/web` (React 19, TanStack Router, Vite), `apps/backend` (Convex). Auth: Clerk. UI: Tailwind v4 + Shadcn.
+Seal: Bun + Turborepo monorepo. `apps/web` (React 19, TanStack Router, Vite), `apps/backend` (Convex), `packages/transactional` (React Email). Auth: Clerk. UI: Tailwind v4 + Shadcn.
 
 ## Commands
 - **Dev**: `bunx turbo run dev --parallel` (or `--filter=@seal/web` / `--filter=@seal/backend`)
 - **Build/Lint/Types**: `bun run build`, `bun run lint`, `bun run format`, `bun run typecheck`
+- **Check All**: `bun run static-analysis` (Runs Biome check + Typecheck)
 - **E2E tests**: `cd apps/web && bun run test:e2e` (single: `bun run test:e2e e2e/tests/file.spec.ts`)
 - **E2E UI mode**: `cd apps/web && bun run test:e2e:ui` (interactive testing)
 
