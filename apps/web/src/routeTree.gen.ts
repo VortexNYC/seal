@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LogoTestRouteImport } from './routes/logo-test'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/_auth'
@@ -38,6 +39,11 @@ import { Route as AuthenticatedSlugSettingsProfileSecurityRouteImport } from './
 import { Route as AuthenticatedSlugSettingsProfileNotificationsRouteImport } from './routes/_authenticated/$slug/settings/profile/notifications'
 import { Route as AuthenticatedSlugSettingsProfileIntegrationsRouteImport } from './routes/_authenticated/$slug/settings/profile/integrations'
 
+const LogoTestRoute = LogoTestRouteImport.update({
+  id: '/logo-test',
+  path: '/logo-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -197,6 +203,7 @@ const AuthenticatedSlugSettingsProfileIntegrationsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/logo-test': typeof LogoTestRoute
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/logo-test': typeof LogoTestRoute
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/app': typeof AppRoute
+  '/logo-test': typeof LogoTestRoute
   '/_auth/accept-invite': typeof AuthAcceptInviteRoute
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/logo-test'
     | '/accept-invite'
     | '/sign-in'
     | '/sign-up'
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
+    | '/logo-test'
     | '/accept-invite'
     | '/sign-in'
     | '/sign-up'
@@ -336,6 +347,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/_authenticated'
     | '/app'
+    | '/logo-test'
     | '/_auth/accept-invite'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
@@ -367,11 +379,19 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AppRoute: typeof AppRoute
+  LogoTestRoute: typeof LogoTestRoute
   SignTokenRoute: typeof SignTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/logo-test': {
+      id: '/logo-test'
+      path: '/logo-test'
+      fullPath: '/logo-test'
+      preLoaderRoute: typeof LogoTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app': {
       id: '/app'
       path: '/app'
@@ -696,6 +716,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AppRoute: AppRoute,
+  LogoTestRoute: LogoTestRoute,
   SignTokenRoute: SignTokenRoute,
 }
 export const routeTree = rootRouteImport
