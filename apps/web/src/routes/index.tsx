@@ -1,7 +1,7 @@
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle2, FileText, Shield } from "lucide-react";
-import { SealLogoBadge } from "@/components/seal-logo";
+import { SealLogoBadgeFixed } from "@/components/seal-logo-fixed";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
 	return (
-		<div className="min-h-screen flex flex-col bg-gradient-to-b from-brand-50 via-white to-white dark:from-slate-950 dark:via-background dark:to-background">
+		<div className="min-h-screen flex flex-col bg-linear-to-b from-brand-50 via-white to-white dark:from-slate-950 dark:via-background dark:to-background">
 			{/* Subtle grain texture overlay */}
 			<div className="fixed inset-0 pointer-events-none opacity-[0.02] dark:opacity-[0.03]">
 				<svg className="w-full h-full" aria-hidden="true">
@@ -34,7 +34,7 @@ function HomePage() {
 						to="/"
 						className="transition-transform duration-300 hover:scale-105"
 					>
-						<SealLogoBadge />
+						<SealLogoBadgeFixed size={48} withText />
 					</Link>
 					<nav className="flex items-center gap-3">
 						<SignedIn>
@@ -72,7 +72,7 @@ function HomePage() {
 				<div className="max-w-4xl mx-auto text-center">
 					{/* Animated logo */}
 					<div className="mb-8 animate-[fadeIn_0.6s_ease-out]">
-						<SealLogoBadge size="xl" />
+						<SealLogoBadgeFixed size={120} withText />
 					</div>
 
 					{/* Headline */}

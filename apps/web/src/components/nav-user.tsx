@@ -1,12 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import {
-	BadgeCheck,
-	Bell,
-	ChevronsUpDown,
-	CreditCard,
-	LogOut,
-	Sparkles,
-} from "lucide-react";
+import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -86,13 +79,6 @@ export function NavUser({
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<Sparkles />
-								Upgrade to Pro
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
 							<DropdownMenuItem
 								onSelect={() =>
 									navigate({ to: "/$slug/settings/profile", params: { slug } })
@@ -101,15 +87,7 @@ export function NavUser({
 								<BadgeCheck />
 								Account
 							</DropdownMenuItem>
-							<DropdownMenuItem
-								onSelect={() =>
-									navigate({ to: "/$slug/settings/billing", params: { slug } })
-								}
-							>
-								<CreditCard />
-								Billing
-							</DropdownMenuItem>
-							<DropdownMenuItem>
+							<DropdownMenuItem disabled>
 								<Bell />
 								Notifications
 							</DropdownMenuItem>

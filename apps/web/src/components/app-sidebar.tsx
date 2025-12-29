@@ -9,7 +9,7 @@ import { LayoutTemplate, type LucideIcon, Settings } from "lucide-react";
 import * as React from "react";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
-import { SealLogoAuto } from "@/components/seal-logo";
+import { SealLogoBadge } from "@/components/seal-logo";
 import { TeamSwitcher } from "@/components/team-switcher";
 import {
 	Sidebar,
@@ -323,11 +323,8 @@ export function AppSidebar({
 	return (
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
-				<div className="flex items-center justify-center py-2 group-data-[collapsible=icon]:py-1">
-					<SealLogoAuto
-						size={32}
-						className="transition-all duration-200 group-data-[collapsible=icon]:scale-75"
-					/>
+				<div className="flex items-center justify-center py-2 group-data-[collapsible=icon]:hidden">
+					<SealLogoBadge size="lg" />
 				</div>
 				{teamOptions.length > 0 && (
 					<TeamSwitcher
