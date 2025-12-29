@@ -462,8 +462,8 @@ export function DraggableField({
 
 	const renderFilledFieldStamp = () => {
 		const iconSize = Math.max(10, Math.min(16, field.height * 0.35));
-		const containerSize = iconSize + 4;
-		const textOffsetX = sealIcon ? 6 + containerSize + 4 : 4;
+		const sidebarWidth = iconSize + 16;
+		const textOffsetX = sealIcon ? 4 + sidebarWidth + 10 : 8;
 		const availableWidth = field.width - textOffsetX - 4;
 		const availableHeight = field.height - 8;
 
@@ -501,10 +501,10 @@ export function DraggableField({
 					height={field.height}
 					fill="#ffffff"
 					stroke={isSelected ? colors.accent : "#22c55e"}
-					strokeWidth={isSelected ? 2 : 1.5}
+					strokeWidth={isSelected ? 2 : 1}
 					cornerRadius={6}
-					shadowColor={isSelected ? colors.glow : "rgba(34, 197, 94, 0.15)"}
-					shadowBlur={isSelected ? 12 : 6}
+					shadowColor={isSelected ? colors.glow : "rgba(34, 197, 94, 0.1)"}
+					shadowBlur={isSelected ? 12 : 4}
 					shadowOpacity={1}
 					shadowOffsetY={isSelected ? 0 : 2}
 				/>
@@ -518,6 +518,32 @@ export function DraggableField({
 					cornerRadius={[6, 0, 0, 6]}
 				/>
 
+				{sealIcon && (
+					<Group x={4} y={0}>
+						<Rect
+							width={sidebarWidth}
+							height={field.height}
+							fill="rgba(34, 197, 94, 0.08)"
+						/>
+						<Rect
+							x={sidebarWidth}
+							y={0}
+							width={1}
+							height={field.height}
+							fill="#22c55e"
+							opacity={0.2}
+						/>
+						<KonvaImage
+							image={sealIcon}
+							x={(sidebarWidth - iconSize) / 2}
+							y={(field.height - iconSize) / 2}
+							width={iconSize}
+							height={iconSize}
+							opacity={0.85}
+						/>
+					</Group>
+				)}
+
 				<Text
 					x={textOffsetX}
 					y={4}
@@ -525,7 +551,7 @@ export function DraggableField({
 					text={getFieldTypeLabel(field.fieldType)}
 					fontSize={titleFontSize}
 					fontStyle="bold"
-					fill="#374151"
+					fill="#166534"
 					align="left"
 				/>
 
@@ -565,26 +591,6 @@ export function DraggableField({
 						fill="#6b7280"
 						align="left"
 					/>
-				)}
-
-				{sealIcon && (
-					<Group x={4} y={0}>
-						<Rect
-							width={containerSize}
-							height={field.height}
-							fill="#ffffff"
-							stroke="#e5e7eb"
-							strokeWidth={0.5}
-							cornerRadius={[0, 2, 2, 0]}
-						/>
-						<KonvaImage
-							image={sealIcon}
-							x={(containerSize - iconSize) / 2}
-							y={(field.height - iconSize) / 2}
-							width={iconSize}
-							height={iconSize}
-						/>
-					</Group>
 				)}
 			</>
 		);
