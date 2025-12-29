@@ -11,7 +11,6 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { NotFoundPage } from "@/components/not-found-page";
 import { RouteErrorComponent } from "@/components/route-error-component";
 import { ThemeProvider } from "@/components/theme-provider";
-import { BackgroundPattern } from "@/components/ui/background-pattern";
 import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createRootRouteWithContext<{
@@ -47,7 +46,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 		<>
 			<HeadContent />
 			<ThemeProvider>
-				<BackgroundPattern />
 				<div className="h-svh">{children}</div>
 				<Toaster richColors />
 			</ThemeProvider>

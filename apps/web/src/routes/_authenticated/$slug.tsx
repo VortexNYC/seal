@@ -11,6 +11,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
+import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
@@ -39,7 +40,8 @@ function WorkspaceLayout() {
 
 	return (
 		<SidebarProvider>
-			<div className="flex h-screen w-full overflow-hidden">
+			<DotPattern className="fixed inset-0 z-0" />
+			<div className="relative z-10 flex h-screen w-full overflow-hidden bg-background/80">
 				<AppSidebar
 					slug={slug}
 					organization={{
