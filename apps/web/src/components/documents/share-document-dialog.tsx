@@ -218,7 +218,10 @@ export function ShareDocumentDialog({
 								<div className="space-y-6">
 									{/* Subscription Warning Banner */}
 									{documentAccess.subscriptionWarning && (
-										<div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+										<div
+											data-testid="subscription-warning"
+											className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200"
+										>
 											<AlertTriangleIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 											<p className="text-sm text-amber-800">
 												{documentAccess.subscriptionWarning}
@@ -312,7 +315,10 @@ export function ShareDocumentDialog({
 														setSelectedMemberId(value as Id<"users">)
 													}
 												>
-													<SelectTrigger className="flex-1">
+													<SelectTrigger
+														className="flex-1"
+														data-testid="member-select"
+													>
 														<SelectValue placeholder="Select a team member" />
 													</SelectTrigger>
 													<SelectContent>
@@ -346,7 +352,10 @@ export function ShareDocumentDialog({
 														setSelectedPermission(value as PermissionLevel)
 													}
 												>
-													<SelectTrigger className="w-32">
+													<SelectTrigger
+														className="w-32"
+														data-testid="permission-select"
+													>
 														<SelectValue />
 													</SelectTrigger>
 													<SelectContent>
@@ -377,9 +386,12 @@ export function ShareDocumentDialog({
 										<label className="text-sm font-medium text-gray-700">
 											People with access
 										</label>
-										<div className="space-y-2">
+										<div className="space-y-2" data-testid="access-list">
 											{/* Document Owner */}
-											<div className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+											<div
+												data-testid="owner-row"
+												className="flex items-center justify-between p-3 rounded-xl bg-gray-50"
+											>
 												<div className="flex items-center gap-3">
 													<Avatar className="h-8 w-8">
 														<AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white text-xs">
@@ -391,7 +403,10 @@ export function ShareDocumentDialog({
 													</Avatar>
 													<div>
 														<div className="flex items-center gap-2">
-															<span className="text-sm font-medium text-gray-900">
+															<span
+																data-testid="owner-name"
+																className="text-sm font-medium text-gray-900"
+															>
 																{documentAccess.owner.name ??
 																	documentAccess.owner.email}
 															</span>
@@ -416,6 +431,7 @@ export function ShareDocumentDialog({
 											{documentAccess.sharedWith.map((access) => (
 												<div
 													key={access._id}
+													data-testid="shared-user"
 													className="flex items-center justify-between p-3 rounded-xl bg-gray-50"
 												>
 													<div className="flex items-center gap-3">
@@ -427,7 +443,10 @@ export function ShareDocumentDialog({
 															</AvatarFallback>
 														</Avatar>
 														<div>
-															<span className="text-sm font-medium text-gray-900">
+															<span
+																data-testid="access-name"
+																className="text-sm font-medium text-gray-900"
+															>
 																{access.userName ?? access.userEmail}
 															</span>
 															{access.userName && (
@@ -448,7 +467,10 @@ export function ShareDocumentDialog({
 															}
 															disabled={isUpdating}
 														>
-															<SelectTrigger className="w-28 h-8 text-xs">
+															<SelectTrigger
+																className="w-28 h-8 text-xs"
+																data-testid="permission-dropdown"
+															>
 																<SelectValue />
 															</SelectTrigger>
 															<SelectContent>
@@ -461,6 +483,7 @@ export function ShareDocumentDialog({
 														</Select>
 														<button
 															type="button"
+															data-testid="revoke-access-button"
 															onClick={() => handleRevokeAccess(access.userId)}
 															disabled={isUpdating}
 															className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
