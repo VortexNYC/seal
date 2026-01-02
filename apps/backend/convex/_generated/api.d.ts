@@ -45,6 +45,7 @@ import type * as documents_reminders from "../documents/reminders.js";
 import type * as documents_reminders_queries from "../documents/reminders_queries.js";
 import type * as documents_send_document_action from "../documents/send_document_action.js";
 import type * as documents_sharing from "../documents/sharing.js";
+import type * as documents_sharing_cleanup from "../documents/sharing_cleanup.js";
 import type * as documents_sign_pdf_action from "../documents/sign_pdf_action.js";
 import type * as documents_upload_config from "../documents/upload_config.js";
 import type * as documents_workflow_helpers from "../documents/workflow_helpers.js";
@@ -153,6 +154,7 @@ declare const fullApi: ApiFromModules<{
   "documents/reminders_queries": typeof documents_reminders_queries;
   "documents/send_document_action": typeof documents_send_document_action;
   "documents/sharing": typeof documents_sharing;
+  "documents/sharing_cleanup": typeof documents_sharing_cleanup;
   "documents/sign_pdf_action": typeof documents_sign_pdf_action;
   "documents/upload_config": typeof documents_upload_config;
   "documents/workflow_helpers": typeof documents_workflow_helpers;

@@ -47,6 +47,7 @@ function getNotificationIcon(type: Notification["type"]) {
 		case "document_shared":
 			return <Share2Icon className="h-4 w-4 text-blue-500" />;
 		case "access_revoked":
+		case "bulk_access_revoked":
 			return <ShieldAlertIcon className="h-4 w-4 text-red-500" />;
 		case "access_updated":
 			return <KeyIcon className="h-4 w-4 text-amber-500" />;
@@ -56,6 +57,8 @@ function getNotificationIcon(type: Notification["type"]) {
 		case "document_completed":
 		case "signature_requested":
 			return <FileTextIcon className="h-4 w-4 text-green-500" />;
+		case "sharing_disabled":
+			return <ShieldAlertIcon className="h-4 w-4 text-orange-500" />;
 		default:
 			return <BellIcon className="h-4 w-4 text-gray-500" />;
 	}
@@ -63,7 +66,8 @@ function getNotificationIcon(type: Notification["type"]) {
 
 function getNotificationMessage(notification: Notification): string {
 	const data = notification.data;
-	const documentName = data.documentName ?? "a document";
+	const documentName =
+		"documentName" in data ? (data.documentName ?? "a document") : "a document";
 
 	switch (notification.type) {
 		case "document_shared": {
@@ -76,6 +80,9 @@ function getNotificationMessage(notification: Notification): string {
 			if ("revokedByName" in data && data.revokedByName) {
 				return `${data.revokedByName} revoked your access to "${documentName}"`;
 			}
+			if ("message" in data && data.message) {
+				return data.message;
+			}
 			return `Your access to "${documentName}" was revoked`;
 		}
 		case "access_updated": {
@@ -87,6 +94,9 @@ function getNotificationMessage(notification: Notification): string {
 			return `Your access to "${documentName}" was updated`;
 		}
 		case "ownership_transferred": {
+			if ("message" in data && data.message) {
+				return data.message;
+			}
 			if ("previousOwnerName" in data && data.previousOwnerName) {
 				return `${data.previousOwnerName} transferred "${documentName}" to you`;
 			}
@@ -100,6 +110,24 @@ function getNotificationMessage(notification: Notification): string {
 			return `Your signature is requested on "${documentName}"`;
 		case "reminder":
 			return `Reminder: "${documentName}" needs your attention`;
+		case "sharing_disabled": {
+			if ("message" in data && data.message) {
+				return data.message;
+			}
+			if ("documentsAffected" in data) {
+				return `Sharing was disabled for ${data.documentsAffected} document(s)`;
+			}
+			return "Document sharing was disabled";
+		}
+		case "bulk_access_revoked": {
+			if ("message" in data && data.message) {
+				return data.message;
+			}
+			if ("removedUserName" in data && data.removedUserName) {
+				return `${data.removedUserName}'s access to "${documentName}" was revoked`;
+			}
+			return `Access to "${documentName}" was revoked`;
+		}
 		default:
 			return "You have a new notification";
 	}
@@ -158,7 +186,10 @@ function NotificationItem({
 	slug: string;
 	onMarkAsRead: (id: Id<"notifications">) => void;
 }) {
-	const documentId = notification.data.documentId;
+	const documentId =
+		"documentId" in notification.data
+			? notification.data.documentId
+			: undefined;
 
 	const handleClick = () => {
 		if (!notification.read) {

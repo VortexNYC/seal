@@ -10,6 +10,8 @@ export const notificationTypeTuple = v.union(
 	v.literal("document_completed"),
 	v.literal("signature_requested"),
 	v.literal("reminder"),
+	v.literal("sharing_disabled"),
+	v.literal("bulk_access_revoked"),
 );
 export type NotificationType = Infer<typeof notificationTypeTuple>;
 
@@ -31,8 +33,10 @@ export const documentSharedData = v.object({
 
 export const accessRevokedData = v.object({
 	...baseNotificationData,
-	revokedBy: v.id("users"),
+	revokedBy: v.optional(v.id("users")),
 	revokedByName: v.optional(v.string()),
+	reason: v.optional(v.string()),
+	message: v.optional(v.string()),
 });
 
 export const accessUpdatedData = v.object({
@@ -55,6 +59,8 @@ export const ownershipTransferredData = v.object({
 	...baseNotificationData,
 	previousOwnerId: v.id("users"),
 	previousOwnerName: v.optional(v.string()),
+	reason: v.optional(v.string()),
+	message: v.optional(v.string()),
 });
 
 export const documentSignedData = v.object({
@@ -82,6 +88,21 @@ export const reminderData = v.object({
 	dueDate: v.optional(v.number()),
 });
 
+export const sharingDisabledData = v.object({
+	reason: v.string(),
+	documentsAffected: v.number(),
+	message: v.optional(v.string()),
+});
+
+export const bulkAccessRevokedData = v.object({
+	...baseNotificationData,
+	reason: v.string(),
+	message: v.optional(v.string()),
+	removedUserId: v.optional(v.id("users")),
+	removedUserName: v.optional(v.string()),
+	removedUserEmail: v.optional(v.string()),
+});
+
 export const notificationDataTuple = v.union(
 	documentSharedData,
 	accessRevokedData,
@@ -91,6 +112,8 @@ export const notificationDataTuple = v.union(
 	documentCompletedData,
 	signatureRequestedData,
 	reminderData,
+	sharingDisabledData,
+	bulkAccessRevokedData,
 );
 export type NotificationData = Infer<typeof notificationDataTuple>;
 
