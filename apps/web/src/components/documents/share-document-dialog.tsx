@@ -3,6 +3,7 @@ import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import {
+	AlertTriangleIcon,
 	CrownIcon,
 	Loader2Icon,
 	LockIcon,
@@ -215,6 +216,16 @@ export function ShareDocumentDialog({
 								</div>
 							) : (
 								<div className="space-y-6">
+									{/* Subscription Warning Banner */}
+									{documentAccess.subscriptionWarning && (
+										<div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+											<AlertTriangleIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+											<p className="text-sm text-amber-800">
+												{documentAccess.subscriptionWarning}
+											</p>
+										</div>
+									)}
+
 									{/* Sharing Mode Selection */}
 									<div className="space-y-3">
 										<label className="text-sm font-medium text-gray-700">
@@ -226,20 +237,34 @@ export function ShareDocumentDialog({
 													const info = SHARING_MODE_INFO[mode];
 													const isSelected =
 														documentAccess.sharingMode === mode;
+													const requiresPro =
+														mode === "workspace" || mode === "specific";
+													const isDisabled =
+														requiresPro && !documentAccess.canUseTeamSharing;
 													return (
 														<button
 															key={mode}
 															type="button"
 															onClick={() => handleSharingModeChange(mode)}
-															disabled={isUpdating}
+															disabled={isUpdating || isDisabled}
 															className={cn(
-																"flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+																"relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
 																isSelected
 																	? "border-blue-500 bg-blue-50"
 																	: "border-gray-200 hover:border-gray-300 hover:bg-gray-50",
-																isUpdating && "opacity-50 cursor-not-allowed",
+																(isUpdating || isDisabled) &&
+																	"opacity-50 cursor-not-allowed",
 															)}
 														>
+															{requiresPro &&
+																!documentAccess.canUseTeamSharing && (
+																	<Badge
+																		variant="outline"
+																		className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white border-0"
+																	>
+																		Pro
+																	</Badge>
+																)}
 															<div
 																className={cn(
 																	"p-2 rounded-lg",
@@ -266,10 +291,11 @@ export function ShareDocumentDialog({
 											)}
 										</div>
 										<p className="text-xs text-gray-500">
-											{
-												SHARING_MODE_INFO[documentAccess.sharingMode]
-													.description
-											}
+											{!documentAccess.canUseTeamSharing &&
+											documentAccess.sharingMode === "private"
+												? "Upgrade to Pro to share with your team"
+												: SHARING_MODE_INFO[documentAccess.sharingMode]
+														.description}
 										</p>
 									</div>
 

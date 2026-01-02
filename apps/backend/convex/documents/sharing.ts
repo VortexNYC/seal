@@ -426,6 +426,18 @@ export const getDocumentAccess = authQuery({
 			}),
 		);
 
+		const subscription = await ctx.db
+			.query("subscriptions")
+			.withIndex("by_user_id", (q) => q.eq("userId", userId))
+			.first();
+
+		const isPro = subscription?.status === "active";
+		const isTrialing = subscription?.status === "trialing";
+		const isPastDue = subscription?.status === "past_due";
+
+		const hasSharedDocuments =
+			document.sharingMode !== "private" || activeAccessRecords.length > 0;
+
 		return {
 			documentId: args.documentId,
 			documentName: document.name,
@@ -436,6 +448,12 @@ export const getDocumentAccess = authQuery({
 				email: owner?.email ?? "Unknown",
 			},
 			sharedWith: accessWithUsers,
+			canUseTeamSharing: isPro || isTrialing,
+			subscriptionStatus: subscription?.status ?? null,
+			subscriptionWarning:
+				isPastDue && hasSharedDocuments
+					? "Your subscription payment is past due. Document sharing may be disabled soon."
+					: null,
 		};
 	},
 });
