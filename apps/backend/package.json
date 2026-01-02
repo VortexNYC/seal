@@ -9,6 +9,8 @@
 		"lint": "biome check .",
 		"format": "biome format --write .",
 		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
 		"knip": "knip",
 		"knip:fix": "knip --fix --allow-remove-files",
 		"clean": "git clean -xdf .cache .turbo node_modules convex/_generated"
@@ -28,6 +30,9 @@
 		"zod": "^4.2.1"
 	},
 	"devDependencies": {
-		"@clerk/types": "^4.101.9"
+		"@clerk/types": "^4.101.9",
+		"convex-test": "^0.0.41",
+		"vite": "^6.0.0",
+		"vitest": "^4.0.16"
 	}
 }

@@ -17,7 +17,7 @@ const config: KnipConfig = {
 		"@signpdf/signpdf",
 		"node-forge",
 	],
-	ignoreBinaries: ["biome", "knip", "convex", "tsc"],
+	ignoreBinaries: ["biome", "knip", "convex", "tsc", "vitest"],
 	ignoreExportsUsedInFile: true,
 	exclude: ["duplicates"],
 };
