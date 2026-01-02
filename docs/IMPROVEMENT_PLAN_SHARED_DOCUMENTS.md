@@ -78,38 +78,38 @@ Enhance the document sharing experience by consolidating duplicate UI components
 
 ---
 
-## Phase 3: Access Control & Granularity
+## Phase 3: Access Control & Granularity ✅
 **Goal:** Refine how workspace sharing works, handle subscription edge cases, and manage member lifecycle.
 
-### 3.1 Review Subscription Gates
-- [ ] Verify the "Pro Plan" check in `updateSharingMode` aligns with current business rules.
-- [ ] Ensure the UI clearly communicates *why* a feature is disabled if the user is on a free plan (the new dialog handles this better visually).
+### 3.1 Review Subscription Gates ✅
+- [x] Verify the "Pro Plan" check in `updateSharingMode` aligns with current business rules.
+- [x] Ensure the UI clearly communicates *why* a feature is disabled if the user is on a free plan (Pro badges on workspace/specific options, disabled state, upgrade message).
 
 ### 3.2 Granular Workspace Sharing (Optional/Future)
 - [ ] Investigate adding "Exclude" functionality to "Workspace" sharing (allow all *except* specific users).
 - [ ] Investigate "Groups" or "Teams" within an organization for more targeted bulk sharing.
 
-### 3.3 Subscription Lapse Handling (Critical)
+### 3.3 Subscription Lapse Handling (Critical) ✅
 **Goal:** Define behavior when a Pro subscription lapses for organizations with shared documents.
 
-- [ ] Define business rule: Should `sharingMode` be downgraded to `"private"` automatically, or grandfather existing shares?
-- [ ] Add webhook handler or cron job to detect subscription status changes
-- [ ] If downgrading: Update all affected documents' `sharingMode` to `"private"`
-- [ ] If downgrading: Revoke all `document_access` records for affected documents
-- [ ] Notify affected users (document owners and users who lost access)
-- [ ] Add UI banner warning when subscription is about to lapse with shared documents
+- [x] Define business rule: `sharingMode` is downgraded to `"private"` automatically
+- [x] Add webhook handler to detect subscription status changes (handleSubscriptionDeleted, handleSubscriptionUpdated)
+- [x] If downgrading: Update all affected documents' `sharingMode` to `"private"`
+- [x] If downgrading: Revoke all `document_access` records for affected documents
+- [x] Notify affected users (document owners and users who lost access)
+- [x] Add UI banner warning when subscription is past due with shared documents (subscriptionWarning in ShareDocumentDialog)
 
-### 3.4 Organization Member Removal Cleanup (Critical)
+### 3.4 Organization Member Removal Cleanup (Critical) ✅
 **Goal:** Handle cascading effects when a user is removed from an organization.
 
-- [ ] Add cleanup logic to revoke all `document_access` records for the removed user
-- [ ] Trigger notification to document owners about cascading access revocation
-- [ ] Handle edge case: What happens when the removed user owns documents?
-  - [ ] Option A: Transfer ownership to org admin automatically
+- [x] Add cleanup logic to revoke all `document_access` records for the removed user
+- [x] Trigger notification to document owners about cascading access revocation
+- [x] Handle edge case: What happens when the removed user owns documents?
+  - [x] Option A: Transfer ownership to org admin automatically (implemented)
   - [ ] Option B: Archive documents with grace period for retrieval
   - [ ] Option C: Block removal until ownership is transferred
-- [ ] Add Clerk webhook handler for `organizationMembership.deleted` event
-- [ ] Log all cascading revocations for audit trail
+- [x] Add Clerk webhook handler for `organizationMembership.deleted` event (deleteMembershipFromClerk)
+- [x] Log all cascading revocations for audit trail
 
 ---
 
