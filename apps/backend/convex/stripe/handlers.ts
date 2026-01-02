@@ -583,8 +583,26 @@ export const handleSubscriptionUpdated = internalMutation({
 
 		await ctx.db.patch(existingSubscription._id, updateData);
 
-		// Log trial conversion events for Axiom analytics
 		logTrialConversionIfNeeded(existingSubscription.status, subscription);
+
+		const wasActive =
+			existingSubscription.status === "active" ||
+			existingSubscription.status === "trialing";
+		const isNowInactive =
+			subscription.status === "past_due" ||
+			subscription.status === "incomplete_expired" ||
+			subscription.status === "unpaid";
+
+		if (wasActive && isNowInactive && existingSubscription.userId) {
+			await ctx.scheduler.runAfter(
+				0,
+				internal.documents.sharing_cleanup.downgradeUserSharing,
+				{
+					userId: existingSubscription.userId,
+					reason: `subscription_${subscription.status}`,
+				},
+			);
+		}
 
 		console.warn(`Updated subscription: ${subscription.id}`);
 	},
@@ -592,7 +610,7 @@ export const handleSubscriptionUpdated = internalMutation({
 
 /**
  * Handle customer.subscription.deleted event
- * Marks subscription as canceled in Convex
+ * Marks subscription as canceled and triggers sharing cleanup
  */
 export const handleSubscriptionDeleted = internalMutation({
 	args: { subscription: v.any() },
@@ -628,7 +646,17 @@ export const handleSubscriptionDeleted = internalMutation({
 			updatedAt: now,
 		});
 
-		// Structured logging for Axiom analytics
+		if (existingSubscription.userId) {
+			await ctx.scheduler.runAfter(
+				0,
+				internal.documents.sharing_cleanup.downgradeUserSharing,
+				{
+					userId: existingSubscription.userId,
+					reason: "subscription_canceled",
+				},
+			);
+		}
+
 		console.warn(
 			JSON.stringify({
 				topic: "subscription_lifecycle",

@@ -575,9 +575,6 @@ export const syncMembershipFromClerk = internalMutation({
 	},
 });
 
-/**
- * Delete membership from Clerk webhook
- */
 export const deleteMembershipFromClerk = internalMutation({
 	args: {
 		clerkMembershipId: v.string(),
@@ -597,7 +594,18 @@ export const deleteMembershipFromClerk = internalMutation({
 			return { deleted: false };
 		}
 
+		const { userId, organizationId } = membership;
+
 		await ctx.db.delete(membership._id);
+
+		await ctx.scheduler.runAfter(
+			0,
+			internal.documents.sharing_cleanup.fullMemberRemovalCleanup,
+			{
+				userId,
+				organizationId,
+			},
+		);
 
 		console.log(
 			`✅ Deleted membership with Clerk ID: ${args.clerkMembershipId}`,
