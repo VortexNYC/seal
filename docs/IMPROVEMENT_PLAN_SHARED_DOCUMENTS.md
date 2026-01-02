@@ -146,11 +146,14 @@ Enhance the document sharing experience by consolidating duplicate UI components
 
 ## Phase 5: Code Quality & Performance
 
-### 5.1 Extract Shared Access Logic (Do First)
-- [ ] Create `apps/backend/convex/auth/access-control.ts` with `checkDocumentAccess(ctx, userId, documentId)` utility
-- [ ] Refactor all document queries to use this shared function (6+ locations identified)
-- [ ] Add comprehensive unit tests for access control logic
-- [ ] Ensure consistent error messages across all access denial scenarios
+### 5.1 Extract Shared Access Logic ✅
+- [x] `apps/backend/convex/auth/access_control.ts` already exists with `checkDocumentAccess` utility
+- [x] Refactored `audit_logs/queries.ts` to use shared `checkDocumentAccess`
+- [x] Refactored `documents/activity_queries.ts` to use shared `checkDocumentAccess`
+- [x] Refactored `documents/recipients_queries.ts` to use shared `checkDocumentAccess`
+- [x] Uses consistent error messages via `ACCESS_ERRORS` constants
+- [x] All static analysis checks pass
+- [x] All existing tests pass (12/12)
 
 ### 5.2 Add Input Validation
 - [ ] In `updateAccessLevel` mutation: Only update database if permission level actually changed
