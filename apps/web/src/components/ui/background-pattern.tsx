@@ -21,17 +21,20 @@ export function BackgroundPattern({
 				className,
 			)}
 		>
-			<svg className="absolute inset-0 h-full w-full" aria-hidden="true">
+			{/* Light mode pattern */}
+			<svg
+				className="absolute inset-0 h-full w-full dark:hidden"
+				aria-hidden="true"
+			>
 				<defs>
 					<pattern
-						id="seal-pattern"
+						id="seal-pattern-light"
 						width="200"
 						height="200"
 						x="50%"
 						y={-1}
 						patternUnits="userSpaceOnUse"
 					>
-						{/* The path is roughly 100x100, so we scale it down to be subtle */}
 						<g transform="scale(0.8) translate(50, 50)">
 							<path
 								d={SEAL_ICON_PATH}
@@ -39,10 +42,10 @@ export function BackgroundPattern({
 								className="text-brand-900"
 								style={{ opacity }}
 							/>
-						</g>{" "}
+						</g>
 					</pattern>
 					<pattern
-						id="dot-pattern"
+						id="dot-pattern-light"
 						width="40"
 						height="40"
 						x="0"
@@ -56,19 +59,73 @@ export function BackgroundPattern({
 							className="fill-brand-900"
 							style={{ opacity: opacity * 1.5 }}
 						/>
-					</pattern>{" "}
+					</pattern>
 				</defs>
 				<rect
 					width="100%"
 					height="100%"
 					strokeWidth={0}
-					fill="url(#dot-pattern)"
+					fill="url(#dot-pattern-light)"
 				/>
 				<rect
 					width="100%"
 					height="100%"
 					strokeWidth={0}
-					fill="url(#seal-pattern)"
+					fill="url(#seal-pattern-light)"
+				/>
+			</svg>
+
+			{/* Dark mode pattern */}
+			<svg
+				className="absolute inset-0 h-full w-full hidden dark:block"
+				aria-hidden="true"
+			>
+				<defs>
+					<pattern
+						id="seal-pattern-dark"
+						width="200"
+						height="200"
+						x="50%"
+						y={-1}
+						patternUnits="userSpaceOnUse"
+					>
+						<g transform="scale(0.8) translate(50, 50)">
+							<path
+								d={SEAL_ICON_PATH}
+								fill="currentColor"
+								className="text-slate-400"
+								style={{ opacity }}
+							/>
+						</g>
+					</pattern>
+					<pattern
+						id="dot-pattern-dark"
+						width="40"
+						height="40"
+						x="0"
+						y="0"
+						patternUnits="userSpaceOnUse"
+					>
+						<circle
+							cx="1"
+							cy="1"
+							r="1"
+							className="fill-slate-400"
+							style={{ opacity: opacity * 1.5 }}
+						/>
+					</pattern>
+				</defs>
+				<rect
+					width="100%"
+					height="100%"
+					strokeWidth={0}
+					fill="url(#dot-pattern-dark)"
+				/>
+				<rect
+					width="100%"
+					height="100%"
+					strokeWidth={0}
+					fill="url(#seal-pattern-dark)"
 				/>
 			</svg>
 		</div>

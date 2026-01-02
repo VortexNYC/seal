@@ -56,11 +56,18 @@ export function SealLogoBadgeFixed({
 					/>
 				</>
 			) : (
-				<img
-					src="/logo/seal-icon-color-no-background.svg"
-					alt="Seal Icon"
-					className="h-full w-full object-contain"
-				/>
+				<>
+					<img
+						src="/logo/seal-icon-color-no-background.svg"
+						alt="Seal Icon"
+						className="h-full w-full object-contain dark:hidden"
+					/>
+					<img
+						src="/logo/seal-icon-white-no-background.svg"
+						alt="Seal Icon"
+						className="h-full w-full object-contain hidden dark:block"
+					/>
+				</>
 			)}
 		</div>
 	);
