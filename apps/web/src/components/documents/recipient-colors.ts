@@ -158,18 +158,3 @@ export function getRecipientColorById(
 	if (index === undefined) return UNASSIGNED_COLOR;
 	return getRecipientColor(index);
 }
-
-/**
- * Create a map from recipient IDs to their indices for efficient color lookup
- * @param recipientIds - Array of recipient IDs in order
- * @returns Map from recipient ID to index
- */
-export function createRecipientIndexMap(
-	recipientIds: string[],
-): Map<string, number> {
-	const map = new Map<string, number>();
-	recipientIds.forEach((id, index) => {
-		map.set(id, index);
-	});
-	return map;
-}

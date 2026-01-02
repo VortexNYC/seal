@@ -15,6 +15,7 @@ import {
 import * as React from "react";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
+import { NotificationsPopover } from "@/components/notifications/notifications-popover";
 import { SealLogoBadgeFixed } from "@/components/seal-logo-fixed";
 import { TeamSwitcher } from "@/components/team-switcher";
 import { useTheme } from "@/components/theme-provider";
@@ -362,26 +363,29 @@ export function AppSidebar({
 			<SidebarFooter>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton
-							className="justify-between"
-							onClick={handleThemeToggle}
-						>
-							<div className="flex items-center gap-2">
-								{isDark ? (
-									<Moon className="size-4" />
-								) : (
-									<Sun className="size-4" />
-								)}
-								<span className="group-data-[collapsible=icon]:hidden">
-									Dark mode
-								</span>
-							</div>
-							<Switch
-								checked={isDark}
-								className="group-data-[collapsible=icon]:hidden"
-								aria-label="Toggle dark mode"
-							/>
-						</SidebarMenuButton>
+						<div className="flex items-center justify-between px-2">
+							<NotificationsPopover slug={slug} />
+							<SidebarMenuButton
+								className="justify-between flex-1 ml-2"
+								onClick={handleThemeToggle}
+							>
+								<div className="flex items-center gap-2">
+									{isDark ? (
+										<Moon className="size-4" />
+									) : (
+										<Sun className="size-4" />
+									)}
+									<span className="group-data-[collapsible=icon]:hidden">
+										Dark mode
+									</span>
+								</div>
+								<Switch
+									checked={isDark}
+									className="group-data-[collapsible=icon]:hidden"
+									aria-label="Toggle dark mode"
+								/>
+							</SidebarMenuButton>
+						</div>
 					</SidebarMenuItem>
 				</SidebarMenu>
 				{currentUser && (
