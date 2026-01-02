@@ -10,69 +10,6 @@ import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
 
 /**
- * Extract page count from PDF file
- */
-export async function getPdfPageCount(file: File): Promise<number> {
-	try {
-		const arrayBuffer = await file.arrayBuffer();
-		const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-		return pdf.numPages;
-	} catch (error) {
-		console.error("Error extracting PDF page count:", error);
-		return 0;
-	}
-}
-
-/**
- * Generate thumbnail from PDF first page
- * Returns a data URL of the thumbnail image
- */
-export async function generatePdfThumbnail(
-	file: File,
-	maxWidth = 200,
-	maxHeight = 300,
-): Promise<string | null> {
-	try {
-		const arrayBuffer = await file.arrayBuffer();
-		const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-		// Get first page
-		const page = await pdf.getPage(1);
-
-		// Calculate viewport scale to fit within maxWidth x maxHeight
-		const viewport = page.getViewport({ scale: 1 });
-		const scale = Math.min(
-			maxWidth / viewport.width,
-			maxHeight / viewport.height,
-		);
-		const scaledViewport = page.getViewport({ scale });
-
-		// Create canvas
-		const canvas = document.createElement("canvas");
-		const context = canvas.getContext("2d");
-		if (!context) {
-			throw new Error("Could not get canvas context");
-		}
-
-		canvas.width = scaledViewport.width;
-		canvas.height = scaledViewport.height;
-
-		// Render page to canvas
-		await page.render({
-			canvasContext: context,
-			viewport: scaledViewport,
-			// biome-ignore lint: pdfjs types issue
-		} as any).promise;
-
-		// Convert canvas to data URL
-		return canvas.toDataURL("image/png");
-	} catch (error) {
-		console.error("Error generating PDF thumbnail:", error);
-		return null;
-	}
-}
-
-/**
  * Generate thumbnail from PDF URL
  * Fetches the PDF from a URL and generates a thumbnail
  */

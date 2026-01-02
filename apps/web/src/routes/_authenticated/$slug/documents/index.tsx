@@ -33,7 +33,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
-import { ShareDialog } from "@/components/documents/share-dialog";
+import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
 import { UploadDialog } from "@/components/documents/upload-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { PageWrapper } from "@/components/page-wrapper";
@@ -163,7 +163,7 @@ interface DocumentsListProps {
 	searchQuery: string;
 	/** SEA-74: Date range filter */
 	dateRange: DateRange | undefined;
-	onShareClick: (documentId: Id<"documents">) => void;
+	onShareClick: (documentId: Id<"documents">, documentName: string) => void;
 	onSortChange: (field: SortField) => void;
 	/** SEA-140: Callback to open upload dialog from empty state */
 	onUploadClick: () => void;
@@ -601,7 +601,7 @@ function DocumentsList({
 															Download
 														</DropdownMenuItem>
 														<DropdownMenuItem
-															onClick={() => onShareClick(doc._id)}
+															onClick={() => onShareClick(doc._id, doc.name)}
 														>
 															<Share2Icon className="mr-2 h-4 w-4" />
 															Share
@@ -697,7 +697,7 @@ function DocumentsList({
 														Download
 													</DropdownMenuItem>
 													<DropdownMenuItem
-														onClick={() => onShareClick(doc._id)}
+														onClick={() => onShareClick(doc._id, doc.name)}
 													>
 														<Share2Icon className="mr-2 h-4 w-4" />
 														Share
@@ -853,6 +853,7 @@ function DocumentsPage() {
 	const [shareDialogOpen, setShareDialogOpen] = useState(false);
 	const [selectedDocumentId, setSelectedDocumentId] =
 		useState<Id<"documents"> | null>(null);
+	const [selectedDocumentName, setSelectedDocumentName] = useState("");
 	const [filter, setFilter] = useState<FilterType>("all");
 	const [workflowStatusFilter, setWorkflowStatusFilter] =
 		useState<WorkflowStatusFilter>("all");
@@ -888,8 +889,12 @@ function DocumentsPage() {
 		setRefreshKey((prev) => prev + 1);
 	};
 
-	const handleShareClick = (documentId: Id<"documents">) => {
+	const handleShareClick = (
+		documentId: Id<"documents">,
+		documentName: string,
+	) => {
 		setSelectedDocumentId(documentId);
+		setSelectedDocumentName(documentName);
 		setShareDialogOpen(true);
 	};
 
@@ -1221,12 +1226,11 @@ function DocumentsPage() {
 				/>
 
 				{selectedDocumentId && (
-					<ShareDialog
+					<ShareDocumentDialog
 						documentId={selectedDocumentId}
-						organizationId={organization._id}
+						documentName={selectedDocumentName}
 						open={shareDialogOpen}
 						onOpenChange={setShareDialogOpen}
-						onSuccess={handleRefetch}
 					/>
 				)}
 			</div>

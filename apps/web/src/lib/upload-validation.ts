@@ -9,12 +9,6 @@
 export const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 /**
- * Allowed file extensions for file input accept attribute
- * SEA-62: PDF only
- */
-export const ALLOWED_FILE_EXTENSIONS = ".pdf";
-
-/**
  * Allowed MIME types
  * SEA-62: PDF only
  */

@@ -99,10 +99,3 @@ export function parseConvexError(error: unknown): ParsedError {
 export function getErrorMessage(error: unknown): string {
 	return parseConvexError(error).userFriendlyMessage;
 }
-
-/**
- * Check if an error is a permission error
- */
-export function isPermissionError(error: unknown): boolean {
-	return parseConvexError(error).type === "permission";
-}

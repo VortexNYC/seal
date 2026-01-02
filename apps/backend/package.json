@@ -9,7 +9,9 @@
 		"lint": "biome check .",
 		"format": "biome format --write .",
 		"typecheck": "tsc --noEmit",
-		"clean": "git clean -xdf .cache .turbo node_modules convex/_generate"
+		"knip": "knip",
+		"knip:fix": "knip --fix --allow-remove-files",
+		"clean": "git clean -xdf .cache .turbo node_modules convex/_generated"
 	},
 	"dependencies": {
 		"@clerk/backend": "^2.29.0",

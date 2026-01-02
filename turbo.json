@@ -15,14 +15,21 @@
 			"persistent": true
 		},
 		"lint": {
-			"dependsOn": ["^build"]
+			"dependsOn": []
 		},
 		"format": {
-			"dependsOn": [],
-			"outputLogs": "new-only"
+			"dependsOn": []
 		},
 		"typecheck": {
-			"dependsOn": ["^build"]
+			"dependsOn": []
+		},
+		"knip": {
+			"dependsOn": [],
+			"outputs": []
+		},
+		"knip:fix": {
+			"dependsOn": [],
+			"outputs": []
 		},
 		"clean": {
 			"cache": false
