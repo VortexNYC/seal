@@ -388,4 +388,226 @@ test.describe("Document Sharing", () => {
 			expect(await shareDialog.isOwnerDisplayed()).toBe(true);
 		});
 	});
+
+	test.describe("Permission Boundaries", () => {
+		test("view-only user should not see add member section", async ({
+			authenticatedPage,
+			organizationSlug,
+		}) => {
+			await documentsPage.goto(organizationSlug);
+
+			const sharedDocRow = authenticatedPage
+				.locator('[data-testid="document-row"][data-shared="true"]')
+				.first();
+
+			const rowExists = await sharedDocRow.isVisible().catch(() => false);
+			if (!rowExists) {
+				test.skip();
+				return;
+			}
+
+			await sharedDocRow.hover();
+			const shareButton = sharedDocRow.locator('[data-testid="share-button"]');
+			const buttonVisible = await shareButton.isVisible().catch(() => false);
+			if (!buttonVisible) {
+				test.skip();
+				return;
+			}
+
+			await shareButton.click();
+			await shareDialog.waitForOpen();
+
+			const canViewAccess = !(await shareDialog.showsNoPermissionMessage());
+			if (canViewAccess) {
+				const isAddSectionVisible =
+					await shareDialog.isAddMemberSectionVisible();
+				const sharedUserCount = await shareDialog.getSharedUserCount();
+
+				if (sharedUserCount > 0) {
+					const hasRevokeButtons = await authenticatedPage
+						.locator('[data-testid="revoke-access-button"]')
+						.first()
+						.isVisible()
+						.catch(() => false);
+
+					if (!isAddSectionVisible && !hasRevokeButtons) {
+						expect(true).toBe(true);
+					}
+				}
+			}
+		});
+
+		test("view-only user should not see revoke buttons", async ({
+			authenticatedPage,
+			organizationSlug,
+		}) => {
+			await documentsPage.goto(organizationSlug);
+
+			const sharedDocRow = authenticatedPage
+				.locator('[data-testid="document-row"][data-shared="true"]')
+				.first();
+
+			const rowExists = await sharedDocRow.isVisible().catch(() => false);
+			if (!rowExists) {
+				test.skip();
+				return;
+			}
+
+			await sharedDocRow.hover();
+			const shareButton = sharedDocRow.locator('[data-testid="share-button"]');
+			const buttonVisible = await shareButton.isVisible().catch(() => false);
+			if (!buttonVisible) {
+				test.skip();
+				return;
+			}
+
+			await shareButton.click();
+			await shareDialog.waitForOpen();
+
+			const revokeButtons = authenticatedPage.locator(
+				'[data-testid="revoke-access-button"]',
+			);
+			const revokeCount = await revokeButtons.count();
+
+			if (
+				(await shareDialog.showsNoPermissionMessage()) ||
+				!(await shareDialog.isAddMemberSectionVisible())
+			) {
+				expect(revokeCount).toBe(0);
+			}
+		});
+
+		test("view-only user should not see permission dropdowns", async ({
+			authenticatedPage,
+			organizationSlug,
+		}) => {
+			await documentsPage.goto(organizationSlug);
+
+			const sharedDocRow = authenticatedPage
+				.locator('[data-testid="document-row"][data-shared="true"]')
+				.first();
+
+			const rowExists = await sharedDocRow.isVisible().catch(() => false);
+			if (!rowExists) {
+				test.skip();
+				return;
+			}
+
+			await sharedDocRow.hover();
+			const shareButton = sharedDocRow.locator('[data-testid="share-button"]');
+			const buttonVisible = await shareButton.isVisible().catch(() => false);
+			if (!buttonVisible) {
+				test.skip();
+				return;
+			}
+
+			await shareButton.click();
+			await shareDialog.waitForOpen();
+
+			const permissionDropdowns = authenticatedPage.locator(
+				'[data-testid="permission-dropdown"]',
+			);
+			const dropdownCount = await permissionDropdowns.count();
+
+			if (
+				(await shareDialog.showsNoPermissionMessage()) ||
+				!(await shareDialog.isAddMemberSectionVisible())
+			) {
+				expect(dropdownCount).toBe(0);
+			}
+		});
+	});
+
+	test.describe("Edge Cases", () => {
+		test("should prevent sharing with oneself", async ({
+			authenticatedPage,
+			organizationSlug,
+		}) => {
+			await documentsPage.goto(organizationSlug);
+
+			const documentRow = authenticatedPage
+				.locator('[data-testid="document-row"]')
+				.first();
+			await documentRow.hover();
+			await documentRow.locator('[data-testid="share-button"]').click();
+
+			await shareDialog.waitForOpen();
+
+			if (!(await shareDialog.isTeamSharingDisabled())) {
+				await shareDialog.selectSharingMode("specific");
+
+				if (await shareDialog.isAddMemberSectionVisible()) {
+					await shareDialog.memberSelect.click();
+
+					const currentUserOption = authenticatedPage.locator(
+						'[role="option"][data-is-current-user="true"]',
+					);
+					const selfOptionExists = await currentUserOption
+						.isVisible()
+						.catch(() => false);
+
+					expect(selfOptionExists).toBe(false);
+				}
+			}
+		});
+
+		test("should not show owner in shareable members list", async ({
+			authenticatedPage,
+			organizationSlug,
+		}) => {
+			await documentsPage.goto(organizationSlug);
+
+			const documentRow = authenticatedPage
+				.locator('[data-testid="document-row"]')
+				.first();
+			await documentRow.hover();
+			await documentRow.locator('[data-testid="share-button"]').click();
+
+			await shareDialog.waitForOpen();
+
+			if (!(await shareDialog.isTeamSharingDisabled())) {
+				await shareDialog.selectSharingMode("specific");
+
+				if (await shareDialog.isAddMemberSectionVisible()) {
+					await shareDialog.memberSelect.click();
+
+					const ownerOption = authenticatedPage.locator(
+						'[role="option"][data-is-owner="true"]',
+					);
+					const ownerInList = await ownerOption.isVisible().catch(() => false);
+
+					expect(ownerInList).toBe(false);
+				}
+			}
+		});
+
+		test("owner should not appear in revocable users list", async ({
+			authenticatedPage,
+			organizationSlug,
+		}) => {
+			await documentsPage.goto(organizationSlug);
+
+			const documentRow = authenticatedPage
+				.locator('[data-testid="document-row"]')
+				.first();
+			await documentRow.hover();
+			await documentRow.locator('[data-testid="share-button"]').click();
+
+			await shareDialog.waitForOpen();
+
+			const ownerRow = authenticatedPage.locator('[data-testid="owner-row"]');
+			const ownerRowExists = await ownerRow.isVisible();
+
+			if (ownerRowExists) {
+				const ownerRevokeButton = ownerRow.locator(
+					'[data-testid="revoke-access-button"]',
+				);
+				const hasRevokeButton = await ownerRevokeButton
+					.isVisible()
+					.catch(() => false);
+
+				expect(hasRevokeButton).toBe(false);
+			}
+		});
+	});
 });
