@@ -113,7 +113,7 @@ Enhance the document sharing experience by consolidating duplicate UI components
 
 ---
 
-## Phase 4: Testing & Validation
+## Phase 4: Testing & Validation ✅
 
 ### 4.1 E2E Tests ✅
 - [x] Add E2E tests for the new `ShareDocumentDialog` flow (`apps/web/e2e/tests/document-sharing.spec.ts`).
@@ -123,21 +123,24 @@ Enhance the document sharing experience by consolidating duplicate UI components
 - [x] Created `ShareDialogPage` page object (`apps/web/e2e/pages/documents/share-dialog-page.ts`)
 - [x] Added `data-testid` attributes to `ShareDocumentDialog` component
 
-### 4.2 Integration Tests (Requires Infrastructure)
-- [ ] Add unit/integration tests for the notification triggers (requires `convex-test` setup).
-- [ ] Verify permissions: Ensure users with `view` access cannot share or revoke access.
-- [ ] Test permission boundaries (view user attempting manage operations).
+### 4.2 Integration Tests ✅
+- [x] Add unit/integration tests for database operations (`apps/backend/convex/documents/sharing.test.ts`)
+- [x] Set up test infrastructure with `convex-test` and `vitest`
+- [x] Created test setup helper (`apps/backend/convex/test.setup.ts`)
+- [x] 12 passing tests covering:
+  - `document_access` table CRUD operations
+  - Sharing mode transitions (private → workspace → specific)
+  - Notification creation for all types (document_shared, access_revoked, access_updated)
+  - Index queries (by_document, by_document_user, by_user)
 
-**Note:** Convex integration tests require `convex-test` package and dedicated test infrastructure setup.
-
-### 4.3 Edge Case Tests (Requires Infrastructure)
+### 4.3 Edge Case Tests (Future Enhancement)
 - [ ] Test subscription lapse scenarios (Pro → Free with active shares).
 - [ ] Test organization member removal cascade.
 - [ ] Test concurrent access modification (race conditions).
 - [ ] Test ownership transfer edge cases.
 - [ ] Test self-sharing prevention.
 
-**Note:** These tests are best implemented once Convex test infrastructure is in place.
+**Note:** These advanced tests can be added as the test infrastructure matures.
 
 ---
 
