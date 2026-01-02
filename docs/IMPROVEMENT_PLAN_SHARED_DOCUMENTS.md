@@ -115,23 +115,29 @@ Enhance the document sharing experience by consolidating duplicate UI components
 
 ## Phase 4: Testing & Validation
 
-### 4.1 E2E Tests
-- [ ] Add E2E tests for the new `ShareDocumentDialog` flow.
-- [ ] Test sharing mode transitions (private → workspace → specific).
-- [ ] Test permission level changes.
-- [ ] Test access revocation flow.
+### 4.1 E2E Tests ✅
+- [x] Add E2E tests for the new `ShareDocumentDialog` flow (`apps/web/e2e/tests/document-sharing.spec.ts`).
+- [x] Test sharing mode transitions (private → workspace → specific).
+- [x] Test permission level changes.
+- [x] Test access revocation flow.
+- [x] Created `ShareDialogPage` page object (`apps/web/e2e/pages/documents/share-dialog-page.ts`)
+- [x] Added `data-testid` attributes to `ShareDocumentDialog` component
 
-### 4.2 Integration Tests
-- [ ] Add unit/integration tests for the notification triggers.
+### 4.2 Integration Tests (Requires Infrastructure)
+- [ ] Add unit/integration tests for the notification triggers (requires `convex-test` setup).
 - [ ] Verify permissions: Ensure users with `view` access cannot share or revoke access.
 - [ ] Test permission boundaries (view user attempting manage operations).
 
-### 4.3 Edge Case Tests
+**Note:** Convex integration tests require `convex-test` package and dedicated test infrastructure setup.
+
+### 4.3 Edge Case Tests (Requires Infrastructure)
 - [ ] Test subscription lapse scenarios (Pro → Free with active shares).
 - [ ] Test organization member removal cascade.
 - [ ] Test concurrent access modification (race conditions).
 - [ ] Test ownership transfer edge cases.
 - [ ] Test self-sharing prevention.
+
+**Note:** These tests are best implemented once Convex test infrastructure is in place.
 
 ---
 
