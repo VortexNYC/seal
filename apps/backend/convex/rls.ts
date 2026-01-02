@@ -661,8 +661,20 @@ export async function rlsRules(
 				return doc.userId === rlsCtx.userId;
 			},
 			modify: async () => {
-				// Activity logs are append-only
 				return false;
+			},
+		},
+
+		notifications: {
+			read: async (_ctx, doc) => {
+				if (!rlsCtx) return false;
+				if (rlsCtx.isSuperAdmin) return true;
+				return doc.userId === rlsCtx.userId;
+			},
+			modify: async (_ctx, doc) => {
+				if (!rlsCtx) return false;
+				if (rlsCtx.isSuperAdmin) return true;
+				return doc.userId === rlsCtx.userId;
 			},
 		},
 	};

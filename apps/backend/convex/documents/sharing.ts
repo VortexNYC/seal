@@ -5,6 +5,13 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import { authQuery, permissionMutation } from "../auth";
+import {
+	ACCESS_ERRORS,
+	getDocumentOrThrow,
+	requireManageAccess,
+	requireOwnership,
+} from "../auth/access_control";
+import { createNotification } from "../notifications";
 
 /**
  * Update sharing mode for a document
@@ -23,32 +30,14 @@ export const updateSharingMode = permissionMutation("documents:share")({
 	handler: async (ctx, args) => {
 		const userId = ctx.auth.user._id;
 
-		// 1. Get the document
-		const document = await ctx.db.get(args.documentId);
-		if (!document || document.status === "deleted") {
-			throw new ConvexError("Document not found");
-		}
+		const document = await getDocumentOrThrow(ctx, args.documentId);
+		await requireManageAccess(
+			ctx,
+			userId,
+			document,
+			"Only the document owner or managers can change sharing settings",
+		);
 
-		// 2. Check if user can manage this document (owner or has "manage" permission)
-		let canManage = document.ownerId === userId;
-		if (!canManage) {
-			const access = await ctx.db
-				.query("document_access")
-				.withIndex("by_document_user", (q) =>
-					q.eq("documentId", document._id).eq("userId", userId),
-				)
-				.first();
-			canManage =
-				access?.permissionLevel === "manage" && access.revokedAt === undefined;
-		}
-
-		if (!canManage) {
-			throw new ConvexError(
-				"Only the document owner or managers can change sharing settings",
-			);
-		}
-
-		// 3. Check plan restrictions for team sharing
 		if (args.sharingMode === "workspace" || args.sharingMode === "specific") {
 			const subscription = await ctx.db
 				.query("subscriptions")
@@ -64,14 +53,10 @@ export const updateSharingMode = permissionMutation("documents:share")({
 			}
 		}
 
-		// 4. Update sharing mode
 		await ctx.db.patch(args.documentId, {
 			sharingMode: args.sharingMode,
 			updatedAt: Date.now(),
 		});
-
-		// 5. If changing from "specific" to another mode, optionally clean up access records
-		// (We'll keep them for audit trail, but mark as inactive if needed)
 
 		return { success: true };
 	},
@@ -95,39 +80,20 @@ export const grantAccess = permissionMutation("documents:share")({
 	handler: async (ctx, args) => {
 		const currentUserId = ctx.auth.user._id;
 
-		// 1. Get the document
-		const document = await ctx.db.get(args.documentId);
-		if (!document || document.status === "deleted") {
-			throw new ConvexError("Document not found");
-		}
+		const document = await getDocumentOrThrow(ctx, args.documentId);
+		await requireManageAccess(
+			ctx,
+			currentUserId,
+			document,
+			"Only the document owner or managers can grant access",
+		);
 
-		// 2. Check if current user can manage this document
-		let canManage = document.ownerId === currentUserId;
-		if (!canManage) {
-			const access = await ctx.db
-				.query("document_access")
-				.withIndex("by_document_user", (q) =>
-					q.eq("documentId", document._id).eq("userId", currentUserId),
-				)
-				.first();
-			canManage =
-				access?.permissionLevel === "manage" && access.revokedAt === undefined;
-		}
-
-		if (!canManage) {
-			throw new ConvexError(
-				"Only the document owner or managers can grant access",
-			);
-		}
-
-		// 3. Ensure document is in "specific" sharing mode
 		if (document.sharingMode !== "specific") {
 			throw new ConvexError(
 				'Document must be in "specific" sharing mode to grant individual access',
 			);
 		}
 
-		// 4. Verify target user is a member of the organization
 		const targetMember = await ctx.db
 			.query("organization_members")
 			.withIndex("by_user_organization", (q) =>
@@ -170,7 +136,21 @@ export const grantAccess = permissionMutation("documents:share")({
 			});
 		}
 
-		// Schedule email notification to the recipient
+		const currentUser = await ctx.db.get(currentUserId);
+		const notificationId = await createNotification(ctx, {
+			userId: args.userId,
+			organizationId: document.organizationId,
+			type: "document_shared",
+			data: {
+				documentId: args.documentId,
+				documentName: document.name,
+				permissionLevel: args.permissionLevel,
+				sharedBy: currentUserId,
+				sharedByName: currentUser?.name ?? undefined,
+			},
+			emailStatus: "pending",
+		});
+
 		await ctx.scheduler.runAfter(
 			0,
 			internal.documents.document_shared_action.sendDocumentSharedEmail,
@@ -179,6 +159,7 @@ export const grantAccess = permissionMutation("documents:share")({
 				recipientUserId: args.userId,
 				sharedByUserId: currentUserId,
 				permissionLevel: args.permissionLevel,
+				notificationId,
 			},
 		);
 
@@ -198,37 +179,18 @@ export const revokeAccess = permissionMutation("documents:share")({
 	handler: async (ctx, args) => {
 		const currentUserId = ctx.auth.user._id;
 
-		// 1. Get the document
-		const document = await ctx.db.get(args.documentId);
-		if (!document || document.status === "deleted") {
-			throw new ConvexError("Document not found");
-		}
+		const document = await getDocumentOrThrow(ctx, args.documentId);
+		await requireManageAccess(
+			ctx,
+			currentUserId,
+			document,
+			"Only the document owner or managers can revoke access",
+		);
 
-		// 2. Check if current user can manage this document
-		let canManage = document.ownerId === currentUserId;
-		if (!canManage) {
-			const access = await ctx.db
-				.query("document_access")
-				.withIndex("by_document_user", (q) =>
-					q.eq("documentId", document._id).eq("userId", currentUserId),
-				)
-				.first();
-			canManage =
-				access?.permissionLevel === "manage" && access.revokedAt === undefined;
-		}
-
-		if (!canManage) {
-			throw new ConvexError(
-				"Only the document owner or managers can revoke access",
-			);
-		}
-
-		// 3. Cannot revoke access from owner
 		if (args.userId === document.ownerId) {
 			throw new ConvexError("Cannot revoke access from document owner");
 		}
 
-		// 4. Find and mark access as revoked
 		const access = await ctx.db
 			.query("document_access")
 			.withIndex("by_document_user", (q) =>
@@ -242,9 +204,21 @@ export const revokeAccess = permissionMutation("documents:share")({
 			);
 		}
 
-		// Mark as revoked (soft delete for audit trail)
 		await ctx.db.patch(access._id, {
 			revokedAt: Date.now(),
+		});
+
+		const currentUser = await ctx.db.get(currentUserId);
+		await createNotification(ctx, {
+			userId: args.userId,
+			organizationId: document.organizationId,
+			type: "access_revoked",
+			data: {
+				documentId: args.documentId,
+				documentName: document.name,
+				revokedBy: currentUserId,
+				revokedByName: currentUser?.name ?? undefined,
+			},
 		});
 
 		return { success: true };
@@ -268,32 +242,14 @@ export const updateAccessLevel = permissionMutation("documents:share")({
 	handler: async (ctx, args) => {
 		const currentUserId = ctx.auth.user._id;
 
-		// 1. Get the document
-		const document = await ctx.db.get(args.documentId);
-		if (!document || document.status === "deleted") {
-			throw new ConvexError("Document not found");
-		}
+		const document = await getDocumentOrThrow(ctx, args.documentId);
+		await requireManageAccess(
+			ctx,
+			currentUserId,
+			document,
+			"Only the document owner or managers can update access levels",
+		);
 
-		// 2. Check if current user can manage this document
-		let canManage = document.ownerId === currentUserId;
-		if (!canManage) {
-			const access = await ctx.db
-				.query("document_access")
-				.withIndex("by_document_user", (q) =>
-					q.eq("documentId", document._id).eq("userId", currentUserId),
-				)
-				.first();
-			canManage =
-				access?.permissionLevel === "manage" && access.revokedAt === undefined;
-		}
-
-		if (!canManage) {
-			throw new ConvexError(
-				"Only the document owner or managers can update access levels",
-			);
-		}
-
-		// 3. Find the access record
 		const access = await ctx.db
 			.query("document_access")
 			.withIndex("by_document_user", (q) =>
@@ -307,11 +263,27 @@ export const updateAccessLevel = permissionMutation("documents:share")({
 			);
 		}
 
-		// 4. Update permission level
+		const oldPermissionLevel = access.permissionLevel;
+
 		await ctx.db.patch(access._id, {
 			permissionLevel: args.newPermissionLevel,
 			grantedBy: currentUserId,
-			grantedAt: Date.now(), // Update grant timestamp
+			grantedAt: Date.now(),
+		});
+
+		const currentUser = await ctx.db.get(currentUserId);
+		await createNotification(ctx, {
+			userId: args.userId,
+			organizationId: document.organizationId,
+			type: "access_updated",
+			data: {
+				documentId: args.documentId,
+				documentName: document.name,
+				oldPermissionLevel,
+				newPermissionLevel: args.newPermissionLevel,
+				updatedBy: currentUserId,
+				updatedByName: currentUser?.name ?? undefined,
+			},
 		});
 
 		return { success: true };
@@ -330,18 +302,9 @@ export const transferOwnership = permissionMutation("documents:share")({
 	handler: async (ctx, args) => {
 		const currentUserId = ctx.auth.user._id;
 
-		// 1. Get the document
-		const document = await ctx.db.get(args.documentId);
-		if (!document || document.status === "deleted") {
-			throw new ConvexError("Document not found");
-		}
+		const document = await getDocumentOrThrow(ctx, args.documentId);
+		requireOwnership(currentUserId, document, ACCESS_ERRORS.OWNER_REQUIRED);
 
-		// 2. Only current owner can transfer ownership
-		if (document.ownerId !== currentUserId) {
-			throw new ConvexError("Only the document owner can transfer ownership");
-		}
-
-		// 3. Verify new owner is a member of the organization
 		const newOwnerMember = await ctx.db
 			.query("organization_members")
 			.withIndex("by_user_organization", (q) =>
@@ -357,20 +320,30 @@ export const transferOwnership = permissionMutation("documents:share")({
 			);
 		}
 
-		// 4. Transfer ownership
 		await ctx.db.patch(args.documentId, {
 			ownerId: args.newOwnerId,
 			updatedAt: Date.now(),
 		});
 
-		// 5. Optionally: Grant the previous owner "manage" access
-		// This ensures they don't lose all access to the document
 		await ctx.db.insert("document_access", {
 			documentId: args.documentId,
 			userId: currentUserId,
 			permissionLevel: "manage",
-			grantedBy: args.newOwnerId, // New owner granted this
+			grantedBy: args.newOwnerId,
 			grantedAt: Date.now(),
+		});
+
+		const currentUser = await ctx.db.get(currentUserId);
+		await createNotification(ctx, {
+			userId: args.newOwnerId,
+			organizationId: document.organizationId,
+			type: "ownership_transferred",
+			data: {
+				documentId: args.documentId,
+				documentName: document.name,
+				previousOwnerId: currentUserId,
+				previousOwnerName: currentUser?.name ?? undefined,
+			},
 		});
 
 		return { success: true };

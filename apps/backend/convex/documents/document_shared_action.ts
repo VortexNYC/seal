@@ -28,6 +28,7 @@ export const sendDocumentSharedEmail = internalAction({
 			v.literal("edit"),
 			v.literal("manage"),
 		),
+		notificationId: v.optional(v.id("notifications")),
 	},
 	handler: async (
 		ctx,
@@ -92,10 +93,26 @@ export const sendDocumentSharedEmail = internalAction({
 
 		if (!result.success) {
 			console.error("Failed to send document shared email:", result.error);
+
+			if (args.notificationId) {
+				await ctx.runMutation(internal.notifications.index.updateEmailStatus, {
+					notificationId: args.notificationId,
+					status: "failed",
+					error: result.error,
+				});
+			}
+
 			return {
 				success: false,
 				error: result.error,
 			};
+		}
+
+		if (args.notificationId) {
+			await ctx.runMutation(internal.notifications.index.updateEmailStatus, {
+				notificationId: args.notificationId,
+				status: "sent",
+			});
 		}
 
 		return { success: true };
