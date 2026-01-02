@@ -35,6 +35,10 @@ import {
 	type EmailType,
 	emailLogsTable,
 } from "./schemas/email_logs";
+import {
+	type NotificationType,
+	notificationsTable,
+} from "./schemas/notifications";
 import { organizationInvitationsTable } from "./schemas/organization_invitations";
 import {
 	type OrganizationMemberRole,
@@ -113,6 +117,9 @@ export type { EmailStatus, EmailType };
 // Re-export audit types
 export type { AuditAction, AuditResourceType };
 
+// Re-export notification types
+export type { NotificationType };
+
 // Re-export integration types
 export type { ApiKeyScope };
 
@@ -140,6 +147,9 @@ export default defineSchema({
 
 	// Email tracking
 	email_logs: emailLogsTable,
+
+	// Notifications
+	notifications: notificationsTable,
 
 	subscriptions: subscriptionsTable,
 	subscription_products: subscriptionProductsTable,
