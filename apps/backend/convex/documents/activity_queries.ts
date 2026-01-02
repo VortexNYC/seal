@@ -7,6 +7,11 @@
 
 import { ConvexError, v } from "convex/values";
 import { authQuery } from "../auth";
+import {
+	ACCESS_ERRORS,
+	checkDocumentAccess,
+	getDocumentOrThrow,
+} from "../auth/access_control";
 
 /**
  * Activity event types that map to the frontend ActivityFeed component
@@ -75,42 +80,14 @@ export const getDocumentActivity = authQuery({
 		const limit = args.limit ?? 20;
 		const offset = args.offset ?? 0;
 
-		// 1. Get the document
-		const document = await ctx.db.get(args.documentId);
-		if (!document || document.status === "deleted") {
-			throw new ConvexError("Document not found");
+		const document = await getDocumentOrThrow(ctx, args.documentId);
+
+		const accessResult = await checkDocumentAccess(ctx, userId, document);
+		if (!accessResult.hasAccess) {
+			throw new ConvexError(ACCESS_ERRORS.NO_ACCESS);
 		}
 
-		// 2. Verify access (owner or org member)
-		let hasAccess = document.ownerId === userId;
-		if (!hasAccess) {
-			const member = await ctx.db
-				.query("organization_members")
-				.withIndex("by_user_organization", (q) =>
-					q.eq("userId", userId).eq("organizationId", document.organizationId),
-				)
-				.first();
-
-			if (member && member.status === "active") {
-				if (document.sharingMode === "workspace") {
-					hasAccess = true;
-				} else if (document.sharingMode === "specific") {
-					const access = await ctx.db
-						.query("document_access")
-						.withIndex("by_document_user", (q) =>
-							q.eq("documentId", document._id).eq("userId", userId),
-						)
-						.first();
-					hasAccess = access !== null && access.revokedAt === undefined;
-				}
-			}
-		}
-
-		if (!hasAccess) {
-			throw new ConvexError("You don't have access to this document");
-		}
-
-		// 3. Get owner information for actor name
+		// Get owner information for actor name
 		const owner = await ctx.db.get(document.ownerId);
 		const ownerName = owner?.name || owner?.email || "Document owner";
 		const ownerId = document.ownerId.toString();
@@ -332,42 +309,14 @@ export const getDocumentActors = authQuery({
 	): Promise<Array<{ id: string; name: string; type: "owner" | "member" }>> => {
 		const userId = ctx.auth.user._id;
 
-		// 1. Get the document
-		const document = await ctx.db.get(args.documentId);
-		if (!document || document.status === "deleted") {
-			throw new ConvexError("Document not found");
+		const document = await getDocumentOrThrow(ctx, args.documentId);
+
+		const accessResult = await checkDocumentAccess(ctx, userId, document);
+		if (!accessResult.hasAccess) {
+			throw new ConvexError(ACCESS_ERRORS.NO_ACCESS);
 		}
 
-		// 2. Verify access (owner or org member)
-		let hasAccess = document.ownerId === userId;
-		if (!hasAccess) {
-			const member = await ctx.db
-				.query("organization_members")
-				.withIndex("by_user_organization", (q) =>
-					q.eq("userId", userId).eq("organizationId", document.organizationId),
-				)
-				.first();
-
-			if (member && member.status === "active") {
-				if (document.sharingMode === "workspace") {
-					hasAccess = true;
-				} else if (document.sharingMode === "specific") {
-					const access = await ctx.db
-						.query("document_access")
-						.withIndex("by_document_user", (q) =>
-							q.eq("documentId", document._id).eq("userId", userId),
-						)
-						.first();
-					hasAccess = access !== null && access.revokedAt === undefined;
-				}
-			}
-		}
-
-		if (!hasAccess) {
-			throw new ConvexError("You don't have access to this document");
-		}
-
-		// 3. Build list of unique actors
+		// Build list of unique actors
 		const actorsMap = new Map<
 			string,
 			{ id: string; name: string; type: "owner" | "member" }

@@ -10,6 +10,11 @@
 import { ConvexError, v } from "convex/values";
 import { query } from "../_generated/server";
 import { authQuery } from "../auth";
+import {
+	ACCESS_ERRORS,
+	checkDocumentAccess,
+	getDocumentOrThrow,
+} from "../auth/access_control";
 import { generateSignatureCertificate } from "../crypto/helpers";
 
 /**
@@ -22,42 +27,15 @@ export const getDocumentAuditLogs = authQuery({
 		const userId = ctx.auth.user._id;
 
 		// 1. Get the document
-		const document = await ctx.db.get(args.documentId);
-		if (!document || document.status === "deleted") {
-			throw new ConvexError("Document not found");
+		const document = await getDocumentOrThrow(ctx, args.documentId);
+
+		// 2. Check access using shared access control
+		const accessResult = await checkDocumentAccess(ctx, userId, document);
+		if (!accessResult.hasAccess) {
+			throw new ConvexError(ACCESS_ERRORS.NO_ACCESS);
 		}
 
-		// 2. Check access - only owner or org members with workspace access
-		let hasAccess = document.ownerId === userId;
-
-		if (!hasAccess) {
-			const member = await ctx.db
-				.query("organization_members")
-				.withIndex("by_user_organization", (q) =>
-					q.eq("userId", userId).eq("organizationId", document.organizationId),
-				)
-				.first();
-
-			if (member && member.status === "active") {
-				if (document.sharingMode === "workspace") {
-					hasAccess = true;
-				} else if (document.sharingMode === "specific") {
-					const access = await ctx.db
-						.query("document_access")
-						.withIndex("by_document_user", (q) =>
-							q.eq("documentId", document._id).eq("userId", userId),
-						)
-						.first();
-					hasAccess = access !== null && access.revokedAt === undefined;
-				}
-			}
-		}
-
-		if (!hasAccess) {
-			throw new ConvexError("You don't have access to this document");
-		}
-
-		// 3. Get audit trail (inlined to avoid type issues)
+		// 3. Get audit trail
 		const auditLogs = await ctx.db
 			.query("audit_logs")
 			.withIndex("by_document_created", (q) =>

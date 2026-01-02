@@ -5,6 +5,11 @@
 import { ConvexError, v } from "convex/values";
 import { query } from "../_generated/server";
 import { authQuery } from "../auth";
+import {
+	ACCESS_ERRORS,
+	checkDocumentAccess,
+	getDocumentOrThrow,
+} from "../auth/access_control";
 import { isRecipientComplete } from "../schemas/document_recipients";
 
 /**
@@ -158,46 +163,14 @@ export const getRecipientProgress = authQuery({
 	handler: async (ctx, args) => {
 		const userId = ctx.auth.user._id;
 
-		// 1. Get the document
-		const document = await ctx.db.get(args.documentId);
-		if (!document) {
-			throw new ConvexError("Document not found");
+		const document = await getDocumentOrThrow(ctx, args.documentId);
+
+		const accessResult = await checkDocumentAccess(ctx, userId, document);
+		if (!accessResult.hasAccess) {
+			throw new ConvexError(ACCESS_ERRORS.NO_ACCESS);
 		}
 
-		// 2. Verify access (owner or has document_access)
-		let hasAccess = document.ownerId === userId;
-
-		if (!hasAccess) {
-			// Check if user has access via document_access
-			if (document.sharingMode === "workspace") {
-				// Check organization membership
-				const member = await ctx.db
-					.query("organization_members")
-					.withIndex("by_user_organization", (q) =>
-						q
-							.eq("userId", userId)
-							.eq("organizationId", document.organizationId),
-					)
-					.first();
-				hasAccess = member !== null && member.status === "active";
-			} else if (document.sharingMode === "specific") {
-				const access = await ctx.db
-					.query("document_access")
-					.withIndex("by_document_user", (q) =>
-						q.eq("documentId", args.documentId).eq("userId", userId),
-					)
-					.first();
-				hasAccess = access !== null && access.revokedAt === undefined;
-			}
-		}
-
-		if (!hasAccess) {
-			throw new ConvexError(
-				"You don't have access to view this document's progress",
-			);
-		}
-
-		// 3. Get all recipients
+		// Get all recipients
 		const recipients = await ctx.db
 			.query("document_recipients")
 			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
