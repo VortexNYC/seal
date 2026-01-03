@@ -12,69 +12,59 @@ Enhance the document sharing experience by consolidating duplicate UI components
 
 ---
 
-## Phase 1: UI Consolidation & UX Polish
+## Phase 1: UI Consolidation & UX Polish ✅
 **Goal:** Replace the basic `ShareDialog` with the more polished, unused `ShareDocumentDialog` and clean up technical debt.
 
-### 1.1 Analyze and Verify `ShareDocumentDialog`
-- [ ] Verify `ShareDocumentDialog.tsx` functionality against the current `ShareDialog.tsx`.
-- [ ] Ensure `api.documents.sharing.getDocumentAccess` and `api.documents.sharing.getShareableMembers` (used by the new component) return all necessary data correctly.
-- [ ] Check if `ShareDocumentDialog` handles all edge cases (e.g., loading states, error handling, empty states).
+### 1.1 Analyze and Verify `ShareDocumentDialog` ✅
+- [x] `ShareDocumentDialog` is comprehensive with all edge cases handled:
+  - Loading states (ShareDialogSkeleton)
+  - Error handling (toast notifications)
+  - Empty states ("No one else has access yet", "No team members to add")
+  - Free plan restrictions (Pro badges, disabled options, upgrade message)
+  - Subscription warning banner
+- [x] APIs `getDocumentAccess` and `getShareableMembers` return all necessary data
 
-### 1.2 Integration
-- [ ] Update `apps/web/src/routes/_authenticated/$slug/documents/index.tsx` to import and use `ShareDocumentDialog` instead of `ShareDialog`.
-- [ ] Pass required props: `documentId`, `documentName`, `open`, `onOpenChange`.
-- [ ] Ensure the "Success" callback (if needed) is handled, likely by refetching data in the parent component.
+### 1.2 Integration ✅
+- [x] `documents/index.tsx` already imports and uses `ShareDocumentDialog`
+- [x] Required props are passed: `documentId`, `documentName`, `open`, `onOpenChange`
+- [x] Convex queries auto-refetch on data changes
 
-### 1.3 Cleanup
-- [ ] Remove `apps/web/src/components/documents/share-dialog.tsx`.
-- [ ] Verify no other references to the old component exist.
+### 1.3 Cleanup ✅
+- [x] No old `share-dialog.tsx` component exists (already removed)
+- [x] No orphan references to old component
 
 ---
 
-## Phase 2: Notification System Implementation
+## Phase 2: Notification System Implementation ✅
 **Goal:** Provide immediate in-app feedback when documents are shared, complementing the existing email notifications.
 
-### 2.1 Backend: Notification Schema & Logic
-- [ ] Create a `notifications` table in `convex/schema.ts`:
-  ```typescript
-  notifications: defineTable({
-    userId: v.id("users"),
-    type: v.union(
-      v.literal("document_shared"),
-      v.literal("document_access_revoked"),
-      v.literal("document_access_updated"),
-      v.literal("ownership_transferred")
-    ),
-    data: v.union(
-      v.object({ documentId: v.id("documents"), sharedBy: v.id("users"), permissionLevel: v.string() }),
-      v.object({ documentId: v.id("documents"), revokedBy: v.id("users") }),
-      v.object({ documentId: v.id("documents"), updatedBy: v.id("users"), newPermissionLevel: v.string() }),
-      v.object({ documentId: v.id("documents"), previousOwner: v.id("users"), newOwner: v.id("users") })
-    ),
-    read: v.boolean(),
-    createdAt: v.number(),
-    emailSent: v.boolean(),
-    emailSentAt: v.optional(v.number()),
-    emailAttempts: v.optional(v.number()),
-  })
-  ```
-- [ ] Create backend functions in a new `notifications.ts` file:
-    - `list`: Query to get user's notifications.
-    - `markAsRead`: Mutation to update status.
-    - `clearAll`: Mutation to archive/delete.
-- [ ] Update `apps/backend/convex/documents/sharing.ts`:
-    - In `grantAccess` mutation, insert a record into the `notifications` table for the target user.
-    - In `revokeAccess` mutation, insert notification for the revoked user.
-    - In `updateAccessLevel` mutation, insert notification for the affected user.
-    - In `transferOwnership` mutation, insert notification for both previous and new owner.
-- [ ] Track email delivery status: Modify `sendDocumentSharedEmail` action to return success/failure and store in notification record
-- [ ] Add retry logic: Schedule retry for failed email notifications (up to 3 attempts)
-- [ ] User feedback: Show "notification sent" vs "email failed but access granted" in UI
+### 2.1 Backend: Notification Schema & Logic ✅
+- [x] `notifications` table exists in `schemas/notifications.ts` with comprehensive types:
+  - `document_shared`, `access_revoked`, `access_updated`, `ownership_transferred`
+  - `document_signed`, `document_completed`, `signature_requested`, `reminder`
+  - `sharing_disabled`, `bulk_access_revoked`
+- [x] Backend functions in `notifications/index.ts`:
+  - `list`: Query with pagination and unread filtering
+  - `getUnreadCount`: Query for badge count
+  - `markAsRead`: Mutation for single notification
+  - `markAllAsRead`: Mutation for all notifications
+  - `deleteNotification`: Mutation for single deletion
+  - `clearAll`: Mutation to delete all
+  - `createNotification`: Helper function for creating notifications
+- [x] Sharing mutations create notifications via `createNotification` helper
+- [x] Email delivery tracking with `emailStatus`, `emailSentAt`, `emailAttempts`, `lastEmailError`
+- [x] Retry logic with exponential backoff (up to 3 attempts)
+- [x] Email status shown in notification UI (pending/sent/failed indicators)
 
-### 2.2 Frontend: Notification UI
-- [ ] Create a `NotificationsPopover` component (bell icon) in the main dashboard layout (`apps/web/src/routes/_authenticated/_layout.tsx` or similar).
-- [ ] Display a badge for unread notifications.
-- [ ] Render the list of notifications with actions (e.g., "View Document").
+### 2.2 Frontend: Notification UI ✅
+- [x] `NotificationsPopover` component exists at `components/notifications/notifications-popover.tsx`
+- [x] Bell icon with unread count badge
+- [x] Notification list with type-based icons and messages
+- [x] Mark as read (single click and "Mark all read" button)
+- [x] Links to documents for actionable notifications
+- [x] Email status indicators (pending/sent/failed)
+- [x] Loading skeleton and empty state
+- [x] Integrated in `AppSidebar` footer
 
 ---
 
@@ -155,42 +145,56 @@ Enhance the document sharing experience by consolidating duplicate UI components
 - [x] All static analysis checks pass
 - [x] All existing tests pass (12/12)
 
-### 5.2 Add Input Validation
-- [ ] In `updateAccessLevel` mutation: Only update database if permission level actually changed
-- [ ] Add validation to prevent granting access to document owners (redundant but clearer)
-- [ ] Add rate limiting for sharing operations to prevent abuse
-- [ ] Validate user is still an active org member before any sharing operation
+### 5.2 Add Input Validation ✅
+- [x] In `updateAccessLevel` mutation: Only update database if permission level actually changed (returns `{ success: true, noChange: true }` for no-op)
+- [x] Add validation to prevent granting access to document owners (throws "Cannot grant access to document owner - they already have full access")
+- [ ] Add rate limiting for sharing operations to prevent abuse (deferred - requires additional infrastructure)
+- [x] Validate user is still an active org member in `updateAccessLevel` (uses `getActiveMembership` helper)
+- Note: `revokeAccess` intentionally allows revoking from inactive members for cleanup scenarios
 
-### 5.3 Audit Trail Enhancements
-- [ ] Add `revokedBy` field to document_access table for better audit trails
-- [ ] Consider adding IP address logging for security-sensitive operations
-- [ ] Add `updatedBy` and `updatedAt` fields to track permission level changes
+### 5.3 Audit Trail Enhancements ✅
+- [x] Add `revokedBy` field to document_access table for better audit trails
+- [ ] Consider adding IP address logging for security-sensitive operations (deferred - requires infrastructure changes)
+- [x] Add `updatedBy` and `updatedAt` fields to track permission level changes
+- [x] Updated `revokeAccess` mutation to populate `revokedBy`
+- [x] Updated `updateAccessLevel` mutation to populate `updatedBy`/`updatedAt`
+- [x] Updated `grantAccess` mutation to clear `revokedBy` and set audit fields on re-grant
 
-### 5.4 Ownership Transfer Review
-- [ ] Review whether giving the old owner "manage" access is appropriate (consider "edit" access or configurable setting)
-- [ ] Add confirmation step in UI before transferring ownership
-- [ ] Consider adding "pending transfer" state that requires new owner acceptance
+### 5.4 Ownership Transfer Review ✅
+- [x] Reviewed: Old owner getting "manage" access is appropriate - they retain administrative capabilities, new owner can demote if needed
+- [ ] Add confirmation step in UI before transferring ownership (frontend change - deferred)
+- [ ] Consider adding "pending transfer" state that requires new owner acceptance (complex feature - deferred to future iteration)
 
-### 5.5 Permission Matrix Documentation
-- [ ] Add clear permission matrix table:
-  | Permission | View Document | Edit Content | View Access List | Share/Revoke | Transfer Ownership |
-  |------------|---------------|--------------|------------------|--------------|-------------------|
-  | **View**   | ✓             | ✗            | ✗                | ✗            | ✗                 |
-  | **Edit**   | ✓             | ✓            | ✗                | ✗            | ✗                 |
-  | **Manage** | ✓             | ✓            | ✓                | ✓            | ✗                 |
-  | **Owner**  | ✓             | ✓            | ✓                | ✓            | ✓                 |
+### 5.5 Permission Matrix Documentation ✅
+Permission matrix for document access levels:
 
-### 5.6 Bulk Sharing Operations
-- [ ] Add `grantAccessBulk` mutation for sharing with multiple users at once
-- [ ] Batch email notifications to avoid rate limiting
-- [ ] Add UI for selecting multiple users to share with
+| Permission | View Document | Edit Content | View Access List | Share/Revoke | Transfer Ownership |
+|------------|---------------|--------------|------------------|--------------|-------------------|
+| **View**   | ✓             | ✗            | ✗                | ✗            | ✗                 |
+| **Edit**   | ✓             | ✓            | ✗                | ✗            | ✗                 |
+| **Manage** | ✓             | ✓            | ✓                | ✓            | ✗                 |
+| **Owner**  | ✓             | ✓            | ✓                | ✓            | ✓                 |
+
+**Notes:**
+- Workspace sharing grants implicit "view" access to all org members
+- Owner always has full access regardless of sharing mode
+- "Manage" permission allows sharing but not ownership transfer
+
+### 5.6 Bulk Sharing Operations ✅
+- [x] Add `grantAccessBulk` mutation for sharing with multiple users at once (max 50 users per call)
+- [x] Batch processing with individual email notifications per user
+- [ ] Add UI for selecting multiple users to share with (frontend change - deferred)
 
 ### 5.7 Real-time Access Enforcement (Optional/Future)
 - [ ] Consider WebSocket/subscription to notify users when their access is revoked mid-session
 - [ ] Graceful UI handling when document becomes inaccessible (redirect with message)
 - [ ] Add periodic access revalidation for long-running sessions
 
+**Status:** Deferred - Convex real-time subscriptions already handle most cases. Consider for v2.
+
 ### 5.8 Performance Optimization
-- [ ] Add pagination to `getDocumentAccessList` for documents shared with many users
+- [ ] Add pagination to `getDocumentAccess` for documents shared with many users
 - [ ] Add caching layer for frequently accessed permission checks
 - [ ] Index optimization for large organizations with many shared documents
+
+**Status:** Deferred - Current implementation handles typical usage (< 50 shared users per document). Indexes are already in place. Consider if performance issues arise.
