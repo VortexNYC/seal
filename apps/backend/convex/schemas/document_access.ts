@@ -18,10 +18,17 @@ export const documentAccessTable = defineTable({
 	// Permission level for this specific user
 	permissionLevel: documentPermissionLevelTuple,
 
-	// Audit trail
-	grantedBy: v.id("users"), // Who granted this access
+	// Audit trail - initial grant
+	grantedBy: v.id("users"),
 	grantedAt: v.number(),
-	revokedAt: v.optional(v.number()), // If access was revoked
+
+	// Audit trail - permission updates
+	updatedBy: v.optional(v.id("users")),
+	updatedAt: v.optional(v.number()),
+
+	// Audit trail - revocation
+	revokedAt: v.optional(v.number()),
+	revokedBy: v.optional(v.id("users")),
 })
 	.index("by_document", ["documentId"])
 	.index("by_user", ["userId"])
