@@ -7,6 +7,7 @@ import { internal } from "../_generated/api";
 import { authQuery, permissionMutation } from "../auth";
 import {
 	ACCESS_ERRORS,
+	getActiveMembership,
 	getDocumentOrThrow,
 	requireManageAccess,
 	requireOwnership,
@@ -94,6 +95,12 @@ export const grantAccess = permissionMutation("documents:share")({
 			);
 		}
 
+		if (args.userId === document.ownerId) {
+			throw new ConvexError(
+				"Cannot grant access to document owner - they already have full access",
+			);
+		}
+
 		const targetMember = await ctx.db
 			.query("organization_members")
 			.withIndex("by_user_organization", (q) =>
@@ -117,22 +124,24 @@ export const grantAccess = permissionMutation("documents:share")({
 			)
 			.first();
 
+		const now = Date.now();
 		if (existingAccess) {
-			// Update existing access if it was revoked or permission level changed
 			await ctx.db.patch(existingAccess._id, {
 				permissionLevel: args.permissionLevel,
 				grantedBy: currentUserId,
-				grantedAt: Date.now(),
-				revokedAt: undefined, // Clear any previous revocation
+				grantedAt: now,
+				updatedBy: currentUserId,
+				updatedAt: now,
+				revokedAt: undefined,
+				revokedBy: undefined,
 			});
 		} else {
-			// Create new access record
 			await ctx.db.insert("document_access", {
 				documentId: args.documentId,
 				userId: args.userId,
 				permissionLevel: args.permissionLevel,
 				grantedBy: currentUserId,
-				grantedAt: Date.now(),
+				grantedAt: now,
 			});
 		}
 
@@ -164,6 +173,134 @@ export const grantAccess = permissionMutation("documents:share")({
 		);
 
 		return { success: true };
+	},
+});
+
+/**
+ * Grant access to multiple users at once
+ * Requires documents:share permission
+ */
+export const grantAccessBulk = permissionMutation("documents:share")({
+	args: {
+		documentId: v.id("documents"),
+		users: v.array(
+			v.object({
+				userId: v.id("users"),
+				permissionLevel: v.union(
+					v.literal("view"),
+					v.literal("edit"),
+					v.literal("manage"),
+				),
+			}),
+		),
+	},
+	handler: async (ctx, args) => {
+		const currentUserId = ctx.auth.user._id;
+
+		if (args.users.length === 0) {
+			return { success: true, granted: 0, skipped: 0 };
+		}
+
+		if (args.users.length > 50) {
+			throw new ConvexError(
+				"Cannot grant access to more than 50 users at once",
+			);
+		}
+
+		const document = await getDocumentOrThrow(ctx, args.documentId);
+		await requireManageAccess(
+			ctx,
+			currentUserId,
+			document,
+			"Only the document owner or managers can grant access",
+		);
+
+		if (document.sharingMode !== "specific") {
+			throw new ConvexError(
+				'Document must be in "specific" sharing mode to grant individual access',
+			);
+		}
+
+		const now = Date.now();
+		const currentUser = await ctx.db.get(currentUserId);
+		let granted = 0;
+		let skipped = 0;
+
+		for (const { userId, permissionLevel } of args.users) {
+			if (userId === document.ownerId) {
+				skipped++;
+				continue;
+			}
+
+			const targetMember = await ctx.db
+				.query("organization_members")
+				.withIndex("by_user_organization", (q) =>
+					q.eq("userId", userId).eq("organizationId", document.organizationId),
+				)
+				.first();
+
+			if (!targetMember || targetMember.status !== "active") {
+				skipped++;
+				continue;
+			}
+
+			const existingAccess = await ctx.db
+				.query("document_access")
+				.withIndex("by_document_user", (q) =>
+					q.eq("documentId", args.documentId).eq("userId", userId),
+				)
+				.first();
+
+			if (existingAccess) {
+				await ctx.db.patch(existingAccess._id, {
+					permissionLevel,
+					grantedBy: currentUserId,
+					grantedAt: now,
+					updatedBy: currentUserId,
+					updatedAt: now,
+					revokedAt: undefined,
+					revokedBy: undefined,
+				});
+			} else {
+				await ctx.db.insert("document_access", {
+					documentId: args.documentId,
+					userId,
+					permissionLevel,
+					grantedBy: currentUserId,
+					grantedAt: now,
+				});
+			}
+
+			const notificationId = await createNotification(ctx, {
+				userId,
+				organizationId: document.organizationId,
+				type: "document_shared",
+				data: {
+					documentId: args.documentId,
+					documentName: document.name,
+					permissionLevel,
+					sharedBy: currentUserId,
+					sharedByName: currentUser?.name ?? undefined,
+				},
+				emailStatus: "pending",
+			});
+
+			await ctx.scheduler.runAfter(
+				0,
+				internal.documents.document_shared_action.sendDocumentSharedEmail,
+				{
+					documentId: args.documentId,
+					recipientUserId: userId,
+					sharedByUserId: currentUserId,
+					permissionLevel,
+					notificationId,
+				},
+			);
+
+			granted++;
+		}
+
+		return { success: true, granted, skipped };
 	},
 });
 
@@ -206,6 +343,7 @@ export const revokeAccess = permissionMutation("documents:share")({
 
 		await ctx.db.patch(access._id, {
 			revokedAt: Date.now(),
+			revokedBy: currentUserId,
 		});
 
 		const currentUser = await ctx.db.get(currentUserId);
@@ -250,6 +388,17 @@ export const updateAccessLevel = permissionMutation("documents:share")({
 			"Only the document owner or managers can update access levels",
 		);
 
+		const targetMember = await getActiveMembership(
+			ctx,
+			args.userId,
+			document.organizationId,
+		);
+		if (!targetMember) {
+			throw new ConvexError(
+				"Cannot update access for user who is no longer an active organization member",
+			);
+		}
+
 		const access = await ctx.db
 			.query("document_access")
 			.withIndex("by_document_user", (q) =>
@@ -265,10 +414,18 @@ export const updateAccessLevel = permissionMutation("documents:share")({
 
 		const oldPermissionLevel = access.permissionLevel;
 
+		// Skip update if permission level hasn't changed (no-op optimization)
+		if (oldPermissionLevel === args.newPermissionLevel) {
+			return { success: true, noChange: true };
+		}
+
+		const now = Date.now();
 		await ctx.db.patch(access._id, {
 			permissionLevel: args.newPermissionLevel,
 			grantedBy: currentUserId,
-			grantedAt: Date.now(),
+			grantedAt: now,
+			updatedBy: currentUserId,
+			updatedAt: now,
 		});
 
 		const currentUser = await ctx.db.get(currentUserId);
@@ -320,9 +477,10 @@ export const transferOwnership = permissionMutation("documents:share")({
 			);
 		}
 
+		const now = Date.now();
 		await ctx.db.patch(args.documentId, {
 			ownerId: args.newOwnerId,
-			updatedAt: Date.now(),
+			updatedAt: now,
 		});
 
 		await ctx.db.insert("document_access", {
@@ -330,7 +488,7 @@ export const transferOwnership = permissionMutation("documents:share")({
 			userId: currentUserId,
 			permissionLevel: "manage",
 			grantedBy: args.newOwnerId,
-			grantedAt: Date.now(),
+			grantedAt: now,
 		});
 
 		const currentUser = await ctx.db.get(currentUserId);
