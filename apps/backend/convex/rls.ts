@@ -677,6 +677,44 @@ export async function rlsRules(
 				return doc.userId === rlsCtx.userId;
 			},
 		},
+
+		// ====================
+		// Webhooks
+		// ====================
+		webhook_endpoints: {
+			read: async (_ctx, doc) => {
+				if (!rlsCtx) return false;
+				if (rlsCtx.isSuperAdmin) return true;
+				if (rlsCtx.orgId !== doc.organizationId) return false;
+				// Need settings:integrations permission to view webhooks
+				return rlsCtx.hasPermission("settings:integrations");
+			},
+			modify: async (_ctx, doc) => {
+				if (!rlsCtx) return false;
+				if (rlsCtx.isSuperAdmin) return true;
+				if (rlsCtx.orgId !== doc.organizationId) return false;
+				// Need settings:integrations permission to modify webhooks
+				return rlsCtx.hasPermission("settings:integrations");
+			},
+		},
+
+		webhook_deliveries: {
+			read: async (ctx, doc) => {
+				if (!rlsCtx) return false;
+				if (rlsCtx.isSuperAdmin) return true;
+				if (rlsCtx.orgId !== doc.organizationId) return false;
+
+				// Check if user can access the parent endpoint
+				const endpoint = await ctx.db.get(doc.endpointId);
+				if (!endpoint) return false;
+
+				return rlsCtx.hasPermission("settings:integrations");
+			},
+			modify: async () => {
+				// Deliveries are system-managed
+				return false;
+			},
+		},
 	};
 
 	return rules as Rules<QueryCtx, DataModel>;

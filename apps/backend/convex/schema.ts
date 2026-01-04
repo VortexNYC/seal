@@ -78,6 +78,13 @@ import {
 } from "./schemas/templates";
 import { userProfilesTable } from "./schemas/user_profiles";
 import { type UserStatus, usersTable } from "./schemas/users";
+import {
+	type WebhookDeliveryStatus,
+	type WebhookEndpointStatus,
+	type WebhookEventType,
+	webhookDeliveries,
+	webhookEndpoints,
+} from "./schemas/webhooks";
 
 // Re-export types for use in other files
 export type MemberStatus = UserStatus; // Member status uses the same values as user status
@@ -123,6 +130,9 @@ export type { NotificationType };
 // Re-export integration types
 export type { ApiKeyScope };
 
+// Re-export webhook types
+export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
+
 export default defineSchema({
 	users: usersTable,
 	user_profiles: userProfilesTable,
@@ -163,4 +173,8 @@ export default defineSchema({
 	// Templates
 	templates: templatesTable,
 	template_fields: templateFieldsTable,
+
+	// Webhooks
+	webhook_endpoints: webhookEndpoints,
+	webhook_deliveries: webhookDeliveries,
 });
