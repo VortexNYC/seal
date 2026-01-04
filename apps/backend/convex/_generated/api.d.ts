@@ -8,6 +8,18 @@
  * @module
  */
 
+import type * as api_context from "../api/context.js";
+import type * as api_errors from "../api/errors.js";
+import type * as api_helpers from "../api/helpers.js";
+import type * as api_index from "../api/index.js";
+import type * as api_middleware from "../api/middleware.js";
+import type * as api_v1_documents from "../api/v1/documents.js";
+import type * as api_v1_index from "../api/v1/index.js";
+import type * as api_v1_recipients from "../api/v1/recipients.js";
+import type * as api_v1_signatures from "../api/v1/signatures.js";
+import type * as api_v1_templates from "../api/v1/templates.js";
+import type * as api_v1_webhooks from "../api/v1/webhooks.js";
+import type * as api_versioning from "../api/versioning.js";
 import type * as api_keys_index from "../api_keys/index.js";
 import type * as api_keys_mutations from "../api_keys/mutations.js";
 import type * as api_keys_queries from "../api_keys/queries.js";
@@ -21,6 +33,7 @@ import type * as auth_permissions from "../auth/permissions.js";
 import type * as auth_recipient_wrappers from "../auth/recipient_wrappers.js";
 import type * as auth_wrappers from "../auth/wrappers.js";
 import type * as check_membership from "../check_membership.js";
+import type * as clerk_webhooks from "../clerk_webhooks.js";
 import type * as crons from "../crons.js";
 import type * as crypto_helpers from "../crypto/helpers.js";
 import type * as crypto_index from "../crypto/index.js";
@@ -91,6 +104,7 @@ import type * as schemas_subscriptions from "../schemas/subscriptions.js";
 import type * as schemas_templates from "../schemas/templates.js";
 import type * as schemas_user_profiles from "../schemas/user_profiles.js";
 import type * as schemas_users from "../schemas/users.js";
+import type * as schemas_webhooks from "../schemas/webhooks.js";
 import type * as signature_fields_helpers from "../signature_fields/helpers.js";
 import type * as signature_fields_mutations from "../signature_fields/mutations.js";
 import type * as signature_fields_queries from "../signature_fields/queries.js";
@@ -108,7 +122,9 @@ import type * as templates_queries from "../templates/queries.js";
 import type * as user_profiles_mutations from "../user_profiles/mutations.js";
 import type * as user_profiles_queries from "../user_profiles/queries.js";
 import type * as validations_organizations from "../validations/organizations.js";
-import type * as webhooks from "../webhooks.js";
+import type * as webhooks_index from "../webhooks/index.js";
+import type * as webhooks_mutations from "../webhooks/mutations.js";
+import type * as webhooks_queries from "../webhooks/queries.js";
 
 import type {
   ApiFromModules,
@@ -117,6 +133,18 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "api/context": typeof api_context;
+  "api/errors": typeof api_errors;
+  "api/helpers": typeof api_helpers;
+  "api/index": typeof api_index;
+  "api/middleware": typeof api_middleware;
+  "api/v1/documents": typeof api_v1_documents;
+  "api/v1/index": typeof api_v1_index;
+  "api/v1/recipients": typeof api_v1_recipients;
+  "api/v1/signatures": typeof api_v1_signatures;
+  "api/v1/templates": typeof api_v1_templates;
+  "api/v1/webhooks": typeof api_v1_webhooks;
+  "api/versioning": typeof api_versioning;
   "api_keys/index": typeof api_keys_index;
   "api_keys/mutations": typeof api_keys_mutations;
   "api_keys/queries": typeof api_keys_queries;
@@ -130,6 +158,7 @@ declare const fullApi: ApiFromModules<{
   "auth/recipient_wrappers": typeof auth_recipient_wrappers;
   "auth/wrappers": typeof auth_wrappers;
   check_membership: typeof check_membership;
+  clerk_webhooks: typeof clerk_webhooks;
   crons: typeof crons;
   "crypto/helpers": typeof crypto_helpers;
   "crypto/index": typeof crypto_index;
@@ -200,6 +229,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/templates": typeof schemas_templates;
   "schemas/user_profiles": typeof schemas_user_profiles;
   "schemas/users": typeof schemas_users;
+  "schemas/webhooks": typeof schemas_webhooks;
   "signature_fields/helpers": typeof signature_fields_helpers;
   "signature_fields/mutations": typeof signature_fields_mutations;
   "signature_fields/queries": typeof signature_fields_queries;
@@ -217,7 +247,9 @@ declare const fullApi: ApiFromModules<{
   "user_profiles/mutations": typeof user_profiles_mutations;
   "user_profiles/queries": typeof user_profiles_queries;
   "validations/organizations": typeof validations_organizations;
-  webhooks: typeof webhooks;
+  "webhooks/index": typeof webhooks_index;
+  "webhooks/mutations": typeof webhooks_mutations;
+  "webhooks/queries": typeof webhooks_queries;
 }>;
 
 /**

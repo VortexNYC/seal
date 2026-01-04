@@ -7,7 +7,6 @@
 
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import type { Doc } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
 import { sendDocumentShared } from "./email";
 
@@ -38,7 +37,7 @@ export const sendDocumentSharedEmail = internalAction({
 		error?: string;
 	}> => {
 		// 1. Get the document
-		const document: Doc<"documents"> | null = await ctx.runQuery(
+		const document = await ctx.runQuery(
 			internal.documents.queries.getDocumentInternal,
 			{ documentId: args.documentId },
 		);
@@ -51,7 +50,7 @@ export const sendDocumentSharedEmail = internalAction({
 		}
 
 		// 2. Get the recipient user
-		const recipientUser: Doc<"users"> | null = await ctx.runQuery(
+		const recipientUser = await ctx.runQuery(
 			internal.organizations.helpers.getUserById,
 			{ userId: args.recipientUserId },
 		);
@@ -64,7 +63,7 @@ export const sendDocumentSharedEmail = internalAction({
 		}
 
 		// 3. Get the sharer user
-		const sharerUser: Doc<"users"> | null = await ctx.runQuery(
+		const sharerUser = await ctx.runQuery(
 			internal.organizations.helpers.getUserById,
 			{ userId: args.sharedByUserId },
 		);
