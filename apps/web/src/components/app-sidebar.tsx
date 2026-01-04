@@ -6,6 +6,7 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import {
+	Code2,
 	LayoutTemplate,
 	type LucideIcon,
 	Moon,
@@ -173,6 +174,21 @@ function buildNavSections({
 		},
 	].filter((item) => item.visible);
 
+	const developerItems = [
+		{
+			title: "API Keys",
+			url: buildOrganizationPath(slug, "/settings/developer/api-keys"),
+			visible:
+				canView(permissionFlags?.canManageAPIKeys) ||
+				canView(permissionFlags?.canManageWebhooks),
+		},
+		{
+			title: "Webhooks",
+			url: buildOrganizationPath(slug, "/settings/developer/webhooks"),
+			visible: canView(permissionFlags?.canManageWebhooks),
+		},
+	].filter((item) => item.visible);
+
 	const sections = [
 		{
 			title: "Workspace",
@@ -183,6 +199,11 @@ function buildNavSections({
 			title: "Settings",
 			icon: Settings,
 			items: settingsItems,
+		},
+		{
+			title: "Developer",
+			icon: Code2,
+			items: developerItems,
 		},
 	];
 
