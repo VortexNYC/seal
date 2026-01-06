@@ -232,6 +232,73 @@ React Email templates for:
 - Team invitations
 - Welcome emails
 
+## Public REST API (`apps/backend/convex/api/`)
+
+The backend includes a public REST API infrastructure:
+
+**Structure**:
+- `api/index.ts` - API endpoint registration and routing
+- `api/middleware.ts` - Clerk API key authentication and rate limiting
+- `api/context.ts` - API context bridge (Clerk API key → internal user/org IDs)
+- `api/errors.ts` - RFC 7807 standardized error responses
+- `api/v1/` - Version 1 endpoints (documents, recipients, templates, signatures, webhooks)
+
+**API Scopes** (configure in Clerk Dashboard):
+```
+seal:documents:read, seal:documents:write
+seal:templates:read, seal:templates:write
+seal:recipients:read, seal:recipients:write
+seal:signatures:read
+seal:webhooks:manage
+```
+
+**API Helpers**:
+```typescript
+// Create authenticated HTTP action
+apiHttpAction(requiredScope, handler)
+
+// Response helpers
+apiResponse(200, { data: result })
+apiError(404, "Resource not found", "RESOURCE_NOT_FOUND")
+validationErrorResponse({ email: ["Invalid format"] })
+```
+
+See `docs/api-webhooks-v1-plan.md` for full API documentation.
+
+## Document Workflow States
+
+Documents follow a state machine:
+```
+draft → sent → in_progress → completed
+                    ↓
+                declined
+     ↓
+  cancelled
+```
+
+- **draft**: Document being prepared, can be edited
+- **sent**: Sent to recipients, waiting for signatures
+- **in_progress**: At least one signature collected
+- **completed**: All required signatures collected
+- **cancelled**: Sender voided the document
+- **declined**: Recipient declined to sign
+
+## Row-Level Security (RLS)
+
+RLS is implemented in `apps/backend/convex/rls.ts`:
+
+**Document Access Rules**:
+- `private`: Only owner can access
+- `workspace`: All org members can access (Pro plan)
+- `specific`: Only explicitly granted users
+
+**Access Control** (`auth/access_control.ts`):
+```typescript
+// Check document access level
+const access = await getDocumentAccessLevel(ctx, document, userId, orgId)
+// Returns: "none" | "view" | "edit" | "manage" | "owner"
+```
+
 ## Key Technologies
 
 - **Runtime**: Bun (package manager and runtime)
@@ -244,5 +311,69 @@ React Email templates for:
 - **E2E Testing**: Playwright
 - **Payments**: Stripe
 - **Emails**: Resend with React Email
-- **PDF**: pdf-lib for generation, pdfjs-dist for rendering
+- **PDF**: pdf-lib for generation, pdfjs-dist for rendering, @signpdf for digital signatures
 - **Code Quality**: Biome (linting + formatting)
+- **Validation**: Zod for schema validation
+- **Webhooks**: Svix for webhook delivery
+
+## Known Issues & Technical Debt
+
+### High Priority
+1. **IP Address Tracking**: Hardcoded as "0.0.0.0" in signature audit trail - should capture actual IP from request context
+2. **Rate Limiting**: Middleware exists but rate limiting is not actually enforced (stub only)
+3. **Document Detail Page Complexity**: `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` is 1,878 lines with 30+ state variables - should be split into smaller components
+
+### Medium Priority
+4. **Missing Email Triggers**: Some API endpoints don't trigger email notifications (see TODO comments in `api/v1/`)
+5. **Recipient Token Security**: Tokens stored in plaintext - should be hashed/salted
+6. **Form Validation**: Frontend lacks schema-based validation (no Zod integration)
+7. **Field List Virtualization**: Long field lists in document editor don't use virtualization
+
+### Low Priority
+8. **Checkbox Fields**: Multi-option rendering incomplete
+9. **File Upload Fields**: Attachment field input is stubbed
+10. **Sentry Integration**: Error boundary not logging to Sentry in production
+
+## Component Guidelines
+
+### Large Component Refactoring
+When working on `$documentId.tsx` or similar large components:
+- Consider extracting state into custom hooks (`useDocumentFields`, `useRecipients`, etc.)
+- Use `useReducer` for related state (field properties, pending changes)
+- Extract dialog components with their own state management
+
+### State Management Patterns
+```typescript
+// Good: Use custom hooks for complex state
+const { fields, addField, removeField } = useDocumentFields(documentId)
+
+// Good: Group related state with useReducer
+const [fieldState, dispatch] = useReducer(fieldReducer, initialState)
+
+// Avoid: Multiple related useState calls
+const [fieldName, setFieldName] = useState("")
+const [fieldType, setFieldType] = useState("")
+const [fieldOptions, setFieldOptions] = useState([])
+```
+
+### Performance Optimization
+- Memoize callbacks passed to child components with `useCallback`
+- Use `useMemo` for expensive computations
+- Consider virtualization for lists > 50 items (use `@tanstack/react-virtual`)
+
+## Security Considerations
+
+### API Keys
+- Clerk API keys are used for programmatic access
+- Keys are scoped to specific operations (configured in Clerk Dashboard)
+- Key prefix is stored for display, but full key is only shown once at creation
+
+### Recipient Tokens
+- Tokens grant signing access without authentication
+- Always validate token ownership and expiration
+- Rate limit token validation attempts to prevent brute force
+
+### Webhook Security
+- Clerk webhooks verified with Svix signatures
+- User-configured webhooks use HMAC-SHA256 signatures
+- Always verify webhook signatures before processing
