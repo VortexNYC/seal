@@ -1,8 +1,6 @@
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
 import {
-	type ApiKeyScope,
-	apiKeysTable,
 	connectedAppsTable,
 	integrationActivityLogsTable,
 } from "./schemas/api_keys";
@@ -128,9 +126,6 @@ export type { AuditAction, AuditResourceType };
 // Re-export notification types
 export type { NotificationType };
 
-// Re-export integration types
-export type { ApiKeyScope };
-
 // Re-export webhook types
 export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
 
@@ -170,7 +165,6 @@ export default defineSchema({
 	subscription_prices: subscriptionPricesTable,
 
 	// Integrations
-	api_keys: apiKeysTable,
 	connected_apps: connectedAppsTable,
 	integration_activity_logs: integrationActivityLogsTable,
 

@@ -627,20 +627,6 @@ export async function rlsRules(
 		// ====================
 		// Integrations
 		// ====================
-		api_keys: {
-			read: async (_ctx, doc) => {
-				if (!rlsCtx) return false;
-				if (rlsCtx.isSuperAdmin) return true;
-				// Users can read their own API keys
-				return doc.userId === rlsCtx.userId;
-			},
-			modify: async (_ctx, doc) => {
-				if (!rlsCtx) return false;
-				if (rlsCtx.isSuperAdmin) return true;
-				return doc.userId === rlsCtx.userId;
-			},
-		},
-
 		connected_apps: {
 			read: async (_ctx, doc) => {
 				if (!rlsCtx) return false;
