@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import {
 	AlertDialog,
@@ -120,23 +121,24 @@ function WebhooksPage() {
 	}
 
 	return (
-		<div className="space-y-6">
-			<div>
-				<h2 className="text-2xl font-bold tracking-tight">Webhooks</h2>
-				<p className="text-muted-foreground">
-					Receive real-time notifications when events happen in Seal
-				</p>
+		<PageWrapper
+			title="Webhooks"
+			description="Receive real-time notifications when events happen in Seal"
+		>
+			<div className="space-y-6">
+				{/* Webhook Endpoints */}
+				<WebhookEndpointsSection
+					endpoints={endpoints}
+					eventTypes={eventTypes}
+				/>
+
+				{/* Event Types Reference */}
+				<EventTypesReference eventTypes={eventTypes} />
+
+				{/* Documentation */}
+				<WebhookDocumentation />
 			</div>
-
-			{/* Webhook Endpoints */}
-			<WebhookEndpointsSection endpoints={endpoints} eventTypes={eventTypes} />
-
-			{/* Event Types Reference */}
-			<EventTypesReference eventTypes={eventTypes} />
-
-			{/* Documentation */}
-			<WebhookDocumentation />
-		</div>
+		</PageWrapper>
 	);
 }
 

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import {
 	AlertDialog,
@@ -288,228 +289,228 @@ function ApiKeysPage() {
 	const isApiKeysAvailable = !!clerk.apiKeys;
 
 	return (
-		<div className="space-y-6">
-			<div>
-				<h2 className="text-2xl font-bold tracking-tight">API Keys</h2>
-				<p className="text-muted-foreground">
-					Manage API keys for programmatic access to Seal
-				</p>
-			</div>
-
-			{!isApiKeysAvailable ? (
-				<Card>
-					<CardHeader>
-						<div className="flex items-center gap-2">
-							<Key className="h-5 w-5" />
-							<CardTitle>API Keys</CardTitle>
-						</div>
-						<CardDescription>
-							API keys allow you to access the Seal API programmatically
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<div className="flex flex-col items-center justify-center py-8 text-center">
-							<AlertTriangle className="h-12 w-12 text-amber-500" />
-							<p className="mt-4 text-sm font-medium">
-								API Keys feature is being set up
-							</p>
-							<p className="mt-2 text-sm text-muted-foreground max-w-md">
-								The API Keys feature requires configuration in the Clerk
-								Dashboard. Please enable API Keys in your Clerk application
-								settings.
-							</p>
-							<Button variant="outline" className="mt-4" asChild>
-								<a
-									href="https://dashboard.clerk.com"
-									target="_blank"
-									rel="noopener noreferrer"
-								>
-									<ExternalLink className="mr-2 h-4 w-4" />
-									Open Clerk Dashboard
-								</a>
-							</Button>
-						</div>
-					</CardContent>
-				</Card>
-			) : (
-				<Card>
-					<CardHeader>
-						<div className="flex items-center justify-between">
+		<PageWrapper
+			title="API Keys"
+			description="Manage API keys for programmatic access to Seal"
+		>
+			<div className="space-y-6">
+				{!isApiKeysAvailable ? (
+					<Card>
+						<CardHeader>
 							<div className="flex items-center gap-2">
 								<Key className="h-5 w-5" />
 								<CardTitle>API Keys</CardTitle>
 							</div>
-							<Dialog
-								open={isCreating}
-								onOpenChange={(open) => {
-									if (!open) handleCloseDialog();
-									else setIsCreating(true);
-								}}
-							>
-								<DialogTrigger asChild>
-									<Button size="sm">
-										<Plus className="mr-1 h-4 w-4" />
-										Create API Key
-									</Button>
-								</DialogTrigger>
-								<DialogContent className="sm:max-w-md">
-									<DialogHeader>
-										<DialogTitle>
-											{newKeySecret ? "API Key Created" : "Create API Key"}
-										</DialogTitle>
-										<DialogDescription>
-											{newKeySecret
-												? "Copy your API key now. You won't be able to see it again."
-												: "Generate a new API key for programmatic access."}
-										</DialogDescription>
-									</DialogHeader>
+							<CardDescription>
+								API keys allow you to access the Seal API programmatically
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className="flex flex-col items-center justify-center py-8 text-center">
+								<AlertTriangle className="h-12 w-12 text-amber-500" />
+								<p className="mt-4 text-sm font-medium">
+									API Keys feature is being set up
+								</p>
+								<p className="mt-2 text-sm text-muted-foreground max-w-md">
+									The API Keys feature requires configuration in the Clerk
+									Dashboard. Please enable API Keys in your Clerk application
+									settings.
+								</p>
+								<Button variant="outline" className="mt-4" asChild>
+									<a
+										href="https://dashboard.clerk.com"
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										<ExternalLink className="mr-2 h-4 w-4" />
+										Open Clerk Dashboard
+									</a>
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				) : (
+					<Card>
+						<CardHeader>
+							<div className="flex items-center justify-between">
+								<div className="flex items-center gap-2">
+									<Key className="h-5 w-5" />
+									<CardTitle>API Keys</CardTitle>
+								</div>
+								<Dialog
+									open={isCreating}
+									onOpenChange={(open) => {
+										if (!open) handleCloseDialog();
+										else setIsCreating(true);
+									}}
+								>
+									<DialogTrigger asChild>
+										<Button size="sm">
+											<Plus className="mr-1 h-4 w-4" />
+											Create API Key
+										</Button>
+									</DialogTrigger>
+									<DialogContent className="sm:max-w-md">
+										<DialogHeader>
+											<DialogTitle>
+												{newKeySecret ? "API Key Created" : "Create API Key"}
+											</DialogTitle>
+											<DialogDescription>
+												{newKeySecret
+													? "Copy your API key now. You won't be able to see it again."
+													: "Generate a new API key for programmatic access."}
+											</DialogDescription>
+										</DialogHeader>
 
-									{newKeySecret ? (
-										<div className="space-y-4">
-											<div className="flex items-center gap-2">
-												<Input
-													value={newKeySecret}
-													readOnly
-													className="font-mono text-sm"
-												/>
-												<Button
-													variant="outline"
-													size="icon"
-													onClick={handleCopyKey}
-												>
-													{copiedKey ? (
-														<Check className="h-4 w-4 text-green-600" />
-													) : (
-														<Copy className="h-4 w-4" />
-													)}
-												</Button>
-											</div>
-											<div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/20">
-												<AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-												<p className="text-sm text-amber-800 dark:text-amber-200">
-													Make sure to copy your API key now. You won't be able
-													to see it again!
-												</p>
-											</div>
-											<DialogFooter>
-												<Button onClick={handleCloseDialog}>Done</Button>
-											</DialogFooter>
-										</div>
-									) : (
-										<div className="space-y-4">
-											<div className="space-y-2">
-												<Label htmlFor="key-name">Name</Label>
-												<Input
-													id="key-name"
-													placeholder="e.g., Production API Key"
-													value={newKeyName}
-													onChange={(e) => setNewKeyName(e.target.value)}
-												/>
-											</div>
-
-											<div className="space-y-2">
-												<Label>Permissions</Label>
-												<div className="space-y-2 rounded-lg border p-3 max-h-64 overflow-y-auto">
-													{AVAILABLE_SCOPES.map((scope) => (
-														<div
-															key={scope.value}
-															className="flex items-start gap-3"
-														>
-															<Checkbox
-																id={scope.value}
-																checked={selectedScopes.includes(scope.value)}
-																onCheckedChange={() => toggleScope(scope.value)}
-															/>
-															<div className="grid gap-0.5">
-																<Label
-																	htmlFor={scope.value}
-																	className="font-normal cursor-pointer"
-																>
-																	{scope.label}
-																</Label>
-																<p className="text-xs text-muted-foreground">
-																	{scope.description}
-																</p>
-															</div>
-														</div>
-													))}
+										{newKeySecret ? (
+											<div className="space-y-4">
+												<div className="flex items-center gap-2">
+													<Input
+														value={newKeySecret}
+														readOnly
+														className="font-mono text-sm"
+													/>
+													<Button
+														variant="outline"
+														size="icon"
+														onClick={handleCopyKey}
+													>
+														{copiedKey ? (
+															<Check className="h-4 w-4 text-green-600" />
+														) : (
+															<Copy className="h-4 w-4" />
+														)}
+													</Button>
 												</div>
+												<div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/20">
+													<AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
+													<p className="text-sm text-amber-800 dark:text-amber-200">
+														Make sure to copy your API key now. You won't be
+														able to see it again!
+													</p>
+												</div>
+												<DialogFooter>
+													<Button onClick={handleCloseDialog}>Done</Button>
+												</DialogFooter>
 											</div>
+										) : (
+											<div className="space-y-4">
+												<div className="space-y-2">
+													<Label htmlFor="key-name">Name</Label>
+													<Input
+														id="key-name"
+														placeholder="e.g., Production API Key"
+														value={newKeyName}
+														onChange={(e) => setNewKeyName(e.target.value)}
+													/>
+												</div>
 
-											<DialogFooter>
-												<Button variant="outline" onClick={handleCloseDialog}>
-													Cancel
-												</Button>
-												<Button onClick={handleCreateKey}>Create Key</Button>
-											</DialogFooter>
-										</div>
-									)}
-								</DialogContent>
-							</Dialog>
-						</div>
+												<div className="space-y-2">
+													<Label>Permissions</Label>
+													<div className="space-y-2 rounded-lg border p-3 max-h-64 overflow-y-auto">
+														{AVAILABLE_SCOPES.map((scope) => (
+															<div
+																key={scope.value}
+																className="flex items-start gap-3"
+															>
+																<Checkbox
+																	id={scope.value}
+																	checked={selectedScopes.includes(scope.value)}
+																	onCheckedChange={() =>
+																		toggleScope(scope.value)
+																	}
+																/>
+																<div className="grid gap-0.5">
+																	<Label
+																		htmlFor={scope.value}
+																		className="font-normal cursor-pointer"
+																	>
+																		{scope.label}
+																	</Label>
+																	<p className="text-xs text-muted-foreground">
+																		{scope.description}
+																	</p>
+																</div>
+															</div>
+														))}
+													</div>
+												</div>
+
+												<DialogFooter>
+													<Button variant="outline" onClick={handleCloseDialog}>
+														Cancel
+													</Button>
+													<Button onClick={handleCreateKey}>Create Key</Button>
+												</DialogFooter>
+											</div>
+										)}
+									</DialogContent>
+								</Dialog>
+							</div>
+							<CardDescription>
+								API keys allow secure programmatic access to the Seal API
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{apiKeys.length === 0 ? (
+								<div className="flex flex-col items-center justify-center py-8 text-center">
+									<Key className="h-12 w-12 text-muted-foreground/50" />
+									<p className="mt-4 text-sm text-muted-foreground">
+										No API keys yet
+									</p>
+									<p className="text-xs text-muted-foreground">
+										Create an API key to access the Seal API programmatically
+									</p>
+								</div>
+							) : (
+								<div className="space-y-4">
+									{apiKeys.map((key) => (
+										<ApiKeyRow
+											key={key.id}
+											apiKey={key}
+											onRevoke={() => handleRevokeKey(key.id)}
+										/>
+									))}
+								</div>
+							)}
+						</CardContent>
+					</Card>
+				)}
+
+				{/* API Documentation Card */}
+				<Card>
+					<CardHeader>
+						<CardTitle>API Documentation</CardTitle>
 						<CardDescription>
-							API keys allow secure programmatic access to the Seal API
+							Learn how to use the Seal API to automate document workflows
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{apiKeys.length === 0 ? (
-							<div className="flex flex-col items-center justify-center py-8 text-center">
-								<Key className="h-12 w-12 text-muted-foreground/50" />
-								<p className="mt-4 text-sm text-muted-foreground">
-									No API keys yet
+						<div className="space-y-4">
+							<div className="rounded-lg border p-4">
+								<h4 className="font-medium mb-2">Quick Start</h4>
+								<p className="text-sm text-muted-foreground mb-3">
+									Use your API key in the Authorization header:
 								</p>
-								<p className="text-xs text-muted-foreground">
-									Create an API key to access the Seal API programmatically
-								</p>
+								<pre className="bg-muted p-3 rounded-md text-sm overflow-x-auto">
+									<code>{`curl -X GET "https://api.seal.app/v1/documents" \\
+  -H "Authorization: Bearer YOUR_API_KEY"`}</code>
+								</pre>
 							</div>
-						) : (
-							<div className="space-y-4">
-								{apiKeys.map((key) => (
-									<ApiKeyRow
-										key={key.id}
-										apiKey={key}
-										onRevoke={() => handleRevokeKey(key.id)}
-									/>
-								))}
+
+							<div className="flex items-center gap-4">
+								<Button variant="outline" asChild>
+									<a href="/docs/api" target="_blank" rel="noopener noreferrer">
+										<ExternalLink className="mr-2 h-4 w-4" />
+										View API Docs
+									</a>
+								</Button>
 							</div>
-						)}
+						</div>
 					</CardContent>
 				</Card>
-			)}
-
-			{/* API Documentation Card */}
-			<Card>
-				<CardHeader>
-					<CardTitle>API Documentation</CardTitle>
-					<CardDescription>
-						Learn how to use the Seal API to automate document workflows
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-4">
-						<div className="rounded-lg border p-4">
-							<h4 className="font-medium mb-2">Quick Start</h4>
-							<p className="text-sm text-muted-foreground mb-3">
-								Use your API key in the Authorization header:
-							</p>
-							<pre className="bg-muted p-3 rounded-md text-sm overflow-x-auto">
-								<code>{`curl -X GET "https://api.seal.app/v1/documents" \\
-  -H "Authorization: Bearer YOUR_API_KEY"`}</code>
-							</pre>
-						</div>
-
-						<div className="flex items-center gap-4">
-							<Button variant="outline" asChild>
-								<a href="/docs/api" target="_blank" rel="noopener noreferrer">
-									<ExternalLink className="mr-2 h-4 w-4" />
-									View API Docs
-								</a>
-							</Button>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
-		</div>
+			</div>
+		</PageWrapper>
 	);
 }
 
