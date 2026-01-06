@@ -9,8 +9,10 @@ test.describe("Authentication", () => {
 		// Should show the public landing page (not redirect to sign-in)
 		await expect(page).toHaveURL("/");
 
-		// Should show Sign In link for unauthenticated users
-		await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible();
+		// Should show Sign In link for unauthenticated users (nav has one, hero has one)
+		await expect(
+			page.getByRole("navigation").getByRole("link", { name: "Sign In" }),
+		).toBeVisible();
 	});
 
 	test("should navigate to sign-in page when clicking Sign In", async ({
@@ -24,8 +26,8 @@ test.describe("Authentication", () => {
 		// Should navigate to sign-in page
 		await expect(page).toHaveURL(/sign-in/);
 
-		// Should show Clerk sign-in component
-		await expect(page.locator('[data-clerk-element="sign-in"]')).toBeVisible();
+		// Should show Clerk sign-in component (check for visible sign-in form elements)
+		await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
 	});
 
 	test("should login with valid credentials", async ({ page }) => {
@@ -36,18 +38,15 @@ test.describe("Authentication", () => {
 		await page.goto("/sign-in");
 
 		// Wait for Clerk sign-in component to load
-		await page.waitForSelector('[data-clerk-element="sign-in"]', {
-			timeout: 10000,
-		});
+		await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
 
 		// Fill in credentials
-		await page.fill('input[name="identifier"]', testEmail);
-		await page.click('button[type="submit"]');
+		await page.getByLabel(/email address/i).fill(testEmail);
+		await page.getByRole("button", { name: "Continue", exact: true }).click();
 
-		// Wait for password field
-		await page.waitForSelector('input[name="password"]');
-		await page.fill('input[name="password"]', testPassword);
-		await page.click('button[type="submit"]');
+		// Wait for password field and fill
+		await page.getByLabel(/password/i).fill(testPassword);
+		await page.getByRole("button", { name: "Continue", exact: true }).click();
 
 		// Should redirect to authenticated area
 		await expect(page).toHaveURL(/\/.*\/home/);
@@ -58,17 +57,15 @@ test.describe("Authentication", () => {
 		await page.goto("/sign-in");
 
 		// Wait for Clerk sign-in component to load
-		await page.waitForSelector('[data-clerk-element="sign-in"]', {
-			timeout: 10000,
-		});
+		await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
 
 		// Fill in invalid credentials
-		await page.fill('input[name="identifier"]', "invalid@email.com");
-		await page.click('button[type="submit"]');
+		await page.getByLabel(/email address/i).fill("invalid@email.com");
+		await page.getByRole("button", { name: "Continue", exact: true }).click();
 
-		await page.waitForSelector('input[name="password"]');
-		await page.fill('input[name="password"]', "wrongpassword");
-		await page.click('button[type="submit"]');
+		// Wait for password field and fill
+		await page.getByLabel(/password/i).fill("wrongpassword");
+		await page.getByRole("button", { name: "Continue", exact: true }).click();
 
 		// Should show error message
 		await expect(page.locator(".cl-formFieldErrorText")).toBeVisible();
