@@ -65,6 +65,8 @@ export const createField = mutation({
 				customMessage: v.optional(v.string()),
 			}),
 		),
+		ipAddress: v.optional(v.string()),
+		userAgent: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		// Get authenticated user
@@ -167,8 +169,8 @@ export const createField = mutation({
 			documentId: args.documentId,
 			recipientId: args.recipientId,
 			newValues: { fieldType: args.fieldType, label: args.label },
-			ipAddress: "0.0.0.0", // TODO: Get from request context
-			userAgent: "web",
+			ipAddress: args.ipAddress ?? "web-authenticated",
+			userAgent: args.userAgent ?? "web",
 		});
 
 		return fieldId;
@@ -203,6 +205,8 @@ export const updateField = mutation({
 				customMessage: v.optional(v.string()),
 			}),
 		),
+		ipAddress: v.optional(v.string()),
+		userAgent: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		// Get authenticated user
@@ -271,8 +275,8 @@ export const updateField = mutation({
 				properties: args.properties,
 				validationRules: args.validationRules,
 			},
-			ipAddress: "0.0.0.0", // TODO: Get from request context
-			userAgent: "web",
+			ipAddress: args.ipAddress ?? "web-authenticated",
+			userAgent: args.userAgent ?? "web",
 		});
 
 		return args.fieldId;
@@ -290,6 +294,8 @@ export const repositionField = mutation({
 		width: v.optional(v.number()),
 		height: v.optional(v.number()),
 		page: v.optional(v.number()),
+		ipAddress: v.optional(v.string()),
+		userAgent: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		// Get authenticated user
@@ -378,8 +384,8 @@ export const repositionField = mutation({
 				height: newHeight,
 				page: newPage,
 			},
-			ipAddress: "0.0.0.0", // TODO: Get from request context
-			userAgent: "web",
+			ipAddress: args.ipAddress ?? "web-authenticated",
+			userAgent: args.userAgent ?? "web",
 		});
 
 		return args.fieldId;
@@ -392,6 +398,8 @@ export const repositionField = mutation({
 export const deleteField = mutation({
 	args: {
 		fieldId: v.id("signature_fields"),
+		ipAddress: v.optional(v.string()),
+		userAgent: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		// Get authenticated user
@@ -449,8 +457,8 @@ export const deleteField = mutation({
 			documentId: field.documentId,
 			recipientId: field.recipientId,
 			oldValues,
-			ipAddress: "0.0.0.0", // TODO: Get from request context
-			userAgent: "web",
+			ipAddress: args.ipAddress ?? "web-authenticated",
+			userAgent: args.userAgent ?? "web",
 		});
 
 		return { success: true };
@@ -574,6 +582,8 @@ export const bulkCreateFields = mutation({
 export const setMainSignature = mutation({
 	args: {
 		fieldId: v.id("signature_fields"),
+		ipAddress: v.optional(v.string()),
+		userAgent: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		// Get authenticated user
@@ -646,8 +656,8 @@ export const setMainSignature = mutation({
 			recipientId: field.recipientId,
 			oldValues: { isMainSignature: field.isMainSignature },
 			newValues: { isMainSignature: true },
-			ipAddress: "0.0.0.0",
-			userAgent: "web",
+			ipAddress: args.ipAddress ?? "web-authenticated",
+			userAgent: args.userAgent ?? "web",
 		});
 
 		return { success: true, message: "Main signature updated" };

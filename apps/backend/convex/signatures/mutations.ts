@@ -232,6 +232,8 @@ export const updateSignature = mutation({
 export const deleteSignature = mutation({
 	args: {
 		signatureId: v.id("signatures"),
+		ipAddress: v.optional(v.string()),
+		userAgent: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		// Get authenticated user
@@ -276,8 +278,8 @@ export const deleteSignature = mutation({
 			fieldId: signature.fieldId,
 			documentId: signature.documentId,
 			oldValues,
-			ipAddress: "0.0.0.0", // TODO: Get from request context
-			userAgent: "web",
+			ipAddress: args.ipAddress ?? "web-authenticated",
+			userAgent: args.userAgent ?? "web",
 		});
 
 		return { success: true };
@@ -498,6 +500,7 @@ export const saveFieldValueAuthenticated = authMutation({
 		value: v.optional(v.string()),
 		signatureImageUrl: v.optional(v.string()),
 		signatureMethod: v.optional(signatureMethodTuple),
+		ipAddress: v.optional(v.string()),
 		userAgent: v.string(),
 	},
 	handler: async (ctx, args) => {
@@ -606,8 +609,8 @@ export const saveFieldValueAuthenticated = authMutation({
 			signedAt,
 		);
 
-		// Get IP address (use placeholder for authenticated flow)
-		const ipAddress = "authenticated";
+		// Get IP address from args or use default for authenticated flow
+		const ipAddress = args.ipAddress ?? "web-authenticated";
 
 		if (existingSignature) {
 			// Update existing signature
