@@ -114,7 +114,6 @@ export interface ApiAuthContext {
  * - seal:recipients:read - Read recipient information
  * - seal:recipients:write - Manage document recipients
  * - seal:signatures:read - Read signature data
- * - seal:webhooks:manage - Configure webhook endpoints
  */
 export const API_SCOPES = {
 	DOCUMENTS_READ: "seal:documents:read",
@@ -124,7 +123,6 @@ export const API_SCOPES = {
 	RECIPIENTS_READ: "seal:recipients:read",
 	RECIPIENTS_WRITE: "seal:recipients:write",
 	SIGNATURES_READ: "seal:signatures:read",
-	WEBHOOKS_MANAGE: "seal:webhooks:manage",
 } as const;
 
 export type ApiScope = (typeof API_SCOPES)[keyof typeof API_SCOPES];
@@ -151,7 +149,6 @@ export const SCOPE_PERMISSION_MAP: Record<ApiScope, string[]> = {
 	[API_SCOPES.RECIPIENTS_READ]: ["documents:view"],
 	[API_SCOPES.RECIPIENTS_WRITE]: ["documents:edit"],
 	[API_SCOPES.SIGNATURES_READ]: ["documents:view", "audit:view"],
-	[API_SCOPES.WEBHOOKS_MANAGE]: ["settings:integrations"],
 };
 
 /**
