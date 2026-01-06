@@ -38,10 +38,18 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+	formatDate,
+	formatFileSize,
+	formatRelativeTime,
+	getInitials,
+} from "@/lib/formatting";
 import { countSignatureFields } from "@/lib/signature-fields";
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
+import { DocumentProgressRing } from "../../../../components/documents/document-progress-ring";
+import { DocumentStatusHero } from "../../../../components/documents/document-status-hero";
 import {
 	FIELD_DIMENSIONS,
 	type PlacedField,
@@ -62,7 +70,6 @@ import { RecipientSelectorDialog } from "../../../../components/documents/recipi
 import { RemoveRecipientDialog } from "../../../../components/documents/remove-recipient-dialog";
 import { SaveAsTemplateDialog } from "../../../../components/documents/save-as-template-dialog";
 import { SendDocumentDialog } from "../../../../components/documents/send-document-dialog";
-import type { DocumentWorkflowStatus } from "../../../../components/documents/workflow-status-badge";
 import { Button } from "../../../../components/ui/button";
 import {
 	Collapsible,
@@ -870,53 +877,6 @@ function DocumentDetailPage() {
 		});
 	};
 
-	// Helper to get initials from name or email
-	const getInitials = (name?: string, email?: string): string => {
-		if (name) {
-			return name
-				.split(" ")
-				.map((n) => n[0])
-				.join("")
-				.toUpperCase()
-				.slice(0, 2);
-		}
-		return email ? email[0].toUpperCase() : "?";
-	};
-
-	// Helper to get status label
-	const getStatusLabel = (
-		status: DocumentWorkflowStatus | undefined,
-	): string => {
-		const labels: Record<DocumentWorkflowStatus, string> = {
-			draft: "Draft",
-			sent: "Sent",
-			in_progress: "In Progress",
-			completed: "Completed",
-			cancelled: "Cancelled",
-			declined: "Declined",
-		};
-		return labels[status ?? "draft"];
-	};
-
-	// Helper to format relative time
-	const formatRelativeTime = (timestamp: number): string => {
-		const now = Date.now();
-		const diff = now - timestamp;
-		const minutes = Math.floor(diff / 60000);
-		const hours = Math.floor(diff / 3600000);
-		const days = Math.floor(diff / 86400000);
-
-		if (minutes < 1) return "Just now";
-		if (minutes < 60) return `${minutes}m ago`;
-		if (hours < 24) return `${hours}h ago`;
-		if (days < 7) return `${days}d ago`;
-
-		return new Date(timestamp).toLocaleDateString("en-US", {
-			month: "short",
-			day: "numeric",
-		});
-	};
-
 	// Get activity icon
 	const getActivityIcon = (type: ActivityEventType) => {
 		switch (type) {
@@ -979,23 +939,6 @@ function DocumentDetailPage() {
 	const canEdit =
 		documentData.status === "active" &&
 		(documentData.workflowStatus === "draft" || !documentData.workflowStatus);
-
-	// SEA-72: Format file size helper
-	const formatFileSize = (bytes: number) => {
-		if (bytes === 0) return "0 Bytes";
-		const k = 1024;
-		const sizes = ["Bytes", "KB", "MB", "GB"];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
-	};
-
-	const formatDate = (timestamp: number) => {
-		return new Date(timestamp).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-		});
-	};
 
 	// Check if document can be sent
 	const getSendDocumentValidation = () => {
@@ -1072,13 +1015,6 @@ function DocumentDetailPage() {
 			</TooltipContent>
 		</Tooltip>
 	);
-
-	// Calculate progress ring circumference
-	const ringRadius = 52;
-	const ringCircumference = 2 * Math.PI * ringRadius;
-	const progressOffset = progress
-		? ringCircumference - (progress.percentComplete / 100) * ringCircumference
-		: ringCircumference;
 
 	return (
 		<PageWrapper
@@ -1242,112 +1178,14 @@ function DocumentDetailPage() {
 					{/* Right column: Document Options Panel */}
 					<div className="flex flex-col gap-5 sm:gap-4">
 						{/* Status Hero */}
-						<div
-							className={`rounded-2xl p-6 text-center border sm:p-4 sm:rounded-xl ${
-								documentData.workflowStatus === "completed"
-									? "bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800"
-									: documentData.workflowStatus === "in_progress"
-										? "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800"
-										: documentData.workflowStatus === "sent"
-											? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
-											: "bg-amber-50/50 dark:bg-amber-950/50 border-amber-200/50 dark:border-amber-800/50"
-							}`}
-						>
-							<div className="font-sans text-[10px] font-semibold tracking-widest uppercase text-stone-500 dark:text-stone-400 mb-2">
-								Document Status
-							</div>
-							<div
-								className={`font-serif text-3xl font-medium mb-1 sm:text-2xl ${
-									documentData.workflowStatus === "completed"
-										? "text-emerald-700 dark:text-emerald-300"
-										: "text-stone-800 dark:text-stone-200"
-								}`}
-							>
-								{getStatusLabel(documentData.workflowStatus)}
-							</div>
-							<div className="font-sans text-sm text-stone-500 dark:text-stone-400 sm:text-xs">
-								Created {formatDate(documentData.createdAt)}
-							</div>
-						</div>
+						<DocumentStatusHero
+							workflowStatus={documentData.workflowStatus}
+							createdAt={documentData.createdAt}
+						/>
 
 						{/* Progress Ring - Only show when document is sent */}
 						{progress && documentData.workflowStatus !== "draft" && (
-							<div className="flex flex-col items-center gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm sm:p-4 sm:rounded-xl animate-[fadeInUp_0.3s_ease-out_forwards]">
-								<div className="relative w-[120px] h-[120px] sm:w-[90px] sm:h-[90px]">
-									<svg
-										width="120"
-										height="120"
-										viewBox="0 0 120 120"
-										aria-hidden="true"
-										className="-rotate-90 sm:w-[90px] sm:h-[90px]"
-									>
-										<circle
-											cx="60"
-											cy="60"
-											r={ringRadius}
-											fill="none"
-											stroke="hsl(220 15% 92%)"
-											strokeWidth="8"
-										/>
-										<circle
-											cx="60"
-											cy="60"
-											r={ringRadius}
-											fill="none"
-											stroke="hsl(145 55% 45%)"
-											strokeWidth="8"
-											strokeLinecap="round"
-											strokeDasharray={ringCircumference}
-											strokeDashoffset={progressOffset}
-											className="transition-[stroke-dashoffset] duration-500 ease-out"
-										/>
-									</svg>
-									<div className="absolute inset-0 flex flex-col items-center justify-center">
-										<span className="font-serif text-[1.75rem] font-semibold text-slate-800 dark:text-slate-200 leading-none sm:text-xl">
-											{progress.percentComplete}%
-										</span>
-										<span className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
-											Complete
-										</span>
-									</div>
-								</div>
-								<div className="grid grid-cols-2 gap-3 w-full sm:gap-2">
-									<div className="text-center py-3 px-2 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:py-2.5 sm:px-1.5">
-										<div className="font-sans text-xl font-semibold text-emerald-600 dark:text-emerald-400 sm:text-base">
-											{progress.byStatus.signed}
-										</div>
-										<div className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
-											Signed
-										</div>
-									</div>
-									<div className="text-center py-3 px-2 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:py-2.5 sm:px-1.5">
-										<div className="font-sans text-xl font-semibold text-amber-600 dark:text-amber-400 sm:text-base">
-											{progress.byStatus.pending}
-										</div>
-										<div className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
-											Pending
-										</div>
-									</div>
-									<div className="text-center py-3 px-2 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:py-2.5 sm:px-1.5">
-										<div className="font-sans text-xl font-semibold text-slate-700 dark:text-slate-300 sm:text-base">
-											{progress.byStatus.viewed}
-										</div>
-										<div className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
-											Viewed
-										</div>
-									</div>
-									{progress.byStatus.declined > 0 && (
-										<div className="text-center py-3 px-2 bg-slate-50 dark:bg-slate-800 rounded-[10px] sm:py-2.5 sm:px-1.5">
-											<div className="font-sans text-xl font-semibold text-red-500 dark:text-red-400 sm:text-base">
-												{progress.byStatus.declined}
-											</div>
-											<div className="font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400 mt-0.5">
-												Declined
-											</div>
-										</div>
-									)}
-								</div>
-							</div>
+							<DocumentProgressRing progress={progress} />
 						)}
 
 						{/* In-App Signing Section - Show when user is a recipient who needs to sign */}
