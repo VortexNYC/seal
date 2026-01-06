@@ -282,7 +282,14 @@ function ApiKeysPage() {
 	};
 
 	if (isLoading) {
-		return <FormSkeleton />;
+		return (
+			<PageWrapper
+				title="API Keys"
+				description="Manage API keys for programmatic access to Seal"
+			>
+				<FormSkeleton />
+			</PageWrapper>
+		);
 	}
 
 	// Check if Clerk API Keys feature is available

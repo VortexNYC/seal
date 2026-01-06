@@ -117,7 +117,14 @@ function WebhooksPage() {
 	const eventTypes = useQuery(api.webhooks.queries.getEventTypes);
 
 	if (!endpoints || !eventTypes) {
-		return <FormSkeleton />;
+		return (
+			<PageWrapper
+				title="Webhooks"
+				description="Receive real-time notifications when events happen in Seal"
+			>
+				<FormSkeleton />
+			</PageWrapper>
+		);
 	}
 
 	return (
