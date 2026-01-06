@@ -136,6 +136,8 @@ export const getUserPermissions = internalQuery({
  * Returns the primary owner of an organization.
  * Used for organization-scoped API keys when no specific user context is provided.
  *
+ * Falls back to finding any active owner-role member if no isPrimary member exists.
+ *
  * @internal
  * @param organizationId - Internal Convex organization ID
  * @returns User document of the owner or null
@@ -143,8 +145,8 @@ export const getUserPermissions = internalQuery({
 export const getOrganizationOwner = internalQuery({
 	args: { organizationId: v.id("organizations") },
 	handler: async (ctx, args) => {
-		// Find primary member (owner)
-		const ownerMembership = await ctx.db
+		// First, try to find primary member (owner)
+		const primaryMembership = await ctx.db
 			.query("organization_members")
 			.withIndex("by_organization", (q) =>
 				q.eq("organizationId", args.organizationId),
@@ -152,11 +154,37 @@ export const getOrganizationOwner = internalQuery({
 			.filter((q) => q.eq(q.field("isPrimary"), true))
 			.first();
 
-		if (!ownerMembership) {
+		if (primaryMembership) {
+			return ctx.db.get(primaryMembership.userId);
+		}
+
+		// Fallback: find any active owner-role member
+		const ownerMembership = await ctx.db
+			.query("organization_members")
+			.withIndex("by_organization_role", (q) =>
+				q.eq("organizationId", args.organizationId).eq("role", "owner"),
+			)
+			.filter((q) => q.eq(q.field("status"), "active"))
+			.first();
+
+		if (ownerMembership) {
+			return ctx.db.get(ownerMembership.userId);
+		}
+
+		// Last fallback: find any active admin member
+		const adminMembership = await ctx.db
+			.query("organization_members")
+			.withIndex("by_organization_role", (q) =>
+				q.eq("organizationId", args.organizationId).eq("role", "admin"),
+			)
+			.filter((q) => q.eq(q.field("status"), "active"))
+			.first();
+
+		if (!adminMembership) {
 			return null;
 		}
 
-		return ctx.db.get(ownerMembership.userId);
+		return ctx.db.get(adminMembership.userId);
 	},
 });
 
