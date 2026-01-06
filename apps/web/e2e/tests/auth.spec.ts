@@ -31,8 +31,9 @@ test.describe("Authentication", () => {
 	});
 
 	test("should login with valid credentials", async ({ page }) => {
-		const testEmail = process.env.TEST_USER_EMAIL || "test@seal-test.com";
-		const testPassword = process.env.TEST_USER_PASSWORD || "TestPassword123!";
+		const testEmail =
+			process.env.TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
+		const testEmailCode = process.env.TEST_EMAIL_CODE || "424242";
 
 		// Navigate directly to sign-in page
 		await page.goto("/sign-in");
@@ -40,35 +41,54 @@ test.describe("Authentication", () => {
 		// Wait for Clerk sign-in component to load
 		await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
 
-		// Fill in credentials
+		// Fill in email
 		await page.getByLabel(/email address/i).fill(testEmail);
 		await page.getByRole("button", { name: "Continue", exact: true }).click();
 
-		// Wait for password field and fill
-		await page.getByLabel(/password/i).fill(testPassword);
-		await page.getByRole("button", { name: "Continue", exact: true }).click();
+		// Wait for OTP code screen and inputs to be ready
+		await expect(
+			page.getByRole("heading", { name: /check your email/i }),
+		).toBeVisible();
 
-		// Should redirect to authenticated area
-		await expect(page).toHaveURL(/\/.*\/home/);
+		// Wait a moment for Clerk OTP to initialize
+		await page.waitForTimeout(500);
+
+		// Type the OTP code directly (Clerk test mode accepts 424242 for +clerk_test emails)
+		await page.keyboard.type(testEmailCode);
+
+		// Should redirect to authenticated area (may go to /app, /home, or org-specific path)
+		await expect(page).toHaveURL(/\/(app|.*\/home)/, { timeout: 30000 });
 	});
 
 	test("should show error with invalid credentials", async ({ page }) => {
+		const testEmail =
+			process.env.TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
+
 		// Navigate directly to sign-in page
 		await page.goto("/sign-in");
 
 		// Wait for Clerk sign-in component to load
 		await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
 
-		// Fill in invalid credentials
-		await page.getByLabel(/email address/i).fill("invalid@email.com");
+		// Fill in email
+		await page.getByLabel(/email address/i).fill(testEmail);
 		await page.getByRole("button", { name: "Continue", exact: true }).click();
 
-		// Wait for password field and fill
-		await page.getByLabel(/password/i).fill("wrongpassword");
-		await page.getByRole("button", { name: "Continue", exact: true }).click();
+		// Wait for OTP code screen
+		await expect(
+			page.getByRole("heading", { name: /check your email/i }),
+		).toBeVisible();
 
-		// Should show error message
-		await expect(page.locator(".cl-formFieldErrorText")).toBeVisible();
+		// Wait a moment for Clerk OTP to initialize
+		await page.waitForTimeout(500);
+
+		// Type an invalid OTP code directly
+		await page.keyboard.type("000000");
+
+		// Should show error message (Clerk shows error after auto-submit)
+		await expect(page.getByText(/incorrect/i).first()).toBeVisible({
+			timeout: 10000,
+		});
 	});
 });
 

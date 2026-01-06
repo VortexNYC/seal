@@ -60,11 +60,12 @@ export const test = base.extend<AuthFixtures>({
 });
 
 /**
- * Perform login using Clerk
+ * Perform login using Clerk with email code verification
  */
 async function performLogin(page: Page): Promise<void> {
-	const testEmail = process.env.TEST_USER_EMAIL || "test@seal-test.com";
-	const testPassword = process.env.TEST_USER_PASSWORD || "TestPassword123!";
+	const testEmail =
+		process.env.TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
+	const testEmailCode = process.env.TEST_EMAIL_CODE || "424242";
 
 	// Navigate directly to sign-in page
 	await page.goto("/sign-in");
@@ -74,16 +75,21 @@ async function performLogin(page: Page): Promise<void> {
 		timeout: 10000,
 	});
 
-	// Fill in credentials
+	// Fill in email
 	await page.getByLabel(/email address/i).fill(testEmail);
 	await page.getByRole("button", { name: "Continue", exact: true }).click();
 
-	// Wait for password field
-	await page.getByLabel(/password/i).fill(testPassword);
-	await page.getByRole("button", { name: "Continue", exact: true }).click();
+	// Wait for OTP code screen
+	await page.waitForSelector('text="Check your email"', { timeout: 10000 });
 
-	// Wait for redirect to authenticated area
-	await page.waitForURL("**/home", { timeout: 30000 });
+	// Wait a moment for Clerk OTP to initialize
+	await page.waitForTimeout(500);
+
+	// Type the OTP code directly (Clerk test mode accepts 424242 for +clerk_test emails)
+	await page.keyboard.type(testEmailCode);
+
+	// Wait for redirect to authenticated area (may go to /app or org-specific path)
+	await page.waitForURL(/\/(app|.*\/home)/, { timeout: 30000 });
 }
 
 /**
