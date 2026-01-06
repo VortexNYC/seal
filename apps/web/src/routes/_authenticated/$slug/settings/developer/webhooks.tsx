@@ -22,11 +22,13 @@ import {
 	Pause,
 	Play,
 	Plus,
+	Radio,
 	RefreshCw,
 	Send,
 	Trash2,
 	Webhook,
 	XCircle,
+	Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -133,16 +135,13 @@ function WebhooksPage() {
 			description="Receive real-time notifications when events happen in Seal"
 		>
 			<div className="space-y-6">
-				{/* Webhook Endpoints */}
 				<WebhookEndpointsSection
 					endpoints={endpoints}
 					eventTypes={eventTypes}
 				/>
 
-				{/* Event Types Reference */}
 				<EventTypesReference eventTypes={eventTypes} />
 
-				{/* Documentation */}
 				<WebhookDocumentation />
 			</div>
 		</PageWrapper>
@@ -165,7 +164,7 @@ function WebhookEndpointsSection({
 			<CardHeader>
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2">
-						<Webhook className="h-5 w-5" />
+						<Radio className="h-5 w-5 text-purple-600 dark:text-purple-400" />
 						<CardTitle>Webhook Endpoints</CardTitle>
 					</div>
 					<CreateWebhookDialog
@@ -180,19 +179,40 @@ function WebhookEndpointsSection({
 			</CardHeader>
 			<CardContent>
 				{endpoints.length === 0 ? (
-					<div className="flex flex-col items-center justify-center py-8 text-center">
-						<Webhook className="h-12 w-12 text-muted-foreground/50" />
-						<p className="mt-4 text-sm text-muted-foreground">
-							No webhook endpoints configured
+					<div className="flex flex-col items-center justify-center py-16 text-center">
+						<div className="relative">
+							<div className="flex h-20 w-20 items-center justify-center rounded-2xl border bg-muted">
+								<Webhook className="h-10 w-10 text-muted-foreground" />
+							</div>
+							<div className="absolute inset-0 flex items-center justify-center">
+								<div className="h-32 w-32 rounded-full border border-purple-500/20 animate-[ping_2s_ease-in-out_infinite]" />
+							</div>
+							<div className="absolute inset-0 flex items-center justify-center">
+								<div className="h-24 w-24 rounded-full border border-purple-500/30 animate-[ping_2s_ease-in-out_infinite_0.5s]" />
+							</div>
+						</div>
+						<p className="mt-8 font-mono">Connect your first endpoint</p>
+						<p className="mt-1 text-sm text-muted-foreground">
+							Receive real-time event notifications in your application
 						</p>
-						<p className="text-xs text-muted-foreground">
-							Create an endpoint to receive real-time event notifications
-						</p>
+						<Button
+							onClick={() => setIsCreating(true)}
+							className="mt-6 bg-purple-600 text-white hover:bg-purple-500"
+						>
+							<Plus className="mr-2 h-4 w-4" />
+							Add Endpoint
+						</Button>
 					</div>
 				) : (
-					<div className="space-y-4">
-						{endpoints.map((endpoint) => (
-							<WebhookEndpointRow key={endpoint._id} endpoint={endpoint} />
+					<div className="space-y-3">
+						{endpoints.map((endpoint, index) => (
+							<div
+								key={endpoint._id}
+								style={{ animationDelay: `${index * 50}ms` }}
+								className="animate-in fade-in slide-in-from-bottom-2"
+							>
+								<WebhookEndpointRow endpoint={endpoint} />
+							</div>
 						))}
 					</div>
 				)}
@@ -294,7 +314,6 @@ function CreateWebhookDialog({
 		}
 	};
 
-	// Group events by category
 	const eventsByCategory = eventTypes.reduce(
 		(acc, event) => {
 			if (!acc[event.category]) {
@@ -309,7 +328,10 @@ function CreateWebhookDialog({
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogTrigger asChild>
-				<Button size="sm">
+				<Button
+					size="sm"
+					className="bg-purple-600 text-white hover:bg-purple-500"
+				>
 					<Plus className="mr-1 h-4 w-4" />
 					Add Endpoint
 				</Button>
@@ -330,34 +352,47 @@ function CreateWebhookDialog({
 					<div className="space-y-4">
 						<div>
 							<Label>Signing Secret</Label>
-							<div className="flex items-center gap-2 mt-1.5">
-								<Input
-									value={newSecret}
-									readOnly
-									className="font-mono text-sm"
-								/>
-								<Button
-									variant="outline"
-									size="icon"
-									onClick={handleCopySecret}
-								>
-									{copiedSecret ? (
-										<Check className="h-4 w-4 text-green-600" />
-									) : (
-										<Copy className="h-4 w-4" />
-									)}
-								</Button>
+							<div className="relative mt-1.5">
+								<div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-purple-500/20 to-purple-500/10 blur" />
+								<div className="relative flex items-center gap-2 rounded-lg border border-purple-500/30 bg-muted p-3">
+									<Input
+										value={newSecret}
+										readOnly
+										className="flex-1 border-0 bg-transparent font-mono text-sm text-purple-700 dark:text-purple-300 focus-visible:ring-0"
+									/>
+									<Button
+										variant="ghost"
+										size="icon"
+										onClick={handleCopySecret}
+										className="shrink-0"
+									>
+										{copiedSecret ? (
+											<Check className="h-4 w-4 text-emerald-500" />
+										) : (
+											<Copy className="h-4 w-4" />
+										)}
+									</Button>
+								</div>
 							</div>
 						</div>
-						<div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/20">
-							<AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-							<p className="text-sm text-amber-800 dark:text-amber-200">
-								Store this secret securely. You'll need it to verify webhook
-								signatures.
-							</p>
+						<div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-4">
+							<AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500 mt-0.5" />
+							<div>
+								<p className="font-medium text-amber-800 dark:text-amber-200">
+									Store this secret securely
+								</p>
+								<p className="text-sm text-amber-700 dark:text-amber-200/70">
+									You'll need it to verify webhook signatures.
+								</p>
+							</div>
 						</div>
 						<DialogFooter>
-							<Button onClick={handleClose}>Done</Button>
+							<Button
+								onClick={handleClose}
+								className="bg-purple-600 text-white hover:bg-purple-500"
+							>
+								Done
+							</Button>
 						</DialogFooter>
 					</div>
 				) : (
@@ -379,6 +414,7 @@ function CreateWebhookDialog({
 								placeholder="https://example.com/webhooks/seal"
 								value={url}
 								onChange={(e) => setUrl(e.target.value)}
+								className="font-mono"
 							/>
 							<p className="text-xs text-muted-foreground">
 								Must be HTTPS for production use
@@ -399,11 +435,21 @@ function CreateWebhookDialog({
 						</div>
 
 						<div className="space-y-2">
-							<Label>Events to subscribe</Label>
-							<p className="text-xs text-muted-foreground mb-2">
+							<div className="flex items-center justify-between">
+								<Label>Events to subscribe</Label>
+								{selectedEvents.length > 0 && (
+									<Badge
+										variant="secondary"
+										className="text-purple-600 dark:text-purple-400"
+									>
+										{selectedEvents.length} selected
+									</Badge>
+								)}
+							</div>
+							<p className="text-xs text-muted-foreground">
 								Leave empty to receive all events
 							</p>
-							<div className="rounded-lg border p-3 max-h-48 overflow-y-auto space-y-4">
+							<div className="rounded-lg border bg-muted/30 p-3 max-h-48 overflow-y-auto space-y-4">
 								{Object.entries(eventsByCategory).map(([category, events]) => {
 									const categorySelected = events.every((e) =>
 										selectedEvents.includes(e.type),
@@ -425,6 +471,7 @@ function CreateWebhookDialog({
 														}
 													}}
 													onCheckedChange={() => toggleCategory(category)}
+													className="data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500"
 												/>
 												<Label
 													htmlFor={`category-${category}`}
@@ -443,12 +490,13 @@ function CreateWebhookDialog({
 															id={event.type}
 															checked={selectedEvents.includes(event.type)}
 															onCheckedChange={() => toggleEvent(event.type)}
+															className="mt-0.5 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500"
 														/>
 														<Label
 															htmlFor={event.type}
 															className="font-normal text-sm cursor-pointer"
 														>
-															<code className="text-xs bg-muted px-1 py-0.5 rounded">
+															<code className="font-mono text-xs bg-muted text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">
 																{event.type}
 															</code>
 														</Label>
@@ -461,11 +509,16 @@ function CreateWebhookDialog({
 							</div>
 						</div>
 
-						<DialogFooter>
+						<DialogFooter className="gap-2">
 							<Button variant="outline" onClick={handleClose}>
 								Cancel
 							</Button>
-							<Button onClick={handleCreate}>Create Endpoint</Button>
+							<Button
+								onClick={handleCreate}
+								className="bg-purple-600 text-white hover:bg-purple-500"
+							>
+								Create Endpoint
+							</Button>
 						</DialogFooter>
 					</div>
 				)}
@@ -481,6 +534,7 @@ interface WebhookEndpointRowProps {
 function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [showSecret, setShowSecret] = useState(false);
+	const [isTesting, setIsTesting] = useState(false);
 
 	const updateEndpoint = useMutation(api.webhooks.mutations.updateEndpoint);
 	const deleteEndpoint = useMutation(api.webhooks.mutations.deleteEndpoint);
@@ -535,6 +589,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 	};
 
 	const handleTest = async () => {
+		setIsTesting(true);
 		try {
 			await testEndpoint({ endpointId: endpoint._id });
 			toast.success("Test webhook sent");
@@ -542,51 +597,75 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 			toast.error(
 				error instanceof Error ? error.message : "Failed to send test",
 			);
+		} finally {
+			setIsTesting(false);
 		}
 	};
 
-	const statusColors = {
-		active: "bg-green-500",
-		paused: "bg-yellow-500",
-		disabled: "bg-red-500",
+	const statusConfig = {
+		active: {
+			border: "border-l-purple-500",
+			badge: "text-purple-600 dark:text-purple-400",
+			dot: "bg-purple-500",
+		},
+		paused: {
+			border: "border-l-amber-500",
+			badge: "text-amber-600 dark:text-amber-400",
+			dot: "bg-amber-500",
+		},
+		disabled: {
+			border: "border-l-rose-500",
+			badge: "text-rose-600 dark:text-rose-400",
+			dot: "bg-rose-500",
+		},
 	};
+
+	const config = statusConfig[endpoint.status];
+
+	const urlParts = endpoint.url.match(/^(https?:\/\/)(.+)$/);
+	const protocol = urlParts?.[1] || "";
+	const urlPath = urlParts?.[2] || endpoint.url;
 
 	return (
 		<Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-			<div className="rounded-lg border">
-				<div className="p-4">
+			<div className="group relative overflow-hidden rounded-lg border transition-all duration-200 hover:border-purple-500/30 hover:shadow-sm dark:hover:shadow-purple-500/5">
+				<div
+					className={`absolute left-0 top-0 bottom-0 w-1 ${config.border}`}
+				/>
+
+				<div className="p-4 pl-5">
 					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-						<div className="space-y-1 min-w-0 flex-1">
-							<div className="flex items-center gap-2 flex-wrap">
-								<CollapsibleTrigger className="flex items-center gap-1 hover:text-foreground">
+						<div className="space-y-2 min-w-0 flex-1">
+							<div className="flex items-center gap-3 flex-wrap">
+								<CollapsibleTrigger className="flex items-center gap-2 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
 									{isExpanded ? (
-										<ChevronDown className="h-4 w-4" />
+										<ChevronDown className="h-4 w-4 text-muted-foreground" />
 									) : (
-										<ChevronRight className="h-4 w-4" />
+										<ChevronRight className="h-4 w-4 text-muted-foreground" />
 									)}
 									<span className="font-medium">{endpoint.name}</span>
 								</CollapsibleTrigger>
-								<div
-									className={`h-2 w-2 rounded-full ${statusColors[endpoint.status]}`}
-								/>
-								<Badge
-									variant={
-										endpoint.status === "active"
-											? "default"
-											: endpoint.status === "paused"
-												? "secondary"
-												: "destructive"
-									}
-									className="text-xs"
-								>
+								<div className={`h-2 w-2 rounded-full ${config.dot}`} />
+								<Badge variant="secondary" className={config.badge}>
 									{endpoint.status}
 								</Badge>
 							</div>
-							<div className="text-sm text-muted-foreground truncate">
-								{endpoint.url}
+							<div className="font-mono text-sm truncate">
+								<span className="text-muted-foreground">{protocol}</span>
+								<span>{urlPath}</span>
 							</div>
 							<div className="flex items-center gap-4 text-xs text-muted-foreground">
-								<span>{endpoint.stats.successRate}% success rate</span>
+								<span
+									className={`font-mono font-medium ${
+										endpoint.stats.successRate >= 90
+											? "text-emerald-600 dark:text-emerald-400"
+											: endpoint.stats.successRate >= 70
+												? "text-amber-600 dark:text-amber-400"
+												: "text-rose-600 dark:text-rose-400"
+									}`}
+								>
+									{endpoint.stats.successRate}% success
+								</span>
 								<span>
 									{endpoint.events.length === 0
 										? "All events"
@@ -604,9 +683,12 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 								variant="outline"
 								size="sm"
 								onClick={handleTest}
+								disabled={isTesting}
 								title="Send test webhook"
 							>
-								<Send className="h-4 w-4" />
+								<Send
+									className={`h-4 w-4 ${isTesting ? "animate-pulse" : ""}`}
+								/>
 							</Button>
 							<Button
 								variant="outline"
@@ -623,7 +705,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 							<AlertDialog>
 								<AlertDialogTrigger asChild>
 									<Button variant="outline" size="sm" title="Delete">
-										<Trash2 className="h-4 w-4 text-destructive" />
+										<Trash2 className="h-4 w-4" />
 									</Button>
 								</AlertDialogTrigger>
 								<AlertDialogContent>
@@ -651,20 +733,23 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 
 				<CollapsibleContent>
 					<Separator />
-					<div className="p-4 space-y-4">
-						{/* Secret */}
+					<div className="p-4 pl-5 space-y-6">
 						<div className="space-y-2">
 							<Label>Signing Secret</Label>
 							<div className="flex items-center gap-2">
-								<Input
-									value={
-										showSecret
+								<div className="flex-1 flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
+									<code
+										className={`font-mono text-sm transition-all duration-300 ${
+											showSecret
+												? "text-purple-700 dark:text-purple-300"
+												: "text-muted-foreground blur-sm"
+										}`}
+									>
+										{showSecret
 											? `${endpoint.secretPrefix}...`
-											: "whsec_••••••••"
-									}
-									readOnly
-									className="font-mono text-sm"
-								/>
+											: "whsec_••••••••••••••••"}
+									</code>
+								</div>
 								<Button
 									variant="outline"
 									size="icon"
@@ -693,7 +778,10 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 										</AlertDialogHeader>
 										<AlertDialogFooter>
 											<AlertDialogCancel>Cancel</AlertDialogCancel>
-											<AlertDialogAction onClick={handleRotateSecret}>
+											<AlertDialogAction
+												onClick={handleRotateSecret}
+												className="bg-amber-600 text-white hover:bg-amber-500"
+											>
 												Rotate Secret
 											</AlertDialogAction>
 										</AlertDialogFooter>
@@ -702,15 +790,23 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 							</div>
 						</div>
 
-						{/* Subscribed Events */}
 						<div className="space-y-2">
 							<Label>Subscribed Events</Label>
-							<div className="flex flex-wrap gap-1">
+							<div className="flex flex-wrap gap-1.5">
 								{endpoint.events.length === 0 ? (
-									<Badge variant="outline">All events</Badge>
+									<Badge
+										variant="outline"
+										className="font-mono text-xs text-purple-700 dark:text-purple-300"
+									>
+										All events
+									</Badge>
 								) : (
 									endpoint.events.map((event) => (
-										<Badge key={event} variant="outline" className="text-xs">
+										<Badge
+											key={event}
+											variant="outline"
+											className="font-mono text-xs"
+										>
 											{event}
 										</Badge>
 									))
@@ -718,19 +814,25 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 							</div>
 						</div>
 
-						{/* Recent Deliveries */}
 						<div className="space-y-2">
 							<Label>Recent Deliveries</Label>
 							{deliveries === undefined ? (
-								<p className="text-sm text-muted-foreground">Loading...</p>
+								<div className="flex items-center gap-2 text-sm text-muted-foreground">
+									<div className="h-4 w-4 border-2 border-muted-foreground/30 border-t-purple-500 rounded-full animate-spin" />
+									Loading...
+								</div>
 							) : deliveries.length === 0 ? (
 								<p className="text-sm text-muted-foreground">
 									No deliveries yet
 								</p>
 							) : (
-								<div className="space-y-2 max-h-48 overflow-y-auto">
-									{deliveries.map((delivery) => (
-										<DeliveryRow key={delivery._id} delivery={delivery} />
+								<div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+									{deliveries.map((delivery, index) => (
+										<DeliveryRow
+											key={delivery._id}
+											delivery={delivery}
+											isLast={index === deliveries.length - 1}
+										/>
 									))}
 								</div>
 							)}
@@ -744,28 +846,69 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 
 interface DeliveryRowProps {
 	delivery: Doc<"webhook_deliveries">;
+	isLast: boolean;
 }
 
-function DeliveryRow({ delivery }: DeliveryRowProps) {
-	const statusIcons = {
-		pending: <Clock className="h-4 w-4 text-yellow-500" />,
-		delivered: <Check className="h-4 w-4 text-green-500" />,
-		failed: <XCircle className="h-4 w-4 text-red-500" />,
-		abandoned: <XCircle className="h-4 w-4 text-gray-500" />,
+function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
+	const statusConfig = {
+		pending: {
+			icon: <Clock className="h-4 w-4 text-sky-600 dark:text-sky-400" />,
+			bg: "bg-sky-500/10",
+		},
+		delivered: {
+			icon: (
+				<Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+			),
+			bg: "bg-emerald-500/10",
+		},
+		failed: {
+			icon: <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />,
+			bg: "bg-rose-500/10",
+		},
+		abandoned: {
+			icon: <XCircle className="h-4 w-4 text-muted-foreground" />,
+			bg: "bg-muted",
+		},
 	};
 
+	const config = statusConfig[delivery.status];
+
+	const responseCodeColor =
+		delivery.responseCode &&
+		delivery.responseCode >= 200 &&
+		delivery.responseCode < 300
+			? "text-emerald-600 dark:text-emerald-400"
+			: delivery.responseCode && delivery.responseCode >= 400
+				? "text-rose-600 dark:text-rose-400"
+				: "text-amber-600 dark:text-amber-400";
+
 	return (
-		<div className="flex items-center justify-between text-sm rounded-md border p-2">
-			<div className="flex items-center gap-2">
-				{statusIcons[delivery.status]}
-				<code className="text-xs bg-muted px-1 py-0.5 rounded">
-					{delivery.eventType}
-				</code>
+		<div className="relative flex items-start gap-3">
+			{!isLast && (
+				<div className="absolute left-[11px] top-7 bottom-0 w-px bg-border" />
+			)}
+			<div
+				className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${config.bg}`}
+			>
+				{config.icon}
 			</div>
-			<div className="flex items-center gap-2 text-muted-foreground text-xs">
-				{delivery.responseCode && <span>{delivery.responseCode}</span>}
-				{delivery.responseTimeMs && <span>{delivery.responseTimeMs}ms</span>}
-				<span>{formatRelativeTime(delivery.createdAt)}</span>
+			<div className="flex-1 flex items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+				<div className="flex items-center gap-2">
+					<code className="font-mono text-xs bg-muted text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">
+						{delivery.eventType}
+					</code>
+				</div>
+				<div className="flex items-center gap-3 text-xs text-muted-foreground">
+					{delivery.responseCode && (
+						<span className={`font-mono font-medium ${responseCodeColor}`}>
+							{delivery.responseCode}
+						</span>
+					)}
+					{delivery.responseTimeMs && (
+						<span className="font-mono">{delivery.responseTimeMs}ms</span>
+					)}
+					<span>{formatRelativeTime(delivery.createdAt)}</span>
+				</div>
 			</div>
 		</div>
 	);
@@ -778,7 +921,6 @@ interface EventTypesReferenceProps {
 function EventTypesReference({ eventTypes }: EventTypesReferenceProps) {
 	const [isOpen, setIsOpen] = useState(false);
 
-	// Group by category
 	const eventsByCategory = eventTypes.reduce(
 		(acc, event) => {
 			if (!acc[event.category]) {
@@ -796,13 +938,16 @@ function EventTypesReference({ eventTypes }: EventTypesReferenceProps) {
 				<CollapsibleTrigger asChild>
 					<CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
 						<div className="flex items-center justify-between">
-							<div>
-								<CardTitle className="text-base">
-									Event Types Reference
-								</CardTitle>
-								<CardDescription>
-									All available webhook event types
-								</CardDescription>
+							<div className="flex items-center gap-2">
+								<Zap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+								<div>
+									<CardTitle className="text-base">
+										Event Types Reference
+									</CardTitle>
+									<CardDescription>
+										All available webhook event types
+									</CardDescription>
+								</div>
 							</div>
 							{isOpen ? (
 								<ChevronDown className="h-5 w-5 text-muted-foreground" />
@@ -817,17 +962,17 @@ function EventTypesReference({ eventTypes }: EventTypesReferenceProps) {
 						<div className="space-y-6">
 							{Object.entries(eventsByCategory).map(([category, events]) => (
 								<div key={category}>
-									<h4 className="font-medium mb-2">{category}</h4>
+									<h4 className="font-medium mb-3">{category}</h4>
 									<div className="space-y-2">
 										{events.map((event) => (
 											<div
 												key={event.type}
-												className="flex items-start justify-between text-sm"
+												className="flex items-start justify-between gap-4 rounded-lg border bg-muted/30 px-3 py-2"
 											>
-												<code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+												<code className="font-mono text-xs bg-muted text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded shrink-0">
 													{event.type}
 												</code>
-												<span className="text-muted-foreground text-right ml-4">
+												<span className="text-sm text-muted-foreground text-right">
 													{event.description}
 												</span>
 											</div>
@@ -847,68 +992,116 @@ function WebhookDocumentation() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Webhook Documentation</CardTitle>
+				<div className="flex items-center gap-2">
+					<ExternalLink className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+					<CardTitle>Webhook Documentation</CardTitle>
+				</div>
 				<CardDescription>
 					Learn how to verify and handle webhook events
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				<div className="rounded-lg border p-4">
-					<h4 className="font-medium mb-2">Verifying Signatures</h4>
-					<p className="text-sm text-muted-foreground mb-3">
-						All webhooks are signed using HMAC-SHA256. Verify the signature to
-						ensure authenticity:
-					</p>
-					<pre className="bg-muted p-3 rounded-md text-sm overflow-x-auto">
-						<code>{`const crypto = require('crypto');
-
-function verifyWebhook(payload, signature, timestamp, secret) {
-  const signedPayload = \`\${timestamp}.\${payload}\`;
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(signedPayload)
-    .digest('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
-}`}</code>
-					</pre>
+				<div className="relative overflow-hidden rounded-lg border bg-muted">
+					<div className="flex items-center gap-2 border-b bg-muted/50 px-4 py-2">
+						<div className="h-3 w-3 rounded-full bg-red-500/80" />
+						<div className="h-3 w-3 rounded-full bg-yellow-500/80" />
+						<div className="h-3 w-3 rounded-full bg-green-500/80" />
+						<span className="ml-2 font-mono text-xs text-muted-foreground">
+							verify-signature.js
+						</span>
+					</div>
+					<div className="p-4">
+						<pre className="overflow-x-auto font-mono text-sm">
+							<code>
+								<span className="text-purple-600 dark:text-purple-400">
+									const
+								</span>
+								<span> crypto = </span>
+								<span className="text-cyan-600 dark:text-cyan-400">
+									require
+								</span>
+								<span>(</span>
+								<span className="text-emerald-600 dark:text-emerald-400">
+									'crypto'
+								</span>
+								<span>);</span>
+								{"\n\n"}
+								<span className="text-purple-600 dark:text-purple-400">
+									function
+								</span>
+								<span className="text-cyan-600 dark:text-cyan-400">
+									{" "}
+									verifyWebhook
+								</span>
+								<span>(payload, signature, timestamp, secret) {"{"}</span>
+								{"\n"}
+								<span>{"  "}</span>
+								<span className="text-purple-600 dark:text-purple-400">
+									const
+								</span>
+								<span>
+									{" "}
+									signedPayload = `${"{"}timestamp{"}"}.${"{"}payload{"}"}`
+								</span>
+								<span>;</span>
+								{"\n"}
+								<span>{"  "}</span>
+								<span className="text-purple-600 dark:text-purple-400">
+									const
+								</span>
+								<span> expected = crypto</span>
+								{"\n"}
+								<span>{"    "}.createHmac(</span>
+								<span className="text-emerald-600 dark:text-emerald-400">
+									'sha256'
+								</span>
+								<span>, secret)</span>
+								{"\n"}
+								<span>{"    "}.update(signedPayload)</span>
+								{"\n"}
+								<span>{"    "}.digest(</span>
+								<span className="text-emerald-600 dark:text-emerald-400">
+									'hex'
+								</span>
+								<span>);</span>
+								{"\n"}
+								<span>{"  "}</span>
+								<span className="text-purple-600 dark:text-purple-400">
+									return
+								</span>
+								<span> crypto.timingSafeEqual(</span>
+								{"\n"}
+								<span>{"    "}Buffer.from(signature),</span>
+								{"\n"}
+								<span>{"    "}Buffer.from(expected)</span>
+								{"\n"}
+								<span>{"  "});</span>
+								{"\n"}
+								<span>{"}"}</span>
+							</code>
+						</pre>
+					</div>
 				</div>
 
-				<div className="rounded-lg border p-4">
-					<h4 className="font-medium mb-2">Webhook Headers</h4>
+				<div className="rounded-lg border bg-muted/30 p-4">
+					<h4 className="font-medium mb-3">Webhook Headers</h4>
 					<div className="space-y-2 text-sm">
-						<div className="flex justify-between">
-							<code className="bg-muted px-1.5 py-0.5 rounded">
-								X-Seal-Signature
-							</code>
-							<span className="text-muted-foreground">
-								HMAC-SHA256 signature
-							</span>
-						</div>
-						<div className="flex justify-between">
-							<code className="bg-muted px-1.5 py-0.5 rounded">
-								X-Seal-Timestamp
-							</code>
-							<span className="text-muted-foreground">
-								Unix timestamp of request
-							</span>
-						</div>
-						<div className="flex justify-between">
-							<code className="bg-muted px-1.5 py-0.5 rounded">
-								X-Seal-Event-Id
-							</code>
-							<span className="text-muted-foreground">
-								Unique event identifier
-							</span>
-						</div>
-						<div className="flex justify-between">
-							<code className="bg-muted px-1.5 py-0.5 rounded">
-								X-Seal-Event-Type
-							</code>
-							<span className="text-muted-foreground">Event type name</span>
-						</div>
+						{[
+							["X-Seal-Signature", "HMAC-SHA256 signature"],
+							["X-Seal-Timestamp", "Unix timestamp of request"],
+							["X-Seal-Event-Id", "Unique event identifier"],
+							["X-Seal-Event-Type", "Event type name"],
+						].map(([header, description]) => (
+							<div
+								key={header}
+								className="flex justify-between items-center gap-4"
+							>
+								<code className="font-mono text-xs bg-muted text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">
+									{header}
+								</code>
+								<span className="text-muted-foreground">{description}</span>
+							</div>
+						))}
 					</div>
 				</div>
 
