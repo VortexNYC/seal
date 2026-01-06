@@ -715,6 +715,21 @@ export async function rlsRules(
 				return false;
 			},
 		},
+
+		// ====================
+		// Rate Limiting
+		// ====================
+		rate_limit_buckets: {
+			read: async () => {
+				// Rate limit buckets are only accessed by the system internally
+				// No direct user access
+				return false;
+			},
+			modify: async () => {
+				// Rate limit buckets are only modified by internal mutations
+				return false;
+			},
+		},
 	};
 
 	return rules as Rules<QueryCtx, DataModel>;

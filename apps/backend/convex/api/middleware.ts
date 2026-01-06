@@ -14,6 +14,13 @@ import {
 	resolveApiAuth,
 } from "./context";
 import { ApiError, apiResponse, handleApiError } from "./errors";
+import {
+	buildRateLimitHeaders,
+	checkRateLimit,
+	DEFAULT_RATE_LIMITS,
+	type RateLimitConfig,
+	throwRateLimitExceeded,
+} from "./rate_limit";
 import { type ApiVersion, getApiVersion } from "./versioning";
 
 /**
@@ -73,14 +80,15 @@ export interface ApiEndpointOptions {
 
 	/**
 	 * Rate limit configuration for this endpoint.
-	 * If not provided, uses default rate limits.
+	 * If not provided, uses default rate limits (60/min, 1000/hour).
 	 */
-	rateLimit?: {
-		/** Max requests per minute */
-		requestsPerMinute?: number;
-		/** Max requests per hour */
-		requestsPerHour?: number;
-	};
+	rateLimit?: Partial<RateLimitConfig>;
+
+	/**
+	 * Whether to skip rate limiting for this endpoint.
+	 * @default false
+	 */
+	skipRateLimit?: boolean;
 }
 
 /**
@@ -91,6 +99,20 @@ const STANDARD_HEADERS: Record<string, string> = {
 	"X-Frame-Options": "DENY",
 	"Cache-Control": "no-store",
 };
+
+/**
+ * Merges rate limit config with defaults.
+ */
+function getRateLimitConfig(
+	options?: Partial<RateLimitConfig>,
+): RateLimitConfig {
+	return {
+		requestsPerMinute:
+			options?.requestsPerMinute ?? DEFAULT_RATE_LIMITS.requestsPerMinute,
+		requestsPerHour:
+			options?.requestsPerHour ?? DEFAULT_RATE_LIMITS.requestsPerHour,
+	};
+}
 
 /**
  * Parses URL and extracts path segments and query params.
@@ -117,29 +139,25 @@ function parseRequest(request: Request): {
 }
 
 /**
- * Adds rate limit headers to a response.
- * This is a placeholder - full rate limiting implementation would track usage.
+ * Adds standard and rate limit headers to a response.
  */
-function addRateLimitHeaders(
+function addResponseHeaders(
 	response: Response,
-	_auth: ApiAuthContext,
+	rateLimitHeaders?: Headers,
 ): Response {
-	// Clone the response to add headers
 	const headers = new Headers(response.headers);
 
-	// Add standard headers
+	// Add standard security headers
 	for (const [key, value] of Object.entries(STANDARD_HEADERS)) {
 		headers.set(key, value);
 	}
 
-	// TODO: Implement actual rate limit tracking
-	// For now, just add placeholder headers
-	headers.set("X-RateLimit-Limit", "1000");
-	headers.set("X-RateLimit-Remaining", "999");
-	headers.set(
-		"X-RateLimit-Reset",
-		String(Math.floor(Date.now() / 1000) + 3600),
-	);
+	// Add rate limit headers if provided
+	if (rateLimitHeaders) {
+		rateLimitHeaders.forEach((value, key) => {
+			headers.set(key, value);
+		});
+	}
 
 	return new Response(response.body, {
 		status: response.status,
@@ -210,6 +228,9 @@ export function apiHttpAction(
 			// Authenticate unless public endpoint
 			let auth: ApiAuthContext | null = null;
 
+			// Track rate limit result for headers
+			let rateLimitHeaders: Headers | undefined;
+
 			if (!options.public) {
 				const authHeader = request.headers.get("Authorization");
 				auth = await resolveApiAuth(ctx, authHeader);
@@ -229,6 +250,24 @@ export function apiHttpAction(
 						);
 					}
 				}
+
+				// Check rate limits (unless explicitly skipped)
+				if (!options.skipRateLimit && auth.apiKeyId) {
+					const rateLimitConfig = getRateLimitConfig(options.rateLimit);
+					const rateLimitResult = await checkRateLimit(
+						ctx,
+						auth.apiKeyId,
+						rateLimitConfig,
+					);
+
+					// Build headers regardless of result (for transparency)
+					rateLimitHeaders = buildRateLimitHeaders(rateLimitResult);
+
+					// Reject if rate limited
+					if (!rateLimitResult.allowed) {
+						throwRateLimitExceeded(rateLimitResult);
+					}
+				}
 			}
 
 			// Build request context
@@ -245,12 +284,8 @@ export function apiHttpAction(
 			// Execute handler
 			const response = await handler(requestContext);
 
-			// Add rate limit headers if authenticated
-			if (auth) {
-				return addRateLimitHeaders(response, auth);
-			}
-
-			return response;
+			// Add headers to response
+			return addResponseHeaders(response, rateLimitHeaders);
 		} catch (error) {
 			return handleApiError(error, request.url);
 		}

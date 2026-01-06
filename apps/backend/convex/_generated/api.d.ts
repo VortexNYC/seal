@@ -13,6 +13,8 @@ import type * as api_errors from "../api/errors.js";
 import type * as api_helpers from "../api/helpers.js";
 import type * as api_index from "../api/index.js";
 import type * as api_middleware from "../api/middleware.js";
+import type * as api_rate_limit from "../api/rate_limit.js";
+import type * as api_rate_limit_mutations from "../api/rate_limit_mutations.js";
 import type * as api_v1_documents from "../api/v1/documents.js";
 import type * as api_v1_index from "../api/v1/index.js";
 import type * as api_v1_recipients from "../api/v1/recipients.js";
@@ -94,6 +96,7 @@ import type * as schemas_organization_invitations from "../schemas/organization_
 import type * as schemas_organization_members from "../schemas/organization_members.js";
 import type * as schemas_organization_roles from "../schemas/organization_roles.js";
 import type * as schemas_organizations from "../schemas/organizations.js";
+import type * as schemas_rate_limits from "../schemas/rate_limits.js";
 import type * as schemas_recipients from "../schemas/recipients.js";
 import type * as schemas_saved_signatures from "../schemas/saved_signatures.js";
 import type * as schemas_signature_fields from "../schemas/signature_fields.js";
@@ -138,6 +141,8 @@ declare const fullApi: ApiFromModules<{
   "api/helpers": typeof api_helpers;
   "api/index": typeof api_index;
   "api/middleware": typeof api_middleware;
+  "api/rate_limit": typeof api_rate_limit;
+  "api/rate_limit_mutations": typeof api_rate_limit_mutations;
   "api/v1/documents": typeof api_v1_documents;
   "api/v1/index": typeof api_v1_index;
   "api/v1/recipients": typeof api_v1_recipients;
@@ -219,6 +224,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/organization_members": typeof schemas_organization_members;
   "schemas/organization_roles": typeof schemas_organization_roles;
   "schemas/organizations": typeof schemas_organizations;
+  "schemas/rate_limits": typeof schemas_rate_limits;
   "schemas/recipients": typeof schemas_recipients;
   "schemas/saved_signatures": typeof schemas_saved_signatures;
   "schemas/signature_fields": typeof schemas_signature_fields;

@@ -54,6 +54,7 @@ import {
 	organizationsTable,
 	type organizationTypeTuple,
 } from "./schemas/organizations";
+import { rateLimitBucketsTable, type WindowType } from "./schemas/rate_limits";
 import {
 	type AuthenticationMethod,
 	recipientsTable,
@@ -133,6 +134,9 @@ export type { ApiKeyScope };
 // Re-export webhook types
 export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
 
+// Re-export rate limit types
+export type { WindowType };
+
 export default defineSchema({
 	users: usersTable,
 	user_profiles: userProfilesTable,
@@ -177,4 +181,7 @@ export default defineSchema({
 	// Webhooks
 	webhook_endpoints: webhookEndpoints,
 	webhook_deliveries: webhookDeliveries,
+
+	// Rate limiting
+	rate_limit_buckets: rateLimitBucketsTable,
 });
