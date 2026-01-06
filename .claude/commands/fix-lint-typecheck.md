@@ -1,1 +1,0 @@
-Check on all issues with `bun lint` and `bun typecheck` and fix all without ignoring or suppressing any
