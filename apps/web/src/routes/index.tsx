@@ -5,12 +5,15 @@ import { SealLogoBadgeFixed } from "@/components/seal-logo-fixed";
 import { BackgroundPattern } from "@/components/ui/background-pattern";
 import { Button } from "@/components/ui/button";
 import { GridLayout } from "@/components/ui/patterns";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 export const Route = createFileRoute("/")({
 	component: HomePage,
 });
 
 function HomePage() {
+	const { capture } = useAnalytics();
+
 	return (
 		<GridLayout className="bg-linear-to-b from-brand-50 via-white to-white dark:from-slate-950 dark:via-background dark:to-background">
 			<BackgroundPattern className="bg-transparent" opacity={0.04} />
@@ -29,6 +32,12 @@ function HomePage() {
 								<Button
 									asChild
 									className="bg-brand-700 hover:bg-brand-800 text-white shadow-md shadow-brand-700/20 transition-all duration-300 hover:shadow-lg hover:shadow-brand-700/30"
+									onClick={() =>
+										capture("cta_clicked", {
+											button: "go_to_app",
+											location: "header",
+										})
+									}
 								>
 									<Link to="/app" className="flex items-center gap-2">
 										Go to App
@@ -41,12 +50,24 @@ function HomePage() {
 									variant="ghost"
 									asChild
 									className="text-brand-700 dark:text-slate-300 hover:text-brand-800 dark:hover:text-slate-200 hover:bg-brand-50 dark:hover:bg-slate-800"
+									onClick={() =>
+										capture("cta_clicked", {
+											button: "sign_in",
+											location: "header",
+										})
+									}
 								>
 									<Link to="/sign-in">Sign In</Link>
 								</Button>
 								<Button
 									asChild
 									className="bg-brand-700 hover:bg-brand-800 text-white shadow-md shadow-brand-700/20 transition-all duration-300 hover:shadow-lg hover:shadow-brand-700/30"
+									onClick={() =>
+										capture("cta_clicked", {
+											button: "get_started",
+											location: "header",
+										})
+									}
 								>
 									<Link to="/sign-up">Get Started</Link>
 								</Button>
@@ -80,6 +101,12 @@ function HomePage() {
 									size="lg"
 									asChild
 									className="bg-brand-700 hover:bg-brand-800 text-white text-lg px-8 py-6 shadow-lg shadow-brand-700/25 transition-all duration-300 hover:shadow-xl hover:shadow-brand-700/30 hover:-translate-y-0.5"
+									onClick={() =>
+										capture("cta_clicked", {
+											button: "go_to_app",
+											location: "hero",
+										})
+									}
 								>
 									<Link to="/app" className="flex items-center gap-2">
 										Go to App
@@ -92,6 +119,12 @@ function HomePage() {
 									size="lg"
 									asChild
 									className="bg-brand-700 hover:bg-brand-800 text-white text-lg px-8 py-6 shadow-lg shadow-brand-700/25 transition-all duration-300 hover:shadow-xl hover:shadow-brand-700/30 hover:-translate-y-0.5"
+									onClick={() =>
+										capture("cta_clicked", {
+											button: "get_started_free",
+											location: "hero",
+										})
+									}
 								>
 									<Link to="/sign-up" className="flex items-center gap-2">
 										Get Started Free
@@ -103,6 +136,12 @@ function HomePage() {
 									variant="outline"
 									asChild
 									className="text-lg px-8 py-6 border-2 border-brand-700/20 dark:border-slate-700 text-brand-700 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-slate-800 hover:border-brand-700/40 dark:hover:border-slate-600 transition-all duration-300"
+									onClick={() =>
+										capture("cta_clicked", {
+											button: "sign_in",
+											location: "hero",
+										})
+									}
 								>
 									<Link to="/sign-in">Sign In</Link>
 								</Button>

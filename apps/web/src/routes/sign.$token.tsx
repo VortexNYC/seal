@@ -54,6 +54,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -78,6 +79,7 @@ const capitalizeFieldLabel = (label: string): string => {
 function SigningPage() {
 	const { token } = Route.useParams();
 	const { convexClient } = useRouteContext({ from: "__root__" });
+	const { track } = useAnalytics();
 
 	// Fetch recipient and document data using the signing token
 	const { data } = useSuspenseQuery(
@@ -239,6 +241,10 @@ function SigningPage() {
 			);
 		},
 		onSuccess: () => {
+			track.signatureCompleted({
+				documentId: doc._id,
+				recipientId: recipient._id,
+			});
 			toast.success("Document signed successfully!");
 			setShowSignatureCapture(false);
 			// Reload the page to show updated status
@@ -308,6 +314,10 @@ function SigningPage() {
 			);
 		},
 		onSuccess: () => {
+			track.signatureDeclined({
+				documentId: doc._id,
+				recipientId: recipient._id,
+			});
 			toast.success("Document declined");
 			setShowDeclineDialog(false);
 			// Reload the page to show updated status

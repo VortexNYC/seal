@@ -5,6 +5,7 @@ import { AlertCircle, CheckCircle2, FileIcon, Upload, X } from "lucide-react";
 import { useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
+import { useAnalytics } from "../../hooks/use-analytics";
 import { extractPdfMetadata } from "../../lib/pdf-utils";
 import {
 	DROPZONE_ACCEPT_TYPES,
@@ -75,6 +76,7 @@ export function UploadDialog({
 	const [description, setDescription] = useState("");
 	const [uploading, setUploading] = useState(false);
 	const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+	const { track } = useAnalytics();
 
 	const generateUploadUrl = useMutation(
 		api.documents.mutations.generateUploadUrl,
@@ -205,6 +207,12 @@ export function UploadDialog({
 							: f,
 					),
 				);
+
+				track.documentUploaded({
+					fileSize: file.size,
+					pageCount: fileWithStatus.pageCount,
+					fileType: file.type,
+				});
 
 				return true;
 			} catch (error) {

@@ -76,6 +76,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 export const Route = createFileRoute("/_authenticated/$slug/templates")({
 	component: TemplatesPage,
@@ -483,6 +484,7 @@ function TemplatesList({
 function TemplatesPage() {
 	const { slug } = Route.useParams();
 	const router = useRouter();
+	const { track } = useAnalytics();
 
 	// State
 	const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -555,6 +557,10 @@ function TemplatesPage() {
 				documentName: newDocumentName || undefined,
 			});
 
+			track.templateUsed({
+				templateId: useTemplateDialog.template._id,
+				templateName: useTemplateDialog.template.name,
+			});
 			toast.success("Document created from template");
 			setUseTemplateDialog({ open: false, template: null });
 
@@ -585,6 +591,10 @@ function TemplatesPage() {
 				description: editDescription || undefined,
 			});
 
+			track.templateEdited({
+				templateId: editTemplateDialog.template._id,
+				templateName: editName,
+			});
 			toast.success("Template updated");
 			setEditTemplateDialog({ open: false, template: null });
 			setRefreshKey((prev) => prev + 1);
@@ -605,6 +615,10 @@ function TemplatesPage() {
 				templateId: deleteConfirmDialog.template._id,
 			});
 
+			track.templateDeleted({
+				templateId: deleteConfirmDialog.template._id,
+				templateName: deleteConfirmDialog.template.name,
+			});
 			toast.success("Template deleted");
 			setDeleteConfirmDialog({ open: false, template: null });
 			setRefreshKey((prev) => prev + 1);

@@ -79,6 +79,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
 	component: DocumentsPage,
@@ -185,6 +186,7 @@ function DocumentsList({
 	const { slug } = Route.useParams();
 	const router = useRouter();
 	const { convexClient } = useRouteContext({ from: "__root__" });
+	const { track } = useAnalytics();
 
 	// Pagination state (SEA-68: 20 items per page)
 	const [currentPage, setCurrentPage] = useState(1);
@@ -349,14 +351,17 @@ function DocumentsList({
 		try {
 			if (confirmDialog.type === "delete") {
 				await deleteDocument({ documentId: confirmDialog.documentId });
+				track.documentDeleted({ documentId: confirmDialog.documentId });
 				toast.success("Document deleted");
 				refetch();
 			} else if (confirmDialog.type === "send") {
 				await sendDocument({ documentId: confirmDialog.documentId });
+				track.documentSent({ documentId: confirmDialog.documentId });
 				toast.success("Document sent successfully");
 				refetch();
 			} else if (confirmDialog.type === "cancel") {
 				await cancelDocument({ documentId: confirmDialog.documentId });
+				track.documentCancelled({ documentId: confirmDialog.documentId });
 				toast.success("Document cancelled");
 				refetch();
 			}
@@ -379,6 +384,7 @@ function DocumentsList({
 					documentId,
 				},
 			);
+			track.documentDownloaded({ documentId });
 			window.open(url, "_blank");
 		} catch (_error) {
 			toast.error("Failed to download document");
