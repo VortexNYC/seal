@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
+import posthog from "posthog-js";
+import { PostHogProvider } from "posthog-js/react";
 import ReactDOM from "react-dom/client";
 import { DefaultCatchBoundary } from "./components/default-catch-boundary";
 import Loader from "./components/loader";
@@ -88,7 +90,24 @@ if (!rootElement) {
 	throw new Error("Root element not found");
 }
 
+const POSTHOG_KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY as string;
+
+if (POSTHOG_KEY) {
+	posthog.init(POSTHOG_KEY, {
+		// Use reverse proxy to bypass ad blockers (configured in vite.config.ts and vercel.json)
+		api_host: "/ingest",
+		ui_host: "https://us.i.posthog.com",
+		capture_pageview: true,
+		capture_pageleave: true,
+		debug: import.meta.env.MODE === "development",
+	});
+}
+
 if (!rootElement.innerHTML) {
 	const root = ReactDOM.createRoot(rootElement);
-	root.render(<RouterProvider router={router} />);
+	root.render(
+		<PostHogProvider client={posthog}>
+			<RouterProvider router={router} />
+		</PostHogProvider>,
+	);
 }

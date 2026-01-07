@@ -23,6 +23,22 @@ export default defineConfig({
 		dedupe: ["react", "react-dom"],
 	},
 
+	// PostHog reverse proxy to bypass ad blockers
+	server: {
+		proxy: {
+			"/ingest/static": {
+				target: "https://us-assets.i.posthog.com",
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/ingest\/static/, "/static"),
+			},
+			"/ingest": {
+				target: "https://us.i.posthog.com",
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/ingest/, ""),
+			},
+		},
+	},
+
 	build: {
 		sourcemap: true,
 		// SEA-136: Mobile performance optimization - chunk splitting for lazy loading
