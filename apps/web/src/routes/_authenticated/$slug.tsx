@@ -10,6 +10,7 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { AppSidebar } from "@/components/app-sidebar";
+import { PostHogIdentify } from "@/components/posthog-identify";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
 import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -38,17 +39,20 @@ function WorkspaceLayout() {
 		return null;
 	}
 
+	const orgData = {
+		_id: orgId,
+		name: organization.name,
+		slug: organization.slug,
+	};
+
 	return (
 		<SidebarProvider>
+			<PostHogIdentify organization={orgData} />
 			<DotPattern className="fixed inset-0 z-0" />
 			<div className="relative z-10 flex h-screen w-full overflow-hidden bg-background/80">
 				<AppSidebar
 					slug={slug}
-					organization={{
-						_id: orgId,
-						name: organization.name,
-						slug: organization.slug,
-					}}
+					organization={orgData}
 					permissions={permissions}
 				/>
 				<main className="flex-1 h-full min-h-0 overflow-hidden">

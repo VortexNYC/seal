@@ -31,6 +31,7 @@ import {
 	SidebarRail,
 } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
+import { useAnalytics } from "@/hooks/use-analytics";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
 
@@ -284,7 +285,14 @@ export function AppSidebar({
 	const navigate = useNavigate();
 	const { user } = useUser();
 	const { signOut } = useClerk();
+	const { reset: resetAnalytics } = useAnalytics();
 	const organizations = useQuery(api.check_membership.listUserOrganizations);
+
+	// Wrapper to reset PostHog identity before signing out
+	const handleSignOut = React.useCallback(async () => {
+		resetAnalytics();
+		await signOut();
+	}, [resetAnalytics, signOut]);
 
 	const teamOptions = React.useMemo(
 		() => buildTeamOptions({ slug, organizations }),
@@ -410,7 +418,7 @@ export function AppSidebar({
 					</SidebarMenuItem>
 				</SidebarMenu>
 				{currentUser && (
-					<NavUser user={currentUser} slug={slug} onSignOut={signOut} />
+					<NavUser user={currentUser} slug={slug} onSignOut={handleSignOut} />
 				)}
 			</SidebarFooter>
 			<SidebarRail />
