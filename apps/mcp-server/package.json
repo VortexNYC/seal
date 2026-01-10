@@ -1,0 +1,33 @@
+{
+	"name": "@seal/mcp-server",
+	"version": "0.0.1",
+	"type": "module",
+	"private": true,
+	"main": "./dist/index.js",
+	"scripts": {
+		"dev": "bun run dev:http",
+		"dev:http": "bun --watch --no-clear-screen src/index.ts",
+		"dev:stdio": "bun src/index.ts --stdio",
+		"build": "bun build src/index.ts --outdir=dist --target=node --format=esm",
+		"start": "node dist/index.js",
+		"lint": "biome check .",
+		"format": "biome format --write .",
+		"typecheck": "bun --bun x tsc --noEmit",
+		"knip": "knip --directory ../.. --workspace apps/mcp-server",
+		"clean": "git clean -xdf .cache .turbo node_modules dist"
+	},
+	"dependencies": {
+		"@clerk/backend": "^1.27.0",
+		"@hono/clerk-auth": "^2.0.0",
+		"@hono/node-server": "^1.13.0",
+		"@modelcontextprotocol/sdk": "^1.12.0",
+		"hono": "^4.7.0",
+		"zod": "^3.25.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.10",
+		"@types/node": "^25.0.3",
+		"knip": "^5.78.0",
+		"typescript": "^5.9.3"
+	}
+}
