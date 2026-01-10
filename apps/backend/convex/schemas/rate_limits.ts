@@ -7,11 +7,12 @@ import { v } from "convex/values";
  * Tracks API request counts per API key per time window.
  * Uses a sliding window approach with buckets for minute and hour windows.
  *
- * Note: apiKeyId is the Clerk API key ID (string like "ak_xxx"),
- * not the internal Convex api_keys table ID.
+ * Note: apiKeyId tracks the auth principal (Clerk API key ID like "ak_xxx"
+ * or a JWT-derived key like "jwt:<userId>"), not the internal Convex api_keys
+ * table ID.
  */
 export const rateLimitBucketsTable = defineTable({
-	// The Clerk API key ID being rate limited (e.g., "ak_xxx")
+	// The auth key being rate limited (e.g., "ak_xxx" or "jwt:<userId>")
 	apiKeyId: v.string(),
 
 	// Window type: "minute" or "hour"

@@ -13,7 +13,7 @@
  *
  * // List documents (requires authentication)
  * GET /api/v1/documents
- * Authorization: Bearer <api_key>
+ * Authorization: Bearer <api_key_or_jwt>
  * ```
  */
 

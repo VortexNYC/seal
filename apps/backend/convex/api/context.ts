@@ -11,7 +11,7 @@
  * @see {@link https://clerk.com/docs/guides/development/machine-auth/api-keys} Clerk API Keys
  */
 
-import { createClerkClient } from "@clerk/backend";
+import { createClerkClient, verifyToken } from "@clerk/backend";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
@@ -47,14 +47,27 @@ function getClerkClient(): ReturnType<typeof createClerkClient> {
  *
  * @interface ApiAuthContext
  */
+export type ApiAuthType = "api_key" | "jwt";
+
+type ClerkJwtPayload = Record<string, unknown> & {
+	sub?: string;
+	org_id?: string;
+	orgId?: string;
+	scope?: string;
+	scp?: string[];
+};
+
 export interface ApiAuthContext {
+	/** Which auth mechanism was used */
+	authType: ApiAuthType;
+
 	/** Clerk API key ID (ak_xxx format) */
-	apiKeyId: string;
+	apiKeyId?: string;
 
 	/** User-provided key name */
-	apiKeyName: string;
+	apiKeyName?: string;
 
-	/** API key scopes from Clerk */
+	/** Scopes from the auth token (API key or JWT) */
 	scopes: string[];
 
 	/** Internal Convex user ID (resolved from Clerk subject) */
@@ -184,11 +197,7 @@ export const SCOPE_PERMISSION_MAP: Record<ApiScope, string[]> = {
  * });
  * ```
  */
-export async function resolveApiAuth(
-	ctx: ActionCtx,
-	authHeader: string | null,
-): Promise<ApiAuthContext> {
-	// Step 1: Extract Bearer token
+function parseBearerToken(authHeader: string | null): string {
 	if (!authHeader) {
 		throw new ApiError(
 			401,
@@ -198,13 +207,101 @@ export async function resolveApiAuth(
 	}
 
 	const [scheme, token] = authHeader.split(" ");
-	if (scheme?.toLowerCase() !== "bearer" || !token) {
+	if (token && scheme?.toLowerCase() === "bearer") {
+		return token;
+	}
+
+	if (!authHeader.includes(" ")) {
+		return authHeader;
+	}
+
+	throw new ApiError(
+		401,
+		"Invalid Authorization format. Use: Bearer <token>",
+		"INVALID_AUTH_FORMAT",
+	);
+}
+
+function isJwtToken(token: string): boolean {
+	return token.split(".").length === 3;
+}
+
+function extractScopesFromJwt(payload: ClerkJwtPayload): string[] {
+	const scope = payload.scope;
+	if (typeof scope === "string") {
+		return scope.split(" ").filter(Boolean);
+	}
+
+	const scp = payload.scp;
+	if (Array.isArray(scp) && scp.every((value) => typeof value === "string")) {
+		return scp;
+	}
+
+	return [];
+}
+
+async function buildAuthContext(
+	ctx: ActionCtx,
+	params: {
+		authType: ApiAuthType;
+		apiKeyId?: string;
+		apiKeyName?: string;
+		scopes: string[];
+		userId: Id<"users">;
+		organizationId: Id<"organizations">;
+		clerkUserId: string;
+		subjectType: "user" | "organization";
+	},
+): Promise<ApiAuthContext> {
+	// Step 4: Validate user has active membership in the organization
+	const membership = await ctx.runQuery(internal.api.helpers.getMembership, {
+		userId: params.userId,
+		organizationId: params.organizationId,
+	});
+
+	if (!membership || membership.status !== "active") {
 		throw new ApiError(
-			401,
-			"Invalid Authorization format. Use: Bearer <api_key>",
-			"INVALID_AUTH_FORMAT",
+			403,
+			"User is not an active member of the organization",
+			"ORGANIZATION_ACCESS_DENIED",
 		);
 	}
+
+	// Get user permissions
+	const permissionInfo = await ctx.runQuery(
+		internal.api.helpers.getUserPermissions,
+		{ userId: params.userId, organizationId: params.organizationId },
+	);
+
+	const role = permissionInfo?.role ?? "member";
+	const permissions = permissionInfo?.permissions ?? [];
+
+	return {
+		authType: params.authType,
+		apiKeyId: params.apiKeyId,
+		apiKeyName: params.apiKeyName,
+		scopes: params.scopes,
+		userId: params.userId,
+		organizationId: params.organizationId,
+		clerkUserId: params.clerkUserId,
+		subjectType: params.subjectType,
+		role,
+		permissions,
+		hasScope: (scope: string) => params.scopes.includes(scope),
+		hasAnyScope: (checkScopes: string[]) =>
+			checkScopes.some((scope) => params.scopes.includes(scope)),
+		hasAllScopes: (checkScopes: string[]) =>
+			checkScopes.every((scope) => params.scopes.includes(scope)),
+		hasPermission: (permission: string) => permissions.includes(permission),
+	};
+}
+
+export async function resolveApiAuth(
+	ctx: ActionCtx,
+	authHeader: string | null,
+): Promise<ApiAuthContext> {
+	// Step 1: Extract Bearer token
+	const token = parseBearerToken(authHeader);
 
 	// Step 2: Verify API key with Clerk
 	const clerk = getClerkClient();
@@ -321,33 +418,11 @@ export async function resolveApiAuth(
 		organizationId = user.activeOrganizationId;
 	}
 
-	// Step 4: Validate user has active membership in the organization
-	const membership = await ctx.runQuery(internal.api.helpers.getMembership, {
-		userId,
-		organizationId,
-	});
-
-	if (!membership || membership.status !== "active") {
-		throw new ApiError(
-			403,
-			"User is not an active member of the organization",
-			"ORGANIZATION_ACCESS_DENIED",
-		);
-	}
-
-	// Get user permissions
-	const permissionInfo = await ctx.runQuery(
-		internal.api.helpers.getUserPermissions,
-		{ userId, organizationId },
-	);
-
-	const role = permissionInfo?.role ?? "member";
-	const permissions = permissionInfo?.permissions ?? [];
-
-	// Step 5: Build context with scope helpers
+	// Step 4: Build context with scope helpers
 	const scopes = apiKey.scopes ?? [];
 
-	const authContext: ApiAuthContext = {
+	return buildAuthContext(ctx, {
+		authType: "api_key",
 		apiKeyId: apiKey.id,
 		apiKeyName: apiKey.name,
 		scopes,
@@ -355,17 +430,106 @@ export async function resolveApiAuth(
 		organizationId,
 		clerkUserId,
 		subjectType: isOrgKey ? "organization" : "user",
-		role,
-		permissions,
-		hasScope: (scope: string) => scopes.includes(scope),
-		hasAnyScope: (checkScopes: string[]) =>
-			checkScopes.some((s) => scopes.includes(s)),
-		hasAllScopes: (checkScopes: string[]) =>
-			checkScopes.every((s) => scopes.includes(s)),
-		hasPermission: (permission: string) => permissions.includes(permission),
-	};
+	});
+}
 
-	return authContext;
+export async function resolveJwtAuth(
+	ctx: ActionCtx,
+	authHeader: string | null,
+): Promise<ApiAuthContext> {
+	const token = parseBearerToken(authHeader);
+
+	const secretKey = process.env.CLERK_SECRET_KEY;
+	const jwtKey = process.env.CLERK_JWT_KEY;
+	if (!secretKey && !jwtKey) {
+		throw new ApiError(
+			500,
+			"Clerk secret key or JWT key not configured",
+			"INTERNAL_ERROR",
+		);
+	}
+
+	const verification = (await verifyToken(token, {
+		secretKey,
+		jwtKey,
+	})) as { data?: ClerkJwtPayload; errors?: unknown[] };
+
+	if (!verification.data) {
+		const [error] = verification.errors ?? [];
+		console.error("[resolveJwtAuth] Clerk verification failed:", error);
+		throw new ApiError(401, "Invalid or expired session token", "INVALID_JWT");
+	}
+
+	const payload = verification.data;
+	const clerkUserId = typeof payload.sub === "string" ? payload.sub : undefined;
+	if (!clerkUserId) {
+		throw new ApiError(401, "Invalid session token subject", "INVALID_JWT");
+	}
+
+	const orgIdClaim =
+		typeof payload.org_id === "string"
+			? payload.org_id
+			: typeof payload.orgId === "string"
+				? payload.orgId
+				: undefined;
+
+	const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
+		clerkUserId,
+	});
+
+	if (!user) {
+		throw new ApiError(403, "User not found", "USER_NOT_FOUND");
+	}
+
+	let organizationId: Id<"organizations"> | null = null;
+	if (orgIdClaim) {
+		const org = await ctx.runQuery(internal.api.helpers.getOrgByClerkId, {
+			clerkOrgId: orgIdClaim,
+		});
+
+		if (!org) {
+			throw new ApiError(
+				403,
+				"Organization not found",
+				"ORGANIZATION_NOT_FOUND",
+			);
+		}
+
+		organizationId = org._id;
+	} else if (user.activeOrganizationId) {
+		organizationId = user.activeOrganizationId;
+	}
+
+	if (!organizationId) {
+		throw new ApiError(
+			403,
+			"User has no active organization. Set an active organization before using the API.",
+			"ORGANIZATION_ACCESS_DENIED",
+		);
+	}
+
+	const scopes = extractScopesFromJwt(payload);
+
+	return buildAuthContext(ctx, {
+		authType: "jwt",
+		scopes,
+		userId: user._id,
+		organizationId,
+		clerkUserId,
+		subjectType: "user",
+	});
+}
+
+export async function resolveAuthContext(
+	ctx: ActionCtx,
+	authHeader: string | null,
+): Promise<ApiAuthContext> {
+	const token = parseBearerToken(authHeader);
+	if (isJwtToken(token)) {
+		return resolveJwtAuth(ctx, token);
+	}
+
+	return resolveApiAuth(ctx, token);
 }
 
 /**
@@ -396,6 +560,17 @@ export function canUserUseScope(
  * @throws {ApiError} 403 - If scope is missing
  */
 export function requireScope(auth: ApiAuthContext, scope: ApiScope): void {
+	if (auth.authType === "jwt") {
+		if (!canUserUseScope(auth.permissions, scope)) {
+			throw new ApiError(
+				403,
+				`Missing required permission for scope: ${scope}`,
+				"INSUFFICIENT_SCOPE",
+			);
+		}
+		return;
+	}
+
 	if (!auth.hasScope(scope)) {
 		throw new ApiError(
 			403,
@@ -417,6 +592,20 @@ export function requireAnyScope(
 	auth: ApiAuthContext,
 	scopes: ApiScope[],
 ): void {
+	if (auth.authType === "jwt") {
+		const hasPermission = scopes.some((scope) =>
+			canUserUseScope(auth.permissions, scope),
+		);
+		if (!hasPermission) {
+			throw new ApiError(
+				403,
+				`Missing required permission. Need one of: ${scopes.join(", ")}`,
+				"INSUFFICIENT_SCOPE",
+			);
+		}
+		return;
+	}
+
 	if (!auth.hasAnyScope(scopes)) {
 		throw new ApiError(
 			403,

@@ -61,7 +61,7 @@ const HOUR_MS = 60 * 60 * 1000;
  * Uses internal mutations to update the rate limit buckets.
  *
  * @param ctx - Convex action context
- * @param apiKeyId - The Clerk API key ID (e.g., "ak_xxx")
+ * @param apiKeyId - Auth key identifier (e.g., "ak_xxx" or "jwt:<userId>")
  * @param config - Rate limit configuration
  * @returns Rate limit result
  */

@@ -11,7 +11,7 @@ import {
 	type ApiAuthContext,
 	type ApiScope,
 	requireScope,
-	resolveApiAuth,
+	resolveAuthContext,
 } from "./context";
 import { ApiError, apiResponse, handleApiError } from "./errors";
 import {
@@ -233,7 +233,7 @@ export function apiHttpAction(
 
 			if (!options.public) {
 				const authHeader = request.headers.get("Authorization");
-				auth = await resolveApiAuth(ctx, authHeader);
+				auth = await resolveAuthContext(ctx, authHeader);
 
 				// Check required scopes
 				if (options.scope) {
@@ -252,11 +252,20 @@ export function apiHttpAction(
 				}
 
 				// Check rate limits (unless explicitly skipped)
-				if (!options.skipRateLimit && auth.apiKeyId) {
+				if (!options.skipRateLimit) {
+					const rateLimitKey =
+						auth.authType === "api_key" ? auth.apiKeyId : `jwt:${auth.userId}`;
+					if (!rateLimitKey) {
+						throw new ApiError(
+							500,
+							"Rate limit key unavailable",
+							"INTERNAL_ERROR",
+						);
+					}
 					const rateLimitConfig = getRateLimitConfig(options.rateLimit);
 					const rateLimitResult = await checkRateLimit(
 						ctx,
-						auth.apiKeyId,
+						rateLimitKey,
 						rateLimitConfig,
 					);
 

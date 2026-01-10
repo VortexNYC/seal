@@ -29,6 +29,8 @@ export {
 	requireAnyScope,
 	requireScope,
 	resolveApiAuth,
+	resolveAuthContext,
+	resolveJwtAuth,
 	SCOPE_PERMISSION_MAP,
 } from "./context";
 
