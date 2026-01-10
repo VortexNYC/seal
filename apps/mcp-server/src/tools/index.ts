@@ -4,6 +4,7 @@ import { registerDocumentTools } from "./documents.js";
 import { registerRecipientTools } from "./recipients.js";
 import { registerSignatureTools } from "./signatures.js";
 import { registerTemplateTools } from "./templates.js";
+import { registerUploadTools } from "./uploads.js";
 
 /**
  * Registers all tools with the MCP server.
@@ -16,4 +17,5 @@ export function registerAllTools(
 	registerTemplateTools(server, client);
 	registerRecipientTools(server, client);
 	registerSignatureTools(server, client);
+	registerUploadTools(server, client);
 }

@@ -221,4 +221,42 @@ export class SealApiClient {
 	): Promise<T> {
 		return this.request<T>("DELETE", path, { query, authToken });
 	}
+
+	/**
+	 * Uploads a file buffer to a Convex storage URL.
+	 * Returns the storageId from the response.
+	 *
+	 * @param uploadUrl - The temporary upload URL from Convex
+	 * @param fileBuffer - The file content as a Buffer
+	 * @param contentType - The MIME type of the file
+	 * @returns The storageId for the uploaded file
+	 */
+	async uploadToStorage(
+		uploadUrl: string,
+		fileBuffer: Buffer,
+		contentType: string,
+	): Promise<string> {
+		if (this.debug) {
+			console.error(
+				`[Seal MCP] Uploading file to storage (${fileBuffer.length} bytes)`,
+			);
+		}
+
+		const response = await fetch(uploadUrl, {
+			method: "POST",
+			headers: { "Content-Type": contentType },
+			body: fileBuffer,
+		});
+
+		if (!response.ok) {
+			throw new SealApiError({
+				type: "UPLOAD_FAILED",
+				status: response.status,
+				title: "Failed to upload file to storage",
+			});
+		}
+
+		const result = (await response.json()) as { storageId: string };
+		return result.storageId;
+	}
 }
