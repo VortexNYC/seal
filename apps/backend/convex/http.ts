@@ -1775,4 +1775,41 @@ http.route({
 	),
 });
 
+// =============================================================================
+// UPLOADS API
+// =============================================================================
+
+/**
+ * Generate Upload URL
+ *
+ * @route POST /api/v1/uploads/generate-url
+ * @scope seal:documents:write
+ *
+ * Generates a temporary URL for uploading a file to Convex storage.
+ * The returned URL can be used to POST a file directly.
+ *
+ * @returns Temporary upload URL
+ *
+ * @example Response
+ * ```json
+ * {
+ *   "upload_url": "https://..."
+ * }
+ * ```
+ */
+http.route({
+	path: "/api/v1/uploads/generate-url",
+	method: "POST",
+	handler: apiHttpAction(
+		async ({ ctx }) => {
+			const uploadUrl = await ctx.runMutation(
+				internal.api.v1.uploads.generateUploadUrl,
+				{},
+			);
+			return apiResponse(200, { upload_url: uploadUrl });
+		},
+		{ scope: API_SCOPES.DOCUMENTS_WRITE },
+	),
+});
+
 export default http;

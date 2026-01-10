@@ -20,6 +20,7 @@ import type * as api_v1_index from "../api/v1/index.js";
 import type * as api_v1_recipients from "../api/v1/recipients.js";
 import type * as api_v1_signatures from "../api/v1/signatures.js";
 import type * as api_v1_templates from "../api/v1/templates.js";
+import type * as api_v1_uploads from "../api/v1/uploads.js";
 import type * as api_v1_webhooks from "../api/v1/webhooks.js";
 import type * as api_versioning from "../api/versioning.js";
 import type * as api_keys_actions from "../api_keys/actions.js";
@@ -149,6 +150,7 @@ declare const fullApi: ApiFromModules<{
   "api/v1/recipients": typeof api_v1_recipients;
   "api/v1/signatures": typeof api_v1_signatures;
   "api/v1/templates": typeof api_v1_templates;
+  "api/v1/uploads": typeof api_v1_uploads;
   "api/v1/webhooks": typeof api_v1_webhooks;
   "api/versioning": typeof api_versioning;
   "api_keys/actions": typeof api_keys_actions;
