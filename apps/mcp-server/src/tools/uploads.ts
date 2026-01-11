@@ -5,9 +5,7 @@ import { basename } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { SealApiClient } from "../client.js";
-
-/** Maximum file size: 50MB (matches backend validation) */
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+import { getConfig } from "../config.js";
 
 const getAuthToken = (extra: {
 	authInfo?: { token: string };
@@ -73,14 +71,15 @@ export function registerUploadTools(
 			}
 
 			// 2. Validate file size
-			if (stats.size > MAX_FILE_SIZE) {
+			const maxFileSize = getConfig().maxFileSize;
+			if (stats.size > maxFileSize) {
 				return {
 					content: [
 						{
 							type: "text" as const,
 							text: JSON.stringify(
 								{
-									error: `File exceeds 50MB limit: ${(stats.size / 1024 / 1024).toFixed(2)}MB`,
+									error: `File exceeds ${(maxFileSize / 1024 / 1024).toFixed(0)}MB limit: ${(stats.size / 1024 / 1024).toFixed(2)}MB`,
 								},
 								null,
 								2,

@@ -13,6 +13,8 @@ const configSchema = z.object({
 	requestTimeout: z.coerce.number().default(30000),
 	/** Enable debug logging */
 	debug: z.coerce.boolean().default(false),
+	/** Maximum file upload size in bytes (default: 50MB) */
+	maxFileSize: z.coerce.number().default(50 * 1024 * 1024),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -27,6 +29,7 @@ function loadConfig(): Config {
 		baseUrl: process.env.SEAL_API_BASE_URL,
 		requestTimeout: process.env.SEAL_REQUEST_TIMEOUT,
 		debug: process.env.SEAL_DEBUG,
+		maxFileSize: process.env.SEAL_MAX_FILE_SIZE,
 	});
 
 	if (!result.success) {
