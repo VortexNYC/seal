@@ -355,7 +355,7 @@ async function startServer() {
 		process.env.MCP_TRANSPORT === "stdio";
 
 	if (isStdioMode) {
-		console.log(`[Seal MCP] Starting in stdio mode...`);
+		console.error(`[Seal MCP] Starting in stdio mode...`);
 		const transport = new StdioServerTransport();
 		await mcpServer.connect(transport);
 		console.error(`[Seal MCP] MCP server connected via stdio`);
