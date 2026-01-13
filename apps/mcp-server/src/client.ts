@@ -1,5 +1,6 @@
 import type { ApiError } from "@seal/backend/convex/validations/api";
 import type { Config } from "./config";
+import { logger } from "./utils/logger";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -78,7 +79,7 @@ export class SealApiClient {
 		}
 
 		if (this.debug) {
-			console.error(`[Seal MCP] ${method} ${url.toString()}`);
+			logger.debug(`${method} ${url.toString()}`);
 		}
 
 		// Create abort controller for timeout
@@ -237,9 +238,7 @@ export class SealApiClient {
 		contentType: string,
 	): Promise<string> {
 		if (this.debug) {
-			console.error(
-				`[Seal MCP] Uploading file to storage (${fileBuffer.length} bytes)`,
-			);
+			logger.debug(`Uploading file to storage (${fileBuffer.length} bytes)`);
 		}
 
 		const response = await fetch(uploadUrl, {
