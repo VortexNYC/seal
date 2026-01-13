@@ -80,23 +80,10 @@ app.get("/.well-known/oauth-protected-resource", (c) => {
 	// Extract Clerk frontend API URL from publishable key
 	const publishableKey =
 		process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY;
-	let authServerUrl = "https://clerk.com";
-
-	if (publishableKey) {
-		// Publishable key format: pk_test_xxx or pk_live_xxx
-		// The base64 part after pk_test_ or pk_live_ contains the frontend API domain
-		const keyPart = publishableKey
-			.replace("pk_test_", "")
-			.replace("pk_live_", "");
-		try {
-			const decoded = atob(keyPart);
-			if (decoded.includes(".clerk.accounts.dev")) {
-				authServerUrl = `https://${decoded}`;
-			}
-		} catch {
-			// If decoding fails, use default
-		}
-	}
+	const clerkFrontendApi = decodeClerkFrontendApi(publishableKey);
+	const authServerUrl = clerkFrontendApi
+		? `https://${clerkFrontendApi}`
+		: "https://clerk.com";
 
 	return c.json({
 		resource: `${baseUrl}/mcp`,
@@ -119,15 +106,8 @@ app.get("/.well-known/oauth-authorization-server", async (c) => {
 		return c.json({ error: "Clerk not configured" }, 500);
 	}
 
-	// Extract Clerk frontend API from publishable key
-	const keyPart = publishableKey
-		.replace("pk_test_", "")
-		.replace("pk_live_", "");
-	let clerkFrontendApi = "";
-
-	try {
-		clerkFrontendApi = atob(keyPart);
-	} catch {
+	const clerkFrontendApi = decodeClerkFrontendApi(publishableKey);
+	if (!clerkFrontendApi) {
 		return c.json({ error: "Invalid Clerk publishable key" }, 500);
 	}
 
@@ -167,7 +147,14 @@ const skipAuth =
  * MCP endpoint - handles all MCP protocol messages (POST, GET, DELETE)
  * The WebStandardStreamableHTTPServerTransport handles all HTTP methods internally.
  */
-app.all("/mcp", clerkMiddleware(), async (c) => {
+const authMiddleware = skipAuth
+	? async (c, next) => {
+			void c.req;
+			await next();
+		}
+	: clerkMiddleware();
+
+app.all("/mcp", authMiddleware, async (c) => {
 	// Development mode: skip auth if SKIP_AUTH=true
 	let userId = "dev-user";
 	let sessionId = "dev-session";
@@ -252,6 +239,35 @@ function getBaseUrl(requestUrl: string): string {
 	return `${url.protocol}//${url.host}`;
 }
 
+function decodeClerkFrontendApi(publishableKey?: string): string | null {
+	if (!publishableKey) {
+		return null;
+	}
+
+	const keyPart = publishableKey
+		.replace("pk_test_", "")
+		.replace("pk_live_", "");
+	if (!keyPart) {
+		return null;
+	}
+
+	try {
+		const decoded = atob(keyPart);
+		const trimmed = decoded.trim();
+		if (
+			!trimmed ||
+			trimmed.includes("://") ||
+			trimmed.includes("/") ||
+			trimmed.includes(" ")
+		) {
+			return null;
+		}
+		return trimmed;
+	} catch {
+		return null;
+	}
+}
+
 function getBearerToken(
 	authHeader: string | null | undefined,
 ): string | undefined {
@@ -294,10 +310,15 @@ async function resolveTokenInfo(token: string): Promise<TokenInfo | null> {
 		return null;
 	}
 
-	const verification = (await verifyToken(token, {
-		secretKey,
-		jwtKey,
-	})) as { data?: Record<string, unknown> };
+	let verification: { data?: Record<string, unknown> };
+	try {
+		verification = (await verifyToken(token, {
+			secretKey,
+			jwtKey,
+		})) as { data?: Record<string, unknown> };
+	} catch {
+		return null;
+	}
 
 	if (!verification.data) {
 		return null;
