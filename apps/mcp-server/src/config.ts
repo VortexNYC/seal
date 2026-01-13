@@ -33,8 +33,8 @@ function loadConfig(): Config {
 	});
 
 	if (!result.success) {
-		const errors = result.error.errors
-			.map((e) => `${e.path.join(".")}: ${e.message}`)
+		const errors = result.error.issues
+			.map((issue) => `${issue.path.join(".")}: ${issue.message}`)
 			.join(", ");
 		throw new Error(`Invalid configuration: ${errors}`);
 	}

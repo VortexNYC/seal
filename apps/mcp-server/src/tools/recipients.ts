@@ -1,65 +1,30 @@
-// @ts-nocheck - MCP SDK has known issues with deep Zod type inference
-// Runtime validation still works correctly via Zod
+/**
+ * @fileoverview Recipient tools for the Seal MCP server.
+ * Uses shared validation schemas from @seal/backend.
+ */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
-import type { SealApiClient } from "../client.js";
-import type { ApiRecipient } from "../types.js";
+import {
+	type AddRecipientInput,
+	type ApiRecipient,
+	addRecipientSchema,
+	type GetRecipientInput,
+	getRecipientSchema,
+	type ListRecipientsInput,
+	listRecipientsSchema,
+	type RemoveRecipientInput,
+	removeRecipientSchema,
+	type SendReminderInput,
+	sendReminderSchema,
+	type UpdateRecipientInput,
+	updateRecipientSchema,
+} from "@seal/backend/convex/validations/api";
+import type { SealApiClient } from "../client";
 
 const getAuthToken = (extra: {
 	authInfo?: { token: string };
 }): string | undefined => {
 	const token = extra.authInfo?.token;
 	return token && token.length > 0 ? token : undefined;
-};
-
-// Define schemas separately to avoid TypeScript "Type instantiation is excessively deep" errors
-// Using explicit type annotations helps TypeScript avoid deep recursion
-const ListRecipientsSchema: Record<string, z.ZodTypeAny> = {
-	document_id: z.string().describe("The document ID"),
-};
-
-const GetRecipientSchema: Record<string, z.ZodTypeAny> = {
-	document_id: z.string().describe("The document ID"),
-	id: z.string().describe("The recipient ID"),
-};
-
-const AddRecipientSchema: Record<string, z.ZodTypeAny> = {
-	document_id: z.string().describe("The document ID"),
-	email: z.string().email().describe("Recipient email address"),
-	name: z.string().describe("Recipient display name"),
-	role: z
-		.enum(["signer", "approver", "viewer"])
-		.describe(
-			"Recipient role: signer (needs to sign), approver (needs to approve), viewer (view only)",
-		),
-	order: z
-		.number()
-		.optional()
-		.describe("Signing order (for sequential signing workflows)"),
-	message: z.string().optional().describe("Custom message for this recipient"),
-};
-
-const UpdateRecipientSchema: Record<string, z.ZodTypeAny> = {
-	document_id: z.string().describe("The document ID"),
-	id: z.string().describe("The recipient ID"),
-	name: z.string().optional().describe("New display name"),
-	role: z
-		.enum(["signer", "approver", "viewer"])
-		.optional()
-		.describe("New recipient role"),
-	order: z.number().optional().describe("New signing order"),
-	message: z.string().optional().describe("New custom message"),
-};
-
-const RemoveRecipientSchema: Record<string, z.ZodTypeAny> = {
-	document_id: z.string().describe("The document ID"),
-	id: z.string().describe("The recipient ID"),
-};
-
-const SendReminderSchema: Record<string, z.ZodTypeAny> = {
-	document_id: z.string().describe("The document ID"),
-	id: z.string().describe("The recipient ID"),
-	message: z.string().optional().describe("Custom reminder message"),
 };
 
 /**
@@ -73,8 +38,9 @@ export function registerRecipientTools(
 	server.tool(
 		"list_recipients",
 		"List all recipients for a document. Recipients are the people who need to sign or review the document.",
-		ListRecipientsSchema,
-		async ({ document_id }, extra) => {
+		listRecipientsSchema.shape,
+		async (args, extra) => {
+			const { document_id } = args as ListRecipientsInput;
 			const authToken = getAuthToken(extra);
 			const response = await client.get<{ recipients: ApiRecipient[] }>(
 				"/recipients",
@@ -97,8 +63,9 @@ export function registerRecipientTools(
 	server.tool(
 		"get_recipient",
 		"Get detailed information about a specific recipient.",
-		GetRecipientSchema,
-		async ({ document_id, id }, extra) => {
+		getRecipientSchema.shape,
+		async (args, extra) => {
+			const { document_id, id } = args as GetRecipientInput;
 			const authToken = getAuthToken(extra);
 			const response = await client.get<ApiRecipient>(
 				"/recipients/get",
@@ -124,8 +91,10 @@ export function registerRecipientTools(
 	server.tool(
 		"add_recipient",
 		"Add a recipient to a document. The document must be in draft status.",
-		AddRecipientSchema,
-		async ({ document_id, email, name, role, order, message }, extra) => {
+		addRecipientSchema.shape,
+		async (args, extra) => {
+			const { document_id, email, name, role, order, message } =
+				args as AddRecipientInput;
 			const authToken = getAuthToken(extra);
 			const response = await client.post<{ id: string }>(
 				"/recipients",
@@ -149,8 +118,10 @@ export function registerRecipientTools(
 	server.tool(
 		"update_recipient",
 		"Update a recipient's details. The document must be in draft status.",
-		UpdateRecipientSchema,
-		async ({ document_id, id, name, role, order, message }, extra) => {
+		updateRecipientSchema.shape,
+		async (args, extra) => {
+			const { document_id, id, name, role, order, message } =
+				args as UpdateRecipientInput;
 			const authToken = getAuthToken(extra);
 			const response = await client.put<{ success: boolean }>(
 				"/recipients/update",
@@ -174,8 +145,9 @@ export function registerRecipientTools(
 	server.tool(
 		"remove_recipient",
 		"Remove a recipient from a document. The document must be in draft status.",
-		RemoveRecipientSchema,
-		async ({ document_id, id }, extra) => {
+		removeRecipientSchema.shape,
+		async (args, extra) => {
+			const { document_id, id } = args as RemoveRecipientInput;
 			const authToken = getAuthToken(extra);
 			const response = await client.delete<{ success: boolean }>(
 				"/recipients/delete",
@@ -198,8 +170,9 @@ export function registerRecipientTools(
 	server.tool(
 		"send_reminder",
 		"Send a signing reminder to a recipient. Only works for recipients who haven't signed yet.",
-		SendReminderSchema,
-		async ({ document_id, id, message }, extra) => {
+		sendReminderSchema.shape,
+		async (args, extra) => {
+			const { document_id, id, message } = args as SendReminderInput;
 			const authToken = getAuthToken(extra);
 			const response = await client.post<{ success: boolean }>(
 				"/recipients/remind",

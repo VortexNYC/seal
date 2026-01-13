@@ -1,10 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { SealApiClient } from "../client.js";
-import { registerDocumentTools } from "./documents.js";
-import { registerRecipientTools } from "./recipients.js";
-import { registerSignatureTools } from "./signatures.js";
-import { registerTemplateTools } from "./templates.js";
-import { registerUploadTools } from "./uploads.js";
+import type { SealApiClient } from "../client";
+import { registerDocumentTools } from "./documents";
+import { registerRecipientTools } from "./recipients";
+import { registerSignatureTools } from "./signatures";
+import { registerTemplateTools } from "./templates";
+import { registerUploadTools } from "./uploads";
 
 /**
  * Registers all tools with the MCP server.

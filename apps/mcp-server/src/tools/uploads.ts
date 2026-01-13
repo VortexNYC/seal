@@ -1,21 +1,22 @@
-// @ts-nocheck - MCP SDK has known issues with deep Zod type inference
-// Runtime validation still works correctly via Zod
+/**
+ * @fileoverview Upload tools for the Seal MCP server.
+ * Uses shared validation schemas from @seal/backend.
+ */
 import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
-import type { SealApiClient } from "../client.js";
-import { getConfig } from "../config.js";
+import {
+	type UploadFileInput,
+	uploadFileSchema,
+} from "@seal/backend/convex/validations/api";
+import type { SealApiClient } from "../client";
+import { getConfig } from "../config";
 
 const getAuthToken = (extra: {
 	authInfo?: { token: string };
 }): string | undefined => {
 	const token = extra.authInfo?.token;
 	return token && token.length > 0 ? token : undefined;
-};
-
-const UploadFileSchema: Record<string, z.ZodTypeAny> = {
-	file_path: z.string().describe("Absolute path to the PDF file to upload"),
 };
 
 /**
@@ -28,8 +29,9 @@ export function registerUploadTools(
 	server.tool(
 		"upload_file",
 		"Upload a PDF file to Seal storage. Returns a storage_id for use with create_document.",
-		UploadFileSchema,
-		async ({ file_path }, extra) => {
+		uploadFileSchema.shape,
+		async (args, extra) => {
+			const { file_path } = args as UploadFileInput;
 			const authToken = getAuthToken(extra);
 
 			// 1. Validate file exists and get stats

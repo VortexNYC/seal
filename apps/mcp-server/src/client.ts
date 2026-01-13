@@ -1,5 +1,5 @@
-import type { Config } from "./config.js";
-import type { ApiError } from "./types.js";
+import type { ApiError } from "@seal/backend/convex/validations/api";
+import type { Config } from "./config";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);

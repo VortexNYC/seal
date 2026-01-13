@@ -6,10 +6,10 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { SealApiClient } from "./client.js";
-import { getConfig } from "./config.js";
-import { registerAllResources } from "./resources/index.js";
-import { registerAllTools } from "./tools/index.js";
+import { SealApiClient } from "./client";
+import { getConfig } from "./config";
+import { registerAllResources } from "./resources";
+import { registerAllTools } from "./tools";
 
 // Types
 type Variables = {
@@ -371,17 +371,11 @@ async function startServer() {
 		console.log(`[Seal MCP] ⚠️  Auth bypass enabled (SKIP_AUTH=true)`);
 	}
 
-	// Use Bun's native server when available (faster, no misleading logs)
-	if (typeof Bun !== "undefined") {
-		Bun.serve({
-			port,
-			fetch: app.fetch,
-		});
-	} else {
-		// Fallback to @hono/node-server for Node.js
-		const { serve } = await import("@hono/node-server");
-		serve({ fetch: app.fetch, port });
-	}
+	// Use Bun's native server
+	Bun.serve({
+		port,
+		fetch: app.fetch,
+	});
 }
 
 // Only start server when running directly (not imported)

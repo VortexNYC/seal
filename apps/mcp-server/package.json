@@ -19,14 +19,14 @@
 	"dependencies": {
 		"@clerk/backend": "^1.27.0",
 		"@hono/clerk-auth": "^2.0.0",
-		"@hono/node-server": "^1.13.0",
 		"@modelcontextprotocol/sdk": "^1.12.0",
+		"@seal/backend": "workspace:*",
 		"hono": "^4.7.0",
-		"zod": "^3.25.0"
+		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.10",
-		"@types/node": "^25.0.3",
+		"@types/bun": "^1.2.6",
 		"knip": "^5.78.0",
 		"typescript": "^5.9.3"
 	}

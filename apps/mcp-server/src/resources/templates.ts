@@ -1,11 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { SealApiClient } from "../client.js";
 import type {
 	ApiTemplate,
 	ApiTemplateField,
 	PaginatedResponse,
-} from "../types.js";
+} from "@seal/backend/convex/validations/api";
+import type { SealApiClient } from "../client";
 
 type RequestExtra = { authInfo?: { token: string } };
 
