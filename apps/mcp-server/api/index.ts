@@ -11,7 +11,12 @@
  * bundler doesn't properly resolve TypeScript imports from src/.
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { app } from "../dist/index.js";
+import type { Hono } from "hono";
+
+// @ts-expect-error - dist/index.js is built at deploy time, no type declarations
+import { app as honoApp } from "../dist/index.js";
+
+const app = honoApp as Hono;
 
 export const config = {
 	runtime: "nodejs",
@@ -28,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 	}
 
-	const request = new Request(url, {
+	const request = new Request(url.toString(), {
 		method: req.method,
 		headers,
 		body: req.method !== "GET" && req.method !== "HEAD" ? JSON.stringify(req.body) : undefined,
@@ -39,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 	// Convert web Response to Vercel response
 	res.status(response.status);
-	response.headers.forEach((value, key) => {
+	response.headers.forEach((value: string, key: string) => {
 		res.setHeader(key, value);
 	});
 
