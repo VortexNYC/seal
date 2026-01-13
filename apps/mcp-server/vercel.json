@@ -1,12 +1,12 @@
 {
 	"$schema": "https://openapi.vercel.sh/vercel.json",
 	"installCommand": "bun install",
-	"buildCommand": "echo 'No static build needed'",
+	"buildCommand": "bun build src/index.ts --outdir=dist --target=node --format=esm",
 	"outputDirectory": "public",
 	"framework": null,
 	"functions": {
 		"api/index.ts": {
-			"includeFiles": "src/**/*"
+			"includeFiles": "dist/**/*"
 		}
 	},
 	"rewrites": [

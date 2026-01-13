@@ -6,9 +6,12 @@
  *
  * Note: Using Node.js runtime because MCP SDK requires Node.js APIs
  * (fs, path, crypto) that are not available in Edge runtime.
+ *
+ * Note: Importing from dist/index.js (pre-built bundle) because Vercel's
+ * bundler doesn't properly resolve TypeScript imports from src/.
  */
 import { handle } from "hono/vercel";
-import { app } from "../src/index";
+import { app } from "../dist/index.js";
 
 export const config = {
 	runtime: "nodejs",
