@@ -68,7 +68,8 @@ app.use("*", async (c, next) => {
 });
 
 // ============================================================================
-// OAuth Discovery Endpoints (RFC 9728)
+// OAuth Discovery Endpoints (RFC 9728 & RFC 8414)
+// These point to Clerk's OAuth Application endpoints
 // ============================================================================
 
 /**
@@ -77,19 +78,16 @@ app.use("*", async (c, next) => {
  */
 app.get("/.well-known/oauth-protected-resource", (c) => {
 	const baseUrl = getBaseUrl(c.req.url);
+	const clerkIssuer = getClerkIssuer();
 
-	// Extract Clerk frontend API URL from publishable key
-	const publishableKey =
-		process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY;
-	const clerkFrontendApi = decodeClerkFrontendApi(publishableKey);
-	const authServerUrl = clerkFrontendApi
-		? `https://${clerkFrontendApi}`
-		: "https://clerk.com";
+	if (!clerkIssuer) {
+		return c.json({ error: "Clerk not configured" }, 500);
+	}
 
 	return c.json({
 		resource: `${baseUrl}/mcp`,
-		authorization_servers: [authServerUrl],
-		scopes_supported: ["profile", "email", "openid"],
+		authorization_servers: [clerkIssuer],
+		scopes_supported: ["openid", "profile", "email"],
 		bearer_methods_supported: ["header"],
 		resource_documentation: "https://docs.seal.app/api/mcp",
 	});
@@ -97,39 +95,36 @@ app.get("/.well-known/oauth-protected-resource", (c) => {
 
 /**
  * Authorization Server Metadata (RFC 8414)
- * Provides OAuth endpoints for clients
+ * Points to Clerk's OAuth endpoints
+ *
+ * Note: For this to work, you must:
+ * 1. Create an OAuth Application in Clerk Dashboard
+ * 2. Enable dynamic client registration in the OAuth Application settings
  */
-app.get("/.well-known/oauth-authorization-server", async (c) => {
-	const publishableKey =
-		process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY;
+app.get("/.well-known/oauth-authorization-server", (c) => {
+	const clerkIssuer = getClerkIssuer();
 
-	if (!publishableKey) {
+	if (!clerkIssuer) {
 		return c.json({ error: "Clerk not configured" }, 500);
 	}
 
-	const clerkFrontendApi = decodeClerkFrontendApi(publishableKey);
-	if (!clerkFrontendApi) {
-		return c.json({ error: "Invalid Clerk publishable key" }, 500);
-	}
-
-	const issuer = `https://${clerkFrontendApi}`;
-
 	return c.json({
-		issuer,
-		authorization_endpoint: `${issuer}/oauth/authorize`,
-		token_endpoint: `${issuer}/oauth/token`,
-		userinfo_endpoint: `${issuer}/oauth/userinfo`,
-		jwks_uri: `${issuer}/.well-known/jwks.json`,
+		issuer: clerkIssuer,
+		authorization_endpoint: `${clerkIssuer}/oauth/authorize`,
+		token_endpoint: `${clerkIssuer}/oauth/token`,
+		userinfo_endpoint: `${clerkIssuer}/oauth/userinfo`,
+		jwks_uri: `${clerkIssuer}/.well-known/jwks.json`,
+		registration_endpoint: `${clerkIssuer}/oauth/register`,
 		scopes_supported: ["openid", "profile", "email"],
 		response_types_supported: ["code"],
+		response_modes_supported: ["query"],
 		grant_types_supported: ["authorization_code", "refresh_token"],
 		token_endpoint_auth_methods_supported: [
 			"client_secret_basic",
 			"client_secret_post",
+			"none",
 		],
-		code_challenge_methods_supported: ["S256"],
-		// Dynamic client registration (RFC 7591)
-		registration_endpoint: `${issuer}/oauth/register`,
+		code_challenge_methods_supported: ["plain", "S256"],
 	});
 });
 
@@ -240,6 +235,18 @@ function getBaseUrl(requestUrl: string): string {
 	return `${url.protocol}//${url.host}`;
 }
 
+function getClerkIssuer(): string | null {
+	const publishableKey =
+		process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+	if (!publishableKey) {
+		return null;
+	}
+
+	const clerkFrontendApi = decodeClerkFrontendApi(publishableKey);
+	return clerkFrontendApi ? `https://${clerkFrontendApi}` : null;
+}
+
 function decodeClerkFrontendApi(publishableKey?: string): string | null {
 	if (!publishableKey) {
 		return null;
@@ -306,8 +313,7 @@ function extractScopesFromPayload(payload: Record<string, unknown>): string[] {
 
 async function resolveTokenInfo(token: string): Promise<TokenInfo | null> {
 	const secretKey = process.env.CLERK_SECRET_KEY;
-	const jwtKey = process.env.CLERK_JWT_KEY;
-	if (!secretKey && !jwtKey) {
+	if (!secretKey) {
 		return null;
 	}
 
@@ -315,7 +321,6 @@ async function resolveTokenInfo(token: string): Promise<TokenInfo | null> {
 	try {
 		verification = (await verifyToken(token, {
 			secretKey,
-			jwtKey,
 		})) as { data?: Record<string, unknown> };
 	} catch {
 		return null;
@@ -361,9 +366,11 @@ async function buildAuthInfo(
 // Exports
 // ============================================================================
 
-// Default export - used by api/index.ts for Vercel
-// Don't export in development to prevent Bun's automatic dev server
-export default process.env.NODE_ENV === "production" ? app : undefined;
+// Named export for Vercel and imports
+export { app };
+
+// Default export for Vercel edge runtime
+export default app;
 
 // ============================================================================
 // Local Development Server
@@ -400,7 +407,10 @@ async function startServer() {
 	});
 }
 
-// Only start server when running directly (not imported)
-if (process.env.NODE_ENV !== "production") {
+// Only start server when running directly (not imported via Vercel)
+const isVercel = process.env.VERCEL === "1";
+const isProduction = process.env.NODE_ENV === "production";
+
+if (!isVercel && !isProduction) {
 	startServer().catch((err: Error) => sealLogger.error(err.message));
 }
