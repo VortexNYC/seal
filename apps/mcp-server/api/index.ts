@@ -10,11 +10,39 @@
  * Note: Importing from dist/index.js (pre-built bundle) because Vercel's
  * bundler doesn't properly resolve TypeScript imports from src/.
  */
-import { handle } from "hono/vercel";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { app } from "../dist/index.js";
 
 export const config = {
 	runtime: "nodejs",
+	maxDuration: 60,
 };
 
-export default handle(app);
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+	// Convert Vercel request to web Request
+	const url = new URL(req.url || "/", `https://${req.headers.host}`);
+	const headers = new Headers();
+	for (const [key, value] of Object.entries(req.headers)) {
+		if (value) {
+			headers.set(key, Array.isArray(value) ? value.join(", ") : value);
+		}
+	}
+
+	const request = new Request(url, {
+		method: req.method,
+		headers,
+		body: req.method !== "GET" && req.method !== "HEAD" ? JSON.stringify(req.body) : undefined,
+	});
+
+	// Handle with Hono
+	const response = await app.fetch(request);
+
+	// Convert web Response to Vercel response
+	res.status(response.status);
+	response.headers.forEach((value, key) => {
+		res.setHeader(key, value);
+	});
+
+	const body = await response.text();
+	res.send(body);
+}
