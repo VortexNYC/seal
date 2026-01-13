@@ -34,6 +34,11 @@ import {
 	emailLogsTable,
 } from "./schemas/email_logs";
 import {
+	mcpOauthClientsTable,
+	mcpOauthCodesTable,
+	mcpOauthRefreshTokensTable,
+} from "./schemas/mcp_oauth";
+import {
 	type NotificationType,
 	notificationsTable,
 } from "./schemas/notifications";
@@ -178,4 +183,9 @@ export default defineSchema({
 
 	// Rate limiting
 	rate_limit_buckets: rateLimitBucketsTable,
+
+	// MCP OAuth
+	mcp_oauth_clients: mcpOauthClientsTable,
+	mcp_oauth_codes: mcpOauthCodesTable,
+	mcp_oauth_refresh_tokens: mcpOauthRefreshTokensTable,
 });

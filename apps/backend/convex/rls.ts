@@ -716,6 +716,42 @@ export async function rlsRules(
 				return false;
 			},
 		},
+
+		// ====================
+		// MCP OAuth (Internal Use Only)
+		// ====================
+		mcp_oauth_clients: {
+			read: async () => {
+				// MCP OAuth clients are only accessed by the MCP server internally
+				return false;
+			},
+			modify: async () => {
+				// MCP OAuth clients are only modified by internal mutations
+				return false;
+			},
+		},
+
+		mcp_oauth_codes: {
+			read: async () => {
+				// MCP OAuth codes are only accessed by the MCP server internally
+				return false;
+			},
+			modify: async () => {
+				// MCP OAuth codes are only modified by internal mutations
+				return false;
+			},
+		},
+
+		mcp_oauth_refresh_tokens: {
+			read: async () => {
+				// MCP OAuth refresh tokens are only accessed by the MCP server internally
+				return false;
+			},
+			modify: async () => {
+				// MCP OAuth refresh tokens are only modified by internal mutations
+				return false;
+			},
+		},
 	};
 
 	return rules as Rules<QueryCtx, DataModel>;

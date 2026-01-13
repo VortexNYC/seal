@@ -72,6 +72,9 @@ import type * as emails_email_retry from "../emails/email_retry.js";
 import type * as emails_user_email_actions from "../emails/user_email_actions.js";
 import type * as fix_user_org from "../fix_user_org.js";
 import type * as http from "../http.js";
+import type * as mcp_oauth_http from "../mcp_oauth/http.js";
+import type * as mcp_oauth_mutations from "../mcp_oauth/mutations.js";
+import type * as mcp_oauth_queries from "../mcp_oauth/queries.js";
 import type * as notifications_index from "../notifications/index.js";
 import type * as organization_roles_helpers from "../organization_roles/helpers.js";
 import type * as organization_roles_migrations from "../organization_roles/migrations.js";
@@ -93,6 +96,7 @@ import type * as schemas_document_reminders from "../schemas/document_reminders.
 import type * as schemas_document_workflow_status from "../schemas/document_workflow_status.js";
 import type * as schemas_documents from "../schemas/documents.js";
 import type * as schemas_email_logs from "../schemas/email_logs.js";
+import type * as schemas_mcp_oauth from "../schemas/mcp_oauth.js";
 import type * as schemas_notifications from "../schemas/notifications.js";
 import type * as schemas_organization_invitations from "../schemas/organization_invitations.js";
 import type * as schemas_organization_members from "../schemas/organization_members.js";
@@ -203,6 +207,9 @@ declare const fullApi: ApiFromModules<{
   "emails/user_email_actions": typeof emails_user_email_actions;
   fix_user_org: typeof fix_user_org;
   http: typeof http;
+  "mcp_oauth/http": typeof mcp_oauth_http;
+  "mcp_oauth/mutations": typeof mcp_oauth_mutations;
+  "mcp_oauth/queries": typeof mcp_oauth_queries;
   "notifications/index": typeof notifications_index;
   "organization_roles/helpers": typeof organization_roles_helpers;
   "organization_roles/migrations": typeof organization_roles_migrations;
@@ -224,6 +231,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/document_workflow_status": typeof schemas_document_workflow_status;
   "schemas/documents": typeof schemas_documents;
   "schemas/email_logs": typeof schemas_email_logs;
+  "schemas/mcp_oauth": typeof schemas_mcp_oauth;
   "schemas/notifications": typeof schemas_notifications;
   "schemas/organization_invitations": typeof schemas_organization_invitations;
   "schemas/organization_members": typeof schemas_organization_members;
