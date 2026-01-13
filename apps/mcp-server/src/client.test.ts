@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { SealApiClient } from "./client";
+import { SealApiClient, SealApiError } from "./client";
 import type { Config } from "./config";
 
 const mockConfig: Config = {
@@ -193,8 +193,11 @@ describe("SealApiClient", () => {
 				await client.get("/documents/get", { id: "nonexistent" });
 				expect(true).toBe(false); // Should not reach here
 			} catch (error) {
-				expect(error).toBeInstanceOf(Error);
-				expect((error as Error).message).toBe("Document not found");
+				expect(error).toBeInstanceOf(SealApiError);
+				const apiError = error as SealApiError;
+				expect(apiError.message).toBe("Document not found");
+				expect(apiError.code).toBe("NOT_FOUND");
+				expect(apiError.status).toBe(404);
 			}
 		});
 
@@ -222,7 +225,12 @@ describe("SealApiClient", () => {
 				);
 				expect(true).toBe(false);
 			} catch (error) {
-				expect((error as Error).message).toBe("Validation failed");
+				expect(error).toBeInstanceOf(SealApiError);
+				const apiError = error as SealApiError;
+				expect(apiError.message).toBe("Validation failed");
+				expect(apiError.code).toBe("VALIDATION_ERROR");
+				expect(apiError.status).toBe(400);
+				expect(apiError.details).toEqual({ email: ["Invalid format"] });
 			}
 		});
 
@@ -240,7 +248,11 @@ describe("SealApiClient", () => {
 				await client.get("/documents");
 				expect(true).toBe(false);
 			} catch (error) {
-				expect((error as Error).message).toBe("Internal Server Error");
+				expect(error).toBeInstanceOf(SealApiError);
+				const apiError = error as SealApiError;
+				expect(apiError.message).toBe("Internal Server Error");
+				expect(apiError.code).toBe("API_ERROR");
+				expect(apiError.status).toBe(500);
 			}
 		});
 
@@ -300,6 +312,35 @@ describe("SealApiClient", () => {
 					"application/pdf",
 				),
 			).rejects.toThrow("Failed to upload file to storage");
+		});
+
+		test("throws timeout error when upload exceeds timeout", async () => {
+			// Create a fetch that hangs until aborted
+			globalThis.fetch = createMockFetch(async (_, options) => {
+				const signal = (options as RequestInit)?.signal;
+				return new Promise((_, reject) => {
+					if (signal) {
+						signal.addEventListener("abort", () => {
+							const error = new Error("The operation was aborted");
+							error.name = "AbortError";
+							reject(error);
+						});
+					}
+				});
+			});
+
+			const client = new SealApiClient(mockConfig);
+			const buffer = Buffer.from("PDF content");
+
+			// Use a very short timeout to trigger the timeout error
+			await expect(
+				client.uploadToStorage(
+					"https://storage.example.com/upload",
+					buffer,
+					"application/pdf",
+					10, // 10ms timeout
+				),
+			).rejects.toThrow("Upload timed out");
 		});
 	});
 });
