@@ -13,6 +13,8 @@
 		"lint": "biome check .",
 		"format": "biome format --write .",
 		"typecheck": "bun --bun x tsc --noEmit",
+		"test": "bun test",
+		"test:watch": "bun test --watch",
 		"knip": "knip --directory ../.. --workspace apps/mcp-server",
 		"clean": "git clean -xdf .cache .turbo node_modules dist"
 	},
