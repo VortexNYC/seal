@@ -126,6 +126,7 @@ import type * as templates_mutations from "../templates/mutations.js";
 import type * as templates_queries from "../templates/queries.js";
 import type * as user_profiles_mutations from "../user_profiles/mutations.js";
 import type * as user_profiles_queries from "../user_profiles/queries.js";
+import type * as validations_api from "../validations/api.js";
 import type * as validations_organizations from "../validations/organizations.js";
 import type * as webhooks_index from "../webhooks/index.js";
 import type * as webhooks_mutations from "../webhooks/mutations.js";
@@ -256,6 +257,7 @@ declare const fullApi: ApiFromModules<{
   "templates/queries": typeof templates_queries;
   "user_profiles/mutations": typeof user_profiles_mutations;
   "user_profiles/queries": typeof user_profiles_queries;
+  "validations/api": typeof validations_api;
   "validations/organizations": typeof validations_organizations;
   "webhooks/index": typeof webhooks_index;
   "webhooks/mutations": typeof webhooks_mutations;
