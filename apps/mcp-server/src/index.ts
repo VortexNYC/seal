@@ -215,8 +215,23 @@ app.all("/mcp", authMiddleware, async (c) => {
 });
 
 // ============================================================================
-// Health Check
+// Root & Health Check
 // ============================================================================
+
+app.get("/", (c) => {
+	return c.json({
+		name: "Seal MCP Server",
+		version: "0.0.1",
+		description: "Model Context Protocol server for Seal document management",
+		endpoints: {
+			mcp: "/mcp",
+			health: "/health",
+			oauth_protected_resource: "/.well-known/oauth-protected-resource",
+			oauth_authorization_server: "/.well-known/oauth-authorization-server",
+		},
+		documentation: "https://docs.seal.app/api/mcp",
+	});
+});
 
 app.get("/health", (c) => {
 	return c.json({
