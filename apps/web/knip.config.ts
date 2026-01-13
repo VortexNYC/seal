@@ -25,6 +25,8 @@ const config: KnipConfig = {
 		"tailwindcss",
 		// TW Animate (imported in CSS)
 		"tw-animate-css",
+		// Radix UI (used by shadcn/ui components)
+		"@radix-ui/*",
 	],
 	ignoreBinaries: ["biome", "knip", "vite", "tsc", "playwright"],
 	ignoreExportsUsedInFile: true,

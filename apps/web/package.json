@@ -11,7 +11,7 @@
 		"typecheck": "tsc --noEmit",
 		"knip": "knip",
 		"knip:fix": "knip --fix --allow-remove-files",
-		"clean": "git clean -xdf .cache .turbo node_modules",
+		"clean": "git clean -xdf .cache .turbo node_modules dist",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:headed": "playwright test --headed",
@@ -22,6 +22,7 @@
 	"dependencies": {
 		"@clerk/clerk-react": "^5.59.2",
 		"@convex-dev/react-query": "0.1.0",
+		"@radix-ui/react-accordion": "^1.2.11",
 		"@radix-ui/react-alert-dialog": "^1.1.15",
 		"@radix-ui/react-avatar": "^1.1.11",
 		"@radix-ui/react-checkbox": "^1.3.3",
