@@ -35,6 +35,18 @@ import {
 	validateRequiredFields,
 } from "./api";
 import { ApiError } from "./api/errors";
+import {
+	createAuthorizationCode as mcpCreateAuthorizationCode,
+	createRefreshToken as mcpCreateRefreshToken,
+	deleteAuthorizationCode as mcpDeleteAuthorizationCode,
+	deleteRefreshToken as mcpDeleteRefreshToken,
+	getAuthorizationCode as mcpGetAuthorizationCode,
+	getClient as mcpGetClient,
+	getRefreshToken as mcpGetRefreshToken,
+	registerClient as mcpRegisterClient,
+	updateRefreshToken as mcpUpdateRefreshToken,
+	validateRedirectUri as mcpValidateRedirectUri,
+} from "./mcp_oauth/http";
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
 
 interface ClerkWebhookEvent {
@@ -345,6 +357,74 @@ http.route({
 
 		return new Response("Webhook processed", { status: 200 });
 	}),
+});
+
+// =============================================================================
+// MCP OAUTH ENDPOINTS (Internal - secured by MCP_INTERNAL_SECRET)
+// =============================================================================
+
+// Client operations
+http.route({
+	path: "/mcp-oauth/clients",
+	method: "POST",
+	handler: mcpRegisterClient,
+});
+
+http.route({
+	path: "/mcp-oauth/clients",
+	method: "GET",
+	handler: mcpGetClient,
+});
+
+// Authorization code operations
+http.route({
+	path: "/mcp-oauth/codes",
+	method: "POST",
+	handler: mcpCreateAuthorizationCode,
+});
+
+http.route({
+	path: "/mcp-oauth/codes",
+	method: "GET",
+	handler: mcpGetAuthorizationCode,
+});
+
+http.route({
+	path: "/mcp-oauth/codes",
+	method: "DELETE",
+	handler: mcpDeleteAuthorizationCode,
+});
+
+// Refresh token operations
+http.route({
+	path: "/mcp-oauth/refresh-tokens",
+	method: "POST",
+	handler: mcpCreateRefreshToken,
+});
+
+http.route({
+	path: "/mcp-oauth/refresh-tokens",
+	method: "GET",
+	handler: mcpGetRefreshToken,
+});
+
+http.route({
+	path: "/mcp-oauth/refresh-tokens",
+	method: "PUT",
+	handler: mcpUpdateRefreshToken,
+});
+
+http.route({
+	path: "/mcp-oauth/refresh-tokens",
+	method: "DELETE",
+	handler: mcpDeleteRefreshToken,
+});
+
+// Validation operations
+http.route({
+	path: "/mcp-oauth/validate-redirect",
+	method: "GET",
+	handler: mcpValidateRedirectUri,
 });
 
 // =============================================================================
