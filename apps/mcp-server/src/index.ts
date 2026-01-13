@@ -1,13 +1,13 @@
-import { verifyToken } from "@clerk/backend";
-import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { type Context, Hono, type Next } from "hono";
+import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { SealApiClient } from "./client";
 import { getConfig } from "./config";
+import { verifyAccessToken } from "./oauth/crypto";
+import { oauthRoutes } from "./oauth/routes";
 import { registerAllResources } from "./resources";
 import { registerAllTools } from "./tools";
 import { logger as sealLogger } from "./utils/logger";
@@ -69,7 +69,7 @@ app.use("*", async (c, next) => {
 
 // ============================================================================
 // OAuth Discovery Endpoints (RFC 9728 & RFC 8414)
-// These point to Clerk's OAuth Application endpoints
+// Point to our own OAuth server (which proxies to Clerk for authentication)
 // ============================================================================
 
 /**
@@ -78,16 +78,11 @@ app.use("*", async (c, next) => {
  */
 app.get("/.well-known/oauth-protected-resource", (c) => {
 	const baseUrl = getBaseUrl(c.req.url);
-	const clerkIssuer = getClerkIssuer();
-
-	if (!clerkIssuer) {
-		return c.json({ error: "Clerk not configured" }, 500);
-	}
 
 	return c.json({
 		resource: `${baseUrl}/mcp`,
-		authorization_servers: [clerkIssuer],
-		scopes_supported: ["profile", "email", "offline_access"],
+		authorization_servers: [baseUrl],
+		scopes_supported: ["profile", "email"],
 		bearer_methods_supported: ["header"],
 		resource_documentation: "https://docs.seal.app/api/mcp",
 	});
@@ -95,27 +90,18 @@ app.get("/.well-known/oauth-protected-resource", (c) => {
 
 /**
  * Authorization Server Metadata (RFC 8414)
- * Points to Clerk's OAuth endpoints
- *
- * Note: For this to work, you must:
- * 1. Create an OAuth Application in Clerk Dashboard
- * 2. Enable dynamic client registration in the OAuth Application settings
+ * Points to our own OAuth endpoints
  */
 app.get("/.well-known/oauth-authorization-server", (c) => {
-	const clerkIssuer = getClerkIssuer();
-
-	if (!clerkIssuer) {
-		return c.json({ error: "Clerk not configured" }, 500);
-	}
+	const baseUrl = getBaseUrl(c.req.url);
 
 	return c.json({
-		issuer: clerkIssuer,
-		authorization_endpoint: `${clerkIssuer}/oauth/authorize`,
-		token_endpoint: `${clerkIssuer}/oauth/token`,
-		userinfo_endpoint: `${clerkIssuer}/oauth/userinfo`,
-		jwks_uri: `${clerkIssuer}/.well-known/jwks.json`,
-		registration_endpoint: `${clerkIssuer}/oauth/register`,
-		scopes_supported: ["profile", "email", "offline_access"],
+		issuer: baseUrl,
+		authorization_endpoint: `${baseUrl}/oauth/authorize`,
+		token_endpoint: `${baseUrl}/oauth/token`,
+		registration_endpoint: `${baseUrl}/oauth/register`,
+		revocation_endpoint: `${baseUrl}/oauth/revoke`,
+		scopes_supported: ["profile", "email"],
 		response_types_supported: ["code"],
 		response_modes_supported: ["query"],
 		grant_types_supported: ["authorization_code", "refresh_token"],
@@ -124,9 +110,12 @@ app.get("/.well-known/oauth-authorization-server", (c) => {
 			"client_secret_post",
 			"none",
 		],
-		code_challenge_methods_supported: ["plain", "S256"],
+		code_challenge_methods_supported: ["S256", "plain"],
 	});
 });
+
+// Mount OAuth routes
+app.route("/oauth", oauthRoutes);
 
 // ============================================================================
 // MCP Endpoint
@@ -142,24 +131,22 @@ const skipAuth =
 /**
  * MCP endpoint - handles all MCP protocol messages (POST, GET, DELETE)
  * The WebStandardStreamableHTTPServerTransport handles all HTTP methods internally.
+ *
+ * Authentication: Validates our own JWT access tokens issued by /oauth/token
  */
-const authMiddleware = skipAuth
-	? async (c: Context, next: Next) => {
-			void c.req;
-			await next();
-		}
-	: clerkMiddleware();
-
-app.all("/mcp", authMiddleware, async (c) => {
+app.all("/mcp", async (c) => {
 	// Development mode: skip auth if SKIP_AUTH=true
 	let userId = "dev-user";
 	let sessionId = "dev-session";
+	let scopes: string[] = ["profile", "email"];
+	let clientId = "dev-client";
 
 	if (!skipAuth) {
-		// Verify authentication in production
-		const auth = getAuth(c);
+		// Get bearer token from Authorization header
+		const authHeader = c.req.header("Authorization");
+		const token = getBearerToken(authHeader);
 
-		if (!auth?.userId) {
+		if (!token) {
 			return c.json(
 				{
 					type: "UNAUTHORIZED",
@@ -173,8 +160,27 @@ app.all("/mcp", authMiddleware, async (c) => {
 			);
 		}
 
-		userId = auth.userId;
-		sessionId = auth.sessionId || "";
+		// Verify our JWT access token
+		const payload = await verifyAccessToken(token);
+
+		if (!payload) {
+			return c.json(
+				{
+					type: "UNAUTHORIZED",
+					status: 401,
+					title: "Invalid or expired access token",
+				},
+				401,
+				{
+					"WWW-Authenticate": `Bearer resource_metadata="${getBaseUrl(c.req.url)}/.well-known/oauth-protected-resource", error="invalid_token"`,
+				},
+			);
+		}
+
+		userId = payload.sub;
+		clientId = payload.client_id;
+		scopes = payload.scope.split(" ").filter(Boolean);
+		sessionId = `${clientId}-${Date.now()}`;
 	} else {
 		sealLogger.debug("Auth bypassed (SKIP_AUTH=true)");
 	}
@@ -208,7 +214,12 @@ app.all("/mcp", authMiddleware, async (c) => {
 	// It handles GET (SSE), POST (messages), and DELETE (close session)
 	const bearerToken = getBearerToken(c.req.header("Authorization"));
 	const authInfo = bearerToken
-		? await buildAuthInfo(bearerToken, userId, sessionId)
+		? {
+				token: bearerToken,
+				clientId,
+				scopes,
+				extra: { sessionId, userId },
+			}
 		: undefined;
 
 	return transport.handleRequest(c.req.raw, { authInfo });
@@ -250,48 +261,6 @@ function getBaseUrl(requestUrl: string): string {
 	return `${url.protocol}//${url.host}`;
 }
 
-function getClerkIssuer(): string | null {
-	const publishableKey =
-		process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY;
-
-	if (!publishableKey) {
-		return null;
-	}
-
-	const clerkFrontendApi = decodeClerkFrontendApi(publishableKey);
-	return clerkFrontendApi ? `https://${clerkFrontendApi}` : null;
-}
-
-function decodeClerkFrontendApi(publishableKey?: string): string | null {
-	if (!publishableKey) {
-		return null;
-	}
-
-	const keyPart = publishableKey
-		.replace("pk_test_", "")
-		.replace("pk_live_", "");
-	if (!keyPart) {
-		return null;
-	}
-
-	try {
-		const decoded = atob(keyPart);
-		// Clerk encodes with a trailing '$' that needs to be removed
-		const trimmed = decoded.trim().replace(/\$$/, "");
-		if (
-			!trimmed ||
-			trimmed.includes("://") ||
-			trimmed.includes("/") ||
-			trimmed.includes(" ")
-		) {
-			return null;
-		}
-		return trimmed;
-	} catch {
-		return null;
-	}
-}
-
 function getBearerToken(
 	authHeader: string | null | undefined,
 ): string | undefined {
@@ -306,76 +275,6 @@ function getBearerToken(
 
 	const trimmed = token.trim();
 	return trimmed.length > 0 ? trimmed : undefined;
-}
-
-type TokenInfo = {
-	scopes: string[];
-	expiresAt?: number;
-};
-
-function extractScopesFromPayload(payload: Record<string, unknown>): string[] {
-	const scope = payload.scope;
-	if (typeof scope === "string") {
-		return scope.split(" ").filter(Boolean);
-	}
-
-	const scp = payload.scp;
-	if (Array.isArray(scp) && scp.every((value) => typeof value === "string")) {
-		return scp;
-	}
-
-	return [];
-}
-
-async function resolveTokenInfo(token: string): Promise<TokenInfo | null> {
-	const secretKey = process.env.CLERK_SECRET_KEY;
-	if (!secretKey) {
-		return null;
-	}
-
-	let verification: { data?: Record<string, unknown> };
-	try {
-		verification = (await verifyToken(token, {
-			secretKey,
-		})) as { data?: Record<string, unknown> };
-	} catch {
-		return null;
-	}
-
-	if (!verification.data) {
-		return null;
-	}
-
-	const payload = verification.data;
-	const scopes = extractScopesFromPayload(payload);
-	const expiresAt = typeof payload.exp === "number" ? payload.exp : undefined;
-
-	return { scopes, expiresAt };
-}
-
-async function buildAuthInfo(
-	token: string,
-	userId: string,
-	sessionId: string,
-): Promise<{
-	token: string;
-	clientId: string;
-	scopes: string[];
-	expiresAt?: number;
-	extra: { sessionId: string };
-}> {
-	const tokenInfo = await resolveTokenInfo(token);
-	const scopes = tokenInfo?.scopes.length
-		? tokenInfo.scopes
-		: ["openid", "profile", "email"];
-
-	return {
-		token,
-		clientId: userId,
-		scopes,
-		expiresAt: tokenInfo?.expiresAt,
-		extra: { sessionId },
-	};
 }
 
 // ============================================================================
