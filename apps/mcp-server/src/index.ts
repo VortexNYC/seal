@@ -3,7 +3,7 @@ import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { Hono } from "hono";
+import { type Context, Hono, type Next } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { SealApiClient } from "./client";
@@ -148,7 +148,7 @@ const skipAuth =
  * The WebStandardStreamableHTTPServerTransport handles all HTTP methods internally.
  */
 const authMiddleware = skipAuth
-	? async (c, next) => {
+	? async (c: Context, next: Next) => {
 			void c.req;
 			await next();
 		}
