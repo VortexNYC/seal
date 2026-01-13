@@ -19,13 +19,7 @@ import {
 	updateRecipientSchema,
 } from "@seal/backend/convex/validations/api";
 import type { SealApiClient } from "../client";
-
-const getAuthToken = (extra: {
-	authInfo?: { token: string };
-}): string | undefined => {
-	const token = extra.authInfo?.token;
-	return token && token.length > 0 ? token : undefined;
-};
+import { getAuthToken } from "../utils/auth";
 
 /**
  * Registers all recipient-related tools with the MCP server.

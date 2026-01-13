@@ -6,13 +6,7 @@ import type {
 	PaginatedResponse,
 } from "@seal/backend/convex/validations/api";
 import type { SealApiClient } from "../client";
-
-type RequestExtra = { authInfo?: { token: string } };
-
-function getAuthToken(extra: RequestExtra): string | undefined {
-	const token = extra.authInfo?.token;
-	return token && token.length > 0 ? token : undefined;
-}
+import { getAuthToken } from "../utils/auth";
 
 /**
  * Registers template resources with the MCP server.

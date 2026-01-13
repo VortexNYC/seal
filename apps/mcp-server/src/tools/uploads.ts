@@ -11,13 +11,7 @@ import {
 } from "@seal/backend/convex/validations/api";
 import type { SealApiClient } from "../client";
 import { getConfig } from "../config";
-
-const getAuthToken = (extra: {
-	authInfo?: { token: string };
-}): string | undefined => {
-	const token = extra.authInfo?.token;
-	return token && token.length > 0 ? token : undefined;
-};
+import { getAuthToken } from "../utils/auth";
 
 function isStdioMode(): boolean {
 	return (
