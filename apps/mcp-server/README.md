@@ -89,6 +89,8 @@ For local development and testing:
 }
 ```
 
+Note: `upload_file` is only available in stdio mode because it reads local file paths. For HTTP transport, upload via the Seal API and pass the `storage_id` to `create_document`.
+
 ## Configuration
 
 ### Environment Variables

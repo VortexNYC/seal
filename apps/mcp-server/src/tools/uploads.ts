@@ -19,6 +19,14 @@ const getAuthToken = (extra: {
 	return token && token.length > 0 ? token : undefined;
 };
 
+function isStdioMode(): boolean {
+	return (
+		process.argv.includes("--stdio") ||
+		(process.stdin.isTTY === false && process.stdout.isTTY === false) ||
+		process.env.MCP_TRANSPORT === "stdio"
+	);
+}
+
 /**
  * Registers upload-related tools with the MCP server.
  */
@@ -33,6 +41,25 @@ export function registerUploadTools(
 		async (args, extra) => {
 			const { file_path } = args as UploadFileInput;
 			const authToken = getAuthToken(extra);
+
+			if (!isStdioMode()) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: JSON.stringify(
+								{
+									error:
+										"upload_file is only available in stdio mode because it reads local file paths on the server.",
+								},
+								null,
+								2,
+							),
+						},
+					],
+					isError: true,
+				};
+			}
 
 			// 1. Validate file exists and get stats
 			let stats: Awaited<ReturnType<typeof stat>>;
