@@ -8,8 +8,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * Custom error class for API errors.
+ * Provides structured error information from the Seal API.
  */
-class SealApiError extends Error {
+export class SealApiError extends Error {
 	public readonly code: string;
 	public readonly status: number;
 	public readonly details?: Record<string, unknown>;
@@ -57,7 +58,7 @@ export class SealApiClient {
 	}
 
 	/**
-	 * Makes an authenticated request to the Seal API.
+	 * Options for API requests.
 	 */
 	private async request<T>(
 		method: string,
@@ -66,6 +67,8 @@ export class SealApiClient {
 			query?: Record<string, string | number | boolean | undefined>;
 			body?: Record<string, unknown>;
 			authToken?: string;
+			/** Override the default timeout for this request (in ms) */
+			timeout?: number;
 		},
 	): Promise<T> {
 		// Build URL with query parameters
@@ -82,9 +85,10 @@ export class SealApiClient {
 			logger.debug(`${method} ${url.toString()}`);
 		}
 
-		// Create abort controller for timeout
+		// Create abort controller for timeout (use per-request timeout if provided)
+		const requestTimeout = options?.timeout ?? this.timeout;
 		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+		const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
 
 		try {
 			const authToken = this.resolveAuthToken(options?.authToken);
@@ -179,48 +183,70 @@ export class SealApiClient {
 
 	/**
 	 * Makes a GET request.
+	 * @param path - API endpoint path
+	 * @param query - Optional query parameters
+	 * @param authToken - Optional auth token (overrides default)
+	 * @param timeout - Optional timeout in ms (overrides default)
 	 */
 	async get<T>(
 		path: string,
 		query?: Record<string, string | number | boolean | undefined>,
 		authToken?: string,
+		timeout?: number,
 	): Promise<T> {
-		return this.request<T>("GET", path, { query, authToken });
+		return this.request<T>("GET", path, { query, authToken, timeout });
 	}
 
 	/**
 	 * Makes a POST request.
+	 * @param path - API endpoint path
+	 * @param body - Optional request body
+	 * @param query - Optional query parameters
+	 * @param authToken - Optional auth token (overrides default)
+	 * @param timeout - Optional timeout in ms (overrides default)
 	 */
 	async post<T>(
 		path: string,
 		body?: Record<string, unknown>,
 		query?: Record<string, string | number | boolean | undefined>,
 		authToken?: string,
+		timeout?: number,
 	): Promise<T> {
-		return this.request<T>("POST", path, { body, query, authToken });
+		return this.request<T>("POST", path, { body, query, authToken, timeout });
 	}
 
 	/**
 	 * Makes a PUT request.
+	 * @param path - API endpoint path
+	 * @param body - Optional request body
+	 * @param query - Optional query parameters
+	 * @param authToken - Optional auth token (overrides default)
+	 * @param timeout - Optional timeout in ms (overrides default)
 	 */
 	async put<T>(
 		path: string,
 		body?: Record<string, unknown>,
 		query?: Record<string, string | number | boolean | undefined>,
 		authToken?: string,
+		timeout?: number,
 	): Promise<T> {
-		return this.request<T>("PUT", path, { body, query, authToken });
+		return this.request<T>("PUT", path, { body, query, authToken, timeout });
 	}
 
 	/**
 	 * Makes a DELETE request.
+	 * @param path - API endpoint path
+	 * @param query - Optional query parameters
+	 * @param authToken - Optional auth token (overrides default)
+	 * @param timeout - Optional timeout in ms (overrides default)
 	 */
 	async delete<T>(
 		path: string,
 		query?: Record<string, string | number | boolean | undefined>,
 		authToken?: string,
+		timeout?: number,
 	): Promise<T> {
-		return this.request<T>("DELETE", path, { query, authToken });
+		return this.request<T>("DELETE", path, { query, authToken, timeout });
 	}
 
 	/**
@@ -230,32 +256,64 @@ export class SealApiClient {
 	 * @param uploadUrl - The temporary upload URL from Convex
 	 * @param fileBuffer - The file content as a Buffer
 	 * @param contentType - The MIME type of the file
+	 * @param timeout - Optional timeout in ms (defaults to 60000ms for uploads)
 	 * @returns The storageId for the uploaded file
 	 */
 	async uploadToStorage(
 		uploadUrl: string,
 		fileBuffer: Buffer,
 		contentType: string,
+		timeout?: number,
 	): Promise<string> {
 		if (this.debug) {
 			logger.debug(`Uploading file to storage (${fileBuffer.length} bytes)`);
 		}
 
-		const response = await fetch(uploadUrl, {
-			method: "POST",
-			headers: { "Content-Type": contentType },
-			body: fileBuffer,
-		});
+		// Use longer timeout for uploads (default 60s)
+		const uploadTimeout = timeout ?? 60000;
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), uploadTimeout);
 
-		if (!response.ok) {
+		try {
+			const response = await fetch(uploadUrl, {
+				method: "POST",
+				headers: { "Content-Type": contentType },
+				body: fileBuffer,
+				signal: controller.signal,
+			});
+
+			clearTimeout(timeoutId);
+
+			if (!response.ok) {
+				throw new SealApiError({
+					type: "UPLOAD_FAILED",
+					status: response.status,
+					title: "Failed to upload file to storage",
+				});
+			}
+
+			const result = (await response.json()) as { storageId: string };
+			return result.storageId;
+		} catch (error) {
+			clearTimeout(timeoutId);
+
+			if (error instanceof Error && error.name === "AbortError") {
+				throw new SealApiError({
+					type: "UPLOAD_TIMEOUT",
+					status: 408,
+					title: "Upload timed out",
+				});
+			}
+
+			if (error instanceof SealApiError) {
+				throw error;
+			}
+
 			throw new SealApiError({
 				type: "UPLOAD_FAILED",
-				status: response.status,
-				title: "Failed to upload file to storage",
+				status: 0,
+				title: error instanceof Error ? error.message : "Upload failed",
 			});
 		}
-
-		const result = (await response.json()) as { storageId: string };
-		return result.storageId;
 	}
 }
