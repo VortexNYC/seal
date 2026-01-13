@@ -87,7 +87,7 @@ app.get("/.well-known/oauth-protected-resource", (c) => {
 	return c.json({
 		resource: `${baseUrl}/mcp`,
 		authorization_servers: [clerkIssuer],
-		scopes_supported: ["openid", "profile", "email"],
+		scopes_supported: ["profile", "email"],
 		bearer_methods_supported: ["header"],
 		resource_documentation: "https://docs.seal.app/api/mcp",
 	});
@@ -115,7 +115,7 @@ app.get("/.well-known/oauth-authorization-server", (c) => {
 		userinfo_endpoint: `${clerkIssuer}/oauth/userinfo`,
 		jwks_uri: `${clerkIssuer}/.well-known/jwks.json`,
 		registration_endpoint: `${clerkIssuer}/oauth/register`,
-		scopes_supported: ["openid", "profile", "email"],
+		scopes_supported: ["profile", "email"],
 		response_types_supported: ["code"],
 		response_modes_supported: ["query"],
 		grant_types_supported: ["authorization_code", "refresh_token"],
