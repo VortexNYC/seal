@@ -36,7 +36,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	const request = new Request(url.toString(), {
 		method: req.method,
 		headers,
-		body: req.method !== "GET" && req.method !== "HEAD" ? JSON.stringify(req.body) : undefined,
+		body:
+			req.method !== "GET" && req.method !== "HEAD"
+				? JSON.stringify(req.body)
+				: undefined,
 	});
 
 	// Handle with Hono

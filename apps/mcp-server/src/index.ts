@@ -276,7 +276,8 @@ function decodeClerkFrontendApi(publishableKey?: string): string | null {
 
 	try {
 		const decoded = atob(keyPart);
-		const trimmed = decoded.trim();
+		// Clerk encodes with a trailing '$' that needs to be removed
+		const trimmed = decoded.trim().replace(/\$$/, "");
 		if (
 			!trimmed ||
 			trimmed.includes("://") ||
