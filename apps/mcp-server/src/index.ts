@@ -10,6 +10,7 @@ import { SealApiClient } from "./client";
 import { getConfig } from "./config";
 import { registerAllResources } from "./resources";
 import { registerAllTools } from "./tools";
+import { logger as sealLogger } from "./utils/logger";
 
 // Types
 type Variables = {
@@ -180,7 +181,7 @@ app.all("/mcp", authMiddleware, async (c) => {
 		userId = auth.userId;
 		sessionId = auth.sessionId || "";
 	} else {
-		console.log("[Seal MCP] Auth bypassed (SKIP_AUTH=true)");
+		sealLogger.debug("Auth bypassed (SKIP_AUTH=true)");
 	}
 
 	// Get or create session
@@ -376,20 +377,20 @@ async function startServer() {
 		process.env.MCP_TRANSPORT === "stdio";
 
 	if (isStdioMode) {
-		console.error(`[Seal MCP] Starting in stdio mode...`);
+		sealLogger.info("Starting in stdio mode...");
 		const transport = new StdioServerTransport();
 		await mcpServer.connect(transport);
-		console.error(`[Seal MCP] MCP server connected via stdio`);
+		sealLogger.info("MCP server connected via stdio");
 		return;
 	}
 
 	// HTTP mode (default for development)
 	const port = Number.parseInt(process.env.PORT || "5183", 10);
-	console.log(`[Seal MCP] Starting HTTP server on port ${port}...`);
-	console.log(`[Seal MCP] MCP endpoint: http://localhost:${port}/mcp`);
-	console.log(`[Seal MCP] Health check: http://localhost:${port}/health`);
+	sealLogger.info(`Starting HTTP server on port ${port}...`);
+	sealLogger.info(`MCP endpoint: http://localhost:${port}/mcp`);
+	sealLogger.info(`Health check: http://localhost:${port}/health`);
 	if (skipAuth) {
-		console.log(`[Seal MCP] ⚠️  Auth bypass enabled (SKIP_AUTH=true)`);
+		sealLogger.warn("Auth bypass enabled (SKIP_AUTH=true)");
 	}
 
 	// Use Bun's native server
@@ -401,5 +402,5 @@ async function startServer() {
 
 // Only start server when running directly (not imported)
 if (process.env.NODE_ENV !== "production") {
-	startServer().catch(console.error);
+	startServer().catch((err: Error) => sealLogger.error(err.message));
 }
