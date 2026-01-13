@@ -16,7 +16,7 @@
 			"args": ["chrome-devtools-mcp@latest"],
 			"env": {}
 		},
-		"seal": {
+		"seal-mcp": {
 			"type": "http",
 			"url": "https://mcp.seal.nyc/mcp"
 		}
