@@ -18,4 +18,30 @@ export function registerAllTools(
 	registerRecipientTools(server, client);
 	registerSignatureTools(server, client);
 	registerUploadTools(server, client);
+
+	// Debug tool to inspect auth info structure
+	server.tool(
+		"debug_auth",
+		"Debug tool: Returns the auth info structure from the request (for debugging only)",
+		{},
+		async (_args, extra) => {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify(
+							{
+								extraType: typeof extra,
+								extraKeys: extra ? Object.keys(extra) : [],
+								authInfo: extra?.authInfo ?? "not present",
+								fullExtra: extra,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			};
+		},
+	);
 }
