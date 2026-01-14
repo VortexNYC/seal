@@ -16,13 +16,18 @@ export type McpRequestExtra = {
  */
 export function getAuthToken(extra: McpRequestExtra): string | undefined {
 	// Debug logging to understand auth flow
-	logger.debug(
-		`[getAuthToken] extra keys: ${extra ? Object.keys(extra).join(", ") : "none"}`,
+	logger.info(
+		`[getAuthToken] extra type: ${typeof extra}, keys: ${extra ? Object.keys(extra).join(", ") : "none"}`,
 	);
-	logger.debug(
-		`[getAuthToken] authInfo: ${extra?.authInfo ? JSON.stringify({ hasToken: !!extra.authInfo.token, extra: extra.authInfo.extra }) : "none"}`,
+	logger.info(`[getAuthToken] extra dump: ${JSON.stringify(extra, null, 2)}`);
+
+	// Try multiple possible structures for auth info
+	const token =
+		extra?.authInfo?.token ||
+		(extra as { authInfo?: { accessToken?: string } })?.authInfo?.accessToken;
+	logger.info(
+		`[getAuthToken] resolved token: ${token ? `${token.substring(0, 20)}...` : "none"}`,
 	);
 
-	const token = extra.authInfo?.token;
 	return token && token.length > 0 ? token : undefined;
 }
