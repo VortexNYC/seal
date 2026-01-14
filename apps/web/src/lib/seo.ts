@@ -87,6 +87,59 @@ export function getCanonicalUrl(path: string): string {
 	return `${baseUrl}${cleanPath}`;
 }
 
+/**
+ * Create meta tags configuration for TanStack Router head() function
+ * Reduces boilerplate when defining route meta tags
+ */
+export function createPageMeta(
+	seo: PageSEO,
+	path?: string,
+): {
+	meta: Array<{
+		title?: string;
+		name?: string;
+		property?: string;
+		content?: string;
+	}>;
+	links: Array<{ rel: string; href: string }>;
+} {
+	const meta: Array<{
+		title?: string;
+		name?: string;
+		property?: string;
+		content?: string;
+	}> = [
+		{ title: seo.title },
+		{ name: "description", content: seo.description },
+		{ property: "og:title", content: seo.title },
+		{ property: "og:description", content: seo.description },
+	];
+
+	if (seo.noIndex) {
+		meta.push({ name: "robots", content: "noindex, nofollow" });
+	}
+
+	if (seo.ogType) {
+		meta.push({ property: "og:type", content: seo.ogType });
+	}
+
+	if (seo.ogImage) {
+		meta.push({
+			property: "og:image",
+			content: `${siteConfig.url}${seo.ogImage}`,
+		});
+	}
+
+	const links: Array<{ rel: string; href: string }> = [];
+	if (path) {
+		links.push({ rel: "canonical", href: getCanonicalUrl(path) });
+	} else if (seo.canonical) {
+		links.push({ rel: "canonical", href: seo.canonical });
+	}
+
+	return { meta, links };
+}
+
 // JSON-LD Schema Types
 export interface OrganizationSchema {
 	"@context": "https://schema.org";
@@ -121,6 +174,22 @@ export interface ProductSchema {
 		"@type": "AggregateRating";
 		ratingValue: string;
 		ratingCount: string;
+	};
+}
+
+export interface WebSiteSchema {
+	"@context": "https://schema.org";
+	"@type": "WebSite";
+	name: string;
+	url: string;
+	description: string;
+	potentialAction?: {
+		"@type": "SearchAction";
+		target: {
+			"@type": "EntryPoint";
+			urlTemplate: string;
+		};
+		"query-input": string;
 	};
 }
 
@@ -166,5 +235,19 @@ export function generateProductSchema(): ProductSchema {
 			priceCurrency: "USD",
 			availability: "https://schema.org/InStock",
 		},
+	};
+}
+
+/**
+ * Generate WebSite JSON-LD schema
+ * Enables Google sitelinks search box feature
+ */
+export function generateWebSiteSchema(): WebSiteSchema {
+	return {
+		"@context": "https://schema.org",
+		"@type": "WebSite",
+		name: siteConfig.name,
+		url: siteConfig.url,
+		description: siteConfig.description,
 	};
 }

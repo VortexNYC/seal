@@ -13,8 +13,10 @@
 import {
 	generateOrganizationSchema,
 	generateProductSchema,
+	generateWebSiteSchema,
 	type OrganizationSchema,
 	type ProductSchema,
+	type WebSiteSchema,
 } from "@/lib/seo";
 
 interface JsonLdProps<T> {
@@ -51,7 +53,15 @@ function ProductJsonLd() {
 }
 
 /**
- * Combined landing page JSON-LD - Organization + Product
+ * WebSite JSON-LD - Enables Google sitelinks search box
+ */
+function WebSiteJsonLd() {
+	const schema = generateWebSiteSchema();
+	return <JsonLdScript<WebSiteSchema> data={schema} />;
+}
+
+/**
+ * Combined landing page JSON-LD - Organization + Product + WebSite
  * Use this on the homepage for maximum SEO impact
  */
 export function LandingPageJsonLd() {
@@ -59,6 +69,7 @@ export function LandingPageJsonLd() {
 		<>
 			<OrganizationJsonLd />
 			<ProductJsonLd />
+			<WebSiteJsonLd />
 		</>
 	);
 }
