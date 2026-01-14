@@ -304,11 +304,20 @@ export type GetAuditTrailInput = z.infer<typeof getAuditTrailSchema>;
 // Upload Schemas
 // =============================================================================
 
-/** Schema for uploading a file */
+/** Schema for uploading a file from local path (stdio mode only) */
 export const uploadFileSchema = z.object({
 	file_path: z.string().describe("Absolute path to the PDF file to upload"),
 });
 export type UploadFileInput = z.infer<typeof uploadFileSchema>;
+
+/** Schema for uploading a file from base64 content (works in all modes) */
+export const uploadFileContentSchema = z.object({
+	file_name: z.string().describe("Name of the file (e.g., 'document.pdf')"),
+	content_base64: z
+		.string()
+		.describe("Base64-encoded PDF file content"),
+});
+export type UploadFileContentInput = z.infer<typeof uploadFileContentSchema>;
 
 // =============================================================================
 // API Response Types
