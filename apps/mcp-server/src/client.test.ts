@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { Readable } from "node:stream";
 import { SealApiClient, SealApiError } from "./client";
 import type { Config } from "./config";
 
@@ -338,6 +339,115 @@ describe("SealApiClient", () => {
 					"https://storage.example.com/upload",
 					buffer,
 					"application/pdf",
+					10, // 10ms timeout
+				),
+			).rejects.toThrow("Upload timed out");
+		});
+	});
+
+	describe("uploadToStorageStream", () => {
+		test("uploads file stream to storage URL", async () => {
+			let capturedUrl: string | undefined;
+			let capturedOptions: RequestInit | undefined;
+
+			globalThis.fetch = createMockFetch(async (url, options) => {
+				capturedUrl = url as string;
+				capturedOptions = options as RequestInit;
+				return new Response(
+					JSON.stringify({ storageId: "storage-stream-123" }),
+					{
+						status: 200,
+					},
+				);
+			});
+
+			const client = new SealApiClient(mockConfig);
+			const stream = Readable.from(Buffer.from("PDF stream content"));
+			const result = await client.uploadToStorageStream(
+				"https://storage.example.com/upload",
+				stream,
+				"application/pdf",
+				18, // content length
+			);
+
+			expect(capturedUrl).toBe("https://storage.example.com/upload");
+			expect(capturedOptions?.method).toBe("POST");
+			expect(
+				(capturedOptions?.headers as Record<string, string>)["Content-Type"],
+			).toBe("application/pdf");
+			expect(
+				(capturedOptions?.headers as Record<string, string>)["Content-Length"],
+			).toBe("18");
+			expect(result).toBe("storage-stream-123");
+		});
+
+		test("uploads stream without content length", async () => {
+			let capturedOptions: RequestInit | undefined;
+
+			globalThis.fetch = createMockFetch(async (_, options) => {
+				capturedOptions = options as RequestInit;
+				return new Response(JSON.stringify({ storageId: "storage-456" }), {
+					status: 200,
+				});
+			});
+
+			const client = new SealApiClient(mockConfig);
+			const stream = Readable.from(Buffer.from("PDF content"));
+			const result = await client.uploadToStorageStream(
+				"https://storage.example.com/upload",
+				stream,
+				"application/pdf",
+				// no content length provided
+			);
+
+			expect(
+				(capturedOptions?.headers as Record<string, string>)["Content-Length"],
+			).toBeUndefined();
+			expect(result).toBe("storage-456");
+		});
+
+		test("throws error on stream upload failure", async () => {
+			globalThis.fetch = createMockFetch(async () => {
+				return new Response("Upload failed", { status: 500 });
+			});
+
+			const client = new SealApiClient(mockConfig);
+			const stream = Readable.from(Buffer.from("PDF content"));
+
+			expect(
+				client.uploadToStorageStream(
+					"https://storage.example.com/upload",
+					stream,
+					"application/pdf",
+				),
+			).rejects.toThrow("Failed to upload file to storage");
+		});
+
+		test("throws timeout error when stream upload exceeds timeout", async () => {
+			// Create a fetch that hangs until aborted
+			globalThis.fetch = createMockFetch(async (_, options) => {
+				const signal = (options as RequestInit)?.signal;
+				return new Promise((_, reject) => {
+					if (signal) {
+						signal.addEventListener("abort", () => {
+							const error = new Error("The operation was aborted");
+							error.name = "AbortError";
+							reject(error);
+						});
+					}
+				});
+			});
+
+			const client = new SealApiClient(mockConfig);
+			const stream = Readable.from(Buffer.from("PDF content"));
+
+			// Use a very short timeout to trigger the timeout error
+			await expect(
+				client.uploadToStorageStream(
+					"https://storage.example.com/upload",
+					stream,
+					"application/pdf",
+					undefined,
 					10, // 10ms timeout
 				),
 			).rejects.toThrow("Upload timed out");

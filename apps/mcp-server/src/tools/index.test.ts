@@ -48,7 +48,9 @@ describe("registerAllTools", () => {
 		expect(registeredTools).toContain("list_recipients");
 		expect(registeredTools).toContain("get_recipient");
 		expect(registeredTools).toContain("add_recipient");
+		expect(registeredTools).toContain("add_recipients_bulk");
 		expect(registeredTools).toContain("update_recipient");
+		expect(registeredTools).toContain("update_recipients_bulk");
 		expect(registeredTools).toContain("remove_recipient");
 		expect(registeredTools).toContain("send_reminder");
 
@@ -60,6 +62,10 @@ describe("registerAllTools", () => {
 
 		// Upload tools
 		expect(registeredTools).toContain("upload_file");
+		expect(registeredTools).toContain("upload_file_content");
+
+		// Debug tools
+		expect(registeredTools).toContain("debug_auth");
 	});
 
 	test("registers correct number of tools", () => {
