@@ -4,6 +4,12 @@ import { EnforceOrganization } from "@/components/enforce-organization";
 
 export const Route = createFileRoute("/_authenticated")({
 	component: AuthenticatedLayout,
+	head: () => ({
+		meta: [
+			// Prevent search engines from indexing authenticated pages
+			{ name: "robots", content: "noindex, nofollow" },
+		],
+	}),
 });
 
 function AuthenticatedLayout() {
