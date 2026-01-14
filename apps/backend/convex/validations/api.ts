@@ -313,9 +313,7 @@ export type UploadFileInput = z.infer<typeof uploadFileSchema>;
 /** Schema for uploading a file from base64 content (works in all modes) */
 export const uploadFileContentSchema = z.object({
 	file_name: z.string().describe("Name of the file (e.g., 'document.pdf')"),
-	content_base64: z
-		.string()
-		.describe("Base64-encoded PDF file content"),
+	content_base64: z.string().describe("Base64-encoded PDF file content"),
 });
 export type UploadFileContentInput = z.infer<typeof uploadFileContentSchema>;
 
