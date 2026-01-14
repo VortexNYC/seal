@@ -115,6 +115,8 @@ export function DocumentThumbnail({
 					src={thumbnail}
 					alt={`${name} thumbnail`}
 					className="w-full h-full object-cover"
+					loading="lazy"
+					decoding="async"
 				/>
 			) : isGenerating ? (
 				<Loader2Icon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground animate-spin" />
