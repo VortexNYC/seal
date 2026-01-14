@@ -43,6 +43,9 @@ registerAllResources(mcpServer, apiClient);
 // Create Express app
 const app = express();
 
+// Trust proxy headers (Vercel, Cloudflare, etc.) for correct protocol detection
+app.set("trust proxy", true);
+
 // CORS configuration - expose WWW-Authenticate header for OAuth
 app.use(
 	cors({
