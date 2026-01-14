@@ -200,6 +200,30 @@ export const sendReminderSchema = z.object({
 });
 export type SendReminderInput = z.infer<typeof sendReminderSchema>;
 
+/** Schema for bulk adding recipients */
+export const addRecipientsBulkSchema = z.object({
+	document_id: z.string().describe("The document ID"),
+	recipients: z
+		.array(addRecipientSchema.omit({ document_id: true }))
+		.describe("Array of recipients to add"),
+});
+export type AddRecipientsBulkInput = z.infer<typeof addRecipientsBulkSchema>;
+
+/** Schema for bulk updating recipients */
+export const updateRecipientsBulkSchema = z.object({
+	document_id: z.string().describe("The document ID"),
+	updates: z
+		.array(
+			updateRecipientSchema.extend({
+				id: z.string().describe("The recipient ID to update"),
+			}),
+		)
+		.describe("Array of recipient updates"),
+});
+export type UpdateRecipientsBulkInput = z.infer<
+	typeof updateRecipientsBulkSchema
+>;
+
 // =============================================================================
 // Template Schemas
 // =============================================================================
