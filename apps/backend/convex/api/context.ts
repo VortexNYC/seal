@@ -433,6 +433,55 @@ export async function resolveApiAuth(
 	});
 }
 
+/**
+ * Verifies an OAuth access token using Clerk's REST API.
+ * OAuth tokens from MCP clients need different verification than session JWTs.
+ */
+async function verifyOAuthAccessToken(token: string): Promise<{
+	sub: string;
+	scopes: string[];
+} | null> {
+	const secretKey = process.env.CLERK_SECRET_KEY;
+	if (!secretKey) {
+		return null;
+	}
+
+	try {
+		const response = await fetch(
+			"https://api.clerk.com/v1/oauth_applications/access_tokens/verify",
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${secretKey}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ token }),
+			},
+		);
+
+		if (!response.ok) {
+			return null;
+		}
+
+		const data = (await response.json()) as {
+			sub?: string;
+			scopes?: string[];
+		};
+
+		if (!data.sub) {
+			return null;
+		}
+
+		return {
+			sub: data.sub,
+			scopes: data.scopes ?? [],
+		};
+	} catch (error) {
+		console.error("[verifyOAuthAccessToken] Verification failed:", error);
+		return null;
+	}
+}
+
 export async function resolveJwtAuth(
 	ctx: ActionCtx,
 	authHeader: string | null,
@@ -449,15 +498,46 @@ export async function resolveJwtAuth(
 		);
 	}
 
+	// First try session token verification
 	const verification = (await verifyToken(token, {
 		secretKey,
 		jwtKey,
 	})) as { data?: ClerkJwtPayload; errors?: unknown[] };
 
+	// If session token verification fails, try OAuth access token
 	if (!verification.data) {
+		const oauthResult = await verifyOAuthAccessToken(token);
+		if (oauthResult) {
+			// OAuth token verified - resolve user and build context
+			const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
+				clerkUserId: oauthResult.sub,
+			});
+
+			if (!user) {
+				throw new ApiError(403, "User not found", "USER_NOT_FOUND");
+			}
+
+			if (!user.activeOrganizationId) {
+				throw new ApiError(
+					403,
+					"User has no active organization. Set an active organization before using the API.",
+					"ORGANIZATION_ACCESS_DENIED",
+				);
+			}
+
+			return buildAuthContext(ctx, {
+				authType: "jwt",
+				scopes: oauthResult.scopes,
+				userId: user._id,
+				organizationId: user.activeOrganizationId,
+				clerkUserId: oauthResult.sub,
+				subjectType: "user",
+			});
+		}
+
 		const [error] = verification.errors ?? [];
 		console.error("[resolveJwtAuth] Clerk verification failed:", error);
-		throw new ApiError(401, "Invalid or expired session token", "INVALID_JWT");
+		throw new ApiError(401, "Invalid or expired token", "INVALID_JWT");
 	}
 
 	const payload = verification.data;
