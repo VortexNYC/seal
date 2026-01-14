@@ -11,6 +11,7 @@ import ReactDOM from "react-dom/client";
 import { DefaultCatchBoundary } from "./components/default-catch-boundary";
 import Loader from "./components/loader";
 import { NotFound } from "./components/not-found";
+import { initWebVitals } from "./lib/web-vitals";
 import { routeTree } from "./routeTree.gen";
 
 import "./styles.css";
@@ -110,4 +111,10 @@ if (!rootElement.innerHTML) {
 			<RouterProvider router={router} />
 		</PostHogProvider>,
 	);
+
+	// Initialize Core Web Vitals tracking after render
+	// This reports LCP, INP, CLS, FCP, TTFB to PostHog
+	initWebVitals().catch((error) => {
+		console.warn("Failed to initialize web vitals:", error);
+	});
 }
