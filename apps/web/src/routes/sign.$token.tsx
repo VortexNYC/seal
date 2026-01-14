@@ -31,6 +31,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { SealLogo } from "@/components/seal-logo";
+import { pageSEO } from "@/lib/seo";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { toast } from "sonner";
@@ -61,6 +62,13 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 
 export const Route = createFileRoute("/sign/$token")({
 	component: SigningPage,
+	head: () => ({
+		meta: [
+			{ title: pageSEO.sign.title },
+			{ name: "description", content: pageSEO.sign.description },
+			{ name: "robots", content: "noindex, nofollow" },
+		],
+	}),
 });
 
 // Helper to capitalize field labels for display

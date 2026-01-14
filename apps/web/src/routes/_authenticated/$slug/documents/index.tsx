@@ -80,9 +80,17 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
 	component: DocumentsPage,
+	head: () => ({
+		meta: [
+			{ title: pageSEO.documents.title },
+			{ name: "description", content: pageSEO.documents.description },
+			{ name: "robots", content: "noindex, nofollow" },
+		],
+	}),
 });
 
 type FilterType = "all" | "owned" | "shared";

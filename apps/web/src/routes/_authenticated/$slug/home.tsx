@@ -44,10 +44,18 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/home")({
 	component: WorkspaceHome,
 	pendingComponent: DashboardSkeleton,
+	head: () => ({
+		meta: [
+			{ title: pageSEO.dashboard.title },
+			{ name: "description", content: pageSEO.dashboard.description },
+			{ name: "robots", content: "noindex, nofollow" },
+		],
+	}),
 });
 
 function StatsCards() {

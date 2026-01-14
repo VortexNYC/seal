@@ -1,8 +1,17 @@
 import { SignIn } from "@clerk/clerk-react";
 import { createFileRoute } from "@tanstack/react-router";
+import { getCanonicalUrl, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/sign-in")({
 	component: RouteComponent,
+	head: () => ({
+		meta: [
+			{ title: pageSEO.signIn.title },
+			{ name: "description", content: pageSEO.signIn.description },
+			{ name: "robots", content: "noindex, nofollow" },
+		],
+		links: [{ rel: "canonical", href: getCanonicalUrl("/sign-in") }],
+	}),
 });
 
 function RouteComponent() {

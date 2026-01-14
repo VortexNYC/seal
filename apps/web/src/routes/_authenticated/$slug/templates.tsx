@@ -77,10 +77,18 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/templates")({
 	component: TemplatesPage,
 	pendingComponent: TemplatesSkeleton,
+	head: () => ({
+		meta: [
+			{ title: pageSEO.templates.title },
+			{ name: "description", content: pageSEO.templates.description },
+			{ name: "robots", content: "noindex, nofollow" },
+		],
+	}),
 });
 
 type ViewMode = "grid" | "table";

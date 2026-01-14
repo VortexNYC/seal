@@ -2,13 +2,25 @@ import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle2, FileText, Shield } from "lucide-react";
 import { SealLogoBadgeFixed } from "@/components/seal-logo-fixed";
+import { LandingPageJsonLd } from "@/components/seo";
 import { BackgroundPattern } from "@/components/ui/background-pattern";
 import { Button } from "@/components/ui/button";
 import { GridLayout } from "@/components/ui/patterns";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { getCanonicalUrl, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
 	component: HomePage,
+	head: () => ({
+		meta: [
+			{ title: pageSEO.home.title },
+			{ name: "description", content: pageSEO.home.description },
+			{ property: "og:title", content: pageSEO.home.title },
+			{ property: "og:description", content: pageSEO.home.description },
+			{ property: "og:type", content: "website" },
+		],
+		links: [{ rel: "canonical", href: getCanonicalUrl("/") }],
+	}),
 });
 
 function HomePage() {
@@ -16,6 +28,7 @@ function HomePage() {
 
 	return (
 		<GridLayout className="bg-linear-to-b from-brand-50 via-white to-white dark:from-slate-950 dark:via-background dark:to-background">
+			<LandingPageJsonLd />
 			<BackgroundPattern className="bg-transparent" opacity={0.04} />
 
 			<div className="flex flex-col min-h-screen">
@@ -77,8 +90,11 @@ function HomePage() {
 				</header>
 
 				<main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-20">
-					<div className="max-w-4xl mx-auto text-center">
-						<div className="mb-8 animate-[fadeIn_0.6s_ease-out]">
+					<article className="max-w-4xl mx-auto text-center">
+						<div
+							className="mb-8 animate-[fadeIn_0.6s_ease-out]"
+							aria-hidden="true"
+						>
 							<SealLogoBadgeFixed size={120} withText />
 						</div>
 
@@ -148,27 +164,39 @@ function HomePage() {
 							</SignedOut>
 						</div>
 
-						<div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto animate-[fadeIn_0.6s_ease-out_0.4s_both]">
-							<div className="flex items-center justify-center gap-3 text-gray-600 dark:text-gray-400">
-								<div className="p-2 rounded-lg bg-brand-50 dark:bg-slate-800">
+						<section
+							aria-label="Key features"
+							className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto animate-[fadeIn_0.6s_ease-out_0.4s_both]"
+						>
+							<article className="flex items-center justify-center gap-3 text-gray-600 dark:text-gray-400">
+								<div
+									className="p-2 rounded-lg bg-brand-50 dark:bg-slate-800"
+									aria-hidden="true"
+								>
 									<Shield className="w-5 h-5 text-brand-700 dark:text-brand-400" />
 								</div>
-								<span className="text-sm font-medium">Bank-level security</span>
-							</div>
-							<div className="flex items-center justify-center gap-3 text-gray-600 dark:text-gray-400">
-								<div className="p-2 rounded-lg bg-brand-50 dark:bg-slate-800">
+								<h2 className="text-sm font-medium">Bank-level security</h2>
+							</article>
+							<article className="flex items-center justify-center gap-3 text-gray-600 dark:text-gray-400">
+								<div
+									className="p-2 rounded-lg bg-brand-50 dark:bg-slate-800"
+									aria-hidden="true"
+								>
 									<FileText className="w-5 h-5 text-brand-700 dark:text-brand-400" />
 								</div>
-								<span className="text-sm font-medium">Legally binding</span>
-							</div>
-							<div className="flex items-center justify-center gap-3 text-gray-600 dark:text-gray-400">
-								<div className="p-2 rounded-lg bg-brand-50 dark:bg-slate-800">
+								<h2 className="text-sm font-medium">Legally binding</h2>
+							</article>
+							<article className="flex items-center justify-center gap-3 text-gray-600 dark:text-gray-400">
+								<div
+									className="p-2 rounded-lg bg-brand-50 dark:bg-slate-800"
+									aria-hidden="true"
+								>
 									<CheckCircle2 className="w-5 h-5 text-brand-700 dark:text-brand-400" />
 								</div>
-								<span className="text-sm font-medium">Easy to use</span>
-							</div>
-						</div>
-					</div>
+								<h2 className="text-sm font-medium">Easy to use</h2>
+							</article>
+						</section>
+					</article>
 				</main>
 
 				<footer className="relative z-10 border-t border-brand-700/10 dark:border-slate-800 py-8 bg-white/50 dark:bg-background/50 backdrop-blur-sm">
