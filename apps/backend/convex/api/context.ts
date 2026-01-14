@@ -498,17 +498,33 @@ export async function resolveJwtAuth(
 		);
 	}
 
-	// First try session token verification
-	const verification = (await verifyToken(token, {
-		secretKey,
-		jwtKey,
-	})) as { data?: ClerkJwtPayload; errors?: unknown[] };
+	// First try session token verification (verifyToken throws on invalid tokens)
+	let payload: ClerkJwtPayload | null = null;
+	let sessionTokenError: unknown = null;
 
-	// If session token verification fails, try OAuth access token
-	if (!verification.data) {
+	try {
+		payload = (await verifyToken(token, {
+			secretKey,
+			jwtKey,
+		})) as ClerkJwtPayload;
+	} catch (error) {
+		sessionTokenError = error;
+		// Session token verification failed - this is expected for OAuth tokens
+		console.log(
+			"[resolveJwtAuth] Session token verification failed, trying OAuth:",
+			error instanceof Error ? error.message : error,
+		);
+	}
+
+	// If session token verification failed, try OAuth access token
+	if (!payload) {
 		const oauthResult = await verifyOAuthAccessToken(token);
 		if (oauthResult) {
 			// OAuth token verified - resolve user and build context
+			console.log(
+				"[resolveJwtAuth] OAuth token verified for user:",
+				oauthResult.sub,
+			);
 			const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
 				clerkUserId: oauthResult.sub,
 			});
@@ -535,12 +551,17 @@ export async function resolveJwtAuth(
 			});
 		}
 
-		const [error] = verification.errors ?? [];
-		console.error("[resolveJwtAuth] Clerk verification failed:", error);
+		// Both session token and OAuth verification failed
+		console.error(
+			"[resolveJwtAuth] Both session and OAuth verification failed:",
+			sessionTokenError instanceof Error
+				? sessionTokenError.message
+				: sessionTokenError,
+		);
 		throw new ApiError(401, "Invalid or expired token", "INVALID_JWT");
 	}
 
-	const payload = verification.data;
+	// Session token was valid
 	const clerkUserId = typeof payload.sub === "string" ? payload.sub : undefined;
 	if (!clerkUserId) {
 		throw new ApiError(401, "Invalid session token subject", "INVALID_JWT");
