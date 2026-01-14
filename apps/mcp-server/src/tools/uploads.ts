@@ -182,7 +182,7 @@ export function registerUploadTools(
 			let fileBuffer: Buffer;
 			try {
 				fileBuffer = Buffer.from(content_base64, "base64");
-			} catch (error) {
+			} catch {
 				return {
 					content: [
 						{

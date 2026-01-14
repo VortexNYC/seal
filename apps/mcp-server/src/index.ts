@@ -122,7 +122,8 @@ app.get("/debug/auth", mcpAuthClerk, (req, res) => {
 	res.json({
 		hasAuth: !!authInfo,
 		authType: typeof authInfo,
-		authKeys: authInfo && typeof authInfo === "object" ? Object.keys(authInfo) : [],
+		authKeys:
+			authInfo && typeof authInfo === "object" ? Object.keys(authInfo) : [],
 		auth: authInfo,
 	});
 });
