@@ -2,6 +2,8 @@
  * @fileoverview Upload tools for the Seal MCP server.
  * Uses shared validation schemas from @seal/backend.
  */
+
+import { createReadStream } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -142,11 +144,13 @@ export function registerUploadTools(
 				authToken,
 			);
 
-			// 5. Upload file to Convex storage
-			const storageId = await client.uploadToStorage(
+			// 5. Upload file to Convex storage using streaming
+			const fileStream = createReadStream(file_path);
+			const storageId = await client.uploadToStorageStream(
 				upload_url,
-				fileBuffer,
+				fileStream,
 				"application/pdf",
+				stats.size,
 			);
 
 			// 6. Return result

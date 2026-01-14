@@ -74,8 +74,8 @@ describe("registerAllTools", () => {
 		const client = new SealApiClient(mockConfig);
 		registerAllTools(mockServer, client);
 
-		// 8 document + 7 template + 6 recipient + 4 signature + 1 upload = 26 tools
-		expect(registeredTools.length).toBe(26);
+		// 8 document + 7 template + 8 recipient + 4 signature + 2 upload + 1 debug = 30 tools
+		expect(registeredTools.length).toBe(30);
 	});
 
 	test("all registered tools have unique names", () => {
