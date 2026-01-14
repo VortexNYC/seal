@@ -12,12 +12,12 @@ import {
 	authServerMetadataHandlerClerk,
 	mcpAuthClerk,
 	protectedResourceHandlerClerk,
-	streamableHttpHandler,
 } from "@clerk/mcp-tools/express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import cors from "cors";
-import express from "express";
+import express, { type Request, type Response } from "express";
 import { SealApiClient } from "./client";
 import { getConfig } from "./config";
 import { registerAllResources } from "./resources";
@@ -114,10 +114,26 @@ app.get(
 // =============================================================================
 
 /**
+ * Custom MCP handler that properly passes auth info to the transport
+ */
+async function mcpHandler(req: Request, res: Response): Promise<void> {
+	// Log auth info for debugging
+	const authInfo = (req as Request & { auth?: unknown }).auth;
+	sealLogger.info(`[MCP] Request received, auth: ${JSON.stringify(authInfo)}`);
+
+	const transport = new StreamableHTTPServerTransport({
+		sessionIdGenerator: undefined,
+	});
+
+	await mcpServer.connect(transport);
+	await transport.handleRequest(req, res, req.body);
+}
+
+/**
  * MCP endpoint - handles all MCP protocol messages
  * Uses Clerk OAuth for authentication via mcpAuthClerk middleware
  */
-app.post("/mcp", mcpAuthClerk, streamableHttpHandler(mcpServer));
+app.post("/mcp", mcpAuthClerk, mcpHandler);
 
 // =============================================================================
 // Exports
