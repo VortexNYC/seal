@@ -114,6 +114,20 @@ app.get(
 // =============================================================================
 
 /**
+ * Debug endpoint to check auth state after mcpAuthClerk middleware
+ * This helps verify the auth flow is working correctly
+ */
+app.get("/debug/auth", mcpAuthClerk, (req, res) => {
+	const authInfo = (req as typeof req & { auth?: unknown }).auth;
+	res.json({
+		hasAuth: !!authInfo,
+		authType: typeof authInfo,
+		authKeys: authInfo && typeof authInfo === "object" ? Object.keys(authInfo) : [],
+		auth: authInfo,
+	});
+});
+
+/**
  * MCP endpoint - handles all MCP protocol messages
  * Uses Clerk OAuth for authentication via mcpAuthClerk middleware
  * streamableHttpHandler properly passes auth info to tool handlers
