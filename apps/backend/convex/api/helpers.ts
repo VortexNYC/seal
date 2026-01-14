@@ -221,6 +221,38 @@ export const getDocumentForApi = internalQuery({
 });
 
 /**
+ * Get all organization memberships for a user.
+ * Used to auto-select organization for OAuth users.
+ *
+ * @internal
+ * @param userId - Internal Convex user ID
+ * @returns Array of active membership documents with organization data
+ */
+export const getUserOrganizationMemberships = internalQuery({
+	args: { userId: v.id("users") },
+	handler: async (ctx, args) => {
+		const memberships = await ctx.db
+			.query("organization_members")
+			.withIndex("by_user", (q) => q.eq("userId", args.userId))
+			.filter((q) => q.eq(q.field("status"), "active"))
+			.collect();
+
+		// Fetch organization details for each membership
+		const membershipsWithOrgs = await Promise.all(
+			memberships.map(async (membership) => {
+				const org = await ctx.db.get(membership.organizationId);
+				return {
+					...membership,
+					organization: org,
+				};
+			}),
+		);
+
+		return membershipsWithOrgs.filter((m) => m.organization !== null);
+	},
+});
+
+/**
  * Log API activity for analytics and debugging.
  *
  * @internal

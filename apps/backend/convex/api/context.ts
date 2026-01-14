@@ -226,6 +226,11 @@ function isJwtToken(token: string): boolean {
 	return token.split(".").length === 3;
 }
 
+function isOAuthAccessToken(token: string): boolean {
+	// Clerk OAuth access tokens start with "oat_"
+	return token.startsWith("oat_");
+}
+
 function extractScopesFromJwt(payload: ClerkJwtPayload): string[] {
 	const scope = payload.scope;
 	if (typeof scope === "string") {
@@ -443,6 +448,7 @@ async function verifyOAuthAccessToken(token: string): Promise<{
 } | null> {
 	const secretKey = process.env.CLERK_SECRET_KEY;
 	if (!secretKey) {
+		console.error("[verifyOAuthAccessToken] No CLERK_SECRET_KEY configured");
 		return null;
 	}
 
@@ -464,16 +470,16 @@ async function verifyOAuthAccessToken(token: string): Promise<{
 		}
 
 		const data = (await response.json()) as {
-			sub?: string;
+			subject?: string;
 			scopes?: string[];
 		};
 
-		if (!data.sub) {
+		if (!data.subject) {
 			return null;
 		}
 
 		return {
-			sub: data.sub,
+			sub: data.subject,
 			scopes: data.scopes ?? [],
 		};
 	} catch (error) {
@@ -499,21 +505,20 @@ export async function resolveJwtAuth(
 	}
 
 	// First try session token verification (verifyToken throws on invalid tokens)
+	// Skip for OAuth access tokens (oat_) which need direct OAuth verification
 	let payload: ClerkJwtPayload | null = null;
 	let sessionTokenError: unknown = null;
 
-	try {
-		payload = (await verifyToken(token, {
-			secretKey,
-			jwtKey,
-		})) as ClerkJwtPayload;
-	} catch (error) {
-		sessionTokenError = error;
-		// Session token verification failed - this is expected for OAuth tokens
-		console.log(
-			"[resolveJwtAuth] Session token verification failed, trying OAuth:",
-			error instanceof Error ? error.message : error,
-		);
+	if (!isOAuthAccessToken(token)) {
+		try {
+			payload = (await verifyToken(token, {
+				secretKey,
+				jwtKey,
+			})) as ClerkJwtPayload;
+		} catch (error) {
+			sessionTokenError = error;
+			// Session token verification failed - this is expected for OAuth tokens
+		}
 	}
 
 	// If session token verification failed, try OAuth access token
@@ -521,10 +526,6 @@ export async function resolveJwtAuth(
 		const oauthResult = await verifyOAuthAccessToken(token);
 		if (oauthResult) {
 			// OAuth token verified - resolve user and build context
-			console.log(
-				"[resolveJwtAuth] OAuth token verified for user:",
-				oauthResult.sub,
-			);
 			const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
 				clerkUserId: oauthResult.sub,
 			});
@@ -533,19 +534,32 @@ export async function resolveJwtAuth(
 				throw new ApiError(403, "User not found", "USER_NOT_FOUND");
 			}
 
-			if (!user.activeOrganizationId) {
-				throw new ApiError(
-					403,
-					"User has no active organization. Set an active organization before using the API.",
-					"ORGANIZATION_ACCESS_DENIED",
+			let organizationId = user.activeOrganizationId;
+
+			// Auto-select organization for OAuth users if not set
+			if (!organizationId) {
+				const memberships = await ctx.runQuery(
+					internal.api.helpers.getUserOrganizationMemberships,
+					{ userId: user._id },
 				);
+
+				if (memberships.length === 0) {
+					throw new ApiError(
+						403,
+						"User has no organization memberships. Join or create an organization first.",
+						"NO_ORGANIZATION",
+					);
+				}
+
+				// Auto-select the first organization (or only one if single membership)
+				organizationId = memberships[0].organizationId;
 			}
 
 			return buildAuthContext(ctx, {
 				authType: "jwt",
 				scopes: oauthResult.scopes,
 				userId: user._id,
-				organizationId: user.activeOrganizationId,
+				organizationId,
 				clerkUserId: oauthResult.sub,
 				subjectType: "user",
 			});
@@ -626,10 +640,13 @@ export async function resolveAuthContext(
 	authHeader: string | null,
 ): Promise<ApiAuthContext> {
 	const token = parseBearerToken(authHeader);
-	if (isJwtToken(token)) {
+
+	// Route JWTs and OAuth access tokens (oat_) to JWT/OAuth auth handler
+	if (isJwtToken(token) || isOAuthAccessToken(token)) {
 		return resolveJwtAuth(ctx, token);
 	}
 
+	// API keys go through API key verification
 	return resolveApiAuth(ctx, token);
 }
 
@@ -653,6 +670,14 @@ export function canUserUseScope(
 }
 
 /**
+ * Checks if a role has full access (owner or admin).
+ * These roles should have all permissions regardless of explicit permission list.
+ */
+function isFullAccessRole(role: string): boolean {
+	return role === "owner" || role === "admin";
+}
+
+/**
  * Validates that the API context has the required scope.
  * Throws an ApiError if the scope is missing.
  *
@@ -662,6 +687,10 @@ export function canUserUseScope(
  */
 export function requireScope(auth: ApiAuthContext, scope: ApiScope): void {
 	if (auth.authType === "jwt") {
+		// Owners and admins have full access via OAuth
+		if (isFullAccessRole(auth.role)) {
+			return;
+		}
 		if (!canUserUseScope(auth.permissions, scope)) {
 			throw new ApiError(
 				403,
@@ -694,6 +723,10 @@ export function requireAnyScope(
 	scopes: ApiScope[],
 ): void {
 	if (auth.authType === "jwt") {
+		// Owners and admins have full access via OAuth
+		if (isFullAccessRole(auth.role)) {
+			return;
+		}
 		const hasPermission = scopes.some((scope) =>
 			canUserUseScope(auth.permissions, scope),
 		);
