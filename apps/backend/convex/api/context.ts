@@ -448,14 +448,14 @@ async function verifyOAuthAccessToken(token: string): Promise<{
 
 	try {
 		const response = await fetch(
-			"https://api.clerk.com/v1/oauth_applications/access_tokens/verify",
+			"https://api.clerk.com/oauth_applications/access_tokens/verify",
 			{
 				method: "POST",
 				headers: {
 					Authorization: `Bearer ${secretKey}`,
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ token }),
+				body: JSON.stringify({ access_token: token }),
 			},
 		);
 
