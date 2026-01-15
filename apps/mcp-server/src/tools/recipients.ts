@@ -235,8 +235,8 @@ export function registerRecipientTools(
 					try {
 						const response = await client.post<{ id: string }>(
 							"/recipients",
-							{ ...recipient, document_id },
-							undefined,
+							recipient,
+							{ document_id },
 							authToken,
 						);
 						return {
