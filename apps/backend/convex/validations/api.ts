@@ -214,7 +214,7 @@ export const updateRecipientsBulkSchema = z.object({
 	document_id: z.string().describe("The document ID"),
 	updates: z
 		.array(
-			updateRecipientSchema.extend({
+			updateRecipientSchema.omit({ document_id: true }).extend({
 				id: z.string().describe("The recipient ID to update"),
 			}),
 		)
