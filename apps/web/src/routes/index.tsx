@@ -1,6 +1,15 @@
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, CheckCircle2, FileText, Shield } from "lucide-react";
+import {
+	ArrowRight,
+	Check,
+	CheckCircle2,
+	Code2,
+	FileText,
+	Shield,
+	Users,
+	X,
+} from "lucide-react";
 import { SealLogoBadgeFixed } from "@/components/seal-logo-fixed";
 import { LandingPageJsonLd } from "@/components/seo";
 import { BackgroundPattern } from "@/components/ui/background-pattern";
@@ -41,6 +50,12 @@ function HomePage() {
 							<SealLogoBadgeFixed size={48} withText />
 						</Link>
 						<nav className="flex items-center gap-3">
+							<a
+								href="#pricing"
+								className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-brand-700 dark:hover:text-brand-400 transition-colors"
+							>
+								Pricing
+							</a>
 							<SignedIn>
 								<Button
 									asChild
@@ -197,6 +212,157 @@ function HomePage() {
 							</article>
 						</section>
 					</article>
+
+					{/* Pricing Section */}
+					<section
+						id="pricing"
+						aria-label="Pricing plans"
+						className="w-full max-w-5xl mx-auto mt-24 animate-[fadeIn_0.6s_ease-out_0.5s_both]"
+					>
+						<h2 className="text-3xl sm:text-4xl font-bold text-center text-gray-900 dark:text-white mb-4">
+							Simple, transparent pricing
+						</h2>
+						<p className="text-center text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto">
+							Start for free, upgrade when you need more features.
+						</p>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+							{/* Free Plan */}
+							<div className="relative rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-sm">
+								<h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+									Free
+								</h3>
+								<div className="mb-6">
+									<span className="text-4xl font-bold text-gray-900 dark:text-white">
+										$0
+									</span>
+									<span className="text-gray-500 dark:text-gray-400">
+										/month
+									</span>
+								</div>
+								<p className="text-gray-600 dark:text-gray-400 mb-6">
+									Perfect for individuals getting started with document signing.
+								</p>
+
+								<ul className="space-y-4 mb-8">
+									<li className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+										<Check className="w-5 h-5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
+										<span>Full app access</span>
+									</li>
+									<li className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+										<Users className="w-5 h-5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
+										<span>Single user workspace</span>
+									</li>
+									<li className="flex items-center gap-3 text-gray-400 dark:text-gray-500">
+										<X className="w-5 h-5 flex-shrink-0" />
+										<span>No API access</span>
+									</li>
+									<li className="flex items-center gap-3 text-gray-400 dark:text-gray-500">
+										<X className="w-5 h-5 flex-shrink-0" />
+										<span>No webhooks</span>
+									</li>
+									<li className="flex items-center gap-3 text-gray-400 dark:text-gray-500">
+										<X className="w-5 h-5 flex-shrink-0" />
+										<span>No MCP integration</span>
+									</li>
+								</ul>
+
+								<SignedOut>
+									<Button
+										asChild
+										variant="outline"
+										className="w-full py-6 text-base border-2 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800"
+										onClick={() =>
+											capture("cta_clicked", {
+												button: "get_started_free",
+												location: "pricing",
+											})
+										}
+									>
+										<Link to="/sign-up">Get Started Free</Link>
+									</Button>
+								</SignedOut>
+								<SignedIn>
+									<Button
+										asChild
+										variant="outline"
+										className="w-full py-6 text-base border-2 border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800"
+									>
+										<Link to="/app">Go to App</Link>
+									</Button>
+								</SignedIn>
+							</div>
+
+							{/* Pro Plan */}
+							<div className="relative rounded-2xl border-2 border-brand-600 dark:border-brand-500 bg-white dark:bg-slate-900 p-8 shadow-lg shadow-brand-600/10">
+								<div className="absolute -top-4 left-1/2 -translate-x-1/2">
+									<span className="bg-brand-600 text-white text-sm font-medium px-4 py-1 rounded-full">
+										Recommended
+									</span>
+								</div>
+								<h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+									Pro
+								</h3>
+								<div className="mb-6">
+									<span className="text-4xl font-bold text-gray-900 dark:text-white">
+										$10
+									</span>
+									<span className="text-gray-500 dark:text-gray-400">
+										/seat/month
+									</span>
+								</div>
+								<p className="text-gray-600 dark:text-gray-400 mb-6">
+									For teams and businesses that need advanced integrations.
+								</p>
+
+								<ul className="space-y-4 mb-8">
+									<li className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+										<Check className="w-5 h-5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
+										<span>Everything in Free</span>
+									</li>
+									<li className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+										<Users className="w-5 h-5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
+										<span>Unlimited team members</span>
+									</li>
+									<li className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+										<Code2 className="w-5 h-5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
+										<span>Full API access</span>
+									</li>
+									<li className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+										<Check className="w-5 h-5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
+										<span>Webhooks</span>
+									</li>
+									<li className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+										<Check className="w-5 h-5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
+										<span>MCP integration</span>
+									</li>
+								</ul>
+
+								<SignedOut>
+									<Button
+										asChild
+										className="w-full py-6 text-base bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-600/20"
+										onClick={() =>
+											capture("cta_clicked", {
+												button: "get_started_pro",
+												location: "pricing",
+											})
+										}
+									>
+										<Link to="/sign-up">Get Started</Link>
+									</Button>
+								</SignedOut>
+								<SignedIn>
+									<Button
+										asChild
+										className="w-full py-6 text-base bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-600/20"
+									>
+										<Link to="/app">Go to App</Link>
+									</Button>
+								</SignedIn>
+							</div>
+						</div>
+					</section>
 				</main>
 
 				<footer className="relative z-10 border-t border-brand-700/10 dark:border-slate-800 py-8 bg-white/50 dark:bg-background/50 backdrop-blur-sm">
