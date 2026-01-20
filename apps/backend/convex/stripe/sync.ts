@@ -93,8 +93,6 @@ export const upsertPrice = internalMutation({
 		),
 		unitAmount: v.optional(v.number()),
 		usageType: v.optional(v.string()),
-		aggregateUsage: v.optional(v.string()),
-		meterId: v.optional(v.string()),
 		status: v.union(
 			v.literal("active"),
 			v.literal("archived"),

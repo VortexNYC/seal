@@ -151,14 +151,6 @@ async function buildPriceParams(
 			: undefined,
 		unitAmount: price.unit_amount ?? undefined,
 		usageType: price.recurring?.usage_type || undefined,
-		aggregateUsage:
-			((price.recurring as Record<string, unknown> | null)?.aggregate_usage as
-				| string
-				| undefined) || undefined,
-		meterId:
-			((price.recurring as Record<string, unknown> | null)?.meter as
-				| string
-				| undefined) || undefined,
 		status: (price.active ? "active" : "archived") as
 			| "active"
 			| "archived"

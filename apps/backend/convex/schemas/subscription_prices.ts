@@ -49,8 +49,6 @@ export const subscriptionPricesTable = defineTable({
 
 	// Metered fields
 	usageType: v.optional(v.string()), // "metered" | "licensed"
-	aggregateUsage: v.optional(v.string()), // "sum" for metered
-	meterId: v.optional(v.string()), // Stripe meter ID
 
 	// Status of price in Stripe: 'active' | 'archived' | 'deleted'
 	status: subscriptionProductPriceStatusTuple,
