@@ -3,7 +3,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"dev": "vite",
+		"dev": "bunx @react-grab/claude-code@latest && vite",
 		"build": "vite build",
 		"serve": "vite preview",
 		"lint": "biome check .",
