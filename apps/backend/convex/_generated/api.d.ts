@@ -127,6 +127,7 @@ import type * as stripe_coupon from "../stripe/coupon.js";
 import type * as stripe_handlers from "../stripe/handlers.js";
 import type * as stripe_helpers from "../stripe/helpers.js";
 import type * as stripe_promo_code from "../stripe/promo_code.js";
+import type * as stripe_subscription_actions from "../stripe/subscription_actions.js";
 import type * as stripe_sync from "../stripe/sync.js";
 import type * as stripe_sync_helpers from "../stripe/sync_helpers.js";
 import type * as stripe_webhook_handlers from "../stripe/webhook_handlers.js";
@@ -267,6 +268,7 @@ declare const fullApi: ApiFromModules<{
   "stripe/handlers": typeof stripe_handlers;
   "stripe/helpers": typeof stripe_helpers;
   "stripe/promo_code": typeof stripe_promo_code;
+  "stripe/subscription_actions": typeof stripe_subscription_actions;
   "stripe/sync": typeof stripe_sync;
   "stripe/sync_helpers": typeof stripe_sync_helpers;
   "stripe/webhook_handlers": typeof stripe_webhook_handlers;

@@ -135,7 +135,47 @@ http.route({
 
 		try {
 			switch (type) {
-				case "user.created":
+				case "user.created": {
+					const firstName = data.first_name || "";
+					const lastName = data.last_name || "";
+					const fullName = `${firstName} ${lastName}`.trim();
+					const email = data.email_addresses?.[0]?.email_address || "";
+
+					const result = await ctx.runMutation(api.clerk_webhooks.syncUser, {
+						clerkId: data.id,
+						name: fullName || undefined,
+						email,
+						avatar: data.image_url || undefined,
+						isEmailVerified:
+							data.email_addresses?.[0]?.verification?.status === "verified",
+					});
+					console.log(`[Clerk Webhook] User synced: ${data.id}`);
+
+					// For new users, create Stripe customer and auto-enroll to free plan
+					if (result.isNewUser && result.userId) {
+						try {
+							await ctx.runAction(
+								internal.stripe.subscription_actions.handleNewUserSignup,
+								{
+									userId: result.userId,
+									email,
+									name: fullName || undefined,
+								},
+							);
+							console.log(
+								`[Clerk Webhook] Stripe customer created for user: ${data.id}`,
+							);
+						} catch (err) {
+							// Log error but don't fail the webhook - user was created successfully
+							console.error(
+								`[Clerk Webhook] Failed to setup Stripe for user ${data.id}:`,
+								err,
+							);
+						}
+					}
+					break;
+				}
+
 				case "user.updated": {
 					const firstName = data.first_name || "";
 					const lastName = data.last_name || "";

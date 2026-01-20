@@ -31,6 +31,9 @@ export const usersTable = defineTable({
 	onboardingCompleted: v.optional(v.boolean()),
 	onboardingCompletedAt: v.optional(v.number()),
 
+	// Stripe integration
+	stripeCustomerId: v.optional(v.string()),
+
 	updatedAt: v.optional(v.number()),
 })
 	.index("by_clerk_id", ["clerkId"])
