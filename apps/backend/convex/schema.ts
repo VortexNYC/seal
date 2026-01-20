@@ -72,6 +72,15 @@ import {
 	signatureFieldsTable,
 } from "./schemas/signature_fields";
 import { signaturesTable } from "./schemas/signatures";
+import {
+	type StripeCouponDuration,
+	type StripeCouponType,
+	stripeCouponsTable,
+} from "./schemas/stripe_coupons";
+import {
+	type StripePromoCodeStatus,
+	stripePromoCodesTable,
+} from "./schemas/stripe_promo_codes";
 import { subscriptionPricesTable } from "./schemas/subscription_prices";
 import { subscriptionProductsTable } from "./schemas/subscription_products";
 import { subscriptionsTable } from "./schemas/subscriptions";
@@ -137,6 +146,9 @@ export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
 // Re-export rate limit types
 export type { WindowType };
 
+// Re-export Stripe coupon/promo types
+export type { StripeCouponDuration, StripeCouponType, StripePromoCodeStatus };
+
 export default defineSchema({
 	users: usersTable,
 	user_profiles: userProfilesTable,
@@ -168,6 +180,8 @@ export default defineSchema({
 	subscriptions: subscriptionsTable,
 	subscription_products: subscriptionProductsTable,
 	subscription_prices: subscriptionPricesTable,
+	stripe_coupons: stripeCouponsTable,
+	stripe_promo_codes: stripePromoCodesTable,
 
 	// Integrations
 	connected_apps: connectedAppsTable,
