@@ -752,6 +752,31 @@ export async function rlsRules(
 				return false;
 			},
 		},
+
+		// ====================
+		// Stripe Coupons & Promo Codes
+		// ====================
+		stripe_coupons: {
+			read: async () => {
+				// Coupons are read-only mirrors from Stripe, accessible to authenticated users
+				return rlsCtx !== null;
+			},
+			modify: async () => {
+				// Coupons are only modified by internal webhook handlers
+				return false;
+			},
+		},
+
+		stripe_promo_codes: {
+			read: async () => {
+				// Promo codes are read-only mirrors from Stripe, accessible to authenticated users
+				return rlsCtx !== null;
+			},
+			modify: async () => {
+				// Promo codes are only modified by internal webhook handlers
+				return false;
+			},
+		},
 	};
 
 	return rules as Rules<QueryCtx, DataModel>;
