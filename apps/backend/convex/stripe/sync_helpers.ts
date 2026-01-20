@@ -149,7 +149,7 @@ async function buildPriceParams(
 					intervalCount: price.recurring.interval_count,
 				}
 			: undefined,
-		unitAmount: price.unit_amount || undefined,
+		unitAmount: price.unit_amount ?? undefined,
 		usageType: price.recurring?.usage_type || undefined,
 		aggregateUsage:
 			((price.recurring as Record<string, unknown> | null)?.aggregate_usage as
