@@ -16,13 +16,47 @@ interface ProductMetadata {
 }
 
 interface SyncProductResult {
-	action: "created" | "updated";
+	action: "created" | "updated" | "failed";
 	name: string;
+}
+
+/**
+ * Get a metadata value, checking multiple possible keys (camelCase and snake_case)
+ */
+function getMetadataValue(
+	metadata: Stripe.Metadata | undefined,
+	...keys: string[]
+): string | undefined {
+	if (!metadata) return undefined;
+
+	for (const key of keys) {
+		const value = metadata[key];
+		if (value !== undefined && value !== null) {
+			return value;
+		}
+	}
+
+	return undefined;
+}
+
+/**
+ * Parse an integer from metadata, returning undefined if not present or invalid
+ */
+function parseIntMetadataValue(
+	metadata: Stripe.Metadata | undefined,
+	...keys: string[]
+): number | undefined {
+	const raw = getMetadataValue(metadata, ...keys);
+	if (raw === undefined) return undefined;
+	const parsed = Number.parseInt(raw, 10);
+	return Number.isNaN(parsed) ? undefined : parsed;
 }
 
 function hasRelevantMetadata(metadata: Stripe.Metadata | undefined): boolean {
 	return Boolean(
-		metadata?.tier || metadata?.includedCredits || metadata?.purchase_type,
+		getMetadataValue(metadata, "tier") ||
+			getMetadataValue(metadata, "includedCredits", "included_credits") ||
+			getMetadataValue(metadata, "purchaseType", "purchase_type"),
 	);
 }
 
@@ -33,16 +67,21 @@ function parseProductMetadata(
 		return undefined;
 	}
 
-	const tier = product.metadata?.tier || "unknown";
-	const includedCredits = product.metadata?.includedCredits
-		? parseInt(product.metadata.includedCredits, 10)
-		: 0;
+	const metadata = product.metadata;
+	const tier = getMetadataValue(metadata, "tier") || "unknown";
+	const includedCredits =
+		parseIntMetadataValue(metadata, "includedCredits", "included_credits") ?? 0;
 
-	const features = product.metadata?.features
-		? product.metadata.features.split(",").map((f) => f.trim())
+	const featuresRaw = getMetadataValue(metadata, "features");
+	const features = featuresRaw
+		? featuresRaw
+				.split(",")
+				.map((f) => f.trim())
+				.filter(Boolean)
 		: undefined;
 
-	const purchase_type = product.metadata?.purchase_type || undefined;
+	const purchase_type =
+		getMetadataValue(metadata, "purchaseType", "purchase_type") || undefined;
 
 	return {
 		tier,
@@ -58,15 +97,26 @@ export async function syncProduct(
 ): Promise<SyncProductResult> {
 	const metadata = parseProductMetadata(product);
 
-	const result = await ctx.runMutation(internal.stripe.sync.upsertProduct, {
-		externalProductId: product.id,
-		name: product.name,
-		description: product.description || undefined,
-		status: product.active ? "active" : "archived",
-		metadata,
-	});
+	try {
+		const result = await ctx.runMutation(internal.stripe.sync.upsertProduct, {
+			externalProductId: product.id,
+			name: product.name,
+			description: product.description || undefined,
+			status: product.active ? "active" : "archived",
+			metadata,
+		});
 
-	return result as SyncProductResult;
+		return result as SyncProductResult;
+	} catch (error) {
+		// Log error but continue syncing other products
+		console.error("Failed to sync Stripe product", {
+			productId: product.id,
+			productName: product.name,
+			metadata: product.metadata,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return { action: "failed", name: product.name };
+	}
 }
 
 async function buildPriceParams(

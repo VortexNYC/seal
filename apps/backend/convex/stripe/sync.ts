@@ -234,7 +234,9 @@ const syncFromStripeInternal = async (ctx: ActionCtx) => {
 
 	// Fetch and sync all products from Stripe with pagination (active and archived)
 	let startingAfter: string | undefined;
-	let productCount = 0;
+	let syncedProducts = 0;
+	let failedProducts = 0;
+
 	while (true) {
 		const params: Stripe.ProductListParams = {
 			expand: ["data.default_price"],
@@ -248,8 +250,13 @@ const syncFromStripeInternal = async (ctx: ActionCtx) => {
 		for (const product of page.data) {
 			// Upsert product (status derived from product.active)
 			const productResult = await syncProduct(ctx, product);
-			productCount++;
 
+			if (productResult.action === "failed") {
+				failedProducts++;
+				continue;
+			}
+
+			syncedProducts++;
 			console.warn(
 				`${productResult.action === "created" ? "Created" : "Updated"} product: ${productResult.name}`,
 			);
@@ -264,11 +271,17 @@ const syncFromStripeInternal = async (ctx: ActionCtx) => {
 		startingAfter = lastItem.id;
 	}
 
-	console.warn(`✓ Stripe sync complete! Synced ${productCount} products.`);
+	const hasFailures = failedProducts > 0;
+	const failureSummary = hasFailures ? ` (${failedProducts} failed)` : "";
+
+	console.warn(
+		`${hasFailures ? "⚠" : "✓"} Stripe sync complete! Synced ${syncedProducts} products${failureSummary}`,
+	);
 
 	return {
-		success: true,
-		productsCount: productCount,
+		success: !hasFailures,
+		syncedProducts,
+		failedProducts,
 	};
 };
 
