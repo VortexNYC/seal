@@ -10,15 +10,6 @@ export type SubscriptionProductStatus = Infer<
 	typeof subscriptionProductStatusTuple
 >;
 
-export const subscriptionProductEnvironmentTuple = v.union(
-	v.literal("prod"),
-	v.literal("staging"),
-	v.literal("dev"),
-);
-export type SubscriptionProductEnvironment = Infer<
-	typeof subscriptionProductEnvironmentTuple
->;
-
 export const subscriptionProductsTable = defineTable({
 	externalProductId: v.string(),
 
@@ -35,8 +26,6 @@ export const subscriptionProductsTable = defineTable({
 			purchase_type: v.optional(v.string()),
 		}),
 	),
-	environment: v.optional(subscriptionProductEnvironmentTuple),
-	environmentName: v.optional(v.string()),
 
 	createdAt: v.number(),
 	updatedAt: v.number(),
