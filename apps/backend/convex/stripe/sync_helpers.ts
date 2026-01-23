@@ -17,9 +17,6 @@ interface ProductMetadata {
 
 interface PriceMetadata {
 	tier?: string;
-	documentsPerMonth?: number;
-	maxRecipients?: number;
-	features?: string; // deprecated: use Product Features instead
 }
 
 interface SyncProductResult {
@@ -102,42 +99,19 @@ function parseProductMetadata(
  * Parse price metadata from Stripe price
  * Returns undefined if no relevant metadata is present
  *
- * Note: Features should be managed via Stripe Product Features API,
- * but the features field is kept for backwards compatibility
+ * Note: Features are managed via Stripe Product Features API
  */
 function parsePriceMetadata(price: Stripe.Price): PriceMetadata | undefined {
 	const metadata = price.metadata;
 	if (!metadata) return undefined;
 
 	const tier = getMetadataValue(metadata, "tier");
-	const documentsPerMonth = parseIntMetadataValue(
-		metadata,
-		"documentsPerMonth",
-		"documents_per_month",
-	);
-	const maxRecipients = parseIntMetadataValue(
-		metadata,
-		"maxRecipients",
-		"max_recipients",
-	);
-	const features = getMetadataValue(metadata, "features");
 
-	// Return undefined if no relevant fields are present
-	if (
-		tier === undefined &&
-		documentsPerMonth === undefined &&
-		maxRecipients === undefined &&
-		features === undefined
-	) {
+	if (tier === undefined) {
 		return undefined;
 	}
 
-	return {
-		tier,
-		documentsPerMonth,
-		maxRecipients,
-		features,
-	};
+	return { tier };
 }
 
 export async function syncProduct(

@@ -26,12 +26,10 @@ export interface ParsedLookupKey {
 
 /**
  * Price metadata from Stripe (stored on each price)
- * Note: Features are managed via Stripe Product Features, not metadata
+ * Note: Features are managed via Stripe Product Features API
  */
 export interface PriceMetadata {
 	tier?: string;
-	documentsPerMonth?: number; // -1 = unlimited
-	maxRecipients?: number; // -1 = unlimited
 }
 
 // Regex: tier:interval:vN
@@ -91,11 +89,4 @@ export function getTierFromLookupKey(
 ): TierName | null {
 	const parsed = parseLookupKey(key);
 	return parsed?.tier ?? null;
-}
-
-/**
- * Check if a limit value means "unlimited"
- */
-export function isUnlimited(value: number | undefined): boolean {
-	return value === -1;
 }
