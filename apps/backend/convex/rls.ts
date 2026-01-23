@@ -624,17 +624,6 @@ export async function rlsRules(
 			},
 		},
 
-		subscription_features: {
-			read: async () => {
-				// All authenticated users can read subscription features
-				return rlsCtx !== null;
-			},
-			modify: async () => {
-				// Modified via webhooks/internal mutations only
-				return false;
-			},
-		},
-
 		// ====================
 		// Integrations
 		// ====================

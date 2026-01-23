@@ -108,7 +108,6 @@ import type * as schemas_saved_signatures from "../schemas/saved_signatures.js";
 import type * as schemas_signature_fields from "../schemas/signature_fields.js";
 import type * as schemas_signatures from "../schemas/signatures.js";
 import type * as schemas_subscription_coupons from "../schemas/subscription_coupons.js";
-import type * as schemas_subscription_features from "../schemas/subscription_features.js";
 import type * as schemas_subscription_prices from "../schemas/subscription_prices.js";
 import type * as schemas_subscription_products from "../schemas/subscription_products.js";
 import type * as schemas_subscription_promo_codes from "../schemas/subscription_promo_codes.js";
@@ -251,7 +250,6 @@ declare const fullApi: ApiFromModules<{
   "schemas/signature_fields": typeof schemas_signature_fields;
   "schemas/signatures": typeof schemas_signatures;
   "schemas/subscription_coupons": typeof schemas_subscription_coupons;
-  "schemas/subscription_features": typeof schemas_subscription_features;
   "schemas/subscription_prices": typeof schemas_subscription_prices;
   "schemas/subscription_products": typeof schemas_subscription_products;
   "schemas/subscription_promo_codes": typeof schemas_subscription_promo_codes;

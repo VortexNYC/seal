@@ -57,7 +57,6 @@ import {
 	organizationsTable,
 	type organizationTypeTuple,
 } from "./schemas/organizations";
-import { subscriptionFeaturesTable } from "./schemas/subscription_features";
 import { rateLimitBucketsTable, type WindowType } from "./schemas/rate_limits";
 import {
 	type AuthenticationMethod,
@@ -185,7 +184,6 @@ export default defineSchema({
 	subscriptions: subscriptionsTable,
 	subscription_products: subscriptionProductsTable,
 	subscription_prices: subscriptionPricesTable,
-	subscription_features: subscriptionFeaturesTable,
 	subscription_coupons: subscriptionCouponsTable,
 	subscription_promo_codes: subscriptionPromoCodesTable,
 
