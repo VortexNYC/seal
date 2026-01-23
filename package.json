@@ -40,7 +40,7 @@
 		"knip": "turbo run knip --continue",
 		"knip:fix": "turbo run knip:fix --continue",
 		"static-analysis": "turbo run lint typecheck knip --continue && bun run biome:check",
-		"clean": "git clean -xdf .cache .turbo dist node_modules",
+		"clean": "git clean -xdf .cache .tanstack .turbo dist node_modules",
 		"clean:workspaces": "turbo run clean"
 	},
 	"devDependencies": {

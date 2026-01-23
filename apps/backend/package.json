@@ -12,7 +12,7 @@
 		"test:watch": "vitest",
 		"knip": "knip",
 		"knip:fix": "knip --fix --allow-remove-files",
-		"clean": "git clean -xdf .cache .turbo node_modules convex/_generated"
+		"clean": "git clean -xdf .cache .tanstack .turbo node_modules convex/_generated"
 	},
 	"dependencies": {
 		"@clerk/backend": "^2.29.4",
