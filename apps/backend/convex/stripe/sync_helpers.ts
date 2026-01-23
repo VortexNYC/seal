@@ -17,6 +17,7 @@ interface ProductMetadata {
 
 interface PriceMetadata {
 	tier?: string;
+	useType?: string;
 }
 
 interface SyncProductResult {
@@ -106,12 +107,13 @@ function parsePriceMetadata(price: Stripe.Price): PriceMetadata | undefined {
 	if (!metadata) return undefined;
 
 	const tier = getMetadataValue(metadata, "tier");
+	const useType = getMetadataValue(metadata, "useType", "use_type");
 
-	if (tier === undefined) {
+	if (tier === undefined && useType === undefined) {
 		return undefined;
 	}
 
-	return { tier };
+	return { tier, useType };
 }
 
 export async function syncProduct(

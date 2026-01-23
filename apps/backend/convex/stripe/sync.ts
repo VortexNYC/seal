@@ -103,6 +103,7 @@ export const upsertPrice = internalMutation({
 		metadata: v.optional(
 			v.object({
 				tier: v.optional(v.string()),
+				useType: v.optional(v.string()),
 			}),
 		),
 	},

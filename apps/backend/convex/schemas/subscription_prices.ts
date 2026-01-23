@@ -58,6 +58,7 @@ export const subscriptionPricesTable = defineTable({
 	metadata: v.optional(
 		v.object({
 			tier: v.optional(v.string()), // "free" | "pro"
+			useType: v.optional(v.string()), // "personal" | "business"
 		}),
 	),
 
