@@ -11,6 +11,7 @@ import ReactDOM from "react-dom/client";
 import { DefaultCatchBoundary } from "./components/default-catch-boundary";
 import Loader from "./components/loader";
 import { NotFound } from "./components/not-found";
+import "./dev/react-grab";
 import { initWebVitals } from "./lib/web-vitals";
 import { routeTree } from "./routeTree.gen";
 
