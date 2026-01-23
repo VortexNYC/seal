@@ -18,7 +18,7 @@ function initializeStripe(): Stripe {
 		throw new Error("STRIPE_SECRET_KEY not configured");
 	}
 	return new Stripe(stripeSecretKey, {
-		apiVersion: "2025-06-30.basil",
+		apiVersion: "2025-12-15.clover",
 	});
 }
 
