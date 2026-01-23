@@ -105,6 +105,7 @@ export const upsertPrice = internalMutation({
 				tier: v.optional(v.string()),
 				documentsPerMonth: v.optional(v.number()),
 				maxRecipients: v.optional(v.number()),
+				features: v.optional(v.string()), // deprecated: use Product Features instead
 			}),
 		),
 	},

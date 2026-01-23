@@ -55,11 +55,13 @@ export const subscriptionPricesTable = defineTable({
 	lookupKey: v.optional(v.string()), // Lookup key: {tier}:{interval}:v{version}
 
 	// Price metadata from Stripe (plan limits)
+	// Note: features should be managed via Stripe Product Features API, but kept here for backwards compatibility
 	metadata: v.optional(
 		v.object({
 			tier: v.optional(v.string()), // "free" | "pro"
 			documentsPerMonth: v.optional(v.number()), // -1 = unlimited
 			maxRecipients: v.optional(v.number()), // -1 = unlimited
+			features: v.optional(v.string()), // deprecated: use Product Features instead
 		}),
 	),
 
