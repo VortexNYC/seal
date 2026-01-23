@@ -1,13 +1,14 @@
 /**
  * Stripe Product & Pricing Sync
  *
- * Syncs products and prices from Stripe to Convex.
+ * Syncs products, prices, and features from Stripe to Convex.
  * This eliminates the need for hardcoded price IDs in environment variables.
  *
  * Usage:
- * 1. Set product metadata in Stripe with: tier, includedCredits, features
- * 2. Run: bunx convex run stripeSync:syncFromStripe
- * 3. Products and prices will be stored in Convex
+ * 1. Set price metadata in Stripe with: tier, documentsPerMonth, maxRecipients
+ * 2. Attach features to products via Stripe Entitlements
+ * 3. Run: bunx convex run stripe/sync:syncFromStripe
+ * 4. Products, prices, and features will be stored in Convex
  */
 
 import { v } from "convex/values";
@@ -20,7 +21,7 @@ import {
 	internalMutation,
 	internalQuery,
 } from "../_generated/server";
-import { syncPrices, syncProduct } from "./sync_helpers";
+import { syncPrices, syncProduct, syncProductFeatures } from "./sync_helpers";
 
 /**
  * Internal mutation to upsert a product
@@ -99,6 +100,13 @@ export const upsertPrice = internalMutation({
 			v.literal("deleted"),
 		),
 		lookupKey: v.optional(v.string()),
+		metadata: v.optional(
+			v.object({
+				tier: v.optional(v.string()),
+				documentsPerMonth: v.optional(v.number()),
+				maxRecipients: v.optional(v.number()),
+			}),
+		),
 	},
 	handler: async (ctx, args) => {
 		const now = Date.now();
@@ -218,6 +226,76 @@ export const setPriceStatus = internalMutation({
 });
 
 /**
+ * Internal mutation to upsert a product feature
+ */
+export const upsertProductFeature = internalMutation({
+	args: {
+		externalFeatureId: v.string(),
+		externalProductId: v.string(),
+		subscriptionProductId: v.id("subscription_products"),
+		lookupKey: v.string(),
+		name: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const now = Date.now();
+
+		// Check if feature already exists for this product
+		const existingFeature = await ctx.db
+			.query("product_features")
+			.withIndex("by_external_feature_id", (q) =>
+				q.eq("externalFeatureId", args.externalFeatureId),
+			)
+			.filter((q) => q.eq(q.field("externalProductId"), args.externalProductId))
+			.first();
+
+		if (existingFeature) {
+			// Update existing feature
+			await ctx.db.patch(existingFeature._id, {
+				...args,
+				updatedAt: now,
+			});
+			return { action: "updated", lookupKey: args.lookupKey };
+		} else {
+			// Insert new feature
+			await ctx.db.insert("product_features", {
+				...args,
+				createdAt: now,
+				updatedAt: now,
+			});
+			return { action: "created", lookupKey: args.lookupKey };
+		}
+	},
+});
+
+/**
+ * Internal mutation to remove features no longer attached to a product
+ */
+export const removeProductFeatures = internalMutation({
+	args: {
+		externalProductId: v.string(),
+		keepFeatureIds: v.array(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const existingFeatures = await ctx.db
+			.query("product_features")
+			.withIndex("by_external_product_id", (q) =>
+				q.eq("externalProductId", args.externalProductId),
+			)
+			.collect();
+
+		let removed = 0;
+		for (const feature of existingFeatures) {
+			if (!args.keepFeatureIds.includes(feature.externalFeatureId)) {
+				await ctx.db.delete(feature._id);
+				removed++;
+			}
+		}
+
+		return { removed };
+	},
+});
+
+/**
  * Internal sync function (called by webhooks or manually)
  */
 const syncFromStripeInternal = async (ctx: ActionCtx) => {
@@ -261,6 +339,9 @@ const syncFromStripeInternal = async (ctx: ActionCtx) => {
 
 			// Sync all prices for this product (includes archived)
 			await syncPrices(ctx, stripe, product.id, product.name);
+
+			// Sync product features from Stripe Entitlements
+			await syncProductFeatures(ctx, stripe, product.id, product.name);
 		}
 
 		if (!page.has_more) break;
