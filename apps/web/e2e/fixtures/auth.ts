@@ -7,41 +7,21 @@ type AuthFixtures = {
 
 /**
  * Extended test with authentication fixtures
+ *
+ * Note: Clerk uses short-lived JWTs (60s), so we perform fresh login for each test
+ * to ensure reliable authentication. The login flow is quick with Clerk test mode.
  */
 export const test = base.extend<AuthFixtures>({
 	/**
 	 * Provides an authenticated page with a logged-in user
-	 * Uses Clerk's session storage to persist authentication
 	 */
-	authenticatedPage: async ({ page, context }, use) => {
-		// Check if we have stored auth state
-		const authStatePath = "e2e/.auth/user.json";
+	authenticatedPage: async ({ page }, use) => {
+		// Always perform fresh login (Clerk JWTs are short-lived)
+		await performLogin(page);
 
-		try {
-			// Try to load existing auth state
-			await context.addCookies(
-				JSON.parse(
-					await require("node:fs").promises.readFile(authStatePath, "utf-8"),
-				),
-			);
-		} catch {
-			// If no auth state exists, perform login
-			await performLogin(page);
-
-			// Save authentication state
-			const cookies = await context.cookies();
-			await require("node:fs").promises.mkdir("e2e/.auth", { recursive: true });
-			await require("node:fs").promises.writeFile(
-				authStatePath,
-				JSON.stringify(cookies),
-			);
-		}
-
-		// Navigate to the app to verify authentication
-		await page.goto("/");
-
-		// Wait for Clerk to initialize
-		await page.waitForLoadState("networkidle");
+		// Wait for redirect to org-specific URL
+		// The app redirects: sign-in -> /app -> /{org-slug}/home
+		await page.waitForURL(/\/[\w-]+\/home/, { timeout: 15000 });
 
 		await use(page);
 	},
@@ -50,7 +30,7 @@ export const test = base.extend<AuthFixtures>({
 	 * Provides the organization slug for the authenticated user
 	 */
 	organizationSlug: async ({ authenticatedPage }, use) => {
-		// Extract organization slug from URL or state
+		// Extract organization slug from URL
 		const url = authenticatedPage.url();
 		const match = url.match(/\/([\w-]+)\/home/);
 		const slug = match ? match[1] : "test-org";
