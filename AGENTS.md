@@ -1,3 +1,18 @@
+# Global Agent Guidelines (Codex)
+Synced from `~/.codex/AGENTS.md`.
+
+## Browser Automation Tooling
+
+- **chrome-devtools MCP**: CDP-level access for DevTools diagnostics (network, performance, console, tracing, throttling) and inspecting existing/local Chrome state.
+- **Playwright MCP** or **Vercel agent-browser**: Use one for UI automation flows (navigation, clicks, form fills, screenshots). Prefer Playwright for local E2E parity; agent-browser for hosted/remote browser sessions.
+- **Avoid combining Playwright MCP and agent-browser** unless explicitly needed; they are largely redundant. If you need both automation and DevTools diagnostics, pair chrome-devtools MCP with one automation tool.
+
+## Slash Commands
+
+| Command | Description |
+|---------|-------------|
+| `/quick-test` | Run tests for a specific file or pattern (useful for Lambda functions) |
+
 # Seal Repository Guidelines
 
 Seal: Bun + Turborepo monorepo. `apps/web` (React 19, TanStack Router, Vite), `apps/backend` (Convex), `packages/transactional` (React Email). Auth: Clerk. UI: Tailwind v4 + Shadcn. Linting: Biome. Testing: Vitest + Playwright.
@@ -352,7 +367,7 @@ bun run static-analysis  # Run before commits
 
 ### Always Commit
 - `apps/backend/convex/_generated/` (Convex generated files)
-- Lockfiles (`bun.lockb`)
+- Lockfiles (`bun.lock`)
 - Configuration files
 
 ## Development Workflow
