@@ -30,7 +30,6 @@ function JsonLdScript<T extends object>({ data }: JsonLdProps<T>) {
 	return (
 		<script
 			type="application/ld+json"
-			// biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD requires innerHTML, data is from static config only
 			dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
 		/>
 	);
