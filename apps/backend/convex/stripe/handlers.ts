@@ -168,7 +168,7 @@ export const cancelOldStripeSubscriptions = internalAction({
 		}
 
 		const stripe = new Stripe(stripeSecretKey, {
-			apiVersion: "2025-12-15.clover",
+			apiVersion: "2025-06-30.basil",
 		});
 
 		for (const subscriptionId of args.subscriptionIds) {
@@ -986,7 +986,7 @@ export const checkSubscriptionStatus = internalAction({
 		}
 
 		const stripe = new Stripe(stripeSecretKey, {
-			apiVersion: "2025-12-15.clover",
+			apiVersion: "2025-06-30.basil",
 		});
 
 		// Get all active or past_due subscriptions
