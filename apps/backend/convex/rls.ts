@@ -624,9 +624,9 @@ export async function rlsRules(
 			},
 		},
 
-		product_features: {
+		subscription_features: {
 			read: async () => {
-				// All authenticated users can read product features
+				// All authenticated users can read subscription features
 				return rlsCtx !== null;
 			},
 			modify: async () => {
@@ -765,11 +765,11 @@ export async function rlsRules(
 		},
 
 		// ====================
-		// Stripe Coupons & Promo Codes
+		// Subscription Coupons & Promo Codes
 		// ====================
-		stripe_coupons: {
+		subscription_coupons: {
 			read: async () => {
-				// Coupons are read-only mirrors from Stripe, accessible to authenticated users
+				// Coupons are read-only mirrors from payment provider, accessible to authenticated users
 				return rlsCtx !== null;
 			},
 			modify: async () => {
@@ -778,9 +778,9 @@ export async function rlsRules(
 			},
 		},
 
-		stripe_promo_codes: {
+		subscription_promo_codes: {
 			read: async () => {
-				// Promo codes are read-only mirrors from Stripe, accessible to authenticated users
+				// Promo codes are read-only mirrors from payment provider, accessible to authenticated users
 				return rlsCtx !== null;
 			},
 			modify: async () => {

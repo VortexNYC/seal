@@ -1,29 +1,29 @@
 /**
- * STRIPE PROMO CODES TABLE
- * Stripe promotion codes synced via webhooks - READ-ONLY mirror for fast queries.
- * Source of truth: Stripe promotion codes.
- * NEVER modify directly - only via Stripe API + webhooks.
+ * SUBSCRIPTION PROMO CODES TABLE
+ * Promotion codes synced from payment provider - READ-ONLY mirror for fast queries.
+ * Source of truth: Payment provider (Stripe).
+ * NEVER modify directly - only via payment provider API + webhooks.
  */
 
 import { defineTable } from "convex/server";
 import type { Infer } from "convex/values";
 import { v } from "convex/values";
 
-export const stripePromoCodeStatus = v.union(
+export const subscriptionPromoCodeStatus = v.union(
 	v.literal("active"),
 	v.literal("inactive"),
 	v.literal("expired"),
 	v.literal("exhausted"),
 	v.literal("deleted"),
 );
-export type StripePromoCodeStatus = Infer<typeof stripePromoCodeStatus>;
+export type SubscriptionPromoCodeStatus = Infer<typeof subscriptionPromoCodeStatus>;
 
-export const stripePromoCodesTable = defineTable({
-	// Stripe IDs (source of truth)
+export const subscriptionPromoCodesTable = defineTable({
+	// External IDs (source of truth from payment provider)
 	stripePromotionCodeId: v.string(),
 
 	// Reference to coupon
-	couponId: v.id("stripe_coupons"),
+	couponId: v.id("subscription_coupons"),
 
 	// User-facing code
 	code: v.string(), // e.g., "SAVE20", "LAUNCH50"

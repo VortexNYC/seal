@@ -26,7 +26,7 @@ export const handleCouponDeleted = internalMutation({
 
 		// Find the coupon in our database
 		const coupon = await ctx.db
-			.query("stripe_coupons")
+			.query("subscription_coupons")
 			.withIndex("by_stripe_coupon_id", (q) => q.eq("stripeCouponId", couponId))
 			.unique();
 
@@ -37,7 +37,7 @@ export const handleCouponDeleted = internalMutation({
 
 		// Find all promo codes using this coupon
 		const promoCodes = await ctx.db
-			.query("stripe_promo_codes")
+			.query("subscription_promo_codes")
 			.withIndex("by_coupon_id", (q) => q.eq("couponId", coupon._id))
 			.collect();
 
@@ -72,7 +72,7 @@ export const handleCouponCreatedOrUpdated = internalMutation({
 	args: {
 		coupon: v.any(), // Stripe.Coupon
 	},
-	handler: async (ctx, { coupon }): Promise<Id<"stripe_coupons">> => {
+	handler: async (ctx, { coupon }): Promise<Id<"subscription_coupons">> => {
 		const stripeCoupon = coupon as Stripe.Coupon;
 
 		console.info("Processing coupon webhook", {
@@ -83,7 +83,7 @@ export const handleCouponCreatedOrUpdated = internalMutation({
 
 		// Check if coupon already exists (for updates)
 		const existing = await ctx.db
-			.query("stripe_coupons")
+			.query("subscription_coupons")
 			.withIndex("by_stripe_coupon_id", (q) =>
 				q.eq("stripeCouponId", stripeCoupon.id),
 			)
@@ -126,7 +126,7 @@ export const handleCouponCreatedOrUpdated = internalMutation({
 		}
 
 		// Create new coupon
-		const couponId = await ctx.db.insert("stripe_coupons", {
+		const couponId = await ctx.db.insert("subscription_coupons", {
 			...couponData,
 			createdAt: now,
 		});

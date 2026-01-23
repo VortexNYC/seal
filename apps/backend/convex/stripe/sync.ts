@@ -241,7 +241,7 @@ export const upsertProductFeature = internalMutation({
 
 		// Check if feature already exists for this product
 		const existingFeature = await ctx.db
-			.query("product_features")
+			.query("subscription_features")
 			.withIndex("by_external_feature_id", (q) =>
 				q.eq("externalFeatureId", args.externalFeatureId),
 			)
@@ -257,7 +257,7 @@ export const upsertProductFeature = internalMutation({
 			return { action: "updated", lookupKey: args.lookupKey };
 		} else {
 			// Insert new feature
-			await ctx.db.insert("product_features", {
+			await ctx.db.insert("subscription_features", {
 				...args,
 				createdAt: now,
 				updatedAt: now,
@@ -277,7 +277,7 @@ export const removeProductFeatures = internalMutation({
 	},
 	handler: async (ctx, args) => {
 		const existingFeatures = await ctx.db
-			.query("product_features")
+			.query("subscription_features")
 			.withIndex("by_external_product_id", (q) =>
 				q.eq("externalProductId", args.externalProductId),
 			)

@@ -57,7 +57,7 @@ import {
 	organizationsTable,
 	type organizationTypeTuple,
 } from "./schemas/organizations";
-import { productFeaturesTable } from "./schemas/product_features";
+import { subscriptionFeaturesTable } from "./schemas/subscription_features";
 import { rateLimitBucketsTable, type WindowType } from "./schemas/rate_limits";
 import {
 	type AuthenticationMethod,
@@ -74,14 +74,14 @@ import {
 } from "./schemas/signature_fields";
 import { signaturesTable } from "./schemas/signatures";
 import {
-	type StripeCouponDuration,
-	type StripeCouponType,
-	stripeCouponsTable,
-} from "./schemas/stripe_coupons";
+	type SubscriptionCouponDuration,
+	type SubscriptionCouponType,
+	subscriptionCouponsTable,
+} from "./schemas/subscription_coupons";
 import {
-	type StripePromoCodeStatus,
-	stripePromoCodesTable,
-} from "./schemas/stripe_promo_codes";
+	type SubscriptionPromoCodeStatus,
+	subscriptionPromoCodesTable,
+} from "./schemas/subscription_promo_codes";
 import { subscriptionPricesTable } from "./schemas/subscription_prices";
 import { subscriptionProductsTable } from "./schemas/subscription_products";
 import { subscriptionsTable } from "./schemas/subscriptions";
@@ -147,8 +147,12 @@ export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
 // Re-export rate limit types
 export type { WindowType };
 
-// Re-export Stripe coupon/promo types
-export type { StripeCouponDuration, StripeCouponType, StripePromoCodeStatus };
+// Re-export subscription coupon/promo types
+export type {
+	SubscriptionCouponDuration,
+	SubscriptionCouponType,
+	SubscriptionPromoCodeStatus,
+};
 
 export default defineSchema({
 	users: usersTable,
@@ -181,9 +185,9 @@ export default defineSchema({
 	subscriptions: subscriptionsTable,
 	subscription_products: subscriptionProductsTable,
 	subscription_prices: subscriptionPricesTable,
-	product_features: productFeaturesTable,
-	stripe_coupons: stripeCouponsTable,
-	stripe_promo_codes: stripePromoCodesTable,
+	subscription_features: subscriptionFeaturesTable,
+	subscription_coupons: subscriptionCouponsTable,
+	subscription_promo_codes: subscriptionPromoCodesTable,
 
 	// Integrations
 	connected_apps: connectedAppsTable,

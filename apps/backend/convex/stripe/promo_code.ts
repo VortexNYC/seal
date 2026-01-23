@@ -38,7 +38,7 @@ export const handlePromotionCodeCreatedOrUpdated = internalMutation({
 
 		// Check if promo code already exists (for updates)
 		const existing = await ctx.db
-			.query("stripe_promo_codes")
+			.query("subscription_promo_codes")
 			.withIndex("by_stripe_promotion_code_id", (q) =>
 				q.eq("stripePromotionCodeId", stripePromoCode.id),
 			)
@@ -91,7 +91,7 @@ export const handlePromotionCodeCreatedOrUpdated = internalMutation({
 			});
 		} else {
 			// Create new promo code
-			const promoCodeDocId = await ctx.db.insert("stripe_promo_codes", {
+			const promoCodeDocId = await ctx.db.insert("subscription_promo_codes", {
 				...promoCodeData,
 				createdAt: now,
 			});
@@ -119,7 +119,7 @@ export const handlePromotionCodeDeleted = internalMutation({
 
 		// Find the promo code in our database
 		const promoCode = await ctx.db
-			.query("stripe_promo_codes")
+			.query("subscription_promo_codes")
 			.withIndex("by_stripe_promotion_code_id", (q) =>
 				q.eq("stripePromotionCodeId", promotionCodeId),
 			)

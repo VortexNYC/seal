@@ -9,7 +9,7 @@ import { v } from "convex/values";
  *
  * @see https://docs.stripe.com/billing/entitlements
  */
-export const productFeaturesTable = defineTable({
+export const subscriptionFeaturesTable = defineTable({
 	// Stripe feature ID (feat_xxx)
 	externalFeatureId: v.string(),
 

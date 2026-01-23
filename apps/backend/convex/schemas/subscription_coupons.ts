@@ -1,33 +1,33 @@
 /**
- * STRIPE COUPONS TABLE
- * Stripe coupons synced via webhooks - READ-ONLY mirror for fast queries.
- * Source of truth: Stripe coupons.
- * NEVER modify directly - only via Stripe API + webhooks.
+ * SUBSCRIPTION COUPONS TABLE
+ * Coupons synced from payment provider - READ-ONLY mirror for fast queries.
+ * Source of truth: Payment provider (Stripe).
+ * NEVER modify directly - only via payment provider API + webhooks.
  */
 
 import { defineTable } from "convex/server";
 import type { Infer } from "convex/values";
 import { v } from "convex/values";
 
-export const stripeCouponType = v.union(
+export const subscriptionCouponType = v.union(
 	v.literal("percent_off"),
 	v.literal("amount_off"),
 );
-export type StripeCouponType = Infer<typeof stripeCouponType>;
+export type SubscriptionCouponType = Infer<typeof subscriptionCouponType>;
 
-export const stripeCouponDuration = v.union(
+export const subscriptionCouponDuration = v.union(
 	v.literal("forever"),
 	v.literal("once"),
 	v.literal("repeating"),
 );
-export type StripeCouponDuration = Infer<typeof stripeCouponDuration>;
+export type SubscriptionCouponDuration = Infer<typeof subscriptionCouponDuration>;
 
-export const stripeCouponsTable = defineTable({
+export const subscriptionCouponsTable = defineTable({
 	// Stripe ID (source of truth)
 	stripeCouponId: v.string(),
 
 	// Discount details
-	couponType: stripeCouponType,
+	couponType: subscriptionCouponType,
 	percentOff: v.optional(v.number()), // For percentage discounts (1-100)
 	amountOff: v.optional(v.number()), // For fixed amount discounts (in cents)
 	currency: v.optional(v.string()), // For fixed amount (e.g., "usd")
@@ -36,7 +36,7 @@ export const stripeCouponsTable = defineTable({
 	name: v.optional(v.string()),
 
 	// Duration (how long discount applies)
-	duration: stripeCouponDuration,
+	duration: subscriptionCouponDuration,
 	durationInMonths: v.optional(v.number()), // For "repeating" duration
 
 	// Product restrictions (which products can use this coupon)
