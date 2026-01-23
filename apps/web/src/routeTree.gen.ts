@@ -240,8 +240,8 @@ export interface FileRoutesByFullPath {
   '/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
   '/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
-  '/$slug/settings': typeof AuthenticatedSlugSettingsIndexRoute
-  '/onboarding/choose-organization': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
+  '/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
+  '/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
   '/$slug/settings/developer/api-keys': typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
   '/$slug/settings/developer/webhooks': typeof AuthenticatedSlugSettingsDeveloperWebhooksRoute
   '/$slug/settings/profile/integrations': typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
@@ -249,7 +249,7 @@ export interface FileRoutesByFullPath {
   '/$slug/settings/profile/security': typeof AuthenticatedSlugSettingsProfileSecurityRoute
   '/$slug/settings/profile/usage': typeof AuthenticatedSlugSettingsProfileUsageRoute
   '/$slug/settings/team/$memberId': typeof AuthenticatedSlugSettingsTeamMemberIdRoute
-  '/$slug/settings/developer': typeof AuthenticatedSlugSettingsDeveloperIndexRoute
+  '/$slug/settings/developer/': typeof AuthenticatedSlugSettingsDeveloperIndexRoute
   '/$slug/settings/profile/': typeof AuthenticatedSlugSettingsProfileIndexRoute
   '/$slug/settings/team/': typeof AuthenticatedSlugSettingsTeamIndexRoute
 }
@@ -337,8 +337,8 @@ export interface FileRouteTypes {
     | '/$slug/settings/profile'
     | '/$slug/settings/team'
     | '/$slug/documents/'
-    | '/$slug/settings'
-    | '/onboarding/choose-organization'
+    | '/$slug/settings/'
+    | '/onboarding/choose-organization/'
     | '/$slug/settings/developer/api-keys'
     | '/$slug/settings/developer/webhooks'
     | '/$slug/settings/profile/integrations'
@@ -346,7 +346,7 @@ export interface FileRouteTypes {
     | '/$slug/settings/profile/security'
     | '/$slug/settings/profile/usage'
     | '/$slug/settings/team/$memberId'
-    | '/$slug/settings/developer'
+    | '/$slug/settings/developer/'
     | '/$slug/settings/profile/'
     | '/$slug/settings/team/'
   fileRoutesByTo: FileRoutesByTo
@@ -441,14 +441,14 @@ declare module '@tanstack/react-router' {
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
       id: '/_auth'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -532,14 +532,14 @@ declare module '@tanstack/react-router' {
     '/_authenticated/onboarding/choose-organization/': {
       id: '/_authenticated/onboarding/choose-organization/'
       path: '/onboarding/choose-organization'
-      fullPath: '/onboarding/choose-organization'
+      fullPath: '/onboarding/choose-organization/'
       preLoaderRoute: typeof AuthenticatedOnboardingChooseOrganizationIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/$slug/settings/': {
       id: '/_authenticated/$slug/settings/'
       path: '/settings'
-      fullPath: '/$slug/settings'
+      fullPath: '/$slug/settings/'
       preLoaderRoute: typeof AuthenticatedSlugSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
@@ -595,7 +595,7 @@ declare module '@tanstack/react-router' {
     '/_authenticated/$slug/settings/developer/': {
       id: '/_authenticated/$slug/settings/developer/'
       path: '/settings/developer'
-      fullPath: '/$slug/settings/developer'
+      fullPath: '/$slug/settings/developer/'
       preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperIndexRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
