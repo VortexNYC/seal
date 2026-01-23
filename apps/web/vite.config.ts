@@ -5,54 +5,60 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-export default defineConfig({
-	plugins: [
-		tailwindcss(),
-		tanstackRouter({}),
-		react(),
-		sentryVitePlugin({
-			org: "plasma-vh",
-			project: "seal",
-		}),
-	],
+export default defineConfig(({ command }) => {
+	const enableSentry = command === "build";
 
-	resolve: {
-		alias: {
-			"@": path.resolve(__dirname, "./src"),
-		},
-		dedupe: ["react", "react-dom"],
-	},
+	return {
+		plugins: [
+			tailwindcss(),
+			tanstackRouter({}),
+			react(),
+			enableSentry
+				? sentryVitePlugin({
+						org: "plasma-vh",
+						project: "seal",
+					})
+				: undefined,
+		].filter(Boolean),
 
-	// PostHog reverse proxy to bypass ad blockers
-	server: {
-		proxy: {
-			"/ingest/static": {
-				target: "https://us-assets.i.posthog.com",
-				changeOrigin: true,
-				rewrite: (path) => path.replace(/^\/ingest\/static/, "/static"),
+		resolve: {
+			alias: {
+				"@": path.resolve(__dirname, "./src"),
 			},
-			"/ingest": {
-				target: "https://us.i.posthog.com",
-				changeOrigin: true,
-				rewrite: (path) => path.replace(/^\/ingest/, ""),
-			},
+			dedupe: ["react", "react-dom"],
 		},
-	},
 
-	build: {
-		sourcemap: true,
-		// SEA-136: Mobile performance optimization - chunk splitting for lazy loading
-		rollupOptions: {
-			output: {
-				manualChunks: {
-					// Large PDF library - lazy loaded on signing/document pages
-					"pdf-viewer": ["react-pdf", "pdfjs-dist"],
-					// Charts library - only used on dashboard
-					charts: ["recharts"],
-					// Date utilities
-					"date-utils": ["date-fns"],
+		// PostHog reverse proxy to bypass ad blockers
+		server: {
+			proxy: {
+				"/ingest/static": {
+					target: "https://us-assets.i.posthog.com",
+					changeOrigin: true,
+					rewrite: (path) => path.replace(/^\/ingest\/static/, "/static"),
+				},
+				"/ingest": {
+					target: "https://us.i.posthog.com",
+					changeOrigin: true,
+					rewrite: (path) => path.replace(/^\/ingest/, ""),
 				},
 			},
 		},
-	},
+
+		build: {
+			sourcemap: true,
+			// SEA-136: Mobile performance optimization - chunk splitting for lazy loading
+			rollupOptions: {
+				output: {
+					manualChunks: {
+						// Large PDF library - lazy loaded on signing/document pages
+						"pdf-viewer": ["react-pdf", "pdfjs-dist"],
+						// Charts library - only used on dashboard
+						charts: ["recharts"],
+						// Date utilities
+						"date-utils": ["date-fns"],
+					},
+				},
+			},
+		},
+	};
 });

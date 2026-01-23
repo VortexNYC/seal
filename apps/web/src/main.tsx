@@ -20,6 +20,7 @@ import "./styles.css";
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN as string;
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string;
 const CLERK_URL = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
+const shouldInitSentry = Boolean(SENTRY_DSN) && import.meta.env.PROD;
 
 if (!CONVEX_URL) {
 	throw new Error("missing VITE_CONVEX_URL envar");
@@ -28,12 +29,14 @@ if (!CLERK_URL) {
 	throw new Error("missing VITE_CLERK_PUBLISHABLE_KEY envar");
 }
 
-Sentry.init({
-	dsn: SENTRY_DSN,
-	// Setting this option to true will send default PII data to Sentry.
-	// For example, automatic IP address collection on events
-	sendDefaultPii: true,
-});
+if (shouldInitSentry) {
+	Sentry.init({
+		dsn: SENTRY_DSN,
+		// Setting this option to true will send default PII data to Sentry.
+		// For example, automatic IP address collection on events
+		sendDefaultPii: true,
+	});
+}
 
 const convex = new ConvexReactClient(CONVEX_URL);
 const convexQueryClient = new ConvexQueryClient(convex);
