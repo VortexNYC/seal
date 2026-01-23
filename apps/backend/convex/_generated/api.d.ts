@@ -102,6 +102,7 @@ import type * as schemas_organization_invitations from "../schemas/organization_
 import type * as schemas_organization_members from "../schemas/organization_members.js";
 import type * as schemas_organization_roles from "../schemas/organization_roles.js";
 import type * as schemas_organizations from "../schemas/organizations.js";
+import type * as schemas_product_features from "../schemas/product_features.js";
 import type * as schemas_rate_limits from "../schemas/rate_limits.js";
 import type * as schemas_recipients from "../schemas/recipients.js";
 import type * as schemas_saved_signatures from "../schemas/saved_signatures.js";
@@ -126,6 +127,7 @@ import type * as stripe_actions from "../stripe/actions.js";
 import type * as stripe_coupon from "../stripe/coupon.js";
 import type * as stripe_handlers from "../stripe/handlers.js";
 import type * as stripe_helpers from "../stripe/helpers.js";
+import type * as stripe_pricing from "../stripe/pricing.js";
 import type * as stripe_promo_code from "../stripe/promo_code.js";
 import type * as stripe_subscription_actions from "../stripe/subscription_actions.js";
 import type * as stripe_sync from "../stripe/sync.js";
@@ -243,6 +245,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/organization_members": typeof schemas_organization_members;
   "schemas/organization_roles": typeof schemas_organization_roles;
   "schemas/organizations": typeof schemas_organizations;
+  "schemas/product_features": typeof schemas_product_features;
   "schemas/rate_limits": typeof schemas_rate_limits;
   "schemas/recipients": typeof schemas_recipients;
   "schemas/saved_signatures": typeof schemas_saved_signatures;
@@ -267,6 +270,7 @@ declare const fullApi: ApiFromModules<{
   "stripe/coupon": typeof stripe_coupon;
   "stripe/handlers": typeof stripe_handlers;
   "stripe/helpers": typeof stripe_helpers;
+  "stripe/pricing": typeof stripe_pricing;
   "stripe/promo_code": typeof stripe_promo_code;
   "stripe/subscription_actions": typeof stripe_subscription_actions;
   "stripe/sync": typeof stripe_sync;

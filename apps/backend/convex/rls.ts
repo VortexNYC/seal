@@ -624,6 +624,17 @@ export async function rlsRules(
 			},
 		},
 
+		product_features: {
+			read: async () => {
+				// All authenticated users can read product features
+				return rlsCtx !== null;
+			},
+			modify: async () => {
+				// Modified via webhooks/internal mutations only
+				return false;
+			},
+		},
+
 		// ====================
 		// Integrations
 		// ====================
