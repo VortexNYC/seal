@@ -6,6 +6,11 @@
 		"moduleResolution": "bundler",
 		"lib": ["ESNext"],
 		"types": ["bun"],
+		"baseUrl": ".",
+		"paths": {
+			"zod": ["../../node_modules/zod"],
+			"zod/*": ["../../node_modules/zod/*"]
+		},
 		"strict": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
