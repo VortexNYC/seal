@@ -236,6 +236,7 @@ export const upsertProductFeature = internalMutation({
 		subscriptionProductId: v.id("subscription_products"),
 		lookupKey: v.string(),
 		name: v.string(),
+		description: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const now = Date.now();

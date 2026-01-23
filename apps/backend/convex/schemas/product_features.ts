@@ -23,6 +23,9 @@ export const productFeaturesTable = defineTable({
 	// Feature name for display
 	name: v.string(),
 
+	// Feature description (from Stripe feature metadata.description)
+	description: v.optional(v.string()),
+
 	createdAt: v.number(),
 	updatedAt: v.number(),
 })

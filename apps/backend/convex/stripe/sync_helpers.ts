@@ -309,6 +309,9 @@ export async function syncProductFeatures(
 				continue;
 			}
 
+			// Get description from feature metadata
+			const description = feature.metadata?.description || undefined;
+
 			const result = await ctx.runMutation(
 				internal.stripe.sync.upsertProductFeature,
 				{
@@ -317,6 +320,7 @@ export async function syncProductFeatures(
 					subscriptionProductId: product._id,
 					lookupKey: feature.lookup_key,
 					name: feature.name,
+					description,
 				},
 			);
 
