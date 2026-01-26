@@ -20,7 +20,9 @@ export const subscriptionCouponDuration = v.union(
 	v.literal("once"),
 	v.literal("repeating"),
 );
-export type SubscriptionCouponDuration = Infer<typeof subscriptionCouponDuration>;
+export type SubscriptionCouponDuration = Infer<
+	typeof subscriptionCouponDuration
+>;
 
 export const subscriptionCouponsTable = defineTable({
 	// Stripe ID (source of truth)

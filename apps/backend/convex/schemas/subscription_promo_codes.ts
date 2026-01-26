@@ -16,7 +16,9 @@ export const subscriptionPromoCodeStatus = v.union(
 	v.literal("exhausted"),
 	v.literal("deleted"),
 );
-export type SubscriptionPromoCodeStatus = Infer<typeof subscriptionPromoCodeStatus>;
+export type SubscriptionPromoCodeStatus = Infer<
+	typeof subscriptionPromoCodeStatus
+>;
 
 export const subscriptionPromoCodesTable = defineTable({
 	// External IDs (source of truth from payment provider)

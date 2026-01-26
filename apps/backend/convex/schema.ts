@@ -77,12 +77,12 @@ import {
 	type SubscriptionCouponType,
 	subscriptionCouponsTable,
 } from "./schemas/subscription_coupons";
+import { subscriptionPricesTable } from "./schemas/subscription_prices";
+import { subscriptionProductsTable } from "./schemas/subscription_products";
 import {
 	type SubscriptionPromoCodeStatus,
 	subscriptionPromoCodesTable,
 } from "./schemas/subscription_promo_codes";
-import { subscriptionPricesTable } from "./schemas/subscription_prices";
-import { subscriptionProductsTable } from "./schemas/subscription_products";
 import { subscriptionsTable } from "./schemas/subscriptions";
 import {
 	type TemplateStatus,
