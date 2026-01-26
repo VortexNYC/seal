@@ -38,10 +38,10 @@ export const upsertProduct = internalMutation({
 		),
 		metadata: v.optional(
 			v.object({
-				tier: v.string(),
-				includedCredits: v.number(),
-				features: v.optional(v.array(v.string())),
-				purchase_type: v.optional(v.string()),
+				tier: v.optional(v.string()),
+				useType: v.optional(v.string()),
+				features: v.optional(v.string()),
+				includedCredits: v.optional(v.number()),
 			}),
 		),
 	},
@@ -100,12 +100,6 @@ export const upsertPrice = internalMutation({
 			v.literal("deleted"),
 		),
 		lookupKey: v.optional(v.string()),
-		metadata: v.optional(
-			v.object({
-				tier: v.optional(v.string()),
-				useType: v.optional(v.string()),
-			}),
-		),
 	},
 	handler: async (ctx, args) => {
 		const now = Date.now();

@@ -52,15 +52,7 @@ export const subscriptionPricesTable = defineTable({
 
 	// Status of price in Stripe: 'active' | 'archived' | 'deleted'
 	status: subscriptionProductPriceStatusTuple,
-	lookupKey: v.optional(v.string()), // Lookup key: {tier}:{interval}:v{version}
-
-	// Price metadata from Stripe (plan identification)
-	metadata: v.optional(
-		v.object({
-			tier: v.optional(v.string()), // "free" | "pro"
-			useType: v.optional(v.string()), // "personal" | "business"
-		}),
-	),
+	lookupKey: v.optional(v.string()), // Lookup key: {tier}:{useType}:{interval}:v{version}
 
 	createdAt: v.number(),
 	updatedAt: v.number(),

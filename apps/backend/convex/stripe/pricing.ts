@@ -4,8 +4,8 @@
  * Lookup key format: {tier}:{useType}:{interval}:v{version}
  * Examples: free:personal:monthly:v1, pro:business:monthly:v1
  *
- * All plan configuration (limits, features) is stored in Stripe Price metadata,
- * not hardcoded here. This module only handles lookup key parsing/validation.
+ * Plan configuration (tier, useType, features) is stored in Stripe Product metadata.
+ * This module only handles lookup key parsing/validation.
  */
 
 // Available tiers (for type safety only - actual limits come from Stripe metadata)
@@ -28,17 +28,9 @@ export interface ParsedLookupKey {
 	version: string;
 }
 
-/**
- * Price metadata from Stripe (stored on each price)
- * Note: Features are managed via Stripe Product Features API
- */
-export interface PriceMetadata {
-	tier?: string;
-	useType?: string; // "personal" | "business"
-}
-
 // Regex: tier:useType:interval:vN
-const LOOKUP_KEY_REGEX = /^([a-z]+):(personal|business):(monthly|yearly):(v\d+)$/;
+const LOOKUP_KEY_REGEX =
+	/^([a-z]+):(personal|business):(monthly|yearly):(v\d+)$/;
 
 /**
  * Build a lookup key from components

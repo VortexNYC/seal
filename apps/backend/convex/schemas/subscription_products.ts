@@ -20,10 +20,10 @@ export const subscriptionProductsTable = defineTable({
 
 	metadata: v.optional(
 		v.object({
-			tier: v.string(), // "starter" | "pro" | "business"
-			includedCredits: v.number(),
-			features: v.optional(v.array(v.string())),
-			purchase_type: v.optional(v.string()),
+			tier: v.optional(v.string()), // "free" | "pro"
+			useType: v.optional(v.string()), // "personal" | "business"
+			features: v.optional(v.string()), // comma-separated: "api_access,webhook_access"
+			includedCredits: v.optional(v.number()), // Credits included per billing period
 		}),
 	),
 

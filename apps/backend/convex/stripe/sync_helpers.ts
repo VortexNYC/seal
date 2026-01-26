@@ -9,15 +9,10 @@ import { internal } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
 
 interface ProductMetadata {
-	tier: string;
-	includedCredits: number;
-	features?: string[];
-	purchase_type?: string;
-}
-
-interface PriceMetadata {
 	tier?: string;
 	useType?: string;
+	features?: string;
+	includedCredits?: number;
 }
 
 interface SyncProductResult {
@@ -60,8 +55,9 @@ function parseIntMetadataValue(
 function hasRelevantMetadata(metadata: Stripe.Metadata | undefined): boolean {
 	return Boolean(
 		getMetadataValue(metadata, "tier") ||
-			getMetadataValue(metadata, "includedCredits", "included_credits") ||
-			getMetadataValue(metadata, "purchaseType", "purchase_type"),
+			getMetadataValue(metadata, "useType", "use_type") ||
+			getMetadataValue(metadata, "features") ||
+			getMetadataValue(metadata, "includedCredits", "included_credits"),
 	);
 }
 
@@ -73,47 +69,21 @@ function parseProductMetadata(
 	}
 
 	const metadata = product.metadata;
-	const tier = getMetadataValue(metadata, "tier") || "unknown";
-	const includedCredits =
-		parseIntMetadataValue(metadata, "includedCredits", "included_credits") ?? 0;
-
-	const featuresRaw = getMetadataValue(metadata, "features");
-	const features = featuresRaw
-		? featuresRaw
-				.split(",")
-				.map((f) => f.trim())
-				.filter(Boolean)
-		: undefined;
-
-	const purchase_type =
-		getMetadataValue(metadata, "purchaseType", "purchase_type") || undefined;
+	const tier = getMetadataValue(metadata, "tier");
+	const useType = getMetadataValue(metadata, "useType", "use_type");
+	const features = getMetadataValue(metadata, "features");
+	const includedCredits = parseIntMetadataValue(
+		metadata,
+		"includedCredits",
+		"included_credits",
+	);
 
 	return {
 		tier,
-		includedCredits,
+		useType,
 		features,
-		purchase_type,
+		includedCredits,
 	};
-}
-
-/**
- * Parse price metadata from Stripe price
- * Returns undefined if no relevant metadata is present
- *
- * Note: Features are managed via Stripe Product Features API
- */
-function parsePriceMetadata(price: Stripe.Price): PriceMetadata | undefined {
-	const metadata = price.metadata;
-	if (!metadata) return undefined;
-
-	const tier = getMetadataValue(metadata, "tier");
-	const useType = getMetadataValue(metadata, "useType", "use_type");
-
-	if (tier === undefined && useType === undefined) {
-		return undefined;
-	}
-
-	return { tier, useType };
 }
 
 export async function syncProduct(
@@ -181,7 +151,6 @@ async function buildPriceParams(
 			| "archived"
 			| "deleted",
 		lookupKey: price.lookup_key || undefined,
-		metadata: parsePriceMetadata(price),
 	};
 }
 
