@@ -1,0 +1,346 @@
+---
+title: Signature Verification
+description: Verify webhook authenticity using HMAC-SHA256 signatures
+---
+
+# Signature Verification
+
+All webhook requests from Seal include an HMAC-SHA256 signature in the `Seal-Signature` header. Always verify this signature to ensure the request is authentic and hasn't been tampered with.
+
+## Why Verify Signatures?
+
+Without signature verification, anyone who knows your webhook URL could send fake events to your endpoint. Signature verification ensures:
+
+- **Authenticity**: The request came from Seal
+- **Integrity**: The payload hasn't been modified
+- **Security**: Protection against replay attacks
+
+<Callout type="warn">
+  **Security Critical**: Never process webhook events without verifying the signature. Unverified webhooks are a security vulnerability.
+</Callout>
+
+## How Signatures Work
+
+1. Seal generates an HMAC-SHA256 hash of the request body using your webhook secret
+2. The hash is sent in the `Seal-Signature` header
+3. Your server generates the same hash using the same secret
+4. If the hashes match, the request is authentic
+
+## Verification Implementation
+
+### Node.js / TypeScript
+
+```typescript
+import { createHmac, timingSafeEqual } from 'crypto';
+
+function verifyWebhookSignature(
+  payload: string,
+  signature: string,
+  secret: string
+): boolean {
+  // Generate expected signature
+  const expectedSignature = createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  
+  // Convert to buffers for timing-safe comparison
+  const signatureBuffer = Buffer.from(signature, 'hex');
+  const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+  
+  // Check length first (prevents timing attacks)
+  if (signatureBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+  
+  // Timing-safe comparison
+  return timingSafeEqual(signatureBuffer, expectedBuffer);
+}
+
+// Usage in Express
+app.post('/webhooks/seal', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['seal-signature'] as string;
+  const payload = req.body.toString('utf8');
+  
+  if (!verifyWebhookSignature(payload, signature, process.env.WEBHOOK_SECRET!)) {
+    return res.status(401).send('Invalid signature');
+  }
+  
+  // Process event
+  const event = JSON.parse(payload);
+  // ...
+  
+  res.status(200).send('OK');
+});
+```
+
+### Python
+
+```python
+import hmac
+import hashlib
+
+def verify_webhook_signature(payload: str, signature: str, secret: str) -> bool:
+    """Verify webhook signature using HMAC-SHA256."""
+    expected_signature = hmac.new(
+        secret.encode('utf-8'),
+        payload.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+    
+    # Timing-safe comparison
+    return hmac.compare_digest(signature, expected_signature)
+
+# Usage in Flask
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.route('/webhooks/seal', methods=['POST'])
+def handle_webhook():
+    signature = request.headers.get('Seal-Signature')
+    payload = request.get_data(as_text=True)
+    
+    if not verify_webhook_signature(payload, signature, os.environ['WEBHOOK_SECRET']):
+        return 'Invalid signature', 401
+    
+    # Process event
+    event = request.get_json()
+    # ...
+    
+    return 'OK', 200
+```
+
+### Go
+
+```go
+package main
+
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "crypto/subtle"
+    "encoding/hex"
+    "io"
+    "net/http"
+    "os"
+)
+
+func verifyWebhookSignature(payload, signature, secret string) bool {
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write([]byte(payload))
+    expectedSignature := hex.EncodeToString(mac.Sum(nil))
+    
+    // Timing-safe comparison
+    return subtle.ConstantTimeCompare(
+        []byte(signature),
+        []byte(expectedSignature),
+    ) == 1
+}
+
+func handleWebhook(w http.ResponseWriter, r *http.Request) {
+    signature := r.Header.Get("Seal-Signature")
+    
+    body, err := io.ReadAll(r.Body)
+    if err != nil {
+        http.Error(w, "Error reading body", http.StatusBadRequest)
+        return
+    }
+    
+    if !verifyWebhookSignature(string(body), signature, os.Getenv("WEBHOOK_SECRET")) {
+        http.Error(w, "Invalid signature", http.StatusUnauthorized)
+        return
+    }
+    
+    // Process event
+    // ...
+    
+    w.WriteHeader(http.StatusOK)
+}
+```
+
+## Important Implementation Details
+
+### 1. Use Raw Request Body
+
+The signature is computed on the **raw request body**, not the parsed JSON. Make sure to:
+
+- Access the raw body before parsing
+- Preserve exact whitespace and formatting
+- Use the same encoding (UTF-8)
+
+```typescript
+// ✅ Correct: Use raw body
+app.use('/webhooks/seal', express.raw({ type: 'application/json' }));
+
+// ❌ Wrong: Body is already parsed
+app.use(express.json());
+```
+
+### 2. Use Timing-Safe Comparison
+
+Always use timing-safe comparison functions to prevent timing attacks:
+
+- **Node.js**: `crypto.timingSafeEqual()`
+- **Python**: `hmac.compare_digest()`
+- **Go**: `subtle.ConstantTimeCompare()`
+
+```typescript
+// ✅ Correct: Timing-safe
+return timingSafeEqual(signatureBuffer, expectedBuffer);
+
+// ❌ Wrong: Vulnerable to timing attacks
+return signature === expectedSignature;
+```
+
+### 3. Handle Missing Signatures
+
+Always check if the signature header exists:
+
+```typescript
+const signature = req.headers['seal-signature'];
+
+if (!signature) {
+  return res.status(401).send('Missing signature');
+}
+
+if (!verifyWebhookSignature(payload, signature, secret)) {
+  return res.status(401).send('Invalid signature');
+}
+```
+
+## Testing Signature Verification
+
+### Generate Test Signature
+
+```typescript
+import { createHmac } from 'crypto';
+
+const payload = JSON.stringify({
+  id: 'evt_test123',
+  type: 'document.completed',
+  created_at: '2024-01-27T12:00:00Z',
+  data: { document_id: 'doc_xyz789' }
+});
+
+const secret = 'whsec_test_secret';
+
+const signature = createHmac('sha256', secret)
+  .update(payload)
+  .digest('hex');
+
+console.log('Signature:', signature);
+
+// Send test request
+fetch('http://localhost:3000/webhooks/seal', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Seal-Signature': signature
+  },
+  body: payload
+});
+```
+
+### Verify Test Signature
+
+```bash
+# Expected signature for test payload
+echo -n '{"id":"evt_test123","type":"document.completed","created_at":"2024-01-27T12:00:00Z","data":{"document_id":"doc_xyz789"}}' | \
+  openssl dgst -sha256 -hmac 'whsec_test_secret' -hex
+```
+
+## Common Pitfalls
+
+### 1. Parsing Body Before Verification
+
+```typescript
+// ❌ Wrong: Body is parsed, signature won't match
+app.use(express.json());
+app.post('/webhooks/seal', (req, res) => {
+  const payload = JSON.stringify(req.body); // Different formatting!
+  // Signature verification will fail
+});
+
+// ✅ Correct: Use raw body
+app.use('/webhooks/seal', express.raw({ type: 'application/json' }));
+app.post('/webhooks/seal', (req, res) => {
+  const payload = req.body.toString('utf8');
+  // Signature verification will succeed
+});
+```
+
+### 2. Using Wrong Secret
+
+```typescript
+// ❌ Wrong: Using API key instead of webhook secret
+const secret = process.env.SEAL_API_KEY;
+
+// ✅ Correct: Use webhook secret from creation response
+const secret = process.env.WEBHOOK_SECRET; // whsec_xxx
+```
+
+### 3. Not Handling Signature Rotation
+
+When rotating secrets, support both old and new secrets temporarily:
+
+```typescript
+function verifyWithFallback(payload: string, signature: string): boolean {
+  const currentSecret = process.env.WEBHOOK_SECRET!;
+  const previousSecret = process.env.WEBHOOK_SECRET_OLD;
+  
+  // Try current secret first
+  if (verifyWebhookSignature(payload, signature, currentSecret)) {
+    return true;
+  }
+  
+  // Fall back to previous secret during rotation
+  if (previousSecret && verifyWebhookSignature(payload, signature, previousSecret)) {
+    console.warn('Webhook verified with old secret - update sender');
+    return true;
+  }
+  
+  return false;
+}
+```
+
+## Security Best Practices
+
+1. **Always Verify**: Never skip signature verification, even in development
+2. **Use HTTPS**: Webhook URLs must use HTTPS in production
+3. **Rotate Secrets**: Rotate webhook secrets every 90 days
+4. **Store Securely**: Keep secrets in environment variables or secrets manager
+5. **Log Failures**: Monitor and alert on signature verification failures
+6. **Rate Limit**: Implement rate limiting on webhook endpoints
+7. **Validate Payload**: Verify payload structure after signature check
+
+## Troubleshooting
+
+### Signature Verification Fails
+
+1. **Check Secret**: Ensure you're using the correct webhook secret (not API key)
+2. **Check Encoding**: Verify you're using UTF-8 encoding
+3. **Check Body**: Ensure you're using the raw request body
+4. **Check Header**: Verify the header name is `Seal-Signature` (case-sensitive)
+5. **Test Locally**: Generate a test signature and verify it works
+
+### Debug Signature Mismatch
+
+```typescript
+function debugSignature(payload: string, receivedSignature: string, secret: string) {
+  const expectedSignature = createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  
+  console.log('Received signature:', receivedSignature);
+  console.log('Expected signature:', expectedSignature);
+  console.log('Payload length:', payload.length);
+  console.log('Payload preview:', payload.substring(0, 100));
+  console.log('Secret prefix:', secret.substring(0, 10) + '...');
+}
+```
+
+## Next Steps
+
+- **[Webhook Setup](/docs/webhooks/setup)** - Configure webhook endpoints
+- **[Webhooks API](/docs/api-reference/webhooks)** - API reference
+- **[Error Handling](/docs/getting-started/error-handling)** - Handle verification errors

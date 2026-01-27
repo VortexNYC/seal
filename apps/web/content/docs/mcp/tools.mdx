@@ -1,0 +1,243 @@
+---
+title: MCP Tools Reference
+description: Complete reference for all 25 Seal MCP tools
+---
+
+# MCP Tools Reference
+
+The Seal MCP server provides 25 tools that give AI assistants complete access to your Seal account. All tools require OAuth authentication and respect your organization's permissions.
+
+## Document Tools
+
+### seal_list_documents
+
+List all documents in your organization.
+
+**Parameters:**
+- `limit` (number, optional): Number of results (max 100, default 20)
+- `status` (string, optional): Filter by status
+
+**Returns:** Array of document objects
+
+**Example:**
+```
+User: "Show me my recent documents"
+Claude: [Calls seal_list_documents]
+```
+
+### seal_get_document
+
+Get detailed information about a specific document.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+- `includeRecipients` (boolean, optional): Include recipient details
+
+**Returns:** Document object with optional recipients
+
+### seal_create_document
+
+Create a new document.
+
+**Parameters:**
+- `title` (string, required): Document title
+- `storageId` (string, required): Storage ID from upload
+- `fileSize` (number, required): File size in bytes
+- `fileType` (string, required): MIME type
+
+**Returns:** Created document object
+
+### seal_send_document
+
+Send a document to recipients for signing.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+- `message` (string, optional): Custom message
+
+**Returns:** Send confirmation
+
+### seal_void_document
+
+Cancel a document and prevent further signing.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+- `reason` (string, optional): Cancellation reason
+
+**Returns:** Void confirmation
+
+## Recipient Tools
+
+### seal_list_recipients
+
+List all recipients for a document.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+
+**Returns:** Array of recipient objects
+
+### seal_add_recipient
+
+Add a new recipient to a document.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+- `email` (string, required): Recipient email
+- `name` (string, required): Recipient name
+- `role` (string, required): Role (signer, approver, viewer)
+- `order` (number, optional): Signing order
+
+**Returns:** Created recipient object
+
+### seal_send_reminder
+
+Send a reminder email to a recipient.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+- `recipientId` (string, required): Recipient ID
+- `message` (string, optional): Custom reminder message
+
+**Returns:** Reminder confirmation
+
+## Template Tools
+
+### seal_list_templates
+
+List all templates in your organization.
+
+**Parameters:**
+- `limit` (number, optional): Number of results
+- `category` (string, optional): Filter by category
+
+**Returns:** Array of template objects
+
+### seal_get_template
+
+Get detailed information about a template.
+
+**Parameters:**
+- `templateId` (string, required): Template ID
+
+**Returns:** Template object
+
+### seal_get_template_fields
+
+Get field definitions for a template.
+
+**Parameters:**
+- `templateId` (string, required): Template ID
+
+**Returns:** Array of field definitions
+
+### seal_use_template
+
+Create a new document from a template.
+
+**Parameters:**
+- `templateId` (string, required): Template ID
+- `title` (string, required): Document title
+- `fieldValues` (object, optional): Field values to populate
+- `recipients` (array, optional): Recipients to add
+
+**Returns:** Created document object
+
+## Signature Tools
+
+### seal_list_signatures
+
+List all signatures for a document.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+
+**Returns:** Array of signature objects
+
+### seal_verify_document
+
+Verify the authenticity of a signed document.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+
+**Returns:** Verification result with signature details
+
+### seal_get_audit_trail
+
+Get the complete audit trail for a document.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+
+**Returns:** Array of audit trail events
+
+## Tool Categories
+
+| Category | Tool Count | Description |
+|----------|------------|-------------|
+| Documents | 8 | Create, manage, and send documents |
+| Recipients | 6 | Manage document recipients and reminders |
+| Templates | 7 | Create and use document templates |
+| Signatures | 4 | Verify signatures and access audit trails |
+
+## Common Workflows
+
+### Create and Send Document
+
+```
+1. seal_create_document - Create document
+2. seal_add_recipient - Add recipients
+3. seal_send_document - Send for signing
+```
+
+### Use Template
+
+```
+1. seal_list_templates - Find template
+2. seal_get_template_fields - Check required fields
+3. seal_use_template - Create document with field values
+4. seal_send_document - Send for signing
+```
+
+### Track Document Status
+
+```
+1. seal_list_documents - Get all documents
+2. seal_get_document - Get specific document details
+3. seal_list_recipients - Check recipient status
+4. seal_send_reminder - Send reminders if needed
+```
+
+## Error Handling
+
+All tools return errors in a consistent format:
+
+```json
+{
+  "error": {
+    "type": "VALIDATION_ERROR",
+    "message": "Invalid email format",
+    "details": {...}
+  }
+}
+```
+
+Common error types:
+- `VALIDATION_ERROR` - Invalid parameters
+- `NOT_FOUND` - Resource doesn't exist
+- `PERMISSION_DENIED` - Insufficient permissions
+- `RATE_LIMIT_EXCEEDED` - Too many requests
+
+## Rate Limits
+
+MCP tools share the same rate limits as the REST API:
+- **60 requests per minute**
+- **1000 requests per hour**
+
+## Next Steps
+
+- **[MCP Authentication](/docs/mcp/authentication)** - OAuth setup guide
+- **[API Reference](/docs/api-reference)** - Detailed API documentation
+- **[Quick Start](/docs/getting-started/quick-start)** - Integration tutorial
