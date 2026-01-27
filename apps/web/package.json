@@ -50,6 +50,9 @@
 		"clsx": "^2.1.1",
 		"convex": "catalog:",
 		"date-fns": "^4.1.0",
+		"fumadocs-core": "^16.4.9",
+		"fumadocs-mdx": "^14.2.6",
+		"fumadocs-ui": "^16.4.9",
 		"fuse.js": "^7.1.0",
 		"konva": "^10.2.0",
 		"lucide-react": "^0.563.0",
@@ -72,9 +75,10 @@
 		"web-vitals": "^5.1.0"
 	},
 	"devDependencies": {
-		"@react-grab/claude-code": "^0.0.98",
 		"@playwright/test": "^1.58.0",
+		"@react-grab/claude-code": "^0.0.98",
 		"@sentry/vite-plugin": "^4.7.0",
+		"@types/mdx": "^2.0.13",
 		"@types/node": "catalog:",
 		"@types/react": "catalog:",
 		"@types/react-dom": "catalog:",
