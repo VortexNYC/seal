@@ -3,13 +3,15 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
+import mdx from "fumadocs-mdx/vite";
 import { defineConfig } from "vite";
 
-export default defineConfig(({ command }) => {
+export default defineConfig(async ({ command }) => {
 	const enableSentry = command === "build";
 
 	return {
 		plugins: [
+			await mdx({}),
 			tailwindcss(),
 			tanstackRouter({}),
 			react(),
@@ -26,6 +28,7 @@ export default defineConfig(({ command }) => {
 				"@": path.resolve(__dirname, "./src"),
 			},
 			dedupe: ["react", "react-dom"],
+			noExternal: ["fumadocs-core", "fumadocs-ui"],
 		},
 
 		// PostHog reverse proxy to bypass ad blockers
@@ -34,12 +37,13 @@ export default defineConfig(({ command }) => {
 				"/ingest/static": {
 					target: "https://us-assets.i.posthog.com",
 					changeOrigin: true,
-					rewrite: (path) => path.replace(/^\/ingest\/static/, "/static"),
+					rewrite: (pathStr: string) =>
+						pathStr.replace(/^\/ingest\/static/, "/static"),
 				},
 				"/ingest": {
 					target: "https://us.i.posthog.com",
 					changeOrigin: true,
-					rewrite: (path) => path.replace(/^\/ingest/, ""),
+					rewrite: (pathStr: string) => pathStr.replace(/^\/ingest/, ""),
 				},
 			},
 		},
