@@ -5,13 +5,14 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import mdx from "fumadocs-mdx/vite";
 import { defineConfig } from "vite";
+import { docs } from "./source.config";
 
 export default defineConfig(async ({ command }) => {
 	const enableSentry = command === "build";
 
 	return {
 		plugins: [
-			await mdx({}),
+			await mdx({ docs: docs }, { updateViteConfig: true }),
 			tailwindcss(),
 			tanstackRouter({}),
 			react(),
@@ -52,6 +53,7 @@ export default defineConfig(async ({ command }) => {
 			sourcemap: true,
 			// SEA-136: Mobile performance optimization - chunk splitting for lazy loading
 			rollupOptions: {
+				external: ["fumadocs-mdx:collections/server"],
 				output: {
 					manualChunks: {
 						// Large PDF library - lazy loaded on signing/document pages
