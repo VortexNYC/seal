@@ -1,0 +1,5 @@
+{
+	"title": "Getting Started",
+	"pages": ["index", "authentication", "quick-start", "error-handling"],
+	"defaultOpen": true
+}
