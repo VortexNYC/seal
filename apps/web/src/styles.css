@@ -2,8 +2,6 @@
 
 @import 'tw-animate-css';
 
-@import 'fumadocs-ui/style.css';
-
 @custom-variant dark (&:is(.dark *));
 
 body {
