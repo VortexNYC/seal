@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
+import { RootProvider } from "fumadocs-ui/provider/tanstack";
 import { source } from "@/lib/source";
 
 export const Route = createFileRoute("/docs")({
@@ -8,8 +9,16 @@ export const Route = createFileRoute("/docs")({
 
 function DocsLayoutRoute() {
 	return (
-		<DocsLayout tree={source.pageTree}>
-			<Outlet />
-		</DocsLayout>
+		<RootProvider
+			search={{
+				options: {
+					type: "static",
+				},
+			}}
+		>
+			<DocsLayout tree={source.pageTree}>
+				<Outlet />
+			</DocsLayout>
+		</RootProvider>
 	);
 }

@@ -13,7 +13,7 @@ import { source } from "@/lib/source";
 export const Route = createFileRoute("/docs/$")({
 	component: DocsPageRoute,
 	loader: async ({ params }) => {
-		const slugs = (params as Record<string, string>).$?.split("/") ?? [];
+		const slugs = (params as Record<string, string>)._splat?.split("/") ?? [];
 		const page = source.getPage(slugs);
 
 		if (!page) {
