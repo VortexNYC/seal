@@ -11,8 +11,8 @@ The Seal MCP (Model Context Protocol) server enables AI assistants like Claude t
 
 The Model Context Protocol is an open standard that allows AI assistants to securely connect to external services. Seal's MCP server provides:
 
-- **25 Tools**: Complete API coverage for documents, recipients, templates, and signatures
-- **4 Resources**: Access to documents, templates, recipients, and webhooks
+- **27 Tools**: Complete API coverage for documents, recipients, templates, signatures, and uploads
+- **4 Resources**: Access to documents and templates with detail views
 - **Clerk OAuth**: Secure authentication with your Seal account
 - **Real-time Access**: Direct integration with your organization's data
 
@@ -56,7 +56,7 @@ Example prompts:
 
 ## Available Tools
 
-The MCP server provides 25 tools organized by category:
+The MCP server provides 27 tools organized by category:
 
 ### Document Tools (8 tools)
 
@@ -69,7 +69,7 @@ The MCP server provides 25 tools organized by category:
 - `seal_void_document` - Cancel document
 - `seal_download_document` - Get download URL
 
-### Recipient Tools (6 tools)
+### Recipient Tools (8 tools)
 
 - `seal_list_recipients` - List document recipients
 - `seal_get_recipient` - Get recipient details
@@ -77,6 +77,8 @@ The MCP server provides 25 tools organized by category:
 - `seal_update_recipient` - Update recipient info
 - `seal_remove_recipient` - Remove recipient
 - `seal_send_reminder` - Send signing reminder
+- `seal_add_recipients_bulk` - Add multiple recipients at once
+- `seal_update_recipients_bulk` - Update multiple recipients at once
 
 ### Template Tools (7 tools)
 
@@ -95,14 +97,19 @@ The MCP server provides 25 tools organized by category:
 - `seal_verify_document` - Verify document signatures
 - `seal_get_audit_trail` - Get complete audit trail
 
+### Upload Tools (2 tools)
+
+- `seal_upload_file` - Upload a PDF file from local path (stdio mode only)
+- `seal_upload_file_content` - Upload a PDF using base64-encoded content (all modes)
+
 ## Available Resources
 
 Resources provide read-only access to your Seal data:
 
 - `seal://documents` - Browse all documents
+- `seal://documents/{id}` - Get detailed document information
 - `seal://templates` - Browse all templates
-- `seal://recipients/{documentId}` - Browse document recipients
-- `seal://webhooks` - Browse webhook endpoints
+- `seal://templates/{id}` - Get detailed template with field definitions
 
 ## Authentication
 
