@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import path from "node:path";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
@@ -7,6 +8,8 @@ import mdx from "fumadocs-mdx/vite";
 import { defineConfig } from "vite";
 import { docs } from "./source.config";
 import { searchIndexPlugin } from "./src/plugins/search-index";
+
+const require = createRequire(import.meta.url);
 
 export default defineConfig(async ({ command }) => {
 	const enableSentry = command === "build";
@@ -28,17 +31,17 @@ export default defineConfig(async ({ command }) => {
 
 		resolve: {
 			alias: {
-				"@": path.resolve(__dirname, "./src"),
+				"@": path.resolve(import.meta.dirname, "./src"),
 				"fumadocs-mdx:collections/server": path.resolve(
-					__dirname,
+					import.meta.dirname,
 					"./.source/server.ts",
 				),
 				"fumadocs-mdx:collections/browser": path.resolve(
-					__dirname,
+					import.meta.dirname,
 					"./.source/browser.ts",
 				),
 				"fumadocs-mdx:collections/dynamic": path.resolve(
-					__dirname,
+					import.meta.dirname,
 					"./.source/dynamic.ts",
 				),
 			},
