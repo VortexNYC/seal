@@ -107,7 +107,7 @@ Retrieve a single document by ID.
 ### Endpoint
 
 ```
-GET /api/v1/documents/:id
+GET /api/v1/documents/get?id={id}
 ```
 
 ### Required Scope
@@ -118,13 +118,14 @@ GET /api/v1/documents/:id
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `id` | string | **Required.** Document ID |
 | `include_recipients` | boolean | Include recipient details in response |
 
 ### TypeScript Example
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v?include_recipients=true',
+  'https://seal.convex.site/api/v1/documents/get?id=jd7k8l9m0n1p2q3r4s5t6u7v&include_recipients=true',
   {
     headers: {
       'Authorization': 'Bearer ak_your_api_key_here'
@@ -138,7 +139,7 @@ const document = await response.json();
 ### cURL Example
 
 ```bash
-curl -X GET "https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v?include_recipients=true" \
+curl -X GET "https://seal.convex.site/api/v1/documents/get?id=jd7k8l9m0n1p2q3r4s5t6u7v&include_recipients=true" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -200,7 +201,6 @@ POST /api/v1/documents
 | `file_type` | string | Yes | MIME type (e.g., "application/pdf") |
 | `page_count` | number | No | Number of pages in document |
 | `deadline` | string | No | ISO 8601 signing deadline |
-| `recipients` | array | No | Array of recipient objects to add |
 
 ### TypeScript Example
 
@@ -218,15 +218,7 @@ const response = await fetch('https://seal.convex.site/api/v1/documents', {
     file_size: 245760,
     file_type: 'application/pdf',
     page_count: 5,
-    deadline: '2024-02-10T23:59:59Z',
-    recipients: [
-      {
-        email: 'john@example.com',
-        name: 'John Doe',
-        role: 'signer',
-        order: 1
-      }
-    ]
+    deadline: '2024-02-10T23:59:59Z'
   })
 });
 
@@ -260,7 +252,7 @@ curl -X POST https://seal.convex.site/api/v1/documents \
   "status": "draft",
   "created_at": "2024-01-27T10:30:00Z",
   "updated_at": "2024-01-27T10:30:00Z",
-  "recipients_count": 1,
+  "recipients_count": 0,
   "signed_count": 0,
   "deadline": "2024-02-10T23:59:59Z"
 }
@@ -273,12 +265,18 @@ Update a document's metadata.
 ### Endpoint
 
 ```
-PATCH /api/v1/documents/:id
+PUT /api/v1/documents/update?id={id}
 ```
 
 ### Required Scope
 
 `seal:documents:write`
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | **Required.** Document ID |
 
 ### Request Body
 
@@ -291,8 +289,8 @@ PATCH /api/v1/documents/:id
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v', {
-  method: 'PATCH',
+const response = await fetch('https://seal.convex.site/api/v1/documents/update?id=jd7k8l9m0n1p2q3r4s5t6u7v', {
+  method: 'PUT',
   headers: {
     'Authorization': 'Bearer ak_your_api_key_here',
     'Content-Type': 'application/json'
@@ -309,7 +307,7 @@ const document = await response.json();
 ### cURL Example
 
 ```bash
-curl -X PATCH https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v \
+curl -X PUT "https://seal.convex.site/api/v1/documents/update?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -325,31 +323,46 @@ Permanently delete a document.
 ### Endpoint
 
 ```
-DELETE /api/v1/documents/:id
+DELETE /api/v1/documents/delete?id={id}
 ```
 
 ### Required Scope
 
 `seal:documents:write`
 
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | **Required.** Document ID |
+
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v', {
+const response = await fetch('https://seal.convex.site/api/v1/documents/delete?id=jd7k8l9m0n1p2q3r4s5t6u7v', {
   method: 'DELETE',
   headers: {
     'Authorization': 'Bearer ak_your_api_key_here'
   }
 });
 
-// Returns 204 No Content on success
+const result = await response.json();
+// Returns { "deleted": true } with status 200
 ```
 
 ### cURL Example
 
 ```bash
-curl -X DELETE https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v \
+curl -X DELETE "https://seal.convex.site/api/v1/documents/delete?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "deleted": true
+}
 ```
 
 <Callout type="warn">
@@ -363,12 +376,18 @@ Send a document to all recipients for signing.
 ### Endpoint
 
 ```
-POST /api/v1/documents/:id/send
+POST /api/v1/documents/send?id={id}
 ```
 
 ### Required Scope
 
 `seal:documents:write`
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | **Required.** Document ID |
 
 ### Request Body
 
@@ -379,7 +398,7 @@ POST /api/v1/documents/:id/send
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/send', {
+const response = await fetch('https://seal.convex.site/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t6u7v', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer ak_your_api_key_here',
@@ -396,7 +415,7 @@ const result = await response.json();
 ### cURL Example
 
 ```bash
-curl -X POST https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/send \
+curl -X POST "https://seal.convex.site/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -422,12 +441,18 @@ Cancel a document and prevent further signing.
 ### Endpoint
 
 ```
-POST /api/v1/documents/:id/void
+POST /api/v1/documents/void?id={id}
 ```
 
 ### Required Scope
 
 `seal:documents:write`
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | **Required.** Document ID |
 
 ### Request Body
 
@@ -438,7 +463,7 @@ POST /api/v1/documents/:id/void
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/void', {
+const response = await fetch('https://seal.convex.site/api/v1/documents/void?id=jd7k8l9m0n1p2q3r4s5t6u7v', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer ak_your_api_key_here',
@@ -455,7 +480,7 @@ const result = await response.json();
 ### cURL Example
 
 ```bash
-curl -X POST https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/void \
+curl -X POST "https://seal.convex.site/api/v1/documents/void?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -485,17 +510,23 @@ Get a temporary download URL for the document PDF.
 ### Endpoint
 
 ```
-GET /api/v1/documents/:id/download
+GET /api/v1/documents/download?id={id}
 ```
 
 ### Required Scope
 
 `seal:documents:read`
 
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | **Required.** Document ID |
+
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/download', {
+const response = await fetch('https://seal.convex.site/api/v1/documents/download?id=jd7k8l9m0n1p2q3r4s5t6u7v', {
   headers: {
     'Authorization': 'Bearer ak_your_api_key_here'
   }
@@ -511,7 +542,7 @@ const blob = await fileResponse.blob();
 ### cURL Example
 
 ```bash
-curl -X GET https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/download \
+curl -X GET "https://seal.convex.site/api/v1/documents/download?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 

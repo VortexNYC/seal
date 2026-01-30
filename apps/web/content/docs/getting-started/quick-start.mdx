@@ -26,35 +26,24 @@ const uploadResponse = await fetch('https://seal.convex.site/api/v1/uploads/gene
   method: 'POST',
   headers: {
     'Authorization': 'Bearer ak_your_api_key_here',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    filename: 'contract.pdf',
-    contentType: 'application/pdf'
-  })
+  }
 });
 
-const { uploadUrl, storageId } = await uploadResponse.json();
+const { upload_url } = await uploadResponse.json();
 ```
 
 ### cURL
 
 ```bash
 curl -X POST https://seal.convex.site/api/v1/uploads/generate-url \
-  -H "Authorization: Bearer ak_your_api_key_here" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "filename": "contract.pdf",
-    "contentType": "application/pdf"
-  }'
+  -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
 ### Response
 
 ```json
 {
-  "uploadUrl": "https://storage.convex.cloud/...",
-  "storageId": "kg2h4j5k6l7m8n9p0q1r2s3t"
+  "upload_url": "https://storage.convex.cloud/..."
 }
 ```
 
@@ -69,7 +58,7 @@ Upload your PDF file to the generated URL:
 const fileBlob = await fetch('/path/to/contract.pdf').then(r => r.blob());
 
 // Upload to storage
-const uploadResult = await fetch(uploadUrl, {
+const uploadResult = await fetch(upload_url, {
   method: 'POST',
   body: fileBlob,
   headers: {
@@ -80,6 +69,8 @@ const uploadResult = await fetch(uploadUrl, {
 if (!uploadResult.ok) {
   throw new Error('File upload failed');
 }
+
+const { storageId } = await uploadResult.json();
 ```
 
 ### cURL
@@ -90,11 +81,13 @@ curl -X POST "https://storage.convex.cloud/..." \
   --data-binary "@contract.pdf"
 ```
 
-## Step 3: Create Document with Recipients
+## Step 3: Create Document and Add Recipients
 
-Create a document record and add recipients in a single request:
+Create a document record, then add recipients separately via the Recipients API:
 
-### TypeScript
+### Create the Document
+
+#### TypeScript
 
 ```typescript
 const documentResponse = await fetch('https://seal.convex.site/api/v1/documents', {
@@ -106,21 +99,9 @@ const documentResponse = await fetch('https://seal.convex.site/api/v1/documents'
   body: JSON.stringify({
     title: 'Service Agreement',
     description: 'Annual service contract for review and signature',
-    storageId: storageId, // from Step 1
-    recipients: [
-      {
-        email: 'john@example.com',
-        name: 'John Doe',
-        role: 'signer',
-        order: 1
-      },
-      {
-        email: 'jane@example.com',
-        name: 'Jane Smith',
-        role: 'signer',
-        order: 2
-      }
-    ]
+    storage_id: storageId, // from Step 2
+    file_size: fileBlob.size,
+    file_type: 'application/pdf'
   })
 });
 
@@ -128,7 +109,7 @@ const document = await documentResponse.json();
 console.log('Document created:', document.id);
 ```
 
-### cURL
+#### cURL
 
 ```bash
 curl -X POST https://seal.convex.site/api/v1/documents \
@@ -137,25 +118,13 @@ curl -X POST https://seal.convex.site/api/v1/documents \
   -d '{
     "title": "Service Agreement",
     "description": "Annual service contract for review and signature",
-    "storageId": "kg2h4j5k6l7m8n9p0q1r2s3t",
-    "recipients": [
-      {
-        "email": "john@example.com",
-        "name": "John Doe",
-        "role": "signer",
-        "order": 1
-      },
-      {
-        "email": "jane@example.com",
-        "name": "Jane Smith",
-        "role": "signer",
-        "order": 2
-      }
-    ]
+    "storage_id": "kg2h4j5k6l7m8n9p0q1r2s3t",
+    "file_size": 204800,
+    "file_type": "application/pdf"
   }'
 ```
 
-### Response
+#### Response
 
 ```json
 {
@@ -165,9 +134,57 @@ curl -X POST https://seal.convex.site/api/v1/documents \
   "status": "draft",
   "created_at": "2024-01-27T10:30:00Z",
   "updated_at": "2024-01-27T10:30:00Z",
-  "recipients_count": 2,
+  "recipients_count": 0,
   "signed_count": 0
 }
+```
+
+### Add Recipients
+
+Add each recipient to the document using the Recipients API:
+
+#### TypeScript
+
+```typescript
+const recipients = [
+  { email: 'john@example.com', name: 'John Doe', role: 'signer', order: 1 },
+  { email: 'jane@example.com', name: 'Jane Smith', role: 'signer', order: 2 }
+];
+
+for (const recipient of recipients) {
+  await fetch(`https://seal.convex.site/api/v1/recipients?document_id=${document.id}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ak_your_api_key_here',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(recipient)
+  });
+}
+```
+
+#### cURL
+
+```bash
+curl -X POST "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "name": "John Doe",
+    "role": "signer",
+    "order": 1
+  }'
+
+curl -X POST "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "jane@example.com",
+    "name": "Jane Smith",
+    "role": "signer",
+    "order": 2
+  }'
 ```
 
 ## Step 4: Send for Signing
@@ -177,7 +194,7 @@ Send the document to all recipients via email:
 ### TypeScript
 
 ```typescript
-const sendResponse = await fetch(`https://seal.convex.site/api/v1/documents/${document.id}/send`, {
+const sendResponse = await fetch(`https://seal.convex.site/api/v1/documents/send?id=${document.id}`, {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer ak_your_api_key_here',
@@ -195,7 +212,7 @@ console.log('Document sent:', result);
 ### cURL
 
 ```bash
-curl -X POST https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/send \
+curl -X POST "https://seal.convex.site/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -229,7 +246,7 @@ After sending the document:
 You can check the document status at any time:
 
 ```typescript
-const statusResponse = await fetch(`https://seal.convex.site/api/v1/documents/${document.id}`, {
+const statusResponse = await fetch(`https://seal.convex.site/api/v1/documents/get?id=${document.id}`, {
   headers: {
     'Authorization': 'Bearer ak_your_api_key_here'
   }

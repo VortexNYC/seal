@@ -50,9 +50,28 @@ The Seal API is organized into the following resource categories:
   </Card>
 </Cards>
 
+## URL Routing
+
+The Seal API uses query-parameter-based routing for resource operations. Since the underlying Convex HTTP router does not support path parameters, resource IDs are passed as query parameters:
+
+```
+GET  /api/v1/documents              # List documents
+GET  /api/v1/documents/get?id={id}  # Get a specific document
+PUT  /api/v1/documents/update?id={id}  # Update a document
+DELETE /api/v1/documents/delete?id={id}  # Delete a document
+POST /api/v1/documents/send?id={id}  # Send a document
+```
+
+For nested resources like recipients and signatures, the parent document ID is also passed as a query parameter:
+
+```
+GET  /api/v1/recipients?document_id={docId}  # List recipients
+POST /api/v1/recipients?document_id={docId}  # Add a recipient
+```
+
 ## Request Format
 
-All POST, PATCH, and PUT requests must include a `Content-Type: application/json` header and a JSON-encoded body.
+All POST and PUT requests must include a `Content-Type: application/json` header and a JSON-encoded body.
 
 ### Example Request
 
@@ -115,12 +134,12 @@ See the [Error Handling Guide](/docs/getting-started/error-handling) for complet
 
 ## Rate Limiting
 
-The API enforces rate limits to ensure fair usage:
+Rate limiting infrastructure is in place and will be enforced in a future release. Planned limits:
 
 - **60 requests per minute** per API key
 - **1000 requests per hour** per API key
 
-Rate limit information is included in response headers:
+When enforced, rate limit information will be included in response headers:
 
 ```
 X-RateLimit-Limit: 60
@@ -128,7 +147,7 @@ X-RateLimit-Remaining: 45
 X-RateLimit-Reset: 1706356800
 ```
 
-When you exceed the rate limit, you'll receive a `429 Too Many Requests` response. Implement exponential backoff and retry logic to handle rate limits gracefully.
+We recommend implementing exponential backoff and retry logic to handle future rate limits gracefully.
 
 ## Pagination
 
