@@ -18,6 +18,7 @@
 			"!**/.turbo",
 			"!**/.clerk",
 			"!**/node_modules",
+			"!**/.source",
 			"!**/routeTree.gen.ts",
 			"!**/test-results",
 			"!**/playwright-report"
