@@ -188,6 +188,11 @@ function buildNavSections({
 			url: buildOrganizationPath(slug, "/settings/developer/webhooks"),
 			visible: canView(permissionFlags?.canManageWebhooks),
 		},
+		{
+			title: "Documentation",
+			url: "/docs",
+			visible: true,
+		},
 	].filter((item) => item.visible);
 
 	const sections = [

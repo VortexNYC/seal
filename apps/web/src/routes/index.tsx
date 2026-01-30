@@ -56,6 +56,12 @@ function HomePage() {
 							>
 								Pricing
 							</a>
+							<Link
+								to="/docs"
+								className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-brand-700 dark:hover:text-brand-400 transition-colors"
+							>
+								Docs
+							</Link>
 							<SignedIn>
 								<Button
 									asChild
