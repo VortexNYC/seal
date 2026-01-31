@@ -1,0 +1,73 @@
+/*
+ * Seal Documentation Theme
+ * Overrides fumadocs-ui default colors with Seal brand palette
+ */
+
+:root {
+  /* Primary brand blue - used for links, active sidebar, accents */
+  --color-fd-primary: oklch(0.32 0.110 250);
+  --color-fd-primary-foreground: oklch(0.985 0 0);
+
+  /* Slightly tinted backgrounds for warmth */
+  --color-fd-background: oklch(0.985 0.003 250);
+  --color-fd-foreground: oklch(0.141 0.005 285.823);
+
+  /* Cards with subtle brand tint */
+  --color-fd-card: oklch(0.975 0.005 250);
+  --color-fd-card-foreground: oklch(0.141 0.005 285.823);
+
+  /* Sidebar and secondary surfaces */
+  --color-fd-secondary: oklch(0.96 0.008 250);
+  --color-fd-secondary-foreground: oklch(0.21 0.006 285.885);
+
+  /* Accent for hover states */
+  --color-fd-accent: oklch(0.93 0.025 250 / 0.6);
+  --color-fd-accent-foreground: oklch(0.20 0.080 250);
+
+  /* Muted text */
+  --color-fd-muted: oklch(0.96 0.005 250);
+  --color-fd-muted-foreground: oklch(0.50 0.020 250);
+
+  /* Borders with brand tint */
+  --color-fd-border: oklch(0.90 0.012 250 / 0.5);
+
+  /* Focus ring */
+  --color-fd-ring: oklch(0.50 0.130 250);
+
+  /* Popovers */
+  --color-fd-popover: oklch(0.99 0.002 250);
+  --color-fd-popover-foreground: oklch(0.20 0.006 285.885);
+}
+
+.dark {
+  --color-fd-primary: oklch(0.65 0.140 250);
+  --color-fd-primary-foreground: oklch(0.985 0 0);
+
+  --color-fd-background: oklch(0.13 0.008 250);
+  --color-fd-foreground: oklch(0.92 0.005 250);
+
+  --color-fd-card: oklch(0.16 0.010 250);
+  --color-fd-card-foreground: oklch(0.92 0.005 250);
+
+  --color-fd-secondary: oklch(0.18 0.012 250);
+  --color-fd-secondary-foreground: oklch(0.90 0.005 250);
+
+  --color-fd-accent: oklch(0.28 0.030 250 / 0.5);
+  --color-fd-accent-foreground: oklch(0.85 0.060 250);
+
+  --color-fd-muted: oklch(0.18 0.010 250);
+  --color-fd-muted-foreground: oklch(0.65 0.020 250);
+
+  --color-fd-border: oklch(0.25 0.015 250 / 0.4);
+
+  --color-fd-ring: oklch(0.55 0.140 250);
+
+  --color-fd-popover: oklch(0.15 0.010 250);
+  --color-fd-popover-foreground: oklch(0.88 0.005 250);
+}
+
+/* Center the logo in the sidebar header */
+#nd-docs-layout aside [class*="inline-flex"][class*="me-auto"][href="/docs"] {
+  margin-inline-end: unset;
+  margin-inline: auto;
+}

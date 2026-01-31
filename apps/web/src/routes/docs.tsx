@@ -1,7 +1,9 @@
 import "fumadocs-ui/style.css";
+import "@/styles/docs-theme.css";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
+import { SealLogoBadgeFixed } from "@/components/seal-logo-fixed";
 import { source } from "@/lib/source";
 
 export const Route = createFileRoute("/docs")({
@@ -17,7 +19,13 @@ function DocsLayoutRoute() {
 				},
 			}}
 		>
-			<DocsLayout tree={source.pageTree}>
+			<DocsLayout
+				tree={source.pageTree}
+				nav={{
+					title: <SealLogoBadgeFixed size={48} withText />,
+					url: "/docs",
+				}}
+			>
 				<Outlet />
 			</DocsLayout>
 		</RootProvider>
