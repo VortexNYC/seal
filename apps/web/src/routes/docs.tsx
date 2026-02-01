@@ -22,7 +22,11 @@ function DocsLayoutRoute() {
 			<DocsLayout
 				tree={source.pageTree}
 				nav={{
-					title: <SealLogoBadgeFixed size={48} withText />,
+					title: (
+						<span className="mx-auto">
+							<SealLogoBadgeFixed size={48} withText />
+						</span>
+					),
 					url: "/docs",
 				}}
 			>
