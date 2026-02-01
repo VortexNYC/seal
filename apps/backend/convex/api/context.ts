@@ -163,7 +163,7 @@ export const SCOPE_PERMISSION_MAP: Record<ApiScope, string[]> = {
 	[API_SCOPES.RECIPIENTS_READ]: ["documents:view"],
 	[API_SCOPES.RECIPIENTS_WRITE]: ["documents:edit"],
 	[API_SCOPES.SIGNATURES_READ]: ["documents:view", "audit:view"],
-	[API_SCOPES.WEBHOOKS_MANAGE]: ["webhooks:manage"],
+	[API_SCOPES.WEBHOOKS_MANAGE]: ["settings:integrations"],
 };
 
 /**
