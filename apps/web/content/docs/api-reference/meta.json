@@ -7,6 +7,5 @@
 		"signatures",
 		"webhooks",
 		"uploads"
-	],
-	"defaultOpen": true
+	]
 }
