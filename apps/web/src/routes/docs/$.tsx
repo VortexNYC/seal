@@ -10,6 +10,7 @@ import {
 	DocsDescription,
 	DocsPage,
 	DocsTitle,
+	PageLastUpdate,
 } from "fumadocs-ui/page";
 import { Suspense, useMemo } from "react";
 import { source } from "@/lib/source";
@@ -39,6 +40,8 @@ function DocsPageRoute() {
 	}
 
 	const MDX = page.data.body;
+	const lastModified = (page.data as DocData & { lastModified?: Date })
+		.lastModified;
 
 	return (
 		<DocsPage key={page.url} toc={page.data.toc}>
@@ -49,6 +52,7 @@ function DocsPageRoute() {
 					<MDX components={defaultMdxComponents} />
 				</Suspense>
 			</DocsBody>
+			{lastModified ? <PageLastUpdate date={lastModified} /> : null}
 		</DocsPage>
 	);
 }
