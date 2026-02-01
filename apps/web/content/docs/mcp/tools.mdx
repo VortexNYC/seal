@@ -1,11 +1,11 @@
 ---
 title: MCP Tools Reference
-description: Complete reference for all 25 Seal MCP tools
+description: Complete reference for all 27 Seal MCP tools
 ---
 
 # MCP Tools Reference
 
-The Seal MCP server provides 25 tools that give AI assistants complete access to your Seal account. All tools require OAuth authentication and respect your organization's permissions.
+The Seal MCP server provides 27 tools that give AI assistants complete access to your Seal account. All tools require OAuth authentication and respect your organization's permissions.
 
 ## Document Tools
 
@@ -102,6 +102,26 @@ Send a reminder email to a recipient.
 
 **Returns:** Reminder confirmation
 
+### seal_add_recipients_bulk
+
+Add multiple recipients to a document at once.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+- `recipients` (array, required): Array of recipient objects with email, name, role, and optional order
+
+**Returns:** Array of created recipient objects with success/failure status
+
+### seal_update_recipients_bulk
+
+Update multiple recipients for a document at once.
+
+**Parameters:**
+- `documentId` (string, required): Document ID
+- `recipients` (array, required): Array of recipient updates with recipientId and fields to update
+
+**Returns:** Array of update results with success/failure status
+
 ## Template Tools
 
 ### seal_list_templates
@@ -138,11 +158,10 @@ Create a new document from a template.
 
 **Parameters:**
 - `templateId` (string, required): Template ID
-- `title` (string, required): Document title
-- `fieldValues` (object, optional): Field values to populate
-- `recipients` (array, optional): Recipients to add
+- `title` (string, optional): Document title (defaults to template name)
+- `description` (string, optional): Document description
 
-**Returns:** Created document object
+**Returns:** Created document object with template fields
 
 ## Signature Tools
 
@@ -173,23 +192,46 @@ Get the complete audit trail for a document.
 
 **Returns:** Array of audit trail events
 
+## Upload Tools
+
+### seal_upload_file
+
+Upload a PDF file from a local file path. Only available in stdio mode.
+
+**Parameters:**
+- `filePath` (string, required): Absolute path to the PDF file
+
+**Returns:** Storage ID for use with `seal_create_document`
+
+### seal_upload_file_content
+
+Upload a PDF using base64-encoded content. Available in all modes.
+
+**Parameters:**
+- `content` (string, required): Base64-encoded PDF file content
+- `filename` (string, optional): Original filename
+
+**Returns:** Storage ID for use with `seal_create_document`
+
 ## Tool Categories
 
 | Category | Tool Count | Description |
 |----------|------------|-------------|
 | Documents | 8 | Create, manage, and send documents |
-| Recipients | 6 | Manage document recipients and reminders |
+| Recipients | 8 | Manage document recipients, reminders, and bulk operations |
 | Templates | 7 | Create and use document templates |
 | Signatures | 4 | Verify signatures and access audit trails |
+| Uploads | 2 | Upload PDF files for document creation |
 
 ## Common Workflows
 
 ### Create and Send Document
 
 ```
-1. seal_create_document - Create document
-2. seal_add_recipient - Add recipients
-3. seal_send_document - Send for signing
+1. seal_upload_file / seal_upload_file_content - Upload PDF
+2. seal_create_document - Create document with storage ID
+3. seal_add_recipient - Add recipients (or seal_add_recipients_bulk)
+4. seal_send_document - Send for signing
 ```
 
 ### Use Template

@@ -69,7 +69,7 @@ Retrieve all recipients for a document.
 ### Endpoint
 
 ```
-GET /api/v1/documents/:documentId/recipients
+GET /api/v1/recipients?document_id={documentId}
 ```
 
 ### Required Scope
@@ -80,7 +80,7 @@ GET /api/v1/documents/:documentId/recipients
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients',
+  'https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v',
   {
     headers: {
       'Authorization': 'Bearer ak_your_api_key_here'
@@ -94,7 +94,7 @@ const recipients = await response.json();
 ### cURL Example
 
 ```bash
-curl -X GET https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients \
+curl -X GET "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -130,7 +130,7 @@ Retrieve a single recipient by ID.
 ### Endpoint
 
 ```
-GET /api/v1/documents/:documentId/recipients/:id
+GET /api/v1/recipients/get?document_id={documentId}&id={id}
 ```
 
 ### Required Scope
@@ -141,7 +141,7 @@ GET /api/v1/documents/:documentId/recipients/:id
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients/rec_abc123',
+  'https://seal.convex.site/api/v1/recipients/get?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123',
   {
     headers: {
       'Authorization': 'Bearer ak_your_api_key_here'
@@ -155,7 +155,7 @@ const recipient = await response.json();
 ### cURL Example
 
 ```bash
-curl -X GET https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients/rec_abc123 \
+curl -X GET "https://seal.convex.site/api/v1/recipients/get?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -184,7 +184,7 @@ Add a new recipient to a document.
 ### Endpoint
 
 ```
-POST /api/v1/documents/:documentId/recipients
+POST /api/v1/recipients?document_id={documentId}
 ```
 
 ### Required Scope
@@ -205,7 +205,7 @@ POST /api/v1/documents/:documentId/recipients
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients',
+  'https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v',
   {
     method: 'POST',
     headers: {
@@ -228,7 +228,7 @@ const recipient = await response.json();
 ### cURL Example
 
 ```bash
-curl -X POST https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients \
+curl -X POST "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -259,7 +259,7 @@ Update a recipient's information.
 ### Endpoint
 
 ```
-PATCH /api/v1/documents/:documentId/recipients/:id
+PUT /api/v1/recipients/update?document_id={documentId}&id={id}
 ```
 
 ### Required Scope
@@ -278,9 +278,9 @@ PATCH /api/v1/documents/:documentId/recipients/:id
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients/rec_abc123',
+  'https://seal.convex.site/api/v1/recipients/update?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123',
   {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       'Authorization': 'Bearer ak_your_api_key_here',
       'Content-Type': 'application/json'
@@ -298,7 +298,7 @@ const recipient = await response.json();
 ### cURL Example
 
 ```bash
-curl -X PATCH https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients/rec_abc123 \
+curl -X PUT "https://seal.convex.site/api/v1/recipients/update?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -318,7 +318,7 @@ Remove a recipient from a document.
 ### Endpoint
 
 ```
-DELETE /api/v1/documents/:documentId/recipients/:id
+DELETE /api/v1/recipients/delete?document_id={documentId}&id={id}
 ```
 
 ### Required Scope
@@ -329,7 +329,7 @@ DELETE /api/v1/documents/:documentId/recipients/:id
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients/rec_abc123',
+  'https://seal.convex.site/api/v1/recipients/delete?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123',
   {
     method: 'DELETE',
     headers: {
@@ -338,13 +338,14 @@ const response = await fetch(
   }
 );
 
-// Returns 204 No Content on success
+const result = await response.json();
+// Returns { "deleted": true } with 200 on success
 ```
 
 ### cURL Example
 
 ```bash
-curl -X DELETE https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients/rec_abc123 \
+curl -X DELETE "https://seal.convex.site/api/v1/recipients/delete?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -359,7 +360,7 @@ Send a reminder email to a recipient.
 ### Endpoint
 
 ```
-POST /api/v1/documents/:documentId/recipients/:id/remind
+POST /api/v1/recipients/remind?document_id={documentId}&id={id}
 ```
 
 ### Required Scope
@@ -376,7 +377,7 @@ POST /api/v1/documents/:documentId/recipients/:id/remind
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients/rec_abc123/remind',
+  'https://seal.convex.site/api/v1/recipients/remind?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123',
   {
     method: 'POST',
     headers: {
@@ -395,7 +396,7 @@ const result = await response.json();
 ### cURL Example
 
 ```bash
-curl -X POST https://seal.convex.site/api/v1/documents/jd7k8l9m0n1p2q3r4s5t6u7v/recipients/rec_abc123/remind \
+curl -X POST "https://seal.convex.site/api/v1/recipients/remind?document_id=jd7k8l9m0n1p2q3r4s5t6u7v&id=rec_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -425,7 +426,7 @@ Use the `order` field to enforce a signing sequence. Recipients with lower order
 
 ```typescript
 // Add recipients in sequence
-await fetch('https://seal.convex.site/api/v1/documents/doc123/recipients', {
+await fetch('https://seal.convex.site/api/v1/recipients?document_id=doc123', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer ak_xxx',
@@ -439,7 +440,7 @@ await fetch('https://seal.convex.site/api/v1/documents/doc123/recipients', {
   })
 });
 
-await fetch('https://seal.convex.site/api/v1/documents/doc123/recipients', {
+await fetch('https://seal.convex.site/api/v1/recipients?document_id=doc123', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer ak_xxx',

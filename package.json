@@ -49,7 +49,7 @@
 		"@types/bun": "catalog:",
 		"@types/node": "catalog:",
 		"knip": "catalog:",
-		"turbo": "^2.7.6",
+		"turbo": "^2.8.0",
 		"typescript": "catalog:"
 	}
 }

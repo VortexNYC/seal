@@ -1932,4 +1932,346 @@ http.route({
 	),
 });
 
+// =============================================================================
+// WEBHOOKS API
+// =============================================================================
+
+/**
+ * List Webhook Endpoints
+ *
+ * @route GET /api/v1/webhooks
+ * @scope seal:webhooks:manage
+ *
+ * @returns List of webhook endpoints for the organization
+ */
+http.route({
+	path: "/api/v1/webhooks",
+	method: "GET",
+	handler: apiHttpAction(
+		async ({ ctx, auth }) => {
+			const endpoints = await ctx.runQuery(
+				internal.api.v1.webhooks.listEndpoints,
+				{
+					userId: auth.userId,
+					organizationId: auth.organizationId,
+				},
+			);
+
+			return apiResponse(200, { data: endpoints });
+		},
+		{ scope: API_SCOPES.WEBHOOKS_MANAGE },
+	),
+});
+
+/**
+ * Get Webhook Endpoint
+ *
+ * @route GET /api/v1/webhooks/get
+ * @scope seal:webhooks:manage
+ *
+ * @queryparam {string} id - Webhook endpoint ID (required)
+ *
+ * @returns Webhook endpoint details
+ */
+http.route({
+	path: "/api/v1/webhooks/get",
+	method: "GET",
+	handler: apiHttpAction(
+		async ({ ctx, auth, query }) => {
+			if (!query.id) {
+				throw new ApiError(
+					400,
+					"Webhook endpoint ID is required",
+					"VALIDATION_ERROR",
+				);
+			}
+
+			const endpoint = await ctx.runQuery(
+				internal.api.v1.webhooks.getEndpoint,
+				{
+					userId: auth.userId,
+					organizationId: auth.organizationId,
+					endpointId: query.id as Id<"webhook_endpoints">,
+				},
+			);
+
+			if (!endpoint) {
+				throw new ApiError(
+					404,
+					"Webhook endpoint not found",
+					"WEBHOOK_NOT_FOUND",
+				);
+			}
+
+			return apiResponse(200, endpoint);
+		},
+		{ scope: API_SCOPES.WEBHOOKS_MANAGE },
+	),
+});
+
+/**
+ * Create Webhook Endpoint
+ *
+ * @route POST /api/v1/webhooks
+ * @scope seal:webhooks:manage
+ *
+ * @bodyparam {string} name - Endpoint name (required)
+ * @bodyparam {string} url - HTTPS URL for webhook delivery (required)
+ * @bodyparam {string[]} events - Event types to subscribe to (required)
+ * @bodyparam {string} [description] - Optional description
+ *
+ * @returns Created endpoint with signing secret (shown only once)
+ */
+http.route({
+	path: "/api/v1/webhooks",
+	method: "POST",
+	handler: apiHttpAction(
+		async ({ ctx, auth, request }) => {
+			const body = await parseJsonBody<{
+				name?: string;
+				url?: string;
+				events?: string[];
+				description?: string;
+			}>(request);
+
+			validateRequiredFields(body, ["name", "url", "events"]);
+
+			const result = await ctx.runMutation(
+				internal.api.v1.webhooks.createEndpoint,
+				{
+					userId: auth.userId,
+					organizationId: auth.organizationId,
+					name: body.name as string,
+					url: body.url as string,
+					events: body.events as string[],
+					description: body.description,
+				},
+			);
+
+			if (!result.success) {
+				throw new ApiError(
+					400,
+					result.error ?? "Failed to create webhook endpoint",
+					"VALIDATION_ERROR",
+				);
+			}
+
+			// Fetch the created endpoint
+			const endpoint = await ctx.runQuery(
+				internal.api.v1.webhooks.getEndpoint,
+				{
+					userId: auth.userId,
+					organizationId: auth.organizationId,
+					endpointId: result.endpointId as Id<"webhook_endpoints">,
+				},
+			);
+
+			return apiResponse(201, {
+				...endpoint,
+				secret: result.secret,
+			});
+		},
+		{ scope: API_SCOPES.WEBHOOKS_MANAGE },
+	),
+});
+
+/**
+ * Update Webhook Endpoint
+ *
+ * @route PUT /api/v1/webhooks/update
+ * @scope seal:webhooks:manage
+ *
+ * @queryparam {string} id - Webhook endpoint ID (required)
+ * @bodyparam {string} [name] - New name
+ * @bodyparam {string} [url] - New HTTPS URL
+ * @bodyparam {string[]} [events] - New event subscriptions
+ * @bodyparam {string} [description] - New description
+ * @bodyparam {string} [status] - New status (active, paused, disabled)
+ *
+ * @returns Updated endpoint
+ */
+http.route({
+	path: "/api/v1/webhooks/update",
+	method: "PUT",
+	handler: apiHttpAction(
+		async ({ ctx, auth, query, request }) => {
+			if (!query.id) {
+				throw new ApiError(
+					400,
+					"Webhook endpoint ID is required",
+					"VALIDATION_ERROR",
+				);
+			}
+
+			const body = await parseJsonBody<{
+				name?: string;
+				url?: string;
+				events?: string[];
+				description?: string;
+				status?: "active" | "paused" | "disabled";
+			}>(request);
+
+			const result = await ctx.runMutation(
+				internal.api.v1.webhooks.updateEndpoint,
+				{
+					userId: auth.userId,
+					organizationId: auth.organizationId,
+					endpointId: query.id as Id<"webhook_endpoints">,
+					name: body.name,
+					url: body.url,
+					events: body.events,
+					description: body.description,
+					status: body.status,
+				},
+			);
+
+			if (!result.success) {
+				if (result.error?.includes("not found")) {
+					throw new ApiError(404, result.error, "WEBHOOK_NOT_FOUND");
+				}
+				throw new ApiError(
+					400,
+					result.error ?? "Update failed",
+					"VALIDATION_ERROR",
+				);
+			}
+
+			// Fetch the updated endpoint
+			const endpoint = await ctx.runQuery(
+				internal.api.v1.webhooks.getEndpoint,
+				{
+					userId: auth.userId,
+					organizationId: auth.organizationId,
+					endpointId: query.id as Id<"webhook_endpoints">,
+				},
+			);
+
+			return apiResponse(200, endpoint);
+		},
+		{ scope: API_SCOPES.WEBHOOKS_MANAGE },
+	),
+});
+
+/**
+ * Delete Webhook Endpoint
+ *
+ * @route DELETE /api/v1/webhooks/delete
+ * @scope seal:webhooks:manage
+ *
+ * @queryparam {string} id - Webhook endpoint ID (required)
+ *
+ * @returns Success confirmation
+ */
+http.route({
+	path: "/api/v1/webhooks/delete",
+	method: "DELETE",
+	handler: apiHttpAction(
+		async ({ ctx, auth, query }) => {
+			if (!query.id) {
+				throw new ApiError(
+					400,
+					"Webhook endpoint ID is required",
+					"VALIDATION_ERROR",
+				);
+			}
+
+			const result = await ctx.runMutation(
+				internal.api.v1.webhooks.deleteEndpoint,
+				{
+					userId: auth.userId,
+					organizationId: auth.organizationId,
+					endpointId: query.id as Id<"webhook_endpoints">,
+				},
+			);
+
+			if (!result.success) {
+				if (result.error?.includes("not found")) {
+					throw new ApiError(404, result.error, "WEBHOOK_NOT_FOUND");
+				}
+				throw new ApiError(
+					400,
+					result.error ?? "Delete failed",
+					"VALIDATION_ERROR",
+				);
+			}
+
+			return apiResponse(200, { deleted: true });
+		},
+		{ scope: API_SCOPES.WEBHOOKS_MANAGE },
+	),
+});
+
+/**
+ * Rotate Webhook Secret
+ *
+ * @route POST /api/v1/webhooks/rotate-secret
+ * @scope seal:webhooks:manage
+ *
+ * @queryparam {string} id - Webhook endpoint ID (required)
+ *
+ * @returns New signing secret (shown only once)
+ */
+http.route({
+	path: "/api/v1/webhooks/rotate-secret",
+	method: "POST",
+	handler: apiHttpAction(
+		async ({ ctx, auth, query }) => {
+			if (!query.id) {
+				throw new ApiError(
+					400,
+					"Webhook endpoint ID is required",
+					"VALIDATION_ERROR",
+				);
+			}
+
+			const result = await ctx.runMutation(
+				internal.api.v1.webhooks.rotateSecret,
+				{
+					userId: auth.userId,
+					organizationId: auth.organizationId,
+					endpointId: query.id as Id<"webhook_endpoints">,
+				},
+			);
+
+			if (!result.success) {
+				if (result.error?.includes("not found")) {
+					throw new ApiError(404, result.error, "WEBHOOK_NOT_FOUND");
+				}
+				throw new ApiError(
+					400,
+					result.error ?? "Rotation failed",
+					"VALIDATION_ERROR",
+				);
+			}
+
+			return apiResponse(200, { secret: result.secret });
+		},
+		{ scope: API_SCOPES.WEBHOOKS_MANAGE },
+	),
+});
+
+/**
+ * Get Available Webhook Event Types
+ *
+ * @route GET /api/v1/webhooks/event-types
+ * @scope seal:webhooks:manage
+ *
+ * @returns List of available event types with descriptions
+ */
+http.route({
+	path: "/api/v1/webhooks/event-types",
+	method: "GET",
+	handler: apiHttpAction(
+		async ({ ctx }) => {
+			const eventTypes = await ctx.runQuery(
+				internal.api.v1.webhooks.getEventTypes,
+				{},
+			);
+
+			return apiResponse(200, { data: eventTypes });
+		},
+		{ scope: API_SCOPES.WEBHOOKS_MANAGE },
+	),
+});
+
 export default http;

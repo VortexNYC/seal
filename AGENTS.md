@@ -1,8 +1,8 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-01-26 13:04 -03
-**Commit:** e65cf75
-**Branch:** main
+**Generated:** 2026-01-31 14:29 -03
+**Commit:** f637968
+**Branch:** guilherme/sea-149-363-create-api-documentation
 
 ## OVERVIEW
 Seal is a Bun + Turborepo monorepo: React 19 web app (TanStack Router + Vite), Convex backend, MCP server, and React Email templates. Auth via Clerk; UI Tailwind v4 + Shadcn.

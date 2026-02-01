@@ -46,7 +46,7 @@ Retrieve all signatures for a document.
 ### Endpoint
 
 ```
-GET /api/v1/documents/:documentId/signatures
+GET /api/v1/signatures?document_id={documentId}
 ```
 
 ### Required Scope
@@ -57,7 +57,7 @@ GET /api/v1/documents/:documentId/signatures
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/documents/doc_xyz789/signatures',
+  'https://seal.convex.site/api/v1/signatures?document_id=doc_xyz789',
   {
     headers: {
       'Authorization': 'Bearer ak_your_api_key_here'
@@ -71,7 +71,7 @@ const signatures = await response.json();
 ### cURL Example
 
 ```bash
-curl -X GET https://seal.convex.site/api/v1/documents/doc_xyz789/signatures \
+curl -X GET https://seal.convex.site/api/v1/signatures?document_id=doc_xyz789 \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -99,7 +99,7 @@ Retrieve a single signature by ID.
 ### Endpoint
 
 ```
-GET /api/v1/signatures/:id
+GET /api/v1/signatures/get?document_id={documentId}&id={id}
 ```
 
 ### Required Scope
@@ -109,7 +109,7 @@ GET /api/v1/signatures/:id
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/signatures/sig_abc123', {
+const response = await fetch('https://seal.convex.site/api/v1/signatures/get?document_id=doc_xyz789&id=sig_abc123', {
   headers: {
     'Authorization': 'Bearer ak_your_api_key_here'
   }
@@ -121,7 +121,7 @@ const signature = await response.json();
 ### cURL Example
 
 ```bash
-curl -X GET https://seal.convex.site/api/v1/signatures/sig_abc123 \
+curl -X GET "https://seal.convex.site/api/v1/signatures/get?document_id=doc_xyz789&id=sig_abc123" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -132,7 +132,7 @@ Verify the authenticity and integrity of a signed document.
 ### Endpoint
 
 ```
-POST /api/v1/documents/:documentId/verify
+GET /api/v1/signatures/verify?document_id={documentId}
 ```
 
 ### Required Scope
@@ -143,9 +143,8 @@ POST /api/v1/documents/:documentId/verify
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/documents/doc_xyz789/verify',
+  'https://seal.convex.site/api/v1/signatures/verify?document_id=doc_xyz789',
   {
-    method: 'POST',
     headers: {
       'Authorization': 'Bearer ak_your_api_key_here'
     }
@@ -158,7 +157,7 @@ const verification = await response.json();
 ### cURL Example
 
 ```bash
-curl -X POST https://seal.convex.site/api/v1/documents/doc_xyz789/verify \
+curl -X GET "https://seal.convex.site/api/v1/signatures/verify?document_id=doc_xyz789" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 
@@ -196,7 +195,7 @@ Retrieve the complete audit trail for a document.
 ### Endpoint
 
 ```
-GET /api/v1/documents/:documentId/audit
+GET /api/v1/signatures/audit?document_id={documentId}
 ```
 
 ### Required Scope
@@ -207,7 +206,7 @@ GET /api/v1/documents/:documentId/audit
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/documents/doc_xyz789/audit',
+  'https://seal.convex.site/api/v1/signatures/audit?document_id=doc_xyz789',
   {
     headers: {
       'Authorization': 'Bearer ak_your_api_key_here'
@@ -221,7 +220,7 @@ const auditTrail = await response.json();
 ### cURL Example
 
 ```bash
-curl -X GET https://seal.convex.site/api/v1/documents/doc_xyz789/audit \
+curl -X GET "https://seal.convex.site/api/v1/signatures/audit?document_id=doc_xyz789" \
   -H "Authorization: Bearer ak_your_api_key_here"
 ```
 

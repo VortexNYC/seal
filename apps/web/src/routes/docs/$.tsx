@@ -1,4 +1,8 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	notFound,
+	useRouterState,
+} from "@tanstack/react-router";
 import type { DocData } from "fumadocs-mdx/runtime/types";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import {
@@ -6,30 +10,41 @@ import {
 	DocsDescription,
 	DocsPage,
 	DocsTitle,
+	PageLastUpdate,
 } from "fumadocs-ui/page";
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import { source } from "@/lib/source";
 
 export const Route = createFileRoute("/docs/$")({
 	component: DocsPageRoute,
-	loader: async ({ params }) => {
-		const slugs = (params as Record<string, string>).$?.split("/") ?? [];
-		const page = source.getPage(slugs);
-
-		if (!page) {
-			throw notFound();
-		}
-
-		return { page: page as typeof page & { data: DocData } };
-	},
 });
 
 function DocsPageRoute() {
-	const { page } = Route.useLoaderData();
+	const pathname = useRouterState({
+		select: (state) => state.location.pathname,
+	});
+
+	const slugs = useMemo(() => {
+		const path = pathname.replace(/^\/docs\/?/, "");
+		return path ? path.split("/") : [];
+	}, [pathname]);
+
+	const page = useMemo(() => {
+		const p = source.getPage(slugs);
+		if (!p) return null;
+		return p as typeof p & { data: DocData };
+	}, [slugs]);
+
+	if (!page) {
+		throw notFound();
+	}
+
 	const MDX = page.data.body;
+	const lastModified = (page.data as DocData & { lastModified?: Date })
+		.lastModified;
 
 	return (
-		<DocsPage toc={page.data.toc}>
+		<DocsPage key={page.url} toc={page.data.toc}>
 			<DocsTitle>{page.data.title}</DocsTitle>
 			<DocsDescription>{page.data.description}</DocsDescription>
 			<DocsBody>
@@ -37,6 +52,7 @@ function DocsPageRoute() {
 					<MDX components={defaultMdxComponents} />
 				</Suspense>
 			</DocsBody>
+			{lastModified ? <PageLastUpdate date={lastModified} /> : null}
 		</DocsPage>
 	);
 }
