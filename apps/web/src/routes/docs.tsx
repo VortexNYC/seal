@@ -16,6 +16,7 @@ function DocsLayoutRoute() {
 			search={{
 				options: {
 					type: "static",
+					api: "/api/search.json",
 				},
 			}}
 		>

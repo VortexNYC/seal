@@ -1,18 +1,19 @@
 import type { Plugin, ViteDevServer } from "vite";
 
+const SEARCH_INDEX_ROUTE = "/api/search.json";
+
 /**
- * Vite plugin that serves the Fumadocs search index at /api/search.
+ * Vite plugin that serves the Fumadocs search index in dev mode.
  *
  * During dev: uses ssrLoadModule with node:path override to generate
  * the search index server-side while the browser uses path-browserify.
- * During build: the static search client (type: "static") builds the index
- * client-side from the bundled page data, so no build-time generation is needed.
+ * Production builds rely on a pre-generated static JSON file.
  */
 export function searchIndexPlugin(): Plugin {
 	return {
 		name: "fumadocs-search-index",
 		configureServer(server: ViteDevServer) {
-			server.middlewares.use("/api/search", async (_req, res) => {
+			server.middlewares.use(SEARCH_INDEX_ROUTE, async (_req, res) => {
 				try {
 					const { searchAPI } =
 						await server.ssrLoadModule("/src/lib/source.ts");

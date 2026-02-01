@@ -38,6 +38,8 @@ dist
 # misc
 .DS_Store
 *.pem
+.source/
+**/.source/
 
 # debug
 npm-debug.log*
