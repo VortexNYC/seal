@@ -20,12 +20,15 @@ export function searchIndexPlugin(): Plugin {
 					const data = await response.json();
 
 					res.setHeader("Content-Type", "application/json");
+					res.setHeader("Cache-Control", "no-cache");
 					res.end(JSON.stringify(data));
 				} catch (error) {
 					const errMsg = error instanceof Error ? error.message : String(error);
 					console.error("[search-index] Failed to generate index:", errMsg);
 					res.statusCode = 500;
-					res.end(JSON.stringify({ error: errMsg }));
+					// Return a valid empty index so the client doesn't crash
+					res.setHeader("Content-Type", "application/json");
+					res.end(JSON.stringify([]));
 				}
 			});
 		},
