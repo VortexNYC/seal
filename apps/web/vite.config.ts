@@ -98,7 +98,6 @@ export default defineConfig(async ({ command }) => {
 			sourcemap: true,
 			// SEA-136: Mobile performance optimization - chunk splitting for lazy loading
 			rollupOptions: {
-				external: ["fumadocs-mdx:collections/server"],
 				output: {
 					manualChunks: {
 						// Large PDF library - lazy loaded on signing/document pages
