@@ -9,6 +9,7 @@ interface PageAction {
 	onClick: () => void;
 	icon?: LucideIcon;
 	variant?: "default" | "outline" | "ghost" | "destructive";
+	disabled?: boolean;
 }
 
 interface PageWrapperProps {
@@ -61,6 +62,7 @@ export function PageWrapper({
 										variant={actionItem.variant || "default"}
 										size="sm"
 										className="flex-1 sm:flex-none"
+										disabled={actionItem.disabled}
 									>
 										{Icon && <Icon className="mr-2 h-4 w-4" />}
 										<span className="truncate">{actionItem.label}</span>

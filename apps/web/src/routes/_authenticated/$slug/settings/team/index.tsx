@@ -18,6 +18,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
 	component: TeamSettings,
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
 function TeamSettings() {
 	const { slug } = Route.useParams();
 	const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+	const { isPro } = useSubscriptionLimits();
 
 	const organization = useQuery(api.organizations.queries.getOrganization, {
 		slug,
@@ -57,6 +59,7 @@ function TeamSettings() {
 	}
 
 	const canInvite = permissions?.permissions.canInviteMembers ?? false;
+	const canInviteWithPlan = canInvite && isPro;
 	const canManageRoles = permissions?.permissions.canUpdateRoles ?? false;
 	const canRemove = permissions?.permissions.canRemoveMembers ?? false;
 
@@ -68,9 +71,14 @@ function TeamSettings() {
 			action={
 				canInvite
 					? {
-							label: "Invite Member",
-							onClick: () => setIsInviteDialogOpen(true),
+							label: isPro ? "Invite Member" : "Invite Member (Pro)",
+							onClick: () => {
+								if (isPro) {
+									setIsInviteDialogOpen(true);
+								}
+							},
 							icon: UserPlus,
+							disabled: !isPro,
 						}
 					: undefined
 			}
@@ -150,7 +158,7 @@ function TeamSettings() {
 			</Tabs>
 
 			{/* Invite Member Dialog */}
-			{canInvite && (
+			{canInviteWithPlan && (
 				<InviteMemberDialog
 					organizationId={orgId}
 					open={isInviteDialogOpen}

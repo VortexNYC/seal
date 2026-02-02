@@ -1,6 +1,6 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { AlertCircle, CheckCircle2, FileIcon, Upload, X } from "lucide-react";
 import { useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
@@ -77,6 +77,8 @@ export function UploadDialog({
 	const [uploading, setUploading] = useState(false);
 	const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 	const { track } = useAnalytics();
+
+	const usageStats = useQuery(api.user_profiles.queries.getUsageStatistics);
 
 	const generateUploadUrl = useMutation(
 		api.documents.mutations.generateUploadUrl,
@@ -355,6 +357,35 @@ export function UploadDialog({
 							</DialogDescription>
 						</DialogHeader>
 
+						{usageStats && (
+							<div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+								<span className="text-muted-foreground">
+									Documents this month
+								</span>
+								<span
+									className={
+										usageStats.documentsThisMonth >= usageStats.documentsLimit
+											? "font-medium text-destructive"
+											: "font-medium"
+									}
+								>
+									{usageStats.documentsThisMonth} / {usageStats.documentsLimit}
+								</span>
+							</div>
+						)}
+
+						{usageStats &&
+							usageStats.documentsThisMonth >= usageStats.documentsLimit && (
+								<div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									You've reached your monthly document limit.{" "}
+									{usageStats.plan === "free" && (
+										<span>
+											Upgrade to Pro for up to 500 documents per month.
+										</span>
+									)}
+								</div>
+							)}
+
 						<div className="flex-1 overflow-y-auto py-4 space-y-4">
 							{/* Dropzone Area */}
 							<div
@@ -499,7 +530,15 @@ export function UploadDialog({
 							>
 								Cancel
 							</Button>
-							<Button type="submit" disabled={uploading || files.length === 0}>
+							<Button
+								type="submit"
+								disabled={
+									uploading ||
+									files.length === 0 ||
+									(usageStats != null &&
+										usageStats.documentsThisMonth >= usageStats.documentsLimit)
+								}
+							>
 								{uploading ? "Uploading..." : "Upload PDF"}
 							</Button>
 						</DialogFooter>
