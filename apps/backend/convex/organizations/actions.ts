@@ -56,6 +56,23 @@ export const clerkInvite = action({
 			});
 		}
 
+		// Check Pro plan requirement for team invitations
+		const user = await ctx.runQuery(
+			internal.organizations.helpers.getUserByClerkId,
+			{ clerkId: identity.subject },
+		);
+		if (user) {
+			const { isPro } = await ctx.runQuery(
+				internal.auth.subscription_helpers.checkProFeature,
+				{ userId: user._id },
+			);
+			if (!isPro) {
+				throw new ConvexError(
+					"Inviting team members requires a Pro plan. Please upgrade to continue.",
+				);
+			}
+		}
+
 		try {
 			const clerk = createClerkClient({
 				secretKey: process.env.CLERK_SECRET_KEY,

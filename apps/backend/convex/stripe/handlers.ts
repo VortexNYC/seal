@@ -191,75 +191,6 @@ export const cancelOldStripeSubscriptions = internalAction({
 });
 
 /**
- * Helper: Get product metadata for credits calculation
- */
-async function getCreditsForPrice(
-	ctx: MutationCtx,
-	stripePriceId: string,
-	userId: Id<"users">,
-	subscriptionId: string,
-): Promise<number> {
-	const now = Date.now();
-	const price = await ctx.db
-		.query("subscription_prices")
-		.withIndex("by_external_price_id", (q) =>
-			q.eq("externalPriceId", stripePriceId),
-		)
-		.first();
-
-	if (!price) {
-		console.error("Price not found for new subscription", {
-			operation: "getCreditsForPrice",
-			stripePriceId,
-			userId,
-			stripeSubscriptionId: subscriptionId,
-			timestamp: now,
-		});
-		throw new Error(
-			`Price not found for new subscription - stripePriceId: ${stripePriceId}`,
-		);
-	}
-
-	const product = await ctx.db
-		.query("subscription_products")
-		.withIndex("by_external_product_id", (q) =>
-			q.eq("externalProductId", price.externalProductId),
-		)
-		.first();
-
-	if (!product) {
-		console.error("Product not found for new subscription", {
-			operation: "getCreditsForPrice",
-			stripePriceId,
-			stripeProductId: price.externalProductId,
-			userId,
-			stripeSubscriptionId: subscriptionId,
-			timestamp: now,
-		});
-		throw new Error(
-			`Product not found for new subscription - stripePriceId: ${stripePriceId}, stripeProductId: ${price.externalProductId}`,
-		);
-	}
-
-	if (!product.metadata?.includedCredits) {
-		console.error("Product missing includedCredits metadata", {
-			operation: "getCreditsForPrice",
-			stripeProductId: product.externalProductId,
-			productName: product.name,
-			metadata: product.metadata,
-			stripePriceId,
-			userId,
-			timestamp: now,
-		});
-		throw new Error(
-			`Product missing includedCredits metadata - stripeProductId: ${product.externalProductId}, productName: ${product.name}`,
-		);
-	}
-
-	return product.metadata.includedCredits;
-}
-
-/**
  * Helper: Log trial conversion events for Axiom analytics
  */
 function logTrialConversionIfNeeded(
@@ -374,14 +305,107 @@ async function cancelOtherSubscriptions(
  * Handle customer.subscription.created event
  * Creates a new subscription record in Convex
  */
-export const handleSubscriptionCreated = internalMutation({
-	args: { subscription: v.any() },
-	handler: async (ctx, args: { subscription: Stripe.Subscription }) => {
-		const subscription = extractSubscriptionData(args.subscription);
+const MAX_SUBSCRIPTION_RETRY_ATTEMPTS = 5;
 
-		if (!subscription.userId) {
-			throw new Error("No userId in subscription metadata");
+function getRetryDelayMs(retryCount: number): number {
+	const baseDelayMs = 5000; // 5 seconds
+	return baseDelayMs * 2 ** retryCount;
+	// Results: 5s, 10s, 20s, 40s, 80s (total ~155s)
+}
+
+/**
+ * Resolve user from subscription metadata or Stripe customer ID.
+ *
+ * Strategy 1: Direct userId from subscription metadata
+ * Strategy 2: Stripe customer ID lookup on users table
+ * Strategy 3: Stripe customer ID lookup on existing subscriptions table
+ */
+async function resolveUserForSubscription(
+	ctx: MutationCtx,
+	metadataUserId: Id<"users"> | undefined,
+	stripeCustomerId: string,
+): Promise<Id<"users"> | null> {
+	// Strategy 1: Direct metadata lookup
+	if (metadataUserId) {
+		const user = await ctx.db.get(metadataUserId);
+		if (user) {
+			return user._id;
 		}
+		console.warn(
+			`userId ${metadataUserId} from metadata not found in users table`,
+		);
+	}
+
+	// Strategy 2: Look up user by stripeCustomerId
+	const allUsers = await ctx.db.query("users").collect();
+	const matchedUser = allUsers.find(
+		(u) => u.stripeCustomerId === stripeCustomerId,
+	);
+	if (matchedUser) {
+		console.warn(
+			`Resolved userId ${matchedUser._id} from Stripe customer ${stripeCustomerId} (metadata lookup failed)`,
+		);
+		return matchedUser._id;
+	}
+
+	// Strategy 3: Look up via existing subscriptions for this customer
+	const existingSub = await ctx.db
+		.query("subscriptions")
+		.withIndex("by_external_customer_id", (q) =>
+			q.eq("externalCustomerId", stripeCustomerId),
+		)
+		.first();
+	if (existingSub) {
+		console.warn(
+			`Resolved userId ${existingSub.userId} from existing subscription for customer ${stripeCustomerId}`,
+		);
+		return existingSub.userId;
+	}
+
+	return null;
+}
+
+export const handleSubscriptionCreated = internalMutation({
+	args: {
+		subscription: v.any(),
+		retryCount: v.optional(v.number()),
+	},
+	handler: async (
+		ctx,
+		args: { subscription: Stripe.Subscription; retryCount?: number },
+	) => {
+		const subscription = extractSubscriptionData(args.subscription);
+		const retryCount = args.retryCount ?? 0;
+
+		// Resolve userId with multi-strategy fallback
+		const resolvedUserId = await resolveUserForSubscription(
+			ctx,
+			subscription.userId,
+			subscription.customer,
+		);
+
+		if (!resolvedUserId) {
+			if (retryCount < MAX_SUBSCRIPTION_RETRY_ATTEMPTS) {
+				const delayMs = getRetryDelayMs(retryCount);
+				console.warn(
+					`User not found for subscription ${subscription.id} (customer ${subscription.customer}), scheduling retry ${retryCount + 1}/${MAX_SUBSCRIPTION_RETRY_ATTEMPTS} in ${delayMs / 1000}s`,
+				);
+				await ctx.scheduler.runAfter(
+					delayMs,
+					internal.stripe.handlers.handleSubscriptionCreated,
+					{
+						subscription: args.subscription,
+						retryCount: retryCount + 1,
+					},
+				);
+				return;
+			}
+			throw new Error(
+				`User not found for subscription ${subscription.id} (customer ${subscription.customer}) after ${MAX_SUBSCRIPTION_RETRY_ATTEMPTS} retries`,
+			);
+		}
+
+		subscription.userId = resolvedUserId;
 
 		const now = Date.now();
 
@@ -417,14 +441,6 @@ export const handleSubscriptionCreated = internalMutation({
 		// Cancel any other active subscriptions for this user
 		await cancelOtherSubscriptions(ctx, subscription.userId, now);
 
-		// Get product metadata to determine included credits
-		const creditsIncluded = await getCreditsForPrice(
-			ctx,
-			subscription.priceId,
-			subscription.userId,
-			subscription.id,
-		);
-
 		await ctx.db.insert("subscriptions", {
 			userId: subscription.userId,
 			externalCustomerId: subscription.customer,
@@ -434,27 +450,17 @@ export const handleSubscriptionCreated = internalMutation({
 			currentPeriodStart: subscription.currentPeriodStart,
 			currentPeriodEnd: subscription.currentPeriodEnd,
 			cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-			// Cancellation tracking
 			canceledAt: subscription.canceledAt,
 			cancelReason: subscription.cancelReason,
-			// Trial period tracking
 			trialStart: subscription.trialStart,
 			trialEnd: subscription.trialEnd,
-			// Latest invoice tracking
 			latestInvoiceId: subscription.latestInvoiceId,
-			// Credit balances (hybrid billing)
-			creditsIncluded,
-			creditsUsed: 0,
-			creditsRemaining: creditsIncluded,
-			topupCreditsRemaining: 0,
-			overageEnabled: false,
-			overageUsedThisCycle: 0,
 			createdAt: now,
 			updatedAt: now,
 		});
 
 		console.warn(
-			`Created subscription for user ${subscription.userId}: ${subscription.id} with ${creditsIncluded} credits`,
+			`Created subscription for user ${subscription.userId}: ${subscription.id}`,
 		);
 	},
 });
@@ -493,11 +499,13 @@ export const handleSubscriptionUpdated = internalMutation({
 			);
 		}
 
-		// Check if the plan changed (price ID is different)
 		const planChanged =
 			existingSubscription.externalPriceId !== subscription.priceId;
 
-		let updateData: Record<string, unknown> = {
+		const updateData: Record<string, unknown> = {
+			externalPriceId: planChanged
+				? subscription.priceId
+				: existingSubscription.externalPriceId,
 			status: subscription.status,
 			currentPeriodStart: subscription.currentPeriodStart,
 			currentPeriodEnd: subscription.currentPeriodEnd,
@@ -510,75 +518,10 @@ export const handleSubscriptionUpdated = internalMutation({
 			updatedAt: Date.now(),
 		};
 
-		// If plan changed, update credits accordingly
 		if (planChanged) {
-			// Get new plan's included credits
-			const price = await ctx.db
-				.query("subscription_prices")
-				.withIndex("by_external_price_id", (q) =>
-					q.eq("externalPriceId", subscription.priceId),
-				)
-				.first();
-
-			if (!price) {
-				console.error("Price not found for subscription update", {
-					operation: "handleSubscriptionUpdated.planChange",
-					stripePriceId: subscription.priceId,
-					stripeSubscriptionId: subscription.id,
-				});
-				// Continue with other updates but skip credit changes
-			} else {
-				const product = await ctx.db
-					.query("subscription_products")
-					.withIndex("by_external_product_id", (q) =>
-						q.eq("externalProductId", price.externalProductId),
-					)
-					.first();
-
-				if (!product) {
-					console.error(
-						"Product not found for price - skipping credit update",
-						{
-							operation: "handleSubscriptionUpdated.planChange",
-							stripePriceId: subscription.priceId,
-							stripeProductId: price.externalProductId,
-						},
-					);
-					// Skip credit update entirely if product is missing
-				} else if (!product.metadata?.includedCredits) {
-					console.error(
-						"Product missing includedCredits metadata - skipping credit update",
-						{
-							operation: "handleSubscriptionUpdated.planChange",
-							stripeProductId: product.externalProductId,
-							productName: product.name,
-							metadata: product.metadata,
-						},
-					);
-					// Skip credit update if metadata is missing
-				} else {
-					const newCreditsIncluded = product.metadata.includedCredits;
-
-					// Keep creditsUsed as-is (preserve usage history) - DO NOT update it
-					const creditsUsed = existingSubscription.creditsUsed ?? 0;
-					const newCreditsRemaining = Math.max(
-						0,
-						newCreditsIncluded - creditsUsed,
-					);
-
-					updateData = {
-						...updateData,
-						stripePriceId: subscription.priceId,
-						creditsIncluded: newCreditsIncluded,
-						creditsRemaining: newCreditsRemaining,
-						// Explicitly NOT setting creditsUsed - it should remain unchanged
-					};
-
-					console.warn(
-						`Plan changed for subscription ${subscription.id}: ${existingSubscription.creditsIncluded} -> ${newCreditsIncluded} credits (${creditsUsed} used, ${newCreditsRemaining} remaining)`,
-					);
-				}
-			}
+			console.warn(
+				`Plan changed for subscription ${subscription.id}: price ${existingSubscription.externalPriceId} -> ${subscription.priceId}`,
+			);
 		}
 
 		await ctx.db.patch(existingSubscription._id, updateData);
@@ -708,7 +651,7 @@ export const handlePaymentSucceeded = internalMutation({
 			}),
 		);
 
-		// If this is a subscription invoice, check if we should reset monthly credits
+		// Update subscription with latest invoice info
 		if (invoice.subscription) {
 			const subscription = await ctx.db
 				.query("subscriptions")
@@ -718,85 +661,11 @@ export const handlePaymentSucceeded = internalMutation({
 				.first();
 
 			if (subscription) {
-				// Get the invoice object to check billing_reason
-				const billingReason = fullInvoice.billing_reason;
-
-				// Only reset credits on actual subscription renewals, not on:
-				// - subscription_create (initial subscription)
-				// - subscription_update (plan change)
-				// - subscription_cycle (this IS a renewal - reset credits)
-				const isRenewal = billingReason === "subscription_cycle";
-
-				if (!isRenewal) {
-					console.warn(
-						`Payment succeeded but not a renewal (billing_reason: ${billingReason}), skipping credit reset`,
-					);
-					return;
-				}
-
-				// Get product metadata to determine included credits
-				const price = await ctx.db
-					.query("subscription_prices")
-					.withIndex("by_external_price_id", (q) =>
-						q.eq("externalPriceId", subscription.externalPriceId),
-					)
-					.first();
-
-				let creditsIncluded = subscription.creditsIncluded ?? 0;
-
-				// Early return if price not found
-				if (!price) {
-					console.error("Price not found for subscription renewal", {
-						operation: "handlePaymentSucceeded.renewal",
-						stripePriceId: subscription.externalPriceId,
-					});
-				}
-
-				// Lookup product if price exists
-				if (price) {
-					const product = await ctx.db
-						.query("subscription_products")
-						.withIndex("by_external_product_id", (q) =>
-							q.eq("externalProductId", price.externalProductId),
-						)
-						.first();
-
-					// eslint-disable-next-line max-depth
-					if (!product) {
-						console.error("Product not found for subscription renewal", {
-							operation: "handlePaymentSucceeded.renewal",
-							stripePriceId: subscription.externalPriceId,
-							stripeProductId: price.externalProductId,
-						});
-					} else if (product.metadata?.includedCredits) {
-						creditsIncluded = product.metadata.includedCredits;
-					} else {
-						console.error(
-							"Product missing includedCredits metadata for renewal",
-							{
-								operation: "handlePaymentSucceeded.renewal",
-								stripeProductId: product.externalProductId,
-								productName: product.name,
-								metadata: product.metadata,
-							},
-						);
-					}
-				}
-
-				// Reset monthly credits (keep topup credits)
 				await ctx.db.patch(subscription._id, {
-					creditsIncluded,
-					creditsUsed: 0,
-					creditsRemaining: creditsIncluded,
-					overageUsedThisCycle: 0,
 					latestInvoiceId: fullInvoice.id,
 					latestInvoiceStatus: fullInvoice.status || undefined,
 					updatedAt: Date.now(),
 				});
-
-				console.warn(
-					`Reset monthly credits for subscription ${invoice.subscription}: ${creditsIncluded} credits (billing_reason: ${billingReason})`,
-				);
 			}
 		}
 	},
@@ -853,11 +722,11 @@ export const handlePaymentFailed = internalMutation({
 
 /**
  * Handle checkout.session.completed event
- * Processes one-time top-up purchases
+ * Currently a no-op placeholder for future one-time purchase handling.
  */
 export const handleCheckoutCompleted = internalMutation({
 	args: { session: v.any() },
-	handler: async (ctx, args: { session: Stripe.Checkout.Session }) => {
+	handler: async (_ctx, args: { session: Stripe.Checkout.Session }) => {
 		const session = args.session;
 
 		// Only handle payment mode (one-time purchases)
@@ -865,45 +734,7 @@ export const handleCheckoutCompleted = internalMutation({
 			return;
 		}
 
-		// Check if this is a top-up purchase (has credits_amount in metadata)
-		const creditsAmount = session.metadata?.credits_amount;
-		const userId = session.metadata?.user_id as Id<"users">;
-
-		if (!creditsAmount || !userId) {
-			console.warn(
-				`Checkout session ${session.id} completed but missing metadata`,
-			);
-			return;
-		}
-
-		const credits = parseInt(creditsAmount, 10);
-		if (Number.isNaN(credits)) {
-			console.error(`Invalid credits amount: ${creditsAmount}`);
-			return;
-		}
-
-		// Find user's active subscription
-		const subscription = await ctx.db
-			.query("subscriptions")
-			.withIndex("by_user_id", (q) => q.eq("userId", userId))
-			.filter((q) => q.eq(q.field("status"), "active"))
-			.first();
-
-		if (!subscription) {
-			console.error(`No active subscription found for user ${userId}`);
-			return;
-		}
-
-		// Add top-up credits
-		const newBalance = (subscription.topupCreditsRemaining ?? 0) + credits;
-		await ctx.db.patch(subscription._id, {
-			topupCreditsRemaining: newBalance,
-			updatedAt: Date.now(),
-		});
-
-		console.warn(
-			`Added ${credits} top-up credits to user ${userId}. New balance: ${newBalance}`,
-		);
+		console.warn(`Checkout session ${session.id} completed (mode: payment)`);
 	},
 });
 

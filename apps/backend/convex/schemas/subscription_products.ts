@@ -23,7 +23,6 @@ export const subscriptionProductsTable = defineTable({
 			tier: v.optional(v.string()), // "free" | "pro"
 			useType: v.optional(v.string()), // "personal" | "business"
 			features: v.optional(v.string()), // comma-separated: "api_access,webhook_access"
-			includedCredits: v.optional(v.number()), // Credits included per billing period
 		}),
 	),
 

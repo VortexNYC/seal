@@ -5,9 +5,12 @@
  * These run in Node.js runtime and can make external API calls.
  */
 
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import Stripe from "stripe";
-import { internalAction } from "../_generated/server";
+import { internal } from "../_generated/api";
+import type { Doc } from "../_generated/dataModel";
+import { type ActionCtx, action, internalAction } from "../_generated/server";
+import { getOrCreateStripeCustomer } from "./helpers";
 
 function initializeStripe(): Stripe {
 	const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -73,5 +76,134 @@ export const retrievePromotionCode = internalAction({
 			});
 			throw error;
 		}
+	},
+});
+
+// =====================
+// PUBLIC ACTIONS (called from frontend)
+// =====================
+
+/**
+ * Resolve the authenticated user from Clerk identity.
+ * Used by public actions that need the user's Stripe customer ID.
+ */
+async function resolveAuthenticatedUser(ctx: ActionCtx): Promise<Doc<"users">> {
+	const identity = await ctx.auth.getUserIdentity();
+	if (!identity) {
+		throw new ConvexError("Authentication required");
+	}
+
+	const user: Doc<"users"> | null = await ctx.runQuery(
+		internal.organizations.helpers.getUserByClerkId,
+		{ clerkId: identity.subject },
+	);
+
+	if (!user) {
+		throw new ConvexError("User not found");
+	}
+
+	return user;
+}
+
+/**
+ * Create a Stripe Checkout session for upgrading to a paid plan.
+ *
+ * Frontend calls this action, gets back a URL, and redirects to Stripe Checkout.
+ * After checkout, Stripe webhook handles subscription creation.
+ */
+export const createCheckoutSession = action({
+	args: {
+		lookupKey: v.string(),
+		successUrl: v.string(),
+		cancelUrl: v.string(),
+	},
+	handler: async (
+		ctx,
+		{ lookupKey, successUrl, cancelUrl },
+	): Promise<{ url: string }> => {
+		const stripe = initializeStripe();
+		const user = await resolveAuthenticatedUser(ctx);
+
+		// Resolve or create Stripe customer
+		let stripeCustomerId: string | undefined = user.stripeCustomerId;
+		if (!stripeCustomerId) {
+			stripeCustomerId = await getOrCreateStripeCustomer(
+				stripe,
+				user._id,
+				user.email,
+				user.name || user.email,
+				undefined,
+			);
+
+			await ctx.runMutation(
+				internal.stripe.subscription_actions.updateUserStripeCustomerId,
+				{ userId: user._id, stripeCustomerId },
+			);
+		}
+
+		// Look up the price by lookup key
+		const priceData = await ctx.runMutation(
+			internal.stripe.subscription_actions.getPriceByLookupKey,
+			{ lookupKey },
+		);
+
+		if (!priceData?.price) {
+			throw new ConvexError(`Price not found for lookup key: ${lookupKey}`);
+		}
+
+		// Create Checkout session
+		const session = await stripe.checkout.sessions.create({
+			customer: stripeCustomerId,
+			mode: "subscription",
+			line_items: [
+				{
+					price: priceData.price.externalPriceId,
+					quantity: 1,
+				},
+			],
+			success_url: successUrl,
+			cancel_url: cancelUrl,
+			subscription_data: {
+				metadata: {
+					userId: user._id,
+					lookupKey,
+				},
+			},
+		});
+
+		if (!session.url) {
+			throw new ConvexError("Failed to create checkout session");
+		}
+
+		return { url: session.url };
+	},
+});
+
+/**
+ * Create a Stripe Customer Portal session for managing billing.
+ *
+ * Allows users to update payment methods, view invoices, and cancel subscriptions.
+ * Frontend calls this action, gets back a URL, and redirects to the portal.
+ */
+export const createCustomerPortalSession = action({
+	args: {
+		returnUrl: v.string(),
+	},
+	handler: async (ctx, { returnUrl }): Promise<{ url: string }> => {
+		const stripe = initializeStripe();
+		const user = await resolveAuthenticatedUser(ctx);
+
+		if (!user.stripeCustomerId) {
+			throw new ConvexError(
+				"No billing account found. Please contact support.",
+			);
+		}
+
+		const session = await stripe.billingPortal.sessions.create({
+			customer: user.stripeCustomerId,
+			return_url: returnUrl,
+		});
+
+		return { url: session.url };
 	},
 });

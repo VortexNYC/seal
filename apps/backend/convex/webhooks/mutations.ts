@@ -6,6 +6,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { ensureProFeature } from "../auth/subscription_guards";
 import { permissionMutation } from "../auth/wrappers";
 import { WEBHOOK_EVENT_TYPES } from "../schemas/webhooks";
 
@@ -103,6 +104,9 @@ export const createEndpoint = permissionMutation("settings:integrations")({
 				});
 			}
 		}
+
+		// Check Pro plan requirement for webhooks
+		await ensureProFeature(ctx.db, ctx.auth.userId, "Webhook endpoints");
 
 		// Check endpoint limit (max 10 per organization)
 		const existingEndpoints = await ctx.db

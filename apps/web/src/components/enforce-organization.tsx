@@ -25,6 +25,7 @@ export function EnforceOrganization({ children }: EnforceOrganizationProps) {
 		api.check_membership.ensureActiveOrganization,
 	);
 	const isOnboardingRoute = location.pathname.startsWith("/onboarding");
+	const isPublicRoute = location.pathname.startsWith("/docs");
 
 	const [isFixingOrg, setIsFixingOrg] = useState(false);
 	const [fixedSlug, setFixedSlug] = useState<string | null>(null);
@@ -101,6 +102,11 @@ export function EnforceOrganization({ children }: EnforceOrganizationProps) {
 			: buildOrganizationPath(activeOrganizationSlug, "/home");
 
 		return <Navigate to={target} replace />;
+	}
+
+	// Allow public routes like /docs to render without organization path check
+	if (isPublicRoute) {
+		return <>{children}</>;
 	}
 
 	const isWithinOrg = isPathWithinOrganization(

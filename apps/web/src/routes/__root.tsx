@@ -10,7 +10,6 @@ import type { ConvexReactClient } from "convex/react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NotFoundPage } from "@/components/not-found-page";
 import { RouteErrorComponent } from "@/components/route-error-component";
-import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createRootRouteWithContext<{
@@ -45,10 +44,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<>
 			<HeadContent />
-			<ThemeProvider>
-				<div className="h-svh">{children}</div>
-				<Toaster richColors />
-			</ThemeProvider>
+			<div className="h-svh">{children}</div>
+			<Toaster richColors />
 			<TanStackRouterDevtools position="bottom-right" />
 		</>
 	);

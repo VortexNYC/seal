@@ -41,7 +41,6 @@ export const upsertProduct = internalMutation({
 				tier: v.optional(v.string()),
 				useType: v.optional(v.string()),
 				features: v.optional(v.string()),
-				includedCredits: v.optional(v.number()),
 			}),
 		),
 	},
@@ -345,7 +344,6 @@ export const getSubscriptionPlans = internalMutation({
 				name: product.name,
 				description: product.description,
 				tier: product.metadata?.tier,
-				includedCredits: product.metadata?.includedCredits || 0,
 				features: product.metadata?.features || [],
 				pricing: {
 					monthly: fixedPrice.unitAmount ? fixedPrice.unitAmount / 100 : 0,

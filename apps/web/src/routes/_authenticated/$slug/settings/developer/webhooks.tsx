@@ -73,6 +73,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 
 export const Route = createFileRoute(
 	"/_authenticated/$slug/settings/developer/webhooks",
@@ -115,6 +116,7 @@ type WebhookEndpointWithStats = Doc<"webhook_endpoints"> & {
 };
 
 function WebhooksPage() {
+	const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
 	const endpoints = useQuery(api.webhooks.queries.listEndpoints);
 	const eventTypes = useQuery(api.webhooks.queries.getEventTypes);
 
@@ -138,6 +140,8 @@ function WebhooksPage() {
 				<WebhookEndpointsSection
 					endpoints={endpoints}
 					eventTypes={eventTypes}
+					isPro={isPro}
+					isLoadingPlan={isLoadingPlan}
 				/>
 
 				<EventTypesReference eventTypes={eventTypes} />
@@ -151,11 +155,15 @@ function WebhooksPage() {
 interface WebhookEndpointsSectionProps {
 	endpoints: WebhookEndpointWithStats[];
 	eventTypes: { type: string; category: string; description: string }[];
+	isPro: boolean;
+	isLoadingPlan: boolean;
 }
 
 function WebhookEndpointsSection({
 	endpoints,
 	eventTypes,
+	isPro,
+	isLoadingPlan,
 }: WebhookEndpointsSectionProps) {
 	const [isCreating, setIsCreating] = useState(false);
 
@@ -167,14 +175,31 @@ function WebhookEndpointsSection({
 						<Radio className="h-5 w-5 text-purple-600 dark:text-purple-400" />
 						<CardTitle>Webhook Endpoints</CardTitle>
 					</div>
-					<CreateWebhookDialog
-						open={isCreating}
-						onOpenChange={setIsCreating}
-						eventTypes={eventTypes}
-					/>
+					{isPro ? (
+						<CreateWebhookDialog
+							open={isCreating}
+							onOpenChange={setIsCreating}
+							eventTypes={eventTypes}
+						/>
+					) : (
+						<div className="flex items-center gap-2">
+							<Badge variant="secondary" className="text-xs">
+								Pro
+							</Badge>
+							<Button size="sm" variant="outline" disabled>
+								<Plus className="mr-1 h-4 w-4" />
+								Add Endpoint
+							</Button>
+						</div>
+					)}
 				</div>
 				<CardDescription>
 					Configure endpoints to receive webhook events
+					{!isPro && !isLoadingPlan && (
+						<span className="block mt-1 text-amber-600 dark:text-amber-400">
+							Webhooks require a Pro plan.
+						</span>
+					)}
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -198,10 +223,16 @@ function WebhookEndpointsSection({
 						<Button
 							onClick={() => setIsCreating(true)}
 							className="mt-6 bg-purple-600 text-white hover:bg-purple-500"
+							disabled={!isPro}
 						>
 							<Plus className="mr-2 h-4 w-4" />
 							Add Endpoint
 						</Button>
+						{!isPro && !isLoadingPlan && (
+							<p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+								Requires a Pro plan
+							</p>
+						)}
 					</div>
 				) : (
 					<div className="space-y-3">
