@@ -10,12 +10,6 @@
 			"args": ["@playwright/mcp@latest"],
 			"env": {}
 		},
-		"chrome-devtools": {
-			"type": "stdio",
-			"command": "npx",
-			"args": ["chrome-devtools-mcp@latest"],
-			"env": {}
-		},
 		"seal-mcp": {
 			"type": "http",
 			"url": "https://mcp.seal.nyc/mcp"
