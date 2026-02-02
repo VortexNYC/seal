@@ -1,8 +1,4 @@
-import {
-	createFileRoute,
-	notFound,
-	useRouterState,
-} from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import type { DocData } from "fumadocs-mdx/runtime/types";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import {
@@ -20,14 +16,11 @@ export const Route = createFileRoute("/docs/$")({
 });
 
 function DocsPageRoute() {
-	const pathname = useRouterState({
-		select: (state) => state.location.pathname,
-	});
+	const { _splat } = Route.useParams();
 
 	const slugs = useMemo(() => {
-		const path = pathname.replace(/^\/docs\/?/, "");
-		return path ? path.split("/") : [];
-	}, [pathname]);
+		return _splat ? _splat.split("/") : [];
+	}, [_splat]);
 
 	const page = useMemo(() => {
 		const p = source.getPage(slugs);
