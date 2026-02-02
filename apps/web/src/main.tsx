@@ -1,4 +1,5 @@
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { dark } from "@clerk/themes";
 import { ConvexQueryClient } from "@convex-dev/react-query";
 import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,10 +8,12 @@ import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
+import { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { DefaultCatchBoundary } from "./components/default-catch-boundary";
 import Loader from "./components/loader";
 import { NotFound } from "./components/not-found";
+import { ThemeProvider, useTheme } from "./components/theme-provider";
 import "./dev/react-grab";
 import { initWebVitals } from "./lib/web-vitals";
 import { routeTree } from "./routeTree.gen";
@@ -64,21 +67,15 @@ const router = createRouter({
 	context: { queryClient, convexClient: convex, convexQueryClient },
 	Wrap: function WrapComponent({ children }: { children: React.ReactNode }) {
 		return (
-			<ClerkProvider
-				publishableKey={CLERK_URL}
-				signInUrl="/sign-in"
-				signUpUrl="/sign-up"
-				afterSignInUrl="/app"
-				afterSignUpUrl="/app"
-				signInFallbackRedirectUrl="/app"
-				signUpFallbackRedirectUrl="/app"
-			>
-				<ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-					<QueryClientProvider client={queryClient}>
-						{children}
-					</QueryClientProvider>
-				</ConvexProviderWithClerk>
-			</ClerkProvider>
+			<ThemeProvider>
+				<ThemedClerkProvider>
+					<ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+						<QueryClientProvider client={queryClient}>
+							{children}
+						</QueryClientProvider>
+					</ConvexProviderWithClerk>
+				</ThemedClerkProvider>
+			</ThemeProvider>
 		);
 	},
 });
@@ -121,4 +118,29 @@ if (!rootElement.innerHTML) {
 	initWebVitals().catch((error) => {
 		console.warn("Failed to initialize web vitals:", error);
 	});
+}
+
+function ThemedClerkProvider({ children }: { children: React.ReactNode }) {
+	const { resolvedTheme } = useTheme();
+	const appearance = useMemo(
+		() => ({
+			theme: resolvedTheme === "dark" ? dark : undefined,
+		}),
+		[resolvedTheme],
+	);
+
+	return (
+		<ClerkProvider
+			publishableKey={CLERK_URL}
+			signInUrl="/sign-in"
+			signUpUrl="/sign-up"
+			afterSignInUrl="/app"
+			afterSignUpUrl="/app"
+			signInFallbackRedirectUrl="/app"
+			signUpFallbackRedirectUrl="/app"
+			appearance={appearance}
+		>
+			{children}
+		</ClerkProvider>
+	);
 }

@@ -1,7 +1,16 @@
+import { api } from "@seal/backend/convex/_generated/api";
 import { useNavigate } from "@tanstack/react-router";
-import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from "lucide-react";
+import { useQuery } from "convex/react";
+import {
+	ChevronsUpDown,
+	CreditCard,
+	LogOut,
+	Sparkles,
+	User,
+} from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -34,6 +43,9 @@ export function NavUser({
 }) {
 	const { isMobile } = useSidebar();
 	const navigate = useNavigate();
+	const subscription = useQuery(api.stripe.queries.getSubscriptionDetails);
+	const planName = subscription?.planName ?? "Free";
+	const isPro = subscription?.tier === "pro";
 
 	return (
 		<SidebarMenu>
@@ -78,22 +90,45 @@ export function NavUser({
 							</div>
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
+						<div className="flex items-center justify-between px-2 py-1.5">
+							<span className="text-xs text-muted-foreground">Plan</span>
+							<Badge
+								variant={isPro ? "default" : "secondary"}
+								className="text-xs gap-1"
+							>
+								{isPro && <Sparkles className="h-3 w-3" />}
+								{planName}
+							</Badge>
+						</div>
+						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
 							<DropdownMenuItem
+								className="cursor-pointer"
 								onSelect={() =>
 									navigate({ to: "/$slug/settings/profile", params: { slug } })
 								}
 							>
-								<BadgeCheck />
-								Account
+								<User />
+								Profile
 							</DropdownMenuItem>
-							<DropdownMenuItem disabled>
-								<Bell />
-								Notifications
+							<DropdownMenuItem
+								className="cursor-pointer"
+								onSelect={() =>
+									navigate({
+										to: "/$slug/settings/billing",
+										params: { slug },
+									})
+								}
+							>
+								<CreditCard />
+								Billing
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem onSelect={() => onSignOut?.()}>
+						<DropdownMenuItem
+							className="cursor-pointer"
+							onSelect={() => onSignOut?.()}
+						>
 							<LogOut />
 							Log out
 						</DropdownMenuItem>
