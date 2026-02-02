@@ -19,6 +19,7 @@
 			"!**/.clerk",
 			"!**/node_modules",
 			"!**/.source",
+			"!**/public/api/search.json",
 			"!**/routeTree.gen.ts",
 			"!**/test-results",
 			"!**/playwright-report"

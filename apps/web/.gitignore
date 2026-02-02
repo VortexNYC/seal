@@ -1,5 +1,6 @@
 .env.sentry-build-plugin
 .vercel
 .source/
+public/api/search.json
 
 .env.local

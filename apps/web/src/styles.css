@@ -1,5 +1,18 @@
 @import 'tailwindcss';
 
+/* Fumadocs: scan component files so Tailwind generates their utilities (md:hidden, etc.) */
+@source "../../../node_modules/fumadocs-ui/dist/**/*.js";
+@source "../../../node_modules/@fumadocs/ui/dist/**/*.js";
+
+/* Fumadocs: layout variant used by docs components */
+@variant layout {
+  #nd-docs-layout:has(&),
+  #nd-notebook-layout:has(&),
+  #nd-home-layout:has(&) {
+    @slot;
+  }
+}
+
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));

@@ -6,7 +6,7 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import mdx from "fumadocs-mdx/vite";
 import { defineConfig } from "vite";
-import { docs } from "./source.config";
+import * as SourceConfig from "./source.config";
 import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
@@ -16,7 +16,7 @@ export default defineConfig(async ({ command }) => {
 
 	return {
 		plugins: [
-			await mdx({ docs: docs }, { updateViteConfig: true }),
+			await mdx(SourceConfig, { updateViteConfig: true }),
 			searchIndexPlugin(),
 			tailwindcss(),
 			tanstackRouter({}),
@@ -46,6 +46,12 @@ export default defineConfig(async ({ command }) => {
 				),
 			},
 			dedupe: ["react", "react-dom"],
+		},
+
+		// Prevent Fumadocs packages from being externalized during SSR.
+		// This avoids React context errors and hydration mismatches.
+		ssr: {
+			noExternal: ["fumadocs-core", "fumadocs-ui"],
 		},
 
 		// Polyfill node:path → path-browserify only during browser dep pre-bundling.
