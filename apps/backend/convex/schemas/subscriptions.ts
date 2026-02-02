@@ -1,7 +1,7 @@
 /**
  * SUBSCRIPTIONS TABLE
  * Stripe subscription data for users.
- * Synced via Stripe webhooks - source of truth for user credits.
+ * Synced via Stripe webhooks.
  */
 
 import { defineTable } from "convex/server";
@@ -24,7 +24,6 @@ export const subscriptionsTable = defineTable({
 	externalCustomerId: v.string(), // Stripe customer ID
 	externalSubscriptionId: v.string(), // Stripe subscription ID
 	externalPriceId: v.string(), // Stripe price ID (base subscription)
-	externalOveragePriceId: v.optional(v.string()), // Stripe price ID for overage
 	status: subscriptionStatus,
 	currentPeriodStart: v.number(), // Unix timestamp
 	currentPeriodEnd: v.number(), // Unix timestamp
@@ -41,18 +40,6 @@ export const subscriptionsTable = defineTable({
 	// Latest invoice tracking
 	latestInvoiceId: v.optional(v.string()), // Stripe invoice ID
 	latestInvoiceStatus: v.optional(v.string()), // Invoice status
-
-	// Credit balances (hybrid billing) - TEMPORARY: optional during migration
-	creditsIncluded: v.optional(v.number()), // Monthly allocation from subscription
-	creditsUsed: v.optional(v.number()), // Total credits used this billing cycle
-	creditsRemaining: v.optional(v.number()), // Included credits remaining
-	topupCreditsRemaining: v.optional(v.number()), // Non-expiring top-up credits
-
-	// Overage settings
-	overageEnabled: v.optional(v.boolean()), // User consent for overage billing
-	overageLimit: v.optional(v.number()), // Max overage credits per cycle
-	overageConsentTimestamp: v.optional(v.number()), // When user consented
-	overageUsedThisCycle: v.optional(v.number()), // Overage credits used this cycle
 
 	createdAt: v.number(),
 	updatedAt: v.number(),

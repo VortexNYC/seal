@@ -131,7 +131,6 @@ export const createSubscriptionRecord = internalMutation({
 		status: v.string(),
 		currentPeriodStart: v.number(),
 		currentPeriodEnd: v.number(),
-		creditsIncluded: v.number(),
 	},
 	handler: async (ctx, args) => {
 		const now = Date.now();
@@ -167,18 +166,12 @@ export const createSubscriptionRecord = internalMutation({
 			currentPeriodStart: args.currentPeriodStart,
 			currentPeriodEnd: args.currentPeriodEnd,
 			cancelAtPeriodEnd: false,
-			creditsIncluded: args.creditsIncluded,
-			creditsUsed: 0,
-			creditsRemaining: args.creditsIncluded,
-			topupCreditsRemaining: 0,
-			overageEnabled: false,
-			overageUsedThisCycle: 0,
 			createdAt: now,
 			updatedAt: now,
 		});
 
 		console.warn(
-			`Created subscription ${args.stripeSubscriptionId} for user ${args.userId} with ${args.creditsIncluded} credits`,
+			`Created subscription ${args.stripeSubscriptionId} for user ${args.userId}`,
 		);
 
 		return subscriptionId;
@@ -196,7 +189,6 @@ export type SubscribeUserToDefaultPlanResult =
 			stripeSubscriptionId: string;
 			stripeCustomerId: string;
 			stripePriceId: string;
-			creditsIncluded: number;
 	  }
 	| {
 			status: "skipped";
@@ -334,9 +326,7 @@ export const subscribeUserToDefaultPlan = internalAction({
 			};
 		}
 
-		const { price, product } = priceData;
-		const creditsIncluded = product?.metadata?.includedCredits ?? 0;
-
+		const { price } = priceData;
 		// Create subscription in Stripe with idempotency key
 		const hourWindow = Math.floor(Date.now() / (1000 * 60 * 60));
 		const idempotencyKey = `sub_default_${stripeCustomerId}_${hourWindow}`;
@@ -378,7 +368,6 @@ export const subscribeUserToDefaultPlan = internalAction({
 					status: subscription.status,
 					currentPeriodStart,
 					currentPeriodEnd,
-					creditsIncluded,
 				},
 			);
 
@@ -391,7 +380,6 @@ export const subscribeUserToDefaultPlan = internalAction({
 				stripeSubscriptionId: subscription.id,
 				stripeCustomerId,
 				stripePriceId: price.externalPriceId,
-				creditsIncluded,
 			};
 		} catch (err) {
 			console.error("Failed to create subscription in Stripe", {

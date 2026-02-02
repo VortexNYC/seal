@@ -12,7 +12,6 @@ interface ProductMetadata {
 	tier?: string;
 	useType?: string;
 	features?: string;
-	includedCredits?: number;
 }
 
 interface SyncProductResult {
@@ -39,25 +38,11 @@ function getMetadataValue(
 	return undefined;
 }
 
-/**
- * Parse an integer from metadata, returning undefined if not present or invalid
- */
-function parseIntMetadataValue(
-	metadata: Stripe.Metadata | undefined,
-	...keys: string[]
-): number | undefined {
-	const raw = getMetadataValue(metadata, ...keys);
-	if (raw === undefined) return undefined;
-	const parsed = Number.parseInt(raw, 10);
-	return Number.isNaN(parsed) ? undefined : parsed;
-}
-
 function hasRelevantMetadata(metadata: Stripe.Metadata | undefined): boolean {
 	return Boolean(
 		getMetadataValue(metadata, "tier") ||
 			getMetadataValue(metadata, "useType", "use_type") ||
-			getMetadataValue(metadata, "features") ||
-			getMetadataValue(metadata, "includedCredits", "included_credits"),
+			getMetadataValue(metadata, "features"),
 	);
 }
 
@@ -72,17 +57,11 @@ function parseProductMetadata(
 	const tier = getMetadataValue(metadata, "tier");
 	const useType = getMetadataValue(metadata, "useType", "use_type");
 	const features = getMetadataValue(metadata, "features");
-	const includedCredits = parseIntMetadataValue(
-		metadata,
-		"includedCredits",
-		"included_credits",
-	);
 
 	return {
 		tier,
 		useType,
 		features,
-		includedCredits,
 	};
 }
 
