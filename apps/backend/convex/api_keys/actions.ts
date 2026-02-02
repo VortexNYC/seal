@@ -72,6 +72,17 @@ export const createClerkApiKey = action({
 			throw new ConvexError("Organization not synced with Clerk");
 		}
 
+		// Check Pro plan requirement for API access
+		const { isPro } = await ctx.runQuery(
+			internal.auth.subscription_helpers.checkProFeature,
+			{ userId: user._id },
+		);
+		if (!isPro) {
+			throw new ConvexError(
+				"API access requires a Pro plan. Please upgrade to continue.",
+			);
+		}
+
 		try {
 			const clerk = getClerkClient();
 

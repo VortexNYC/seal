@@ -7,6 +7,10 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
 import { authMutation, permissionMutation } from "../auth";
+import {
+	ensureDocumentLimit,
+	ensureStorageLimit,
+} from "../auth/subscription_guards";
 import { validateFile } from "./upload_config";
 import {
 	canCancelDocument,
@@ -71,7 +75,11 @@ export const createDocument = permissionMutation("documents:create")({
 			throw new ConvexError("Your organization membership is not active");
 		}
 
-		// 3. Create the document record (default to private sharing)
+		// 3. Check subscription limits
+		await ensureDocumentLimit(ctx.db, userId);
+		await ensureStorageLimit(ctx.db, userId, args.fileSize);
+
+		// 4. Create the document record (default to private sharing)
 		const documentId = await ctx.db.insert("documents", {
 			organizationId: args.organizationId,
 			ownerId: userId,
