@@ -35,6 +35,8 @@ import type * as auth_access_control from "../auth/access_control.js";
 import type * as auth_guards from "../auth/guards.js";
 import type * as auth_permissions from "../auth/permissions.js";
 import type * as auth_recipient_wrappers from "../auth/recipient_wrappers.js";
+import type * as auth_subscription_guards from "../auth/subscription_guards.js";
+import type * as auth_subscription_helpers from "../auth/subscription_helpers.js";
 import type * as auth_wrappers from "../auth/wrappers.js";
 import type * as check_membership from "../check_membership.js";
 import type * as clerk_webhooks from "../clerk_webhooks.js";
@@ -180,6 +182,8 @@ declare const fullApi: ApiFromModules<{
   "auth/guards": typeof auth_guards;
   "auth/permissions": typeof auth_permissions;
   "auth/recipient_wrappers": typeof auth_recipient_wrappers;
+  "auth/subscription_guards": typeof auth_subscription_guards;
+  "auth/subscription_helpers": typeof auth_subscription_helpers;
   "auth/wrappers": typeof auth_wrappers;
   check_membership: typeof check_membership;
   clerk_webhooks: typeof clerk_webhooks;
