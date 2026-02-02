@@ -14,10 +14,7 @@ export function useSubscriptionLimits() {
 
 	const tier = subscription?.tier ?? "free";
 
-	const isPro =
-		(subscription?.status === "active" ||
-			subscription?.status === "trialing") &&
-		tier === "pro";
+	const isPro = subscription?.status === "active" && tier === "pro";
 
 	return {
 		isPro,

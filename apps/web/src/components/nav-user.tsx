@@ -44,8 +44,11 @@ export function NavUser({
 	const { isMobile } = useSidebar();
 	const navigate = useNavigate();
 	const subscription = useQuery(api.stripe.queries.getSubscriptionDetails);
-	const planName = subscription?.planName ?? "Free";
-	const isPro = subscription?.tier === "pro";
+	const isActiveSubscription = subscription?.status === "active";
+	const planName = isActiveSubscription
+		? (subscription?.planName ?? "Free")
+		: "Free";
+	const isPro = isActiveSubscription && subscription?.tier === "pro";
 
 	return (
 		<SidebarMenu>

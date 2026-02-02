@@ -42,7 +42,6 @@ type SubscriptionStatus =
 	| "active"
 	| "canceled"
 	| "past_due"
-	| "trialing"
 	| "incomplete"
 	| "incomplete_expired"
 	| "unpaid";
@@ -58,8 +57,6 @@ function getStatusBadge(
 	switch (status) {
 		case "active":
 			return <Badge>Active</Badge>;
-		case "trialing":
-			return <Badge variant="secondary">Trial</Badge>;
 		case "past_due":
 			return <Badge variant="destructive">Past Due</Badge>;
 		case "canceled":
@@ -130,7 +127,9 @@ function BillingSettingsPage() {
 	const [portalLoading, setPortalLoading] = useState(false);
 
 	const currentUrl = window.location.href;
-	const isFreePlan = !subscription || subscription.tier === "free";
+	const isActiveSubscription = subscription?.status === "active";
+	const isFreePlan =
+		!subscription || subscription.tier === "free" || !isActiveSubscription;
 
 	async function handleUpgrade(lookupKey: string) {
 		setUpgradeLoading(true);
@@ -240,7 +239,7 @@ function BillingSettingsPage() {
 											<span className="text-muted-foreground">/month</span>
 										</div>
 									</div>
-									{subscription && subscription.status !== "canceled" && (
+									{subscription && isActiveSubscription && (
 										<p className="text-sm text-muted-foreground">
 											{subscription.cancelAtPeriodEnd
 												? `Access until ${formatDate(subscription.currentPeriodEnd)}`
@@ -327,13 +326,6 @@ function BillingSettingsPage() {
 												: `Next billing date: ${formatDate(subscription.currentPeriodEnd)}`}
 										</p>
 									)}
-
-									{subscription?.status === "trialing" &&
-										subscription.trialEnd && (
-											<p className="mt-1 text-sm text-muted-foreground">
-												Trial ends {formatDate(subscription.trialEnd)}
-											</p>
-										)}
 								</div>
 
 								{currentFeatures.length > 0 && (
