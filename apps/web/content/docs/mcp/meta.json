@@ -1,4 +1,5 @@
 {
 	"title": "MCP Integration",
-	"pages": ["tools", "authentication"]
+	"pages": ["tools", "authentication"],
+	"defaultOpen": true
 }
