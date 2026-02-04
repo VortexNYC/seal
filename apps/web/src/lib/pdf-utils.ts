@@ -14,53 +14,50 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
  * Fetches the PDF from a URL and generates a thumbnail
  */
 export async function generateThumbnailFromUrl(
-	url: string,
-	maxWidth = 200,
-	maxHeight = 300,
+  url: string,
+  maxWidth = 200,
+  maxHeight = 300,
 ): Promise<string | null> {
-	try {
-		const response = await fetch(url);
-		if (!response.ok) {
-			throw new Error(`Failed to fetch PDF: ${response.status}`);
-		}
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PDF: ${response.status}`);
+    }
 
-		const arrayBuffer = await response.arrayBuffer();
-		const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const arrayBuffer = await response.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-		// Get first page
-		const page = await pdf.getPage(1);
+    // Get first page
+    const page = await pdf.getPage(1);
 
-		// Calculate viewport scale to fit within maxWidth x maxHeight
-		const viewport = page.getViewport({ scale: 1 });
-		const scale = Math.min(
-			maxWidth / viewport.width,
-			maxHeight / viewport.height,
-		);
-		const scaledViewport = page.getViewport({ scale });
+    // Calculate viewport scale to fit within maxWidth x maxHeight
+    const viewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(maxWidth / viewport.width, maxHeight / viewport.height);
+    const scaledViewport = page.getViewport({ scale });
 
-		// Create canvas
-		const canvas = document.createElement("canvas");
-		const context = canvas.getContext("2d");
-		if (!context) {
-			throw new Error("Could not get canvas context");
-		}
+    // Create canvas
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Could not get canvas context");
+    }
 
-		canvas.width = scaledViewport.width;
-		canvas.height = scaledViewport.height;
+    canvas.width = scaledViewport.width;
+    canvas.height = scaledViewport.height;
 
-		// Render page to canvas
-		await page.render({
-			canvasContext: context,
-			viewport: scaledViewport,
-			// biome-ignore lint: pdfjs types issue
-		} as any).promise;
+    // Render page to canvas
+    await page.render({
+      canvasContext: context,
+      viewport: scaledViewport,
+      // oxlint-disable-next-line typescript-eslint/no-explicit-any -- pdfjs types issue
+    } as any).promise;
 
-		// Convert canvas to data URL
-		return canvas.toDataURL("image/png");
-	} catch (error) {
-		console.error("Error generating PDF thumbnail from URL:", error);
-		return null;
-	}
+    // Convert canvas to data URL
+    return canvas.toDataURL("image/png");
+  } catch (error) {
+    console.error("Error generating PDF thumbnail from URL:", error);
+    return null;
+  }
 }
 
 /**
@@ -68,41 +65,41 @@ export async function generateThumbnailFromUrl(
  * Returns metadata object with pageCount and thumbnail
  */
 export async function extractPdfMetadata(file: File): Promise<{
-	pageCount: number;
-	thumbnail: string | null;
+  pageCount: number;
+  thumbnail: string | null;
 }> {
-	try {
-		const arrayBuffer = await file.arrayBuffer();
-		const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-		const pageCount = pdf.numPages;
+    const pageCount = pdf.numPages;
 
-		// Generate thumbnail from first page
-		const page = await pdf.getPage(1);
-		const viewport = page.getViewport({ scale: 1 });
-		const scale = Math.min(200 / viewport.width, 300 / viewport.height);
-		const scaledViewport = page.getViewport({ scale });
+    // Generate thumbnail from first page
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(200 / viewport.width, 300 / viewport.height);
+    const scaledViewport = page.getViewport({ scale });
 
-		const canvas = document.createElement("canvas");
-		const context = canvas.getContext("2d");
-		if (!context) {
-			return { pageCount, thumbnail: null };
-		}
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return { pageCount, thumbnail: null };
+    }
 
-		canvas.width = scaledViewport.width;
-		canvas.height = scaledViewport.height;
+    canvas.width = scaledViewport.width;
+    canvas.height = scaledViewport.height;
 
-		await page.render({
-			canvasContext: context,
-			viewport: scaledViewport,
-			// biome-ignore lint: pdfjs types issue
-		} as any).promise;
+    await page.render({
+      canvasContext: context,
+      viewport: scaledViewport,
+      // oxlint-disable-next-line typescript-eslint/no-explicit-any -- pdfjs types issue
+    } as any).promise;
 
-		const thumbnail = canvas.toDataURL("image/png");
+    const thumbnail = canvas.toDataURL("image/png");
 
-		return { pageCount, thumbnail };
-	} catch (error) {
-		console.error("Error extracting PDF metadata:", error);
-		return { pageCount: 0, thumbnail: null };
-	}
+    return { pageCount, thumbnail };
+  } catch (error) {
+    console.error("Error extracting PDF metadata:", error);
+    return { pageCount: 0, thumbnail: null };
+  }
 }

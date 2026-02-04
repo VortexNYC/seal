@@ -8,44 +8,31 @@
 
 import { SignIn, useAuth } from "@clerk/clerk-react";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useEffect } from "react";
 
 export const Route = createFileRoute("/_auth/accept-invite")({
-	component: AcceptInviteRoute,
+  component: AcceptInviteRoute,
 });
 
 function AcceptInviteRoute() {
-	const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
 
-	useEffect(() => {
-		// Log for debugging
-		console.log(
-			"[AcceptInvite] isSignedIn:",
-			isSignedIn,
-			"isLoaded:",
-			isLoaded,
-		);
-		console.log("[AcceptInvite] Current URL:", window.location.href);
-	}, [isSignedIn, isLoaded]);
+  // Wait for Clerk to load
+  if (!isLoaded) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-2 text-center">
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
+        <p className="text-muted-foreground text-sm">Loading...</p>
+      </div>
+    );
+  }
 
-	// Wait for Clerk to load
-	if (!isLoaded) {
-		return (
-			<div className="flex h-screen flex-col items-center justify-center gap-2 text-center">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-				<p className="text-sm text-muted-foreground">Loading...</p>
-			</div>
-		);
-	}
+  // If user is already signed in, redirect to app
+  if (isSignedIn) {
+    return <Navigate to="/app" replace />;
+  }
 
-	// If user is already signed in, redirect to app
-	if (isSignedIn) {
-		console.log("[AcceptInvite] User signed in, redirecting to /app");
-		return <Navigate to="/app" replace />;
-	}
-
-	// Render embedded SignIn so the invitation token present in the URL
-	// is preserved and processed by Clerk. This avoids losing the token
-	// via a redirect to a different path.
-	return <SignIn routing="virtual" signUpUrl="/sign-up" />;
+  // Render embedded SignIn so the invitation token present in the URL
+  // is preserved and processed by Clerk. This avoids losing the token
+  // via a redirect to a different path.
+  return <SignIn routing="virtual" signUpUrl="/sign-up" />;
 }
