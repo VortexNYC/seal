@@ -1,0 +1,34 @@
+{
+  "indentStyle": "tab",
+  "indentWidth": 2,
+  "quoteStyle": "double",
+  "experimentalSortImports": {
+    "groups": ["builtin", "external", "internal", ["parent", "sibling", "index"]],
+    "internalPattern": ["@seal/", "@/", "~/"],
+    "newlinesBetween": true,
+    "ignoreCase": true
+  },
+  "experimentalTailwindcss": {
+    "attributes": ["class", "className"],
+    "functions": ["clsx", "cn", "cva", "tw"]
+  },
+  "ignorePatterns": [
+    "**/node_modules",
+    "**/dist",
+    "**/_generated",
+    "**/.turbo",
+    "**/coverage",
+    "**/.clerk",
+    "**/.cache",
+    "**/.output",
+    "**/.next",
+    "**/.tanstack",
+    "**/*.d.ts",
+    "**/routeTree.gen.ts",
+    "**/.source",
+    "**/public/api/search.json",
+    "**/test-results",
+    "**/playwright-report",
+    "**/docs"
+  ]
+}
