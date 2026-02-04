@@ -29,6 +29,10 @@
     "**/public/api/search.json",
     "**/test-results",
     "**/playwright-report",
-    "**/docs"
+    "**/docs",
+    "**/*.json",
+    "**/*.md",
+    "**/*.css",
+    "**/*.html"
   ]
 }
