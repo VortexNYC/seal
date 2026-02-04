@@ -4,6 +4,7 @@
  */
 
 import { v } from "convex/values";
+
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { internalMutation } from "../_generated/server";
@@ -13,30 +14,26 @@ import { internalMutation } from "../_generated/server";
  * Shared between single and batch cleanup operations
  */
 async function performCleanup(
-	ctx: MutationCtx,
-	storageId: string,
-	documentId: Id<"documents">,
+  ctx: MutationCtx,
+  storageId: string,
+  documentId: Id<"documents">,
 ): Promise<{ deleted: boolean; reason?: string }> {
-	// 1. Verify document is still marked as deleted
-	const document = await ctx.db.get(documentId);
+  // 1. Verify document is still marked as deleted
+  const document = await ctx.db.get(documentId);
 
-	// Only delete storage if document is still deleted (or doesn't exist)
-	if (!document || document.status === "deleted") {
-		// 2. Delete the file from Convex Storage
-		await ctx.storage.delete(storageId);
+  // Only delete storage if document is still deleted (or doesn't exist)
+  if (!document || document.status === "deleted") {
+    // 2. Delete the file from Convex Storage
+    await ctx.storage.delete(storageId);
 
-		console.log(
-			`Storage cleanup: Deleted file ${storageId} for document ${documentId}`,
-		);
+    console.info(`Storage cleanup: Deleted file ${storageId} for document ${documentId}`);
 
-		return { deleted: true };
-	}
+    return { deleted: true };
+  }
 
-	// Document was restored, don't delete storage
-	console.log(
-		`Storage cleanup: Skipped deletion for ${storageId} - document was restored`,
-	);
-	return { deleted: false, reason: "document_restored" };
+  // Document was restored, don't delete storage
+  console.info(`Storage cleanup: Skipped deletion for ${storageId} - document was restored`);
+  return { deleted: false, reason: "document_restored" };
 }
 
 /**
@@ -44,20 +41,20 @@ async function performCleanup(
  * This is called by a scheduled task after the grace period
  */
 export const cleanupDocumentStorage = internalMutation({
-	args: {
-		storageId: v.string(),
-		documentId: v.id("documents"),
-	},
-	handler: async (ctx, args) => {
-		try {
-			const result = await performCleanup(ctx, args.storageId, args.documentId);
+  args: {
+    storageId: v.string(),
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const result = await performCleanup(ctx, args.storageId, args.documentId);
 
-			return { success: true, ...result };
-		} catch (error) {
-			console.error(`Storage cleanup error for ${args.storageId}:`, error);
-			throw error;
-		}
-	},
+      return { success: true, ...result };
+    } catch (error) {
+      console.error(`Storage cleanup error for ${args.storageId}:`, error);
+      throw error;
+    }
+  },
 });
 
 /**
@@ -65,45 +62,41 @@ export const cleanupDocumentStorage = internalMutation({
  * Useful for admin cleanup tasks
  */
 export const batchCleanupDocumentStorage = internalMutation({
-	args: {
-		items: v.array(
-			v.object({
-				storageId: v.string(),
-				documentId: v.id("documents"),
-			}),
-		),
-	},
-	handler: async (ctx, args) => {
-		const results = {
-			total: args.items.length,
-			deleted: 0,
-			skipped: 0,
-			errors: 0,
-		};
+  args: {
+    items: v.array(
+      v.object({
+        storageId: v.string(),
+        documentId: v.id("documents"),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const results = {
+      total: args.items.length,
+      deleted: 0,
+      skipped: 0,
+      errors: 0,
+    };
 
-		for (const item of args.items) {
-			try {
-				const result = await performCleanup(
-					ctx,
-					item.storageId,
-					item.documentId,
-				);
+    for (const item of args.items) {
+      try {
+        const result = await performCleanup(ctx, item.storageId, item.documentId);
 
-				if (result.deleted) {
-					results.deleted++;
-				} else {
-					results.skipped++;
-				}
-			} catch (error) {
-				console.error(`Batch cleanup error for ${item.storageId}:`, error);
-				results.errors++;
-			}
-		}
+        if (result.deleted) {
+          results.deleted++;
+        } else {
+          results.skipped++;
+        }
+      } catch (error) {
+        console.error(`Batch cleanup error for ${item.storageId}:`, error);
+        results.errors++;
+      }
+    }
 
-		console.log(
-			`Batch cleanup completed: ${results.deleted} deleted, ${results.skipped} skipped, ${results.errors} errors`,
-		);
+    console.info(
+      `Batch cleanup completed: ${results.deleted} deleted, ${results.skipped} skipped, ${results.errors} errors`,
+    );
 
-		return results;
-	},
+    return results;
+  },
 });

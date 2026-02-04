@@ -17,32 +17,32 @@
  * @returns Hexadecimal hash string
  */
 export function generateStringHash(data: string): string {
-	// Simple hash implementation using Web-compatible algorithm
-	// This creates a deterministic hash suitable for signature verification
-	let hash = 0;
-	const str = data;
+  // Simple hash implementation using Web-compatible algorithm
+  // This creates a deterministic hash suitable for signature verification
+  let hash = 0;
+  const str = data;
 
-	if (str.length === 0) return "0";
+  if (str.length === 0) return "0";
 
-	for (let i = 0; i < str.length; i++) {
-		const char = str.charCodeAt(i);
-		hash = (hash << 5) - hash + char;
-		hash = hash & hash; // Convert to 32bit integer
-	}
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
 
-	// Convert to hex and pad to ensure consistent length
-	const hexHash = Math.abs(hash).toString(16);
+  // Convert to hex and pad to ensure consistent length
+  const hexHash = Math.abs(hash).toString(16);
 
-	// Create a longer hash by combining multiple rounds
-	let extendedHash = hexHash;
-	let seed = hash;
-	for (let round = 0; round < 7; round++) {
-		seed = Math.imul(seed, 0x5bd1e995);
-		seed ^= seed >>> 15;
-		extendedHash += Math.abs(seed).toString(16);
-	}
+  // Create a longer hash by combining multiple rounds
+  let extendedHash = hexHash;
+  let seed = hash;
+  for (let round = 0; round < 7; round++) {
+    seed = Math.imul(seed, 0x5bd1e995);
+    seed ^= seed >>> 15;
+    extendedHash += Math.abs(seed).toString(16);
+  }
 
-	return extendedHash.padStart(64, "0").substring(0, 64);
+  return extendedHash.padStart(64, "0").substring(0, 64);
 }
 
 /**
@@ -57,21 +57,17 @@ export function generateStringHash(data: string): string {
  * @returns Hexadecimal hash string
  */
 export function generateSignatureHash(
-	signatureData: string,
-	recipientId: string,
-	fieldId: string,
-	documentHash: string,
-	timestamp: number,
+  signatureData: string,
+  recipientId: string,
+  fieldId: string,
+  documentHash: string,
+  timestamp: number,
 ): string {
-	const dataToHash = [
-		signatureData,
-		recipientId,
-		fieldId,
-		documentHash,
-		timestamp.toString(),
-	].join("|");
+  const dataToHash = [signatureData, recipientId, fieldId, documentHash, timestamp.toString()].join(
+    "|",
+  );
 
-	return generateStringHash(dataToHash);
+  return generateStringHash(dataToHash);
 }
 
 /**
@@ -87,21 +83,21 @@ export function generateSignatureHash(
  * @returns True if hash matches, false otherwise
  */
 export function verifySignatureHash(
-	signatureData: string,
-	recipientId: string,
-	fieldId: string,
-	documentHash: string,
-	timestamp: number,
-	storedHash: string,
+  signatureData: string,
+  recipientId: string,
+  fieldId: string,
+  documentHash: string,
+  timestamp: number,
+  storedHash: string,
 ): boolean {
-	const calculatedHash = generateSignatureHash(
-		signatureData,
-		recipientId,
-		fieldId,
-		documentHash,
-		timestamp,
-	);
-	return calculatedHash === storedHash;
+  const calculatedHash = generateSignatureHash(
+    signatureData,
+    recipientId,
+    fieldId,
+    documentHash,
+    timestamp,
+  );
+  return calculatedHash === storedHash;
 }
 
 /**
@@ -111,11 +107,8 @@ export function verifySignatureHash(
  * @param originalHash - Original document hash stored at upload
  * @returns True if document has not been tampered with
  */
-export function verifyDocumentIntegrity(
-	currentHash: string,
-	originalHash: string,
-): boolean {
-	return currentHash === originalHash;
+export function verifyDocumentIntegrity(currentHash: string, originalHash: string): boolean {
+  return currentHash === originalHash;
 }
 
 /**
@@ -128,53 +121,53 @@ export function verifyDocumentIntegrity(
  * @returns Signature certificate object
  */
 export function generateSignatureCertificate(
-	signature: {
-		signatureHash?: string | null;
-		documentHashAtSigning?: string | null;
-		signedAt: number;
-		ipAddress: string;
-		userAgent: string;
-		signatureMethod?: string | null;
-	},
-	recipient: {
-		name?: string | null;
-		email: string;
-	},
-	document: {
-		name: string;
-		documentHash?: string | null;
-	},
+  signature: {
+    signatureHash?: string | null;
+    documentHashAtSigning?: string | null;
+    signedAt: number;
+    ipAddress: string;
+    userAgent: string;
+    signatureMethod?: string | null;
+  },
+  recipient: {
+    name?: string | null;
+    email: string;
+  },
+  document: {
+    name: string;
+    documentHash?: string | null;
+  },
 ): {
-	certificateVersion: string;
-	documentName: string;
-	documentHash: string | null;
-	signerName: string | null;
-	signerEmail: string;
-	signedAt: string;
-	signatureHash: string | null;
-	documentHashAtSigning: string | null;
-	signatureMethod: string | null;
-	ipAddress: string;
-	userAgent: string;
-	integrityVerified: boolean;
+  certificateVersion: string;
+  documentName: string;
+  documentHash: string | null;
+  signerName: string | null;
+  signerEmail: string;
+  signedAt: string;
+  signatureHash: string | null;
+  documentHashAtSigning: string | null;
+  signatureMethod: string | null;
+  ipAddress: string;
+  userAgent: string;
+  integrityVerified: boolean;
 } {
-	const integrityVerified =
-		document.documentHash != null &&
-		signature.documentHashAtSigning != null &&
-		document.documentHash === signature.documentHashAtSigning;
+  const integrityVerified =
+    document.documentHash !== null &&
+    signature.documentHashAtSigning !== null &&
+    document.documentHash === signature.documentHashAtSigning;
 
-	return {
-		certificateVersion: "1.0",
-		documentName: document.name,
-		documentHash: document.documentHash ?? null,
-		signerName: recipient.name ?? null,
-		signerEmail: recipient.email,
-		signedAt: new Date(signature.signedAt).toISOString(),
-		signatureHash: signature.signatureHash ?? null,
-		documentHashAtSigning: signature.documentHashAtSigning ?? null,
-		signatureMethod: signature.signatureMethod ?? null,
-		ipAddress: signature.ipAddress,
-		userAgent: signature.userAgent,
-		integrityVerified,
-	};
+  return {
+    certificateVersion: "1.0",
+    documentName: document.name,
+    documentHash: document.documentHash ?? null,
+    signerName: recipient.name ?? null,
+    signerEmail: recipient.email,
+    signedAt: new Date(signature.signedAt).toISOString(),
+    signatureHash: signature.signatureHash ?? null,
+    documentHashAtSigning: signature.documentHashAtSigning ?? null,
+    signatureMethod: signature.signatureMethod ?? null,
+    ipAddress: signature.ipAddress,
+    userAgent: signature.userAgent,
+    integrityVerified,
+  };
 }
