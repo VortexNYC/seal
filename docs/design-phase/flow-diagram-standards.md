@@ -11,6 +11,7 @@ Standardized flow diagram conventions for documenting user journeys, system proc
 ### **Standard Flowchart Elements**
 
 #### **Start/End Points**
+
 ```
 ○ Start Point (entry to flow)
 ◉ End Point (successful completion)
@@ -18,6 +19,7 @@ Standardized flow diagram conventions for documenting user journeys, system proc
 ```
 
 #### **Process & Action Nodes**
+
 ```
 □ Process/Action (user or system action)
 ◇ Decision Point (yes/no, conditional branching)
@@ -26,6 +28,7 @@ Standardized flow diagram conventions for documenting user journeys, system proc
 ```
 
 #### **Flow Direction**
+
 ```
 → Normal flow direction
 ↗ Optional/alternative path
@@ -35,6 +38,7 @@ Standardized flow diagram conventions for documenting user journeys, system proc
 ```
 
 ### **State-Specific Symbols**
+
 ```
 🟢 Happy Path Flow (primary user journey)
 🔴 Error Path Flow (error handling and recovery)
@@ -50,6 +54,7 @@ Standardized flow diagram conventions for documenting user journeys, system proc
 ### **Color-Coded Paths** (for digital diagrams)
 
 #### **Path Types**
+
 - **🟢 Green**: Happy path (primary success flow)
 - **🔴 Red**: Error paths (failure and recovery)
 - **🟡 Yellow**: Processing/loading states
@@ -57,6 +62,7 @@ Standardized flow diagram conventions for documenting user journeys, system proc
 - **⚪ Gray**: Edge cases and alternative paths
 
 #### **Text Formatting**
+
 ```
 Node Labels:
 • Actions: "Create Document"
@@ -76,6 +82,7 @@ Flow Labels:
 ## 📋 Flow Diagram Templates
 
 ### **Simple Linear Flow**
+
 ```
 ○ Start
     ↓
@@ -87,6 +94,7 @@ Flow Labels:
 ```
 
 ### **Decision-Based Flow**
+
 ```
 ○ Start
     ↓
@@ -98,6 +106,7 @@ Flow Labels:
 ```
 
 ### **Multi-Path Flow**
+
 ```
 ○ Start
     ↓
@@ -110,6 +119,7 @@ Flow Labels:
 ```
 
 ### **Error Recovery Flow**
+
 ```
 □ Submit Form
     ↓
@@ -126,6 +136,7 @@ Flow Labels:
 ## 🎭 State Transition Flows
 
 ### **Screen-to-Screen Flows**
+
 ```
 Screen Transition Format:
 
@@ -137,6 +148,7 @@ Screen Transition Format:
 ```
 
 ### **Component State Flows**
+
 ```
 Component State Flow:
 
@@ -150,6 +162,7 @@ Component State Flow:
 ```
 
 ### **Authentication Flow Example**
+
 ```
 🔵 Landing Page
     ↓ Click "Sign In"
@@ -167,6 +180,7 @@ Component State Flow:
 ## 🔄 Complex Flow Patterns
 
 ### **Multi-Step Process Flow**
+
 ```
 Step-by-Step Process:
 
@@ -175,7 +189,7 @@ Step-by-Step Process:
 □ Step 1: Document Upload
     ↓ ✓ Success
 □ Step 2: Field Placement
-    ↓ ✓ Success  
+    ↓ ✓ Success
 □ Step 3: Recipient Setup
     ↓ ✓ Success
 □ Step 4: Send Document
@@ -187,6 +201,7 @@ Error Recovery at any step:
 ```
 
 ### **Parallel Process Flow**
+
 ```
 Parallel Processing:
 
@@ -199,7 +214,7 @@ Parallel Processing:
     │      ├─ ✓ → □ Generate Preview
     │      └─ ❌ → 🔴 Conversion Error
     │
-    ├─ 🟡 Text Extraction  
+    ├─ 🟡 Text Extraction
     │      ↓
     │   ◇ Extraction Success?
     │      ├─ ✓ → □ Enable Search
@@ -210,12 +225,13 @@ Parallel Processing:
        ◇ Analysis Complete?
           ├─ ✓ → □ Suggest Fields
           └─ ❌ → ⚪ Manual Setup
-    
+
     ↓ (All processes complete)
 ◉ Document Ready
 ```
 
 ### **Role-Based Flow Branching**
+
 ```
 Role-Based Access:
 
@@ -241,6 +257,7 @@ Role-Based Access:
 ## 📱 Device-Specific Flows
 
 ### **Responsive Flow Variations**
+
 ```
 Device-Aware Navigation:
 
@@ -259,6 +276,7 @@ Device-Aware Navigation:
 ```
 
 ### **Touch vs. Mouse Interactions**
+
 ```
 Input Method Flows:
 
@@ -281,6 +299,7 @@ Input Method Flows:
 ## 🔄 Integration Flow Patterns
 
 ### **API Integration Flows**
+
 ```
 API Call Flow:
 
@@ -296,6 +315,7 @@ API Call Flow:
 ```
 
 ### **Real-Time Update Flows**
+
 ```
 WebSocket/Convex Updates:
 
@@ -314,6 +334,7 @@ WebSocket/Convex Updates:
 ```
 
 ### **Webhook Flow Example**
+
 ```
 Webhook Integration:
 
@@ -335,6 +356,7 @@ Webhook Integration:
 ## 📝 Flow Documentation Standards
 
 ### **Flow Header Template**
+
 ```markdown
 # Flow Name - Feature Context
 
@@ -347,6 +369,7 @@ Webhook Integration:
 ```
 
 ### **Flow Description Format**
+
 ```markdown
 ## Primary Flow (🟢 Happy Path)
 
@@ -360,11 +383,13 @@ Webhook Integration:
 ## Error Flows (🔴 Error Paths)
 
 ### Validation Error
+
 - **Trigger**: Invalid field configuration
 - **Response**: Show inline error messages
 - **Recovery**: User fixes errors and retries
 
-### Server Error  
+### Server Error
+
 - **Trigger**: Backend service unavailable
 - **Response**: Show error page with retry option
 - **Recovery**: User can retry or save draft for later
@@ -375,6 +400,7 @@ Webhook Integration:
 ## 🎯 Flow Quality Standards
 
 ### **Required Flow Coverage**
+
 - [ ] **Happy Path**: Primary success journey documented
 - [ ] **Error Paths**: All major error scenarios covered
 - [ ] **Edge Cases**: Unusual but valid scenarios included
@@ -382,6 +408,7 @@ Webhook Integration:
 - [ ] **Alternative Paths**: Secondary success routes shown
 
 ### **Flow Validation Checklist**
+
 - [ ] **Start/End Clear**: Obvious entry and exit points
 - [ ] **Decision Points**: All conditional branches documented
 - [ ] **Error Handling**: Recovery options at each failure point
@@ -389,6 +416,7 @@ Webhook Integration:
 - [ ] **Accessibility**: Alternative interaction paths considered
 
 ### **Cross-Reference Requirements**
+
 - [ ] **Wireframe Links**: Flows reference specific wireframes
 - [ ] **Feature Specs**: Flows align with feature requirements
 - [ ] **Data Model**: Flows reflect actual data relationships
@@ -399,12 +427,14 @@ Webhook Integration:
 ## 🔄 Flow Diagram Tools & Format
 
 ### **Recommended Tools**
+
 1. **ASCII Text**: For simple flows in markdown
 2. **Mermaid**: For complex flows in documentation
 3. **Draw.io/Lucidchart**: For detailed visual flows
 4. **Figma/Whimsical**: For collaborative flow design
 
 ### **Export Standards**
+
 - **Format**: SVG preferred for scalability
 - **Resolution**: High-res for detailed review
 - **Annotations**: Include in exported version

@@ -256,18 +256,21 @@
 ## Interactive Elements
 
 ### API Key Management
+
 - **Create/Delete**: Full CRUD operations for API keys
 - **Copy to Clipboard**: One-click copy for new keys
 - **Usage Tracking**: Show last used timestamps
 - **Permission Scopes**: Granular permission control
 
 ### Webhook Management
+
 - **Endpoint Testing**: Test webhook delivery
 - **Event Selection**: Choose which events to receive
 - **Delivery Status**: Show successful/failed deliveries
 - **Secret Management**: Optional webhook signing secrets
 
 ### Free Plan Restrictions
+
 - **Upgrade Prompts**: Clear calls-to-action for Pro upgrade
 - **Feature Previews**: Show what's available with Pro
 - **Documentation Access**: Free users can still view docs
@@ -277,12 +280,14 @@
 ## State Management
 
 ### API Key Security
+
 - **One-time Display**: Keys shown only once after creation
 - **Secure Storage**: Keys stored encrypted in database
 - **Regeneration**: Replace compromised keys
 - **Audit Logging**: Track all API key operations
 
 ### Webhook Reliability
+
 - **Retry Logic**: Automatic retry for failed deliveries
 - **Status Monitoring**: Track webhook health
 - **Event Queuing**: Queue events during endpoint downtime
@@ -292,6 +297,7 @@
 ## Pro Feature Gating
 
 ### Access Control
+
 - **Plan Check**: Verify Pro subscription before showing features
 - **Graceful Degradation**: Show upgrade prompts for Free users
 - **Feature Flags**: Toggle features based on subscription status
@@ -310,6 +316,7 @@
 ## Confirmation Dialogs
 
 ### Remove API Key Confirmation
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal          Workspace: Acme Corp ▼                    👤 John Doe ▼   │
@@ -345,6 +352,7 @@
 ```
 
 ### Remove Webhook Confirmation
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal          Workspace: Acme Corp ▼                    👤 John Doe ▼   │

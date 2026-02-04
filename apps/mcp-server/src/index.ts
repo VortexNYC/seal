@@ -9,15 +9,16 @@
  */
 import { clerkMiddleware } from "@clerk/express";
 import {
-	authServerMetadataHandlerClerk,
-	mcpAuthClerk,
-	protectedResourceHandlerClerk,
-	streamableHttpHandler,
+  authServerMetadataHandlerClerk,
+  mcpAuthClerk,
+  protectedResourceHandlerClerk,
+  streamableHttpHandler,
 } from "@clerk/mcp-tools/express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import cors from "cors";
 import express from "express";
+
 import { SealApiClient } from "./client";
 import { getConfig } from "./config";
 import { registerAllResources } from "./resources";
@@ -29,8 +30,8 @@ const config = getConfig();
 
 // Create MCP server instance
 const mcpServer = new McpServer({
-	name: "seal-mcp-server",
-	version: "0.0.1",
+  name: "seal-mcp-server",
+  version: "0.0.1",
 });
 
 // Create API client
@@ -48,10 +49,10 @@ app.set("trust proxy", true);
 
 // CORS configuration - expose WWW-Authenticate header for OAuth
 app.use(
-	cors({
-		origin: "*",
-		exposedHeaders: ["WWW-Authenticate", "Mcp-Session-Id"],
-	}),
+  cors({
+    origin: "*",
+    exposedHeaders: ["WWW-Authenticate", "Mcp-Session-Id"],
+  }),
 );
 
 // Clerk middleware for authentication
@@ -65,26 +66,26 @@ app.use(express.json());
 // =============================================================================
 
 app.get("/", (_req, res) => {
-	res.json({
-		name: "Seal MCP Server",
-		version: "0.0.1",
-		description: "Model Context Protocol server for Seal document management",
-		endpoints: {
-			mcp: "/mcp",
-			health: "/health",
-			oauth_protected_resource: "/.well-known/oauth-protected-resource/mcp",
-			oauth_authorization_server: "/.well-known/oauth-authorization-server",
-		},
-		documentation: "https://docs.seal.app/api/mcp",
-	});
+  res.json({
+    name: "Seal MCP Server",
+    version: "0.0.1",
+    description: "Model Context Protocol server for Seal document management",
+    endpoints: {
+      mcp: "/mcp",
+      health: "/health",
+      oauth_protected_resource: "/.well-known/oauth-protected-resource/mcp",
+      oauth_authorization_server: "/.well-known/oauth-authorization-server",
+    },
+    documentation: "https://docs.seal.app/api/mcp",
+  });
 });
 
 app.get("/health", (_req, res) => {
-	res.json({
-		status: "ok",
-		name: "seal-mcp-server",
-		version: "0.0.1",
-	});
+  res.json({
+    status: "ok",
+    name: "seal-mcp-server",
+    version: "0.0.1",
+  });
 });
 
 // =============================================================================
@@ -96,18 +97,15 @@ app.get("/health", (_req, res) => {
  * Tells MCP clients where to authenticate
  */
 app.get(
-	"/.well-known/oauth-protected-resource/mcp",
-	protectedResourceHandlerClerk({ scopes_supported: ["email", "profile"] }),
+  "/.well-known/oauth-protected-resource/mcp",
+  protectedResourceHandlerClerk({ scopes_supported: ["email", "profile"] }),
 );
 
 /**
  * Authorization Server Metadata (RFC 8414)
  * Points to Clerk's OAuth endpoints
  */
-app.get(
-	"/.well-known/oauth-authorization-server",
-	authServerMetadataHandlerClerk,
-);
+app.get("/.well-known/oauth-authorization-server", authServerMetadataHandlerClerk);
 
 // =============================================================================
 // MCP Endpoint
@@ -118,14 +116,13 @@ app.get(
  * This helps verify the auth flow is working correctly
  */
 app.get("/debug/auth", mcpAuthClerk, (req, res) => {
-	const authInfo = (req as typeof req & { auth?: unknown }).auth;
-	res.json({
-		hasAuth: !!authInfo,
-		authType: typeof authInfo,
-		authKeys:
-			authInfo && typeof authInfo === "object" ? Object.keys(authInfo) : [],
-		auth: authInfo,
-	});
+  const authInfo = (req as typeof req & { auth?: unknown }).auth;
+  res.json({
+    hasAuth: !!authInfo,
+    authType: typeof authInfo,
+    authKeys: authInfo && typeof authInfo === "object" ? Object.keys(authInfo) : [],
+    auth: authInfo,
+  });
 });
 
 /**
@@ -150,29 +147,29 @@ export default app;
 // =============================================================================
 
 async function startServer() {
-	// Check if we should run in stdio mode (for MCP clients)
-	const isStdioMode =
-		process.argv.includes("--stdio") ||
-		(process.stdin.isTTY === false && process.stdout.isTTY === false) ||
-		process.env.MCP_TRANSPORT === "stdio";
+  // Check if we should run in stdio mode (for MCP clients)
+  const isStdioMode =
+    process.argv.includes("--stdio") ||
+    (process.stdin.isTTY === false && process.stdout.isTTY === false) ||
+    process.env.MCP_TRANSPORT === "stdio";
 
-	if (isStdioMode) {
-		sealLogger.info("Starting in stdio mode...");
-		const transport = new StdioServerTransport();
-		await mcpServer.connect(transport);
-		sealLogger.info("MCP server connected via stdio");
-		return;
-	}
+  if (isStdioMode) {
+    sealLogger.info("Starting in stdio mode...");
+    const transport = new StdioServerTransport();
+    await mcpServer.connect(transport);
+    sealLogger.info("MCP server connected via stdio");
+    return;
+  }
 
-	// HTTP mode (default for development)
-	const port = Number.parseInt(process.env.PORT || "5183", 10);
-	sealLogger.info(`Starting HTTP server on port ${port}...`);
-	sealLogger.info(`MCP endpoint: http://localhost:${port}/mcp`);
-	sealLogger.info(`Health check: http://localhost:${port}/health`);
+  // HTTP mode (default for development)
+  const port = Number.parseInt(process.env.PORT || "5183", 10);
+  sealLogger.info(`Starting HTTP server on port ${port}...`);
+  sealLogger.info(`MCP endpoint: http://localhost:${port}/mcp`);
+  sealLogger.info(`Health check: http://localhost:${port}/health`);
 
-	app.listen(port, () => {
-		sealLogger.info(`Server listening on port ${port}`);
-	});
+  app.listen(port, () => {
+    sealLogger.info(`Server listening on port ${port}`);
+  });
 }
 
 // Only start server when running directly (not imported via Vercel)
@@ -180,5 +177,5 @@ const isVercel = process.env.VERCEL === "1";
 const isProduction = process.env.NODE_ENV === "production";
 
 if (!isVercel && !isProduction) {
-	startServer().catch((err: Error) => sealLogger.error(err.message));
+  startServer().catch((err: Error) => sealLogger.error(err.message));
 }

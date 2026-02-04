@@ -429,7 +429,7 @@
 ║     ║                               ║
 ╚╗    ╚═══════════════════════════════╝
  ╚╗                 ●
-  ╚╗            
+  ╚╗
    ╚╗
     ╚╗
      ╚═══════════════════════════════
@@ -490,7 +490,7 @@
 ║     ║                               ║
 ╚╗    ╚═══════════════════════════════╝
  ╚╗                 ●
-  ╚╗            
+  ╚╗
    ╚╗
     ╚╗
      ╚═══════════════════════════════
@@ -551,7 +551,7 @@
 ║     ║                               ║
 ╚╗    ╚═══════════════════════════════╝
  ╚╗                 ●
-  ╚╗            
+  ╚╗
    ╚╗
     ╚╗
      ╚═══════════════════════════════
@@ -562,30 +562,35 @@
 ## Interaction Specifications
 
 ### Progress Tracking
+
 - **Visual Progress Bar**: shadcn/ui Progress component with neutral-900 fill
 - **Step Validation**: Form validation with Zod schemas before proceeding
-- **Resume Capability**: Convex state persistence for session resumption  
+- **Resume Capability**: Convex state persistence for session resumption
 - **Skip Options**: Power users can skip setup with Dialog confirmation
 
 ### Document Upload Handling
+
 - **Drag & Drop**: React Dropzone with shadcn/ui visual feedback
 - **File Validation**: Real-time format and size checking with Toast notifications
 - **Upload Progress**: shadcn/ui Progress component during upload
 - **Error Recovery**: Alert component with clear retry Button options
 
-### Field Placement Interface  
+### Field Placement Interface
+
 - **Click to Place**: Interactive PDF viewer with shadcn/ui Tooltip guidance
 - **Visual Feedback**: Immediate Badge indicators for placed fields
 - **Field Management**: Draggable elements with Card containers
 - **Templates**: Sheet component with suggested field templates
 
 ### Recipient Management
+
 - **Smart Defaults**: Form auto-fill with user's email for testing
 - **Validation**: Real-time email validation using shadcn/ui form patterns
 - **Messaging**: Textarea component with character count
 - **Role Management**: RadioGroup component for signer vs. CC distinction
 
 ### Component Integration
+
 - **shadcn/ui Components**: Form, Input, Button, Progress, Card, Badge, Alert, Sheet, Dialog
 - **Color Palette**: Consistent neutral-50 to neutral-950 scale throughout
 - **Typography**: Inter font with heading and body text hierarchy
@@ -597,6 +602,7 @@
 ## Error Handling States
 
 ### Upload Error States
+
 ```
 ❌ File Too Large: Alert component with "File exceeds 10MB limit. Please choose a smaller file."
 ❌ Invalid Format: Alert component with "Unsupported format. Please use PDF, DOC, or DOCX."
@@ -604,7 +610,8 @@
 ❌ Corrupted File: Alert component with "File appears corrupted. Please try a different file."
 ```
 
-### Field Placement Errors  
+### Field Placement Errors
+
 ```
 ❌ No Fields Added: Alert component with "Please add at least one signature field to continue."
 ❌ Overlapping Fields: Alert component with "Fields cannot overlap. Please adjust placement."
@@ -612,6 +619,7 @@
 ```
 
 ### Recipient Validation Errors
+
 ```
 ❌ Invalid Email: Form field error with "Please enter a valid email address."
 ❌ No Recipients: Form validation error with "Please add at least one recipient."
@@ -623,24 +631,28 @@
 ## Technical Integration
 
 ### Convex Integration
+
 - **Progress Persistence**: Save onboarding state using Convex mutations
 - **Document Storage**: Secure temporary file storage during onboarding
 - **Real-time Updates**: Live progress and status updates via Convex subscriptions
 - **Analytics**: Track completion rates and identify drop-off points
 
 ### Clerk Integration
+
 - **Session Management**: Maintain authentication throughout multi-step flow
 - **Workspace Creation**: Automatic workspace setup during onboarding
 - **User Context**: Personalized experience based on Clerk user data
 - **Security**: Secure document handling with proper access control
 
 ### shadcn/ui Integration
+
 - **Form Management**: react-hook-form + Zod validation with shadcn/ui Form components
 - **Loading States**: Skeleton components matching actual content structure
 - **Error Handling**: Consistent Alert and Toast components for all error states
 - **Mobile Responsive**: All components adapt seamlessly across device sizes
 
 ### Document Processing
+
 - **Format Support**: PDF.js integration for preview generation
 - **Field Management**: Interactive signature field placement with visual feedback
 - **Security**: Encrypted document processing and secure temporary storage

@@ -1,124 +1,105 @@
 import { cn } from "@/lib/utils";
 
 interface StripeColumnProps {
-	className?: string;
-	position?: "left" | "right";
+  className?: string;
+  position?: "left" | "right";
 }
 
-export function StripeColumn({
-	className,
-	position = "left",
-}: StripeColumnProps) {
-	return (
-		<>
-			<div
-				className={cn(
-					"hidden md:block dark:hidden w-10 border-x border-brand-900/5",
-					"bg-[size:10px_10px] bg-fixed",
-					position === "left" ? "col-start-1" : "col-start-3",
-					"row-span-full row-start-1",
-					className,
-				)}
-				style={{
-					backgroundImage:
-						"repeating-linear-gradient(315deg, rgb(0 0 0 / 0.03) 0px, rgb(0 0 0 / 0.03) 1px, transparent 0px, transparent 50%)",
-				}}
-			/>
-			<div
-				className={cn(
-					"hidden dark:md:block w-10 border-x border-white/5",
-					"bg-[size:10px_10px] bg-fixed",
-					position === "left" ? "col-start-1" : "col-start-3",
-					"row-span-full row-start-1",
-					className,
-				)}
-				style={{
-					backgroundImage:
-						"repeating-linear-gradient(315deg, rgb(255 255 255 / 0.05) 0px, rgb(255 255 255 / 0.05) 1px, transparent 0px, transparent 50%)",
-				}}
-			/>
-		</>
-	);
+export function StripeColumn({ className, position = "left" }: StripeColumnProps) {
+  return (
+    <>
+      <div
+        className={cn(
+          "border-brand-900/5 hidden w-10 border-x md:block dark:hidden",
+          "bg-[size:10px_10px] bg-fixed",
+          position === "left" ? "col-start-1" : "col-start-3",
+          "row-span-full row-start-1",
+          className,
+        )}
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(315deg, rgb(0 0 0 / 0.03) 0px, rgb(0 0 0 / 0.03) 1px, transparent 0px, transparent 50%)",
+        }}
+      />
+      <div
+        className={cn(
+          "hidden w-10 border-x border-white/5 dark:md:block",
+          "bg-[size:10px_10px] bg-fixed",
+          position === "left" ? "col-start-1" : "col-start-3",
+          "row-span-full row-start-1",
+          className,
+        )}
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(315deg, rgb(255 255 255 / 0.05) 0px, rgb(255 255 255 / 0.05) 1px, transparent 0px, transparent 50%)",
+        }}
+      />
+    </>
+  );
 }
 
 interface GridLayoutProps {
-	children: React.ReactNode;
-	className?: string;
-	showStripes?: boolean;
+  children: React.ReactNode;
+  className?: string;
+  showStripes?: boolean;
 }
 
-export function GridLayout({
-	children,
-	className,
-	showStripes = true,
-}: GridLayoutProps) {
-	return (
-		<div
-			className={cn(
-				"grid min-h-screen",
-				showStripes
-					? "md:grid-cols-[40px_1fr_40px] grid-cols-1"
-					: "grid-cols-1",
-				className,
-			)}
-		>
-			{showStripes && <StripeColumn position="left" />}
-			<div className={cn(showStripes && "col-start-2")}>{children}</div>
-			{showStripes && <StripeColumn position="right" />}
-		</div>
-	);
+export function GridLayout({ children, className, showStripes = true }: GridLayoutProps) {
+  return (
+    <div
+      className={cn(
+        "grid min-h-screen",
+        showStripes ? "grid-cols-1 md:grid-cols-[40px_1fr_40px]" : "grid-cols-1",
+        className,
+      )}
+    >
+      {showStripes && <StripeColumn position="left" />}
+      <div className={cn(showStripes && "col-start-2")}>{children}</div>
+      {showStripes && <StripeColumn position="right" />}
+    </div>
+  );
 }
 
 interface DotPatternProps {
-	className?: string;
+  className?: string;
 }
 
 export function DotPattern({ className }: DotPatternProps) {
-	return (
-		<>
-			<div
-				className={cn(
-					"pointer-events-none dark:hidden",
-					"bg-[size:16px_16px]",
-					className,
-				)}
-				style={{
-					backgroundImage:
-						"radial-gradient(circle, rgb(0 0 0 / 0.35) 1px, transparent 1px)",
-				}}
-			/>
-			<div
-				className={cn(
-					"pointer-events-none hidden dark:block",
-					"bg-[size:16px_16px]",
-					className,
-				)}
-				style={{
-					backgroundImage:
-						"radial-gradient(circle, rgb(255 255 255 / 0.15) 1px, transparent 1px)",
-				}}
-			/>
-		</>
-	);
+  return (
+    <>
+      <div
+        className={cn("pointer-events-none dark:hidden", "bg-[size:16px_16px]", className)}
+        style={{
+          backgroundImage: "radial-gradient(circle, rgb(0 0 0 / 0.35) 1px, transparent 1px)",
+        }}
+      />
+      <div
+        className={cn("pointer-events-none hidden dark:block", "bg-[size:16px_16px]", className)}
+        style={{
+          backgroundImage: "radial-gradient(circle, rgb(255 255 255 / 0.15) 1px, transparent 1px)",
+        }}
+      />
+    </>
+  );
 }
 
 interface CardWithDotsProps {
-	children: React.ReactNode;
-	className?: string;
+  children: React.ReactNode;
+  className?: string;
 }
 
 export function CardWithDots({ children, className }: CardWithDotsProps) {
-	return (
-		<div
-			className={cn(
-				"relative overflow-hidden rounded-lg",
-				"bg-brand-950/[2.5%] dark:bg-white/[2.5%]",
-				"ring-1 ring-inset ring-brand-950/5 dark:ring-white/5",
-				className,
-			)}
-		>
-			<DotPattern />
-			{children}
-		</div>
-	);
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-lg",
+        "bg-brand-950/[2.5%] dark:bg-white/[2.5%]",
+        "ring-brand-950/5 ring-1 ring-inset dark:ring-white/5",
+        className,
+      )}
+    >
+      <DotPattern />
+      {children}
+    </div>
+  );
 }

@@ -241,16 +241,19 @@
 ## Interaction Specifications
 
 ### Workspace Switching
+
 - **Dropdown Selection**: Change active workspace context
 - **Real-time Updates**: Statistics update immediately on switch
 - **Preserved Context**: Remember last viewed workspace
 
 ### API Key Management
+
 - **Quick Actions**: View usage, manage permissions, delete keys
 - **Usage Monitoring**: Real-time usage percentage updates
 - **Rate Limit Warnings**: Visual indicators when approaching limits
 
 ### Time Period Navigation
+
 - **Period Selection**: Current month, last month, all time
 - **Data Refresh**: Automatic updates for current period
 - **Export Options**: Download statistics as CSV (future)

@@ -11,6 +11,7 @@ This document outlines all user flows for profile management, including profile 
 ### Profile Editing Flow
 
 #### Happy Path Workflow
+
 ```
 ○ User Accesses Profile
     ↓
@@ -36,6 +37,7 @@ This document outlines all user flows for profile management, including profile 
 ```
 
 #### Profile Edit Error Flow
+
 ```
 Profile Edit Errors:
 ○ User Submits Changes
@@ -65,6 +67,7 @@ Profile Edit Errors:
 ### Avatar Upload Flow
 
 #### Avatar Upload Process
+
 ```
 ○ User Clicks Avatar Upload
     ↓
@@ -104,6 +107,7 @@ Profile Edit Errors:
 ### Email Change Flow
 
 #### Email Change Process
+
 ```
 ○ User Changes Email
     ↓
@@ -135,6 +139,7 @@ Profile Edit Errors:
 ### Notification Preferences Flow
 
 #### Simplified Notification Settings
+
 ```
 ○ User Accesses Notification Settings
     ↓
@@ -156,6 +161,7 @@ Profile Edit Errors:
 ### Account Settings Flow
 
 #### Security Settings
+
 ```
 ○ User Accesses Account Settings
     ↓
@@ -179,6 +185,7 @@ Profile Edit Errors:
 ### Statistics Viewing Flow
 
 #### Per-Workspace Statistics
+
 ```
 ○ User Views Usage Statistics
     ↓
@@ -199,6 +206,7 @@ Profile Edit Errors:
 ```
 
 #### API Key Management Flow
+
 ```
 ○ User Manages API Keys
     ↓
@@ -220,6 +228,7 @@ Profile Edit Errors:
 ## 🚫 Account Deletion Flow
 
 ### Account Deletion Process
+
 ```
 ○ User Requests Account Deletion
     ↓
@@ -250,6 +259,7 @@ Profile Edit Errors:
 ## 📱 Mobile-Specific Flows
 
 ### Mobile Profile Management
+
 ```
 Mobile Considerations:
 ○ Touch-Optimized Interface
@@ -270,12 +280,14 @@ Mobile Considerations:
 ## 🎯 Success Criteria
 
 ### Flow Completion Targets
+
 - **Profile Update**: >95% successful profile updates
-- **Avatar Upload**: >90% successful avatar uploads  
+- **Avatar Upload**: >90% successful avatar uploads
 - **Email Verification**: >85% email change completion
 - **Settings Sync**: <2 seconds for preference updates
 
 ### Error Recovery Rates
+
 - **Network Errors**: >80% retry success rate
 - **Validation Errors**: >95% user correction rate
 - **Upload Errors**: >75% successful retry rate

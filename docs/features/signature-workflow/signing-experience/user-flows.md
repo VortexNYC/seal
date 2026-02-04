@@ -3,6 +3,7 @@
 ## Primary Signing Flows
 
 ### Initial Document Access Flow (From Email Invitation)
+
 ```
 ○ Recipient Receives Signing Invitation Email
     ↓
@@ -38,6 +39,7 @@
 ```
 
 ### Returning User Signing Flow
+
 ```
 ○ Existing User Receives Signing Invitation
     ↓
@@ -61,6 +63,7 @@
 ```
 
 ### Complete Signing Flow (Desktop/Mobile)
+
 ```
 ○ Authenticated Recipient Ready to Sign Document
     ↓
@@ -106,6 +109,7 @@
 ## Authentication and Account Creation
 
 ### External Recipient Account Creation Flow
+
 ```
 ○ External Recipient Needs to Sign Document
     ↓
@@ -135,6 +139,7 @@
 ```
 
 ### Workspace Member Internal Signing Flow
+
 ```
 ○ Workspace Member Receives Internal Signing Request
     ↓
@@ -162,6 +167,7 @@
 ## Field Type Specific Flows
 
 ### Signature Field Completion Flow
+
 ```
 ○ Authenticated Recipient Encounters Signature Field
     ↓
@@ -191,6 +197,7 @@
 ```
 
 ### Date Field Auto-Population Flow
+
 ```
 ○ Recipient Encounters Date Field
     ↓
@@ -214,6 +221,7 @@
 ```
 
 ### Text Field Completion Flow
+
 ```
 ○ Recipient Encounters Text Field
     ↓
@@ -241,6 +249,7 @@
 ## Multi-Page Document Navigation
 
 ### Page-by-Page Signing Flow
+
 ```
 ○ Authenticated Recipient Working on Multi-Page Document
     ↓
@@ -274,6 +283,7 @@
 ## Mobile-Specific Signing Experience
 
 ### Mobile Touch Signing Flow
+
 ```
 ○ Authenticated Mobile User Accesses Document
     ↓
@@ -307,6 +317,7 @@
 ## Error Handling and Recovery
 
 ### Authentication Session Recovery Flow
+
 ```
 ○ User Session Expires During Signing
     ↓
@@ -330,6 +341,7 @@
 ```
 
 ### Network Interruption Recovery Flow
+
 ```
 ○ Network Interruption During Signing
     ↓
@@ -357,6 +369,7 @@
 ## Document Completion and Download
 
 ### Final Review and Submission Flow
+
 ```
 ○ All Required Fields Completed by Authenticated User
     ↓
@@ -386,6 +399,7 @@
 ```
 
 ### Sequential Signing with Authentication Flow
+
 ```
 ○ Authenticated Recipient is Part of Sequential Signing Process
     ↓

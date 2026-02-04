@@ -3,6 +3,7 @@
 ## Dashboard Access and Overview
 
 ### Dashboard Loading Flow
+
 ```
 ○ User Accesses Sender Dashboard
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### Dashboard Real-Time Updates Flow
+
 ```
 ○ Document Status Changes Occur
     ↓
@@ -63,6 +65,7 @@
 ## Document Overview and Status Management
 
 ### Document Status Overview Flow
+
 ```
 ○ User Reviews Document Status Overview
     ↓
@@ -92,6 +95,7 @@
 ```
 
 ### Priority Document Management Flow
+
 ```
 ○ User Identifies High-Priority Documents
     ↓
@@ -123,6 +127,7 @@
 ## Recent Activity Feed
 
 ### Activity Feed Monitoring Flow
+
 ```
 ○ User Monitors Recent Activity
     ↓
@@ -152,6 +157,7 @@
 ```
 
 ### Activity Filtering Flow
+
 ```
 ○ User Wants to Filter Activity
     ↓
@@ -183,6 +189,7 @@
 ## Quick Actions and Shortcuts
 
 ### Quick Action Execution Flow
+
 ```
 ○ User Identifies Quick Action Need
     ↓
@@ -212,6 +219,7 @@
 ```
 
 ### Bulk Quick Actions Flow
+
 ```
 ○ User Selects Multiple Documents
     ↓
@@ -243,6 +251,7 @@
 ## Document Filtering and Search
 
 ### Dashboard Filtering Flow
+
 ```
 ○ User Wants to Filter Dashboard Documents
     ↓
@@ -272,6 +281,7 @@
 ```
 
 ### Dashboard Search Flow
+
 ```
 ○ User Searches for Specific Documents
     ↓
@@ -303,6 +313,7 @@
 ## Completed Documents Management
 
 ### Completed Documents Archive Flow
+
 ```
 ○ User Accesses Completed Documents
     ↓
@@ -332,6 +343,7 @@
 ```
 
 ### Download Management Flow
+
 ```
 ○ User Needs to Download Completed Documents
     ↓
@@ -363,6 +375,7 @@
 ## Error Handling and Recovery
 
 ### Dashboard Loading Error Flow
+
 ```
 ○ Dashboard Fails to Load
     ↓
@@ -392,6 +405,7 @@
 ```
 
 ### Real-Time Sync Failure Flow
+
 ```
 ○ Real-Time Connection Lost
     ↓

@@ -13,12 +13,12 @@ import { type Infer, v } from "convex/values";
  * - declined: One or more recipients declined to sign
  */
 export const documentWorkflowStatusTuple = v.union(
-	v.literal("draft"),
-	v.literal("sent"),
-	v.literal("in_progress"),
-	v.literal("completed"),
-	v.literal("cancelled"),
-	v.literal("declined"),
+  v.literal("draft"),
+  v.literal("sent"),
+  v.literal("in_progress"),
+  v.literal("completed"),
+  v.literal("cancelled"),
+  v.literal("declined"),
 );
 
 export type DocumentWorkflowStatus = Infer<typeof documentWorkflowStatusTuple>;
@@ -26,39 +26,36 @@ export type DocumentWorkflowStatus = Infer<typeof documentWorkflowStatusTuple>;
 /**
  * Valid status transitions for document workflow
  */
-export const WORKFLOW_TRANSITIONS: Record<
-	DocumentWorkflowStatus,
-	DocumentWorkflowStatus[]
-> = {
-	draft: ["sent", "cancelled"],
-	sent: ["in_progress", "cancelled", "declined"],
-	in_progress: ["completed", "cancelled", "declined"],
-	completed: [], // Terminal state
-	cancelled: [], // Terminal state
-	declined: [], // Terminal state
+export const WORKFLOW_TRANSITIONS: Record<DocumentWorkflowStatus, DocumentWorkflowStatus[]> = {
+  draft: ["sent", "cancelled"],
+  sent: ["in_progress", "cancelled", "declined"],
+  in_progress: ["completed", "cancelled", "declined"],
+  completed: [], // Terminal state
+  cancelled: [], // Terminal state
+  declined: [], // Terminal state
 };
 
 /**
  * Check if a workflow status transition is valid
  */
 export function isValidWorkflowTransition(
-	from: DocumentWorkflowStatus,
-	to: DocumentWorkflowStatus,
+  from: DocumentWorkflowStatus,
+  to: DocumentWorkflowStatus,
 ): boolean {
-	return WORKFLOW_TRANSITIONS[from].includes(to);
+  return WORKFLOW_TRANSITIONS[from].includes(to);
 }
 
 /**
  * Get human-readable label for workflow status
  */
 export function getWorkflowStatusLabel(status: DocumentWorkflowStatus): string {
-	const labels: Record<DocumentWorkflowStatus, string> = {
-		draft: "Draft",
-		sent: "Sent",
-		in_progress: "In Progress",
-		completed: "Completed",
-		cancelled: "Cancelled",
-		declined: "Declined",
-	};
-	return labels[status];
+  const labels: Record<DocumentWorkflowStatus, string> = {
+    draft: "Draft",
+    sent: "Sent",
+    in_progress: "In Progress",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    declined: "Declined",
+  };
+  return labels[status];
 }

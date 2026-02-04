@@ -19,23 +19,23 @@ import { CardSkeleton } from "@/components/skeletons/card-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardSkeleton() {
-	return (
-		<PageWrapper title="Dashboard">
-			<div className="space-y-6" role="status" aria-label="Loading dashboard">
-				<div>
-					<Skeleton className="h-9 w-[200px] mb-2" />
-					<Skeleton className="h-5 w-[300px]" />
-				</div>
+  return (
+    <PageWrapper title="Dashboard">
+      <div className="space-y-6" role="status" aria-label="Loading dashboard">
+        <div>
+          <Skeleton className="mb-2 h-9 w-[200px]" />
+          <Skeleton className="h-5 w-[300px]" />
+        </div>
 
-				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-					<CardSkeleton showDescription={false} />
-					<CardSkeleton showDescription={false} />
-					<CardSkeleton showDescription={false} />
-					<CardSkeleton showDescription={false} />
-				</div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <CardSkeleton showDescription={false} />
+          <CardSkeleton showDescription={false} />
+          <CardSkeleton showDescription={false} />
+          <CardSkeleton showDescription={false} />
+        </div>
 
-				<CardSkeleton showDescription showFooter={false} />
-			</div>
-		</PageWrapper>
-	);
+        <CardSkeleton showDescription showFooter={false} />
+      </div>
+    </PageWrapper>
+  );
 }

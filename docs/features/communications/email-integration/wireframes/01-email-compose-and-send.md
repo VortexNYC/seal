@@ -3,6 +3,7 @@
 ## 01: Compose and Send
 
 ### A) Quick Send (Default Messaging)
+
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Seal                                                        [☰] [⚙] │
@@ -29,6 +30,7 @@
 ```
 
 ### E) Mobile Variants
+
 ```
 ┌─────────────────────────┐
 │        Seal ☰           │
@@ -55,35 +57,42 @@
 ```
 
 ### F) State Variants
+
 #### 🔵 Initial/Empty
+
 ```
 • Custom Send: subject/body empty, helper text shown.
 • Quick Send: default message preview visible, no edits.
 ```
 
 #### 🟡 Loading
+
 ```
 • Loading recipients/templates: ⏳ Loading… overlays editor areas.
 ```
 
 #### 🟢 Success
+
 ```
 • Banner: ✅ Emails queued for delivery to 2 recipients.
 ```
 
 #### 🔴 Error
+
 ```
 • Validation: ❌ Subject required / ❌ Invalid recipient email.
 • Send failure: ❌ Could not queue emails. Try again.
 ```
 
 #### ⚪ Edge Cases
+
 ```
 • Long recipient lists: paginate/accordion collapse recipients.
 • Variable preview: show resolved variables in preview safely.
 ```
 
 ### B) Custom Send (Per-Recipient Personalization)
+
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Seal                                                        [☰] [⚙] │
@@ -111,10 +120,12 @@
 ```
 
 Notes
+
 - Variables allowed: recipient name, document title, sender details.
 - Templates: pick and apply as starting points; no template creation here.
 
 ### C) Template Picker (Modal)
+
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ Message Templates                                 [✕]   │
@@ -136,6 +147,7 @@ Notes
 ```
 
 ### D) Review & Confirm
+
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Review & Send                                                [✕]     │

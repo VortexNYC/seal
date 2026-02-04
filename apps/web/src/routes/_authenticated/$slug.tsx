@@ -5,60 +5,57 @@
  * Route: /{slug}/*
  */
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+
 import { AppSidebar } from "@/components/app-sidebar";
 import { PostHogIdentify } from "@/components/posthog-identify";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
 import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
-	component: WorkspaceLayout,
-	pendingComponent: WorkspaceLayoutSkeleton,
+  component: WorkspaceLayout,
+  pendingComponent: WorkspaceLayoutSkeleton,
 });
 
 function WorkspaceLayout() {
-	const { slug } = Route.useParams();
+  const { slug } = Route.useParams();
 
-	const organization = useQuery(api.organizations.queries.getOrganization, {
-		slug,
-	});
+  const organization = useQuery(api.organizations.queries.getOrganization, {
+    slug,
+  });
 
-	const orgId = organization?._id as Id<"organizations"> | undefined;
+  const orgId = organization?._id as Id<"organizations"> | undefined;
 
-	const permissions = useQuery(
-		api.organizations.queries.getUserPermissions,
-		orgId ? { organizationId: orgId } : "skip",
-	);
+  const permissions = useQuery(
+    api.organizations.queries.getUserPermissions,
+    orgId ? { organizationId: orgId } : "skip",
+  );
 
-	// Loading state handled by pendingComponent
-	if (!organization || !orgId) {
-		return null;
-	}
+  // Loading state handled by pendingComponent
+  if (!organization || !orgId) {
+    return null;
+  }
 
-	const orgData = {
-		_id: orgId,
-		name: organization.name,
-		slug: organization.slug,
-	};
+  const orgData = {
+    _id: orgId,
+    name: organization.name,
+    slug: organization.slug,
+  };
 
-	return (
-		<SidebarProvider>
-			<PostHogIdentify organization={orgData} />
-			<DotPattern className="fixed inset-0 z-0" />
-			<div className="relative z-10 flex h-screen w-full overflow-hidden bg-background/80">
-				<AppSidebar
-					slug={slug}
-					organization={orgData}
-					permissions={permissions}
-				/>
-				<main className="flex-1 h-full min-h-0 overflow-hidden">
-					<Outlet />
-				</main>
-			</div>
-		</SidebarProvider>
-	);
+  return (
+    <SidebarProvider>
+      <PostHogIdentify organization={orgData} />
+      <DotPattern className="fixed inset-0 z-0" />
+      <div className="bg-background/80 relative z-10 flex h-screen w-full overflow-hidden">
+        <AppSidebar slug={slug} organization={orgData} permissions={permissions} />
+        <main className="h-full min-h-0 flex-1 overflow-hidden">
+          <Outlet />
+        </main>
+      </div>
+    </SidebarProvider>
+  );
 }

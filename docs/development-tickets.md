@@ -1716,7 +1716,7 @@
 **Authentication:**
 
 - [ ] Clerk API key generation working
-- [ ] API keys generated with custom prefix (e.g., "seal_")
+- [ ] API keys generated with custom prefix (e.g., "seal\_")
 - [ ] API key validation on every request
 - [ ] Workspace-scoped API key permissions enforced
 - [ ] Invalid API keys return 401 with clear message

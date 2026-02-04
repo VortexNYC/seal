@@ -3,12 +3,14 @@
 ## Feature Requirements (from MVP Core Features)
 
 ### Team Collaboration Features ⚡ **Important**
+
 - [ ] **Team member management** within workspaces
 - [ ] **Document sharing** within organization
 - [ ] **Collaborative workflow** for document preparation
 - [ ] **Team activity visibility** and notifications
 
 ## Technology Stack Integration
+
 - **Clerk Organizations**: Team member management and invitations
 - **Clerk Roles & Permissions**: Permission management for team collaboration
 - **Convex Presence**: Real-time collaboration and user presence tracking
@@ -16,6 +18,7 @@
 - **Convex**: Real-time document sharing and activity feeds
 
 ## Business Requirements
+
 - Simple team setup and management
 - Clear visibility into team document activity
 - Real-time collaboration features
@@ -26,15 +29,18 @@
 ## Edge Cases (from Feature Edge Cases Breakdown)
 
 ### Feature Description
+
 Basic team workspace functionality using Clerk organizations - simple document sharing within paid workspaces.
 
 ### Core Functionality
+
 - Paid workspace with multiple team members
 - Basic document sharing within workspace
 - Simple role-based permissions (owner, member)
 - Document access control
 
 ### Technology Stack Integration
+
 - **Clerk Organizations**: Multi-tenant workspace management
 - **Clerk Roles & Permissions**: Basic role permissions
 - **Convex Database**: Shared document storage
@@ -42,6 +48,7 @@ Basic team workspace functionality using Clerk organizations - simple document s
 ### Edge Cases & State Management
 
 #### Team Member Management
+
 - [ ] **Adding team members**: Basic member invitation
   - Email invitation workflow using Resend
   - Pending invitation state management
@@ -63,6 +70,7 @@ Basic team workspace functionality using Clerk organizations - simple document s
   - Member count validation
 
 #### Role-Based Permissions
+
 - [ ] **Owner permissions**: Full workspace control
   - All document creation, editing, deletion
   - Team member management (invite, remove)
@@ -75,6 +83,7 @@ Basic team workspace functionality using Clerk organizations - simple document s
   - Cannot access billing
 
 #### Document Sharing & Access
+
 - [ ] **Workspace document sharing**: Share documents within team
   - Document visibility levels (private, shared with workspace)
   - Simple read/write permission assignment
@@ -91,6 +100,7 @@ Basic team workspace functionality using Clerk organizations - simple document s
   - Activity log ownership updates
 
 #### Workspace Management
+
 - [ ] **Workspace creation and setup**: Initial team workspace setup
   - Organization creation via Clerk
   - Initial owner role assignment
@@ -107,6 +117,7 @@ Basic team workspace functionality using Clerk organizations - simple document s
   - User identity consistency across workspaces
 
 #### Invitation & Onboarding
+
 - [ ] **Email invitation system**: Simple team member invitation
   - Basic invitation email templates via Resend
   - Invitation link security and expiration
@@ -118,6 +129,7 @@ Basic team workspace functionality using Clerk organizations - simple document s
   - Role-specific permission overview
 
 #### Error Handling & Edge Cases
+
 - [ ] **Permission conflicts**: Handle basic permission scenarios
   - Document and workspace permission consistency
   - Role change conflicts during active workflows
@@ -132,9 +144,10 @@ Basic team workspace functionality using Clerk organizations - simple document s
   - Activity log completeness via Convex mutation guarantees
 
 #### Integration & API Access (Clerk Integration)
+
 - [ ] **Team API access**: Organization-scoped API management via Clerk
   - **API Key Plugin**: Generate workspace-specific API keys with organization context
-  - **Organization Plugin**: API keys inherit organization membership and permissions  
+  - **Organization Plugin**: API keys inherit organization membership and permissions
   - **RBAC Plugin**: API permissions based on user role (owner, member) within organization
   - **Admin Plugin**: Platform admin can manage API keys across all organizations
   - Metadata support for API key descriptions and usage tracking

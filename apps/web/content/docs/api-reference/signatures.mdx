@@ -11,16 +11,16 @@ The Signatures API provides access to signature verification and audit trail dat
 
 ### Attributes
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `id` | string | Unique signature identifier |
-| `document_id` | string | Associated document ID |
-| `recipient_id` | string | Recipient who signed |
-| `signer_email` | string | Email of the signer |
-| `signer_name` | string | Name of the signer |
-| `signed_at` | string | ISO 8601 timestamp when signed |
-| `ip_address` | string | IP address used for signing |
-| `user_agent` | string | Browser/device information |
+| Attribute        | Type   | Description                          |
+| ---------------- | ------ | ------------------------------------ |
+| `id`             | string | Unique signature identifier          |
+| `document_id`    | string | Associated document ID               |
+| `recipient_id`   | string | Recipient who signed                 |
+| `signer_email`   | string | Email of the signer                  |
+| `signer_name`    | string | Name of the signer                   |
+| `signed_at`      | string | ISO 8601 timestamp when signed       |
+| `ip_address`     | string | IP address used for signing          |
+| `user_agent`     | string | Browser/device information           |
 | `signature_type` | string | Type: `electronic`, `drawn`, `typed` |
 
 ### Example Object
@@ -56,14 +56,11 @@ GET /api/v1/signatures?document_id={documentId}
 ### TypeScript Example
 
 ```typescript
-const response = await fetch(
-  'https://seal.convex.site/api/v1/signatures?document_id=doc_xyz789',
-  {
-    headers: {
-      'Authorization': 'Bearer ak_your_api_key_here'
-    }
-  }
-);
+const response = await fetch("https://seal.convex.site/api/v1/signatures?document_id=doc_xyz789", {
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
 
 const signatures = await response.json();
 ```
@@ -109,11 +106,14 @@ GET /api/v1/signatures/get?document_id={documentId}&id={id}
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/signatures/get?document_id=doc_xyz789&id=sig_abc123', {
-  headers: {
-    'Authorization': 'Bearer ak_your_api_key_here'
-  }
-});
+const response = await fetch(
+  "https://seal.convex.site/api/v1/signatures/get?document_id=doc_xyz789&id=sig_abc123",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
 
 const signature = await response.json();
 ```
@@ -143,12 +143,12 @@ GET /api/v1/signatures/verify?document_id={documentId}
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/signatures/verify?document_id=doc_xyz789',
+  "https://seal.convex.site/api/v1/signatures/verify?document_id=doc_xyz789",
   {
     headers: {
-      'Authorization': 'Bearer ak_your_api_key_here'
-    }
-  }
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
 );
 
 const verification = await response.json();
@@ -206,12 +206,12 @@ GET /api/v1/signatures/audit?document_id={documentId}
 
 ```typescript
 const response = await fetch(
-  'https://seal.convex.site/api/v1/signatures/audit?document_id=doc_xyz789',
+  "https://seal.convex.site/api/v1/signatures/audit?document_id=doc_xyz789",
   {
     headers: {
-      'Authorization': 'Bearer ak_your_api_key_here'
-    }
-  }
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
 );
 
 const auditTrail = await response.json();
@@ -271,18 +271,18 @@ curl -X GET "https://seal.convex.site/api/v1/signatures/audit?document_id=doc_xy
 
 ## Audit Trail Event Types
 
-| Event Type | Description |
-|------------|-------------|
-| `document.created` | Document was created |
-| `document.sent` | Document was sent to recipients |
-| `document.voided` | Document was cancelled |
+| Event Type           | Description                      |
+| -------------------- | -------------------------------- |
+| `document.created`   | Document was created             |
+| `document.sent`      | Document was sent to recipients  |
+| `document.voided`    | Document was cancelled           |
 | `document.completed` | All recipients completed signing |
-| `recipient.added` | Recipient was added to document |
-| `recipient.viewed` | Recipient viewed the document |
-| `recipient.signed` | Recipient signed the document |
-| `recipient.approved` | Recipient approved the document |
-| `recipient.declined` | Recipient declined to sign |
-| `recipient.reminded` | Reminder sent to recipient |
+| `recipient.added`    | Recipient was added to document  |
+| `recipient.viewed`   | Recipient viewed the document    |
+| `recipient.signed`   | Recipient signed the document    |
+| `recipient.approved` | Recipient approved the document  |
+| `recipient.declined` | Recipient declined to sign       |
+| `recipient.reminded` | Reminder sent to recipient       |
 
 ## Signature Verification
 
@@ -295,7 +295,8 @@ All signatures include cryptographic verification data:
 - **Certificate Chain**: Cryptographic proof of authenticity
 
 <Callout type="info">
-  **Legal Validity**: Seal signatures comply with ESIGN Act and eIDAS regulations for electronic signatures. The audit trail provides legally admissible evidence of signing events.
+  **Legal Validity**: Seal signatures comply with ESIGN Act and eIDAS regulations for electronic
+  signatures. The audit trail provides legally admissible evidence of signing events.
 </Callout>
 
 ## Next Steps

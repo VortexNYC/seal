@@ -1,6 +1,6 @@
 {
-	"extends": "@seal/tsconfig/base.json",
-	"compilerOptions": {
-		"strictNullChecks": true
-	}
+  "extends": "@seal/tsconfig/base.json",
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
 }

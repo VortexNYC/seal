@@ -20,31 +20,28 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface FormSkeletonProps {
-	/** Number of form fields to show (default: 3) */
-	fields?: number;
-	/** Whether to show submit button skeleton (default: true) */
-	showSubmitButton?: boolean;
+  /** Number of form fields to show (default: 3) */
+  fields?: number;
+  /** Whether to show submit button skeleton (default: true) */
+  showSubmitButton?: boolean;
 }
 
-export function FormSkeleton({
-	fields = 3,
-	showSubmitButton = true,
-}: FormSkeletonProps) {
-	return (
-		<div className="space-y-6" role="status" aria-label="Loading form">
-			{Array.from({ length: fields }).map((_, i) => (
-				<div key={i} className="space-y-2">
-					<Skeleton className="h-4 w-[120px]" />
-					<Skeleton className="h-10 w-full" />
-				</div>
-			))}
+export function FormSkeleton({ fields = 3, showSubmitButton = true }: FormSkeletonProps) {
+  return (
+    <div className="space-y-6" role="status" aria-label="Loading form">
+      {Array.from({ length: fields }).map((_, i) => (
+        <div key={i} className="space-y-2">
+          <Skeleton className="h-4 w-[120px]" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ))}
 
-			{showSubmitButton && (
-				<div className="flex gap-2 pt-4">
-					<Skeleton className="h-10 w-[100px]" />
-					<Skeleton className="h-10 w-[100px]" />
-				</div>
-			)}
-		</div>
-	);
+      {showSubmitButton && (
+        <div className="flex gap-2 pt-4">
+          <Skeleton className="h-10 w-[100px]" />
+          <Skeleton className="h-10 w-[100px]" />
+        </div>
+      )}
+    </div>
+  );
 }

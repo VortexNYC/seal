@@ -9,12 +9,14 @@ Consistent loading patterns that maintain layout stability and provide clear fee
 ## 🎨 Core Loading Principles
 
 ### Progressive Loading Strategy
+
 1. **Instant** (0-300ms): No loading indicator
 2. **Brief** (300ms-1s): Subtle skeleton or spinner
 3. **Extended** (1s-3s): Full skeleton with animation
 4. **Long** (3s+): Progress indicator with messaging
 
 ### Visual Consistency
+
 - Maintain layout structure during loading
 - Prevent content shifting (CLS = 0)
 - Match skeleton to actual content shape
@@ -25,23 +27,25 @@ Consistent loading patterns that maintain layout stability and provide clear fee
 ## 🦴 Skeleton Screen Patterns
 
 ### Document List Skeleton
+
 ```
 While Loading:
 ╔══════════════════════════════════════════════╗
 ║░░░░░░░░░░░░░░░░░░░░░░░░░     ░░░░░░░░░░░░░░║ ← Title skeleton
 ║░░░░░░░░░░░░░░░     ░░░░░░░░░    ░░░░░░░░░░║ ← Metadata skeleton
 ╠══════════════════════════════════════════════╣
-║░░░░░░░░░░░░░░░░░░░░░░░░░     ░░░░░░░░░░░░░░║  
-║░░░░░░░░░░░░░░░     ░░░░░░░░░    ░░░░░░░░░░║   
+║░░░░░░░░░░░░░░░░░░░░░░░░░     ░░░░░░░░░░░░░░║
+║░░░░░░░░░░░░░░░     ░░░░░░░░░    ░░░░░░░░░░║
 ╠══════════════════════════════════════════════╣
-║░░░░░░░░░░░░░░░░░░░░░░░░░     ░░░░░░░░░░░░░░║  
-║░░░░░░░░░░░░░░░     ░░░░░░░░░    ░░░░░░░░░░║   
+║░░░░░░░░░░░░░░░░░░░░░░░░░     ░░░░░░░░░░░░░░║
+║░░░░░░░░░░░░░░░     ░░░░░░░░░    ░░░░░░░░░░║
 ╚══════════════════════════════════════════════╝
 
 Animation: Shimmer effect moving left to right
 ```
 
 ### Card Skeleton
+
 ```
 ╔══════════════════════════════════════════════╗
 ║░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░║ ← Header
@@ -54,6 +58,7 @@ Animation: Shimmer effect moving left to right
 ```
 
 ### Form Skeleton
+
 ```
 ░░░░░░░░░░  ← Label skeleton
 ╔══════════════════════════════════════════════╗
@@ -62,7 +67,7 @@ Animation: Shimmer effect moving left to right
 
 ░░░░░░░░░░
 ╔══════════════════════════════════════════════╗
-║░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░║  
+║░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░║
 ╚══════════════════════════════════════════════╝
 
 [░░░░░░░░░░░░░░░]  ← Button skeleton
@@ -73,6 +78,7 @@ Animation: Shimmer effect moving left to right
 ## ⏳ Spinner Patterns
 
 ### Inline Spinners
+
 ```
 Small (16px):  ⏳
 Medium (24px): ⚙️
@@ -85,19 +91,21 @@ Usage contexts:
 ```
 
 ### Full Page Spinner
+
 ```
-                                        
-                                        
-                                        
-                   ⚙️                    
-                                        
-              Loading...                
-                                        
-                                        
-                                        
+
+
+
+                   ⚙️
+
+              Loading...
+
+
+
 ```
 
 ### Component-Level Loading
+
 ```
 ╔══════════════════════════════════════════════╗
 ║                    ⏳                         ║
@@ -112,6 +120,7 @@ Usage contexts:
 ## 📊 Progress Indicators
 
 ### Linear Progress Bar
+
 ```
 Upload Progress: 68%
 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░ 68%
@@ -121,15 +130,17 @@ Processing...
 ```
 
 ### Step Progress
+
 ```
 Step 2 of 4: Processing
 ◉ ── ◉ ── ○ ── ○
 ```
 
 ### Circular Progress (Text representation)
+
 ```
 ⭕ 25% Complete
-⭕ 50% Complete  
+⭕ 50% Complete
 ⭕ 75% Complete
 ✅ 100% Complete
 ```
@@ -139,6 +150,7 @@ Step 2 of 4: Processing
 ## 📄 Document-Specific Loading States
 
 ### Document Upload Loading
+
 ```
 ┌────────────────────────────────────────────┐
 │               📄 → 📁                       │
@@ -152,6 +164,7 @@ Step 2 of 4: Processing
 ```
 
 ### Document Processing States
+
 ```
 Processing Document:
 ┌────────────────────────────────────────────┐
@@ -167,11 +180,12 @@ Processing Document:
 ```
 
 ### Signature Field Placement Loading
+
 ```
 ╔══════════════════════════════════════════════╗
 ║                 PDF Content                  ║
 ║                                              ║
-║░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░║ ← Loading line 
+║░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░║ ← Loading line
 ║                                              ║
 ║    [⏳ Detecting signature locations...]     ║
 ║                                              ║
@@ -185,6 +199,7 @@ Processing Document:
 ## 📱 Mobile Loading Adaptations
 
 ### Mobile-Friendly Spinners
+
 ```
 Large Touch Target Loading:
 ┌──────────────────────────────┐
@@ -197,6 +212,7 @@ Large Touch Target Loading:
 ```
 
 ### Mobile Progress Bars
+
 ```
 Full-width progress on mobile:
 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 85%
@@ -208,6 +224,7 @@ Uploading... (2 of 3 files)
 ## 🔄 Real-time Loading States
 
 ### Live Data Updates
+
 ```
 ┌────────────────────────────────────┐
 │ 📊 Dashboard Analytics             │
@@ -221,11 +238,12 @@ Uploading... (2 of 3 files)
 ```
 
 ### Background Sync Loading
+
 ```
 Sync Status: ⚙️ Syncing changes...
 ┌────────────────────────────────────┐
 │ ✅ Document 1: Synced              │
-│ ✅ Document 2: Synced              │  
+│ ✅ Document 2: Synced              │
 │ ⏳ Document 3: Syncing...          │
 │ ⏹️ Document 4: Pending             │
 └────────────────────────────────────┘
@@ -236,12 +254,14 @@ Sync Status: ⚙️ Syncing changes...
 ## ⚡ Performance Optimizations
 
 ### Skeleton Matching Strategy
+
 - **Exact dimensions**: Skeleton matches loaded content size
 - **Consistent spacing**: Maintain identical padding/margins
 - **Visual hierarchy**: Preserve content structure in skeleton
 - **Animation timing**: Smooth 1.5s shimmer cycle
 
 ### Loading State Priorities
+
 1. **Critical data first**: Load essential content immediately
 2. **Progressive enhancement**: Add non-essential content after
 3. **Perceived performance**: Show skeleton before actual load time
@@ -252,12 +272,14 @@ Sync Status: ⚙️ Syncing changes...
 ## 📈 Loading Performance Metrics
 
 ### Target Performance
+
 - **Skeleton render**: <100ms from state change
 - **Shimmer animation**: Smooth 60fps throughout
 - **State transitions**: <200ms between loading states
 - **Content replacement**: <50ms skeleton to content swap
 
 ### Error Recovery
+
 ```
 Loading Failed State:
 ┌────────────────────────────────────┐
@@ -275,13 +297,15 @@ Loading Failed State:
 ## 🎯 Best Practices Summary
 
 ### Do's
+
 - Show loading states for operations >300ms
 - Match skeleton structure to actual content
 - Provide clear progress indicators for long operations
 - Use shimmer animation for better perceived performance
 - Maintain layout stability during loading
 
-### Don'ts  
+### Don'ts
+
 - Don't show spinners for <300ms operations
 - Don't use generic skeletons that don't match content
 - Don't leave users guessing about progress

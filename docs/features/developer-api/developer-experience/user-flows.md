@@ -3,6 +3,7 @@
 ## API Discovery and Documentation
 
 ### Developer Discovers API Flow
+
 ```
 ○ Developer Finds Seal API Documentation
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### API Documentation Browsing Flow
+
 ```
 ○ Developer Explores API Documentation
     ↓
@@ -63,6 +65,7 @@
 ## API Key Generation and Management
 
 ### API Key Generation Flow
+
 ```
 ○ Developer Needs API Access
     ↓
@@ -92,6 +95,7 @@
 ```
 
 ### API Key Management Flow
+
 ```
 ○ Developer Manages Existing API Keys
     ↓
@@ -123,6 +127,7 @@
 ## Quick Integration Flows
 
 ### "2-Minute Integration" Flow
+
 ```
 ○ Developer Wants Fastest Integration
     ↓
@@ -152,6 +157,7 @@
 ```
 
 ### Production Integration Flow
+
 ```
 ○ Developer Builds Production Integration
     ↓
@@ -183,6 +189,7 @@
 ## Testing and Sandbox Environment
 
 ### API Testing Flow
+
 ```
 ○ Developer Tests API Integration
     ↓
@@ -212,6 +219,7 @@
 ```
 
 ### Debugging and Troubleshooting Flow
+
 ```
 ○ Developer Encounters API Issues
     ↓
@@ -243,6 +251,7 @@
 ## API-First Integration with Code Examples
 
 ### Multi-Language Code Example Discovery Flow
+
 ```
 ○ Developer Looks for Language-Specific Integration
     ↓
@@ -273,6 +282,7 @@
 ```
 
 ### Code Example Usage Flow
+
 ```
 ○ Developer Needs Working Code Example
     ↓
@@ -304,6 +314,7 @@
 ## Error Handling and Recovery
 
 ### API Error Handling Flow
+
 ```
 ○ Developer Encounters API Error
     ↓
@@ -333,6 +344,7 @@
 ```
 
 ### Rate Limiting Handling Flow
+
 ```
 ○ Developer Hits API Rate Limits
     ↓

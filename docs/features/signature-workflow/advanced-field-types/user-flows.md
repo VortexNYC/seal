@@ -3,6 +3,7 @@
 ## Primary Advanced Field Creation Flows
 
 ### Adding Advanced Fields to Document
+
 ```
 ○ User in Field Placement Mode with Recipients Configured
     ↓
@@ -36,6 +37,7 @@
 ## Dropdown Field Flows
 
 ### Creating Dropdown Field Flow
+
 ```
 ○ User Selects Dropdown Field Type
     ↓
@@ -65,6 +67,7 @@
 ```
 
 ### Dropdown Field Completion During Signing
+
 ```
 ○ Recipient Encounters Dropdown Field During Signing
     ↓
@@ -92,6 +95,7 @@
 ## Radio Button Group Flows
 
 ### Creating Radio Button Group Flow
+
 ```
 ○ User Selects Radio Button Field Type
     ↓
@@ -121,6 +125,7 @@
 ```
 
 ### Radio Button Completion During Signing
+
 ```
 ○ Recipient Encounters Radio Button Group During Signing
     ↓
@@ -148,6 +153,7 @@
 ## Number Field Flows
 
 ### Creating Number Field Flow
+
 ```
 ○ User Selects Number Field Type
     ↓
@@ -177,6 +183,7 @@
 ```
 
 ### Number Field Completion During Signing
+
 ```
 ○ Recipient Encounters Number Field During Signing
     ↓
@@ -210,6 +217,7 @@
 ## Checkbox Field Flows
 
 ### Creating Checkbox Field Flow
+
 ```
 ○ User Selects Checkbox Field Type
     ↓
@@ -239,6 +247,7 @@
 ```
 
 ### Checkbox Completion During Signing
+
 ```
 ○ Recipient Encounters Checkbox During Signing
     ↓
@@ -272,6 +281,7 @@
 ## Date Field Flows
 
 ### Creating Date Field Flow
+
 ```
 ○ User Selects Date Field Type
     ↓
@@ -301,6 +311,7 @@
 ```
 
 ### Date Field Completion During Signing
+
 ```
 ○ Recipient Encounters Date Field During Signing
     ↓
@@ -334,6 +345,7 @@
 ## Advanced Field Editing and Management
 
 ### Editing Placed Advanced Fields Flow
+
 ```
 ○ User Needs to Modify Placed Advanced Field
     ↓
@@ -363,6 +375,7 @@
 ```
 
 ### Advanced Field Mobile Compatibility Flow
+
 ```
 ○ Advanced Field Accessed on Mobile Device During Signing
     ↓
@@ -398,6 +411,7 @@
 ## Integration with Existing Field System
 
 ### Advanced Fields in Complete Document Flow
+
 ```
 ○ Document Contains Mix of Basic and Advanced Fields
     ↓

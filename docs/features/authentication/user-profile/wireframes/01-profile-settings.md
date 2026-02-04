@@ -64,12 +64,14 @@
 ## Detailed Specifications
 
 ### Component Details
+
 - **Container**: Main settings page with proper spacing and hierarchy
 - **Header**: Brand logo with page title (text-2xl font-bold)
 
 ### Profile Header Section
+
 - **Profile Card**: Elevated card component with user information
-- **Avatar Component**: 
+- **Avatar Component**:
   - Large avatar (64px) with fallback initials "JD"
   - Upload functionality with image validation
   - Rounded corners and proper aspect ratio
@@ -79,15 +81,17 @@
 - **Edit Button**: Primary action button for profile editing
 
 ### Personal Information Section
+
 - **Section Header**: Clear section demarcation (text-lg font-semibold)
 - **Settings Card**: Outline variant card with list items
-- **Field Layout**: 
+- **Field Layout**:
   - Label-value pairs with consistent spacing
   - Edit buttons aligned to right
   - Divider lines between fields for clarity
 
 ### Account Security Section
-- **Password Field**: 
+
+- **Password Field**:
   - Masked display with bullet points
   - Muted text color for security
 - **Two-Factor Authentication**:
@@ -97,16 +101,18 @@
 - **Active Sessions**: Clear count with management option
 
 ### Action Buttons
-- **Edit Buttons**: 
+
+- **Edit Buttons**:
   - Consistent secondary button styling
   - Right-aligned for scanning pattern
   - Clear labels: "Edit", "Change", "Enable", "Manage"
-- **Delete Account**: 
+- **Delete Account**:
   - Destructive variant button
   - Centered positioning for emphasis
   - Red styling to indicate danger
 
 ### Interactive States
+
 - **Hover States**: Button color transitions
 - **Focus States**: Keyboard navigation support
 - **Loading States**: Spinner for save operations
@@ -167,11 +173,13 @@
 ## Detailed Specifications
 
 ### Component Details
+
 - **Container**: Edit mode interface with form validation
 - **Header**: Edit Profile title with navigation context
 
 ### Avatar Upload Section
-- **Avatar Display**: 
+
+- **Avatar Display**:
   - Current avatar with edit overlay
   - 64px size with proper aspect ratio
   - Upload zone with drag-and-drop support
@@ -182,7 +190,8 @@
 - **File Validation**: JPG/PNG/WebP, max 5MB with preview
 
 ### Form Fields
-- **Field Labels**: 
+
+- **Field Labels**:
   - FormLabel components with medium font weight
   - Consistent spacing and alignment
 - **Input Components**:
@@ -191,21 +200,24 @@
   - Border styling based on validation state
 
 ### Validation Features
+
 - **Real-time Validation**: Input validation on blur
 - **Success States**: Green checkmarks for valid fields
 - **Help Text**: Warning message for email changes
 - **Required Field Indicators**: Visual cues for required fields
 
 ### Action Buttons
-- **Save Changes**: 
+
+- **Save Changes**:
   - Primary button (variant="default" size="lg")
   - Full width for prominence
   - Disabled state until changes detected
-- **Cancel Button**: 
+- **Cancel Button**:
   - Ghost variant for secondary action
   - Returns to view mode without saving
 
 ### Form Behavior
+
 - **Auto-save**: Draft changes saved locally
 - **Validation States**: Real-time feedback
 - **Loading States**: Spinner during save operations
@@ -258,10 +270,12 @@
 ## Detailed Specifications
 
 ### Component Details
+
 - **Container**: Error state interface with validation feedback
 - **Header**: Consistent edit mode title
 
 ### Form Field Validation
+
 - **Field Labels**: FormLabel components with clear hierarchy
 - **Error State Inputs**:
   - Red border styling (border-red-500)
@@ -270,6 +284,7 @@
   - Focus states maintain error styling
 
 ### Error Message Display
+
 - **Error Messages**:
   - text-sm text-red-600 styling
   - Positioned directly below relevant fields
@@ -277,6 +292,7 @@
   - ARIA live regions for screen readers
 
 ### Validation Rules
+
 - **Full Name Field**:
   - Required validation
   - Empty state error: "Name cannot be empty"
@@ -287,6 +303,7 @@
   - Uniqueness validation (backend)
 
 ### Interactive Elements
+
 - **Save Changes Button**:
   - Disabled state when validation errors exist
   - Grayed out appearance with disabled cursor
@@ -294,12 +311,14 @@
 - **Cancel Button**: Always enabled for form exit
 
 ### Accessibility Features
+
 - **ARIA Labels**: Form fields properly labeled
 - **Error Announcements**: Screen reader notifications
 - **Focus Management**: Error fields receive focus
 - **High Contrast**: Error states clearly visible
 
 ### Form Behavior
+
 - **Real-time Validation**: Errors shown on field blur
 - **Live Updates**: Error messages update as user types
 - **Form State**: Button remains disabled until valid
@@ -378,17 +397,20 @@
 ## Interaction Specifications
 
 ### Profile Edit Actions
+
 - **Edit Profile Button**: Toggle to edit mode
 - **Avatar Upload**: File picker with image validation
 - **Save Changes**: Validates and saves profile updates
 - **Cancel**: Discards changes, returns to view mode
 
 ### Validation Rules
+
 - **Name**: Required, 1-100 characters
 - **Email**: Valid email format, unique in system
 - **Avatar**: JPG/PNG/WebP, max 5MB
 
 ### Real-time Features
+
 - **Profile Sync**: Changes sync across all user sessions via Convex
 - **Email Verification**: Required for email changes
 - **Session Updates**: All active sessions reflect profile changes

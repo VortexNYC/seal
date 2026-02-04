@@ -10,11 +10,11 @@
 
 // Pure JavaScript helpers (work in Convex default runtime)
 export {
-	generateSignatureCertificate,
-	generateSignatureHash,
-	generateStringHash,
-	verifyDocumentIntegrity,
-	verifySignatureHash,
+  generateSignatureCertificate,
+  generateSignatureHash,
+  generateStringHash,
+  verifyDocumentIntegrity,
+  verifySignatureHash,
 } from "./helpers";
 
 // Node.js helpers are exported from node_helpers.ts directly

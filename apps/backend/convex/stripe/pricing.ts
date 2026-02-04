@@ -22,71 +22,66 @@ export type BillingInterval = (typeof BILLING_INTERVALS)[number];
  * Parsed lookup key structure
  */
 export interface ParsedLookupKey {
-	tier: TierName;
-	useType: UseType;
-	interval: BillingInterval;
-	version: string;
+  tier: TierName;
+  useType: UseType;
+  interval: BillingInterval;
+  version: string;
 }
 
 // Regex: tier:useType:interval:vN
-const LOOKUP_KEY_REGEX =
-	/^([a-z]+):(personal|business):(monthly|yearly):(v\d+)$/;
+const LOOKUP_KEY_REGEX = /^([a-z]+):(personal|business):(monthly|yearly):(v\d+)$/;
 
 /**
  * Build a lookup key from components
  */
 export function buildLookupKey(
-	tier: TierName,
-	useType: UseType,
-	interval: BillingInterval,
-	version = "v1",
+  tier: TierName,
+  useType: UseType,
+  interval: BillingInterval,
+  version = "v1",
 ): string {
-	return `${tier}:${useType}:${interval}:${version}`;
+  return `${tier}:${useType}:${interval}:${version}`;
 }
 
 /**
  * Validate a lookup key format
  */
 export function isValidLookupKey(key: string | null | undefined): boolean {
-	if (!key) return false;
-	const match = key.match(LOOKUP_KEY_REGEX);
-	if (!match) return false;
+  if (!key) return false;
+  const match = key.match(LOOKUP_KEY_REGEX);
+  if (!match) return false;
 
-	const tier = match[1];
-	return tier !== undefined && TIER_NAMES.includes(tier as TierName);
+  const tier = match[1];
+  return tier !== undefined && TIER_NAMES.includes(tier as TierName);
 }
 
 /**
  * Parse a lookup key into its components
  * Returns null if the key is invalid
  */
-export function parseLookupKey(
-	key: string | null | undefined,
-): ParsedLookupKey | null {
-	if (!key) return null;
+export function parseLookupKey(key: string | null | undefined): ParsedLookupKey | null {
+  if (!key) return null;
 
-	const match = key.match(LOOKUP_KEY_REGEX);
-	if (!match) return null;
+  const match = key.match(LOOKUP_KEY_REGEX);
+  if (!match) return null;
 
-	const [, tier, useType, interval, version] = match;
-	if (!tier || !useType || !interval || !version) return null;
-	if (!TIER_NAMES.includes(tier as TierName)) return null;
-	if (!USE_TYPES.includes(useType as UseType)) return null;
+  const [, tier, useType, interval, version] = match;
+  if (!tier || !useType || !interval || !version) return null;
+  if (!TIER_NAMES.includes(tier as TierName)) return null;
+  if (!USE_TYPES.includes(useType as UseType)) return null;
 
-	return {
-		tier: tier as TierName,
-		useType: useType as UseType,
-		interval: interval as BillingInterval,
-		version,
-	};
+  return {
+    tier: tier as TierName,
+    useType: useType as UseType,
+    interval: interval as BillingInterval,
+    version,
+  };
 }
 
 /**
  * Extract tier name from a lookup key
  */
-export function getTierFromLookupKey(
-	key: string | null | undefined,
-): TierName | null {
-	const parsed = parseLookupKey(key);
-	return parsed?.tier ?? null;
+export function getTierFromLookupKey(key: string | null | undefined): TierName | null {
+  const parsed = parseLookupKey(key);
+  return parsed?.tier ?? null;
 }

@@ -8,16 +8,10 @@
  * wrapDatabaseReader/wrapDatabaseWriter from convex-helpers.
  */
 
+import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
+import { wrapDatabaseReader, wrapDatabaseWriter } from "convex-helpers/server/rowLevelSecurity";
 import { ConvexError } from "convex/values";
-import {
-	customCtx,
-	customMutation,
-	customQuery,
-} from "convex-helpers/server/customFunctions";
-import {
-	wrapDatabaseReader,
-	wrapDatabaseWriter,
-} from "convex-helpers/server/rowLevelSecurity";
+
 import { mutation, query } from "../_generated/server";
 import { rlsRules } from "../rls";
 import { getAuthContextWithPermissions } from "./auth.permissions";
@@ -28,15 +22,15 @@ import { getAuthContextWithPermissions } from "./auth.permissions";
  * RLS is automatically applied to ctx.db
  */
 export const authQuery = customQuery(
-	query,
-	customCtx(async (ctx) => {
-		const auth = await getAuthContextWithPermissions(ctx);
-		const rules = await rlsRules(ctx);
-		return {
-			auth,
-			db: wrapDatabaseReader(ctx, ctx.db, rules),
-		};
-	}),
+  query,
+  customCtx(async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
+    const rules = await rlsRules(ctx);
+    return {
+      auth,
+      db: wrapDatabaseReader(ctx, ctx.db, rules),
+    };
+  }),
 );
 
 /**
@@ -54,26 +48,26 @@ export const authQuery = customQuery(
  * });
  */
 export const permissionQuery = (requiredPermission: string) =>
-	customQuery(
-		query,
-		customCtx(async (ctx) => {
-			const auth = await getAuthContextWithPermissions(ctx);
+  customQuery(
+    query,
+    customCtx(async (ctx) => {
+      const auth = await getAuthContextWithPermissions(ctx);
 
-			if (!auth.hasPermission(requiredPermission)) {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: `Insufficient permissions: ${requiredPermission} required`,
-					permission: requiredPermission,
-				});
-			}
+      if (!auth.hasPermission(requiredPermission)) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: `Insufficient permissions: ${requiredPermission} required`,
+          permission: requiredPermission,
+        });
+      }
 
-			const rules = await rlsRules(ctx);
-			return {
-				auth,
-				db: wrapDatabaseReader(ctx, ctx.db, rules),
-			};
-		}),
-	);
+      const rules = await rlsRules(ctx);
+      return {
+        auth,
+        db: wrapDatabaseReader(ctx, ctx.db, rules),
+      };
+    }),
+  );
 
 /**
  * Any of multiple permissions required (OR logic)
@@ -90,26 +84,26 @@ export const permissionQuery = (requiredPermission: string) =>
  * });
  */
 export const permissionAnyQuery = (requiredPermissions: string[]) =>
-	customQuery(
-		query,
-		customCtx(async (ctx) => {
-			const auth = await getAuthContextWithPermissions(ctx);
+  customQuery(
+    query,
+    customCtx(async (ctx) => {
+      const auth = await getAuthContextWithPermissions(ctx);
 
-			if (!auth.hasAnyPermission(requiredPermissions)) {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: `Insufficient permissions: one of [${requiredPermissions.join(", ")}] required`,
-					permissions: requiredPermissions,
-				});
-			}
+      if (!auth.hasAnyPermission(requiredPermissions)) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: `Insufficient permissions: one of [${requiredPermissions.join(", ")}] required`,
+          permissions: requiredPermissions,
+        });
+      }
 
-			const rules = await rlsRules(ctx);
-			return {
-				auth,
-				db: wrapDatabaseReader(ctx, ctx.db, rules),
-			};
-		}),
-	);
+      const rules = await rlsRules(ctx);
+      return {
+        auth,
+        db: wrapDatabaseReader(ctx, ctx.db, rules),
+      };
+    }),
+  );
 
 /**
  * All permissions required (AND logic)
@@ -126,26 +120,26 @@ export const permissionAnyQuery = (requiredPermissions: string[]) =>
  * });
  */
 export const permissionAllQuery = (requiredPermissions: string[]) =>
-	customQuery(
-		query,
-		customCtx(async (ctx) => {
-			const auth = await getAuthContextWithPermissions(ctx);
+  customQuery(
+    query,
+    customCtx(async (ctx) => {
+      const auth = await getAuthContextWithPermissions(ctx);
 
-			if (!auth.hasAllPermissions(requiredPermissions)) {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: `Insufficient permissions: all of [${requiredPermissions.join(", ")}] required`,
-					permissions: requiredPermissions,
-				});
-			}
+      if (!auth.hasAllPermissions(requiredPermissions)) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: `Insufficient permissions: all of [${requiredPermissions.join(", ")}] required`,
+          permissions: requiredPermissions,
+        });
+      }
 
-			const rules = await rlsRules(ctx);
-			return {
-				auth,
-				db: wrapDatabaseReader(ctx, ctx.db, rules),
-			};
-		}),
-	);
+      const rules = await rlsRules(ctx);
+      return {
+        auth,
+        db: wrapDatabaseReader(ctx, ctx.db, rules),
+      };
+    }),
+  );
 
 /**
  * Admin-only query
@@ -162,23 +156,23 @@ export const permissionAllQuery = (requiredPermissions: string[]) =>
  * });
  */
 export const adminQuery = customQuery(
-	query,
-	customCtx(async (ctx) => {
-		const auth = await getAuthContextWithPermissions(ctx);
+  query,
+  customCtx(async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
 
-		if (!auth.isAdmin) {
-			throw new ConvexError({
-				code: "FORBIDDEN",
-				message: "Admin privileges required",
-			});
-		}
+    if (!auth.isAdmin) {
+      throw new ConvexError({
+        code: "FORBIDDEN",
+        message: "Admin privileges required",
+      });
+    }
 
-		const rules = await rlsRules(ctx);
-		return {
-			auth,
-			db: wrapDatabaseReader(ctx, ctx.db, rules),
-		};
-	}),
+    const rules = await rlsRules(ctx);
+    return {
+      auth,
+      db: wrapDatabaseReader(ctx, ctx.db, rules),
+    };
+  }),
 );
 
 /**
@@ -187,23 +181,23 @@ export const adminQuery = customQuery(
  * RLS is automatically applied to ctx.db
  */
 export const ownerQuery = customQuery(
-	query,
-	customCtx(async (ctx) => {
-		const auth = await getAuthContextWithPermissions(ctx);
+  query,
+  customCtx(async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
 
-		if (!auth.isOwner) {
-			throw new ConvexError({
-				code: "FORBIDDEN",
-				message: "Owner privileges required",
-			});
-		}
+    if (!auth.isOwner) {
+      throw new ConvexError({
+        code: "FORBIDDEN",
+        message: "Owner privileges required",
+      });
+    }
 
-		const rules = await rlsRules(ctx);
-		return {
-			auth,
-			db: wrapDatabaseReader(ctx, ctx.db, rules),
-		};
-	}),
+    const rules = await rlsRules(ctx);
+    return {
+      auth,
+      db: wrapDatabaseReader(ctx, ctx.db, rules),
+    };
+  }),
 );
 
 // =====================
@@ -215,15 +209,15 @@ export const ownerQuery = customQuery(
  * RLS is automatically applied to ctx.db
  */
 export const authMutation = customMutation(
-	mutation,
-	customCtx(async (ctx) => {
-		const auth = await getAuthContextWithPermissions(ctx);
-		const rules = await rlsRules(ctx);
-		return {
-			auth,
-			db: wrapDatabaseWriter(ctx, ctx.db, rules),
-		};
-	}),
+  mutation,
+  customCtx(async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
+    const rules = await rlsRules(ctx);
+    return {
+      auth,
+      db: wrapDatabaseWriter(ctx, ctx.db, rules),
+    };
+  }),
 );
 
 /**
@@ -242,78 +236,78 @@ export const authMutation = customMutation(
  * });
  */
 export const permissionMutation = (requiredPermission: string) =>
-	customMutation(
-		mutation,
-		customCtx(async (ctx) => {
-			const auth = await getAuthContextWithPermissions(ctx);
+  customMutation(
+    mutation,
+    customCtx(async (ctx) => {
+      const auth = await getAuthContextWithPermissions(ctx);
 
-			if (!auth.hasPermission(requiredPermission)) {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: `Insufficient permissions: ${requiredPermission} required`,
-					permission: requiredPermission,
-				});
-			}
+      if (!auth.hasPermission(requiredPermission)) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: `Insufficient permissions: ${requiredPermission} required`,
+          permission: requiredPermission,
+        });
+      }
 
-			const rules = await rlsRules(ctx);
-			return {
-				auth,
-				db: wrapDatabaseWriter(ctx, ctx.db, rules),
-			};
-		}),
-	);
+      const rules = await rlsRules(ctx);
+      return {
+        auth,
+        db: wrapDatabaseWriter(ctx, ctx.db, rules),
+      };
+    }),
+  );
 
 /**
  * Any of multiple permissions required (OR logic)
  * RLS is automatically applied to ctx.db
  */
 export const permissionAnyMutation = (requiredPermissions: string[]) =>
-	customMutation(
-		mutation,
-		customCtx(async (ctx) => {
-			const auth = await getAuthContextWithPermissions(ctx);
+  customMutation(
+    mutation,
+    customCtx(async (ctx) => {
+      const auth = await getAuthContextWithPermissions(ctx);
 
-			if (!auth.hasAnyPermission(requiredPermissions)) {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: `Insufficient permissions: one of [${requiredPermissions.join(", ")}] required`,
-					permissions: requiredPermissions,
-				});
-			}
+      if (!auth.hasAnyPermission(requiredPermissions)) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: `Insufficient permissions: one of [${requiredPermissions.join(", ")}] required`,
+          permissions: requiredPermissions,
+        });
+      }
 
-			const rules = await rlsRules(ctx);
-			return {
-				auth,
-				db: wrapDatabaseWriter(ctx, ctx.db, rules),
-			};
-		}),
-	);
+      const rules = await rlsRules(ctx);
+      return {
+        auth,
+        db: wrapDatabaseWriter(ctx, ctx.db, rules),
+      };
+    }),
+  );
 
 /**
  * All permissions required (AND logic)
  * RLS is automatically applied to ctx.db
  */
 export const permissionAllMutation = (requiredPermissions: string[]) =>
-	customMutation(
-		mutation,
-		customCtx(async (ctx) => {
-			const auth = await getAuthContextWithPermissions(ctx);
+  customMutation(
+    mutation,
+    customCtx(async (ctx) => {
+      const auth = await getAuthContextWithPermissions(ctx);
 
-			if (!auth.hasAllPermissions(requiredPermissions)) {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: `Insufficient permissions: all of [${requiredPermissions.join(", ")}] required`,
-					permissions: requiredPermissions,
-				});
-			}
+      if (!auth.hasAllPermissions(requiredPermissions)) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: `Insufficient permissions: all of [${requiredPermissions.join(", ")}] required`,
+          permissions: requiredPermissions,
+        });
+      }
 
-			const rules = await rlsRules(ctx);
-			return {
-				auth,
-				db: wrapDatabaseWriter(ctx, ctx.db, rules),
-			};
-		}),
-	);
+      const rules = await rlsRules(ctx);
+      return {
+        auth,
+        db: wrapDatabaseWriter(ctx, ctx.db, rules),
+      };
+    }),
+  );
 
 /**
  * Admin-only mutation
@@ -321,23 +315,23 @@ export const permissionAllMutation = (requiredPermissions: string[]) =>
  * RLS is automatically applied to ctx.db
  */
 export const adminMutation = customMutation(
-	mutation,
-	customCtx(async (ctx) => {
-		const auth = await getAuthContextWithPermissions(ctx);
+  mutation,
+  customCtx(async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
 
-		if (!auth.isAdmin) {
-			throw new ConvexError({
-				code: "FORBIDDEN",
-				message: "Admin privileges required",
-			});
-		}
+    if (!auth.isAdmin) {
+      throw new ConvexError({
+        code: "FORBIDDEN",
+        message: "Admin privileges required",
+      });
+    }
 
-		const rules = await rlsRules(ctx);
-		return {
-			auth,
-			db: wrapDatabaseWriter(ctx, ctx.db, rules),
-		};
-	}),
+    const rules = await rlsRules(ctx);
+    return {
+      auth,
+      db: wrapDatabaseWriter(ctx, ctx.db, rules),
+    };
+  }),
 );
 
 /**
@@ -346,21 +340,21 @@ export const adminMutation = customMutation(
  * RLS is automatically applied to ctx.db
  */
 export const ownerMutation = customMutation(
-	mutation,
-	customCtx(async (ctx) => {
-		const auth = await getAuthContextWithPermissions(ctx);
+  mutation,
+  customCtx(async (ctx) => {
+    const auth = await getAuthContextWithPermissions(ctx);
 
-		if (!auth.isOwner) {
-			throw new ConvexError({
-				code: "FORBIDDEN",
-				message: "Owner privileges required",
-			});
-		}
+    if (!auth.isOwner) {
+      throw new ConvexError({
+        code: "FORBIDDEN",
+        message: "Owner privileges required",
+      });
+    }
 
-		const rules = await rlsRules(ctx);
-		return {
-			auth,
-			db: wrapDatabaseWriter(ctx, ctx.db, rules),
-		};
-	}),
+    const rules = await rlsRules(ctx);
+    return {
+      auth,
+      db: wrapDatabaseWriter(ctx, ctx.db, rules),
+    };
+  }),
 );

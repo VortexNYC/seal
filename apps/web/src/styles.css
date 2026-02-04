@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 /* Fumadocs: scan component files so Tailwind generates their utilities (md:hidden, etc.) */
 @source "../../../node_modules/fumadocs-ui/dist/**/*.js";
@@ -13,22 +13,21 @@
   }
 }
 
-@import 'tw-animate-css';
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 body {
   @apply m-0;
   font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
+    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family:
-    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 :root {
@@ -38,7 +37,7 @@ code {
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.32 0.110 250);
+  --primary: oklch(0.32 0.11 250);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
@@ -50,7 +49,7 @@ code {
   --destructive-foreground: oklch(0.577 0.245 27.325);
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.50 0.130 250);
+  --ring: oklch(0.5 0.13 250);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -59,7 +58,7 @@ code {
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.32 0.110 250);
+  --sidebar-primary: oklch(0.32 0.11 250);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.967 0.001 286.375);
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
@@ -72,17 +71,17 @@ code {
   --brand-200: oklch(0.85 0.055 250);
   --brand-300: oklch(0.75 0.085 250);
   --brand-400: oklch(0.62 0.115 250);
-  --brand-500: oklch(0.50 0.130 250);
+  --brand-500: oklch(0.5 0.13 250);
   --brand-600: oklch(0.42 0.125 250);
-  --brand-700: oklch(0.32 0.110 250);
+  --brand-700: oklch(0.32 0.11 250);
   --brand-800: oklch(0.26 0.095 250);
-  --brand-900: oklch(0.20 0.080 250);
+  --brand-900: oklch(0.2 0.08 250);
 
   /* Semantic Status Colors */
-  --success: oklch(0.70 0.165 160);
+  --success: oklch(0.7 0.165 160);
   --success-foreground: oklch(0.98 0 0);
   --warning: oklch(0.77 0.175 75);
-  --warning-foreground: oklch(0.20 0.020 75);
+  --warning-foreground: oklch(0.2 0.02 75);
   --info: oklch(0.62 0.195 260);
   --info-foreground: oklch(0.98 0 0);
 }
@@ -94,7 +93,7 @@ code {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.141 0.005 285.823);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.55 0.140 250);
+  --primary: oklch(0.55 0.14 250);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
@@ -106,7 +105,7 @@ code {
   --destructive-foreground: oklch(0.637 0.237 25.331);
   --border: oklch(0.274 0.006 286.033);
   --input: oklch(0.274 0.006 286.033);
-  --ring: oklch(0.55 0.140 250);
+  --ring: oklch(0.55 0.14 250);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -114,7 +113,7 @@ code {
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.21 0.006 285.885);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.55 0.140 250);
+  --sidebar-primary: oklch(0.55 0.14 250);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.274 0.006 286.033);
   --sidebar-accent-foreground: oklch(0.985 0 0);
@@ -122,23 +121,23 @@ code {
   --sidebar-ring: oklch(0.442 0.017 285.786);
 
   /* Brand Colors - Lighter shades for dark mode visibility */
-  --brand-50: oklch(0.20 0.030 250);
+  --brand-50: oklch(0.2 0.03 250);
   --brand-100: oklch(0.25 0.045 250);
-  --brand-200: oklch(0.30 0.060 250);
-  --brand-300: oklch(0.38 0.080 250);
-  --brand-400: oklch(0.50 0.110 250);
-  --brand-500: oklch(0.60 0.140 250);
-  --brand-600: oklch(0.68 0.130 250);
+  --brand-200: oklch(0.3 0.06 250);
+  --brand-300: oklch(0.38 0.08 250);
+  --brand-400: oklch(0.5 0.11 250);
+  --brand-500: oklch(0.6 0.14 250);
+  --brand-600: oklch(0.68 0.13 250);
   --brand-700: oklch(0.75 0.115 250);
-  --brand-800: oklch(0.85 0.090 250);
-  --brand-900: oklch(0.92 0.060 250);
+  --brand-800: oklch(0.85 0.09 250);
+  --brand-900: oklch(0.92 0.06 250);
 
   /* Semantic Status Colors - Dark mode adjustments */
-  --success: oklch(0.65 0.150 160);
+  --success: oklch(0.65 0.15 160);
   --success-foreground: oklch(0.98 0 0);
-  --warning: oklch(0.72 0.160 75);
+  --warning: oklch(0.72 0.16 75);
   --warning-foreground: oklch(0.15 0.015 75);
-  --info: oklch(0.65 0.180 260);
+  --info: oklch(0.65 0.18 260);
   --info-foreground: oklch(0.98 0 0);
 }
 
@@ -209,7 +208,7 @@ code {
     @apply bg-background text-foreground;
   }
   button,
-  [role='button'] {
+  [role="button"] {
     cursor: pointer;
   }
 }

@@ -295,18 +295,21 @@
 ## Interaction Specifications
 
 ### Real-time Updates
+
 - **Live Data**: Dashboard updates in real-time via Convex subscriptions
 - **Event Notifications**: New security events trigger immediate dashboard updates
 - **Status Indicators**: Color-coded status indicators for quick assessment
 - **Auto-refresh**: Regular data refresh every 30 seconds
 
 ### Filtering & Search
+
 - **Advanced Filters**: Multi-criteria filtering with date ranges, users, documents
 - **Search Functionality**: Full-text search across audit logs
 - **Saved Filters**: Save frequently used filter combinations
 - **Export Capabilities**: Export filtered results in multiple formats
 
 ### Report Generation
+
 - **Custom Reports**: Flexible report configuration with multiple output formats
 - **Scheduled Reports**: Automated report generation and delivery
 - **Template System**: Pre-built report templates for common use cases
@@ -317,24 +320,28 @@
 ## Technical Integration
 
 ### Convex Backend
+
 - **Real-time Dashboard**: Live updates via Convex subscriptions
 - **Secure Queries**: Optimized queries for large audit datasets
 - **Data Aggregation**: Real-time compliance metric calculations
 - **Scalable Storage**: Efficient storage for millions of audit events
 
 ### Retraced Integration
+
 - **Audit Logging**: Professional audit trail with Retraced service
 - **Compliance Standards**: Industry-standard audit logging formats
 - **Data Integrity**: Tamper-proof audit log storage
 - **Export Capabilities**: Multiple export formats for compliance needs
 
 ### Clerk Integration
+
 - **Admin Security**: MFA required for audit access
 - **Role-based Access**: Different dashboard views based on user role
 - **API Security**: Secure API endpoints for audit data access
 - **Session Management**: Secure admin session handling
 
 ### Accessibility Features
+
 - **Screen Reader**: Full dashboard accessibility
 - **Keyboard Navigation**: Complete keyboard navigation support
 - **Focus Management**: Clear focus indicators throughout

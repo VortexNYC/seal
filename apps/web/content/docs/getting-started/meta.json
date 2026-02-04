@@ -1,5 +1,5 @@
 {
-	"title": "Getting Started",
-	"pages": ["authentication", "quick-start", "error-handling"],
-	"defaultOpen": true
+  "title": "Getting Started",
+  "pages": ["authentication", "quick-start", "error-handling"],
+  "defaultOpen": true
 }

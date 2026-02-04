@@ -11,6 +11,7 @@ This document maps all authentication-related permissions using Clerk's RBAC str
 ### Unauthenticated User Access
 
 #### **Public Routes (No Authentication Required)**
+
 - **Landing Page**: `/`
   - View marketing content
   - Access sign-up and sign-in forms
@@ -30,6 +31,7 @@ This document maps all authentication-related permissions using Clerk's RBAC str
   - Complete signature and input fields
 
 #### **Restricted Actions**
+
 - Cannot access dashboard or workspace features
 - Cannot create or manage documents
 - Cannot invite team members
@@ -40,7 +42,8 @@ This document maps all authentication-related permissions using Clerk's RBAC str
 ## Authenticated User Permissions
 
 ### Base Authenticated User (No Workspace)
-- **Profile Management**: 
+
+- **Profile Management**:
   - Update personal profile information
   - Change password and security settings
   - Manage notification preferences
@@ -53,6 +56,7 @@ This document maps all authentication-related permissions using Clerk's RBAC str
   - Decline invitations
 
 #### **Restricted Actions**
+
 - Cannot access any workspace features until assigned to workspace
 - Cannot create documents or templates
 - Cannot access billing or organization settings
@@ -64,6 +68,7 @@ This document maps all authentication-related permissions using Clerk's RBAC str
 ### Workspace Owner Role (`owner`)
 
 #### **Full Access Permissions**
+
 - **Authentication & Security**:
   - Manage workspace security settings
   - Configure SSO/SAML integration (future)
@@ -94,6 +99,7 @@ This document maps all authentication-related permissions using Clerk's RBAC str
 ### Workspace Admin Role (`admin`)
 
 #### **Administrative Permissions**
+
 - **Member Management** (Limited):
   - Invite new members as `member` role only
   - View member list and basic activity
@@ -113,6 +119,7 @@ This document maps all authentication-related permissions using Clerk's RBAC str
   - Access basic compliance reports
 
 #### **Restricted Actions**
+
 - Cannot manage workspace billing/subscription
 - Cannot delete workspace
 - Cannot change other admin/owner permissions
@@ -121,6 +128,7 @@ This document maps all authentication-related permissions using Clerk's RBAC str
 ### Workspace Member Role (`member`)
 
 #### **Standard Access Permissions**
+
 - **Document Management**:
   - Create and manage own documents
   - Use shared templates (read-only)
@@ -141,6 +149,7 @@ This document maps all authentication-related permissions using Clerk's RBAC str
   - View own activity history
 
 #### **Restricted Actions**
+
 - Cannot invite new members
 - Cannot access billing information
 - Cannot modify workspace settings
@@ -152,11 +161,13 @@ This document maps all authentication-related permissions using Clerk's RBAC str
 ## API Key Permissions
 
 ### API Key Generation Access
+
 - **Workspace Owner**: Can generate organization-wide API keys with full permissions
 - **Workspace Admin**: Can generate limited API keys with document management permissions
 - **Workspace Member**: Can generate personal API keys (if enabled in workspace settings)
 
 ### API Key Permission Scopes
+
 - **Document Management**: CRUD operations on documents within workspace
 - **Template Access**: Read access to shared templates
 - **Signature Workflows**: Create and manage signature requests
@@ -169,11 +180,13 @@ This document maps all authentication-related permissions using Clerk's RBAC str
 ## Email Verification Requirements
 
 ### New User Registration
+
 - **Email Verification Mandatory**: All new accounts must verify email before workspace access
 - **Workspace Invitation**: Invited users can complete workspace onboarding after email verification
 - **Cross-Workspace Signing**: Document signers must have verified accounts to sign documents from other workspaces
 
 ### Existing User Email Changes
+
 - **Re-verification Required**: Changing email address requires new verification
 - **Workspace Notifications**: All workspace members notified of email changes for security
 - **Session Management**: Force re-authentication after email change
@@ -183,11 +196,13 @@ This document maps all authentication-related permissions using Clerk's RBAC str
 ## Session Management & Security
 
 ### Session Duration by Role
+
 - **Workspace Owner**: Extended sessions (30 days with "Remember Me")
 - **Admin/Member**: Standard sessions (7 days with "Remember Me")
 - **Cross-Workspace Signers**: Standard user sessions when signing documents from other workspaces
 
 ### Multi-Workspace Access
+
 - **Workspace Switching**: Users can switch between workspaces they belong to
 - **Permission Context**: Permissions change based on current workspace context
 - **Plan Context**: Feature access determined by current workspace's subscription plan
@@ -195,6 +210,7 @@ This document maps all authentication-related permissions using Clerk's RBAC str
 - **Billing Context**: Each workspace has independent billing/subscription
 
 ### Security Escalation
+
 - **Sensitive Actions**: Require recent authentication (password/2FA within last hour)
   - Changing workspace ownership
   - Deleting workspace
@@ -206,6 +222,7 @@ This document maps all authentication-related permissions using Clerk's RBAC str
 ## Clerk Plugin Integration
 
 ### Organization Plugin Configuration
+
 ```javascript
 organizations: {
   allowUserToCreateOrganization: true,
@@ -220,13 +237,14 @@ organizations: {
 ```
 
 ### RBAC Plugin Permissions
+
 ```javascript
 rbac: {
   roles: {
     owner: ["*"], // Full access to all resources
     admin: [
       "document:*",
-      "template:*", 
+      "template:*",
       "member:read",
       "member:invite",
       "api-key:create:limited",
@@ -245,13 +263,14 @@ rbac: {
 ```
 
 ### Admin Plugin Configuration
+
 ```javascript
 admin: {
   allowedRoles: ["owner"],
   adminPath: "/admin",
   permissions: [
     "workspace:manage",
-    "user:impersonate", 
+    "user:impersonate",
     "billing:manage",
     "analytics:view:all"
   ]
@@ -263,12 +282,14 @@ admin: {
 ## Permission Validation Patterns
 
 ### Frontend Permission Checks
+
 - **Route Guards**: Verify authentication and workspace membership
 - **Component Rendering**: Conditionally show features based on role permissions
 - **Action Buttons**: Disable actions user cannot perform
 - **Navigation Menus**: Hide inaccessible sections
 
 ### Backend Permission Enforcement
+
 - **API Endpoints**: Validate permissions before processing requests
 - **Database Queries**: Scope data access by workspace and role
 - **Webhook Events**: Include permission context in event payloads
@@ -279,16 +300,19 @@ admin: {
 ## Edge Cases & Special Permissions
 
 ### Workspace Deletion Scenarios
+
 - **Owner Leaves**: Must transfer ownership before leaving
 - **Last Member**: Workspace enters "abandoned" state with 90-day recovery
 - **Billing Lapse**: Workspace features restricted but data preserved
 
 ### Cross-Workspace Document Sharing
+
 - **External Recipients**: Must create accounts to sign documents from other workspaces
 - **Account-Based Access**: All signers require verified accounts for security and audit trail
 - **Template Sharing**: Public templates accessible across workspaces (future)
 
 ### Emergency Access
+
 - **Account Recovery**: Platform admins can assist with account recovery
 - **Workspace Recovery**: Owner can recover "deleted" workspace within 90 days
 - **Legal Compliance**: Authorized personnel can access documents for legal requirements

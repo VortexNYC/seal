@@ -3,6 +3,7 @@
 ## Document Selection Flows
 
 ### Multi-Document Selection Flow
+
 ```
 ○ User Opens Document Library
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### Select All Documents Flow
+
 ```
 ○ User Wants to Select All Documents
     ↓
@@ -63,6 +65,7 @@
 ## Bulk Document Operations
 
 ### Bulk Delete Flow
+
 ```
 ○ User Selects Documents for Deletion
     ↓
@@ -92,6 +95,7 @@
 ```
 
 ### Bulk Status Change Flow
+
 ```
 ○ User Selects Documents for Status Change
     ↓
@@ -121,6 +125,7 @@
 ```
 
 ### Bulk Download Flow
+
 ```
 ○ User Selects Completed Documents for Download
     ↓
@@ -152,6 +157,7 @@
 ## Bulk Email Operations
 
 ### Bulk Document Sending Flow
+
 ```
 ○ User Selects Multiple Draft Documents
     ↓
@@ -187,6 +193,7 @@
 ```
 
 ### Bulk Reminder Flow
+
 ```
 ○ User Selects Documents with Pending Signatures
     ↓
@@ -218,6 +225,7 @@
 ## Error Handling Flows
 
 ### Partial Operation Failure Flow
+
 ```
 ○ Bulk Operation Encounters Errors
     ↓
@@ -247,6 +255,7 @@
 ```
 
 ### Permission Error Handling Flow
+
 ```
 ○ Bulk Operation Lacks Required Permissions
     ↓
@@ -278,6 +287,7 @@
 ## Progress Tracking Flows
 
 ### Bulk Operation Progress Flow
+
 ```
 ○ Large Bulk Operation Initiated
     ↓

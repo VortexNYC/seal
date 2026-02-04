@@ -3,6 +3,7 @@
 ## Primary Document Sending Flows
 
 ### Final Review and Send Flow (After Field Placement)
+
 ```
 ○ User Has Completed Field Placement
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### Quick Send Flow (Minimal Customization)
+
 ```
 ○ User Wants to Send Document Quickly
     ↓
@@ -59,6 +61,7 @@
 ## Document Review and Verification
 
 ### Complete Document Review Flow
+
 ```
 ○ User Needs to Verify Document Before Sending
     ↓
@@ -88,6 +91,7 @@
 ```
 
 ### Edit During Review Flow
+
 ```
 ○ User Finds Issue During Document Review
     ↓
@@ -121,6 +125,7 @@
 ## Custom Message Composition
 
 ### Individual Recipient Messaging Flow
+
 ```
 ○ User Wants Personalized Messages for Each Recipient
     ↓
@@ -150,6 +155,7 @@
 ```
 
 ### Message Template Usage Flow
+
 ```
 ○ User Wants to Use Professional Message Templates
     ↓
@@ -183,6 +189,7 @@
 ## Document Sending and Delivery
 
 ### Standard Document Sending Flow
+
 ```
 ○ User Ready to Send Document with Custom Messages
     ↓
@@ -212,6 +219,7 @@
 ```
 
 ### Delivery Status Tracking Flow
+
 ```
 ○ Document Sent Successfully
     ↓
@@ -245,6 +253,7 @@
 ## Deadline and Reminder Management
 
 ### Signing Deadline Setup Flow
+
 ```
 ○ User Wants to Set Signing Deadlines
     ↓
@@ -274,6 +283,7 @@
 ```
 
 ### Reminder Management Flow
+
 ```
 ○ Document Has Deadline with Automatic Reminders
     ↓
@@ -307,6 +317,7 @@
 ## Mobile Sending Experience
 
 ### Mobile Document Sending Flow
+
 ```
 ○ Mobile User Ready to Send Document
     ↓
@@ -340,6 +351,7 @@
 ## Error Handling and Recovery
 
 ### Sending Failure Recovery Flow
+
 ```
 ○ Email Delivery Failure Detected
     ↓
@@ -369,6 +381,7 @@
 ```
 
 ### Network Interruption Recovery Flow
+
 ```
 ○ Network Interruption During Sending
     ↓

@@ -3,6 +3,7 @@
 ## Primary User Flows
 
 ### Workspace Plan Upgrade Flow (Free to Pro)
+
 ```
 ○ User on Free Plan (10 docs limit reached)
     ↓
@@ -36,6 +37,7 @@
 ```
 
 ### Payment Method Management Flow
+
 ```
 ○ Workspace Owner Accesses Billing
     ↓
@@ -57,6 +59,7 @@
 ```
 
 ### Failed Payment Recovery Flow
+
 ```
 ○ Payment Failure Occurs (Stripe Webhook)
     ↓
@@ -84,6 +87,7 @@
 ```
 
 ### Billing History Access Flow
+
 ```
 ○ Workspace Owner Views Billing History
     ↓
@@ -103,6 +107,7 @@
 ## Secondary User Flows
 
 ### Plan Downgrade Flow (Pro to Free)
+
 ```
 ○ Workspace Owner Initiates Downgrade
     ↓
@@ -126,6 +131,7 @@
 ```
 
 ### Team Member Billing Impact Flow
+
 ```
 ○ Workspace Owner Adds Team Member
     ↓
@@ -147,6 +153,7 @@
 ```
 
 ### Subscription Cancellation Flow
+
 ```
 ○ Workspace Owner Initiates Cancellation
     ↓
@@ -172,6 +179,7 @@
 ## Error Flows
 
 ### Access Control Error Flow
+
 ```
 ○ Non-Owner Attempts Billing Access
     ↓
@@ -183,6 +191,7 @@
 ```
 
 ### Payment Processing Error Flow
+
 ```
 ○ Payment Processing Failure
     ↓

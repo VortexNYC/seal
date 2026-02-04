@@ -12,18 +12,19 @@
  */
 
 import Stripe from "stripe";
+
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalAction, internalMutation } from "../_generated/server";
 
 function initializeStripe(): Stripe {
-	const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-	if (!stripeSecretKey) {
-		throw new Error("STRIPE_SECRET_KEY not configured");
-	}
-	return new Stripe(stripeSecretKey, {
-		apiVersion: "2025-12-15.clover",
-	});
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    throw new Error("STRIPE_SECRET_KEY not configured");
+  }
+  return new Stripe(stripeSecretKey, {
+    apiVersion: "2025-12-15.clover",
+  });
 }
 
 /**
@@ -31,56 +32,54 @@ function initializeStripe(): Stripe {
  * existing Convex subscription external IDs for dedup.
  */
 export const getUsersWithStripeCustomers = internalMutation({
-	args: {},
-	handler: async (
-		ctx,
-	): Promise<
-		Array<{
-			userId: Id<"users">;
-			email: string;
-			stripeCustomerId: string;
-			existingSubscriptionIds: string[];
-		}>
-	> => {
-		const allUsers = await ctx.db.query("users").collect();
+  args: {},
+  handler: async (
+    ctx,
+  ): Promise<
+    Array<{
+      userId: Id<"users">;
+      email: string;
+      stripeCustomerId: string;
+      existingSubscriptionIds: string[];
+    }>
+  > => {
+    const allUsers = await ctx.db.query("users").collect();
 
-		const results: Array<{
-			userId: Id<"users">;
-			email: string;
-			stripeCustomerId: string;
-			existingSubscriptionIds: string[];
-		}> = [];
+    const results: Array<{
+      userId: Id<"users">;
+      email: string;
+      stripeCustomerId: string;
+      existingSubscriptionIds: string[];
+    }> = [];
 
-		for (const user of allUsers) {
-			if (!user.stripeCustomerId) {
-				continue;
-			}
+    for (const user of allUsers) {
+      if (!user.stripeCustomerId) {
+        continue;
+      }
 
-			const subscriptions = await ctx.db
-				.query("subscriptions")
-				.withIndex("by_user_id", (q) => q.eq("userId", user._id))
-				.collect();
+      const subscriptions = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+        .collect();
 
-			results.push({
-				userId: user._id,
-				email: user.email,
-				stripeCustomerId: user.stripeCustomerId,
-				existingSubscriptionIds: subscriptions.map(
-					(s) => s.externalSubscriptionId,
-				),
-			});
-		}
+      results.push({
+        userId: user._id,
+        email: user.email,
+        stripeCustomerId: user.stripeCustomerId,
+        existingSubscriptionIds: subscriptions.map((s) => s.externalSubscriptionId),
+      });
+    }
 
-		return results;
-	},
+    return results;
+  },
 });
 
 interface SyncResult {
-	total: number;
-	synced: number;
-	alreadyInConvex: number;
-	skippedInactive: number;
-	errors: number;
+  total: number;
+  synced: number;
+  alreadyInConvex: number;
+  skippedInactive: number;
+  errors: number;
 }
 
 /**
@@ -94,118 +93,103 @@ interface SyncResult {
  * Safe to run multiple times — fully idempotent.
  */
 export const syncStripeSubscriptions = internalAction({
-	args: {},
-	handler: async (ctx): Promise<SyncResult> => {
-		const stripe = initializeStripe();
+  args: {},
+  handler: async (ctx): Promise<SyncResult> => {
+    const stripe = initializeStripe();
 
-		const users = await ctx.runMutation(
-			internal.stripe.sync_subscriptions.getUsersWithStripeCustomers,
-			{},
-		);
+    const users = await ctx.runMutation(
+      internal.stripe.sync_subscriptions.getUsersWithStripeCustomers,
+      {},
+    );
 
-		console.warn(`Found ${users.length} users with Stripe customer IDs`);
+    console.warn(`Found ${users.length} users with Stripe customer IDs`);
 
-		let synced = 0;
-		let alreadyInConvex = 0;
-		let skippedInactive = 0;
-		let errors = 0;
+    let synced = 0;
+    let alreadyInConvex = 0;
+    let skippedInactive = 0;
+    let errors = 0;
 
-		for (const user of users) {
-			try {
-				const stripeSubscriptions = await stripe.subscriptions.list({
-					customer: user.stripeCustomerId,
-					limit: 100,
-				});
+    for (const user of users) {
+      try {
+        const stripeSubscriptions = await stripe.subscriptions.list({
+          customer: user.stripeCustomerId,
+          limit: 100,
+        });
 
-				for (const sub of stripeSubscriptions.data) {
-					// Skip terminal statuses
-					if (
-						sub.status === "canceled" ||
-						sub.status === "incomplete_expired"
-					) {
-						skippedInactive++;
-						continue;
-					}
+        for (const sub of stripeSubscriptions.data) {
+          // Skip terminal statuses
+          if (sub.status === "canceled" || sub.status === "incomplete_expired") {
+            skippedInactive++;
+            continue;
+          }
 
-					// Already in Convex?
-					if (user.existingSubscriptionIds.includes(sub.id)) {
-						alreadyInConvex++;
-						continue;
-					}
+          // Already in Convex?
+          if (user.existingSubscriptionIds.includes(sub.id)) {
+            alreadyInConvex++;
+            continue;
+          }
 
-					// Ensure subscription has userId in metadata (fix for future webhooks)
-					if (!sub.metadata?.userId) {
-						await stripe.subscriptions.update(sub.id, {
-							metadata: {
-								...sub.metadata,
-								userId: user.userId,
-							},
-						});
-						console.warn(
-							`[FIX] Added userId metadata to Stripe subscription ${sub.id}`,
-						);
-					}
+          // Ensure subscription has userId in metadata (fix for future webhooks)
+          if (!sub.metadata?.userId) {
+            await stripe.subscriptions.update(sub.id, {
+              metadata: {
+                ...sub.metadata,
+                userId: user.userId,
+              },
+            });
+            console.warn(`[FIX] Added userId metadata to Stripe subscription ${sub.id}`);
+          }
 
-					// Get price ID from first item
-					const firstItem = sub.items.data[0];
-					if (!firstItem) {
-						console.error(
-							`[ERROR] Subscription ${sub.id} has no items, skipping`,
-						);
-						errors++;
-						continue;
-					}
+          // Get price ID from first item
+          const firstItem = sub.items.data[0];
+          if (!firstItem) {
+            console.error(`[ERROR] Subscription ${sub.id} has no items, skipping`);
+            errors++;
+            continue;
+          }
 
-					const currentPeriodStart = firstItem.current_period_start;
-					const currentPeriodEnd = firstItem.current_period_end;
+          const currentPeriodStart = firstItem.current_period_start;
+          const currentPeriodEnd = firstItem.current_period_end;
 
-					if (!currentPeriodStart || !currentPeriodEnd) {
-						console.error(
-							`[ERROR] Subscription ${sub.id} missing period dates, skipping`,
-						);
-						errors++;
-						continue;
-					}
+          if (!currentPeriodStart || !currentPeriodEnd) {
+            console.error(`[ERROR] Subscription ${sub.id} missing period dates, skipping`);
+            errors++;
+            continue;
+          }
 
-					await ctx.runMutation(
-						internal.stripe.subscription_actions.createSubscriptionRecord,
-						{
-							userId: user.userId,
-							stripeCustomerId: user.stripeCustomerId,
-							stripeSubscriptionId: sub.id,
-							stripePriceId: firstItem.price.id,
-							status: sub.status,
-							currentPeriodStart: currentPeriodStart * 1000,
-							currentPeriodEnd: currentPeriodEnd * 1000,
-						},
-					);
+          await ctx.runMutation(internal.stripe.subscription_actions.createSubscriptionRecord, {
+            userId: user.userId,
+            stripeCustomerId: user.stripeCustomerId,
+            stripeSubscriptionId: sub.id,
+            stripePriceId: firstItem.price.id,
+            status: sub.status,
+            currentPeriodStart: currentPeriodStart * 1000,
+            currentPeriodEnd: currentPeriodEnd * 1000,
+          });
 
-					synced++;
-					console.warn(
-						`[SYNCED] ${user.email}: subscription ${sub.id} (${sub.status}, price: ${firstItem.price.id})`,
-					);
-				}
-			} catch (err) {
-				errors++;
-				console.error(
-					`[ERROR] Failed to sync ${user.email} (${user.stripeCustomerId}):`,
-					err instanceof Error ? err.message : String(err),
-				);
-			}
-		}
+          synced++;
+          console.warn(
+            `[SYNCED] ${user.email}: subscription ${sub.id} (${sub.status}, price: ${firstItem.price.id})`,
+          );
+        }
+      } catch (err) {
+        errors++;
+        console.error(
+          `[ERROR] Failed to sync ${user.email} (${user.stripeCustomerId}):`,
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    }
 
-		const summary: SyncResult = {
-			total: users.length,
-			synced,
-			alreadyInConvex,
-			skippedInactive,
-			errors,
-		};
+    const summary: SyncResult = {
+      total: users.length,
+      synced,
+      alreadyInConvex,
+      skippedInactive,
+      errors,
+    };
 
-		console.warn(
-			"Subscription sync complete:",
-			JSON.stringify(summary, null, 2),
-		);
-		return summary;
-	},
+    console.warn("Subscription sync complete:", JSON.stringify(summary, null, 2));
+    return summary;
+  },
 });

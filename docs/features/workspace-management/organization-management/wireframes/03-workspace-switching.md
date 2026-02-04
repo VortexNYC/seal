@@ -339,24 +339,28 @@
 ## Interaction Specifications
 
 ### Workspace Switcher Behavior
+
 - **Dropdown Toggle**: Click to open/close workspace list
 - **Keyboard Navigation**: Arrow keys to navigate, Enter to select
 - **Visual Indicators**: Show current workspace, user role, and status
 - **Quick Access**: Recent workspaces appear at top of list
 
 ### Context Switching Process
+
 - **Seamless Transition**: Smooth loading state during switch
 - **Data Persistence**: Preserve unsaved work when possible
 - **Permission Updates**: Immediate permission refresh via Convex
 - **URL Management**: Update browser URL to reflect current workspace
 
 ### Workspace Status Indicators
+
 - **Billing Status**: Clear visual indicators for trial, active, suspended
 - **Member Count**: Show current member count and billing impact
 - **Role Display**: User's role in each workspace clearly shown
 - **Activity Indicators**: Show recent activity or updates
 
 ### Error Handling
+
 - **Access Denied**: Clear explanation and recovery options
 - **Network Issues**: Retry mechanisms with user feedback
 - **Invalid Workspace**: Automatic fallback to valid workspace
@@ -367,30 +371,35 @@
 ## Technical Integration
 
 ### Convex Real-time Updates
+
 - **Context Switching**: Seamless workspace data updates
 - **Permission Changes**: Instant permission refresh across all clients
 - **Member Updates**: Real-time workspace member list updates
 - **State Persistence**: Automatic workspace preference saving
 
 ### Clerk Integration
+
 - **Multi-Organization Support**: Handle users across multiple workspaces
 - **Permission Context**: Dynamic permission checking per workspace
 - **Role-Based Features**: Different UI based on user role in workspace
 - **Session Management**: Maintain authentication across workspace switches
 
 ### URL and State Management
+
 - **Workspace Routing**: Clean URL structure with workspace context
 - **Browser History**: Proper back/forward navigation support
 - **Deep Linking**: Direct links to specific workspace contexts
 - **State Persistence**: Remember last active workspace preference
 
 ### Stripe Billing Integration
+
 - **Per-Workspace Billing**: Independent billing status per workspace
 - **Feature Access**: Features based on current workspace subscription
 - **Trial Management**: Clear trial status and expiration warnings
 - **Payment Recovery**: Easy payment update flows for suspended workspaces
 
 ### Mobile Optimization
+
 - **Touch-Friendly Switcher**: Large touch targets for mobile
 - **Responsive Layout**: Adaptive workspace information display
 - **Swipe Navigation**: Consider swipe gestures for workspace switching

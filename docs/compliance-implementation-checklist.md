@@ -19,6 +19,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 **Legal Requirement**: Prove the signer intended to execute the signature.
 
 **Implementation Checklist**:
+
 - [ ] Clear UI showing user is about to sign (not just clicking randomly)
 - [ ] Explicit "I agree to sign" button/action
 - [ ] Record signature method used (drawn, typed, uploaded image)
@@ -35,6 +36,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 **Legal Requirement**: Obtain explicit consent from signers to conduct business electronically.
 
 **Implementation Checklist**:
+
 - [ ] Show consent modal BEFORE first signature opportunity
 - [ ] Clear language explaining electronic signature process
 - [ ] Checkbox or explicit "I consent" action required
@@ -51,6 +53,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 **Legal Requirement**: Provide alternative to electronic signing (paper/manual process).
 
 **Implementation Checklist**:
+
 - [ ] Offer "Download PDF for manual signing" option
 - [ ] Clear instructions on how to use paper process
 - [ ] Contact information for requesting paper documents
@@ -66,6 +69,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 **Legal Requirement**: Automatically deliver signed copies to all parties.
 
 **Implementation Checklist**:
+
 - [ ] Automatic email delivery to all signers upon completion
 - [ ] Sender receives copy of completed document
 - [ ] Generate secure download links (time-limited)
@@ -82,6 +86,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 **Legal Requirement**: Store documents and audit trails for legally-required retention period.
 
 **Implementation Checklist**:
+
 - [ ] Store signed documents for minimum **7 years** (industry standard)
 - [ ] Encrypted storage in Convex database
 - [ ] Immutable storage (prevent tampering)
@@ -99,6 +104,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 ### Document Integrity Verification
 
 **Implementation Checklist**:
+
 - [ ] Generate SHA-256 hash on document upload (Web Crypto API)
 - [ ] Store document hash in database
 - [ ] Verify hash before signature process starts
@@ -113,6 +119,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 ### Comprehensive Audit Trail (CRITICAL)
 
 **Implementation Checklist**:
+
 - [ ] **Document Actions**: Log upload, modification, deletion
 - [ ] **Signature Fields**: Log additions, changes, removals
 - [ ] **Recipients**: Log additions, modifications, removals
@@ -133,6 +140,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 ### Audit Logging Failure Handling
 
 **Implementation Checklist**:
+
 - [ ] Retry mechanism (3 attempts) before blocking action
 - [ ] Block signature completion if audit log fails
 - [ ] Block document send if audit log fails
@@ -148,6 +156,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 ## 📊 Certificate of Completion
 
 **Implementation Checklist**:
+
 - [ ] Generate certificate upon document completion
 - [ ] Include document details (title, date, parties)
 - [ ] List all signers with timestamps
@@ -164,6 +173,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 ## 🔒 Digital Signature Security
 
 **Implementation Checklist**:
+
 - [ ] Use Web Crypto API for cryptographic operations
 - [ ] Generate unique signature for each signing event
 - [ ] Store signature data securely (encrypted)
@@ -179,6 +189,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 ## 📤 Compliance Reporting & Export
 
 **Implementation Checklist**:
+
 - [ ] Generate audit reports for specific documents
 - [ ] Generate audit reports for date ranges
 - [ ] Export in multiple formats (PDF, CSV, JSON)
@@ -212,6 +223,7 @@ Before launching to production, verify:
 ## 🎯 Success Criteria
 
 **Minimum Requirements for MVP Launch**:
+
 1. ✅ All 5 ESIGN Act requirements fully implemented
 2. ✅ Audit logging blocks actions on failure
 3. ✅ Document integrity verification working

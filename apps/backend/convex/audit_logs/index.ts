@@ -9,18 +9,18 @@
  */
 
 export {
-	getDocumentAuditTrail,
-	getOrganizationAuditTrail,
-	getRecipientAuditTrail,
-	logAction,
-	logDocumentAction,
-	logFieldAction,
-	logSignatureAction,
+  getDocumentAuditTrail,
+  getOrganizationAuditTrail,
+  getRecipientAuditTrail,
+  logAction,
+  logDocumentAction,
+  logFieldAction,
+  logSignatureAction,
 } from "./helpers";
 
 export {
-	exportDocumentAuditTrail,
-	getDocumentAuditLogs,
-	getOrganizationAuditLogs,
-	getSigningSessionAuditTrail,
+  exportDocumentAuditTrail,
+  getDocumentAuditLogs,
+  getOrganizationAuditLogs,
+  getSigningSessionAuditTrail,
 } from "./queries";

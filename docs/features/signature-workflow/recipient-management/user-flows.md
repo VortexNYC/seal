@@ -3,6 +3,7 @@
 ## Primary Recipient Setup Flows
 
 ### Initial Recipient Setup Flow (After Document Processing)
+
 ```
 ○ User's Document Processing Complete
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### Multiple Recipients and Signing Order Flow
+
 ```
 ○ User Needs Multiple Signers with Specific Order
     ↓
@@ -59,6 +61,7 @@
 ## Recipient Role Management
 
 ### Assign Recipient Roles Flow
+
 ```
 ○ User Setting Up Different Types of Recipients
     ↓
@@ -86,6 +89,7 @@
 ## Recipient Information Management
 
 ### Edit Recipient Details Flow
+
 ```
 ○ User Needs to Modify Recipient Information
     ↓
@@ -103,6 +107,7 @@
 ```
 
 ### Remove Recipient Flow
+
 ```
 ○ User Needs to Remove Recipient
     ↓
@@ -124,6 +129,7 @@
 ## Transition to Field Placement
 
 ### From Recipients to Field Placement Flow
+
 ```
 ○ User Has All Recipients Configured
     ↓
@@ -151,6 +157,7 @@
 ## Email Validation and Data Management
 
 ### Email Validation Flow
+
 ```
 ○ User Enters Email Addresses for Recipients
     ↓
@@ -168,6 +175,7 @@
 ```
 
 ### Duplicate Recipients Handling Flow
+
 ```
 ○ User Accidentally Adds Same Email Twice
     ↓
@@ -189,6 +197,7 @@
 ## Mobile Recipient Management
 
 ### Mobile Recipient Setup Flow
+
 ```
 ○ Mobile User Setting Up Recipients
     ↓
@@ -216,6 +225,7 @@
 ## Error Handling and Recovery
 
 ### Invalid Email Recovery Flow
+
 ```
 ○ User Gets Email Validation Error
     ↓
@@ -233,6 +243,7 @@
 ```
 
 ### Recipient Setup Validation Flow
+
 ```
 ○ User Tries to Proceed Without Required Recipients
     ↓
@@ -254,6 +265,7 @@
 ## Workflow Integration
 
 ### Recipients to Field Assignment Flow
+
 ```
 ○ User Completes Recipient Setup
     ↓
@@ -271,6 +283,7 @@
 ```
 
 ### Recipient Setup Foundation for Later Steps
+
 ```
 ○ User Has Recipients Configured
     ↓

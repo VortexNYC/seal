@@ -77,6 +77,7 @@ seal/
 ### 1. Authentication (Clerk Integration)
 
 **Frontend Setup** (`apps/web/src/main.tsx`):
+
 ```
 ClerkProvider (Clerk auth state)
   └── ConvexProviderWithClerk (Bridges Clerk + Convex)
@@ -85,6 +86,7 @@ ClerkProvider (Clerk auth state)
 ```
 
 **Key Auth Files**:
+
 - `apps/backend/convex/auth.config.ts` - Clerk Convex configuration
 - `apps/web/src/routes/_auth.tsx` - Public auth layout
 - `apps/web/src/routes/_authenticated.tsx` - Protected route layout with `SignedIn`/`SignedOut` guards
@@ -92,11 +94,13 @@ ClerkProvider (Clerk auth state)
 ### 2. Authorization System
 
 **Role-Based Access Control (RBAC)**:
+
 - Located: `apps/backend/convex/auth.utils.ts`
 - Roles: `owner` (100), `admin` (75), `member` (50), `viewer` (25), `system` (150)
 
 **Permission Model**:
 Each role has specific permissions grouped by domain:
+
 - Organization: manage, settings (read/update), users (read/invite/remove/update_role)
 - Subscriptions: manage, billing (read/update)
 - Documents: read, create, update, delete, send, cancel, download
@@ -108,13 +112,14 @@ Each role has specific permissions grouped by domain:
 - Data: export, backup
 
 **Permission Checking Functions**:
+
 ```typescript
-hasPermission(member, permission) // Check specific permission
-hasRole(member, requiredRole)      // Check role hierarchy
-getEffectivePermissions(member)    // Get all permissions for role
-canManageDocuments(member, orgId)
-canSendDocuments(member)
-canManageMembers(member)
+hasPermission(member, permission); // Check specific permission
+hasRole(member, requiredRole); // Check role hierarchy
+getEffectivePermissions(member); // Get all permissions for role
+canManageDocuments(member, orgId);
+canSendDocuments(member);
+canManageMembers(member);
 // ... and many more specific helpers
 ```
 
@@ -123,6 +128,7 @@ canManageMembers(member)
 **Function**: `getAuthContext(ctx)` in `auth.ts`
 
 **Returns**: `AuthContext` with:
+
 - `member` - Organization member record with role & status
 - `user` - User record (Clerk ID, email, name, active org)
 - `organization` - Current organization
@@ -135,13 +141,14 @@ canManageMembers(member)
   - `canManageFinances(), canManageSubscription(), canManageMembers()`
 
 **Query/Mutation Wrapper Patterns**:
+
 ```typescript
-authQuery       // Basic authenticated query
-adminQuery      // Requires admin+ role
-memberQuery     // Requires member+ role
-authMutation    // Basic authenticated mutation
-adminMutation   // Requires admin+ role
-memberMutation  // Requires member+ role
+authQuery; // Basic authenticated query
+adminQuery; // Requires admin+ role
+memberQuery; // Requires member+ role
+authMutation; // Basic authenticated mutation
+adminMutation; // Requires admin+ role
+memberMutation; // Requires member+ role
 ```
 
 ### 4. Account Status Validation
@@ -151,6 +158,7 @@ memberMutation  // Requires member+ role
 **Enforcement**: `isAccountValid(member)` checks status === "active"
 
 **Error Handling**: Maps status to specific error types:
+
 - `ACCOUNT_INACTIVE`, `ACCOUNT_SUSPENDED`, `ACCOUNT_PENDING`, `ACCOUNT_BLOCKED`
 
 ## Database Schema
@@ -158,6 +166,7 @@ memberMutation  // Requires member+ role
 ### Core Tables
 
 #### 1. **users**
+
 ```
 - clerkId (indexed) - Clerk user ID
 - name, email, avatar
@@ -169,6 +178,7 @@ memberMutation  // Requires member+ role
 ```
 
 #### 2. **organizations**
+
 ```
 - name, slug (indexed, unique)
 - type: personal | group | company
@@ -180,6 +190,7 @@ memberMutation  // Requires member+ role
 ```
 
 #### 3. **organization_members**
+
 ```
 - userId, organizationId (compound index)
 - role: system | owner | admin | member | viewer
@@ -191,6 +202,7 @@ memberMutation  // Requires member+ role
 ```
 
 #### 4. **organization_invitations**
+
 ```
 - organizationId, email (indexed together)
 - role (what role to assign when accepted)
@@ -202,6 +214,7 @@ memberMutation  // Requires member+ role
 ```
 
 #### 5. **documents**
+
 ```
 - organizationId (indexed), ownerId
 - name, description, fileSize, fileType (MIME)
@@ -213,6 +226,7 @@ memberMutation  // Requires member+ role
 ```
 
 #### 6. **document_access** (For specific sharing)
+
 ```
 - documentId, userId (compound index)
 - permissionLevel: view | edit | manage
@@ -223,6 +237,7 @@ memberMutation  // Requires member+ role
 ```
 
 ### Subscription Tables
+
 - `subscriptions` - User subscription state
 - `subscription_products` - Product definitions
 - `subscription_prices` - Pricing tiers
@@ -234,6 +249,7 @@ memberMutation  // Requires member+ role
 **Location**: `apps/backend/convex/organizations/queries.ts`
 
 Key queries:
+
 - `getOrganization(slug)` - Get org details with user's role/status
 - `getOrganizationMembers(orgId)` - List all members with details
 - `getPendingInvitations(orgId)` - Invitations (requires invite permission)
@@ -245,6 +261,7 @@ Key queries:
 **Location**: `apps/backend/convex/organizations/mutations.ts`
 
 Key mutations:
+
 - `ensurePersonalOrganization()` - Create personal org for user
 - `createWorkspace()` - Admin: Create new organization
 - `updateWorkspace()` - Admin: Update org settings
@@ -297,6 +314,7 @@ Key mutations:
 ### Routing Structure
 
 **Route Hierarchy**:
+
 ```
 / (index)
 ├── /sign-in (public)
@@ -316,6 +334,7 @@ Key mutations:
 ```
 
 **Auth Guards**:
+
 - `_authenticated.tsx` - Uses Clerk's `SignedOut` to redirect to `/sign-in`
 - `_authenticated` layout wraps `EnforceOrganization` component
 - `EnforceOrganization` ensures user has org before accessing workspace
@@ -323,6 +342,7 @@ Key mutations:
 ### Component Organization
 
 **Key Components**:
+
 - `AppSidebar` - Main navigation sidebar with menu items
 - `TeamSwitcher` - Switch between user's organizations
 - `NavMain` - Main navigation links (home, documents, templates, etc.)
@@ -332,15 +352,17 @@ Key mutations:
 
 **Permissions-Based UI**:
 Frontend uses `permissions` object from `getUserPermissions` query to conditionally show UI:
+
 - `canManageOrganization`, `canViewMembers`, `canInviteMembers`, etc.
 
 ### Permission Fetching
 
 In workspace layout (`$slug.tsx`):
+
 ```typescript
 const organization = useQuery(api.organizations.queries.getOrganization, { slug });
 const permissions = useQuery(api.organizations.queries.getUserPermissions, {
-  organizationId: orgId
+  organizationId: orgId,
 });
 ```
 
@@ -349,6 +371,7 @@ Passes `permissions` to sidebar for UI rendering.
 ## Key Features & Their Permission Integration
 
 ### 1. Document Management
+
 - **View**: Any accessible document (by sharing mode)
 - **Create**: `documents:create` permission
 - **Edit**: Owner or `edit`/`manage` access level
@@ -357,6 +380,7 @@ Passes `permissions` to sidebar for UI rendering.
 - **Share**: Owner or `manage` access level
 
 ### 2. Team Management
+
 - **View Members**: `org:users:read`
 - **Invite Members**: `org:users:invite`
 - **Remove Members**: `org:users:remove`
@@ -364,22 +388,26 @@ Passes `permissions` to sidebar for UI rendering.
 - **Update Status**: Admin only
 
 ### 3. Organization Settings
+
 - **View Settings**: `org:settings:read`
 - **Update Settings**: `org:settings:update` (admin only)
 - **Manage Organization**: `org:manage` (admin only)
 
 ### 4. Subscription/Billing
+
 - **View Billing**: `subscription:billing:read`
 - **Manage Billing**: `subscription:manage` (admin only)
 - **Feature Gating**: Team sharing requires Pro subscription
 
 ### 5. Audit & Compliance
+
 - **View Audit Logs**: `audit:read`
 - **Export Audit**: `audit:export`
 
 ## Error Handling
 
 **Custom Error Types** (`AuthErrorType`):
+
 ```
 NO_IDENTITY, NO_USER_RECORD, NO_MEMBER_RECORD, NO_ORGANIZATION,
 NO_SUBSCRIPTION, INSUFFICIENT_PERMISSIONS, INSUFFICIENT_ROLE,
@@ -390,12 +418,14 @@ WRONG_ORGANIZATION, SUBSCRIPTION_EXPIRED, SUBSCRIPTION_REQUIRED
 **Error Creation**: `createAuthError(type, message?, metadata?)`
 
 **Frontend Error Handling**:
+
 - Throws `ConvexError` with descriptive messages
 - Special hint: `CALL_ENSURE_MEMBERSHIP` for missing org setup
 
 ## Integration Points for Roles & Permissions
 
 ### Where to Add New Permissions:
+
 1. **Define permission string**: `auth.utils.ts` - `DOCUMENT_SIGNING_PERMISSIONS` constant
 2. **Add to role**: Update `ROLE_PERMISSIONS[role]` array
 3. **Create check function**: Optional helper like `canManageFeature(member)`
@@ -403,6 +433,7 @@ WRONG_ORGANIZATION, SUBSCRIPTION_EXPIRED, SUBSCRIPTION_REQUIRED
 5. **Frontend gating**: Conditionally render UI based on permissions object
 
 ### Where Roles Are Assigned:
+
 1. **Personal Org Creation**: `ensurePersonalOrganization()` - User gets `owner` role
 2. **Workspace Creation**: `createWorkspace()` - Creator gets `owner` role
 3. **Member Addition**: `addMember()` - Specify role (admin, member, viewer)
@@ -410,6 +441,7 @@ WRONG_ORGANIZATION, SUBSCRIPTION_EXPIRED, SUBSCRIPTION_REQUIRED
 5. **Role Updates**: `updateMemberRole()` - Can change existing member's role
 
 ### Permission Checks Occur At:
+
 - **All authenticated queries**: `getAuthContext()` validates user is active member
 - **Mutation handlers**: Check specific permissions before operations
 - **Organization queries**: Verify user is org member
@@ -419,6 +451,7 @@ WRONG_ORGANIZATION, SUBSCRIPTION_EXPIRED, SUBSCRIPTION_REQUIRED
 ## Tech Stack Summary
 
 **Backend**:
+
 - Convex (serverless backend, real-time database)
 - Clerk (authentication)
 - Stripe (subscriptions)
@@ -426,6 +459,7 @@ WRONG_ORGANIZATION, SUBSCRIPTION_EXPIRED, SUBSCRIPTION_REQUIRED
 - convex-helpers (utilities)
 
 **Frontend**:
+
 - React 19
 - Vite (build tool)
 - TanStack Router (routing)
@@ -439,7 +473,7 @@ WRONG_ORGANIZATION, SUBSCRIPTION_EXPIRED, SUBSCRIPTION_REQUIRED
 ## Generated Files
 
 Auto-generated files in `_generated` folder (committed to git per CLAUDE.md instructions):
+
 - `dataModel.ts` - Type definitions for all tables
 - `api.ts` - All server function exports
 - Various type definitions
-

@@ -9,11 +9,13 @@ This project has comprehensive documentation covering the authentication, author
 ## Documentation Files
 
 ### 1. EXPLORATION_SUMMARY.md
+
 **Purpose**: Complete project overview at a glance  
 **Length**: ~15 minutes read  
 **Best for**: Getting oriented with the entire system
 
 **Covers**:
+
 - Executive overview
 - Complete project structure (backend + frontend)
 - Authentication & authorization system
@@ -28,11 +30,13 @@ This project has comprehensive documentation covering the authentication, author
 ---
 
 ### 2. SEAL_ARCHITECTURE.md
+
 **Purpose**: Detailed architectural documentation  
 **Length**: ~20 minutes read  
 **Best for**: Understanding components and their interactions
 
 **Covers**:
+
 - Project structure with directory tree
 - Clerk integration setup
 - Authorization system details
@@ -48,11 +52,13 @@ This project has comprehensive documentation covering the authentication, author
 ---
 
 ### 3. ROLES_AND_PERMISSIONS.md
+
 **Purpose**: In-depth guide to the permission system  
 **Length**: ~25 minutes read  
 **Best for**: Working with roles, permissions, and access control
 
 **Covers**:
+
 - Quick reference (role hierarchy, key files)
 - Database schema for roles & permissions
 - Permission system architecture (definitions, mappings, checks)
@@ -71,11 +77,13 @@ This project has comprehensive documentation covering the authentication, author
 ---
 
 ### 4. QUICK_START_ROLES.md
+
 **Purpose**: Quick reference guide  
 **Length**: ~8 minutes read  
 **Best for**: Quick lookup while coding
 
 **Covers**:
+
 - 5-minute overview of the system
 - Role hierarchy diagram
 - Database table essentials
@@ -101,34 +109,42 @@ This project has comprehensive documentation covering the authentication, author
 ## Quick Navigation by Task
 
 ### I need to understand the entire system
+
 1. Read: **EXPLORATION_SUMMARY.md** (start-to-finish overview)
 2. Reference: **SEAL_ARCHITECTURE.md** (detailed specifics)
 
 ### I need to add a new permission
+
 1. Go to: **QUICK_START_ROLES.md** → "I need to add a new permission"
 2. Reference: **ROLES_AND_PERMISSIONS.md** → "How to Add a New Permission"
 
 ### I need to check if a user can do something
+
 1. Go to: **QUICK_START_ROLES.md** → "I need to check if a user can do something"
 2. Deep dive: **ROLES_AND_PERMISSIONS.md** → "How Permissions Are Checked"
 
 ### I need to restrict a feature to a specific role
+
 1. Go to: **QUICK_START_ROLES.md** → "I need to restrict a feature to admins"
 2. Reference: **ROLES_AND_PERMISSIONS.md** → "Query/Mutation Wrapper Patterns"
 
 ### I need to change someone's role
+
 1. Go to: **QUICK_START_ROLES.md** → "I need to change someone's role"
 2. Reference: **ROLES_AND_PERMISSIONS.md** → "Role Assignment Flow"
 
 ### I need to understand database design
+
 1. Read: **EXPLORATION_SUMMARY.md** → "Database Design" section
 2. Deep dive: **SEAL_ARCHITECTURE.md** → "Database Schema" section
 
 ### I need to understand the frontend
+
 1. Read: **EXPLORATION_SUMMARY.md** → "Frontend Architecture" section
 2. Deep dive: **SEAL_ARCHITECTURE.md** → "Frontend Architecture" section
 
 ### I need to understand document access control
+
 1. Go to: **QUICK_START_ROLES.md** → "Two-Level Document Access"
 2. Deep dive: **ROLES_AND_PERMISSIONS.md** → "Document Access Control"
 
@@ -137,19 +153,24 @@ This project has comprehensive documentation covering the authentication, author
 ## Key Concepts
 
 ### Authentication vs Authorization
+
 - **Authentication** (Clerk): Is this person who they claim to be?
 - **Authorization** (Convex + Database): What can this person do?
 
 ### Roles vs Status
+
 - **Role**: What a person CAN do (owner, admin, member, viewer)
 - **Status**: Whether a person IS ALLOWED to act (active, suspended, etc.)
 
 ### Two-Tier Document Access
+
 - **Org-level**: Role determines if you can create docs (member can, viewer cannot)
 - **Doc-level**: Sharing mode (private, workspace, specific) + permission level (view, edit, manage)
 
 ### Permission Hierarchy
+
 Permissions are organized by domain:
+
 - `org:*` - Organization management
 - `documents:*` - Document operations
 - `templates:*` - Template management
@@ -162,6 +183,7 @@ Permissions are organized by domain:
 ## File Locations
 
 **Main backend files**:
+
 - `/apps/backend/convex/auth.ts` - Auth context
 - `/apps/backend/convex/auth.utils.ts` - Permission logic
 - `/apps/backend/convex/auth.config.ts` - Clerk config
@@ -170,6 +192,7 @@ Permissions are organized by domain:
 - `/apps/backend/convex/documents/` - Document operations
 
 **Main frontend files**:
+
 - `/apps/web/src/main.tsx` - App entry point
 - `/apps/web/src/routes/_authenticated/$slug.tsx` - Workspace layout
 - `/apps/web/src/components/app-sidebar.tsx` - Main navigation
@@ -182,26 +205,31 @@ Permissions are organized by domain:
 **For Different Roles**:
 
 **Project Manager / Product Manager**:
+
 1. EXPLORATION_SUMMARY.md (executive overview)
 2. SEAL_ARCHITECTURE.md (features & capabilities)
 3. QUICK_START_ROLES.md (understanding constraints)
 
 **Backend Developer**:
+
 1. ROLES_AND_PERMISSIONS.md (full guide)
 2. SEAL_ARCHITECTURE.md (API patterns)
 3. QUICK_START_ROLES.md (quick reference while coding)
 
 **Frontend Developer**:
+
 1. SEAL_ARCHITECTURE.md (frontend section first)
 2. QUICK_START_ROLES.md (permission checks in components)
 3. ROLES_AND_PERMISSIONS.md (detailed reference)
 
 **DevOps / System Admin**:
+
 1. EXPLORATION_SUMMARY.md (overview)
 2. SEAL_ARCHITECTURE.md (database & structure)
 3. Convex docs (deployment specifics not covered here)
 
 **QA / Tester**:
+
 1. QUICK_START_ROLES.md (permission matrix)
 2. ROLES_AND_PERMISSIONS.md (scenarios & edge cases)
 3. EXPLORATION_SUMMARY.md (invariants & constraints)
@@ -225,31 +253,33 @@ These topics are outside the scope of the documentation but are important:
 
 ### Role Permissions Summary
 
-| Feature | Owner | Admin | Member | Viewer |
-|---------|-------|-------|--------|--------|
-| Create Documents | ✓ | ✓ | ✓ | ✗ |
-| Edit Documents | ✓ | ✓ | ✓* | ✗ |
-| Delete Documents | ✓ | ✓ | ✗ | ✗ |
-| Share Documents | ✓ | ✓ | ✗ | ✗ |
-| Download Documents | ✓ | ✓ | ✓ | ✓ |
-| View Members | ✓ | ✓ | ✗ | ✗ |
-| Invite Members | ✓ | ✓ | ✗ | ✗ |
-| Change Roles | ✓ | ✗ | ✗ | ✗ |
-| Remove Members | ✓ | ✗ | ✗ | ✗ |
-| Manage Settings | ✓ | ✗ | ✗ | ✗ |
-| View Billing | ✓ | ✓ | ✗ | ✗ |
-| Manage Billing | ✓ | ✗ | ✗ | ✗ |
+| Feature            | Owner | Admin | Member | Viewer |
+| ------------------ | ----- | ----- | ------ | ------ |
+| Create Documents   | ✓     | ✓     | ✓      | ✗      |
+| Edit Documents     | ✓     | ✓     | ✓\*    | ✗      |
+| Delete Documents   | ✓     | ✓     | ✗      | ✗      |
+| Share Documents    | ✓     | ✓     | ✗      | ✗      |
+| Download Documents | ✓     | ✓     | ✓      | ✓      |
+| View Members       | ✓     | ✓     | ✗      | ✗      |
+| Invite Members     | ✓     | ✓     | ✗      | ✗      |
+| Change Roles       | ✓     | ✗     | ✗      | ✗      |
+| Remove Members     | ✓     | ✗     | ✗      | ✗      |
+| Manage Settings    | ✓     | ✗     | ✗      | ✗      |
+| View Billing       | ✓     | ✓     | ✗      | ✗      |
+| Manage Billing     | ✓     | ✗     | ✗      | ✗      |
 
-*Members can only edit documents they own or have explicit "edit" access to
+\*Members can only edit documents they own or have explicit "edit" access to
 
 ### Key Files by Category
 
 **Authentication**:
+
 - `auth.ts` - Context & wrappers
 - `auth.utils.ts` - Permission logic
 - `auth.config.ts` - Clerk config
 
 **Database Schemas**:
+
 - `schemas/users.ts`
 - `schemas/organizations.ts`
 - `schemas/organization_members.ts`
@@ -258,6 +288,7 @@ These topics are outside the scope of the documentation but are important:
 - `schemas/document_access.ts`
 
 **Business Logic**:
+
 - `organizations/queries.ts`
 - `organizations/mutations.ts`
 - `documents/queries.ts`
@@ -265,11 +296,13 @@ These topics are outside the scope of the documentation but are important:
 - `documents/sharing.ts`
 
 **Frontend Routes**:
+
 - `routes/_auth.tsx` - Public routes
 - `routes/_authenticated.tsx` - Protected routes
 - `routes/_authenticated/$slug.tsx` - Workspace
 
 **Frontend Components**:
+
 - `components/app-sidebar.tsx`
 - `components/enforce-organization.tsx`
 - `components/team-switcher.tsx`
@@ -280,6 +313,7 @@ These topics are outside the scope of the documentation but are important:
 ## Document Versions & Updates
 
 These documents were generated on October 27, 2025 based on:
+
 - Seal commit: 55130dd
 - React 19.2.0
 - Convex 1.28.0
@@ -309,4 +343,3 @@ These documents are snapshots of the codebase architecture. As the project evolv
 - Reference these when onboarding new team members
 - Use these as a starting point for API documentation
 - Reference these in design documents for new features
-

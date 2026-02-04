@@ -401,24 +401,28 @@
 ## Interaction Specifications
 
 ### Member List Management
+
 - **Real-time Updates**: Member status changes reflect instantly via Convex
 - **Role-based Actions**: Different actions available based on current user's role
 - **Bulk Operations**: Select multiple members for batch role changes
 - **Search and Filter**: Find members quickly in large workspaces
 
 ### Invitation System
+
 - **Email Validation**: Real-time email format checking and duplicate detection
 - **Batch Processing**: Handle up to 10 invitations simultaneously
 - **Rate Limiting**: Respect Resend rate limits for email delivery
 - **Error Recovery**: Clear error handling with retry options
 
 ### Role Management
+
 - **Permission Preview**: Show what permissions each role includes
 - **Transfer Safeguards**: Prevent accidental ownership transfers
 - **Last Admin Protection**: Ensure workspace always has at least one admin
 - **Audit Trail**: Log all role changes for workspace activity tracking
 
 ### Billing Integration
+
 - **Cost Transparency**: Show billing impact of adding/removing members
 - **Real-time Updates**: Member count affects billing immediately
 - **Prorated Billing**: Handle mid-cycle member additions/removals
@@ -429,30 +433,35 @@
 ## Technical Integration
 
 ### Clerk Integration
+
 - **Roles & Permissions**: Role-based permission management
 - **Organizations**: Member invitation and management
 - **Permission Checking**: Real-time permission validation
 - **Audit Logging**: Complete trail of member and role changes
 
 ### Convex Real-time Updates
+
 - **Member Presence**: Live member status and activity
 - **Permission Changes**: Instant permission updates across all clients
 - **Invitation Status**: Real-time invitation acceptance/decline updates
 - **Activity Feeds**: Live workspace activity and member actions
 
 ### React Email + Resend Integration
+
 - **Invitation Templates**: Professional email templates for invitations
 - **Role Change Notifications**: Automated emails for role updates
 - **Batch Email Handling**: Efficient bulk invitation processing
 - **Delivery Tracking**: Monitor invitation email delivery status
 
 ### Stripe Billing Integration
+
 - **Seat Management**: Automatic billing updates for member changes
 - **Prorated Billing**: Handle mid-cycle member additions/removals
 - **Cost Calculation**: Real-time billing impact display
 - **Payment Processing**: Seamless billing updates with member changes
 
 ### Mobile Optimization
+
 - **Touch-Friendly Interface**: Large touch targets for mobile interactions
 - **Responsive Tables**: Adaptive member list display for mobile
 - **Swipe Actions**: Mobile-native interactions for member management
@@ -463,6 +472,7 @@
 ## Destructive Action Confirmations
 
 ### Delete Workspace Confirmation
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal          Workspace: Acme Corp ▼                    👤 John Doe ▼   │

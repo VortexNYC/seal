@@ -3,6 +3,7 @@
 ## Primary User Flows
 
 ### Team Member Invitation Flow (Pro Plans Only)
+
 ```
 ○ Workspace Owner/Admin in Pro Plan Workspace
     ↓
@@ -40,6 +41,7 @@
 ```
 
 ### Invitation Response Flow
+
 ```
 ○ Recipient Receives Invitation Email
     ↓
@@ -83,6 +85,7 @@
 ```
 
 ### Document Sharing Within Team
+
 ```
 ○ Workspace Member Creates Document
     ↓
@@ -114,6 +117,7 @@
 ```
 
 ### Role Management Flow
+
 ```
 ○ Workspace Owner Manages Team Roles
     ↓
@@ -144,6 +148,7 @@
 ```
 
 ### Team Activity & Presence Flow
+
 ```
 ○ Team Member Activity Tracking
     ↓
@@ -172,6 +177,7 @@
 ## Advanced Team Collaboration Flows
 
 ### Document Ownership Transfer
+
 ```
 ○ Document Owner Initiates Transfer
     ↓
@@ -196,6 +202,7 @@
 ```
 
 ### Multi-Workspace Context Management
+
 ```
 ○ User Active in Multiple Workspaces
     ↓
@@ -220,6 +227,7 @@
 ```
 
 ### Team Member Removal Flow
+
 ```
 ○ Owner/Admin Removes Team Member
     ↓
@@ -254,6 +262,7 @@
 ## Free Plan Limitations & Upgrade Flows
 
 ### Free Plan Team Limitation Flow
+
 ```
 ○ Free Plan User Tries to Add Team Member
     ↓
@@ -278,6 +287,7 @@
 ```
 
 ### Pro Plan Team Collaboration
+
 ```
 ○ Pro Plan Workspace with Team Collaboration
     ↓
@@ -301,6 +311,7 @@
 ## Error Handling & Edge Case Flows
 
 ### Team Invitation Conflicts
+
 ```
 ○ Team Invitation Conflict Detected
     ↓
@@ -319,6 +330,7 @@
 ```
 
 ### Permission Conflicts During Active Sessions
+
 ```
 ○ User Role Changed During Active Session
     ↓
@@ -336,6 +348,7 @@
 ```
 
 ### Workspace Deletion with Active Team
+
 ```
 ○ Workspace Owner Deletes Workspace with Team
     ↓
@@ -357,18 +370,21 @@
 ## Integration Touch Points
 
 ### Organization Management
+
 - **Team Management**: Seamless member invitation and role management
 - **Permission Enforcement**: Real-time RBAC integration
 - **Multi-workspace Support**: Clean separation of team contexts
 - **Audit Integration**: Complete team activity logging
 
 ### Convex Real-Time Features
+
 - **Team Presence**: Live member status and activity tracking
 - **Document Collaboration**: Real-time document sharing and updates
 - **Activity Feeds**: Live team activity and notification system
 - **Permission Sync**: Instant permission updates across all clients
 
 ### React Email + Resend Integration
+
 - **Team Invitations**: Professional invitation email templates
 - **Role Change Notifications**: Team role update communications
 - **Activity Digests**: Periodic team activity summaries

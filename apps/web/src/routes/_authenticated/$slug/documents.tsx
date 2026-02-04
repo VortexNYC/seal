@@ -8,9 +8,9 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents")({
-	component: DocumentsLayout,
+  component: DocumentsLayout,
 });
 
 function DocumentsLayout() {
-	return <Outlet />;
+  return <Outlet />;
 }

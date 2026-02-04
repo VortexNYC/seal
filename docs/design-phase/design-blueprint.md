@@ -5,6 +5,7 @@ This is the master design document that establishes our core UX principles, desi
 ## 🎯 Design Philosophy
 
 ### Core Principles
+
 1. **User Experience First**: Prioritize functionality and flow over visual design
 2. **State-Driven Design**: Design for ALL states (loading, error, empty, success), not just happy paths
 3. **Predictable Interactions**: Consistent patterns across the entire application
@@ -12,6 +13,7 @@ This is the master design document that establishes our core UX principles, desi
 5. **Mobile Optimization**: Responsive design optimized for all screen sizes
 
 ### UX Goals
+
 - **Sub-5-minute onboarding**: From sign-up to first document signed
 - **Zero-learning curve**: Intuitive flows that require no training
 - **Error recovery focused**: Every error state has a clear path to resolution
@@ -22,12 +24,14 @@ This is the master design document that establishes our core UX principles, desi
 ## 🏗️ Information Architecture
 
 ### Primary User Types
+
 1. **Document Senders** (Workspace Members/Owners/Admins)
 2. **Document Signers** (Recipients - may not have accounts)
 3. **Workspace Administrators** (Managing teams and billing)
 4. **Platform Developers** (Using APIs)
 
 ### Core Mental Models
+
 - **Workspaces** = Teams/Organizations with independent billing (each workspace = separate subscription)
 - **Seats** = User membership in a workspace (subscription charges per seat)
 - **Multi-Workspace Users** = Same user can have different roles/plans in different workspaces
@@ -37,6 +41,7 @@ This is the master design document that establishes our core UX principles, desi
 - **Signature Fields** = Specific areas requiring input
 
 ### Billing & Subscription Model
+
 - **Per-Workspace Billing**: Each workspace has its own subscription (Free, Pro, Team tiers)
 - **Per-Seat Pricing**: Workspaces pay per active member seat
 - **User Context Switching**: Users inherit permissions/features based on current workspace's plan
@@ -46,11 +51,12 @@ This is the master design document that establishes our core UX principles, desi
   - Client workspace (Pro tier): Advanced features, API access, compliance tools
 
 ### Top-Level Navigation Structure
+
 ```
 Primary Navigation (Always Visible):
 ├── Dashboard (Home)
 ├── Documents (Library)
-├── Templates 
+├── Templates
 ├── Recipients (if admin+)
 └── Settings
     ├── Profile
@@ -71,7 +77,9 @@ User Menu (Top Right):
 ## 🔄 Core Interaction Patterns
 
 ### State Management Philosophy
+
 Every UI component/screen has these states:
+
 1. **Initial/Empty State**: First time experience
 2. **Loading State**: Data fetching/processing
 3. **Success State**: Normal populated state
@@ -81,12 +89,14 @@ Every UI component/screen has these states:
 ### Form Interaction Patterns
 
 #### Validation Strategy
+
 - **Real-time validation**: Using TanStack Form + Zod schemas
 - **Progressive validation**: Validate on blur, then real-time after first error
 - **Server validation**: Handled via Clerk patterns
 - **Error display**: Inline errors with clear recovery instructions
 
 #### Common Form States
+
 ```
 Form States:
 ├── Pristine (untouched)
@@ -102,12 +112,14 @@ Form States:
 ### Navigation Patterns
 
 #### Page Transitions
+
 - **Optimistic navigation**: UI updates immediately, sync in background
 - **Loading indicators**: Page-level loading for slow operations
 - **Breadcrumbs**: For deep navigation (Documents > Template > Edit)
 - **Back button**: Always works as expected
 
 #### Mobile Navigation
+
 - **Collapsible sidebar**: Drawer pattern for primary nav
 - **Bottom navigation**: For frequently used actions
 - **Swipe gestures**: Where appropriate (document pages, modal dismiss)
@@ -117,17 +129,20 @@ Form States:
 ## 📱 Responsive Design Strategy
 
 ### Breakpoints
+
 - **Mobile**: 320px - 768px (primary target)
 - **Tablet**: 768px - 1024px (secondary)
 - **Desktop**: 1024px+ (full features)
 
 ### Mobile-First Approach
+
 - Design for mobile browsers first
 - Progressive enhancement for larger screens
 - Touch targets minimum 44px
 - No hover states on mobile
 
 ### Key Mobile Considerations
+
 - **Virtual keyboard handling**: Viewport adjustments
 - **Touch-friendly signature capture**: Large signature areas
 - **Readable text**: 16px minimum font size
@@ -138,13 +153,16 @@ Form States:
 ## 🎨 Visual Design Constraints (Future Phase)
 
 ### Design System Approach
+
 Following shadcn/ui neutral theme approach:
+
 - **Minimal color palette**: Primarily neutral scale (neutral-50 to neutral-950)
 - **Clean typography**: Sans-serif, readable hierarchy
 - **Generous whitespace**: Breathing room between elements
 - **Subtle shadows**: Depth without distraction
 
 ### Component Philosophy
+
 - **shadcn/ui as Foundation**: All UI components built on shadcn/ui + Radix UI primitives
 - **Compound components**: Related elements grouped together (Card + CardHeader + CardContent)
 - **Consistent spacing**: Tailwind spacing scale (space-y-4, space-x-2, p-6, etc.)
@@ -157,19 +175,23 @@ Following shadcn/ui neutral theme approach:
 ## 🚨 Error Handling Philosophy
 
 ### Error Categories
+
 1. **User Input Errors**: Validation, format issues
 2. **System Errors**: Server down, network issues
 3. **Permission Errors**: Access denied, subscription limits
 4. **Business Logic Errors**: Workflow constraints
 
 ### Error Recovery Patterns
+
 Every error includes:
+
 - **Clear explanation**: What happened in plain English
 - **Specific cause**: Why it happened
 - **Recovery actions**: 2-3 options to fix it
 - **Escalation path**: Contact support when needed
 
 ### Example Error Pattern
+
 ```
 Error State Template:
 ┌─────────────────────────────────┐
@@ -189,12 +211,14 @@ Error State Template:
 ## 🔐 Security & Privacy UX
 
 ### Trust Building Elements
+
 - **Security indicators**: SSL badges, encryption mentions
 - **Audit trail visibility**: Users can see document history
 - **Data control**: Clear export/deletion options
 - **Compliance badges**: ESIGN Act compliance display
 
 ### Privacy-First Design
+
 - **Minimal data collection**: Only ask for what's needed
 - **Clear permissions**: Explicit consent for data use
 - **Easy opt-out**: Unsubscribe/deletion always available
@@ -205,12 +229,14 @@ Error State Template:
 ## 📊 Performance & Loading Patterns
 
 ### Loading Strategy
+
 - **Skeleton screens**: Match actual content structure
 - **Progressive loading**: Critical content first
 - **Optimistic updates**: Update UI immediately, sync later
 - **Error boundaries**: Graceful failure handling
 
 ### Critical Performance Targets
+
 - **Time to Interactive**: <3 seconds on mobile
 - **Document Processing**: <5 seconds for typical PDFs
 - **Real-time Updates**: <500ms via Convex subscriptions
@@ -221,6 +247,7 @@ Error State Template:
 ## 🧭 User Flow Principles
 
 ### Flow Documentation Standards
+
 - **Start/End clearly marked**: Entry and exit points
 - **Decision points highlighted**: Where users make choices
 - **Happy path in green**: Main success flow
@@ -228,6 +255,7 @@ Error State Template:
 - **Edge cases documented**: Unusual but possible scenarios
 
 ### Flow Complexity Management
+
 - **One primary action per screen**: Avoid choice overload
 - **Linear progression**: Step 1, 2, 3 when possible
 - **Clear progress indicators**: Users know where they are
@@ -238,12 +266,14 @@ Error State Template:
 ## 🔄 Real-time Features (Convex)
 
 ### Real-time Update Patterns
+
 - **Optimistic UI**: Immediate feedback, sync later
 - **Connection status**: Users know if offline/online
 - **Conflict resolution**: Clear merge conflict handling
 - **Presence indicators**: Show who else is active
 
 ### Subscription Management
+
 - **Automatic reconnection**: Handle network issues gracefully
 - **Subscription cleanup**: Prevent memory leaks
 - **Selective subscriptions**: Only subscribe to needed data
@@ -253,10 +283,11 @@ Error State Template:
 ## 📚 Documentation Standards
 
 ### Wireframe Conventions
+
 ```
 Text Input:     [_______________]
 Button:         [Button Text]
-Checkbox:       [x] Label / [ ] Label  
+Checkbox:       [x] Label / [ ] Label
 Radio:          (•) Selected / ( ) Option
 Dropdown:       [Selected ▼]
 Link:           <Link Text>
@@ -267,6 +298,7 @@ Success:        ✅ Success message
 ```
 
 ### State Annotation
+
 ```
 Screen States:
 🟢 Happy Path (normal usage)
@@ -277,6 +309,7 @@ Screen States:
 ```
 
 ### Flow Diagram Symbols
+
 ```
 ○ Start/End
 □ Process/Action
@@ -292,12 +325,14 @@ Screen States:
 ## 🎯 Success Metrics
 
 ### UX Quality Metrics
+
 - **Task Completion Rate**: >95% for core flows
 - **Error Recovery Rate**: >90% successful recovery
 - **Time to First Value**: <60 seconds new users
 - **Mobile Usability**: Equal functionality across devices
 
 ### Technical Quality Metrics
+
 - **Performance Budget**: Lighthouse >90
 - **Error Rate**: <1% unrecoverable errors
 - **Loading Performance**: <3s on 3G connections
@@ -310,6 +345,7 @@ Screen States:
 ## 🛠️ shadcn/ui Technical Integration
 
 ### Core Architecture
+
 ```typescript
 // Component Structure
 ├── @/components/ui/ (shadcn/ui primitives)
@@ -327,6 +363,7 @@ Screen States:
 ```
 
 ### CSS Variables & Theming
+
 ```css
 :root {
   --background: 0 0% 100%;
@@ -352,6 +389,7 @@ Screen States:
 ```
 
 ### Tailwind Configuration
+
 ```javascript
 // tailwind.config.js integration
 module.exports = {
@@ -376,10 +414,11 @@ module.exports = {
       },
     },
   },
-}
+};
 ```
 
 ### Form Integration Pattern
+
 ```typescript
 // Standard form pattern with shadcn/ui + react-hook-form + zod
 const formSchema = z.object({
@@ -413,6 +452,7 @@ const form = useForm<z.infer<typeof formSchema>>({
 ```
 
 ### Performance Budgets
+
 - **Bundle Size**: shadcn/ui components <50KB gzipped total
 - **Tree Shaking**: Only import used components
 - **CSS-in-JS**: Zero runtime CSS-in-JS (Tailwind compile-time)

@@ -21,6 +21,7 @@ Missing Tables:
 ```
 
 **Current Schema Tables** (from `/apps/backend/convex/schema.ts`):
+
 - `users` - User accounts
 - `organizations` - Workspaces/teams
 - `organization_members` - Team membership with role-based permissions
@@ -51,6 +52,7 @@ To support document sharing, you'll need to create:
    - Timestamp for audit trails
 
 Example schema structure needed:
+
 ```typescript
 // Documents Table
 documentId -> organizationId (workspace scoping)
@@ -73,6 +75,7 @@ userId -> documentId -> grantedAt (timestamp for audit)
 #### A. Team/Organization Structure
 
 **Organizations Table** (`/apps/backend/convex/schemas/organizations.ts`):
+
 ```typescript
 {
   name: string,              // Workspace name
@@ -97,17 +100,18 @@ userId -> documentId -> grantedAt (timestamp for audit)
 #### B. Team Members & Roles
 
 **Organization Members Table** (`/apps/backend/convex/schemas/organization_members.ts`):
+
 ```typescript
 {
   userId: Id<"users">,
   organizationId: Id<"organizations">,
-  
+
   // Role-based permissions
   role: "system" | "owner" | "admin" | "member" | "viewer",
-  
+
   // Individual permission overrides
   permissions?: string[],
-  
+
   status: "active" | "inactive" | "suspended" | "pending",
   isPrimary: boolean,        // Primary workspace for user
   externalId?: string
@@ -123,6 +127,7 @@ userId -> documentId -> grantedAt (timestamp for audit)
 ```
 
 **User Status Values**:
+
 - `active` - User is active
 - `inactive` - User is inactive
 - `suspended` - User is suspended
@@ -130,6 +135,7 @@ userId -> documentId -> grantedAt (timestamp for audit)
 - `blocked` - User is blocked
 
 **Role Hierarchy** (from `/apps/backend/convex/auth.utils.ts`):
+
 ```
 system: 150      (System admin - highest level)
 owner: 100       (Workspace owner)
@@ -149,68 +155,71 @@ The system implements a **role-based + individual permission** hybrid:
 
 **Role-Based Permission Matrix**:
 
-| Domain | Owner | Admin | Member | Viewer |
-|--------|-------|-------|--------|--------|
-| **Org Management** | ✅ Full | ✅ Limited | ❌ | ❌ |
-| **Member Management** | ✅ Full | ✅ Invite only | ❌ | ❌ |
-| **Subscription** | ✅ Full | ✅ View only | ❌ | ❌ |
-| **Documents** | ✅ Full | ✅ Full | ✅ Own docs | ✅ View |
-| **Templates** | ✅ Full | ✅ Full | ✅ Own | ✅ View |
-| **Signatures** | ✅ Full | ✅ Full | ✅ Own | ✅ View |
-| **API/Webhooks** | ✅ Full | ✅ Full | ❌ | ❌ |
-| **Audit** | ✅ Full | ✅ View | ❌ | ❌ |
+| Domain                | Owner   | Admin          | Member      | Viewer  |
+| --------------------- | ------- | -------------- | ----------- | ------- |
+| **Org Management**    | ✅ Full | ✅ Limited     | ❌          | ❌      |
+| **Member Management** | ✅ Full | ✅ Invite only | ❌          | ❌      |
+| **Subscription**      | ✅ Full | ✅ View only   | ❌          | ❌      |
+| **Documents**         | ✅ Full | ✅ Full        | ✅ Own docs | ✅ View |
+| **Templates**         | ✅ Full | ✅ Full        | ✅ Own      | ✅ View |
+| **Signatures**        | ✅ Full | ✅ Full        | ✅ Own      | ✅ View |
+| **API/Webhooks**      | ✅ Full | ✅ Full        | ❌          | ❌      |
+| **Audit**             | ✅ Full | ✅ View        | ❌          | ❌      |
 
 **Permission Constants** (60+ permissions defined):
+
 ```typescript
 // Organization
-"org:manage"
-"org:settings:read|update"
-"org:users:read|invite|remove|update_role"
+"org:manage";
+"org:settings:read|update";
+"org:users:read|invite|remove|update_role";
 
 // Subscriptions
-"subscription:manage|billing:read|billing:update"
+"subscription:manage|billing:read|billing:update";
 
 // Documents (KEY FOR YOUR USE CASE)
-"documents:read|create|update|delete|send|cancel|download"
+"documents:read|create|update|delete|send|cancel|download";
 
 // Templates
-"templates:read|create|update|delete|use"
+"templates:read|create|update|delete|use";
 
 // Signatures
-"signatures:read|download"
+"signatures:read|download";
 
 // API & Webhooks
-"api:read|create|delete"
-"webhooks:read|create|update|delete"
+"api:read|create|delete";
+"webhooks:read|create|update|delete";
 
 // Audit & Data
-"audit:read|export"
-"data:export|backup"
+"audit:read|export";
+"data:export|backup";
 
 // Analytics
-"analytics:read"
-"reports:read|generate"
+"analytics:read";
+"reports:read|generate";
 ```
 
 **Helper Functions** (comprehensive permission checking):
+
 ```typescript
 // Core functions
-hasPermission(member, permission)     // Check single permission
-hasRole(member, requiredRole)         // Role hierarchy check
-getEffectivePermissions(member)       // All permissions (role + individual)
-isAccountValid(member)                // Account status check
-canAccessOrganization(member, orgId)  // Workspace isolation
+hasPermission(member, permission); // Check single permission
+hasRole(member, requiredRole); // Role hierarchy check
+getEffectivePermissions(member); // All permissions (role + individual)
+isAccountValid(member); // Account status check
+canAccessOrganization(member, orgId); // Workspace isolation
 
 // Document-specific helpers
-canManageDocuments(member, orgId)     // Create/update/delete
-canSendDocuments(member)              // Send for signing
-canDownloadDocuments(member)          // Download capability
-canManageTemplates(member, orgId)     // Template management
+canManageDocuments(member, orgId); // Create/update/delete
+canSendDocuments(member); // Send for signing
+canDownloadDocuments(member); // Download capability
+canManageTemplates(member, orgId); // Template management
 
 // And 15+ more specific helpers for different features
 ```
 
 **Account Status Rules**:
+
 - Only `active` members can perform actions
 - `suspended`, `pending`, `blocked` cannot act
 - Permission checks automatically fail for inactive accounts
@@ -218,18 +227,19 @@ canManageTemplates(member, orgId)     // Template management
 #### D. Member Invitation System
 
 **Invitations Table** (`/apps/backend/convex/schemas/organization_invitations.ts`):
+
 ```typescript
 {
   organizationId: Id<"organizations">,
   email: string,
   role: "system" | "owner" | "admin" | "member" | "viewer",
   status: "pending" | "accepted" | "declined" | "expired",
-  
+
   token: string,               // Unique invitation token
   invitedBy: Id<"users">,      // Who sent the invitation
   acceptedBy?: Id<"users">,    // Who accepted it
   acceptedAt?: number,
-  
+
   expiresAt: number,           // 7 days default
   createdAt: number
 }
@@ -241,6 +251,7 @@ canManageTemplates(member, orgId)     // Template management
 ```
 
 **Invitation Workflow**:
+
 1. Owner/Admin invites user by email
 2. Invitation stored with 7-day expiration
 3. User accepts via invitation link/token
@@ -269,19 +280,20 @@ canManageTemplates(member, orgId)     // Template management
    - `getOrganizationMemberCount` - Restricted access
 
 3. **Permission Checking Patterns**
+
    ```typescript
    // Pattern used throughout backend:
    const member = await ctx.db
      .query("organization_members")
      .withIndex("by_user_organization", (q) =>
-       q.eq("userId", ctx.auth.user._id).eq("organizationId", orgId)
+       q.eq("userId", ctx.auth.user._id).eq("organizationId", orgId),
      )
      .first();
-   
+
    if (!member) {
      throw new ConvexError("No access to this organization");
    }
-   
+
    if (!hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.REQUIRED_PERM)) {
      throw new ConvexError("Insufficient permissions");
    }
@@ -314,6 +326,7 @@ canManageTemplates(member, orgId)     // Template management
 Convex offers two approaches:
 
 #### Option A: Convex File Storage (Recommended)
+
 ```typescript
 // Upload:
 const storageId = await ctx.storage.generateUploadUrl();
@@ -322,7 +335,7 @@ const storageId = await ctx.storage.generateUploadUrl();
 // Store in database:
 const docId = await ctx.db.insert("documents", {
   name: "contract.pdf",
-  storageId: storageId,  // Reference to file storage
+  storageId: storageId, // Reference to file storage
   organizationId,
   ownerId,
   // ...
@@ -333,6 +346,7 @@ const file = await ctx.storage.getUrl(storageId);
 ```
 
 #### Option B: External Storage (S3/GCS)
+
 ```typescript
 // Store signed URLs in database
 const docId = await ctx.db.insert("documents", {
@@ -358,6 +372,7 @@ const docId = await ctx.db.insert("documents", {
    - JWT token validation
 
 2. **Custom Auth Wrappers**
+
    ```typescript
    // authQuery - Requires authenticated user
    export const authQuery = (config) => {
@@ -369,7 +384,7 @@ const docId = await ctx.db.insert("documents", {
        }
      });
    };
-   
+
    // adminMutation - Requires organization admin+
    export const adminMutation = (config) => {
      // Validates user is admin/owner of organization
@@ -437,6 +452,7 @@ The codebase includes **comprehensive wireframes and specifications** for docume
 ### SEA-142, 143, 144 - Role-Based Permissions (COMPLETED)
 
 These tickets implemented the foundation:
+
 - ✅ Role hierarchy system (5 roles: system, owner, admin, member, viewer)
 - ✅ 60+ permission strings for granular control
 - ✅ Permission checking functions and helpers
@@ -450,6 +466,7 @@ Located in: `/apps/backend/convex/auth.utils.ts`
 ## 8. KEY TECHNICAL PATTERNS USED
 
 ### Query Access Control Pattern
+
 ```typescript
 // All queries follow this pattern:
 export const getOrganization = authQuery({
@@ -459,32 +476,35 @@ export const getOrganization = authQuery({
       .query("organizations")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
-    
+
     if (!org) throw new ConvexError("Organization not found");
-    
+
     // CRITICAL: Verify user has access
     const member = await ctx.db
       .query("organization_members")
       .withIndex("by_user_organization", (q) =>
-        q.eq("userId", ctx.auth.user._id).eq("organizationId", org._id)
+        q.eq("userId", ctx.auth.user._id).eq("organizationId", org._id),
       )
       .first();
-    
+
     if (!member) throw new ConvexError("No access to this organization");
-    
+
     // Now safe to return data
     return { ...org, userRole: member.role };
-  }
+  },
 });
 ```
 
 ### Index Usage for Performance
+
 All tables are properly indexed:
+
 - Foreign keys indexed (userId, organizationId, etc.)
 - Composite indexes for common queries (userId + organizationId)
 - Status filtering indexes
 
 ### Transaction Safety
+
 - Convex mutations are ACID-compliant
 - No manual transaction management needed
 - Automatic rollback on errors
@@ -496,28 +516,33 @@ All tables are properly indexed:
 To add document sharing functionality:
 
 ### Phase 1: Document Storage (Required First)
+
 - [ ] Create `documents` table schema
 - [ ] Implement file upload/storage (Convex or S3)
 - [ ] Create document queries (get, list, search)
 - [ ] Create document mutations (create, update, delete)
 
 ### Phase 2: Document-Level Permissions
+
 - [ ] Create `document_access` table for specific member sharing
 - [ ] Implement permission checking in document queries
 - [ ] Add permission mutation handlers
 
 ### Phase 3: Sharing UI & API
+
 - [ ] Document sharing modal API endpoint
 - [ ] Permission update endpoints
 - [ ] Ownership transfer endpoint
 - [ ] Document library with sharing filters
 
 ### Phase 4: Notifications & Audit
+
 - [ ] Document sharing notifications (via Resend)
 - [ ] Activity/audit log for documents
 - [ ] Real-time updates (Convex subscriptions)
 
 ### Phase 5: Free Plan Limitations
+
 - [ ] Implement plan-based sharing restrictions
 - [ ] Free plan: external sharing only
 - [ ] Pro plan: team sharing enabled
@@ -527,6 +552,7 @@ To add document sharing functionality:
 ## 10. FILES TO EXAMINE FOR IMPLEMENTATION DETAILS
 
 ### Backend Structure
+
 ```
 /apps/backend/convex/
 ├── schema.ts                              # Main schema definitions
@@ -545,6 +571,7 @@ To add document sharing functionality:
 ```
 
 ### Design & Specification Documents
+
 ```
 /docs/features/workspace-management/team-collaboration/
 ├── wireframes/02-document-sharing.md      # Complete sharing UI specs
@@ -560,6 +587,7 @@ To add document sharing functionality:
 ## 11. SUMMARY & RECOMMENDATIONS
 
 ### What Works Today ✅
+
 - Organization/workspace management
 - Team member management and invitations
 - Comprehensive role-based permission system
@@ -567,6 +595,7 @@ To add document sharing functionality:
 - User authentication and authorization
 
 ### What's Missing ❌
+
 - Document storage schema
 - File upload/storage implementation
 - Per-document access control
@@ -574,6 +603,7 @@ To add document sharing functionality:
 - Document sharing UI and API
 
 ### Next Steps
+
 1. **Design document schema** - Decide on metadata needed
 2. **Choose storage solution** - Convex Files vs. S3/external
 3. **Implement `documents` table** - With all necessary indexes

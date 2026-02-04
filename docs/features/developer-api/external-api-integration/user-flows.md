@@ -3,6 +3,7 @@
 ## API Authentication and Authorization
 
 ### API Key Authentication Flow
+
 ```
 ○ External System Makes API Request
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### Permission Validation Flow
+
 ```
 ○ API Request Requires Specific Permissions
     ↓
@@ -63,6 +65,7 @@
 ## Document Management API Operations
 
 ### Create Document via API Flow
+
 ```
 ○ External System Creates Document
     ↓
@@ -92,6 +95,7 @@
 ```
 
 ### Send Document for Signature API Flow
+
 ```
 ○ External System Sends Document
     ↓
@@ -121,6 +125,7 @@
 ```
 
 ### Get Document Status API Flow
+
 ```
 ○ External System Checks Document Status
     ↓
@@ -152,6 +157,7 @@
 ## Rate Limiting and Performance
 
 ### Rate Limiting Enforcement Flow
+
 ```
 ○ API Request Subject to Rate Limiting
     ↓
@@ -181,6 +187,7 @@
 ```
 
 ### API Performance Optimization Flow
+
 ```
 ○ API Request Requires Fast Response
     ↓
@@ -212,6 +219,7 @@
 ## Webhook Integration and Delivery
 
 ### Webhook Configuration Flow
+
 ```
 ○ External System Registers Webhook
     ↓
@@ -241,6 +249,7 @@
 ```
 
 ### Webhook Event Delivery Flow
+
 ```
 ○ Document Event Triggers Webhook
     ↓
@@ -270,6 +279,7 @@
 ```
 
 ### Webhook Reliability and Recovery Flow
+
 ```
 ○ Webhook Delivery Fails
     ↓
@@ -301,6 +311,7 @@
 ## Error Handling and Response Management
 
 ### API Error Response Flow
+
 ```
 ○ API Request Encounters Error
     ↓
@@ -330,6 +341,7 @@
 ```
 
 ### Request Validation Error Flow
+
 ```
 ○ API Request Has Invalid Data
     ↓
@@ -361,6 +373,7 @@
 ## API Monitoring and Analytics
 
 ### API Usage Tracking Flow
+
 ```
 ○ API Key Makes Requests
     ↓
@@ -390,6 +403,7 @@
 ```
 
 ### API Health Monitoring Flow
+
 ```
 ○ API Health Monitoring Active
     ↓

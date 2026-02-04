@@ -11,12 +11,9 @@
  * via token validation which scopes access to the specific document.
  */
 
+import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
 import { ConvexError } from "convex/values";
-import {
-	customCtx,
-	customMutation,
-	customQuery,
-} from "convex-helpers/server/customFunctions";
+
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import type { RecipientRole } from "../schemas/document_recipients";
@@ -26,10 +23,10 @@ import type { RecipientRole } from "../schemas/document_recipients";
  * Uses document_recipients table with signingToken
  */
 export interface RecipientContext {
-	recipientId: Id<"document_recipients">;
-	documentId: Id<"documents">;
-	email: string;
-	role: RecipientRole;
+  recipientId: Id<"document_recipients">;
+  documentId: Id<"documents">;
+  email: string;
+  role: RecipientRole;
 }
 
 /**
@@ -52,55 +49,53 @@ export interface RecipientContext {
  * });
  */
 export const recipientQuery = customQuery(
-	query,
-	customCtx(async (ctx) => {
-		// Helper to validate token and get recipient context
-		const validateRecipientToken = async (
-			signingToken: string,
-		): Promise<RecipientContext> => {
-			// Use document_recipients table with by_token index
-			const recipient = await ctx.db
-				.query("document_recipients")
-				.withIndex("by_token", (q) => q.eq("signingToken", signingToken))
-				.first();
+  query,
+  customCtx(async (ctx) => {
+    // Helper to validate token and get recipient context
+    const validateRecipientToken = async (signingToken: string): Promise<RecipientContext> => {
+      // Use document_recipients table with by_token index
+      const recipient = await ctx.db
+        .query("document_recipients")
+        .withIndex("by_token", (q) => q.eq("signingToken", signingToken))
+        .first();
 
-			if (!recipient) {
-				throw new ConvexError({
-					code: "NOT_FOUND",
-					message: "Invalid signing token",
-				});
-			}
+      if (!recipient) {
+        throw new ConvexError({
+          code: "NOT_FOUND",
+          message: "Invalid signing token",
+        });
+      }
 
-			// Check token expiration
-			if (recipient.tokenExpiresAt < Date.now()) {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: "Signing token has expired",
-				});
-			}
+      // Check token expiration
+      if (recipient.tokenExpiresAt < Date.now()) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: "Signing token has expired",
+        });
+      }
 
-			// Check recipient status
-			if (recipient.status === "declined") {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: "Cannot access document: signing was declined",
-				});
-			}
+      // Check recipient status
+      if (recipient.status === "declined") {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: "Cannot access document: signing was declined",
+        });
+      }
 
-			return {
-				recipientId: recipient._id,
-				documentId: recipient.documentId,
-				email: recipient.email,
-				role: recipient.role,
-			};
-		};
+      return {
+        recipientId: recipient._id,
+        documentId: recipient.documentId,
+        email: recipient.email,
+        role: recipient.role,
+      };
+    };
 
-		return {
-			validateRecipientToken,
-			// Raw db access - access control via token validation
-			db: ctx.db,
-		};
-	}),
+    return {
+      validateRecipientToken,
+      // Raw db access - access control via token validation
+      db: ctx.db,
+    };
+  }),
 );
 
 /**
@@ -128,61 +123,59 @@ export const recipientQuery = customQuery(
  * });
  */
 export const recipientMutation = customMutation(
-	mutation,
-	customCtx(async (ctx) => {
-		// Helper to validate token and get recipient context
-		const validateRecipientToken = async (
-			signingToken: string,
-		): Promise<RecipientContext> => {
-			// Use document_recipients table with by_token index
-			const recipient = await ctx.db
-				.query("document_recipients")
-				.withIndex("by_token", (q) => q.eq("signingToken", signingToken))
-				.first();
+  mutation,
+  customCtx(async (ctx) => {
+    // Helper to validate token and get recipient context
+    const validateRecipientToken = async (signingToken: string): Promise<RecipientContext> => {
+      // Use document_recipients table with by_token index
+      const recipient = await ctx.db
+        .query("document_recipients")
+        .withIndex("by_token", (q) => q.eq("signingToken", signingToken))
+        .first();
 
-			if (!recipient) {
-				throw new ConvexError({
-					code: "NOT_FOUND",
-					message: "Invalid signing token",
-				});
-			}
+      if (!recipient) {
+        throw new ConvexError({
+          code: "NOT_FOUND",
+          message: "Invalid signing token",
+        });
+      }
 
-			// Check token expiration
-			if (recipient.tokenExpiresAt < Date.now()) {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: "Signing token has expired",
-				});
-			}
+      // Check token expiration
+      if (recipient.tokenExpiresAt < Date.now()) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: "Signing token has expired",
+        });
+      }
 
-			// Check recipient status
-			if (recipient.status === "declined") {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: "Cannot access document: signing was declined",
-				});
-			}
+      // Check recipient status
+      if (recipient.status === "declined") {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: "Cannot access document: signing was declined",
+        });
+      }
 
-			// For mutations, also check if already signed/approved
-			if (recipient.status === "signed" || recipient.status === "approved") {
-				throw new ConvexError({
-					code: "FORBIDDEN",
-					message: "Document action has already been completed",
-				});
-			}
+      // For mutations, also check if already signed/approved
+      if (recipient.status === "signed" || recipient.status === "approved") {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: "Document action has already been completed",
+        });
+      }
 
-			return {
-				recipientId: recipient._id,
-				documentId: recipient.documentId,
-				email: recipient.email,
-				role: recipient.role,
-			};
-		};
+      return {
+        recipientId: recipient._id,
+        documentId: recipient.documentId,
+        email: recipient.email,
+        role: recipient.role,
+      };
+    };
 
-		return {
-			validateRecipientToken,
-			// Raw db access - access control via token validation
-			db: ctx.db,
-		};
-	}),
+    return {
+      validateRecipientToken,
+      // Raw db access - access control via token validation
+      db: ctx.db,
+    };
+  }),
 );

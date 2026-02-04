@@ -3,6 +3,7 @@
 ## Basic Analytics Access
 
 ### Analytics Dashboard Loading Flow
+
 ```
 ○ User Accesses Analytics Dashboard
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### Individual vs Team Analytics Flow
+
 ```
 ○ User Role Determines Analytics Scope
     ↓
@@ -63,6 +65,7 @@
 ## Document Metrics and Performance
 
 ### Document Volume Analytics Flow
+
 ```
 ○ User Reviews Document Volume Metrics
     ↓
@@ -92,6 +95,7 @@
 ```
 
 ### Completion Rate Analysis Flow
+
 ```
 ○ User Examines Document Completion Rates
     ↓
@@ -123,6 +127,7 @@
 ## Time-Based Analytics
 
 ### Date Range Filtering Flow
+
 ```
 ○ User Wants Specific Time Period Analytics
     ↓
@@ -152,6 +157,7 @@
 ```
 
 ### Trend Analysis Flow
+
 ```
 ○ User Analyzes Performance Trends
     ↓
@@ -183,6 +189,7 @@
 ## Team Analytics (Admin Access)
 
 ### Workspace Analytics Overview Flow
+
 ```
 ○ Admin Accesses Team Analytics
     ↓
@@ -212,6 +219,7 @@
 ```
 
 ### Member Activity Analytics Flow
+
 ```
 ○ Admin Reviews Individual Member Activity
     ↓
@@ -243,6 +251,7 @@
 ## Report Generation and Export
 
 ### Basic Report Generation Flow
+
 ```
 ○ User Wants to Generate Analytics Report
     ↓
@@ -272,6 +281,7 @@
 ```
 
 ### Data Export Flow
+
 ```
 ○ User Needs to Export Analytics Data
     ↓
@@ -303,6 +313,7 @@
 ## Error Handling and Performance
 
 ### Analytics Loading Error Flow
+
 ```
 ○ Analytics Data Fails to Load
     ↓
@@ -332,6 +343,7 @@
 ```
 
 ### Performance Optimization Flow
+
 ```
 ○ Large Dataset Analytics Loading
     ↓
@@ -363,6 +375,7 @@
 ## Personal vs Team Analytics Access
 
 ### Permission-Based Analytics Flow
+
 ```
 ○ User Accesses Analytics Based on Role
     ↓

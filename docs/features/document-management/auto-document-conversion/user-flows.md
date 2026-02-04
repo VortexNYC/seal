@@ -6,6 +6,7 @@
 ## Primary Conversion Flows
 
 ### Single Document Conversion Flow
+
 [User Journey: Complete conversion lifecycle from upload to signature-ready PDF]
 [Process Flow: Multi-stage conversion with real-time progress tracking]
 
@@ -51,6 +52,7 @@
 ```
 
 ### Batch Document Conversion Flow
+
 [User Journey: Multi-file conversion with intelligent queue management]
 [Process Flow: Parallel processing with individual progress tracking]
 
@@ -91,6 +93,7 @@
 ## Conversion Progress & Status Flows
 
 ### Real-Time Progress Updates
+
 [User Experience: Live progress tracking with interactive elements]
 [System Integration: Background processing with notification system]
 
@@ -127,6 +130,7 @@
 ```
 
 ### Conversion Quality Verification
+
 [Quality Assurance: Automated validation with manual review options]
 [User Choice: Accept conversion or retry with different settings]
 
@@ -166,6 +170,7 @@
 ## Error Handling & Recovery Flows
 
 ### Conversion Failure Recovery
+
 [Error Handling: Graceful degradation with multiple recovery paths]
 [User Empowerment: Clear options for resolving conversion issues]
 
@@ -202,6 +207,7 @@
 ```
 
 ### Service Outage Management
+
 ```
 ○ Fly.io/Gotenberg Service Unavailable
     ↓
@@ -219,6 +225,7 @@
 ```
 
 ### Network Interruption During Conversion
+
 ```
 ○ Network Connection Lost During Conversion
     ↓
@@ -240,6 +247,7 @@
 ## Freemium Model Integration Flows
 
 ### Free Plan Conversion Quota Management
+
 ```
 ○ Free Plan User Initiates Conversion (9/10 documents used)
     ↓
@@ -257,6 +265,7 @@
 ```
 
 ### Free Plan Limit Reached During Conversion
+
 ```
 ○ Free Plan User at 10/10 Limit Tries Conversion
     ↓
@@ -274,6 +283,7 @@
 ```
 
 ### Pro Plan Conversion Benefits
+
 ```
 ○ Pro Plan User Conversion Experience
     ↓
@@ -295,6 +305,7 @@
 ## Advanced Conversion Scenarios
 
 ### Large Document Conversion (20MB+)
+
 ```
 ○ User Uploads Large Office Document
     ↓
@@ -312,6 +323,7 @@
 ```
 
 ### Complex Document Conversion (Charts, Embedded Objects)
+
 ```
 ○ Excel with Charts/PowerPoint with Animations
     ↓
@@ -329,6 +341,7 @@
 ```
 
 ### Template Document Conversion
+
 ```
 ○ User Uploads Template with Form Fields
     ↓
@@ -350,6 +363,7 @@
 ## Integration Touch Points
 
 ### Document Upload Pipeline Integration
+
 ```
 ○ Seamless Upload → Conversion Flow
     ↓
@@ -367,6 +381,7 @@
 ```
 
 ### Signature Workflow Integration
+
 ```
 ○ Conversion Complete → Signature Ready
     ↓

@@ -10,6 +10,7 @@ All **new organizations** created through the following mutations will automatic
 - `organizations/mutations:createWorkspace` - Team workspaces
 
 The three system roles that are automatically created:
+
 1. **Administrator** - Full management access except billing
 2. **Member** - Can create and edit content
 3. **Viewer** - Read-only access
@@ -29,12 +30,14 @@ npx convex run organization_roles/migrations:seedAllOrganizations
 ```
 
 This will:
+
 - Check all organizations in the database
 - Skip organizations that already have roles
 - Seed the 3 system roles for organizations without roles
 - Return a summary of how many were seeded vs skipped
 
 Example output:
+
 ```json
 {
   "success": true,
@@ -55,12 +58,14 @@ npx convex run organization_roles/migrations:seedOrganization '{"organizationId"
 Replace `jx7abc123def456` with your organization ID.
 
 This will:
+
 - Check if the organization exists
 - Check if it already has roles
 - Seed the 3 system roles if none exist
 - Return success/failure message
 
 Example output (success):
+
 ```json
 {
   "success": true,
@@ -69,14 +74,15 @@ Example output (success):
 ```
 
 Example output (already has roles):
+
 ```json
 {
   "success": false,
   "message": "Organization already has 3 roles",
   "existingRoles": [
-    {"id": "abc123", "name": "Administrator", "type": "system"},
-    {"id": "def456", "name": "Member", "type": "system"},
-    {"id": "ghi789", "name": "Viewer", "type": "system"}
+    { "id": "abc123", "name": "Administrator", "type": "system" },
+    { "id": "def456", "name": "Member", "type": "system" },
+    { "id": "ghi789", "name": "Viewer", "type": "system" }
   ]
 }
 ```
@@ -96,6 +102,7 @@ To verify roles were seeded correctly, you can:
    ```
 
 Each organization should have 3 system roles:
+
 - Administrator
 - Member
 - Viewer
@@ -113,6 +120,7 @@ Double-check the organization ID. You can find IDs in the Convex dashboard under
 ### Roles Missing After Seeding
 
 If roles are still missing after running the migration:
+
 1. Check the Convex dashboard logs for any errors
 2. Verify the organization status is not "deleted"
 3. Try running the specific organization seed command with that org ID
@@ -122,6 +130,7 @@ If roles are still missing after running the migration:
 **Location:** `apps/backend/convex/organization_roles/`
 
 **Files:**
+
 - `helpers.ts` - Contains `seedSystemRoles()` function
 - `migrations.ts` - Contains migration scripts for existing orgs
 - `mutations.ts` - CRUD operations for custom roles

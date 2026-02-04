@@ -1,27 +1,27 @@
 {
-	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"compilerOptions": {
-		"target": "ESNext",
-		"module": "ESNext",
-		"moduleResolution": "bundler",
-		"lib": ["ESNext"],
-		"types": ["bun"],
-		"baseUrl": ".",
-		"paths": {
-			"zod": ["../../node_modules/zod"],
-			"zod/*": ["../../node_modules/zod/*"]
-		},
-		"strict": true,
-		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"resolveJsonModule": true,
-		"isolatedModules": true,
-		"noEmit": true,
-		"noImplicitReturns": true,
-		"noFallthroughCasesInSwitch": true,
-		"noUncheckedIndexedAccess": true,
-		"verbatimModuleSyntax": true
-	},
-	"include": ["src/**/*"],
-	"exclude": ["node_modules"]
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext"],
+    "types": ["bun"],
+    "baseUrl": ".",
+    "paths": {
+      "zod": ["../../node_modules/zod"],
+      "zod/*": ["../../node_modules/zod/*"]
+    },
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }

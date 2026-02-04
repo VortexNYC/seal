@@ -1,68 +1,69 @@
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { FieldPropertiesPanel } from "./field-properties-panel";
 import type { FieldType } from "./field-toolbar";
 
 interface FieldData {
-	_id: Id<"signature_fields">;
-	fieldType: FieldType;
-	label: string;
-	isRequired: boolean;
-	recipientId: Id<"document_recipients">;
-	properties?: {
-		placeholder?: string;
-		defaultValue?: string;
-		options?: string[];
-		maxLength?: number;
-		minLength?: number;
-		pattern?: string;
-		helpText?: string;
-	};
-	validationRules?: {
-		required?: boolean;
-		min?: number;
-		max?: number;
-		pattern?: string;
-		customMessage?: string;
-	};
+  _id: Id<"signature_fields">;
+  fieldType: FieldType;
+  label: string;
+  isRequired: boolean;
+  recipientId: Id<"document_recipients">;
+  properties?: {
+    placeholder?: string;
+    defaultValue?: string;
+    options?: string[];
+    maxLength?: number;
+    minLength?: number;
+    pattern?: string;
+    helpText?: string;
+  };
+  validationRules?: {
+    required?: boolean;
+    min?: number;
+    max?: number;
+    pattern?: string;
+    customMessage?: string;
+  };
 }
 
 interface Recipient {
-	_id: Id<"document_recipients">;
-	name?: string;
-	email: string;
+  _id: Id<"document_recipients">;
+  name?: string;
+  email: string;
 }
 
 interface FieldPropertiesDialogProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	field: FieldData | null;
-	recipients: Recipient[];
-	onSave?: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  field: FieldData | null;
+  recipients: Recipient[];
+  onSave?: () => void;
 }
 
 export function FieldPropertiesDialog({
-	open,
-	onOpenChange,
-	field,
-	recipients,
-	onSave,
+  open,
+  onOpenChange,
+  field,
+  recipients,
+  onSave,
 }: FieldPropertiesDialogProps) {
-	if (!field) return null;
+  if (!field) return null;
 
-	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-md p-0 gap-0 overflow-hidden [&>button]:hidden">
-				<DialogHeader className="sr-only">
-					<DialogTitle>Field Properties</DialogTitle>
-				</DialogHeader>
-				<FieldPropertiesPanel
-					field={field}
-					recipients={recipients}
-					onClose={() => onOpenChange(false)}
-					onSave={onSave}
-				/>
-			</DialogContent>
-		</Dialog>
-	);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md gap-0 overflow-hidden p-0 [&>button]:hidden">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Field Properties</DialogTitle>
+        </DialogHeader>
+        <FieldPropertiesPanel
+          field={field}
+          recipients={recipients}
+          onClose={() => onOpenChange(false)}
+          onSave={onSave}
+        />
+      </DialogContent>
+    </Dialog>
+  );
 }

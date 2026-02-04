@@ -8,7 +8,7 @@
 ### Document Upload & Storage ⭐ **Critical**
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                 CORE REQUIREMENTS                                      ┃
+┃ CORE REQUIREMENTS ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ◉ **Multi-format upload** with drag-and-drop interface (PDF, Word, Excel, PowerPoint)
@@ -19,29 +19,29 @@
 ◉ **File organization** (folders/tags)
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                            TECHNOLOGY STACK INTEGRATION                                ┃
+┃ TECHNOLOGY STACK INTEGRATION ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ╭─ Frontend & Interface ─────────────────────────────────────────────────────────────────╮
-│ • **TanStack Router**: Client-side routing                                            │
-│ • **React**: Drag-and-drop upload interface                                           │
-│ • **react-pdf**: PDF preview and viewing                                              │
+│ • **TanStack Router**: Client-side routing │
+│ • **React**: Drag-and-drop upload interface │
+│ • **react-pdf**: PDF preview and viewing │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Processing & Conversion ──────────────────────────────────────────────────────────────╮
-│ • **Chromiumly**: Document conversion library (TypeScript wrapper for Gotenberg)     │
-│ • **Fly.io**: Gotenberg Docker container hosting for document conversion             │
-│ • **Zod**: File validation and schema validation                                      │
+│ • **Chromiumly**: Document conversion library (TypeScript wrapper for Gotenberg) │
+│ • **Fly.io**: Gotenberg Docker container hosting for document conversion │
+│ • **Zod**: File validation and schema validation │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Storage & Backend ────────────────────────────────────────────────────────────────────╮
-│ • **Convex**: File storage and document management                                    │
-│ • **File size limits**: 50MB maximum per document                                     │
-│ • **Conversion timeout**: 60-second timeout for document conversion                   │
+│ • **Convex**: File storage and document management │
+│ • **File size limits**: 50MB maximum per document │
+│ • **Conversion timeout**: 60-second timeout for document conversion │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                BUSINESS REQUIREMENTS                                    ┃
+┃ BUSINESS REQUIREMENTS ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ■ Secure file storage with workspace-level access control
@@ -52,10 +52,11 @@
 ■ Freemium model integration (10 docs/month for Free plan)
 
 ╔══════════════════════════════════════════════════════════════════════════════════════════╗
-║                           🔧 EDGE CASES & ERROR HANDLING                                ║
+║ 🔧 EDGE CASES & ERROR HANDLING ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════╝
 
 ### Convex File Storage Integration
+
 - **File Upload**: Convex file storage for final PDF documents
 - **Security**: Workspace-scoped access controls via Clerk Roles & Permissions
 - **Processing**: Multi-format conversion + PDF validation and metadata extraction
@@ -65,6 +66,7 @@
 ### Document Upload Workflow States & Edge Cases
 
 #### Happy Path Upload Workflow
+
 1. **Plan Quota Check**: Verify Free plan document limit (10/month) or Pro unlimited
 2. **Upload Interface**: Drag-and-drop or file picker interface
 3. **File Selection**: User selects document (PDF, Word, Excel, PowerPoint, images)
@@ -76,6 +78,7 @@
 9. **Document Ready**: Available for signature field placement
 
 #### File Upload Method Edge Cases
+
 - [ ] **Drag & Drop Upload**: Standard drag-and-drop interface
   - Success: Visual feedback during drag, progress on drop
   - File Preview: Show document thumbnail after upload (mobile-responsive)
@@ -90,6 +93,7 @@
   - User Feedback: "Upload failed. Retrying..." with retry count
 
 #### Manual Error Recovery Workflows (Upload & Processing)
+
 - [ ] **Upload failure recovery**: Help users recover from failed uploads
   - Clear error message: "Upload failed. Here's what to try:"
   - Step 1: "Check your internet connection and try again"
@@ -109,6 +113,7 @@
   - Progress reset to ensure clean state
 
 #### Supported File Formats (Chromiumly + Gotenberg)
+
 - [ ] **PDF Files**: Direct upload and processing
   - Native PDF files → Direct storage and processing
   - Password-protected PDFs → Error with removal instructions
@@ -125,6 +130,7 @@
   - See Gotenberg documentation for complete list
 
 #### File Validation Edge Cases
+
 - [ ] **Valid Supported File**: Document in supported format
   - PDF: Parse PDF structure, extract page count and metadata
   - Office/Image: Queue for conversion via Chromiumly
@@ -149,6 +155,7 @@
 ### Document Storage and Organization Edge Cases
 
 #### Workspace Storage Context
+
 - [ ] **Document Ownership**: Documents belong to specific workspace
   - Access: Only workspace members can view/edit documents
   - Isolation: Documents not visible across different workspaces
@@ -157,6 +164,7 @@
   - Cost Management: Monitor usage, adjust if needed based on actual costs
 
 #### Document Metadata and Organization
+
 - [ ] **Auto-Generated Metadata**: Extract information from PDF
   - Title: Use PDF title metadata or filename
   - Pages: Count total pages for display
@@ -178,6 +186,7 @@
 ### Document Access Control Edge Cases
 
 #### Workspace Member Access
+
 - [ ] **Document Creator**: User who uploaded document has full access
   - Permissions: Edit, delete, share, send for signature
 - [ ] **Workspace Admin**: Admin role access to all workspace documents
@@ -189,6 +198,7 @@
   - Notifications: Notify members when documents shared with them
 
 #### Cross-Workspace Access Control
+
 - [ ] **Workspace Isolation**: Documents strictly scoped to workspace
   - Security: No cross-workspace document access
   - User in Multiple Workspaces: Must switch workspace context to access documents
@@ -202,6 +212,7 @@
 ### Document Processing and Preview Edge Cases
 
 #### Simplified PDF Processing (All PDFs Supported)
+
 - [ ] **Any PDF Processing**: All PDFs should preview regardless of size, complexity, scanned/text
   - Success: Generate preview for any valid PDF
   - Fallback: If preview fails, show error but don't block functionality
@@ -216,6 +227,7 @@
   - Recovery: Retry processing option
 
 #### Document Search and Discovery (Simplified)
+
 - [ ] **Metadata Search**: Search by filename, creator, date, tags, status
   - Implementation: Straightforward database queries
   - Filters: Filter documents by date, creator, status

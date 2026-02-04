@@ -23,17 +23,17 @@ export type ApiVersionStatus = "current" | "deprecated" | "sunset";
  * API version configuration.
  */
 export interface ApiVersionConfig {
-	/** Version status */
-	status: ApiVersionStatus;
+  /** Version status */
+  status: ApiVersionStatus;
 
-	/** Deprecation date (if deprecated) */
-	deprecationDate: string | null;
+  /** Deprecation date (if deprecated) */
+  deprecationDate: string | null;
 
-	/** Sunset date when version will be removed */
-	sunsetDate: string | null;
+  /** Sunset date when version will be removed */
+  sunsetDate: string | null;
 
-	/** Description of changes in this version */
-	description?: string;
+  /** Description of changes in this version */
+  description?: string;
 }
 
 /**
@@ -43,12 +43,12 @@ export interface ApiVersionConfig {
  * @constant
  */
 export const API_VERSIONS: Record<string, ApiVersionConfig> = {
-	"2025-01-01": {
-		status: "current",
-		deprecationDate: null,
-		sunsetDate: null,
-		description: "Initial API release",
-	},
+  "2025-01-01": {
+    status: "current",
+    deprecationDate: null,
+    sunsetDate: null,
+    description: "Initial API release",
+  },
 } as const;
 
 /**
@@ -66,14 +66,14 @@ export const API_VERSION_HEADER = "X-API-Version";
  * API version object returned to handlers.
  */
 export interface ApiVersion {
-	/** The version string (e.g., "2025-01-01") */
-	version: string;
+  /** The version string (e.g., "2025-01-01") */
+  version: string;
 
-	/** Version configuration */
-	config: ApiVersionConfig;
+  /** Version configuration */
+  config: ApiVersionConfig;
 
-	/** Whether this was explicitly requested or defaulted */
-	explicit: boolean;
+  /** Whether this was explicitly requested or defaulted */
+  explicit: boolean;
 }
 
 /**
@@ -92,38 +92,38 @@ export interface ApiVersion {
  * ```
  */
 export function getApiVersion(request: Request): ApiVersion {
-	const requestedVersion = request.headers.get(API_VERSION_HEADER);
+  const requestedVersion = request.headers.get(API_VERSION_HEADER);
 
-	// Get the latest version config (we know this exists)
-	const latestConfig = API_VERSIONS[LATEST_API_VERSION] as ApiVersionConfig;
+  // Get the latest version config (we know this exists)
+  const latestConfig = API_VERSIONS[LATEST_API_VERSION] as ApiVersionConfig;
 
-	if (!requestedVersion) {
-		return {
-			version: LATEST_API_VERSION,
-			config: latestConfig,
-			explicit: false,
-		};
-	}
+  if (!requestedVersion) {
+    return {
+      version: LATEST_API_VERSION,
+      config: latestConfig,
+      explicit: false,
+    };
+  }
 
-	// Validate version exists
-	const config = API_VERSIONS[requestedVersion];
-	if (!config) {
-		// Invalid version, fall back to latest
-		console.warn(
-			`[API] Invalid API version requested: ${requestedVersion}, using ${LATEST_API_VERSION}`,
-		);
-		return {
-			version: LATEST_API_VERSION,
-			config: latestConfig,
-			explicit: false,
-		};
-	}
+  // Validate version exists
+  const config = API_VERSIONS[requestedVersion];
+  if (!config) {
+    // Invalid version, fall back to latest
+    console.warn(
+      `[API] Invalid API version requested: ${requestedVersion}, using ${LATEST_API_VERSION}`,
+    );
+    return {
+      version: LATEST_API_VERSION,
+      config: latestConfig,
+      explicit: false,
+    };
+  }
 
-	return {
-		version: requestedVersion,
-		config,
-		explicit: true,
-	};
+  return {
+    version: requestedVersion,
+    config,
+    explicit: true,
+  };
 }
 
 /**
@@ -133,8 +133,8 @@ export function getApiVersion(request: Request): ApiVersion {
  * @returns Whether the version is deprecated
  */
 export function isVersionDeprecated(version: string): boolean {
-	const config = API_VERSIONS[version];
-	return config?.status === "deprecated" || config?.status === "sunset";
+  const config = API_VERSIONS[version];
+  return config?.status === "deprecated" || config?.status === "sunset";
 }
 
 /**
@@ -144,8 +144,8 @@ export function isVersionDeprecated(version: string): boolean {
  * @returns Whether the version is sunset
  */
 export function isVersionSunset(version: string): boolean {
-	const config = API_VERSIONS[version];
-	return config?.status === "sunset";
+  const config = API_VERSIONS[version];
+  return config?.status === "sunset";
 }
 
 /**
@@ -154,28 +154,24 @@ export function isVersionSunset(version: string): boolean {
  * @param version - The API version
  * @returns Headers to include in response, or null if not deprecated
  */
-export function getDeprecationHeaders(
-	version: string,
-): Record<string, string> | null {
-	const config = API_VERSIONS[version];
+export function getDeprecationHeaders(version: string): Record<string, string> | null {
+  const config = API_VERSIONS[version];
 
-	if (!config || config.status === "current") {
-		return null;
-	}
+  if (!config || config.status === "current") {
+    return null;
+  }
 
-	const headers: Record<string, string> = {
-		Deprecation: config.deprecationDate
-			? `date="${config.deprecationDate}"`
-			: "true",
-	};
+  const headers: Record<string, string> = {
+    Deprecation: config.deprecationDate ? `date="${config.deprecationDate}"` : "true",
+  };
 
-	if (config.sunsetDate) {
-		headers.Sunset = config.sunsetDate;
-	}
+  if (config.sunsetDate) {
+    headers.Sunset = config.sunsetDate;
+  }
 
-	headers.Link = `</api/v1>; rel="successor-version"`;
+  headers.Link = `</api/v1>; rel="successor-version"`;
 
-	return headers;
+  return headers;
 }
 
 /**
@@ -185,28 +181,25 @@ export function getDeprecationHeaders(
  * @param version - The API version used
  * @returns Response with version headers
  */
-export function addVersionHeaders(
-	response: Response,
-	version: ApiVersion,
-): Response {
-	const headers = new Headers(response.headers);
+export function addVersionHeaders(response: Response, version: ApiVersion): Response {
+  const headers = new Headers(response.headers);
 
-	// Always include the version used
-	headers.set(API_VERSION_HEADER, version.version);
+  // Always include the version used
+  headers.set(API_VERSION_HEADER, version.version);
 
-	// Add deprecation headers if applicable
-	const deprecationHeaders = getDeprecationHeaders(version.version);
-	if (deprecationHeaders) {
-		for (const [key, value] of Object.entries(deprecationHeaders)) {
-			headers.set(key, value);
-		}
-	}
+  // Add deprecation headers if applicable
+  const deprecationHeaders = getDeprecationHeaders(version.version);
+  if (deprecationHeaders) {
+    for (const [key, value] of Object.entries(deprecationHeaders)) {
+      headers.set(key, value);
+    }
+  }
 
-	return new Response(response.body, {
-		status: response.status,
-		statusText: response.statusText,
-		headers,
-	});
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 /**
@@ -216,17 +209,17 @@ export function addVersionHeaders(
  * @returns Array of version information
  */
 export function listApiVersions(): Array<{
-	version: string;
-	status: ApiVersionStatus;
-	current: boolean;
-	deprecationDate: string | null;
-	sunsetDate: string | null;
+  version: string;
+  status: ApiVersionStatus;
+  current: boolean;
+  deprecationDate: string | null;
+  sunsetDate: string | null;
 }> {
-	return Object.entries(API_VERSIONS).map(([version, config]) => ({
-		version,
-		status: config.status,
-		current: version === LATEST_API_VERSION,
-		deprecationDate: config.deprecationDate,
-		sunsetDate: config.sunsetDate,
-	}));
+  return Object.entries(API_VERSIONS).map(([version, config]) => ({
+    version,
+    status: config.status,
+    current: version === LATEST_API_VERSION,
+    deprecationDate: config.deprecationDate,
+    sunsetDate: config.sunsetDate,
+  }));
 }

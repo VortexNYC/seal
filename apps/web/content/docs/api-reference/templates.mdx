@@ -11,15 +11,15 @@ The Templates API allows you to create reusable document templates with predefin
 
 ### Attributes
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `id` | string | Unique template identifier |
-| `name` | string | Template name |
-| `description` | string | Template description |
-| `category` | string | Template category for organization |
-| `fields` | array | Array of field definitions |
-| `created_at` | string | ISO 8601 creation timestamp |
-| `updated_at` | string | ISO 8601 last update timestamp |
+| Attribute     | Type   | Description                            |
+| ------------- | ------ | -------------------------------------- |
+| `id`          | string | Unique template identifier             |
+| `name`        | string | Template name                          |
+| `description` | string | Template description                   |
+| `category`    | string | Template category for organization     |
+| `fields`      | array  | Array of field definitions             |
+| `created_at`  | string | ISO 8601 creation timestamp            |
+| `updated_at`  | string | ISO 8601 last update timestamp         |
 | `usage_count` | number | Number of times template has been used |
 
 ### Example Object
@@ -52,19 +52,19 @@ GET /api/v1/templates
 
 ### Query Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `limit` | number | Number of results (max 100, default 20) |
-| `cursor` | string | Pagination cursor |
-| `category` | string | Filter by category |
+| Parameter  | Type   | Description                             |
+| ---------- | ------ | --------------------------------------- |
+| `limit`    | number | Number of results (max 100, default 20) |
+| `cursor`   | string | Pagination cursor                       |
+| `category` | string | Filter by category                      |
 
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/templates?category=HR', {
+const response = await fetch("https://seal.convex.site/api/v1/templates?category=HR", {
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here'
-  }
+    Authorization: "Bearer ak_your_api_key_here",
+  },
 });
 
 const { templates, has_more, next_cursor } = await response.json();
@@ -94,10 +94,10 @@ GET /api/v1/templates/get?id={id}
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/templates/get?id=tpl_abc123', {
+const response = await fetch("https://seal.convex.site/api/v1/templates/get?id=tpl_abc123", {
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here'
-  }
+    Authorization: "Bearer ak_your_api_key_here",
+  },
 });
 
 const template = await response.json();
@@ -127,10 +127,10 @@ GET /api/v1/templates/fields?id={id}
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/templates/fields?id=tpl_abc123', {
+const response = await fetch("https://seal.convex.site/api/v1/templates/fields?id=tpl_abc123", {
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here'
-  }
+    Authorization: "Bearer ak_your_api_key_here",
+  },
 });
 
 const fields = await response.json();
@@ -183,28 +183,28 @@ POST /api/v1/templates
 
 ### Request Body
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `document_id` | string | Yes | Source document ID |
-| `name` | string | Yes | Template name |
-| `description` | string | No | Template description |
-| `category` | string | No | Template category |
+| Field         | Type   | Required | Description          |
+| ------------- | ------ | -------- | -------------------- |
+| `document_id` | string | Yes      | Source document ID   |
+| `name`        | string | Yes      | Template name        |
+| `description` | string | No       | Template description |
+| `category`    | string | No       | Template category    |
 
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/templates', {
-  method: 'POST',
+const response = await fetch("https://seal.convex.site/api/v1/templates", {
+  method: "POST",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    document_id: 'doc_xyz789',
-    name: 'Employment Contract',
-    description: 'Standard employment agreement',
-    category: 'HR'
-  })
+    document_id: "doc_xyz789",
+    name: "Employment Contract",
+    description: "Standard employment agreement",
+    category: "HR",
+  }),
 });
 
 const template = await response.json();
@@ -239,25 +239,25 @@ PUT /api/v1/templates/update?id={id}
 
 ### Request Body
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | New template name |
-| `description` | string | New description |
-| `category` | string | New category |
+| Field         | Type   | Description       |
+| ------------- | ------ | ----------------- |
+| `name`        | string | New template name |
+| `description` | string | New description   |
+| `category`    | string | New category      |
 
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/templates/update?id=tpl_abc123', {
-  method: 'PUT',
+const response = await fetch("https://seal.convex.site/api/v1/templates/update?id=tpl_abc123", {
+  method: "PUT",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    name: 'Updated Employment Contract',
-    category: 'Legal'
-  })
+    name: "Updated Employment Contract",
+    category: "Legal",
+  }),
 });
 ```
 
@@ -278,11 +278,11 @@ DELETE /api/v1/templates/delete?id={id}
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/templates/delete?id=tpl_abc123', {
-  method: 'DELETE',
+const response = await fetch("https://seal.convex.site/api/v1/templates/delete?id=tpl_abc123", {
+  method: "DELETE",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here'
-  }
+    Authorization: "Bearer ak_your_api_key_here",
+  },
 });
 
 const result = await response.json();
@@ -305,24 +305,24 @@ POST /api/v1/templates/use?id={id}
 
 ### Request Body
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `title` | string | Yes | Document title |
-| `description` | string | No | Document description |
+| Field         | Type   | Required | Description          |
+| ------------- | ------ | -------- | -------------------- |
+| `title`       | string | Yes      | Document title       |
+| `description` | string | No       | Document description |
 
 ### TypeScript Example
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/templates/use?id=tpl_abc123', {
-  method: 'POST',
+const response = await fetch("https://seal.convex.site/api/v1/templates/use?id=tpl_abc123", {
+  method: "POST",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    title: 'John Doe Employment Contract',
-    description: 'Employment agreement for John Doe'
-  })
+    title: "John Doe Employment Contract",
+    description: "Employment agreement for John Doe",
+  }),
 });
 
 const document = await response.json();
@@ -342,16 +342,16 @@ const document = await response.json();
 
 ## Field Types
 
-| Type | Description | Example Value |
-|------|-------------|---------------|
-| `text` | Single-line text input | "John Doe" |
-| `textarea` | Multi-line text input | "Full address..." |
-| `number` | Numeric input | 75000 |
-| `date` | Date picker | "2024-02-01" |
-| `email` | Email address | "john@example.com" |
-| `checkbox` | Boolean checkbox | true |
-| `select` | Dropdown selection | "option1" |
-| `signature` | Signature field | (drawn signature) |
+| Type        | Description            | Example Value      |
+| ----------- | ---------------------- | ------------------ |
+| `text`      | Single-line text input | "John Doe"         |
+| `textarea`  | Multi-line text input  | "Full address..."  |
+| `number`    | Numeric input          | 75000              |
+| `date`      | Date picker            | "2024-02-01"       |
+| `email`     | Email address          | "john@example.com" |
+| `checkbox`  | Boolean checkbox       | true               |
+| `select`    | Dropdown selection     | "option1"          |
+| `signature` | Signature field        | (drawn signature)  |
 
 ## Next Steps
 

@@ -431,18 +431,21 @@
 ## Interaction Specifications
 
 ### Document Sharing Interface
+
 - **Sharing Modes**: Clear visual distinction between private, team, and external sharing
 - **Permission Levels**: Simple permission control (View, Edit, Manage) with clear explanations
 - **Team Member Selection**: Easy team member discovery and permission assignment
 - **Access Control**: Clerk RBAC integration for permission enforcement
 
 ### Team Document Library
+
 - **Filter and Search**: Real-time filtering by sharing status and document type
 - **Visual Indicators**: Clear sharing status icons and ownership badges
 - **Quick Actions**: Contextual action menus for document management
 - **Permission Display**: Clear indication of user's access level per document
 
 ### Document Access Control
+
 - **Permission Management**: Granular control over team member document access
 - **Ownership Transfer**: Secure document ownership transfer between team members
 - **Access History**: Document access and modification tracking
@@ -453,12 +456,14 @@
 ## Clerk Integration
 
 ### RBAC
+
 - **Document Permissions**: Fine-grained access control per document
 - **Role-based Access**: Automatic permission inheritance from workspace roles
 - **Permission Cascade**: Efficient permission updates on role changes
 - **API Security**: Role-based API access to shared documents
 
 ### Organization Plugin
+
 - **Workspace Scoping**: Documents scoped to workspace context
 - **Member Access**: Automatic team member discovery and access
 - **Multi-workspace Support**: Clean document isolation between workspaces
@@ -469,18 +474,21 @@
 ## Technical Integration
 
 ### Convex Real-Time Features
+
 - **Sharing Updates**: Real-time sharing status and permission changes
 - **Document Library**: Live document list updates and sharing status
 - **Permission Sync**: Instant permission updates across all clients
 - **Activity Tracking**: Document sharing and access activity logging
 
 ### React Email + Resend
+
 - **Sharing Notifications**: Professional document sharing notifications
 - **Access Granted**: New team member document access emails
 - **Permission Changes**: Document permission update notifications
 - **Ownership Transfer**: Document ownership change notifications
 
 ### State Management
+
 - **Document Library**: Real-time document list updates and filtering
 - **Permission State**: Efficient permission caching and validation
 - **Sharing State**: Live sharing status and team member access

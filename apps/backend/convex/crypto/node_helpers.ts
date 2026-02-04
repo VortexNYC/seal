@@ -17,9 +17,9 @@ import { createHash } from "node:crypto";
  * @returns Hexadecimal hash string
  */
 export function generateSHA256Hash(data: ArrayBuffer | Uint8Array): string {
-	const hash = createHash("sha256");
-	// Convert ArrayBuffer to Uint8Array if needed, then to Buffer
-	const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
-	hash.update(Buffer.from(bytes));
-	return hash.digest("hex");
+  const hash = createHash("sha256");
+  // Convert ArrayBuffer to Uint8Array if needed, then to Buffer
+  const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+  hash.update(Buffer.from(bytes));
+  return hash.digest("hex");
 }

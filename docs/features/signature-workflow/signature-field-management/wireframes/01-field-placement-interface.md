@@ -5,42 +5,43 @@
 ### Initial Field Placement Interface - Desktop Browser
 
 ╔════════════════════════════════════════════════════════════════════════════════════════════════╗
-║ ● ● ●    🌐 https://seal.nyc/document/service-agreement/fields ⚪ ⚫ 🔍 ≡           ║
+║ ● ● ● 🌐 https://seal.nyc/document/service-agreement/fields ⚪ ⚫ 🔍 ≡ ║
 ╠════════════════════════════════════════════════════════════════════════════════════════════════╣
-║ 🏠 Seal                                                        ░░[☰]░░ ░░[⚙]░░               ║
+║ 🏠 Seal ░░[☰]░░ ░░[⚙]░░ ║
 ║ ─────────────────────────────────────────────────────────────────────────────────────────────── ║
-║ ▓▓ Documents > service-agreement.pdf > Recipients > Fields ▓▓                                   ║
+║ ▓▓ Documents > service-agreement.pdf > Recipients > Fields ▓▓ ║
 ║ ─────────────────────────────────────────────────────────────────────────────────────────────── ║
-║                                                                                                  ║
-║ ▓▓ 🔧 Field Tools: ▓▓                                                                           ║
-║ ▓▓[✍️ Signature]▓▓ ▓▓[🔤 Initial]▓▓ ▓▓[📅 Date]▓▓ ▓▓[📝 Text]▓▓ ▓▓[☑️ Check]▓▓                ║
-║                                                                                                  ║
+║ ║
+║ ▓▓ 🔧 Field Tools: ▓▓ ║
+║ ▓▓[✍️ Signature]▓▓ ▓▓[🔤 Initial]▓▓ ▓▓[📅 Date]▓▓ ▓▓[📝 Text]▓▓ ▓▓[☑️ Check]▓▓ ║
+║ ║
 ║ ╔════════════════════════════════════════════════════════════════════════════════════════════╗ ║
-║ ║                                                                                            ║ ║
-║ ║                          ▓▓ Document Preview ▓▓                                           ║ ║
-║ ║                                                                                            ║ ║
-║ ║         ▓▓ SERVICE AGREEMENT ▓▓                                                            ║ ║
-║ ║                                                                                            ║ ║
-║ ║         This agreement between ________________                                            ║ ║
-║ ║         and Your Company                                                                   ║ ║
-║ ║                                                                                            ║ ║
-║ ║         Client Signature: ░░[____________________]░░                                       ║ ║
-║ ║                                                                                            ║ ║
-║ ║         Date: ░░[____________]░░                                                           ║ ║
-║ ║                                                                                            ║ ║
-║ ║         Service Provider: ░░[____________________]░░                                       ║ ║
-║ ║                                                                                            ║ ║
-║ ║                            ▓▓ Page 1 of 3 ▓▓                                             ║ ║
+║ ║ ║ ║
+║ ║ ▓▓ Document Preview ▓▓ ║ ║
+║ ║ ║ ║
+║ ║ ▓▓ SERVICE AGREEMENT ▓▓ ║ ║
+║ ║ ║ ║
+║ ║ This agreement between ******\_\_\_\_****** ║ ║
+║ ║ and Your Company ║ ║
+║ ║ ║ ║
+║ ║ Client Signature: ░░[____________________]░░ ║ ║
+║ ║ ║ ║
+║ ║ Date: ░░[____________]░░ ║ ║
+║ ║ ║ ║
+║ ║ Service Provider: ░░[____________________]░░ ║ ║
+║ ║ ║ ║
+║ ║ ▓▓ Page 1 of 3 ▓▓ ║ ║
 ║ ╚════════════════════════════════════════════════════════════════════════════════════════════╝ ║
-║                                                                                                  ║
-║ ░░ 👥 Recipients: Client | Service Provider (configured) ░░                                    ║
-║ ░░ 🔄 Pages: ◀ [1] 2 3 ▶ ░░    ░░ 📋 Field Summary: 0 fields ░░                            ║
-║                                                                                                  ║
-║ ░░[◀ Back to Recipients]░░ ░░[Preview Fields]░░ ▓▓[Continue →]▓▓                              ║
-║                                                                                                  ║
+║ ║
+║ ░░ 👥 Recipients: Client | Service Provider (configured) ░░ ║
+║ ░░ 🔄 Pages: ◀ [1] 2 3 ▶ ░░ ░░ 📋 Field Summary: 0 fields ░░ ║
+║ ║
+║ ░░[◀ Back to Recipients]░░ ░░[Preview Fields]░░ ▓▓[Continue →]▓▓ ║
+║ ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 **shadcn/ui Component Mapping:**
+
 - Breadcrumb navigation: `Breadcrumb` component with `BreadcrumbItem` and `BreadcrumbSeparator`
 - Field tools toolbar: Custom toolbar with `Button` components in `variant="default"`
 - Document preview: Custom PDF viewer with `border-neutral-200` (#e5e5e5)
@@ -52,45 +53,46 @@
 ### Field Placement in Progress - Desktop Browser
 
 ╔════════════════════════════════════════════════════════════════════════════════════════════════╗
-║ ● ● ●    🌐 https://seal.nyc/document/service-agreement/fields ⚪ ⚫ 🔍 ≡           ║
+║ ● ● ● 🌐 https://seal.nyc/document/service-agreement/fields ⚪ ⚫ 🔍 ≡ ║
 ╠════════════════════════════════════════════════════════════════════════════════════════════════╣
-║ 🏠 Seal - Field Placement Mode                                          ░░[✕]░░               ║
+║ 🏠 Seal - Field Placement Mode ░░[✕]░░ ║
 ║ ─────────────────────────────────────────────────────────────────────────────────────────────── ║
-║                                                                                                  ║
-║ ▓▓ 🔧 [✍️ Signature] [🔤 Initial] [📅 Date] [📝 Text] [☑️] ▓▓                                 ║
-║                                                                                                  ║
+║ ║
+║ ▓▓ 🔧 [✍️ Signature] [🔤 Initial] [📅 Date] [📝 Text] [☑️] ▓▓ ║
+║ ║
 ║ ╔════════════════════════════════════════════════════════════════════════════════════════════╗ ║
-║ ║                                                                                            ║ ║
-║ ║         ▓▓ SERVICE AGREEMENT ▓▓                                                            ║ ║
-║ ║                                                                                            ║ ║
-║ ║         This agreement between ________________                                            ║ ║
-║ ║         and Your Company                                                                   ║ ║
-║ ║                                                                                            ║ ║
-║ ║         Client Signature: ╔═══════════════════════╗                                       ║ ║
-║ ║                           ║ ▓▓ ✍️ Signature Field ▓▓ ║                                       ║ ║
-║ ║                           ║ Recipient: Client     ║                                       ║ ║
-║ ║                           ║ Required: ✅          ║                                       ║ ║
-║ ║                           ╚═══════════════════════╝                                       ║ ║
-║ ║                                                                                            ║ ║
-║ ║         Date: ╔════════════╗                                                              ║ ║
-║ ║               ║▓▓📅 Date▓▓ ║                                                              ║ ║
-║ ║               ║Client      ║                                                              ║ ║
-║ ║               ╚════════════╝                                                              ║ ║
-║ ║                                                                                            ║ ║
-║ ║         Service Provider: ╔═══════════════════════╗                                       ║ ║
-║ ║                           ║ ▓▓ ✍️ Signature Field ▓▓ ║                                       ║ ║
-║ ║                           ║ Service Provider      ║                                       ║ ║
-║ ║                           ║ Required: ✅          ║                                       ║ ║
-║ ║                           ╚═══════════════════════╝                                       ║ ║
-║ ║                            ▓▓ Page 1 of 3 ▓▓                                             ║ ║
+║ ║ ║ ║
+║ ║ ▓▓ SERVICE AGREEMENT ▓▓ ║ ║
+║ ║ ║ ║
+║ ║ This agreement between ******\_\_\_\_****** ║ ║
+║ ║ and Your Company ║ ║
+║ ║ ║ ║
+║ ║ Client Signature: ╔═══════════════════════╗ ║ ║
+║ ║ ║ ▓▓ ✍️ Signature Field ▓▓ ║ ║ ║
+║ ║ ║ Recipient: Client ║ ║ ║
+║ ║ ║ Required: ✅ ║ ║ ║
+║ ║ ╚═══════════════════════╝ ║ ║
+║ ║ ║ ║
+║ ║ Date: ╔════════════╗ ║ ║
+║ ║ ║▓▓📅 Date▓▓ ║ ║ ║
+║ ║ ║Client ║ ║ ║
+║ ║ ╚════════════╝ ║ ║
+║ ║ ║ ║
+║ ║ Service Provider: ╔═══════════════════════╗ ║ ║
+║ ║ ║ ▓▓ ✍️ Signature Field ▓▓ ║ ║ ║
+║ ║ ║ Service Provider ║ ║ ║
+║ ║ ║ Required: ✅ ║ ║ ║
+║ ║ ╚═══════════════════════╝ ║ ║
+║ ║ ▓▓ Page 1 of 3 ▓▓ ║ ║
 ║ ╚════════════════════════════════════════════════════════════════════════════════════════════╝ ║
-║                                                                                                  ║
-║ ▓▓ 📊 Field Count: 3 fields placed ▓▓                                                          ║
-║ ░░ 👥 Client (2) | Service Provider (1) | Unassigned (0) ░░                                   ║
-║                                                                                                  ║
+║ ║
+║ ▓▓ 📊 Field Count: 3 fields placed ▓▓ ║
+║ ░░ 👥 Client (2) | Service Provider (1) | Unassigned (0) ░░ ║
+║ ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 **shadcn/ui Component Mapping:**
+
 - Field overlay tooltips: `Popover` or `Tooltip` components with field information
 - Signature field indicators: `Card` components with `border-blue-500` (#3b82f6) for active fields
 - Field count display: `Badge` components with field statistics
@@ -101,51 +103,52 @@
 ### Field Properties Panel - Modal Overlay
 
 ╔════════════════════════════════════════════════════════════════════════════════════════════════╗
-║ ● ● ●    🌐 https://seal.nyc/document/service-agreement/fields ⚪ ⚫ 🔍 ≡           ║
+║ ● ● ● 🌐 https://seal.nyc/document/service-agreement/fields ⚪ ⚫ 🔍 ≡ ║
 ╠════════════════════════════════════════════════════════════════════════════════════════════════╣
-║ 🏠 Seal - Field Placement Mode                                          ░░[✕]░░               ║
+║ 🏠 Seal - Field Placement Mode ░░[✕]░░ ║
 ║ ─────────────────────────────────────────────────────────────────────────────────────────────── ║
 ║ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ║
 ║ ░░░░░░░░░░░░ ╔════════════════════════════════════════════════════════════╗ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║                ▓▓ Field Properties ▓▓                     ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ ▓▓ Field Properties ▓▓ ║ ░░░░░░░░░░░░░░░░░░░░ ║
 ║ ░░░░░░░░░░░░ ╠════════════════════════════════════════════════════════════╣ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║                                                            ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ ▓▓ ✍️ Signature Field ▓▓                                   ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║                                                            ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ ▓▓ ✍️ Signature Field ▓▓ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ ║ ░░░░░░░░░░░░░░░░░░░░ ║
 ║ ░░░░░░░░░░░░ ║ ╭────────────────────────────────────────────────────────╮ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │                                                        │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ 🏷️ Field Label:                                        │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ ░░[Client Signature                     ]░░             │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │                                                        │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ 👤 Assign to Recipient:                                │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ ░░[Client                    ▼]░░                       │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │                                                        │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ ⚠️ Field Requirements:                                 │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ ☑️ Required field                                      │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ ☐ Allow reject/decline                                 │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │                                                        │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ 📐 Size & Position:                                    │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ Width: ░░[200px]░░ Height: ░░[50px]░░                   │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ X: ░░[150px]░░ Y: ░░[300px]░░                           │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │                                                        │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ 🎨 Appearance:                                         │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ Border: ░░[Solid ▼]░░ Color: ░░[Blue ▼]░░              │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ Background: ░░[Transparent ▼]░░                         │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │                                                        │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ 📝 Help Text:                                          │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ ╭─────────────────────────────────────────────╮       │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ │ Please sign here to agree to the terms     │       │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │ ╰─────────────────────────────────────────────╯       │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ │                                                        │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ 🏷️ Field Label: │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ ░░[Client Signature ]░░ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ 👤 Assign to Recipient: │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ ░░[Client ▼]░░ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ ⚠️ Field Requirements: │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ ☑️ Required field │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ ☐ Allow reject/decline │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ 📐 Size & Position: │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ Width: ░░[200px]░░ Height: ░░[50px]░░ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ X: ░░[150px]░░ Y: ░░[300px]░░ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ 🎨 Appearance: │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ Border: ░░[Solid ▼]░░ Color: ░░[Blue ▼]░░ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ Background: ░░[Transparent ▼]░░ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ 📝 Help Text: │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ ╭─────────────────────────────────────────────╮ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ │ Please sign here to agree to the terms │ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ ╰─────────────────────────────────────────────╯ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ │ │ ║ ░░░░░░░░░░░░░░░░░░░░ ║
 ║ ░░░░░░░░░░░░ ║ ╰────────────────────────────────────────────────────────╯ ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║                                                            ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║ ░░[🗑️ Delete Field]░░ ░░[📋 Duplicate]░░ ▓▓[✅ Save]▓▓     ║ ░░░░░░░░░░░░░░░░░░░░ ║
-║ ░░░░░░░░░░░░ ║                                                            ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ ░░[🗑️ Delete Field]░░ ░░[📋 Duplicate]░░ ▓▓[✅ Save]▓▓ ║ ░░░░░░░░░░░░░░░░░░░░ ║
+║ ░░░░░░░░░░░░ ║ ║ ░░░░░░░░░░░░░░░░░░░░ ║
 ║ ░░░░░░░░░░░░ ╚════════════════════════════════════════════════════════════╝ ░░░░░░░░░░░░░░░░░░░░ ║
 ║ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 **shadcn/ui Component Mapping:**
+
 - Modal overlay: `Dialog` with `DialogOverlay` using `bg-neutral-500/20` opacity
 - Properties form: `DialogContent` with comprehensive form controls
 - Field label input: `Input` component with proper labeling
@@ -433,41 +436,42 @@
 ### Mobile Field Placement - iPhone Frame
 
 ┌───────────────────────────────────────┐
-│  9:41 AM        ●●●     🔋 85% ●●●●   │ ← Status bar
+│ 9:41 AM ●●● 🔋 85% ●●●● │ ← Status bar
 ├───────────────────────────────────────┤
-│ 🏠 Seal - Add Fields      ░░[✕]░░     │ ← Header
+│ 🏠 Seal - Add Fields ░░[✕]░░ │ ← Header
 ├───────────────────────────────────────┤
-│                                       │
-│ ▓▓ 🔧 Field Tools ▓▓                  │ ← Toolbar
+│ │
+│ ▓▓ 🔧 Field Tools ▓▓ │ ← Toolbar
 │ ▓▓[✍️]▓▓▓▓[🔤]▓▓▓▓[📅]▓▓▓▓[📝]▓▓▓▓[☑️]▓▓ │
-│                                       │
+│ │
 │ ╔═══════════════════════════════════╗ │
-│ ║                                   ║ │
-│ ║    ▓▓ SERVICE AGREEMENT ▓▓        ║ │
-│ ║                                   ║ │
-│ ║   Client Signature:               ║ │
-│ ║   ╔═══════════════════╗           ║ │
-│ ║   ║ ▓▓ ✍️ Signature ▓▓ ║           ║ │
-│ ║   ║ Client            ║           ║ │
-│ ║   ╚═══════════════════╝           ║ │
-│ ║                                   ║ │
-│ ║   Date: ╔══════════════╗          ║ │
-│ ║         ║▓▓📅 Date▓▓   ║          ║ │
-│ ║         ╚══════════════╝          ║ │
-│ ║                                   ║ │
-│ ║          ▓▓ Page 1 of 3 ▓▓        ║ │
+│ ║ ║ │
+│ ║ ▓▓ SERVICE AGREEMENT ▓▓ ║ │
+│ ║ ║ │
+│ ║ Client Signature: ║ │
+│ ║ ╔═══════════════════╗ ║ │
+│ ║ ║ ▓▓ ✍️ Signature ▓▓ ║ ║ │
+│ ║ ║ Client ║ ║ │
+│ ║ ╚═══════════════════╝ ║ │
+│ ║ ║ │
+│ ║ Date: ╔══════════════╗ ║ │
+│ ║ ║▓▓📅 Date▓▓ ║ ║ │
+│ ║ ╚══════════════╝ ║ │
+│ ║ ║ │
+│ ║ ▓▓ Page 1 of 3 ▓▓ ║ │
 │ ╚═══════════════════════════════════╝ │
-│                                       │
-│ ▓▓ 📊 Fields: 2 placed ▓▓             │
-│ ░░ 👥 Client(2) Provider(0) ░░        │
-│                                       │
-│ ░░[◀]░░ ░░[Field List]░░ ░░[Next▶]░░   │
-│                                       │
+│ │
+│ ▓▓ 📊 Fields: 2 placed ▓▓ │
+│ ░░ 👥 Client(2) Provider(0) ░░ │
+│ │
+│ ░░[◀]░░ ░░[Field List]░░ ░░[Next▶]░░ │
+│ │
 └───────────────────────────────────────┘
-│                                       │ ← Home indicator area
+│ │ ← Home indicator area
 └───────────────────────────────────────┘
 
 **shadcn/ui Component Mapping:**
+
 - Mobile toolbar: Custom horizontal scrolling toolbar with field type buttons
 - Document container: Mobile-optimized PDF viewer with touch interactions
 - Field indicators: Smaller `Card` components for mobile field overlays
@@ -478,37 +482,38 @@
 ### Mobile Field Properties - iPhone Frame
 
 ┌───────────────────────────────────────┐
-│  9:41 AM        ●●●     🔋 85% ●●●●   │ ← Status bar
+│ 9:41 AM ●●● 🔋 85% ●●●● │ ← Status bar
 ├───────────────────────────────────────┤
-│ ▓▓ Field Properties ▓▓     ░░[✕]░░    │ ← Header
+│ ▓▓ Field Properties ▓▓ ░░[✕]░░ │ ← Header
 ├───────────────────────────────────────┤
-│                                       │
-│ ▓▓ ✍️ Signature Field ▓▓              │
-│                                       │
-│ Label:                                │
-│ ░░[Client Signature         ]░░       │
-│                                       │
-│ Recipient:                            │
-│ ░░[Client                    ▼]░░     │
-│                                       │
-│ ☑️ Required field                     │
-│ ☐ Allow decline                       │
-│                                       │
-│ ▓▓ 📐 Size: ▓▓                        │
-│ W:░░[200]░░ H:░░[50]░░                 │
-│                                       │
-│ ▓▓ 📝 Help Text: ▓▓                   │
+│ │
+│ ▓▓ ✍️ Signature Field ▓▓ │
+│ │
+│ Label: │
+│ ░░[Client Signature ]░░ │
+│ │
+│ Recipient: │
+│ ░░[Client ▼]░░ │
+│ │
+│ ☑️ Required field │
+│ ☐ Allow decline │
+│ │
+│ ▓▓ 📐 Size: ▓▓ │
+│ W:░░[200]░░ H:░░[50]░░ │
+│ │
+│ ▓▓ 📝 Help Text: ▓▓ │
 │ ╔═══════════════════════════════════╗ │
-│ ║ Sign here to agree to terms       ║ │
+│ ║ Sign here to agree to terms ║ │
 │ ╚═══════════════════════════════════╝ │
-│                                       │
-│ ░░[🗑️ Delete]░░     ▓▓[✅ Save]▓▓      │
-│                                       │
+│ │
+│ ░░[🗑️ Delete]░░ ▓▓[✅ Save]▓▓ │
+│ │
 └───────────────────────────────────────┘
-│                                       │ ← Home indicator area
+│ │ ← Home indicator area
 └───────────────────────────────────────┘
 
 **shadcn/ui Component Mapping:**
+
 - Mobile modal: Full-screen modal optimized for touch interaction
 - Form inputs: Mobile-sized `Input` components with proper touch targets
 - Checkboxes: Touch-friendly `Checkbox` components

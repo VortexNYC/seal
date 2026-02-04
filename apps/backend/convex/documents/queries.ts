@@ -3,12 +3,13 @@
  */
 
 import { ConvexError, v } from "convex/values";
+
 import { internalQuery, query } from "../_generated/server";
 import { authQuery } from "../auth";
 import {
-	checkDocumentAccess,
-	getDocumentWithAccessCheck,
-	requireActiveMembership,
+  checkDocumentAccess,
+  getDocumentWithAccessCheck,
+  requireActiveMembership,
 } from "../auth/access_control";
 import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
 
@@ -17,159 +18,147 @@ import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status
  * Used for thumbnail generation - minimal access check since document list already verified access
  */
 export const getStorageUrl = authQuery({
-	args: { storageId: v.string() },
-	handler: async (ctx, args) => {
-		const url = await ctx.storage.getUrl(args.storageId);
-		return url;
-	},
+  args: { storageId: v.string() },
+  handler: async (ctx, args) => {
+    const url = await ctx.storage.getUrl(args.storageId);
+    return url;
+  },
 });
 
 /**
  * Get a single document by ID with access control
  */
 export const getDocument = authQuery({
-	args: { documentId: v.id("documents") },
-	handler: async (ctx, args) => {
-		const userId = ctx.auth.user._id;
-		const { document } = await getDocumentWithAccessCheck(
-			ctx,
-			userId,
-			args.documentId,
-		);
-		return document;
-	},
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+    const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
+    return document;
+  },
 });
 
 /**
  * Get download URL for a document
  */
 export const getDocumentUrl = authQuery({
-	args: { documentId: v.id("documents") },
-	handler: async (ctx, args) => {
-		const userId = ctx.auth.user._id;
-		const { document } = await getDocumentWithAccessCheck(
-			ctx,
-			userId,
-			args.documentId,
-		);
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+    const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
 
-		const url = await ctx.storage.getUrl(document.storageId);
-		if (!url) {
-			throw new ConvexError("File not found in storage");
-		}
+    const url = await ctx.storage.getUrl(document.storageId);
+    if (!url) {
+      throw new ConvexError("File not found in storage");
+    }
 
-		return url;
-	},
+    return url;
+  },
 });
 
 /**
  * List all documents accessible to the user in an organization
  */
 export const listDocuments = authQuery({
-	args: {
-		organizationId: v.id("organizations"),
-		filter: v.optional(
-			v.union(v.literal("all"), v.literal("owned"), v.literal("shared")),
-		),
-		workflowStatus: v.optional(documentWorkflowStatusTuple),
-	},
-	handler: async (ctx, args) => {
-		const userId = ctx.auth.user._id;
-		const filter = args.filter || "all";
+  args: {
+    organizationId: v.id("organizations"),
+    filter: v.optional(v.union(v.literal("all"), v.literal("owned"), v.literal("shared"))),
+    workflowStatus: v.optional(documentWorkflowStatusTuple),
+  },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+    const filter = args.filter || "all";
 
-		await requireActiveMembership(ctx, userId, args.organizationId);
+    await requireActiveMembership(ctx, userId, args.organizationId);
 
-		const allOrgDocuments = await ctx.db
-			.query("documents")
-			.withIndex("by_organization_status", (q) =>
-				q.eq("organizationId", args.organizationId).eq("status", "active"),
-			)
-			.collect();
+    const allOrgDocuments = await ctx.db
+      .query("documents")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", args.organizationId).eq("status", "active"),
+      )
+      .collect();
 
-		const accessibleDocuments = [];
+    const accessibleDocuments = [];
 
-		for (const doc of allOrgDocuments) {
-			if (filter === "owned" && doc.ownerId !== userId) {
-				continue;
-			}
-			if (filter === "shared" && doc.ownerId === userId) {
-				continue;
-			}
+    for (const doc of allOrgDocuments) {
+      if (filter === "owned" && doc.ownerId !== userId) {
+        continue;
+      }
+      if (filter === "shared" && doc.ownerId === userId) {
+        continue;
+      }
 
-			const docWorkflowStatus = doc.workflowStatus ?? "draft";
-			if (args.workflowStatus && docWorkflowStatus !== args.workflowStatus) {
-				continue;
-			}
+      const docWorkflowStatus = doc.workflowStatus ?? "draft";
+      if (args.workflowStatus && docWorkflowStatus !== args.workflowStatus) {
+        continue;
+      }
 
-			const accessResult = await checkDocumentAccess(ctx, userId, doc);
-			if (accessResult.hasAccess) {
-				accessibleDocuments.push(doc);
-			}
-		}
+      const accessResult = await checkDocumentAccess(ctx, userId, doc);
+      if (accessResult.hasAccess) {
+        accessibleDocuments.push(doc);
+      }
+    }
 
-		return accessibleDocuments;
-	},
+    return accessibleDocuments;
+  },
 });
 
 /**
  * Get access list for a document (who has access and their permission levels)
  */
 export const getDocumentAccessList = authQuery({
-	args: { documentId: v.id("documents") },
-	handler: async (ctx, args) => {
-		const userId = ctx.auth.user._id;
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
 
-		// 1. Get the document
-		const document = await ctx.db.get(args.documentId);
-		if (!document || document.status === "deleted") {
-			throw new ConvexError("Document not found");
-		}
+    // 1. Get the document
+    const document = await ctx.db.get(args.documentId);
+    if (!document || document.status === "deleted") {
+      throw new ConvexError("Document not found");
+    }
 
-		// 2. Only owner or users with manage permission can view access list
-		if (document.ownerId !== userId) {
-			const access = await ctx.db
-				.query("document_access")
-				.withIndex("by_document_user", (q) =>
-					q.eq("documentId", args.documentId).eq("userId", userId),
-				)
-				.first();
+    // 2. Only owner or users with manage permission can view access list
+    if (document.ownerId !== userId) {
+      const access = await ctx.db
+        .query("document_access")
+        .withIndex("by_document_user", (q) =>
+          q.eq("documentId", args.documentId).eq("userId", userId),
+        )
+        .first();
 
-			if (!access || access.permissionLevel !== "manage") {
-				throw new ConvexError(
-					"Only the document owner or managers can view access list",
-				);
-			}
-		}
+      if (!access || access.permissionLevel !== "manage") {
+        throw new ConvexError("Only the document owner or managers can view access list");
+      }
+    }
 
-		// 3. Get all access records for this document
-		const accessRecords = await ctx.db
-			.query("document_access")
-			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-			.filter((q) => q.eq(q.field("revokedAt"), undefined))
-			.collect();
+    // 3. Get all access records for this document
+    const accessRecords = await ctx.db
+      .query("document_access")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .filter((q) => q.eq(q.field("revokedAt"), undefined))
+      .collect();
 
-		// 4. Enrich with user information
-		const enrichedAccess = await Promise.all(
-			accessRecords.map(async (access) => {
-				const user = await ctx.db.get(access.userId);
-				return {
-					...access,
-					user: user
-						? {
-								_id: user._id,
-								name: user.name,
-								email: user.email,
-							}
-						: null,
-				};
-			}),
-		);
+    // 4. Enrich with user information
+    const enrichedAccess = await Promise.all(
+      accessRecords.map(async (access) => {
+        const user = await ctx.db.get(access.userId);
+        return {
+          ...access,
+          user: user
+            ? {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+              }
+            : null,
+        };
+      }),
+    );
 
-		return {
-			sharingMode: document.sharingMode,
-			specificAccess: enrichedAccess,
-		};
-	},
+    return {
+      sharingMode: document.sharingMode,
+      specificAccess: enrichedAccess,
+    };
+  },
 });
 
 /**
@@ -177,36 +166,34 @@ export const getDocumentAccessList = authQuery({
  * Useful for dashboards and workflow-specific views
  */
 export const getDocumentsByWorkflowStatus = authQuery({
-	args: {
-		organizationId: v.id("organizations"),
-		workflowStatus: documentWorkflowStatusTuple,
-	},
-	handler: async (ctx, args) => {
-		const userId = ctx.auth.user._id;
+  args: {
+    organizationId: v.id("organizations"),
+    workflowStatus: documentWorkflowStatusTuple,
+  },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
 
-		await requireActiveMembership(ctx, userId, args.organizationId);
+    await requireActiveMembership(ctx, userId, args.organizationId);
 
-		const documents = await ctx.db
-			.query("documents")
-			.withIndex("by_organization_workflow", (q) =>
-				q
-					.eq("organizationId", args.organizationId)
-					.eq("workflowStatus", args.workflowStatus),
-			)
-			.filter((q) => q.eq(q.field("status"), "active"))
-			.collect();
+    const documents = await ctx.db
+      .query("documents")
+      .withIndex("by_organization_workflow", (q) =>
+        q.eq("organizationId", args.organizationId).eq("workflowStatus", args.workflowStatus),
+      )
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .collect();
 
-		const accessibleDocuments = [];
+    const accessibleDocuments = [];
 
-		for (const doc of documents) {
-			const accessResult = await checkDocumentAccess(ctx, userId, doc);
-			if (accessResult.hasAccess) {
-				accessibleDocuments.push(doc);
-			}
-		}
+    for (const doc of documents) {
+      const accessResult = await checkDocumentAccess(ctx, userId, doc);
+      if (accessResult.hasAccess) {
+        accessibleDocuments.push(doc);
+      }
+    }
 
-		return accessibleDocuments;
-	},
+    return accessibleDocuments;
+  },
 });
 
 /**
@@ -219,46 +206,42 @@ export const getDocumentsByWorkflowStatus = authQuery({
  * SEA-32: Composite query to retrieve document and related signatures
  */
 export const getDocumentWithSignatures = authQuery({
-	args: { documentId: v.id("documents") },
-	handler: async (ctx, args) => {
-		const userId = ctx.auth.user._id;
-		const { document } = await getDocumentWithAccessCheck(
-			ctx,
-			userId,
-			args.documentId,
-		);
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+    const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
 
-		const signatures = await ctx.db
-			.query("signatures")
-			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-			.collect();
+    const signatures = await ctx.db
+      .query("signatures")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
 
-		const fields = await ctx.db
-			.query("signature_fields")
-			.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-			.collect();
+    const fields = await ctx.db
+      .query("signature_fields")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
 
-		const enrichedSignatures = await Promise.all(
-			signatures.map(async (signature) => {
-				const field = await ctx.db.get(signature.fieldId);
-				const recipient = await ctx.db.get(signature.recipientId);
+    const enrichedSignatures = await Promise.all(
+      signatures.map(async (signature) => {
+        const field = await ctx.db.get(signature.fieldId);
+        const recipient = await ctx.db.get(signature.recipientId);
 
-				return {
-					...signature,
-					field,
-					recipient,
-				};
-			}),
-		);
+        return {
+          ...signature,
+          field,
+          recipient,
+        };
+      }),
+    );
 
-		return {
-			document,
-			signatures: enrichedSignatures,
-			fields,
-			signatureCount: signatures.length,
-			fieldCount: fields.length,
-		};
-	},
+    return {
+      document,
+      signatures: enrichedSignatures,
+      fields,
+      signatureCount: signatures.length,
+      fieldCount: fields.length,
+    };
+  },
 });
 
 /**
@@ -266,29 +249,23 @@ export const getDocumentWithSignatures = authQuery({
  * SEA-32: Composite query to retrieve document and audit history
  */
 export const getDocumentWithAuditTrail = authQuery({
-	args: { documentId: v.id("documents") },
-	handler: async (ctx, args) => {
-		const userId = ctx.auth.user._id;
-		const { document } = await getDocumentWithAccessCheck(
-			ctx,
-			userId,
-			args.documentId,
-		);
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+    const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
 
-		const auditLogs = await ctx.db
-			.query("audit_logs")
-			.withIndex("by_document_created", (q) =>
-				q.eq("documentId", args.documentId),
-			)
-			.order("desc")
-			.collect();
+    const auditLogs = await ctx.db
+      .query("audit_logs")
+      .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
+      .order("desc")
+      .collect();
 
-		return {
-			document,
-			auditLogs,
-			auditLogCount: auditLogs.length,
-		};
-	},
+    return {
+      document,
+      auditLogs,
+      auditLogCount: auditLogs.length,
+    };
+  },
 });
 
 /**
@@ -297,78 +274,68 @@ export const getDocumentWithAuditTrail = authQuery({
  * Useful for document detail pages that need all related data
  */
 export const getDocumentComplete = authQuery({
-	args: { documentId: v.id("documents") },
-	handler: async (ctx, args) => {
-		const userId = ctx.auth.user._id;
-		const { document } = await getDocumentWithAccessCheck(
-			ctx,
-			userId,
-			args.documentId,
-		);
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+    const { document } = await getDocumentWithAccessCheck(ctx, userId, args.documentId);
 
-		// Get all related data in parallel for performance
-		const [signatures, fields, recipients, auditLogs] = await Promise.all([
-			ctx.db
-				.query("signatures")
-				.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-				.collect(),
-			ctx.db
-				.query("signature_fields")
-				.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-				.collect(),
-			ctx.db
-				.query("recipients")
-				.withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-				.collect(),
-			ctx.db
-				.query("audit_logs")
-				.withIndex("by_document_created", (q) =>
-					q.eq("documentId", args.documentId),
-				)
-				.order("desc")
-				.take(50), // Limit audit logs to most recent 50
-		]);
+    // Get all related data in parallel for performance
+    const [signatures, fields, recipients, auditLogs] = await Promise.all([
+      ctx.db
+        .query("signatures")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+        .collect(),
+      ctx.db
+        .query("signature_fields")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+        .collect(),
+      ctx.db
+        .query("recipients")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+        .collect(),
+      ctx.db
+        .query("audit_logs")
+        .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
+        .order("desc")
+        .take(50), // Limit audit logs to most recent 50
+    ]);
 
-		// 4. Enrich signatures with field and recipient information
-		const enrichedSignatures = await Promise.all(
-			signatures.map(async (signature) => {
-				const field = await ctx.db.get(signature.fieldId);
-				const recipient = await ctx.db.get(signature.recipientId);
+    // 4. Enrich signatures with field and recipient information
+    const enrichedSignatures = await Promise.all(
+      signatures.map(async (signature) => {
+        const field = await ctx.db.get(signature.fieldId);
+        const recipient = await ctx.db.get(signature.recipientId);
 
-				return {
-					...signature,
-					field,
-					recipient,
-				};
-			}),
-		);
+        return {
+          ...signature,
+          field,
+          recipient,
+        };
+      }),
+    );
 
-		// 5. Calculate completion statistics
-		const requiredFields = fields.filter((f) => f.isRequired);
-		const completedFields = fields.filter((f) =>
-			signatures.some((s) => s.fieldId === f._id),
-		);
+    // 5. Calculate completion statistics
+    const requiredFields = fields.filter((f) => f.isRequired);
+    const completedFields = fields.filter((f) => signatures.some((s) => s.fieldId === f._id));
 
-		return {
-			document,
-			signatures: enrichedSignatures,
-			fields,
-			recipients,
-			auditLogs,
-			statistics: {
-				totalFields: fields.length,
-				requiredFields: requiredFields.length,
-				completedFields: completedFields.length,
-				signatureCount: signatures.length,
-				recipientCount: recipients.length,
-				auditLogCount: auditLogs.length,
-				completionPercentage:
-					fields.length > 0
-						? Math.round((completedFields.length / fields.length) * 100)
-						: 0,
-			},
-		};
-	},
+    return {
+      document,
+      signatures: enrichedSignatures,
+      fields,
+      recipients,
+      auditLogs,
+      statistics: {
+        totalFields: fields.length,
+        requiredFields: requiredFields.length,
+        completedFields: completedFields.length,
+        signatureCount: signatures.length,
+        recipientCount: recipients.length,
+        auditLogCount: auditLogs.length,
+        completionPercentage:
+          fields.length > 0 ? Math.round((completedFields.length / fields.length) * 100) : 0,
+      },
+    };
+  },
 });
 
 /**
@@ -376,37 +343,37 @@ export const getDocumentComplete = authQuery({
  * Validates access via signing token
  */
 export const getDocumentUrlByToken = query({
-	args: { signingToken: v.string() },
-	handler: async (ctx, args) => {
-		// 1. Find recipient by signing token
-		const recipient = await ctx.db
-			.query("document_recipients")
-			.withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
-			.first();
+  args: { signingToken: v.string() },
+  handler: async (ctx, args) => {
+    // 1. Find recipient by signing token
+    const recipient = await ctx.db
+      .query("document_recipients")
+      .withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
+      .first();
 
-		if (!recipient) {
-			throw new ConvexError("Invalid signing token");
-		}
+    if (!recipient) {
+      throw new ConvexError("Invalid signing token");
+    }
 
-		// 2. Check token expiration
-		if (recipient.tokenExpiresAt < Date.now()) {
-			throw new ConvexError("Signing token has expired");
-		}
+    // 2. Check token expiration
+    if (recipient.tokenExpiresAt < Date.now()) {
+      throw new ConvexError("Signing token has expired");
+    }
 
-		// 3. Get the document
-		const document = await ctx.db.get(recipient.documentId);
-		if (!document || document.status === "deleted") {
-			throw new ConvexError("Document not found");
-		}
+    // 3. Get the document
+    const document = await ctx.db.get(recipient.documentId);
+    if (!document || document.status === "deleted") {
+      throw new ConvexError("Document not found");
+    }
 
-		// 4. Generate download URL from storage
-		const url = await ctx.storage.getUrl(document.storageId);
-		if (!url) {
-			throw new ConvexError("File not found in storage");
-		}
+    // 4. Generate download URL from storage
+    const url = await ctx.storage.getUrl(document.storageId);
+    if (!url) {
+      throw new ConvexError("File not found in storage");
+    }
 
-		return url;
-	},
+    return url;
+  },
 });
 
 /**
@@ -415,12 +382,12 @@ export const getDocumentUrlByToken = query({
  */
 
 export const getDocumentInternal = internalQuery({
-	args: { documentId: v.id("documents") },
-	handler: async (ctx, args) => {
-		const document = await ctx.db.get(args.documentId);
-		if (!document || document.status === "deleted") {
-			return null;
-		}
-		return document;
-	},
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const document = await ctx.db.get(args.documentId);
+    if (!document || document.status === "deleted") {
+      return null;
+    }
+    return document;
+  },
 });

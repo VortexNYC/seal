@@ -16,8 +16,8 @@ import { internalMutation } from "../../_generated/server";
  * @returns Temporary upload URL valid for a short period
  */
 export const generateUploadUrl = internalMutation({
-	args: {},
-	handler: async (ctx): Promise<string> => {
-		return await ctx.storage.generateUploadUrl();
-	},
+  args: {},
+  handler: async (ctx): Promise<string> => {
+    return await ctx.storage.generateUploadUrl();
+  },
 });

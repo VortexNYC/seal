@@ -44,13 +44,15 @@
 ## Detailed Specifications
 
 ### Component Details
+
 - **Container**: Full-width Card component with elevation shadow
 - **Logo Area**: Brand logo, fixed height 48px (h-12)
-- **Header**: 
+- **Header**:
   - Title: "🚀 Choose Your Plan" (text-2xl font-semibold)
   - Subtitle: "Select a plan to create your workspace" (text-muted-foreground)
 
 ### Plan Cards Layout
+
 - **Grid**: Two-column equal width (grid-cols-2 gap-6)
 - **FREE Plan Card**:
   - Border: Card with outline variant (border-2 border-border)
@@ -64,13 +66,15 @@
   - CTA: Primary button with default variant
 
 ### Interactive Elements
-- **Buttons**: 
+
+- **Buttons**:
   - Free Plan: variant="outline" size="lg" class="w-full"
   - Pro Trial: variant="default" size="lg" class="w-full"
 - **Hover States**: Cards lift with shadow increase on hover
 - **Focus States**: Keyboard navigation with visible focus rings
 
 ### Responsive Design
+
 - **Desktop**: Two-column card layout (1200px+)
 - **Tablet**: Two-column stacked (768px+)
 - **Mobile**: Single column (< 768px)
@@ -116,6 +120,7 @@
 ## Detailed Specifications
 
 ### Component Details
+
 - **Container**: Card component with padding-6 and subtle border
 - **Logo Area**: Brand logo centered, height 48px
 - **Welcome Section**:
@@ -123,6 +128,7 @@
   - Subtitle: Instructional text (text-muted-foreground text-center)
 
 ### Form Elements
+
 - **Workspace Name Field**:
   - Label: FormLabel component with medium font weight
   - Input: FormField with Input component
@@ -132,18 +138,21 @@
   - Help Text: Muted guidance text below input
 
 ### Action Elements
-- **Create Button**: 
+
+- **Create Button**:
   - variant="default" size="lg" class="w-full mt-6"
   - Primary action, full width
   - Disabled until valid workspace name entered
 
 ### Information Display
+
 - **Owner Info Alert**:
   - Alert component with info icon
   - variant="default" (light blue background)
   - Clear ownership explanation
 
 ### Interaction States
+
 - **Input Focus**: Blue border and shadow focus ring
 - **Button Hover**: Slight color darkening and shadow
 - **Loading**: Button shows spinner and disabled state
@@ -199,6 +208,7 @@
 ## Detailed Specifications
 
 ### Component Details
+
 - **Container**: Card with elevated styling and padding
 - **Header Section**:
   - Icon: 🏢 building emoji for team context
@@ -206,12 +216,14 @@
   - Description: Two-line explanation (text-muted-foreground)
 
 ### Email Detection Display
-- **Email Badge**: 
+
+- **Email Badge**:
   - Badge component with secondary variant
   - Shows detected company email
   - Centered positioning with subtle background
 
 ### Form Interface
+
 - **Workspace Name Field**:
   - Pre-filled with company name extracted from email domain
   - Auto-suggestion algorithm based on email domain
@@ -219,6 +231,7 @@
   - Help text explaining auto-suggestion
 
 ### Action Hierarchy
+
 - **Primary Action**: "Create Team Workspace" button
   - variant="default" size="lg" class="w-full"
   - Recommended action prominently displayed
@@ -227,12 +240,14 @@
   - Alternative option less prominent
 
 ### Feature Highlight
+
 - **Team Benefits Alert**:
   - Info alert showcasing team workspace benefits
   - Rocket emoji for excitement
   - Key features: Collaboration, templates, billing
 
 ### Smart Detection Logic
+
 - **Email Analysis**: Corporate domain detection
 - **Name Generation**: Company name extraction from domain
 - **Recommendation**: Contextual workspace type suggestion
@@ -509,18 +524,21 @@
 ## Interaction Specifications
 
 ### Workspace Name Input
+
 - **Auto-suggestion**: Based on email domain for corporate accounts
 - **Real-time Validation**: Check name availability as user types
 - **Character Limits**: 3-50 characters, alphanumeric and spaces
 - **Conflict Resolution**: Suggest alternatives if name taken
 
 ### Use Case Selection
+
 - **Smart Defaults**: Auto-select based on email domain analysis
 - **Progressive Disclosure**: Show relevant features based on selection
 - **Later Modification**: Can be changed in workspace settings
 - **Feature Implications**: Affects onboarding flow and feature recommendations
 
 ### Team Invitation Flow
+
 - **Bulk Email Entry**: Support multiple emails (one per line or comma-separated)
 - **Email Validation**: Real-time format and domain checking
 - **Role Assignment**: Default member role with dropdown for alternatives
@@ -531,12 +549,14 @@
 ## Clerk Integration
 
 ### Organization Plugin
+
 - **Workspace Creation**: Leverage Clerk Organizations
 - **Owner Assignment**: Set creator as organization owner
 - **Member Invitations**: Send invitation emails via Clerk
 - **Role Management**: Integrate with Clerk roles for permissions
 
 ### Permission Setup
+
 - **Owner Permissions**: Full workspace access and management
 - **Default Member Role**: Standard document access and collaboration
 - **Admin Assignment**: Option to assign admin role during invitation
@@ -547,18 +567,21 @@
 ## Technical Integration
 
 ### Convex Backend
+
 - **Real-time Updates**: Workspace creation progress via Convex subscriptions
 - **Data Sync**: Immediate workspace data availability
 - **Member Management**: Real-time member status and invitation tracking
 - **Audit Trail**: Log all workspace creation and invitation activities
 
 ### Email Integration
+
 - **React Email**: Styled invitation email templates
 - **Resend Service**: Reliable email delivery for invitations
 - **Personalization**: Include workspace name and inviter information
 - **Tracking**: Monitor invitation email delivery and opening
 
 ### State Management
+
 - **Creation Progress**: Track workspace setup steps
 - **Error Handling**: Clear error recovery at each step
 - **Success Confirmation**: Positive feedback for completion
@@ -579,18 +602,21 @@
 ## Business Logic
 
 ### Workspace Naming
+
 - **Uniqueness**: Global workspace name uniqueness enforcement
 - **Suggestions**: Smart alternative generation for conflicts
 - **Domain Analysis**: Extract company name from email domain
 - **Reserved Names**: Prevent use of system/reserved names
 
 ### Team Size Detection
+
 - **Email Domain Analysis**: Detect corporate vs. personal emails
 - **Use Case Mapping**: Map selections to feature recommendations
 - **Billing Setup**: Each workspace gets independent billing/subscription
 - **Feature Access**: Configure available features based on workspace's chosen plan
 
 ### Onboarding Personalization
+
 - **Flow Customization**: Tailor next steps based on use case
 - **Feature Highlighting**: Show relevant features for workspace type
 - **Quick Actions**: Surface most relevant first actions

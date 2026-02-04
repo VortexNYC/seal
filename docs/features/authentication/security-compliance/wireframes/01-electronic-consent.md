@@ -150,18 +150,21 @@
 ## Interaction Specifications
 
 ### Consent Modal Behavior
+
 - **Required Checkbox**: Must be checked to enable "Continue" button
 - **Scroll Tracking**: Ensure user scrolled through full agreement text
 - **Session Storage**: Store consent temporarily until document completion
 - **Auto-Focus**: Focus on checkbox after modal opens
 
 ### Legal Compliance Features
+
 - **Timestamp Recording**: UTC timestamp when consent is given
 - **IP Address Logging**: Record user's IP for audit trail
 - **Device Information**: Store basic browser/device info
 - **Consent Version**: Track which version of consent was accepted
 
 ### Error Handling
+
 - **Network Issues**: Allow retry if consent submission fails
 - **Session Timeout**: Re-prompt for consent if session expires
 - **Browser Compatibility**: Fallback for older browsers
@@ -171,18 +174,21 @@
 ## Technical Integration
 
 ### Convex Backend
+
 - **Consent Storage**: Encrypted consent records with full audit trail
 - **User Linking**: Associate consent with user account and workspace
 - **Compliance Queries**: Fast retrieval for legal requirements
 - **Retention Management**: Automatic consent record retention
 
 ### Legal Compliance
+
 - **ESIGN Act Requirements**: Full disclosure and clear consent process
 - **UETA Compliance**: Electronic signature agreement standards
 - **Audit Trail**: Complete record of consent process
 - **Withdrawal Process**: Clear path for users to withdraw consent
 
 ### Accessibility Features
+
 - **Screen Reader**: Full agreement text accessible
 - **Keyboard Navigation**: Tab through all interactive elements
 - **Focus Management**: Clear focus indicators

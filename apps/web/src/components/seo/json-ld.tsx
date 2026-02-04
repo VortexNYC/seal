@@ -11,52 +11,49 @@
  */
 
 import {
-	generateOrganizationSchema,
-	generateProductSchema,
-	generateWebSiteSchema,
-	type OrganizationSchema,
-	type ProductSchema,
-	type WebSiteSchema,
+  generateOrganizationSchema,
+  generateProductSchema,
+  generateWebSiteSchema,
+  type OrganizationSchema,
+  type ProductSchema,
+  type WebSiteSchema,
 } from "@/lib/seo";
 
 interface JsonLdProps<T> {
-	data: T;
+  data: T;
 }
 
 /**
  * Generic JSON-LD script component
  */
 function JsonLdScript<T extends object>({ data }: JsonLdProps<T>) {
-	return (
-		<script
-			type="application/ld+json"
-			dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-		/>
-	);
+  return (
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+  );
 }
 
 /**
  * Organization JSON-LD - Use on the homepage/landing page
  */
 function OrganizationJsonLd() {
-	const schema = generateOrganizationSchema();
-	return <JsonLdScript<OrganizationSchema> data={schema} />;
+  const schema = generateOrganizationSchema();
+  return <JsonLdScript<OrganizationSchema> data={schema} />;
 }
 
 /**
  * Product/Software Application JSON-LD - Use on the homepage
  */
 function ProductJsonLd() {
-	const schema = generateProductSchema();
-	return <JsonLdScript<ProductSchema> data={schema} />;
+  const schema = generateProductSchema();
+  return <JsonLdScript<ProductSchema> data={schema} />;
 }
 
 /**
  * WebSite JSON-LD - Enables Google sitelinks search box
  */
 function WebSiteJsonLd() {
-	const schema = generateWebSiteSchema();
-	return <JsonLdScript<WebSiteSchema> data={schema} />;
+  const schema = generateWebSiteSchema();
+  return <JsonLdScript<WebSiteSchema> data={schema} />;
 }
 
 /**
@@ -64,11 +61,11 @@ function WebSiteJsonLd() {
  * Use this on the homepage for maximum SEO impact
  */
 export function LandingPageJsonLd() {
-	return (
-		<>
-			<OrganizationJsonLd />
-			<ProductJsonLd />
-			<WebSiteJsonLd />
-		</>
-	);
+  return (
+    <>
+      <OrganizationJsonLd />
+      <ProductJsonLd />
+      <WebSiteJsonLd />
+    </>
+  );
 }

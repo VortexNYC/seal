@@ -3,10 +3,11 @@
 ## Quick Reference
 
 ### Current Role Hierarchy (in `auth.utils.ts`)
+
 ```
 system: 150  // System-level access (highest)
 owner: 100   // Organization owner
-admin: 75    // Organization administrator  
+admin: 75    // Organization administrator
 member: 50   // Regular member
 viewer: 25   // Read-only access (lowest)
 ```
@@ -14,6 +15,7 @@ viewer: 25   // Read-only access (lowest)
 ### Key Files
 
 **Backend (Convex)**:
+
 - `/apps/backend/convex/auth.ts` - Authentication context, query/mutation wrappers
 - `/apps/backend/convex/auth.utils.ts` - Permission logic, role hierarchy, helper functions
 - `/apps/backend/convex/organizations/queries.ts` - Organization data queries
@@ -23,6 +25,7 @@ viewer: 25   // Read-only access (lowest)
 - `/apps/backend/convex/schemas/organization_members.ts` - Member schema with role field
 
 **Frontend (React)**:
+
 - `/apps/web/src/routes/_authenticated/$slug.tsx` - Workspace layout with permission fetching
 - `/apps/web/src/routes/_authenticated/$slug/settings/team.tsx` - Team management UI
 - `/apps/web/src/components/app-sidebar.tsx` - Sidebar with permission-based menu items
@@ -39,14 +42,14 @@ viewer: 25   // Read-only access (lowest)
 export const organizationMembersTable = defineTable({
   userId: v.id("users"),
   organizationId: v.id("organizations"),
-  
-  role: organizationMemberRoleTuple,  // owner | admin | member | viewer | system
-  status: organizationMemberStatus,   // active | inactive | suspended | pending | blocked
-  permissions: v.optional(v.array(v.string())),  // Individual permission overrides
-  
+
+  role: organizationMemberRoleTuple, // owner | admin | member | viewer | system
+  status: organizationMemberStatus, // active | inactive | suspended | pending | blocked
+  permissions: v.optional(v.array(v.string())), // Individual permission overrides
+
   isPrimary: v.boolean(),
   externalId: v.optional(v.string()),
-})
+});
 ```
 
 **Key Index**: `by_user_organization` - Enables fast lookups of member record
@@ -68,7 +71,7 @@ export const DOCUMENT_SIGNING_PERMISSIONS = {
   ORG_USERS_INVITE: "org:users:invite",
   ORG_USERS_REMOVE: "org:users:remove",
   ORG_USERS_UPDATE_ROLE: "org:users:update_role",
-  
+
   // Documents
   DOCUMENTS_READ: "documents:read",
   DOCUMENTS_CREATE: "documents:create",
@@ -77,7 +80,7 @@ export const DOCUMENT_SIGNING_PERMISSIONS = {
   DOCUMENTS_SEND: "documents:send",
   DOCUMENTS_CANCEL: "documents:cancel",
   DOCUMENTS_DOWNLOAD: "documents:download",
-  
+
   // ... more permissions for templates, subscriptions, etc.
 } as const;
 ```
@@ -168,7 +171,7 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
     "reports:read",
   ],
 
-  system: ["*"],  // Wildcard - all permissions
+  system: ["*"], // Wildcard - all permissions
 };
 ```
 
@@ -184,11 +187,11 @@ All mutations/queries use `getAuthContext(ctx)` which returns:
 
 ```typescript
 export type AuthContext = {
-  member: Doc<"organization_members">;  // Contains role + status
+  member: Doc<"organization_members">; // Contains role + status
   user: Doc<"users">;
   organization: Doc<"organizations">;
   subscription?: Doc<"subscriptions">;
-  
+
   // Helper methods
   hasPermission: (permission: string) => boolean;
   hasRole: (role: OrganizationMemberRole) => boolean;
@@ -212,14 +215,14 @@ export const createInvitation = adminMutation({
     // adminMutation automatically:
     // 1. Calls getAuthContext(ctx)
     // 2. Checks auth.hasRole("admin") - throws if not admin+
-    
+
     const { organization, user: currentUser } = ctx.auth;
-    
+
     // Explicit permission check if needed
     if (!hasPermission(ctx.auth.member, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE)) {
       throw new ConvexError("Insufficient permissions to invite members");
     }
-    
+
     // Rest of mutation logic...
   }
 });
@@ -271,15 +274,15 @@ In workspace layout (`_authenticated/$slug.tsx`):
 ```typescript
 function WorkspaceLayout() {
   const { slug } = Route.useParams();
-  
+
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
   const orgId = organization?._id as Id<"organizations"> | undefined;
-  
+
   const permissions = useQuery(
     api.organizations.queries.getUserPermissions,
-    orgId ? { organizationId: orgId } : "skip"
+    orgId ? { organizationId: orgId } : "skip",
   );
-  
+
   // Returns object with:
   // {
   //   role: "admin" | "owner" | "member" | "viewer",
@@ -307,21 +310,21 @@ Example from `settings/team.tsx` or `app-sidebar.tsx`:
 ```typescript
 function TeamSettingsPage() {
   const permissions = useQuery(...);
-  
+
   if (!permissions?.permissions.canViewMembers) {
     return <Unauthorized />;
   }
-  
+
   return (
     <div>
       {permissions.permissions.canInviteMembers && (
         <button onClick={handleInvite}>Invite Member</button>
       )}
-      
+
       {permissions.permissions.canUpdateRoles && (
         <RoleSelector member={member} />
       )}
-      
+
       {permissions.permissions.canRemoveMembers && (
         <button onClick={handleRemove}>Remove</button>
       )}
@@ -344,7 +347,7 @@ export const addMember = adminMutation({
   handler: async (ctx, args) => {
     const { organization } = ctx.auth;
     // Mutation logic...
-  }
+  },
 });
 ```
 
@@ -358,7 +361,7 @@ export const createInvitation = adminMutation({
       throw new ConvexError("Cannot invite members");
     }
     // ...
-  }
+  },
 });
 ```
 
@@ -369,24 +372,24 @@ export const grantAccess = authMutation({
   handler: async (ctx, args) => {
     const currentUserId = ctx.auth.user._id;
     const document = await ctx.db.get(args.documentId);
-    
+
     // Check if user can manage document
     let canManage = document.ownerId === currentUserId;
     if (!canManage) {
       const access = await ctx.db
         .query("document_access")
         .withIndex("by_document_user", (q) =>
-          q.eq("documentId", document._id).eq("userId", currentUserId)
+          q.eq("documentId", document._id).eq("userId", currentUserId),
         )
         .first();
       canManage = access?.permissionLevel === "manage" && !access.revokedAt;
     }
-    
+
     if (!canManage) {
       throw new ConvexError("Only owner or managers can grant access");
     }
     // ...
-  }
+  },
 });
 ```
 
@@ -413,11 +416,11 @@ In `ROLE_PERMISSIONS`, add to roles that should have it:
 export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
   owner: [
     // ... existing
-    "feature:new_action",  // Add here
+    "feature:new_action", // Add here
   ],
   admin: [
     // ... existing
-    "feature:new_action",  // Add here if admin should have it
+    "feature:new_action", // Add here if admin should have it
   ],
   member: [
     // ... existing
@@ -446,7 +449,7 @@ export const performNewFeature = authMutation({
       throw new ConvexError("Insufficient permissions for this feature");
     }
     // Feature logic...
-  }
+  },
 });
 ```
 
@@ -457,11 +460,11 @@ In your component:
 ```typescript
 function FeatureComponent() {
   const permissions = useQuery(api.organizations.queries.getUserPermissions, ...);
-  
+
   if (!permissions?.permissions.canDoNewFeature) {
     return <FeatureLockedMessage />;
   }
-  
+
   return <FeatureUI />;
 }
 ```
@@ -478,17 +481,17 @@ Flow: User signs up → Clerk webhook creates user → Frontend calls `ensurePer
 export const ensurePersonalOrganization = mutation({
   handler: async (ctx, args) => {
     // ... create org ...
-    
+
     // Creator automatically gets OWNER role
     await ctx.db.insert("organization_members", {
       organizationId: organization._id,
       userId: user._id,
-      role: "owner",  // <-- Assigned here
+      role: "owner", // <-- Assigned here
       status: "active",
       isPrimary: true,
       permissions: [],
     });
-  }
+  },
 });
 ```
 
@@ -500,15 +503,15 @@ Flow: Admin sends invitation → User signs up with invited email → Auto-accep
 export const createInvitation = adminMutation({
   handler: async (ctx, args) => {
     // ... create invitation record ...
-    
+
     await ctx.db.insert("organization_invitations", {
       email: args.email,
-      role: args.role,  // <-- Role specified by inviter
+      role: args.role, // <-- Role specified by inviter
       status: "pending",
       // ...
     });
     // Later: When user signs up, webhook accepts invitation and creates member
-  }
+  },
 });
 ```
 
@@ -518,19 +521,19 @@ export const createInvitation = adminMutation({
 export const updateMemberRole = adminMutation({
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
-    
+
     const membership = await ctx.db.get(args.memberId);
-    
+
     // Only owner can change owner role
     if (args.role === "owner" && currentMembership?.role !== "owner") {
       throw new ConvexError("Only owners can assign owner role");
     }
-    
+
     // Update role
     await ctx.db.patch(args.memberId, {
-      role: args.role,  // <-- Role changed here
+      role: args.role, // <-- Role changed here
     });
-  }
+  },
 });
 ```
 
@@ -538,22 +541,22 @@ export const updateMemberRole = adminMutation({
 
 ## Permission-Based Features Matrix
 
-| Feature | Owner | Admin | Member | Viewer |
-|---------|-------|-------|--------|--------|
-| Create Documents | ✓ | ✓ | ✓ | ✗ |
-| Edit Documents | ✓ | ✓ | ✓* | ✗ |
-| Delete Documents | ✓ | ✓ | ✗ | ✗ |
-| Share Documents | ✓ | ✓ | ✗ | ✗ |
-| Download Documents | ✓ | ✓ | ✓ | ✓ |
-| View Members | ✓ | ✓ | ✗ | ✗ |
-| Invite Members | ✓ | ✓ | ✗ | ✗ |
-| Change Roles | ✓ | ✗ | ✗ | ✗ |
-| Remove Members | ✓ | ✗ | ✗ | ✗ |
-| Manage Settings | ✓ | ✗ | ✗ | ✗ |
-| View Billing | ✓ | ✓ | ✗ | ✗ |
-| Manage Billing | ✓ | ✗ | ✗ | ✗ |
+| Feature            | Owner | Admin | Member | Viewer |
+| ------------------ | ----- | ----- | ------ | ------ |
+| Create Documents   | ✓     | ✓     | ✓      | ✗      |
+| Edit Documents     | ✓     | ✓     | ✓\*    | ✗      |
+| Delete Documents   | ✓     | ✓     | ✗      | ✗      |
+| Share Documents    | ✓     | ✓     | ✗      | ✗      |
+| Download Documents | ✓     | ✓     | ✓      | ✓      |
+| View Members       | ✓     | ✓     | ✗      | ✗      |
+| Invite Members     | ✓     | ✓     | ✗      | ✗      |
+| Change Roles       | ✓     | ✗     | ✗      | ✗      |
+| Remove Members     | ✓     | ✗     | ✗      | ✗      |
+| Manage Settings    | ✓     | ✗     | ✗      | ✗      |
+| View Billing       | ✓     | ✓     | ✗      | ✗      |
+| Manage Billing     | ✓     | ✗     | ✗      | ✗      |
 
-*Members can only edit documents they own or have explicit "edit" access to
+\*Members can only edit documents they own or have explicit "edit" access to
 
 ---
 
@@ -566,7 +569,8 @@ Statuses: `active`, `inactive`, `suspended`, `pending`, `blocked`
 
 ```typescript
 // In auth.ts - getAuthContext()
-if (!AuthUtils.isAccountValid(member)) {  // status !== "active"
+if (!AuthUtils.isAccountValid(member)) {
+  // status !== "active"
   const errorType = getStatusErrorType(member.status);
   throw new ConvexError(createAuthError(errorType).message);
 }
@@ -581,11 +585,13 @@ Only users with `status: "active"` can perform any actions, regardless of role.
 Documents have TWO levels of access control:
 
 ### 1. Sharing Mode (At document level)
+
 - `private` - Only owner
 - `workspace` - All org members
 - `specific` - Only explicit access grants (requires Pro plan)
 
 ### 2. Permission Level (For specific mode only)
+
 - `view` - Read only
 - `edit` - Can modify
 - `manage` - Can share, transfer, delete
@@ -596,15 +602,13 @@ let hasAccess = document.ownerId === userId;
 
 if (!hasAccess) {
   if (document.sharingMode === "workspace") {
-    hasAccess = true;  // All members get access
+    hasAccess = true; // All members get access
   } else if (document.sharingMode === "specific") {
     const access = await ctx.db
       .query("document_access")
-      .withIndex("by_document_user", (q) =>
-        q.eq("documentId", document._id).eq("userId", userId)
-      )
+      .withIndex("by_document_user", (q) => q.eq("documentId", document._id).eq("userId", userId))
       .first();
-    hasAccess = access !== null && !access.revokedAt;  // Check explicit grant
+    hasAccess = access !== null && !access.revokedAt; // Check explicit grant
   }
 }
 ```
@@ -620,4 +624,3 @@ if (!hasAccess) {
 5. **Role hierarchy is enforced** - Member permissions subset of Admin subset of Owner
 6. **Team sharing requires Pro plan** - Checked in `updateSharingMode()`
 7. **Document owner cannot lose all access** - Explicit access created when transferring ownership
-

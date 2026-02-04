@@ -8,7 +8,7 @@
 ### Document Library ⚡ **Important**
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                 CORE FEATURES                                          ┃
+┃ CORE FEATURES ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ◉ **Document listing** with search and filters
@@ -21,25 +21,25 @@
 ◉ **Freemium quota display** (Free plan document sending count)
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                            TECHNOLOGY STACK INTEGRATION                                ┃
+┃ TECHNOLOGY STACK INTEGRATION ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ╭─ Real-time Data Layer ───────────────────────────────────────────────────────────────╮
-│ • **Convex**: Real-time queries, subscriptions, and live document updates            │
-│ • **fuzzysort**: Client-side search on live Convex data (5KB, <1ms on 13k files)    │
+│ • **Convex**: Real-time queries, subscriptions, and live document updates │
+│ • **fuzzysort**: Client-side search on live Convex data (5KB, <1ms on 13k files) │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ User Interface ───────────────────────────────────────────────────────────────────╮
-│ • **TanStack Router**: Client-side routing for document library                     │
-│ • **React**: Component state management and loading indicators                       │
+│ • **TanStack Router**: Client-side routing for document library │
+│ • **React**: Component state management and loading indicators │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Security & Access Control ─────────────────────────────────────────────────────────╮
-│ • **Clerk Roles & Permissions**: Workspace-scoped access control for document visibility     │
+│ • **Clerk Roles & Permissions**: Workspace-scoped access control for document visibility │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                BUSINESS REQUIREMENTS                                    ┃
+┃ BUSINESS REQUIREMENTS ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ■ Fast document discovery and navigation
@@ -55,32 +55,36 @@
 ## Freemium Model Integration
 
 ### Free Plan Document Library
+
 - Display document quota prominently (8/10 documents used)
 - Show upgrade prompts when approaching limit (at 80% usage)
 - Block document sending when limit reached
 - Clear monthly reset date display
 - Full access to all library features (folders, tags, bulk operations, search)
 
-### Pro Plan Document Library  
+### Pro Plan Document Library
+
 - Clean interface without quota counters or upgrade prompts
 - Unlimited document sending
 - API access for document management
 - Multiple workspace users support
 
 ### Document Organization Features
+
 - **Folders**: Hierarchical folder structure for document organization
-- **Tags**: Flexible tagging system for document categorization  
+- **Tags**: Flexible tagging system for document categorization
 - **Search**: Full-text search across document content and metadata
 - **Filters**: Filter by date, status, type, folder, tags
 - **Sorting**: Sort by name, date, size, status, recent activity
 
 ╔══════════════════════════════════════════════════════════════════════════════════════════╗
-║                           🔧 EDGE CASES & ERROR HANDLING                                ║
+║ 🔧 EDGE CASES & ERROR HANDLING ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════╝
 
 ### Document Library Workflow States & Edge Cases
 
 #### Happy Path Document Library Workflow
+
 1. **Library Access**: User navigates to document library in current workspace
 2. **Convex Subscription**: Real-time subscription to workspace documents
 3. **Live Document List**: Documents appear with live status updates via Convex
@@ -89,6 +93,7 @@
 6. **Live Status Updates**: Document status changes propagate instantly to all users
 
 #### Convex Document Loading & Real-time Subscriptions Edge Cases
+
 - [ ] **Convex Subscription Success**: Real-time subscription to workspace documents established
   - Live Data: Documents appear immediately with current status (draft, pending, completed)
   - Real-time Updates: Document changes propagate instantly to UI
@@ -111,6 +116,7 @@
   - Live Updates: New document uploads appear instantly via subscription
 
 #### React State Management with Convex Edge Cases
+
 - [ ] **React + Convex Pattern**: Proper integration with Convex's automatic caching
   - Loading States: React useState and useEffect for component loading states
   - Error Handling: React error boundaries for Convex query failures
@@ -129,6 +135,7 @@
   - User Experience: Clean error states without losing application state
 
 #### Client-side Search with Live Data (fuzzysort) Edge Cases
+
 - [ ] **Search on Live Convex Data**: fuzzysort searches real-time document array
   - Data Source: fuzzysort operates on current Convex subscription data
   - Live Search: Search results update automatically as documents change
@@ -152,6 +159,7 @@
   - Filter Persistence: Maintain search filters across real-time data changes
 
 #### Convex Real-time Document Status Updates Edge Cases
+
 - [ ] **Live Status Propagation**: Document status changes propagate via Convex subscriptions
   - Instant Updates: Status changes visible across all user sessions immediately
   - Multiple Users: All workspace members see status updates in real-time
@@ -170,6 +178,7 @@
   - Cross-user Consistency: All users see identical status at all times
 
 #### Document Actions with Convex Mutations Edge Cases
+
 - [ ] **Convex Mutation Success**: Document actions execute via Convex mutations
   - Optimistic Updates: Actions appear successful immediately in UI
   - Server Confirmation: Convex confirms mutation success/failure
@@ -192,6 +201,7 @@
   - Partial Failures: Handle cases where some operations succeed, others fail
 
 #### Workspace Context & Access Control Edge Cases
+
 - [ ] **Workspace-scoped Queries**: Convex queries filtered by current workspace
   - Automatic Scoping: All document queries automatically scoped to active workspace
   - Context Switching: Document list updates immediately when switching workspaces
@@ -210,6 +220,7 @@
   - Sharing Changes: Sharing permission changes propagate instantly
 
 #### Convex Pagination & Performance Edge Cases
+
 - [ ] **Convex Paginated Queries**: Efficient loading of large document collections
   - Cursor-based Pagination: Use Convex cursor-based pagination for performance
   - Live Pagination: Paginated data still receives real-time updates
@@ -228,6 +239,7 @@
   - Performance: Maintain search performance across paginated datasets
 
 #### Error Handling & Connection Recovery Edge Cases
+
 - [ ] **Convex Connection Loss**: Handle temporary connection interruptions
   - Detection: Convex client detects connection loss automatically
   - Reconnection: Automatic reconnection with state recovery

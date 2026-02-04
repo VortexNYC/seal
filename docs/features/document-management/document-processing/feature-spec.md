@@ -8,7 +8,7 @@
 ### Document Processing ⭐ **Critical**
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                 CORE FEATURES                                          ┃
+┃ CORE FEATURES ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ◉ **PDF parsing** and page management via PDF.js
@@ -21,29 +21,29 @@
 ◉ **Document templates** for reuse
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                            TECHNOLOGY STACK INTEGRATION                                ┃
+┃ TECHNOLOGY STACK INTEGRATION ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ╭─ PDF Processing ───────────────────────────────────────────────────────────────────╮
-│ • **PDF.js**: PDF viewing and text extraction via `page.getTextContent()`           │
-│ • **PDF-lib**: PDF manipulation and signature embedding                             │
-│ • **Web Crypto API**: Native browser cryptographic operations (secure)             │
+│ • **PDF.js**: PDF viewing and text extraction via `page.getTextContent()` │
+│ • **PDF-lib**: PDF manipulation and signature embedding │
+│ • **Web Crypto API**: Native browser cryptographic operations (secure) │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ User Interface & Interaction ─────────────────────────────────────────────────────────╮
-│ • **TanStack Router**: Client-side routing for document processing                  │
-│ • **Konva.js**: Signature field placement UI overlay (optimized event listeners)     │
-│ • **react-signature-pad**: Signature capture with superior touch support             │
+│ • **TanStack Router**: Client-side routing for document processing │
+│ • **Konva.js**: Signature field placement UI overlay (optimized event listeners) │
+│ • **react-signature-pad**: Signature capture with superior touch support │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Storage & Security ──────────────────────────────────────────────────────────────────╮
-│ • **Convex**: Document metadata storage, version control, and real-time updates     │
-│ • **Clerk Roles & Permissions**: Document-level access control                               │
-│ • **Zod**: Metadata validation and schema enforcement                               │
+│ • **Convex**: Document metadata storage, version control, and real-time updates │
+│ • **Clerk Roles & Permissions**: Document-level access control │
+│ • **Zod**: Metadata validation and schema enforcement │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                BUSINESS REQUIREMENTS                                    ┃
+┃ BUSINESS REQUIREMENTS ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ■ Reliable PDF processing for all document types
@@ -60,6 +60,7 @@
 ## Freemium Model Integration
 
 ### Document Processing for All Plans
+
 - **Free Plan**: Full document processing capabilities (10 documents sending limit per month)
 - **Pro Plan**: Same processing capabilities + unlimited document sending + API access + multiple workspace users
 - **No Processing Restrictions**: Identical processing features for both plans
@@ -67,18 +68,20 @@
 - **Feature Parity**: No artificial limitations on processing, templates, or field types
 
 ### Processing Performance
+
 - **Client-Side Processing**: Fast, secure processing in browser
 - **No Server Dependencies**: Reduces costs, works offline
 - **Real-Time Updates**: Convex provides live status updates
 - **Mobile Optimized**: Full processing capabilities on mobile devices
 
 ╔══════════════════════════════════════════════════════════════════════════════════════════╗
-║                           🔧 EDGE CASES & ERROR HANDLING                                ║
+║ 🔧 EDGE CASES & ERROR HANDLING ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════╝
 
 ### Final Optimized Tech Stack (Client-Side Legal Compliance)
+
 1. **PDF.js** - PDF viewing and text extraction via `page.getTextContent()`
-2. **PDF-lib** - PDF manipulation and signature embedding  
+2. **PDF-lib** - PDF manipulation and signature embedding
 3. **Konva.js** - Signature field placement UI overlay (optimized event listeners)
 4. **react-signature-pad** - Signature capture with superior touch support
 5. **Web Crypto API** - Native browser cryptographic operations (secure)
@@ -86,6 +89,7 @@
 ### Document Processing Workflow States & Edge Cases
 
 #### Happy Path Processing Workflow (Client-Side)
+
 1. **Document Upload**: PDF received and validated
 2. **PDF.js Loading**: Parse document structure and load pages
 3. **Text Extraction**: Use `page.getTextContent()` for search indexing
@@ -94,13 +98,14 @@
 6. **Ready for Fields**: Document ready for signature field placement
 
 #### PDF.js Structure Analysis & Loading Edge Cases
+
 - [ ] **Standard PDF Loading**: PDF.js successfully parses document
   - Success: All pages accessible via `pdf.getPage()`
   - Metadata: Extract page count, dimensions, document properties
   - Text Layer: `page.getTextContent()` returns searchable text
 - [ ] **PDF.js Loading Failure**: Document cannot be parsed by PDF.js
   - Error: "Document format not supported or corrupted"
-  - Fallback: Store document but disable preview and overlay features  
+  - Fallback: Store document but disable preview and overlay features
   - User Option: "Document uploaded but advanced features unavailable"
 - [ ] **PDF.js Worker Initialization Failure**: Web worker fails to start
   - Cause: Browser security restrictions or resource loading issues
@@ -112,6 +117,7 @@
   - Recovery: Allow retry for failed pages
 
 #### PDF.js Text Extraction Edge Cases (getTextContent)
+
 - [ ] **Successful Text Extraction**: `page.getTextContent()` returns clean text
   - Success: Full text search capabilities enabled
   - Indexing: Store extracted text in searchable format
@@ -134,6 +140,7 @@
   - Document Handling: Mark pages as "text" vs "image-only"
 
 #### PDF.js Performance & Resource Management Edge Cases
+
 - [ ] **Large Document Handling**: PDF with 100+ pages
   - PDF.js Limit: Recommended maximum 25 pages rendered simultaneously
   - Implementation: Virtual scrolling with on-demand page rendering
@@ -152,6 +159,7 @@
   - User Feedback: "Document queued for processing"
 
 #### Konva.js Canvas Overlay Edge Cases
+
 - [ ] **Canvas Overlay Initialization**: Konva.js stage creation over PDF page
   - Success: Canvas overlay properly aligned with PDF page dimensions
   - Coordinate Mapping: PDF coordinates correctly mapped to canvas coordinates
@@ -178,6 +186,7 @@
   - WebGL: Canvas fallback when WebGL not available
 
 #### react-signature-pad Integration Edge Cases
+
 - [ ] **Signature Capture Success**: Clean signature capture with proper touch support
   - Touch Support: Pressure sensitivity works correctly on touch devices
   - Quality: High-quality signature image generation
@@ -204,6 +213,7 @@
   - State Management: Proper signature state tracking
 
 #### PDF-lib Signature Embedding Edge Cases
+
 - [ ] **PDF-lib Document Loading**: Load PDF for signature embedding
   - Success: Same document loads successfully in both PDF.js and PDF-lib
   - Compatibility: Document structure supported by both libraries
@@ -226,6 +236,7 @@
   - Metadata: Update document metadata to reflect signature addition
 
 #### Web Crypto API Integration Edge Cases
+
 - [ ] **Crypto API Availability**: Browser supports Web Crypto API
   - Success: Native crypto functions available for secure operations
   - Performance: Fast cryptographic operations using native implementation
@@ -248,6 +259,7 @@
   - Performance: Native implementation provides fast secure random generation
 
 #### Legal Compliance Data Collection Edge Cases
+
 - [ ] **Intent to Sign Capture**: User clearly indicates signing intent
   - UI Implementation: Explicit "Sign Document" button with confirmation
   - Data Recording: Timestamp, user ID, IP address, document hash
@@ -266,10 +278,11 @@
   - Integrity: Audit trail protected against modification
 - [ ] **Cross-Device Signing**: User signs on different device than uploader
   - Session Management: Secure session transfer between devices
-  - Identity Verification: Confirm signer identity across devices  
+  - Identity Verification: Confirm signer identity across devices
   - Data Consistency: Maintain audit trail continuity across device changes
 
 #### Error Handling and Recovery Edge Cases
+
 - [ ] **Complete Processing Failure**: All processing steps fail
   - Graceful Degradation: Store document with basic functionality only
   - User Communication: Clear explanation of available limited features

@@ -3,10 +3,13 @@
 ## Context
 
 ### Original Request
+
 Create comprehensive developer documentation for Seal's API, Webhooks, and MCP server using Fumadocs in the apps/web/ directory.
 
 ### Interview Summary
+
 **Key Discussions**:
+
 - **Scope**: Full Developer Portal (API Reference + Guides + MCP Integration + Webhook Setup)
 - **Interactivity**: Static MDX docs only (no playground, no OpenAPI UI)
 - **Access**: Public at /docs (no authentication required)
@@ -16,15 +19,18 @@ Create comprehensive developer documentation for Seal's API, Webhooks, and MCP s
 - **QA Strategy**: Manual verification (visual browser checks + build verification)
 
 **Research Findings**:
+
 - **API v1**: 30+ REST endpoints across 6 modules (Documents, Recipients, Templates, Signatures, Webhooks, Uploads)
 - **Authentication**: Clerk-based API keys (ak_xxx) with scope-based access control
-- **Webhooks**: 17 outbound event types (document.*, recipient.*, template.*) + HMAC-SHA256 signatures
+- **Webhooks**: 17 outbound event types (document._, recipient._, template.\*) + HMAC-SHA256 signatures
 - **MCP Server**: 25 tools + 4 resources, Clerk OAuth auth, deployed at mcp.seal.nyc
 - **React Version**: 19.2.3 (meets Fumadocs requirement of ≥19.2.0)
 - **Fumadocs**: Official Vite + TanStack Router support with rich MDX components
 
 ### Metis Review
+
 **Identified Gaps** (addressed):
+
 - React version validation → VERIFIED: 19.2.3 meets requirements
 - Vite config requirements → Added task for resolve.noExternal
 - Provider selection → Must use `fumadocs-ui/provider/tanstack`
@@ -36,9 +42,11 @@ Create comprehensive developer documentation for Seal's API, Webhooks, and MCP s
 ## Work Objectives
 
 ### Core Objective
+
 Create a public developer documentation portal at /docs using Fumadocs, covering API reference, webhooks, and MCP integration for external developers.
 
 ### Concrete Deliverables
+
 - Fumadocs infrastructure in apps/web (Vite plugin, TanStack Router routes, Tailwind config)
 - Content directory structure at apps/web/content/docs/
 - Getting Started documentation (auth, quick start)
@@ -47,6 +55,7 @@ Create a public developer documentation portal at /docs using Fumadocs, covering
 - MCP Integration documentation (tools, resources, auth)
 
 ### Definition of Done
+
 - [x] /docs loads without authentication
 - [x] All navigation links work (no 404s)
 - [x] Code examples are syntax-highlighted
@@ -55,6 +64,7 @@ Create a public developer documentation portal at /docs using Fumadocs, covering
 - [x] `bun run typecheck` passes
 
 ### Must Have
+
 - Public /docs route (no auth required)
 - Getting Started with authentication guide
 - Complete API v1 endpoint documentation
@@ -64,6 +74,7 @@ Create a public developer documentation portal at /docs using Fumadocs, covering
 - Fumadocs built-in search
 
 ### Must NOT Have (Guardrails)
+
 - Interactive API playground
 - OpenAPI/Swagger UI generation
 - Code examples in Python, Go, Ruby, etc. (TypeScript + cURL only)
@@ -81,6 +92,7 @@ Create a public developer documentation portal at /docs using Fumadocs, covering
 ## Verification Strategy (MANDATORY)
 
 ### Test Decision
+
 - **Infrastructure exists**: YES (Playwright E2E in apps/web/e2e/)
 - **User wants tests**: Manual verification only
 - **Framework**: N/A (manual QA for documentation)
@@ -90,11 +102,13 @@ Create a public developer documentation portal at /docs using Fumadocs, covering
 Each task includes manual verification:
 
 **For Infrastructure Tasks:**
+
 - Verify `bun run dev` starts without errors
 - Navigate to /docs in browser
 - Check console for errors
 
 **For Content Tasks:**
+
 - Navigate to the new page in browser
 - Verify rendering (headings, code blocks, links)
 - Test code example copy-to-clipboard
@@ -132,20 +146,20 @@ Each task includes manual verification:
 
 ## Parallelization
 
-| Group | Tasks | Reason |
-|-------|-------|--------|
-| A | 7, 8, 9, 10 | Independent Getting Started pages |
-| B | 11, 12, 13, 14, 15, 16 | Independent API Reference pages |
-| C | 17, 18, 19 | Independent Webhook pages |
-| D | 20, 21, 22 | Independent MCP pages |
+| Group | Tasks                  | Reason                            |
+| ----- | ---------------------- | --------------------------------- |
+| A     | 7, 8, 9, 10            | Independent Getting Started pages |
+| B     | 11, 12, 13, 14, 15, 16 | Independent API Reference pages   |
+| C     | 17, 18, 19             | Independent Webhook pages         |
+| D     | 20, 21, 22             | Independent MCP pages             |
 
-| Task | Depends On | Reason |
-|------|------------|--------|
-| 1 | 0 | Dependencies need pre-flight check |
-| 2-5 | 1 | Configuration needs dependencies |
-| 6 | 5 | Content needs routes |
-| 7-10 | 6 | Pages need directory structure |
-| 23 | 22 | Final verification needs all content |
+| Task | Depends On | Reason                               |
+| ---- | ---------- | ------------------------------------ |
+| 1    | 0          | Dependencies need pre-flight check   |
+| 2-5  | 1          | Configuration needs dependencies     |
+| 6    | 5          | Content needs routes                 |
+| 7-10 | 6          | Pages need directory structure       |
+| 23   | 22         | Final verification needs all content |
 
 ---
 
@@ -847,24 +861,25 @@ Each task includes manual verification:
 
 ## Commit Strategy
 
-| After Task | Message | Files | Verification |
-|------------|---------|-------|--------------|
-| 1 | `feat(web): add fumadocs dependencies for developer portal` | package.json, bun.lock | build |
-| 2 | `feat(web): configure vite plugin for fumadocs mdx` | vite.config.ts | build |
-| 3 | `feat(web): add fumadocs source configuration` | source.config.ts, src/lib/source.ts | typecheck |
-| 4 | `feat(web): configure tailwind for fumadocs styles` | styles.css | build |
-| 5 | `feat(web): add tanstack router routes for docs` | src/routes/docs/*.tsx | typecheck |
-| 6 | `feat(web): add docs content directory structure and homepage` | content/docs/* | manual |
-| 10 | `docs(web): add getting started documentation` | content/docs/getting-started/* | manual |
-| 16 | `docs(web): add api reference documentation` | content/docs/api-reference/* | manual |
-| 19 | `docs(web): add webhooks documentation` | content/docs/webhooks/* | manual |
-| 22 | `docs(web): add mcp integration documentation` | content/docs/mcp/* | manual |
+| After Task | Message                                                        | Files                               | Verification |
+| ---------- | -------------------------------------------------------------- | ----------------------------------- | ------------ |
+| 1          | `feat(web): add fumadocs dependencies for developer portal`    | package.json, bun.lock              | build        |
+| 2          | `feat(web): configure vite plugin for fumadocs mdx`            | vite.config.ts                      | build        |
+| 3          | `feat(web): add fumadocs source configuration`                 | source.config.ts, src/lib/source.ts | typecheck    |
+| 4          | `feat(web): configure tailwind for fumadocs styles`            | styles.css                          | build        |
+| 5          | `feat(web): add tanstack router routes for docs`               | src/routes/docs/\*.tsx              | typecheck    |
+| 6          | `feat(web): add docs content directory structure and homepage` | content/docs/\*                     | manual       |
+| 10         | `docs(web): add getting started documentation`                 | content/docs/getting-started/\*     | manual       |
+| 16         | `docs(web): add api reference documentation`                   | content/docs/api-reference/\*       | manual       |
+| 19         | `docs(web): add webhooks documentation`                        | content/docs/webhooks/\*            | manual       |
+| 22         | `docs(web): add mcp integration documentation`                 | content/docs/mcp/\*                 | manual       |
 
 ---
 
 ## Success Criteria
 
 ### Verification Commands
+
 ```bash
 # Build verification
 bunx turbo run build --filter=@seal/web
@@ -878,6 +893,7 @@ bunx turbo run dev --filter=@seal/web
 ```
 
 ### Final Checklist
+
 - [x] All "Must Have" present
 - [x] All "Must NOT Have" absent
 - [x] /docs publicly accessible without auth

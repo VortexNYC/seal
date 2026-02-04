@@ -637,6 +637,7 @@
 ## Mobile Bottom Sheets for Signing
 
 ### Mobile Help Options Bottom Sheet
+
 ```
 ┌───────────────────────────┐
 │ Sign Here           [✕]  │
@@ -675,6 +676,7 @@
 ```
 
 ### Document Navigation Bottom Sheet
+
 ```
 ┌───────────────────────────┐
 │ 📄 Sign Document         │
@@ -709,6 +711,7 @@
 ```
 
 ### Signature Method Selection Bottom Sheet
+
 ```
 ┌───────────────────────────┐
 │ Sign Here           [✕]  │
@@ -745,6 +748,7 @@
 ```
 
 ### Decline to Sign Bottom Sheet
+
 ```
 ┌───────────────────────────┐
 │ 📄 Sign Document         │
@@ -781,6 +785,7 @@
 ```
 
 ### Document Actions Bottom Sheet
+
 ```
 ┌───────────────────────────┐
 │ 🏠 Seal          [☰] ←   │
@@ -821,6 +826,7 @@
 ```
 
 ### Save Draft Bottom Sheet
+
 ```
 ┌───────────────────────────┐
 │ Sign Here           [✕]  │
@@ -853,6 +859,7 @@
 ```
 
 ### Final Review Options Bottom Sheet
+
 ```
 ┌───────────────────────────┐
 │ Final Review        [✕]  │

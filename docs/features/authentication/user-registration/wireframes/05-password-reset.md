@@ -358,18 +358,21 @@
 ## Interaction Specifications
 
 ### Email Input & Validation
+
 - **Format Validation**: Real-time email format checking
 - **Account Lookup**: Check if email exists in system
 - **Auto-complete**: Support browser email auto-complete
 - **Error Recovery**: Clear path to account creation if not found
 
 ### Password Strength & Validation
+
 - **Real-time Strength**: Visual strength meter while typing
 - **Requirement Checklist**: Clear visual feedback for each rule
 - **Show/Hide Toggle**: Password visibility control
 - **Match Validation**: Real-time confirmation matching
 
 ### Reset Link Security
+
 - **Single Use**: Links invalidated after successful use
 - **Time Limited**: 1-hour expiration for security
 - **Secure Tokens**: Cryptographically secure link generation
@@ -380,18 +383,21 @@
 ## Technical Integration
 
 ### Clerk Integration
+
 - **Password Reset Flow**: Integrated with Clerk patterns
 - **Email Service**: React Email + Resend for delivery
 - **Security Tokens**: Secure token generation and validation
 - **Session Management**: Force re-authentication after reset
 
 ### Email Templates
+
 - **React Email**: Styled, responsive email templates
 - **Personalization**: User name and email in templates
 - **Security Messaging**: Clear security context in emails
 - **Link Tracking**: Monitor link click rates
 
 ### State Management
+
 - **Reset Flow State**: Track user progress through flow
 - **Error Handling**: Clear error recovery at each step
 - **Success Confirmation**: Positive feedback for completion
@@ -412,12 +418,14 @@
 ## Security Considerations
 
 ### Reset Link Security
+
 - **Cryptographic Tokens**: High-entropy token generation
 - **Time Bounds**: Short expiration window (1 hour)
 - **Single Use**: Tokens invalidated after successful reset
 - **Rate Limiting**: Prevent abuse and brute force attempts
 
 ### Password Security
+
 - **Strength Requirements**: Enforce Clerk password rules
 - **Common Password Detection**: Prevent weak/common passwords
 - **Secure Storage**: Proper password hashing on backend

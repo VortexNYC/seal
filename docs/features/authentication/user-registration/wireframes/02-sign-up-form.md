@@ -358,12 +358,13 @@
 ## Interaction Specifications
 
 ### Form Field Behaviors
-- **Email Field**: 
+
+- **Email Field**:
   - Real-time format validation
   - Server check for existing accounts on blur
   - Clear error recovery with sign-in suggestion
 
-- **Password Field**: 
+- **Password Field**:
   - Real-time strength indicator
   - Show/hide toggle
   - Strength criteria checklist
@@ -374,11 +375,13 @@
   - Only validate after user starts typing
 
 ### Form Submission
+
 - **Button State**: Disabled until all fields valid
 - **Loading State**: Form disabled, button shows spinner
 - **Error Handling**: Clear error messages with recovery options
 
 ### OAuth Integration
+
 - **Google/Microsoft**: Clerk provider integration
 - **Loading States**: Show redirect progress
 - **Error Recovery**: Fall back to email/password
@@ -398,12 +401,14 @@
 ## Technical Integration
 
 ### Clerk Integration
+
 - Real-time validation using Clerk patterns
 - Password strength requirements from Clerk config
 - OAuth provider configuration
 - Session creation on successful signup
 
 ### Form State Management
+
 - TanStack Form integration
 - Zod schema validation
 - Optimistic UI updates

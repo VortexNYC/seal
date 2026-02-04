@@ -8,10 +8,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/$slug/")({
-	beforeLoad: ({ params }) => {
-		throw redirect({
-			to: "/$slug/home",
-			params: { slug: params.slug },
-		});
-	},
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: "/$slug/home",
+      params: { slug: params.slug },
+    });
+  },
 });

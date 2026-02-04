@@ -8,17 +8,20 @@
 ## 🎉 Auto-Enrollment Verified
 
 ### Test User
+
 - **Email**: test-autoenroll-1769449451@example.com
 - **Clerk ID**: user_38ny6SpjQ0vyVQrX2y4OzVRX1HG
 - **Convex ID**: jn7fn115f3j1ppsdb5zcqmf6097zybka
 
 ### Stripe Customer (VERIFIED)
+
 - **Customer ID**: `cus_Trd5IQ4jG1VJ5Y`
 - **Email**: test-autoenroll-1769449451@example.com
 - **Created**: 1769449454 (2026-01-26)
 - **Status**: ✅ EXISTS
 
 ### Subscription (VERIFIED)
+
 - **Subscription ID**: `sub_1SttpiIlmpJUPMjL3STdFfTl`
 - **Status**: ✅ **ACTIVE**
 - **Lookup Key**: `free:personal:monthly:v1` ✅
@@ -31,10 +34,10 @@
 
 **Nothing was misconfigured!** The issue was my verification method:
 
-| What I Did | Problem |
-|------------|---------|
-| Read from `.env.local` | Has LIVE key (sk_live_***) |
-| Should have used | Convex deployed key (sk_test_***) |
+| What I Did             | Problem                              |
+| ---------------------- | ------------------------------------ |
+| Read from `.env.local` | Has LIVE key (sk*live*\*\*\*)        |
+| Should have used       | Convex deployed key (sk*test*\*\*\*) |
 
 The Convex runtime uses its own environment variables, not the local `.env.local` file. The deployed test key was correct all along.
 
@@ -43,6 +46,7 @@ The Convex runtime uses its own environment variables, not the local `.env.local
 ## Configuration Summary (All Correct)
 
 ### Environment Variables (Convex)
+
 ```
 AUTO_ENROLL_FREE_PLAN_ON_SIGNUP=true
 DEFAULT_PLAN_LOOKUP_KEY=free:personal:monthly:v1
@@ -50,6 +54,7 @@ STRIPE_SECRET_KEY=sk_test_*** (test mode - CORRECT)
 ```
 
 ### Stripe Products (Synced)
+
 - ✅ Free Plan - Personal: `free:personal:monthly:v1`
 - ✅ Free Plan - Business: `free:business:monthly:v1`
 - ✅ Pro Plan - Personal: `pro:personal:monthly:v1`
@@ -86,14 +91,14 @@ STRIPE_SECRET_KEY=sk_test_*** (test mode - CORRECT)
 
 ## Final Status
 
-| Component | Status |
-|-----------|--------|
-| Environment Variables | ✅ Configured |
-| Stripe Products Synced | ✅ Complete |
-| Test User Created | ✅ Created |
-| Stripe Customer | ✅ Verified |
-| Active Subscription | ✅ Verified |
-| Correct Lookup Key | ✅ Verified |
+| Component              | Status        |
+| ---------------------- | ------------- |
+| Environment Variables  | ✅ Configured |
+| Stripe Products Synced | ✅ Complete   |
+| Test User Created      | ✅ Created    |
+| Stripe Customer        | ✅ Verified   |
+| Active Subscription    | ✅ Verified   |
+| Correct Lookup Key     | ✅ Verified   |
 
 **ALL NEW USERS WILL AUTOMATICALLY GET A FREE SUBSCRIPTION**
 
@@ -102,6 +107,7 @@ STRIPE_SECRET_KEY=sk_test_*** (test mode - CORRECT)
 ## Evidence
 
 ### Stripe API Verification
+
 ```bash
 curl -s "https://api.stripe.com/v1/subscriptions?customer=cus_Trd5IQ4jG1VJ5Y" \
   -u "sk_test_***:"
@@ -130,6 +136,7 @@ curl -s "https://api.stripe.com/v1/subscriptions?customer=cus_Trd5IQ4jG1VJ5Y" \
 **The free subscription auto-enrollment is 100% working.**
 
 No further action required. All new users signing up will automatically:
+
 1. Get a Stripe customer created
 2. Be enrolled in the free plan (`free:personal:monthly:v1`)
 3. Have an active subscription

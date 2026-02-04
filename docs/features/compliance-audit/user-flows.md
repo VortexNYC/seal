@@ -3,6 +3,7 @@
 ## Audit Trail Generation Flows
 
 ### Complete Document Audit Trail Flow
+
 ```
 ○ User Accesses Document Audit Trail
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### Real-Time Audit Logging Flow
+
 ```
 ○ User Performs Any Document Action
     ↓
@@ -63,6 +65,7 @@
 ## Legal Compliance Flows
 
 ### Electronic Signature Validity Flow
+
 ```
 ○ User Initiates Document Signing
     ↓
@@ -92,6 +95,7 @@
 ```
 
 ### Document Integrity Verification Flow
+
 ```
 ○ Document Requires Integrity Verification
     ↓
@@ -123,6 +127,7 @@
 ## Compliance Reporting Flows
 
 ### Audit Report Generation Flow
+
 ```
 ○ User Requests Compliance Report
     ↓
@@ -152,6 +157,7 @@
 ```
 
 ### Legal Documentation Export Flow
+
 ```
 ○ Legal Team Requests Audit Evidence
     ↓
@@ -183,6 +189,7 @@
 ## Audit Failure Handling Flows
 
 ### Audit Logging Failure Flow
+
 ```
 ○ System Attempts to Log User Action
     ↓
@@ -212,6 +219,7 @@
 ```
 
 ### Missing Audit Record Detection Flow
+
 ```
 ○ System Performs Audit Trail Validation
     ↓
@@ -243,6 +251,7 @@
 ## User Access and Permissions Flows
 
 ### Audit Trail Access Control Flow
+
 ```
 ○ User Requests Access to Audit Trails
     ↓
@@ -272,6 +281,7 @@
 ```
 
 ### Compliance Officer Review Flow
+
 ```
 ○ Compliance Officer Accesses System
     ↓
@@ -303,6 +313,7 @@
 ## Document Lifecycle Compliance
 
 ### End-to-End Document Compliance Flow
+
 ```
 ○ Document Created in System
     ↓

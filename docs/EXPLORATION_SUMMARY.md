@@ -18,11 +18,13 @@ The system supports **multiple organizations per user** with fine-grained permis
 ### Backend (`/apps/backend/convex/`)
 
 **Core Authentication**:
+
 - `auth.ts` - Main auth context, defines `AuthContext` type with helper methods
 - `auth.utils.ts` - 540 lines of permission logic, role hierarchy, and utility functions
 - `auth.config.ts` - Clerk integration configuration
 
 **Database Schemas** (`/schemas/`):
+
 - `users.ts` - User records with Clerk ID, timezone, locale, active organization
 - `organizations.ts` - Organization definitions (personal, group, company)
 - `organization_members.ts` - The crucial table linking users to roles + status
@@ -31,6 +33,7 @@ The system supports **multiple organizations per user** with fine-grained permis
 - `document_access.ts` - Explicit per-user document permissions
 
 **Business Logic**:
+
 - `organizations/queries.ts` - Get org, members, invitations, permissions
 - `organizations/mutations.ts` - Create org, manage members, invite, change roles
 - `documents/queries.ts` - Document retrieval with access control
@@ -38,6 +41,7 @@ The system supports **multiple organizations per user** with fine-grained permis
 - `documents/sharing.ts` - Sharing modes, grant/revoke access, transfer ownership
 
 **Additional**:
+
 - `check_membership.ts` - User's organization list
 - `stripe/` - Subscription integration
 - `_generated/` - Auto-generated types and API exports
@@ -45,6 +49,7 @@ The system supports **multiple organizations per user** with fine-grained permis
 ### Frontend (`/apps/web/src/`)
 
 **Routing** (`/routes/`):
+
 - `_auth/` - Public login/signup pages
 - `_authenticated/` - Protected workspace routes with organization slug parameter
 - `$slug/` - Organization workspace with sidebar and sub-routes
@@ -52,6 +57,7 @@ The system supports **multiple organizations per user** with fine-grained permis
   - `settings/` - team management, billing
 
 **Components** (`/components/`):
+
 - `app-sidebar.tsx` - Main navigation with permission-based menu items
 - `team-switcher.tsx` - Switch between user's organizations
 - `nav-user.tsx` - User profile dropdown
@@ -60,12 +66,14 @@ The system supports **multiple organizations per user** with fine-grained permis
 - `page-wrapper.tsx` - Page layout wrapper
 
 **Supporting**:
+
 - `integrations/clerk/` - Clerk provider setup
 - `lib/organization-path.ts` - Route path utilities
 - `hooks/use-mobile.tsx` - Mobile detection hook
 - `ui/` - Shadcn UI components (buttons, dialogs, dropdowns, etc.)
 
 **Main App Setup** (`/main.tsx`):
+
 - ClerkProvider (Clerk auth state)
 - ConvexProviderWithClerk (Bridges Clerk + Convex)
 - QueryClientProvider (TanStack React Query)
@@ -101,6 +109,7 @@ const auth = await getAuthContext(ctx);
 **Status Check**: User must be `status: "active"` in organization_members
 
 **Role Hierarchy**:
+
 ```
 system (150) > owner (100) > admin (75) > member (50) > viewer (25)
 ```
@@ -108,6 +117,7 @@ system (150) > owner (100) > admin (75) > member (50) > viewer (25)
 Higher roles inherit all permissions of lower roles.
 
 **Permission Strings**: 40+ domain-specific permissions like:
+
 - `org:manage`, `org:settings:read`, `org:settings:update`
 - `org:users:read`, `org:users:invite`, `org:users:remove`, `org:users:update_role`
 - `documents:read`, `documents:create`, `documents:update`, `documents:delete`
@@ -117,9 +127,9 @@ Higher roles inherit all permissions of lower roles.
 ### Query/Mutation Wrappers
 
 ```typescript
-authQuery/authMutation        // Any active member
-adminQuery/adminMutation      // Requires admin+ role
-memberQuery/memberMutation    // Requires member+ role
+authQuery / authMutation; // Any active member
+adminQuery / adminMutation; // Requires admin+ role
+memberQuery / memberMutation; // Requires member+ role
 ```
 
 ---
@@ -129,27 +139,32 @@ memberQuery/memberMutation    // Requires member+ role
 ### Key Tables
 
 **users**:
+
 - Indexed by: clerk_id, email, active_organization_id
 - Fields: name, email, avatar, timezone, locale, onboarding flags
 
 **organizations**:
+
 - Indexed by: slug (unique), type, is_active, clerk_id
 - Types: personal, group, company
 - Fields: name, logo, metadata, currency, timezone
 
 **organization_members** (THE crucial table):
+
 - Indexed by: user_organization (compound), user, organization, primary
-- Fields: 
+- Fields:
   - `role` - owner, admin, member, viewer, system
   - `status` - active, inactive, suspended, pending, blocked
   - `permissions` - optional array of individual permission overrides
   - `isPrimary` - which org is user's primary
 
 **organization_invitations**:
+
 - Indexed by: email, organization
 - Fields: role, status, token (for link), invitedBy, expiresAt (7 days)
 
 **documents**:
+
 - Indexed by: organization, owner, status, sharing_mode
 - Fields:
   - `sharingMode` - private, workspace, specific
@@ -157,6 +172,7 @@ memberQuery/memberMutation    // Requires member+ role
   - `storageId` - reference to Convex file storage
 
 **document_access** (For specific sharing):
+
 - Indexed by: document_user (compound), document, user
 - Fields:
   - `permissionLevel` - view, edit, manage
@@ -165,6 +181,7 @@ memberQuery/memberMutation    // Requires member+ role
 ### Indexes
 
 All tables heavily indexed for fast queries:
+
 - Single field indexes for common filters
 - Compound indexes for multi-field lookups
 - Critical index: `organization_members.by_user_organization` - used in auth flow
@@ -176,6 +193,7 @@ All tables heavily indexed for fast queries:
 ### Role → Permission Mapping
 
 **Owner** gets 35+ permissions including:
+
 - All organization management
 - All subscription management
 - All document operations
@@ -184,6 +202,7 @@ All tables heavily indexed for fast queries:
 - API & webhook management
 
 **Admin** gets 23+ permissions including:
+
 - View org settings
 - View & invite members
 - All document operations
@@ -192,6 +211,7 @@ All tables heavily indexed for fast queries:
 - API & webhook management
 
 **Member** gets 14 permissions including:
+
 - Create/read/update documents
 - Create/read/use templates
 - Download documents
@@ -207,14 +227,14 @@ All tables heavily indexed for fast queries:
 In `auth.utils.ts`:
 
 ```typescript
-hasPermission(member, permission)          // Direct permission check
-hasRole(member, requiredRole)              // Role hierarchy check
-getEffectivePermissions(member)            // All applicable permissions
-isAccountValid(member)                     // Check status === "active"
-isOwner(member), isAdmin(member)           // Role shortcuts
-canManageDocuments(member, orgId)          // Composite checks
-canManageMembers(member)
-canManageSubscription(member)
+hasPermission(member, permission); // Direct permission check
+hasRole(member, requiredRole); // Role hierarchy check
+getEffectivePermissions(member); // All applicable permissions
+isAccountValid(member); // Check status === "active"
+(isOwner(member), isAdmin(member)); // Role shortcuts
+canManageDocuments(member, orgId); // Composite checks
+canManageMembers(member);
+canManageSubscription(member);
 // ... 20+ more specific helper functions
 ```
 
@@ -224,7 +244,7 @@ Frontend fetches permissions via `getUserPermissions` query:
 
 ```typescript
 const permissions = useQuery(api.organizations.queries.getUserPermissions, {
-  organizationId: orgId
+  organizationId: orgId,
 });
 
 // Returns object with boolean flags:
@@ -259,6 +279,7 @@ specific   → Only users with explicit document_access record (requires Pro)
 ```
 
 Within specific mode, each user has permission_level:
+
 ```
 view   → Read only
 edit   → Can modify
@@ -305,6 +326,7 @@ manage → Can share, transfer ownership, delete
 ## Error Handling
 
 **Custom Error Types**:
+
 ```
 NO_IDENTITY, NO_USER_RECORD, NO_MEMBER_RECORD, NO_ORGANIZATION,
 NO_SUBSCRIPTION, INSUFFICIENT_PERMISSIONS, INSUFFICIENT_ROLE,
@@ -313,11 +335,13 @@ WRONG_ORGANIZATION, SUBSCRIPTION_EXPIRED, SUBSCRIPTION_REQUIRED
 ```
 
 **Error Creation Helper**:
+
 ```typescript
 createAuthError(type, message?, metadata?)
 ```
 
 **ConvexError**:
+
 ```typescript
 throw new ConvexError("User-friendly message");
 ```
@@ -327,6 +351,7 @@ throw new ConvexError("User-friendly message");
 ## Tech Stack
 
 **Backend**:
+
 - Convex 1.28.0 - Serverless backend with real-time DB
 - convex-helpers 0.1.104 - Custom query/mutation utilities
 - Clerk (via auth.config.ts) - Authentication provider
@@ -335,6 +360,7 @@ throw new ConvexError("User-friendly message");
 - Svix 1.77.0 - Webhook handling
 
 **Frontend**:
+
 - React 19.2.0 - UI framework
 - Vite 7.1.11 - Build tool
 - TanStack React Router 1.133.21 - Routing
@@ -349,17 +375,17 @@ throw new ConvexError("User-friendly message");
 
 ## Key Files Map
 
-| Task | Primary File | Secondary Files |
-|------|--------------|-----------------|
-| Check user permission | `auth.utils.ts` | `auth.ts` |
-| Create organization | `organizations/mutations.ts` | `organizations.ts` schema |
-| Manage team members | `organizations/mutations.ts` | `organization_members.ts` schema |
-| Handle documents | `documents/mutations.ts` | `documents.ts` schema |
-| Control sharing | `documents/sharing.ts` | `document_access.ts` schema |
-| Fetch permissions | `organizations/queries.ts` | - |
-| Frontend workspace | `$slug.tsx` | `app-sidebar.tsx`, `enforce-organization.tsx` |
-| Frontend team settings | `settings/team.tsx` | `organizations/mutations.ts` |
-| Auth entry point | `main.tsx` | `_authenticated.tsx`, `_auth.tsx` |
+| Task                   | Primary File                 | Secondary Files                               |
+| ---------------------- | ---------------------------- | --------------------------------------------- |
+| Check user permission  | `auth.utils.ts`              | `auth.ts`                                     |
+| Create organization    | `organizations/mutations.ts` | `organizations.ts` schema                     |
+| Manage team members    | `organizations/mutations.ts` | `organization_members.ts` schema              |
+| Handle documents       | `documents/mutations.ts`     | `documents.ts` schema                         |
+| Control sharing        | `documents/sharing.ts`       | `document_access.ts` schema                   |
+| Fetch permissions      | `organizations/queries.ts`   | -                                             |
+| Frontend workspace     | `$slug.tsx`                  | `app-sidebar.tsx`, `enforce-organization.tsx` |
+| Frontend team settings | `settings/team.tsx`          | `organizations/mutations.ts`                  |
+| Auth entry point       | `main.tsx`                   | `_authenticated.tsx`, `_auth.tsx`             |
 
 ---
 
@@ -428,4 +454,3 @@ Three comprehensive guides have been created and saved to the project:
 3. **QUICK_START_ROLES.md** - 5-minute reference for common tasks
 
 All files located in: `/Users/gbarros/Developer/plasma/seal/`
-

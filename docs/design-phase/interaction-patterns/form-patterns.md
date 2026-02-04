@@ -9,13 +9,15 @@ Standardized patterns for form inputs, validation, and submission across the app
 ## 🎨 Visual Design Principles
 
 ### shadcn/ui Neutral Theme Aesthetic
+
 - neutral-900 borders and text (#171717)
-- White backgrounds (#FFFFFF)  
+- White backgrounds (#FFFFFF)
 - neutral-400 states for disabled (#a3a3a3)
 - Subtle shadows for depth
 - No color except for critical errors (red) and success (green)
 
 ### Input Hierarchy
+
 1. **Label** - Clear, above input
 2. **Input field** - Prominent, accessible
 3. **Helper text** - Subtle, below input
@@ -26,10 +28,11 @@ Standardized patterns for form inputs, validation, and submission across the app
 ## 📝 Input Field States
 
 ### Text Input States
+
 ```
 Default:
 ╔════════════════════════════════════╗
-║ Placeholder text                   ║  
+║ Placeholder text                   ║
 ╚════════════════════════════════════╝
 
 Focus:
@@ -50,6 +53,7 @@ Disabled:
 ```
 
 ### Input Components Structure
+
 ```
 Label *
 ╔════════════════════════════════════╗
@@ -63,11 +67,13 @@ Helper text or character count (0/100)
 ## ✅ Validation Patterns
 
 ### Validation Timing
+
 1. **On Blur** - Initial validation when user leaves field
 2. **On Change** - After first error, validate while typing
 3. **On Submit** - Final validation before submission
 
 ### Validation States
+
 ```
 Typing (no validation):
 ╔════════════════════════════════════╗
@@ -92,6 +98,7 @@ Invalid:
 ```
 
 ### Error Message Guidelines
+
 - **Specific**: "Password must be at least 8 characters"
 - **Actionable**: "Add a special character (!@#$%)"
 - **Friendly**: Avoid technical jargon
@@ -102,6 +109,7 @@ Invalid:
 ## 📤 Form Submission Patterns
 
 ### Submit Button States
+
 ```
 Default:
 [Submit]
@@ -120,6 +128,7 @@ Error:
 ```
 
 ### Form-Level Validation
+
 ```
 ┌────────────────────────────────────┐
 │ ❌ Please fix the following errors: │
@@ -133,6 +142,7 @@ Error:
 ## 🔐 Special Input Types
 
 ### Password Input
+
 ```
 ╔════════════════════════════════════╗
 ║ ••••••••••••••••••••••••••••  [👁] ║ ← Toggle visibility
@@ -141,6 +151,7 @@ Error:
 ```
 
 ### Select/Dropdown
+
 ```
 Closed:
 ╔════════════════════════════════════╗
@@ -158,6 +169,7 @@ Open:
 ```
 
 ### Checkbox/Radio
+
 ```
 Checkbox:
 ☐ Unchecked
@@ -171,6 +183,7 @@ Radio:
 ```
 
 ### File Upload
+
 ```
 ┌────────────────────────────────────┐
 │                                    │
@@ -187,19 +200,21 @@ PDF, Word, or image files (max 10MB)
 ## 📱 Mobile Form Adaptations
 
 ### Touch Optimizations
+
 - **Larger touch targets**: Minimum 44x44px
 - **Increased spacing**: More room between inputs
 - **Sticky submit button**: Fixed at bottom on long forms
 - **Native inputs**: Use device keyboards (email, number, etc.)
 
 ### Mobile Keyboard Handling
+
 ```
 When keyboard opens:
 ╔══════════════════════════════════╗
 ║ Active input field               ║ ← Scrolls into view
 ╚══════════════════════════════════╝
-                    
-  📱 Device Keyboard   
+
+  📱 Device Keyboard
 ```
 
 ---
@@ -207,6 +222,7 @@ When keyboard opens:
 ## 📑 Progressive Disclosure
 
 ### Conditional Fields
+
 ```
 Are you a business?
 ○ Yes  ◉ No
@@ -217,17 +233,18 @@ If Yes selected:
 ├────────────────────────────────────┤
 │ Company Name *                     │
 │ ╔════════════════════════════════╗ │
-│ ║                                ║ │  
+│ ║                                ║ │
 │ ╚════════════════════════════════╝ │
 │                                    │
 │ Tax ID                             │
 │ ╔════════════════════════════════╗ │
-│ ║                                ║ │  
+│ ║                                ║ │
 │ ╚════════════════════════════════╝ │
 └────────────────────────────────────┘
 ```
 
 ### Multi-Step Forms
+
 ```
 Progress: Step 2 of 3
 ▓▓▓▓▓▓▓▓░░░░░░░░░
@@ -240,6 +257,7 @@ Progress: Step 2 of 3
 ## ✨ Success Patterns
 
 ### Inline Success
+
 ```
 ┌────────────────────────────────────┐
 │  ✅ Changes saved automatically     │
@@ -247,6 +265,7 @@ Progress: Step 2 of 3
 ```
 
 ### Post-Submit Success
+
 ```
 ┌────────────────────────────────────┐
 │                                    │
@@ -266,6 +285,7 @@ Progress: Step 2 of 3
 ## 📋 Form Best Practices
 
 ### Do's
+
 - Show field requirements upfront
 - Validate on blur, not while typing (initially)
 - Provide clear, actionable error messages
@@ -273,6 +293,7 @@ Progress: Step 2 of 3
 - Group related fields together
 
 ### Don'ts
+
 - Don't clear form on error
 - Don't validate too aggressively
 - Don't hide important information

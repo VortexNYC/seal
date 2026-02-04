@@ -19,12 +19,12 @@ import { CardSkeleton } from "@/components/skeletons/card-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function TemplatesSkeleton() {
-	return (
-		<PageWrapper title="Templates">
-			<div className="space-y-6">
-				<Skeleton className="h-5 w-[280px]" />
-				<CardSkeleton showDescription showFooter={false} />
-			</div>
-		</PageWrapper>
-	);
+  return (
+    <PageWrapper title="Templates">
+      <div className="space-y-6">
+        <Skeleton className="h-5 w-[280px]" />
+        <CardSkeleton showDescription showFooter={false} />
+      </div>
+    </PageWrapper>
+  );
 }

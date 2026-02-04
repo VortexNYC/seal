@@ -199,6 +199,7 @@
 ## Interaction Specifications
 
 ### Call-to-Action Buttons
+
 - **Primary Button**: "Sign Up"
   - Target: `/signup`
   - Color: High contrast (follows design system)
@@ -206,17 +207,18 @@
   - State: Hover effect on desktop
 
 ### OAuth Buttons
+
 - **Google OAuth**: "Continue with Google"
   - Target: Clerk Google provider
   - Icon: Google logo
   - Branded colors per Google guidelines
-  
 - **Microsoft OAuth**: "Continue with Microsoft"
   - Target: Clerk Microsoft provider
   - Icon: Microsoft logo
   - Branded colors per Microsoft guidelines
 
 ### Secondary Actions
+
 - **Sign In Link**: Text link to `/signin`
 - **Learn More**: Scroll to feature highlights
 - **Pricing**: Link to pricing information

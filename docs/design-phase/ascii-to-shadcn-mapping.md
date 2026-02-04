@@ -9,6 +9,7 @@ This document maps every ASCII wireframe element to its corresponding shadcn/ui 
 ## 🔘 Button Elements
 
 ### Primary Button (Enhanced ASCII)
+
 ```
 WIREFRAME ASCII:
 ┌─[BUTTON TEXT: 280×48px]─────────────────────────────────┐
@@ -24,11 +25,12 @@ SHADCN/UI IMPLEMENTATION:
 
 // Custom styling if needed
 <Button variant="default" size="lg" className="w-[280px] h-12">
-  Get Started  
+  Get Started
 </Button>
 ```
 
 ### Secondary Button (Enhanced ASCII)
+
 ```
 WIREFRAME ASCII:
 ┌─[SECONDARY BUTTON: 200×40px]───────────────────────────┐
@@ -49,6 +51,7 @@ SHADCN/UI IMPLEMENTATION:
 ```
 
 ### Destructive Button (Enhanced ASCII)
+
 ```
 WIREFRAME ASCII:
 ┌─[DELETE BUTTON: 120×36px]──────────────────────────────┐
@@ -64,6 +67,7 @@ SHADCN/UI IMPLEMENTATION:
 ```
 
 ### Loading Button State
+
 ```
 WIREFRAME ASCII:
 ┌─[LOADING BUTTON: 280×48px]─────────────────────────────┐
@@ -86,6 +90,7 @@ import { Loader2 } from "lucide-react"
 ## 📝 Form Input Elements
 
 ### Text Input (Enhanced ASCII)
+
 ```
 WIREFRAME ASCII:
 ┌─[INPUT FIELD: 320×44px]─────────────────────────────────┐
@@ -96,7 +101,7 @@ WIREFRAME ASCII:
 └─────────────────────────────────────────────────────────┘
 
 SHADCN/UI IMPLEMENTATION:
-<Input 
+<Input
   type="email"
   placeholder="Enter your email"
   className="w-[320px] h-11"
@@ -118,6 +123,7 @@ SHADCN/UI IMPLEMENTATION:
 ```
 
 ### Input with Error State
+
 ```
 WIREFRAME ASCII:
 ┌─[INPUT FIELD: 320×44px]─────────────────────────────────┐
@@ -128,7 +134,7 @@ WIREFRAME ASCII:
 
 SHADCN/UI IMPLEMENTATION:
 <div className="space-y-2">
-  <Input 
+  <Input
     type="email"
     value="john@invalid"
     className="border-destructive focus-visible:ring-destructive"
@@ -154,6 +160,7 @@ SHADCN/UI IMPLEMENTATION:
 ```
 
 ### Select Dropdown (Enhanced ASCII)
+
 ```
 WIREFRAME ASCII:
 ┌─[SELECT FIELD: 280×44px]───────────────────────────────┐
@@ -203,6 +210,7 @@ SHADCN/UI IMPLEMENTATION:
 ## 🗂️ Layout Components
 
 ### Card Container (Enhanced ASCII)
+
 ```
 WIREFRAME ASCII:
 ┌─[CARD: 400×300px]──────────────────────────────────────┐
@@ -235,6 +243,7 @@ SHADCN/UI IMPLEMENTATION:
 ```
 
 ### Alert/Toast Messages (Enhanced ASCII)
+
 ```
 WIREFRAME ASCII:
 ┌─[SUCCESS ALERT: 100% width × 48px]─────────────────────┐
@@ -275,6 +284,7 @@ toast({
 ## 📊 Data Display Components
 
 ### Table (Enhanced ASCII)
+
 ```
 WIREFRAME ASCII:
 ┌─[TABLE: 100% width]────────────────────────────────────┐
@@ -325,6 +335,7 @@ SHADCN/UI IMPLEMENTATION:
 ## 🗄️ Navigation Components
 
 ### Tabs (Enhanced ASCII)
+
 ```
 WIREFRAME ASCII:
 ┌─[TABS: 100% width]─────────────────────────────────────┐
@@ -355,6 +366,7 @@ SHADCN/UI IMPLEMENTATION:
 ```
 
 ### Command Palette (⌘K Interface)
+
 ```
 WIREFRAME ASCII:
 ╔═[COMMAND PALETTE: Full-screen overlay]═════════════════════════════════════╗
@@ -412,6 +424,7 @@ useEffect(() => {
 ## 🎛️ Advanced Components
 
 ### Dialog/Modal (Enhanced ASCII)
+
 ```
 WIREFRAME ASCII:
 ┌─[MODAL OVERLAY: 100% screen]───────────────────────────┐
@@ -459,6 +472,7 @@ SHADCN/UI IMPLEMENTATION:
 ## 📊 Advanced Data Display
 
 ### Data Table with Sorting, Filtering, and Pagination
+
 ```
 WIREFRAME ASCII:
 ╔═[DATA TABLE: Full featured with controls]══════════════════════════════════╗
@@ -519,6 +533,7 @@ const columns: ColumnDef<Document>[] = [
 ```
 
 ### Toast Notification Stack
+
 ```
 WIREFRAME ASCII:
                                         ┌─[TOAST STACK: Fixed position top-right]─┐
@@ -540,7 +555,7 @@ toast({
 
 // Error with retry:
 toast({
-  variant: "destructive", 
+  variant: "destructive",
   title: "Connection lost",
   action: <ToastAction onClick={handleRetry}>Retry</ToastAction>,
 })
@@ -551,6 +566,7 @@ toast({
 ## 📋 Form Patterns
 
 ### Advanced Multi-Step Form with Validation
+
 ```
 WIREFRAME ASCII:
 ╔═[ADVANCED FORM: Multi-step with validation]════════════════════════════════╗
@@ -581,7 +597,7 @@ SHADCN/UI IMPLEMENTATION:
       <div className="w-2 h-2 bg-muted rounded-full" />
     </div>
   </div>
-  
+
   <FormField
     control={form.control}
     name="workspaceName"
@@ -598,7 +614,7 @@ SHADCN/UI IMPLEMENTATION:
       </FormItem>
     )}
   />
-  
+
   <FormField
     control={form.control}
     name="planType"
@@ -640,10 +656,11 @@ SHADCN/UI IMPLEMENTATION:
 ## 🎨 Design Tokens Integration
 
 ### Color Mapping
+
 ```
 WIREFRAME COLOR → SHADCN/UI TOKEN
 #2563eb (Primary) → bg-primary, text-primary
-#ef4444 (Error) → bg-destructive, text-destructive  
+#ef4444 (Error) → bg-destructive, text-destructive
 #10b981 (Success) → bg-green-500 (or custom success variant)
 #f3f4f6 (Muted) → bg-muted
 #e5e7eb (Border) → border-input
@@ -651,10 +668,11 @@ WIREFRAME COLOR → SHADCN/UI TOKEN
 ```
 
 ### Size Mapping
+
 ```
 WIREFRAME SIZE → SHADCN/UI SIZE
 Small buttons (120×36px) → size="sm"
-Default buttons (200×40px) → size="default"  
+Default buttons (200×40px) → size="default"
 Large buttons (280×48px) → size="lg"
 Input height (44px) → h-11 (default Input height)
 ```
@@ -664,20 +682,23 @@ Input height (44px) → h-11 (default Input height)
 ## 🔄 State Variations
 
 ### Loading States
+
 ```
 All ⏳ symbols in wireframes = <Loader2 className="animate-spin" />
 All "Loading..." text = disabled state + spinner icon
 All skeleton content = Skeleton component from shadcn/ui
 ```
 
-### Error States  
+### Error States
+
 ```
-All ❌ symbols = variant="destructive" 
+All ❌ symbols = variant="destructive"
 All error text = text-destructive className
 All error borders = border-destructive className
 ```
 
 ### Success States
+
 ```
 All ✅ symbols = CheckCircle icon or Badge variant="success"
 All success messages = Alert component or toast notification

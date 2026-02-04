@@ -3,6 +3,7 @@
 ## Primary User Flows
 
 ### 404 Not Found Flow
+
 ```
 ○ User Navigates to Non-Existent URL
     ↓
@@ -25,6 +26,7 @@
 ```
 
 ### 403 Permission Denied Flow
+
 ```
 ○ User Attempts Unauthorized Action
     ↓
@@ -47,6 +49,7 @@
 ```
 
 ### 500 Server Error Flow
+
 ```
 ○ Application Exception Occurs
     ↓
@@ -69,6 +72,7 @@
 ```
 
 ### Network Offline Flow
+
 ```
 ○ Network Connection Lost
     ↓
@@ -91,6 +95,7 @@
 ```
 
 ### Session Expired Flow
+
 ```
 ○ Session Timeout Occurs
     ↓
@@ -115,6 +120,7 @@
 ## Secondary User Flows
 
 ### Context-Aware 404 Flow
+
 ```
 ○ Document-Specific 404
     ↓
@@ -130,6 +136,7 @@
 ```
 
 ### Pro Feature 403 Flow
+
 ```
 ○ Free User Accesses Pro Feature
     ↓
@@ -145,6 +152,7 @@
 ```
 
 ### Real-Time Permission Change
+
 ```
 ○ User Permission Revoked While Active
     ↓
@@ -163,6 +171,7 @@
 ## Error Recovery Flows
 
 ### Smart Navigation Flow
+
 ```
 ○ Error Context Analysis
     ↓
@@ -179,6 +188,7 @@
 ```
 
 ### Error Reporting Flow
+
 ```
 ○ User Chooses to Report Error
     ↓
@@ -198,6 +208,7 @@
 ## Error Prevention Flows
 
 ### Proactive Session Management
+
 ```
 ○ Session Near Expiration
     ↓
@@ -209,6 +220,7 @@
 ```
 
 ### Connection Monitoring
+
 ```
 ○ Unstable Connection Detected
     ↓

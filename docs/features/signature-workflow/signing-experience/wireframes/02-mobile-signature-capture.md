@@ -3,6 +3,7 @@
 ## Mobile Signature Methods with Camera
 
 ### Mobile Signature Method Selection
+
 ```
 ┌───────────────────────────┐
 │ Sign Here           [✕]  │
@@ -31,6 +32,7 @@
 ## Camera Signature Capture
 
 ### Camera Permission Request
+
 ```
 ┌───────────────────────────┐
 │ Camera Access       [✕]  │
@@ -60,6 +62,7 @@
 ```
 
 ### Camera Capture Interface
+
 ```
 ┌───────────────────────────┐
 │              📷      [✕]  │
@@ -88,6 +91,7 @@
 ```
 
 ### Signature Capture Tips
+
 ```
 ┌───────────────────────────┐
 │ Signature Tips      [✕]  │
@@ -122,6 +126,7 @@
 ## Photo Review & Processing
 
 ### Captured Photo Review
+
 ```
 ┌───────────────────────────┐
 │ Review Photo        [✕]  │
@@ -150,6 +155,7 @@
 ```
 
 ### Photo Processing
+
 ```
 ┌───────────────────────────┐
 │ Processing...       [✕]  │
@@ -177,6 +183,7 @@
 ```
 
 ### Processing Complete
+
 ```
 ┌───────────────────────────┐
 │ Ready to Sign       [✕]  │
@@ -207,6 +214,7 @@
 ## Alternative: Photo Library Upload
 
 ### Photo Source Selection
+
 ```
 ┌───────────────────────────┐
 │ Add Signature       [✕]  │
@@ -234,6 +242,7 @@
 ```
 
 ### Photo Library Selection
+
 ```
 ┌───────────────────────────┐
 │ Select Photo        [✕]  │
@@ -265,6 +274,7 @@
 ## Error States
 
 ### Camera Not Available
+
 ```
 ┌───────────────────────────┐
 │ Camera Error        [✕]  │
@@ -294,6 +304,7 @@
 ```
 
 ### Photo Quality Issues
+
 ```
 ┌───────────────────────────┐
 │ Photo Quality       [✕]  │
@@ -328,6 +339,7 @@
 ## Saved Signature Integration
 
 ### Using Saved Signature
+
 ```
 ┌───────────────────────────┐
 │ Use Saved Signature [✕]  │

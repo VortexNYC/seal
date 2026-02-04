@@ -6,6 +6,7 @@
 ## Main Document Library Views
 
 ### Pro Plan Document Library
+
 [Mobile Viewport: 375px width with responsive component stacking]
 [Desktop Viewport: 1200px width with multi-column layout]
 
@@ -52,6 +53,7 @@
 ```
 
 ### Free Plan Document Library
+
 [Mobile Viewport: 375px with usage indicators prominent]
 [Desktop Viewport: 1200px with usage tracking sidebar]
 
@@ -93,6 +95,7 @@
 ```
 
 ### Free Plan - Limit Reached
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal       🆓 Free Plan    Workspace: My Workspace ▼   👤 Jane Smith ▼   │
@@ -128,6 +131,7 @@
 ## Folder and Organization Views
 
 ### Folder Navigation View
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 📄 Documents > 📁 Legal Documents                     [+ Upload Document]   │
@@ -164,6 +168,7 @@
 ```
 
 ### Create New Folder Dialog
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           📁 Create New Folder                             │
@@ -188,6 +193,7 @@
 ## Search and Filter Interface
 
 ### Search Results View
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal                                    👤 John Doe    🔄 Pro Plan       │
@@ -227,6 +233,7 @@
 ```
 
 ### Advanced Filter Panel
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🔍 Advanced Search & Filters                                          ❌   │
@@ -262,6 +269,7 @@
 ## Document Context Menu and Actions
 
 ### Document Context Menu
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ ┌───────┐  📄 Service-Agreement.pdf    ✅ Comp┌─────────────────────────────┐│
@@ -285,6 +293,7 @@
 ```
 
 ### Move to Folder Dialog
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                             📁 Move Document                               │
@@ -310,6 +319,7 @@
 ```
 
 ### Tag Management Dialog
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            🏷️ Manage Document Tags                         │
@@ -340,6 +350,7 @@
 ## Mobile Document Library
 
 ### Mobile Library View
+
 ```
 ┌─────────────────────────────┐
 │ 🏠 Seal  Acme Corp ▼  ☰    │
@@ -374,6 +385,7 @@
 ```
 
 ### Mobile Navigation Menu (Hamburger)
+
 ```
 ┌─────────────────────────────┐
 │ 🏠 Seal  Acme Corp ▼  ☰    │ ← Hamburger tapped
@@ -411,6 +423,7 @@
 ```
 
 ### Mobile Menu - Documents to Sign Priority
+
 ```
 ┌─────────────────────────────┐
 │ Documents to Sign     [✕]  │
@@ -445,6 +458,7 @@
 ```
 
 ### Mobile Search Results
+
 ```
 ┌─────────────────────────────┐
 │ ← 🔍 "contract"        [❌] │
@@ -481,6 +495,7 @@
 ## Mobile Bottom Sheets
 
 ### Document Quick Actions Bottom Sheet
+
 ```
 ┌─────────────────────────────┐
 │ 📄 Documents          [+]   │ ← Document [⚙️] tapped
@@ -514,6 +529,7 @@
 ```
 
 ### Move to Folder Bottom Sheet
+
 ```
 ┌─────────────────────────────┐
 │ 📄 Documents          [+]   │
@@ -546,6 +562,7 @@
 ```
 
 ### Delete Confirmation Bottom Sheet
+
 ```
 ┌─────────────────────────────┐
 │ 📄 Documents          [+]   │
@@ -574,6 +591,7 @@
 ```
 
 ### Filter/Sort Bottom Sheet
+
 ```
 ┌─────────────────────────────┐
 │ 📄 Documents          [+]   │
@@ -605,6 +623,7 @@
 ```
 
 ### Share Document Bottom Sheet
+
 ```
 ┌─────────────────────────────┐
 │ 📄 Documents          [+]   │
@@ -635,6 +654,7 @@
 ```
 
 ### Document Upload Type Bottom Sheet
+
 ```
 ┌─────────────────────────────┐
 │ 📄 Documents          [+]   │ ← Upload button tapped
@@ -666,6 +686,7 @@
 ## Bulk Operations Confirmations
 
 ### Bulk Delete Documents Confirmation
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal          Workspace: Acme Corp ▼                    👤 John Doe ▼   │
@@ -709,6 +730,7 @@
 ```
 
 ### Bulk Move Documents Confirmation
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal          Workspace: Acme Corp ▼                    👤 John Doe ▼   │

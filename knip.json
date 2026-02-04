@@ -1,8 +1,8 @@
 {
-	"$schema": "https://unpkg.com/knip@latest/schema.json",
-	"workspaces": {
-		"apps/mcp-server": {
-			"entry": ["src/index.ts", "api/index.ts"]
-		}
-	}
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "workspaces": {
+    "apps/mcp-server": {
+      "entry": ["src/index.ts", "api/index.ts"]
+    }
+  }
 }

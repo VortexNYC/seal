@@ -37,9 +37,10 @@
 ### Key Database Tables
 
 **organization_members** - The table that connects users to roles:
+
 ```
 userid: "user_123"
-organizationId: "org_456" 
+organizationId: "org_456"
 role: "admin"              ← This is the key field
 status: "active"           ← Must be "active" to perform actions
 permissions: []            ← Individual overrides (optional)
@@ -56,14 +57,14 @@ When a user tries to invite someone:
 
 ## Where Permissions Live
 
-| What | Where | File |
-|------|-------|------|
-| Role definitions | Database | `schemas/organization_members.ts` |
-| Permission strings | Code constants | `auth.utils.ts` line 19-286 |
-| Role → Permissions mapping | Code constants | `auth.utils.ts` line 8-148 |
-| Permission checks | Mutations | `organizations/mutations.ts` |
-| Permission fetching | Frontend | `$slug/tsx` queries |
-| UI conditional rendering | Components | `app-sidebar.tsx`, `settings/team.tsx` |
+| What                       | Where          | File                                   |
+| -------------------------- | -------------- | -------------------------------------- |
+| Role definitions           | Database       | `schemas/organization_members.ts`      |
+| Permission strings         | Code constants | `auth.utils.ts` line 19-286            |
+| Role → Permissions mapping | Code constants | `auth.utils.ts` line 8-148             |
+| Permission checks          | Mutations      | `organizations/mutations.ts`           |
+| Permission fetching        | Frontend       | `$slug/tsx` queries                    |
+| UI conditional rendering   | Components     | `app-sidebar.tsx`, `settings/team.tsx` |
 
 ## Common Tasks
 
@@ -77,6 +78,7 @@ When a user tries to invite someone:
 ### I need to check if a user can do something
 
 **Backend (inside a mutation)**:
+
 ```typescript
 if (!hasPermission(ctx.auth.member, "documents:create")) {
   throw new ConvexError("You cannot create documents");
@@ -84,6 +86,7 @@ if (!hasPermission(ctx.auth.member, "documents:create")) {
 ```
 
 **Frontend (in a React component)**:
+
 ```typescript
 const permissions = useQuery(api.organizations.queries.getUserPermissions, ...);
 if (!permissions?.permissions.canCreateDocuments) {
@@ -100,7 +103,7 @@ export const featureForAdminsOnly = adminMutation({
   // Automatically checks user is admin+ and active
   handler: async (ctx, args) => {
     // ... your code here ...
-  }
+  },
 });
 ```
 
@@ -111,11 +114,12 @@ Call `updateMemberRole` mutation:
 ```typescript
 await mutation(api.organizations.mutations.updateMemberRole, {
   memberId: member_id,
-  role: "admin"  // owner | admin | member | viewer
+  role: "admin", // owner | admin | member | viewer
 });
 ```
 
 Constraints:
+
 - You must be an admin
 - You cannot change your own role
 - Only owners can assign/change owner role
@@ -200,10 +204,12 @@ Frontend shows error message to user.
 Documents have organization-wide + document-level permissions:
 
 **Org-level** (role-based):
+
 - Member role can create docs
 - Viewer role cannot
 
 **Document-level** (sharing mode):
+
 - `private` - Only owner
 - `workspace` - All org members
 - `specific` - Explicit per-user permissions (requires Pro)
@@ -228,19 +234,23 @@ Documents have organization-wide + document-level permissions:
 ## Files to Know
 
 **Core Auth**:
+
 - `auth.ts` - AuthContext definition, query/mutation wrappers
 - `auth.utils.ts` - Permission functions, role hierarchy
 - `auth.config.ts` - Clerk Convex bridge
 
 **Organization Management**:
+
 - `organizations/queries.ts` - Get org details, members, permissions
 - `organizations/mutations.ts` - Create org, invite, change roles
 
 **Document Access**:
+
 - `documents/queries.ts` - Get documents with access control
 - `documents/sharing.ts` - Manage document sharing & access
 
 **Frontend**:
+
 - `$slug.tsx` - Fetches permissions on workspace load
 - `app-sidebar.tsx` - Shows/hides menu items based on permissions
 - `settings/team.tsx` - Team management UI with permission checks
@@ -255,4 +265,3 @@ Try these in your app:
 4. **Owner makes member an admin** - now member can invite
 5. **Owner removes self from org** - fails because they're the last owner
 6. **Owner suspends member** - member can no longer perform actions
-

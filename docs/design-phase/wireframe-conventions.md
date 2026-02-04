@@ -13,12 +13,13 @@ This document establishes **detailed** standards for creating wireframes across 
 Every wireframe must include **three layers of information**:
 
 1. **Visual Structure Layer** (detailed ASCII/Unicode layout with measurements)
-2. **Detailed Specifications Layer** (colors, interactions, states)  
+2. **Detailed Specifications Layer** (colors, interactions, states)
 3. **Technical Implementation Layer** (components, data, APIs)
 
 ### **Unicode Box Drawing Characters (Maximum Detail)**
 
 #### **Advanced Box Drawing Set**
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ Single line borders: ┌─┬─┐ ├─┼─┤ └─┴─┘                  │
@@ -32,25 +33,26 @@ Every wireframe must include **three layers of information**:
 
 Visual Depth Indicators:
 ▓▓▓ Solid shadows/elevated elements
-▒▒▒ Medium opacity/semi-disabled elements  
+▒▒▒ Medium opacity/semi-disabled elements
 ░░░ Light backgrounds/subtle elements
 ███ Completely filled/active elements
 
 Interaction Symbols:
 ↔ ↕ ↗ ↘ ↙ ↖ ↶ ↷ ↺ ↻ Movement/resize
-✋ 👆 👉 👇 👈 Touch gestures  
+✋ 👆 👉 👇 👈 Touch gestures
 ⟲ ⟳ Rotation/refresh
 🖱 Mouse interactions
 ⌘ ⌥ ⇧ ⌃ Keyboard modifiers
 ```
 
 #### **Container Hierarchy System**
+
 ```
 PRIORITY 1 (Critical): ╔═══════════════╗
                        ║ Primary CTA   ║
                        ╚═══════════════╝
 
-PRIORITY 2 (Important): ┏━━━━━━━━━━━━━━━┓  
+PRIORITY 2 (Important): ┏━━━━━━━━━━━━━━━┓
                         ┃ Secondary     ┃
                         ┗━━━━━━━━━━━━━━━┛
 
@@ -66,6 +68,7 @@ PRIORITY 4 (Subtle):    ╭─────────────────�
 ### **Enhanced UI Element Standards**
 
 #### **shadcn/ui Buttons (Unicode Enhanced + Component Specific)**
+
 ```
 BASIC (NEVER USE):
 [Button Text]
@@ -78,7 +81,7 @@ ENHANCED SHADCN/UI BUTTONS (ALWAYS USE):
 ║ ▓▓▓ Shadow depth: 0 1px 3px rgba(0,0,0,0.1) ▓▓▓                      ║
 ╚════════════════════════════════════════════════════════════════════════╝
 
-┏━[SECONDARY BUTTON: variant="outline" size="default"]━━━━━━━━━━━━━━━━━━━━━┓  
+┏━[SECONDARY BUTTON: variant="outline" size="default"]━━━━━━━━━━━━━━━━━━━━━┓
 ┃ ░░░ Learn More ░░░ │ 200×40px                                        ┃
 ┃ class="border border-input bg-background hover:bg-accent"           ┃
 ┃ ▒▒▒ Subtle hover state with accent background ▒▒▒                   ┃
@@ -100,7 +103,7 @@ SHADCN/UI STATE MATRIX:
 
 SIZE VARIANTS:
 ├─ sm: h-9 px-3 text-sm (36px height)
-├─ default: h-10 px-4 py-2 (40px height)  
+├─ default: h-10 px-4 py-2 (40px height)
 ├─ lg: h-11 px-8 (44px height)
 └─ icon: h-10 w-10 p-0 (40×40px square)
 
@@ -120,6 +123,7 @@ TECHNICAL IMPLEMENTATION:
 ```
 
 #### **shadcn/ui Form Inputs (Unicode Enhanced + Component Specific)**
+
 ```
 BASIC (NEVER USE):
 [_______________]
@@ -194,6 +198,7 @@ TECHNICAL IMPLEMENTATION:
 ```
 
 #### **shadcn/ui Layout Containers (Unicode Enhanced + Component Specific)**
+
 ```
 BASIC (NEVER USE):
 ┌─────────────┐
@@ -302,6 +307,7 @@ TECHNICAL IMPLEMENTATION:
 ### **Required Breakpoints (All Must Be Documented)**
 
 #### **Desktop Layout (≥1024px) - Primary Layout**
+
 ```css
 /* Container Specifications */
 max-width: 1200px;
@@ -315,7 +321,7 @@ Touch Target: N/A (mouse interaction)
 
 /* Typography Scale */
 Hero: 48px/52px font-bold
-Section: 32px/36px font-semibold  
+Section: 32px/36px font-semibold
 Body: 16px/24px font-normal
 Small: 14px/20px font-normal
 
@@ -326,6 +332,7 @@ Internal Padding: 16px
 ```
 
 #### **Mobile Layout (≤767px) - Critical Priority**
+
 ```
 ┌─[MOBILE CONTAINER: 100% width]─────┐
 │ Padding: 16px horizontal           │
@@ -359,17 +366,17 @@ CSS IMPLEMENTATION:
   .container {
     padding: 0 16px;
   }
-  
+
   .hero-text {
     font-size: 36px;
     line-height: 40px;
   }
-  
+
   .cta-button {
     width: 100%;
     height: 48px;
   }
-  
+
   .oauth-buttons {
     flex-direction: column;
     gap: 8px;
@@ -378,7 +385,7 @@ CSS IMPLEMENTATION:
 
 TOUCH INTERACTIONS:
 ├─ Minimum Touch Target: 44×44px
-├─ Button Height: 48px minimum  
+├─ Button Height: 48px minimum
 ├─ Active State: Visual feedback on tap
 └─ Swipe Support: Where contextually appropriate
 ```
@@ -390,6 +397,7 @@ TOUCH INTERACTIONS:
 ### **Required States (ALL Must Be Documented)**
 
 #### **1. 🔵 Initial/Empty State - REQUIRED**
+
 ```
 VISUAL SPECIFICATION:
 ┌─[EMPTY STATE CONTAINER: 400×300px centered]────────────────────────────────┐
@@ -429,6 +437,7 @@ BEHAVIORAL SPECIFICATIONS:
 ```
 
 #### **2. 🟢 Success State - REQUIRED**
+
 ```
 Must show populated interface with real data examples
 Must include all interactive elements in their default states
@@ -436,7 +445,8 @@ Must demonstrate proper content hierarchy and spacing
 Must include loading indicators for dynamic content
 ```
 
-#### **3. 🟡 Loading State - REQUIRED**  
+#### **3. 🟡 Loading State - REQUIRED**
+
 ```
 LOADING SPECIFICATION:
 ┌─[LOADING CONTAINER: Match success state dimensions]────────────────────────┐
@@ -480,6 +490,7 @@ ACCESSIBILITY:
 ```
 
 #### **4. 🔴 Error State - REQUIRED**
+
 ```
 ERROR STATE SPECIFICATION:
 ┌─[ERROR CONTAINER: 400×200px centered]──────────────────────────────────────┐
@@ -529,6 +540,7 @@ TECHNICAL INTEGRATION:
 ### **Component Architecture (REQUIRED for all wireframes)**
 
 #### **Data Requirements Specification**
+
 ```javascript
 // REQUIRED: Define exact data needs for each wireframe
 interface WireframeDataRequirements {
@@ -539,7 +551,7 @@ interface WireframeDataRequirements {
     permissions: string[];
     currentWorkspace: WorkspaceContext;
   };
-  
+
   // Page-Specific Data
   pageData: {
     // Specify exact API endpoints
@@ -548,7 +560,7 @@ interface WireframeDataRequirements {
     fallback: any; // What to show if data unavailable
     realTimeUpdates: boolean;
   };
-  
+
   // UI State Management
   uiState: {
     loading: Record<string, boolean>;
@@ -567,15 +579,15 @@ interface WireframeActions {
     openModal: (modalId: string) => void;
     closeModal: (modalId: string) => void;
   };
-  
-  // Data Actions  
+
+  // Data Actions
   data: {
     refetch: () => Promise<void>;
     create: (data: any) => Promise<void>;
     update: (id: string, data: any) => Promise<void>;
     delete: (id: string) => Promise<void>;
   };
-  
+
   // Analytics Actions
   analytics: {
     trackPageView: () => void;
@@ -586,6 +598,7 @@ interface WireframeActions {
 ```
 
 #### **Clerk Integration (REQUIRED)**
+
 ```javascript
 // REQUIRED: Specify authentication requirements
 interface AuthRequirements {
@@ -593,15 +606,15 @@ interface AuthRequirements {
   minimumRole: 'member' | 'admin' | 'owner';
   workspaceRequired: boolean;
   specificPermissions: string[]; // e.g., ['document.create', 'billing.view']
-  
+
   // Authentication Flow
   redirectIfUnauthenticated: string; // e.g., '/signin'
   redirectAfterAuth: string; // e.g., '/dashboard'
-  
+
   // Session Management
   requireRecentAuth: boolean; // For sensitive operations
   mfaRequired: boolean;
-  
+
   // API Integration
   protectedRoutes: string[]; // API endpoints that require auth
   authHeaders: boolean; // Include auth in API requests
@@ -617,6 +630,7 @@ interface AuthUIStates {
 ```
 
 #### **Convex Integration (REQUIRED)**
+
 ```javascript
 // REQUIRED: Specify real-time data needs
 interface ConvexIntegration {
@@ -629,17 +643,17 @@ interface ConvexIntegration {
       dependencies: string[]; // Other queries this depends on
     };
   };
-  
-  // Mutations (WRITE operations)  
+
+  // Mutations (WRITE operations)
   mutations: {
     [mutationName: string]: {
-      api: string; // e.g., 'api.documents.create'  
+      api: string; // e.g., 'api.documents.create'
       optimistic: boolean; // Update UI immediately
       invalidates: string[]; // Queries to refetch after mutation
       rollback: any; // How to rollback if mutation fails
     };
   };
-  
+
   // Actions (Server functions)
   actions: {
     [actionName: string]: {
@@ -658,6 +672,7 @@ interface ConvexIntegration {
 ### **Pre-Development Handoff (ALL Must Pass)**
 
 #### **Visual Specifications Complete**
+
 - [ ] **Exact dimensions specified** for all elements (width × height in px)
 - [ ] **Color values defined** using design tokens (hex codes from design-tokens.md)
 - [ ] **Typography scales documented** (font-size/line-height font-weight)
@@ -667,6 +682,7 @@ interface ConvexIntegration {
 - [ ] **Animation specifications** included (duration, easing, keyframes)
 
 #### **Interactive Behavior Complete**
+
 - [ ] **All 5 states documented** (Initial, Success, Loading, Error, Edge cases)
 - [ ] **Button interaction matrix** defined (default, hover, focus, active, disabled)
 - [ ] **Form validation rules** specified with error messages
@@ -676,6 +692,7 @@ interface ConvexIntegration {
 - [ ] **Accessibility requirements** documented (ARIA labels, focus management)
 
 #### **Technical Integration Complete**
+
 - [ ] **Data requirements interface** defined with exact API endpoints
 - [ ] **Authentication requirements** specified (roles, permissions, redirects)
 - [ ] **Real-time subscriptions** identified (Convex queries/mutations)
@@ -685,6 +702,7 @@ interface ConvexIntegration {
 - [ ] **Error boundaries** and fallback strategies documented
 
 #### **Cross-Platform Compatibility**
+
 - [ ] **Mobile layout tested** at 320px width minimum
 - [ ] **Touch targets verified** minimum 44px height
 - [ ] **Keyboard navigation** order documented
@@ -700,13 +718,15 @@ interface ConvexIntegration {
 ### **Wireframe Detail Levels**
 
 #### **Level 1: Critical User Journeys (Maximum Detail Required)**
+
 - Landing page and authentication flows
-- Document upload and signing ceremony  
+- Document upload and signing ceremony
 - Checkout and billing flows
 - First-time user onboarding
 - Mobile-critical interactions
 
 **Requirements:**
+
 - Pixel-perfect specifications
 - Complete state matrices
 - Full responsive documentation
@@ -715,6 +735,7 @@ interface ConvexIntegration {
 - Analytics instrumentation complete
 
 #### **Level 2: Core Application Features (High Detail Required)**
+
 - Dashboard and document management
 - Profile and workspace settings
 - Templates and bulk operations
@@ -722,21 +743,24 @@ interface ConvexIntegration {
 - API key management
 
 **Requirements:**
+
 - Detailed dimensions and spacing
-- All interactive states documented  
+- All interactive states documented
 - Responsive behaviors specified
 - Key technical integrations defined
 - Error handling strategies
 - Basic analytics tracking
 
 #### **Level 3: Secondary Features (Moderate Detail Required)**
+
 - Help and support interfaces
-- Advanced settings and preferences  
+- Advanced settings and preferences
 - Edge case handling interfaces
 - Admin tooling and debugging
 - Marketing and informational pages
 
 **Requirements:**
+
 - Standard component specifications
 - Primary states documented
 - Mobile responsiveness confirmed
@@ -748,30 +772,37 @@ interface ConvexIntegration {
 ## 🔄 Maintenance and Updates
 
 ### **Wireframe Version Control**
+
 ```markdown
 ## Version History Template (Required for all wireframes)
 
 ### v1.2.0 - 2024-01-15
+
 **Changes:**
+
 - Enhanced mobile layout for better touch interaction
 - Added loading states for async operations
 - Updated color values to match design-tokens.md v2.1
 
 **Technical Updates:**
+
 - Added Convex real-time subscriptions
 - Updated Clerk integration patterns
 - New analytics events for user behavior tracking
 
 **Breaking Changes:**
+
 - Button component API updated (size prop renamed)
 - Navigation structure modified (affects routing)
 
 **Migration Guide:**
+
 - Update button components: size="large" → size="lg"
 - Review navigation links in existing implementations
 ```
 
 ### **Cross-Reference Maintenance**
+
 - **Design Tokens**: Verify all color/typography references match current tokens
 - **Component Library**: Ensure wireframes align with implemented components
 - **API Documentation**: Keep endpoint specifications in sync with backend
@@ -782,7 +813,9 @@ interface ConvexIntegration {
 ## ✅ Success Criteria
 
 ### **Developer Handoff Quality**
+
 A wireframe is ready for development when:
+
 - [ ] Developer can implement without asking clarifying questions
 - [ ] All visual specifications have exact measurements
 - [ ] All interactive behaviors are clearly defined
@@ -792,7 +825,9 @@ A wireframe is ready for development when:
 - [ ] Analytics and tracking are instrumented
 
 ### **Design Consistency Quality**
+
 A wireframe maintains design consistency when:
+
 - [ ] Uses established design tokens and patterns
 - [ ] Follows accessibility guidelines consistently
 - [ ] Matches interaction patterns from similar features

@@ -3,15 +3,18 @@
 ## Feature Requirements (from MVP Core Features)
 
 ### User Onboarding ⭐ **Critical**
+
 - [ ] **User onboarding** flow completed in <5 minutes
 
 ## Technology Stack Integration
+
 - **Clerk**: Seamless authentication flow integration
 - **React**: Interactive onboarding components
 - **Convex**: Real-time progress tracking during onboarding
 - **Clerk Organizations**: Workspace creation during onboarding
 
 ## Business Requirements
+
 - Fast, intuitive onboarding process
 - Clear value demonstration during setup
 - Two distinct onboarding paths: Free and Pro Trial
@@ -20,6 +23,7 @@
 - Mobile-responsive onboarding experience
 
 ## Design Philosophy
+
 - Stripe-inspired minimalist aesthetic
 - Focus on getting users to success quickly
 - Progressive disclosure of features
@@ -30,12 +34,14 @@
 ## Edge Cases (from Feature Edge Cases Breakdown)
 
 ### Core Tech Stack
+
 - **React** - Landing page and onboarding components
 - **TanStack Router** - Client-side routing for marketing pages
 - **Clerk** - Seamless transition from marketing to authenticated experience
 - **Convex** - Onboarding progress tracking
 
 ### Onboarding States
+
 - `landing` - User viewing marketing landing page
 - `plan_selection` - User choosing Free or Pro Trial plan
 - `signing_up` - User going through registration process
@@ -47,6 +53,7 @@
 ### Core Edge Cases
 
 #### Marketing Landing Page (Stripe-Style)
+
 - [ ] **Clean, developer-focused design**: Minimalist aesthetic like Stripe
   - Clean typography and generous white space
   - Monochromatic palette with subtle accent colors
@@ -63,6 +70,7 @@
   - Mobile-responsive without bloat
 
 #### Developer-First Onboarding
+
 - [ ] **Quick start workflow**: Get developers productive immediately
   - Sample API calls and code examples
   - Direct path to API documentation
@@ -79,6 +87,7 @@
   - Webhook setup guidance
 
 #### Simple Documentation
+
 - [ ] **Getting started guide**: Clear, concise documentation
   - Step-by-step first document workflow
   - Common use cases and examples
@@ -89,6 +98,7 @@
   - Pre-configured signature field examples
 
 #### Onboarding Error Handling
+
 - [ ] **Interrupted onboarding**: Handle users who leave mid-process
   - Save progress and allow easy resumption
   - Simple re-entry without repetitive steps

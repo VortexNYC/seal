@@ -3,6 +3,7 @@
 ## Feature Requirements (from MVP Core Features)
 
 ### Billing & Subscription Management ⭐ **Critical**
+
 - [ ] **Subscription plan display** with current usage vs limits
 - [ ] **Payment method management** (add/edit/remove payment methods)
 - [ ] **Billing history** with downloadable invoices
@@ -11,12 +12,14 @@
 - [ ] **Billing notifications** via email
 
 ## Technology Stack Integration
+
 - **Stripe**: Payment processing and subscription management
 - **Clerk**: Workspace owner billing access control
 - **Convex**: Usage tracking and billing data storage
 - **React Email + Resend**: Billing notification emails
 
 ## Business Requirements
+
 - Workspace-level billing (one subscription per workspace)
 - Free tier: 10 docs/month, 1 user, no payment required
 - Pro tier: $10/month per seat, unlimited features
@@ -27,6 +30,7 @@
 ## Edge Cases (from Feature Edge Cases Breakdown)
 
 ### Billing Access Control (Clerk Integration)
+
 - [ ] **Workspace Owner**: Full billing access and management
   - View current plan, usage, and billing history
   - Add/edit/remove payment methods
@@ -38,6 +42,7 @@
   - Cannot modify billing or payment methods
 
 ### Subscription Plan Display Edge Cases
+
 - [ ] **Free Plan Display**: Show current usage vs 10 document limit
   - Usage: "7 of 10 documents used this month"
   - Features: "1 user, 10 documents/month, basic features"
@@ -51,6 +56,7 @@
   - Action: Add payment method to continue Pro after trial
 
 ### Payment Method Management Edge Cases (Stripe Integration)
+
 - [ ] **Add Payment Method**: Connect credit card via Stripe
   - Form: Standard credit card form with Stripe Elements secure processing
   - Validation: Real-time card validation
@@ -69,6 +75,7 @@
   - Retry: Manual retry option after updating payment method
 
 ### Plan Change Edge Cases
+
 - [ ] **Upgrade to Pro**: Change from Free to Pro plan
   - Immediate: Pro features activated immediately
   - Billing: Prorated billing for current month
@@ -83,6 +90,7 @@
   - Prorated: Mid-month member changes are prorated
 
 ### Usage Tracking Edge Cases (Convex Integration)
+
 - [ ] **Free Plan Usage Tracking**: Track documents against 10/month limit
   - Counter: Reset monthly on billing date
   - Warning: "2 documents remaining this month" at 8/10
@@ -95,6 +103,7 @@
   - Display: Clear indication of next reset date
 
 ### Billing History Edge Cases (Stripe Invoice Management)
+
 - [ ] **Invoice Generation**: Monthly invoice creation via Stripe
   - Content: Workspace name, billing period, itemized charges
   - Delivery: Automatic email to workspace owner
@@ -109,6 +118,7 @@
   - Recovery: Update payment method and retry
 
 ### Billing Notifications Edge Cases (React Email + Resend)
+
 - [ ] **Successful Payment**: Payment confirmation notifications
   - Email: Receipt with invoice attached via React Email
   - Content: Payment amount, next billing date, workspace details
@@ -124,6 +134,7 @@
   - Content: Add payment method to continue Pro features
 
 ### Stripe Integration Edge Cases
+
 - [ ] **Stripe Subscription Creation**: New Pro subscription setup
   - Process: Create Stripe subscription with workspace context
   - Webhook: Handle subscription created webhook

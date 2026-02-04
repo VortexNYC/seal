@@ -49,6 +49,7 @@ Add Seal to your Claude Desktop configuration:
 3. **Start Using**: Ask Claude to help with document workflows
 
 Example prompts:
+
 - "List my recent documents"
 - "Create a new document from the Employment Contract template"
 - "Show me all pending signatures"
@@ -116,7 +117,7 @@ Resources provide read-only access to your Seal data:
 The MCP server uses Clerk OAuth for secure authentication:
 
 1. **OAuth Flow**: Standard OAuth 2.0 authorization code flow
-2. **Scopes**: Full API access (all seal:* scopes)
+2. **Scopes**: Full API access (all seal:\* scopes)
 3. **Token Storage**: Tokens are stored securely by the MCP client
 4. **Refresh**: Tokens are automatically refreshed when expired
 
@@ -130,8 +131,8 @@ The MCP server uses Clerk OAuth for secure authentication:
 ### Automated Document Workflows
 
 ```
-User: "Create a new employment contract for John Doe (john@example.com) 
-       using the Employment Contract template, with a start date of Feb 1st 
+User: "Create a new employment contract for John Doe (john@example.com)
+       using the Employment Contract template, with a start date of Feb 1st
        and salary of $75,000"
 
 Claude: I'll create that document for you using the template.
@@ -148,7 +149,7 @@ User: "Show me all documents waiting for signatures"
 Claude: [Uses seal_list_documents with status filter]
         You have 3 documents pending signatures:
         1. Service Agreement - 1/2 signed
-        2. NDA - 0/1 signed  
+        2. NDA - 0/1 signed
         3. Contract Amendment - 2/3 signed
 ```
 
@@ -169,7 +170,8 @@ Claude: [Uses seal_list_documents and seal_send_reminder tools]
 - **Revocable**: Disconnect MCP access anytime from Clerk dashboard
 
 <Callout type="info">
-  **Privacy**: The MCP server only accesses data you explicitly authorize. AI assistants cannot access your Seal account without your permission.
+  **Privacy**: The MCP server only accesses data you explicitly authorize. AI assistants cannot
+  access your Seal account without your permission.
 </Callout>
 
 ## Limitations

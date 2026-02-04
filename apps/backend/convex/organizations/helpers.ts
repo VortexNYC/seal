@@ -5,87 +5,88 @@
  */
 
 import { v } from "convex/values";
+
 import { internalQuery } from "../_generated/server";
 
 /**
  * Get organization by ID (internal query for actions)
  */
 export const getOrganizationById = internalQuery({
-	args: {
-		organizationId: v.id("organizations"),
-	},
-	handler: async (ctx, args) => {
-		return await ctx.db.get(args.organizationId);
-	},
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.organizationId);
+  },
 });
 
 /**
  * Get organization member by ID (internal query for actions)
  */
 export const getOrganizationMemberById = internalQuery({
-	args: {
-		memberId: v.id("organization_members"),
-		organizationId: v.id("organizations"),
-	},
-	handler: async (ctx, args) => {
-		const member = await ctx.db.get(args.memberId);
+  args: {
+    memberId: v.id("organization_members"),
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    const member = await ctx.db.get(args.memberId);
 
-		// Verify member belongs to the specified organization
-		if (member && member.organizationId !== args.organizationId) {
-			return null;
-		}
+    // Verify member belongs to the specified organization
+    if (member && member.organizationId !== args.organizationId) {
+      return null;
+    }
 
-		return member;
-	},
+    return member;
+  },
 });
 
 /**
  * Get user by ID (internal query for actions)
  */
 export const getUserById = internalQuery({
-	args: {
-		userId: v.id("users"),
-	},
-	handler: async (ctx, args) => {
-		return await ctx.db.get(args.userId);
-	},
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.userId);
+  },
 });
 
 /**
  * Get user by Clerk ID (internal query for actions)
  */
 export const getUserByClerkId = internalQuery({
-	args: {
-		clerkId: v.string(),
-	},
-	handler: async (ctx, args) => {
-		return await ctx.db
-			.query("users")
-			.withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-			.first();
-	},
+  args: {
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+  },
 });
 
 /**
  * Get active membership for a user within an organization
  */
 export const getActiveMembershipByUserAndOrganization = internalQuery({
-	args: {
-		userId: v.id("users"),
-		organizationId: v.id("organizations"),
-	},
-	handler: async (ctx, args) => {
-		const membership = await ctx.db
-			.query("organization_members")
-			.withIndex("by_user_organization", (q) =>
-				q.eq("userId", args.userId).eq("organizationId", args.organizationId),
-			)
-			.first();
+  args: {
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    const membership = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user_organization", (q) =>
+        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
+      )
+      .first();
 
-		if (!membership || membership.status !== "active") {
-			return null;
-		}
+    if (!membership || membership.status !== "active") {
+      return null;
+    }
 
-		return membership;
-	},
+    return membership;
+  },
 });

@@ -8,7 +8,7 @@
 ### Document Templates ⚡ **Important**
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                 CORE FEATURES                                          ┃
+┃ CORE FEATURES ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ◉ **Template creation** from existing documents
@@ -17,28 +17,28 @@
 ◉ **Shared templates** across organization
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                            TECHNOLOGY STACK INTEGRATION                                ┃
+┃ TECHNOLOGY STACK INTEGRATION ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ╭─ Template Processing ──────────────────────────────────────────────────────────────────╮
-│ • **PDF-lib**: Template PDF processing and signature field preservation               │
-│ • **Konva.js**: Template field editing and positioning (reuses document processing)   │
-│ • **Zod**: Template validation schemas and field structure validation                  │
+│ • **PDF-lib**: Template PDF processing and signature field preservation │
+│ • **Konva.js**: Template field editing and positioning (reuses document processing) │
+│ • **Zod**: Template validation schemas and field structure validation │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Template Interface ───────────────────────────────────────────────────────────────────╮
-│ • **TanStack Router**: Client-side routing for template interfaces                    │
-│ • **React**: Template creation, management, and discovery interfaces                   │
-│ • **fuzzysort**: Template search and discovery (consistent with document search)      │
+│ • **TanStack Router**: Client-side routing for template interfaces │
+│ • **React**: Template creation, management, and discovery interfaces │
+│ • **fuzzysort**: Template search and discovery (consistent with document search) │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Template Storage & Security ──────────────────────────────────────────────────────────╮
-│ • **Convex**: Template storage, sharing, version control, and real-time sync          │
-│ • **Clerk Roles & Permissions**: Workspace-scoped template permissions and access control      │
+│ • **Convex**: Template storage, sharing, version control, and real-time sync │
+│ • **Clerk Roles & Permissions**: Workspace-scoped template permissions and access control │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                BUSINESS REQUIREMENTS                                    ┃
+┃ BUSINESS REQUIREMENTS ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ■ Simple template creation workflow from existing documents
@@ -54,10 +54,12 @@
 ## Freemium Model Integration
 
 ### Simple Plan Structure
+
 - **Free Plan**: Full template access, 10 documents per month limit
 - **Pro Plan**: Full template access, unlimited documents + API access + multiple workspace users
 
 ### All Template Features Available on Both Plans
+
 - Create unlimited templates from documents
 - Complete template organization and management
 - Template search and discovery
@@ -69,18 +71,21 @@
 - Template export/import functionality
 
 ### Pro Plan Exclusive Features
+
 - **API Access**: Programmatic template operations
 - **Multiple Workspace Users**: Teams and collaboration
 - **Unlimited Documents**: No monthly document limits
 
 ╔══════════════════════════════════════════════════════════════════════════════════════════╗
-║                           🔧 EDGE CASES & ERROR HANDLING                                ║
+║ 🔧 EDGE CASES & ERROR HANDLING ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════╝
 
 ### Feature Description
+
 Templates are reusable document scaffolds (like "Sales Agreement", "Partnership Contract") that save time when creating similar documents repeatedly. Templates are ONLY used during document creation - once a document is created from a template, they become completely independent.
 
 ### Template States
+
 - `creating` - Creating new template from existing document
 - `editing` - Modifying template structure and fields (independent of any existing documents)
 - `saving` - Persisting template changes to Convex
@@ -89,6 +94,7 @@ Templates are reusable document scaffolds (like "Sales Agreement", "Partnership 
 - `duplicating` - Copying template to create new template variation
 
 ### Key Template Independence Rules
+
 1. **Templates are document scaffolds** - not connected to active documents
 2. **Once document created** - template connection is permanently severed
 3. **Template edits never affect existing documents** - they're completely independent
@@ -97,6 +103,7 @@ Templates are reusable document scaffolds (like "Sales Agreement", "Partnership 
 ### Core Edge Cases
 
 #### Template Creation & Management
+
 - [ ] **Create from document**: Convert existing document with fields into reusable template
   - Source Document: Any document with signature fields can become template (50MB max)
   - Field Preservation: Maintain all signature field positions and properties
@@ -115,6 +122,7 @@ Templates are reusable document scaffolds (like "Sales Agreement", "Partnership 
   - Field Conflicts: Check for overlapping or invalid field placements
 
 #### Template Organization & Discovery
+
 - [ ] **Template library**: Organize templates within workspace
   - Template Listing: Display all available templates with previews
   - Search Functionality: Find templates by name, description, or tags
@@ -138,6 +146,7 @@ Templates are reusable document scaffolds (like "Sales Agreement", "Partnership 
   - Access Control: Clerk Roles & Permissions controls template access
 
 #### Template Application & Usage (Independence Model)
+
 - [ ] **New document from template**: Template creates completely independent document copy
   - Template Selection: Choose template from organized library
   - **Independent Document Generation**: Template creates separate document with zero connection
@@ -155,6 +164,7 @@ Templates are reusable document scaffolds (like "Sales Agreement", "Partnership 
   - Custom Messages: Add custom email messages when using template
 
 #### Template Performance & Optimization
+
 - [ ] **Template loading**: Efficient template retrieval and display
   - Fast Loading: Quick template library loading with pagination
   - Preview Generation: Efficient template preview rendering
@@ -162,11 +172,12 @@ Templates are reusable document scaffolds (like "Sales Agreement", "Partnership 
   - Search Performance: Fast template search across large libraries
 - [ ] **Template storage**: Efficient template data management
   - Compact Storage: Optimize template data structure for storage efficiency
-  - Field Data: Store field positions, properties, and assignments efficiently  
+  - Field Data: Store field positions, properties, and assignments efficiently
   - Version History: Maintain template change history without bloating storage
   - Duplicate Detection: Identify and handle duplicate template creation
 
 #### Template Error Handling & Edge Cases
+
 - [ ] **Template creation failures**: Handle template creation errors
   - Invalid Source Document: Handle documents that cannot be templated
   - Field Extraction Errors: Handle cases where fields cannot be preserved
@@ -177,11 +188,12 @@ Templates are reusable document scaffolds (like "Sales Agreement", "Partnership 
   - Field Mapping Errors: Handle cases where template fields cannot be applied
   - Document Compatibility: Handle cases where template doesn't fit new document
   - Recipient Mapping Failures: Handle incomplete or invalid recipient assignments
-- [ ] **Template sharing conflicts**: Handle template access issues  
+- [ ] **Template sharing conflicts**: Handle template access issues
   - Permission Changes: Handle cases where template access is revoked
   - Template Deletion: Handle cases where template is deleted (doesn't affect existing documents)
 
 #### Template + Bulk Operations Interaction (Independence Model)
+
 - [ ] **Template changes during bulk operations**: Templates and bulk sends are completely independent
   - **No impact on queued sends**: Template edits don't affect documents already queued for bulk sending
   - **No impact on active sends**: Template changes don't affect documents currently being sent to recipients

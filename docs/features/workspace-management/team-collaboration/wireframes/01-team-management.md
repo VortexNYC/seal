@@ -364,6 +364,7 @@
 ## Interaction Specifications
 
 ### Team Member List
+
 - **Real-time Status**: Online/offline indicators update via Convex Presence
 - **Role Indicators**: Clear visual hierarchy (Owner > Admin > Member)
 - **Activity Stats**: Document count and signature count per member
@@ -371,12 +372,14 @@
 - **Search/Filter**: Search members by name/email, filter by role or status
 
 ### Invitation Management
+
 - **Bulk Processing**: Support up to 10 email addresses at once
 - **Email Validation**: Real-time format checking and duplicate detection
 - **Status Tracking**: Real-time invitation status updates via Convex
 - **Expiration Handling**: Auto-cleanup of expired invitations
 
 ### Role Management
+
 - **Permission Preview**: Clear explanation of role capabilities
 - **Confirmation Flows**: Two-step confirmation for destructive actions
 - **Real-time Updates**: Immediate permission refresh across all sessions
@@ -387,12 +390,14 @@
 ## Clerk Integration
 
 ### Organization Plugin
+
 - **Member Management**: Leverage Clerk organization membership
 - **Invitation System**: Built-in invitation flow with token management
 - **Role Assignment**: Seamless role integration
 - **Multi-workspace Support**: Clean workspace context separation
 
 ### RBAC Plugin
+
 - **Permission Enforcement**: Real-time permission checking and updates
 - **Role Hierarchies**: Clear Owner > Admin > Member structure
 - **API Access**: Role-based API permissions and rate limiting
@@ -403,18 +408,21 @@
 ## Technical Integration
 
 ### Convex Real-time Features
+
 - **Member Presence**: Live online/offline status via Convex Presence
 - **Activity Tracking**: Real-time document and signature statistics
 - **Permission Sync**: Instant permission updates across all clients
 - **Invitation Status**: Live invitation status and response tracking
 
 ### React Email + Resend
+
 - **Team Invitations**: Professional invitation email templates
 - **Role Notifications**: Member role change communications
 - **Removal Notifications**: Team member removal emails
 - **Activity Digests**: Periodic team activity summaries
 
 ### State Management
+
 - **Member List**: Real-time member list updates and status changes
 - **Permission Cache**: Efficient permission checking and updates
 - **UI Consistency**: Seamless state synchronization across all interfaces

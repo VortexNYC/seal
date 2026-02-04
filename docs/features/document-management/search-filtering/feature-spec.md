@@ -8,7 +8,7 @@
 ### Search & Filtering ⚡ **Important**
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                 CORE FEATURES                                          ┃
+┃ CORE FEATURES ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ◉ **Document search** by title, content, and metadata
@@ -20,23 +20,23 @@
 ◉ **Real-time search updates** via Convex subscriptions
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                            TECHNOLOGY STACK INTEGRATION                                ┃
+┃ TECHNOLOGY STACK INTEGRATION ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ╭─ Search Engine ────────────────────────────────────────────────────────────────────────╮
-│ • **fuzzysort**: Client-side fuzzy search (5KB, <1ms on 13k files)                   │
-│ • **Convex**: Real-time document queries and live search results                     │
-│ • **date-fns**: Date range filtering and sorting                                      │
+│ • **fuzzysort**: Client-side fuzzy search (5KB, <1ms on 13k files) │
+│ • **Convex**: Real-time document queries and live search results │
+│ • **date-fns**: Date range filtering and sorting │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ User Interface ───────────────────────────────────────────────────────────────────╮
-│ • **TanStack Router**: Client-side routing for search interfaces                    │
-│ • **React**: Search interface and filter components                                   │
-│ • **Clerk Roles & Permissions**: Workspace-scoped search access control                       │
+│ • **TanStack Router**: Client-side routing for search interfaces │
+│ • **React**: Search interface and filter components │
+│ • **Clerk Roles & Permissions**: Workspace-scoped search access control │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                BUSINESS REQUIREMENTS                                    ┃
+┃ BUSINESS REQUIREMENTS ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ■ Fast search across all workspace documents
@@ -52,6 +52,7 @@
 ## Freemium Model Integration
 
 ### Search & Filtering for All Plans
+
 - **Free Plan**: Full search functionality across all documents (10/month sending limit only)
 - **Pro Plan**: Same search features + API access + multiple workspace users
 - **No Search Restrictions**: Identical search capabilities for both plans
@@ -59,16 +60,18 @@
 - **Feature Parity**: No artificial limitations on search or filtering features
 
 ### Search Integration with Organization
+
 - **Folder Search**: Search within specific folders or across all folders
 - **Tag Filtering**: Filter documents by assigned tags
 - **Status Filtering**: Filter by document status (draft, pending, completed)
 - **Date Filtering**: Search by creation date, modification date, completion date
 
 ╔══════════════════════════════════════════════════════════════════════════════════════════╗
-║                           🔧 EDGE CASES & ERROR HANDLING                                ║
+║ 🔧 EDGE CASES & ERROR HANDLING ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════╝
 
 ### Search States
+
 - `idle` - Search interface ready for input
 - `searching` - Executing search query against documents
 - `filtering` - Applying filters to search results
@@ -78,6 +81,7 @@
 ### Core Edge Cases
 
 #### Basic Document Search
+
 - [ ] **Document title search**: Find documents by title/name
   - Real-time search as user types
   - Fuzzy matching for typos and partial matches
@@ -95,6 +99,7 @@
   - Efficient search indexing
 
 #### Document Filtering
+
 - [ ] **Status filtering**: Filter documents by current status
   - Draft, Sent, In Progress, Completed, Expired, Cancelled
   - Multiple status selection
@@ -116,6 +121,7 @@
   - User-specific document views
 
 #### Advanced Search Features
+
 - [ ] **Combined search and filters**: Search with multiple active filters
   - Search text combined with status filters
   - Search with date range restrictions
@@ -133,6 +139,7 @@
   - Search suggestions based on history
 
 #### Search Performance & Optimization (Large Document Libraries)
+
 - [ ] **Large library search**: Efficient search across thousands of documents (1000+ documents)
   - **Performance Threshold**: Sub-200ms search response for libraries up to 5,000 documents
   - **Client-side search**: Use fuzzysort for immediate search results without server round-trips
@@ -162,6 +169,7 @@
   - Efficient re-search on filter changes
 
 #### Search Interface & UX
+
 - [ ] **Search result display**: Clear, informative search results
   - Document thumbnails or previews in results
   - Highlighted search terms in results
@@ -179,6 +187,7 @@
   - Help text for effective searching
 
 #### Search Error Handling
+
 - [ ] **Search failures**: Handle search errors gracefully
   - Network errors during search
   - Search timeout for very large libraries
@@ -196,6 +205,7 @@
   - Progressive search result loading for large results
 
 #### Workspace Context & Permissions
+
 - [ ] **Workspace-scoped search**: Search only documents user can access
   - Clerk Roles & Permissions filtering in search results
   - Workspace-specific document search

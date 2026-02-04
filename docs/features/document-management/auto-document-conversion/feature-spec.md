@@ -8,7 +8,7 @@
 ### Auto Document Conversion ⚡ **Important**
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                 CORE FEATURES                                          ┃
+┃ CORE FEATURES ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ◉ **Office document conversion** (Word, Excel, PowerPoint) to PDF
@@ -18,23 +18,23 @@
 ◉ **Fallback handling** for unsupported formats
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                            TECHNOLOGY STACK INTEGRATION                                ┃
+┃ TECHNOLOGY STACK INTEGRATION ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ╭─ Conversion Engine ────────────────────────────────────────────────────────────────────╮
-│ • **Chromiumly**: TypeScript wrapper for Gotenberg document conversion               │
-│ • **Fly.io**: Gotenberg Docker container hosting for document conversion             │
+│ • **Chromiumly**: TypeScript wrapper for Gotenberg document conversion │
+│ • **Fly.io**: Gotenberg Docker container hosting for document conversion │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ╭─ Application Layer ────────────────────────────────────────────────────────────────────╮
-│ • **TanStack Router**: Client-side routing for conversion interfaces                 │
-│ • **Convex**: Real-time conversion job queue and status tracking                     │
-│ • **React**: Upload progress and conversion status UI                                 │
-│ • **Clerk Roles & Permissions**: Workspace-scoped conversion access                           │
+│ • **TanStack Router**: Client-side routing for conversion interfaces │
+│ • **Convex**: Real-time conversion job queue and status tracking │
+│ • **React**: Upload progress and conversion status UI │
+│ • **Clerk Roles & Permissions**: Workspace-scoped conversion access │
 ╰────────────────────────────────────────────────────────────────────────────────────────╯
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                BUSINESS REQUIREMENTS                                    ┃
+┃ BUSINESS REQUIREMENTS ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 ■ Seamless PDF conversion for all major office formats
@@ -50,22 +50,25 @@
 ## Freemium Model Integration
 
 ### Free Plan Conversion Limits
+
 - Document conversion counts toward 10 documents/month limit
 - Conversion failure doesn't consume quota
 - Clear quota status during conversion process
 - Upgrade prompts when approaching limit
 
 ### Pro Plan Conversion Benefits
+
 - Unlimited document conversions
 - Priority conversion queue processing
 - Batch conversion capabilities
 - Premium support for conversion issues
 
 ╔══════════════════════════════════════════════════════════════════════════════════════════╗
-║                           🔧 EDGE CASES & ERROR HANDLING                                ║
+║ 🔧 EDGE CASES & ERROR HANDLING ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════╝
 
 ### Conversion States
+
 - `queued` - Document queued for conversion
 - `converting` - Conversion in progress via Gotenberg
 - `completed` - Conversion successful
@@ -75,6 +78,7 @@
 ### Core Edge Cases
 
 #### Supported Document Formats (Gotenberg)
+
 - [ ] **Microsoft Office formats**: Convert Office documents to PDF
   - Word documents (.docx, .doc) - full formatting preservation
   - Excel spreadsheets (.xlsx, .xls) - maintain layout and charts
@@ -87,6 +91,7 @@
   - Clear error messages for unsupported formats
 
 #### Chromiumly + Fly.io Integration
+
 - [ ] **Conversion service management**: Manage Gotenberg container on Fly.io
   - Fly.io Docker deployment and health monitoring
   - Service availability and scaling
@@ -99,6 +104,7 @@
   - Error handling and response parsing
 
 #### Conversion Quality & Fidelity
+
 - [ ] **Layout preservation**: Maintain document formatting during conversion
   - Font rendering and text layout accuracy
   - Image positioning and quality preservation
@@ -111,6 +117,7 @@
   - Metadata and properties transfer
 
 #### Conversion Performance & Scalability
+
 - [ ] **Processing efficiency**: Optimize conversion performance
   - Parallel conversion processing
   - Queue management for multiple documents
@@ -123,6 +130,7 @@
   - Progress indicators for long conversions
 
 #### Error Handling & Recovery
+
 - [ ] **Conversion failures**: Handle failed conversions gracefully
   - Clear error messages for different failure types
   - Automatic retry for temporary failures
@@ -135,6 +143,7 @@
   - Clear user communication about service status
 
 #### User Experience & Feedback
+
 - [ ] **Conversion progress**: Provide clear progress indicators
   - Real-time conversion status updates
   - Estimated time remaining for conversion
@@ -147,6 +156,7 @@
   - Success notifications and next steps
 
 #### Security & Privacy
+
 - [ ] **Document security**: Protect documents during conversion
   - Secure file transfer to Fly.io Gotenberg service via Chromiumly
   - Temporary file cleanup after conversion
@@ -159,6 +169,7 @@
   - Data retention policies for conversion logs
 
 #### Batch Conversion Operations
+
 - [ ] **Multiple document conversion**: Handle batch operations
   - Queue multiple documents for conversion
   - Parallel processing of multiple files
@@ -171,6 +182,7 @@
   - Fair usage policies across users
 
 #### Integration & Workflow
+
 - [ ] **Upload pipeline integration**: Seamless conversion during upload
   - Automatic conversion trigger via Convex HTTP actions
   - Upload progress combined with conversion status via Convex real-time updates

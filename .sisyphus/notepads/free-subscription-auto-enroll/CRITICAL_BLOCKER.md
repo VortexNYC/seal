@@ -13,9 +13,11 @@
 ### Evidence
 
 1. **Current Stripe Key** (in `apps/backend/.env.local`):
+
    ```
    STRIPE_SECRET_KEY=sk_live_51SmfKfRNe9gzqXOL...
    ```
+
    - Prefix: `sk_live_` = **LIVE MODE**
    - Should be: `sk_test_` = **TEST MODE**
 
@@ -38,6 +40,7 @@
 ### What This Means
 
 The auto-enrollment code is **working correctly**, but:
+
 - It's trying to create customers/subscriptions in Stripe
 - The STRIPE_SECRET_KEY is pointing to LIVE mode
 - Development should use TEST mode
@@ -75,17 +78,20 @@ The auto-enrollment code is **working correctly**, but:
    - Copy the "Secret key" (starts with `sk_test_`)
 
 2. Update Convex environment variable:
+
    ```bash
    cd apps/backend
    bunx convex env set STRIPE_SECRET_KEY sk_test_YOUR_KEY_HERE
    ```
 
 3. Re-run the sync:
+
    ```bash
    bunx convex run stripe/sync:syncFromStripe
    ```
 
 4. Create a new test user (the current one may be in wrong mode):
+
    ```bash
    # Use the Clerk API script again with new timestamp
    ```
@@ -108,12 +114,12 @@ The auto-enrollment code is **working correctly**, but:
 
 ## 📊 Impact Assessment
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Code | ✅ Working | No code changes needed |
-| Configuration | ⚠️ Incorrect | Using live key in dev |
-| Auto-enrollment | ✅ Functional | Would work with correct key |
-| Verification | ❌ Blocked | Cannot verify with wrong mode |
+| Component       | Status        | Notes                         |
+| --------------- | ------------- | ----------------------------- |
+| Code            | ✅ Working    | No code changes needed        |
+| Configuration   | ⚠️ Incorrect  | Using live key in dev         |
+| Auto-enrollment | ✅ Functional | Would work with correct key   |
+| Verification    | ❌ Blocked    | Cannot verify with wrong mode |
 
 ---
 
@@ -127,6 +133,7 @@ The auto-enrollment code is **working correctly**, but:
 4. Matches the "test mode" expectation from the plan
 
 **After switching:**
+
 - Re-sync Stripe data
 - Create new test user
 - Verify subscription in test mode dashboard
@@ -148,11 +155,13 @@ The auto-enrollment code is **working correctly**, but:
 ## 🔍 How to Check Current Mode
 
 **In Stripe Dashboard:**
+
 - Top left corner shows "Test mode" or "Live mode"
 - Test mode has orange banner
 - Live mode has no banner
 
 **In API Keys:**
+
 - Test keys: `sk_test_...` and `pk_test_...`
 - Live keys: `sk_live_...` and `pk_live_...`
 

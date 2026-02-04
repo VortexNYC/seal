@@ -1,62 +1,65 @@
 {
-	"$schema": "https://turbo.build/schema.json",
-	"ui": "tui",
-	"tasks": {
-		"build": {
-			"dependsOn": ["^build"],
-			"inputs": ["$TURBO_DEFAULT$", ".env*"],
-			"outputs": [".next/**", "!.next/cache/**", ".output/**", "dist/**"]
-		},
-		"start": {
-			"cache": false
-		},
-		"dev": {
-			"cache": false,
-			"persistent": true
-		},
-		"lint": {
-			"dependsOn": []
-		},
-		"format": {
-			"dependsOn": []
-		},
-		"typecheck": {
-			"dependsOn": []
-		},
-		"knip": {
-			"dependsOn": [],
-			"outputs": []
-		},
-		"knip:fix": {
-			"dependsOn": [],
-			"outputs": []
-		},
-		"clean": {
-			"cache": false
-		},
-		"//#clean": {
-			"cache": false
-		}
-	},
-	"globalEnv": [
-		"VERCEL_URL",
-		"PORT",
-		"CLERK_SECRET_KEY",
-		"CLERK_WEBHOOK_SECRET",
-		"CONVEX_DEPLOY_KEY",
-		"NEXT_PUBLIC_CONVEX_URL",
-		"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-		"VITE_CONVEX_URL",
-		"VITE_CLERK_PUBLISHABLE_KEY",
-		"VITE_CLERK_SIGN_IN_URL",
-		"VITE_CLERK_SIGN_UP_URL"
-	],
-	"globalPassThroughEnv": [
-		"NODE_ENV",
-		"CI",
-		"VERCEL",
-		"VERCEL_ENV",
-		"VERCEL_URL",
-		"npm_lifecycle_event"
-	]
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**", ".output/**", "dist/**"]
+    },
+    "start": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": []
+    },
+    "format": {
+      "dependsOn": []
+    },
+    "format:check": {
+      "dependsOn": []
+    },
+    "typecheck": {
+      "dependsOn": []
+    },
+    "knip": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "knip:fix": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "clean": {
+      "cache": false
+    },
+    "//#clean": {
+      "cache": false
+    }
+  },
+  "globalEnv": [
+    "VERCEL_URL",
+    "PORT",
+    "CLERK_SECRET_KEY",
+    "CLERK_WEBHOOK_SECRET",
+    "CONVEX_DEPLOY_KEY",
+    "NEXT_PUBLIC_CONVEX_URL",
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+    "VITE_CONVEX_URL",
+    "VITE_CLERK_PUBLISHABLE_KEY",
+    "VITE_CLERK_SIGN_IN_URL",
+    "VITE_CLERK_SIGN_UP_URL"
+  ],
+  "globalPassThroughEnv": [
+    "NODE_ENV",
+    "CI",
+    "VERCEL",
+    "VERCEL_ENV",
+    "VERCEL_URL",
+    "npm_lifecycle_event"
+  ]
 }

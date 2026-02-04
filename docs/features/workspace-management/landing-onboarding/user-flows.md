@@ -3,6 +3,7 @@
 ## Primary User Flows
 
 ### Regular User Landing Experience
+
 ```
 ○ User Visits seal.nyc
     ↓
@@ -20,6 +21,7 @@
 ```
 
 ### Quick Registration & Onboarding Flow
+
 ```
 ○ User Clicks "Get Started"
     ↓
@@ -49,6 +51,7 @@
 ```
 
 ### First Document Workflow (Core Onboarding)
+
 ```
 ○ Step 1: Document Upload
     ↓
@@ -84,6 +87,7 @@
 ```
 
 ### Onboarding Success & Next Steps
+
 ```
 ○ First Document Sent Successfully
     ↓
@@ -107,6 +111,7 @@
 ```
 
 ### Progress Tracking & Resumption
+
 ```
 ○ Onboarding Started
     ↓
@@ -128,6 +133,7 @@
 ## Supporting Flows
 
 ### Sample Document Experience
+
 ```
 ○ User Unsure What to Upload
     ↓
@@ -147,6 +153,7 @@
 ```
 
 ### Self-Signing Tutorial Flow
+
 ```
 ○ User Wants to Test the Process
     ↓
@@ -166,6 +173,7 @@
 ```
 
 ### Team Invitation Discovery
+
 ```
 ○ User Completes Personal Onboarding
     ↓
@@ -189,6 +197,7 @@
 ## Error Handling & Recovery Flows
 
 ### Document Upload Issues
+
 ```
 ○ Document Upload Fails
     ↓
@@ -206,6 +215,7 @@
 ```
 
 ### Interrupted Onboarding
+
 ```
 ○ User Leaves Mid-Onboarding
     ↓
@@ -223,6 +233,7 @@
 ```
 
 ### Low Engagement Recovery
+
 ```
 ○ User Showing Hesitation
     ↓
@@ -244,6 +255,7 @@
 ## Developer Toggle Flow (Separate Path)
 
 ### Developer Mode Discovery
+
 ```
 ○ Developer Visits seal.nyc
     ↓
@@ -268,24 +280,28 @@
 ## Integration Touch Points
 
 ### Authentication Integration
+
 - **Seamless Registration**: Simple email/password flow
 - **Workspace Creation**: Automatic workspace with sensible defaults
 - **Session Persistence**: Maintain onboarding progress across sessions
 - **Email Verification**: Handle verification within onboarding flow
 
 ### Convex Integration
+
 - **Real-time Progress**: Live step completion tracking
 - **Document Storage**: Secure temporary storage during onboarding
 - **State Persistence**: Resume onboarding from any step
 - **Analytics**: Track completion rates and drop-off points
 
 ### React Integration
+
 - **Interactive Components**: Smooth, responsive onboarding experience
 - **Progressive Enhancement**: Works on all devices and browsers
 - **Accessibility**: Full keyboard and screen reader support
 - **Mobile Optimization**: Touch-friendly interface for mobile users
 
 ### Document Processing
+
 - **Upload Handling**: Support multiple file formats
 - **Preview Generation**: Real-time document preview
 - **Field Validation**: Ensure proper signature field placement

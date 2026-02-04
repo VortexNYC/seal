@@ -3,6 +3,7 @@
 ## Feature Requirements (from MVP Core Features)
 
 ### Organization Management ⭐ **Critical**
+
 - [ ] **Create organizations** (teams/companies)
 - [ ] **Invite team members** via email
 - [ ] **Role-based permissions** (Owner, Admin, Member)
@@ -10,6 +11,7 @@
 - [ ] **Basic billing per organization** (via Stripe)
 
 ## Technology Stack Integration
+
 - **Clerk Organizations**: Workspace creation and member management
 - **Clerk Roles & Permissions**: Role-based permissions (Owner, Admin, Member)
 - **Stripe**: Billing integration with per-organization subscription management
@@ -17,6 +19,7 @@
 - **Convex**: Real-time organization data and member presence
 
 ## Business Requirements
+
 - Multi-organization support for users
 - Clear role-based access control
 - Seamless organization switching interface
@@ -27,6 +30,7 @@
 ## Edge Cases (from Feature Edge Cases Breakdown)
 
 ### Clerk Organizations Integration
+
 - **Workspace Creation**: Clerk's organization system handles workspace creation
 - **Member Management**: Built-in invitation system with email verification
 - **Role Assignment**: RBAC plugin provides Owner/Admin/Member roles
@@ -36,6 +40,7 @@
 ### Workspace Creation States & Edge Cases
 
 #### Happy Path Workflow (Simplified - All Users)
+
 1. **User Signs Up**: Any email type (gmail, corporate, etc.)
 2. **Workspace Creation**: Required for all users
 3. **Plan Selection**: Choose Free or Pro Trial plan
@@ -46,6 +51,7 @@
 8. **Workspace Dashboard**: User's primary workspace
 
 #### Workspace Creation Edge Cases
+
 - [ ] **Standard Workspace Creation**: Any email type creates workspace
   - Success: Workspace created, user is owner
   - Clerk: Uses organization creation API
@@ -63,6 +69,7 @@
   - Recovery: Retry mechanism, preserve user input
 
 #### Future Enhancement: Domain Matching (Option 1)
+
 - [ ] **Same Domain Detection**: user@acmecorp.com joins existing acmecorp.com workspace
   - Flow: "Found existing workspace for your company. Join instead?"
   - Process: Send join request to workspace owner for approval
@@ -71,6 +78,7 @@
 ### Member Invitation & Management Edge Cases
 
 #### Invitation Flow (Clerk + React Email + Resend)
+
 - [ ] **Single Member Invitation**: Owner invites one person
   - Process: Clerk invitation creation → React Email template → Resend delivery
 - [ ] **Batch Email Invitations**: Owner invites up to 10 people at once
@@ -82,6 +90,7 @@
   - Report: Show summary "8 invitations sent, 2 failed"
 
 #### Invitation Delivery Edge Cases
+
 - [ ] **Email Delivered Successfully**: Standard invitation flow via Resend
 - [ ] **Email Bounced**: Invalid recipient email address
   - Status: Mark invitation as "bounced" in Clerk
@@ -91,6 +100,7 @@
   - User feedback: "Invitations queued for delivery"
 
 #### Invitation Response Edge Cases
+
 - [ ] **Invitation Accepted**: New member joins workspace
   - State: Update Clerk organization membership
   - Convex: Real-time update to all workspace members
@@ -106,6 +116,7 @@
 ### Role Management Edge Cases (Clerk Roles & Permissions)
 
 #### Role Assignment States (Following Clerk Patterns)
+
 - [ ] **Owner Role**: Full permissions, cannot be removed by others
   - Permissions: All workspace settings, billing, member management
 - [ ] **Admin Role**: Most permissions, cannot modify owner
@@ -114,6 +125,7 @@
   - Permissions: Create/view own documents, participate in signing flows
 
 #### Role Change Edge Cases
+
 - [ ] **Promote Member to Admin**: Owner promotes existing member
   - Process: Clerk role update
   - Notification: Email notification via React Email + Resend
@@ -126,6 +138,7 @@
 ### Multi-Workspace Support Edge Cases
 
 #### Workspace Context Management
+
 - [ ] **Single Workspace**: User belongs to one workspace only
   - UI: No workspace switcher needed
   - Context: All actions scoped to single workspace
@@ -139,6 +152,7 @@
   - Error: "Access denied. You're not a member of this workspace"
 
 #### Context Persistence Edge Cases
+
 - [ ] **Last Accessed Workspace**: Remember user's preferred workspace
   - Storage: Browser localStorage + user preferences in database
 - [ ] **Workspace Deleted**: User's active workspace gets deleted
@@ -151,6 +165,7 @@
 ### Billing Integration Edge Cases (Stripe)
 
 #### Simplified Billing Model
+
 - [ ] **New Workspace Created**: Plan-based requirements
   - Free Plan: No payment required, 10 docs/month limit
   - Pro Trial: Payment info required, 2-week trial then $10/month per seat
@@ -165,6 +180,7 @@
   - Recovery: Add payment method restores full access
 
 #### Multi-Workspace Billing Edge Cases
+
 - [ ] **User in Multiple Paid Workspaces**: Each workspace pays for user's seat independently
   - Behavior: Each workspace has independent Stripe subscription and pays for their own seats
   - UI: Clear billing context when switching workspaces, user sees features based on current workspace plan
@@ -187,6 +203,7 @@
 ### Admin Plugin Controls (Hosted Platform)
 
 #### Platform Admin Override Capabilities
+
 - [ ] **Workspace Management**: Platform admin can access any workspace
   - Permission: Super admin role in Clerk dashboard
   - Audit: All admin actions logged for compliance
@@ -197,6 +214,7 @@
   - Audit: Financial override actions logged
 
 #### Multi-Tenant Security (Admin Plugin)
+
 - [ ] **Workspace Data Isolation**: Each workspace's data completely separate
   - Technical: Clerk ensures proper data scoping
 - [ ] **Admin Access Logging**: All platform admin actions tracked
@@ -206,6 +224,7 @@
   - Approval: Multiple admin approval for sensitive actions
 
 #### Final Billing Model Decision: Freemium + Workspace-Pays-Per-Seat
+
 - **Free Tier**: 10 docs/month, 1 user, no API access - no payment required
 - **Pro Tier**: $10/month per seat (member) in their workspace - unlimited everything
 - **Example**: User in 3 workspaces = 3 workspaces each pay for their own seats independently

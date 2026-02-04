@@ -5,6 +5,7 @@ Complete user flow documentation for Feature #1: User Registration & Authenticat
 ## 🎯 Flow Overview
 
 ### Primary Authentication Paths
+
 1. **Sign Up Flow** (New Users)
 2. **Sign In Flow** (Returning Users)
 3. **OAuth Flow** (Google, Microsoft, Apple)
@@ -13,6 +14,7 @@ Complete user flow documentation for Feature #1: User Registration & Authenticat
 6. **Account Deletion Flow** (Data Management)
 
 ### States Legend
+
 - 🟢 **Happy Path** (normal successful flow)
 - 🟡 **Loading/Processing** (waiting states)
 - 🔴 **Error State** (something went wrong)
@@ -32,7 +34,7 @@ Landing Page
     ↓
 Sign Up Form 🔵
 ├─ Email field: [_______________]
-├─ Password field: [***********]  
+├─ Password field: [***********]
 ├─ Confirm Password: [***********]
 └─ [Sign Up] Button
     ↓
@@ -80,6 +82,7 @@ Dashboard 🏠
 ### Error Paths & Edge Cases 🔴
 
 #### Email Validation Errors
+
 ```
 Email Input
     ↓
@@ -94,7 +97,8 @@ Validation Check
     └─ Too long (>200) → "Email address too long (max 200 characters)"
 ```
 
-#### Password Validation Errors  
+#### Password Validation Errors
+
 ```
 Password Input (Clerk Rules)
     ↓
@@ -110,6 +114,7 @@ Strength Check
 ```
 
 #### OTP Verification Errors
+
 ```
 OTP Code Entry [_ _ _ _ _ _]
     ↓
@@ -147,7 +152,7 @@ Sign In Form
 ├─ [Sign In] Button
 └─ OAuth Options:
     ├─ [Continue with Google]
-    ├─ [Continue with Microsoft] 
+    ├─ [Continue with Microsoft]
     └─ [Continue with Apple]
     ↓
 Clerk Validation 🟡
@@ -165,6 +170,7 @@ Dashboard with Session Active 🏠
 ### Error Paths & Edge Cases 🔴
 
 #### Credential Errors
+
 ```
 Sign In Attempt
     ↓
@@ -183,6 +189,7 @@ Authentication System Validation
 ```
 
 #### Rate Limiting (Clerk)
+
 ```
 Multiple Failed Attempts
     ↓
@@ -397,6 +404,7 @@ Deletion Blocked
 ## 🔐 Session Management Patterns
 
 ### Session States
+
 ```
 User Authentication Status:
 ├─ Unauthenticated → Landing/Sign In
@@ -407,6 +415,7 @@ User Authentication Status:
 ```
 
 ### Session Transitions
+
 ```
 Session Lifecycle:
 ○ Sign In Success → Active Session
@@ -426,12 +435,14 @@ Session Lifecycle:
 ## 📱 Mobile-Specific Considerations
 
 ### Touch Interactions
+
 - **Form fields**: Minimum 44px touch targets
 - **OAuth buttons**: Large, thumb-friendly
 - **OTP input**: Large digit boxes for easy tapping
 - **Password visibility**: Toggle button for password reveal
 
 ### Mobile Flows
+
 - **Keyboard handling**: Adjust viewport for input fields
 - **App switching**: Handle OAuth redirects gracefully
 - **Offline detection**: Show connection status
@@ -442,12 +453,14 @@ Session Lifecycle:
 ## 🎯 Success Criteria
 
 ### Flow Completion Metrics
+
 - **Sign Up Success**: >90% complete sign-up to workspace creation
-- **Sign In Success**: >95% successful logins  
+- **Sign In Success**: >95% successful logins
 - **Error Recovery**: >85% successful recovery from errors
 - **Mobile Performance**: Equal success rates on mobile
 
 ### Time Targets
+
 - **Sign Up Flow**: <3 minutes from start to workspace
 - **Sign In Flow**: <30 seconds to dashboard
 - **Password Reset**: <2 minutes total process
@@ -458,6 +471,7 @@ Session Lifecycle:
 ## 📄 Cross-Workspace Document Signing Flow
 
 ### External Signer Account Creation Flow
+
 ```
 ○ Document Signing Link Received
     ↓
@@ -478,6 +492,7 @@ Session Lifecycle:
 ```
 
 ### Cross-Workspace Signing Authentication
+
 ```
 External Signer Flow:
 ○ Authenticated User from Personal Workspace
@@ -497,6 +512,7 @@ External Signer Flow:
 ```
 
 ### Authentication Context Management
+
 ```
 Cross-Workspace Context:
 ○ User Authenticated in Personal Workspace
@@ -518,6 +534,7 @@ Cross-Workspace Context:
 ```
 
 ### Account Creation During Signing Flow
+
 ```
 "Create Account to Sign" Flow:
 ○ Click Document Signing Link (No Account)

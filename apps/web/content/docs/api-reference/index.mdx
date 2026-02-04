@@ -76,16 +76,16 @@ All POST and PUT requests must include a `Content-Type: application/json` header
 ### Example Request
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/documents', {
-  method: 'POST',
+const response = await fetch("https://seal.convex.site/api/v1/documents", {
+  method: "POST",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    title: 'Service Agreement',
-    description: 'Annual service contract'
-  })
+    title: "Service Agreement",
+    description: "Annual service contract",
+  }),
 });
 ```
 
@@ -120,17 +120,17 @@ See the [Error Handling Guide](/docs/getting-started/error-handling) for complet
 
 ## HTTP Status Codes
 
-| Code | Description |
-|------|-------------|
-| 200 | OK - Request succeeded |
-| 201 | Created - Resource created successfully |
-| 204 | No Content - Request succeeded with no response body |
-| 400 | Bad Request - Invalid request parameters |
-| 401 | Unauthorized - Missing or invalid API key |
-| 403 | Forbidden - Insufficient permissions |
-| 404 | Not Found - Resource doesn't exist |
-| 429 | Too Many Requests - Rate limit exceeded |
-| 500 | Internal Server Error - Server error |
+| Code | Description                                          |
+| ---- | ---------------------------------------------------- |
+| 200  | OK - Request succeeded                               |
+| 201  | Created - Resource created successfully              |
+| 204  | No Content - Request succeeded with no response body |
+| 400  | Bad Request - Invalid request parameters             |
+| 401  | Unauthorized - Missing or invalid API key            |
+| 403  | Forbidden - Insufficient permissions                 |
+| 404  | Not Found - Resource doesn't exist                   |
+| 429  | Too Many Requests - Rate limit exceeded              |
+| 500  | Internal Server Error - Server error                 |
 
 ## Rate Limiting
 
@@ -155,10 +155,10 @@ List endpoints support cursor-based pagination:
 
 ### Request Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `limit` | number | Number of results to return (max 100, default 20) |
-| `cursor` | string | Pagination cursor from previous response |
+| Parameter | Type   | Description                                       |
+| --------- | ------ | ------------------------------------------------- |
+| `limit`   | number | Number of results to return (max 100, default 20) |
+| `cursor`  | string | Pagination cursor from previous response          |
 
 ### Response Format
 
@@ -174,13 +174,13 @@ List endpoints support cursor-based pagination:
 
 ```typescript
 // First page
-const page1 = await fetch('https://seal.convex.site/api/v1/documents?limit=20');
+const page1 = await fetch("https://seal.convex.site/api/v1/documents?limit=20");
 const { data, has_more, next_cursor } = await page1.json();
 
 // Next page
 if (has_more) {
   const page2 = await fetch(
-    `https://seal.convex.site/api/v1/documents?limit=20&cursor=${next_cursor}`
+    `https://seal.convex.site/api/v1/documents?limit=20&cursor=${next_cursor}`,
   );
 }
 ```

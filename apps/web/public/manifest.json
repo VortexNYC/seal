@@ -1,39 +1,39 @@
 {
-	"short_name": "Seal",
-	"name": "Seal - Document Signatures",
-	"icons": [
-		{
-			"src": "favicon/favicon.png",
-			"sizes": "32x32",
-			"type": "image/png"
-		},
-		{
-			"src": "favicon/favicon-iphone.png",
-			"sizes": "180x180",
-			"type": "image/png",
-			"purpose": "any"
-		},
-		{
-			"src": "favicon/favicon-192.png",
-			"sizes": "192x192",
-			"type": "image/png",
-			"purpose": "any"
-		},
-		{
-			"src": "favicon/favicon-android.png",
-			"sizes": "196x196",
-			"type": "image/png",
-			"purpose": "maskable"
-		},
-		{
-			"src": "favicon/favicon-512.png",
-			"sizes": "512x512",
-			"type": "image/png",
-			"purpose": "any"
-		}
-	],
-	"start_url": ".",
-	"display": "standalone",
-	"theme_color": "#0d9488",
-	"background_color": "#ffffff"
+  "short_name": "Seal",
+  "name": "Seal - Document Signatures",
+  "icons": [
+    {
+      "src": "favicon/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon/favicon-iphone.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon/favicon-android.png",
+      "sizes": "196x196",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "favicon/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0d9488",
+  "background_color": "#ffffff"
 }

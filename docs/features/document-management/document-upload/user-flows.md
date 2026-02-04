@@ -6,6 +6,7 @@
 ## Primary User Flows
 
 ### Multi-Format Document Upload Flow (Freemium Model)
+
 [User Journey: Complete upload lifecycle with freemium model integration]
 [Process Flow: Multi-format support with real-time conversion]
 

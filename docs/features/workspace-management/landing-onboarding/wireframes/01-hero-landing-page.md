@@ -256,7 +256,7 @@
 ║     ║                               ║
 ╚╗    ╚═══════════════════════════════╝
  ╚╗                 ●
-  ╚╗            
+  ╚╗
    ╚╗
     ╚╗
      ╚═══════════════════════════════
@@ -305,24 +305,28 @@
 ## Interaction Specifications
 
 ### Navigation & Routing
+
 - **Developer Toggle**: Smooth transition to seal.nyc/developers using shadcn/ui transitions
 - **Demo Modal**: Dialog component overlay with video player and feature highlights
 - **Progressive Enhancement**: Works without JavaScript, enhanced with React
 - **Mobile Navigation**: Sheet component collapsible hamburger menu
 
 ### Performance & Loading
+
 - **Fast Initial Load**: Server-side rendered for instant appearance
 - **Lazy Loading**: Load demo video and images only when needed using React Suspense
 - **Progressive Web App**: Installable experience with service worker
 - **Skeleton Loading**: shadcn/ui Skeleton components during content load
 
 ### User Engagement
+
 - **Clear CTAs**: Button components with consistent neutral-900 styling
 - **Social Proof**: Card components for testimonials and usage statistics
 - **Feature Highlights**: Visual process flow using shadcn/ui icons and layout
 - **Value Proposition**: Typography hierarchy with neutral color scale
 
 ### Component Integration
+
 - **shadcn/ui Components**: Button, Dialog, Sheet, Card, Badge, Separator
 - **Color Palette**: neutral-50 to neutral-950 scale throughout
 - **Typography**: Inter font with consistent text sizes and weights
@@ -334,24 +338,28 @@
 ## Technical Integration
 
 ### TanStack Router Integration
+
 - **Client-Side Routing**: Fast navigation with React components
 - **SEO Optimization**: Proper meta tags and structured data
 - **Route Management**: Smooth navigation between sections
 - **Code Splitting**: Optimized bundle size for performance
 
 ### Clerk Integration
+
 - **Seamless Signup**: Direct integration with registration flow
 - **Social Login**: Google/Microsoft OAuth options
 - **Session Management**: Maintain state across site sections
 - **Security**: Secure authentication endpoints
 
 ### shadcn/ui Integration
+
 - **Component Library**: Consistent design system usage with neutral palette
 - **Responsive Design**: Mobile-first, progressively enhanced components
 - **Theme System**: CSS custom properties with neutral color scale
 - **Performance**: Tree-shakeable components with minimal bundle impact
 
 ### Analytics Integration
+
 - **Conversion Tracking**: Monitor signup conversion rates
 - **User Behavior**: Track interaction patterns and drop-off points
 - **A/B Testing**: Different messaging and CTA variations

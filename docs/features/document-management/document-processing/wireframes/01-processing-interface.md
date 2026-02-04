@@ -6,6 +6,7 @@
 ## Processing Interface Wireframes
 
 ### Processing Status Interface
+
 [Mobile Viewport: 375px width with stacked progress indicators]
 [Desktop Viewport: 1200px width with side-by-side processing details]
 
@@ -41,6 +42,7 @@
 ```
 
 ### Processing Progress Stages
+
 [Component Structure: Multi-stage progress indicator with detailed breakdown]
 [Features: Real-time stage updates, estimated completion times]
 
@@ -72,6 +74,7 @@
 ```
 
 ### Processing Complete Success State
+
 [Mobile Viewport: Success celebration with large CTA buttons]
 [Desktop Viewport: Preview panel with action toolbar]
 

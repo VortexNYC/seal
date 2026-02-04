@@ -20,27 +20,27 @@ const ALLOWED_MIME_TYPES = new Set(["application/pdf"]);
  * SEA-62: PDF only
  */
 export const DROPZONE_ACCEPT_TYPES: Record<string, string[]> = {
-	"application/pdf": [".pdf"],
+  "application/pdf": [".pdf"],
 };
 
 /**
  * Format file size in human-readable format
  */
 export function formatFileSize(bytes: number): string {
-	if (bytes === 0) return "0 Bytes";
+  if (bytes === 0) return "0 Bytes";
 
-	const k = 1024;
-	const sizes = ["Bytes", "KB", "MB", "GB"];
-	const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-	return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
+  return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 }
 
 /**
  * Get maximum file size display
  */
 export function getMaxFileSizeDisplay(): string {
-	return formatFileSize(MAX_FILE_SIZE);
+  return formatFileSize(MAX_FILE_SIZE);
 }
 
 /**
@@ -48,44 +48,44 @@ export function getMaxFileSizeDisplay(): string {
  * SEA-62: PDF only
  */
 export function getSupportedFileTypesDisplay(): string {
-	return "PDF only";
+  return "PDF only";
 }
 
 /**
  * Validate file before upload
  */
 export function validateFileForUpload(file: File): {
-	valid: boolean;
-	errors: string[];
+  valid: boolean;
+  errors: string[];
 } {
-	const errors: string[] = [];
+  const errors: string[] = [];
 
-	// Validate size
-	if (file.size === 0) {
-		errors.push("File is empty");
-	} else if (file.size > MAX_FILE_SIZE) {
-		errors.push(
-			`File size (${formatFileSize(file.size)}) exceeds maximum allowed size of ${getMaxFileSizeDisplay()}`,
-		);
-	}
+  // Validate size
+  if (file.size === 0) {
+    errors.push("File is empty");
+  } else if (file.size > MAX_FILE_SIZE) {
+    errors.push(
+      `File size (${formatFileSize(file.size)}) exceeds maximum allowed size of ${getMaxFileSizeDisplay()}`,
+    );
+  }
 
-	// Validate MIME type (SEA-62: PDF only)
-	if (!file.type) {
-		errors.push("File type could not be determined");
-	} else if (!ALLOWED_MIME_TYPES.has(file.type)) {
-		errors.push("Only PDF files are supported");
-	}
+  // Validate MIME type (SEA-62: PDF only)
+  if (!file.type) {
+    errors.push("File type could not be determined");
+  } else if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    errors.push("Only PDF files are supported");
+  }
 
-	// Validate extension (SEA-62: PDF only)
-	const fileExt = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-	if (!fileExt) {
-		errors.push("File must have an extension");
-	} else if (fileExt !== ".pdf") {
-		errors.push("Only PDF files are supported");
-	}
+  // Validate extension (SEA-62: PDF only)
+  const fileExt = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+  if (!fileExt) {
+    errors.push("File must have an extension");
+  } else if (fileExt !== ".pdf") {
+    errors.push("Only PDF files are supported");
+  }
 
-	return {
-		valid: errors.length === 0,
-		errors,
-	};
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
 }

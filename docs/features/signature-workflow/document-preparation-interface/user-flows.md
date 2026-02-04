@@ -3,6 +3,7 @@
 ## Primary Document Preparation Flow
 
 ### Document Preparation Entry Flow
+
 ```
 ○ User Completes Document Upload
     ↓
@@ -34,6 +35,7 @@
 ## Field Placement Flow
 
 ### Drag-and-Drop Field Placement
+
 ```
 ○ User Selects Field Type
     ↓
@@ -59,6 +61,7 @@
 ## Recipient Assignment Flow
 
 ### Field-to-Recipient Assignment
+
 ```
 ○ User Configures Placed Field
     ↓
@@ -84,6 +87,7 @@
 ## Edge Case Flows
 
 ### Field Overlap Detection Flow
+
 ```
 ○ User Places Field Near Existing Field
     ↓
@@ -101,6 +105,7 @@
 ```
 
 ### Field Boundary Validation Flow
+
 ```
 ○ User Places Field Near Document Edge
     ↓
@@ -120,6 +125,7 @@
 ## Send Preview Flow
 
 ### Pre-Send Validation
+
 ```
 ○ User Completes Field Placement
     ↓

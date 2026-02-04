@@ -3,6 +3,7 @@
 ## Email Composition Interface
 
 ### Document Invitation Email Composer
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Send Document - Compose Email                                                   │
@@ -42,6 +43,7 @@
 ```
 
 ### Email Template Selection
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Select Email Template                                                           │
@@ -84,6 +86,7 @@
 ```
 
 ### Email Preview Interface
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Email Preview - Review Before Sending                                          │
@@ -124,6 +127,7 @@
 ## Email Tracking Interface
 
 ### Email Delivery Status Dashboard
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Document Status - Email Tracking                                               │
@@ -167,6 +171,7 @@
 ```
 
 ### Email Bounce Error State
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Email Delivery Issue - Action Required                                         │
@@ -212,6 +217,7 @@
 ## Reminder Email Interface
 
 ### Send Manual Reminder
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Send Reminder - Contract_Agreement.pdf                                         │
@@ -257,6 +263,7 @@
 ```
 
 ### Automated Reminder Settings
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Configure Automatic Reminders                                                  │
@@ -300,6 +307,7 @@
 ## Completion Notification
 
 ### Document Completion Email Interface
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Document Completed! 🎉                                                          │
@@ -347,6 +355,7 @@
 ## Mobile Email Interface
 
 ### Mobile Email Composer
+
 ```
 ┌─────────────────────────────────┐
 │ Send Document                   │

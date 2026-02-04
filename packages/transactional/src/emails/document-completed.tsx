@@ -1,177 +1,174 @@
 import {
-	Body,
-	Button,
-	Container,
-	Head,
-	Heading,
-	Hr,
-	Html,
-	Preview,
-	Section,
-	Tailwind,
-	Text,
+  Body,
+  Button,
+  Container,
+  Head,
+  Heading,
+  Hr,
+  Html,
+  Preview,
+  Section,
+  Tailwind,
+  Text,
 } from "@react-email/components";
 
 interface RecipientSummary {
-	name: string;
-	email: string;
-	role: "signer" | "approver" | "viewer";
-	completedAt: number;
+  name: string;
+  email: string;
+  role: "signer" | "approver" | "viewer";
+  completedAt: number;
 }
 
 export interface DocumentCompletedProps {
-	senderName: string;
-	documentName: string;
-	documentUrl: string;
-	completedAt: number;
-	recipientsSummary: RecipientSummary[];
+  senderName: string;
+  documentName: string;
+  documentUrl: string;
+  completedAt: number;
+  recipientsSummary: RecipientSummary[];
 }
 
 export function DocumentCompleted({
-	senderName = "User",
-	documentName = "Document",
-	documentUrl = "https://seal.nyc/documents/example",
-	completedAt = Date.now(),
-	recipientsSummary = [],
+  senderName = "User",
+  documentName = "Document",
+  documentUrl = "https://seal.nyc/documents/example",
+  completedAt = Date.now(),
+  recipientsSummary = [],
 }: DocumentCompletedProps) {
-	const previewText = `All signatures collected for "${documentName}"`;
+  const previewText = `All signatures collected for "${documentName}"`;
 
-	const formattedDate = new Date(completedAt).toLocaleDateString("en-US", {
-		weekday: "long",
-		year: "numeric",
-		month: "long",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
+  const formattedDate = new Date(completedAt).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-	const getRoleLabel = (role: RecipientSummary["role"]) => {
-		switch (role) {
-			case "signer":
-				return "Signed";
-			case "approver":
-				return "Approved";
-			case "viewer":
-				return "Viewed";
-		}
-	};
+  const getRoleLabel = (role: RecipientSummary["role"]) => {
+    switch (role) {
+      case "signer":
+        return "Signed";
+      case "approver":
+        return "Approved";
+      case "viewer":
+        return "Viewed";
+    }
+  };
 
-	const formatRecipientDate = (timestamp: number) => {
-		return new Date(timestamp).toLocaleDateString("en-US", {
-			month: "short",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-	};
+  const formatRecipientDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
-	return (
-		<Html>
-			<Head />
-			<Preview>{previewText}</Preview>
-			<Tailwind>
-				<Body className="bg-[#f6f9fc] my-auto mx-auto font-sans py-[40px]">
-					<Container className="bg-white border border-solid border-[#e6ebf1] rounded-lg my-[40px] mx-auto p-[40px] w-[520px]">
-						{/* Header */}
-						<Section className="text-center">
-							<Heading className="text-[#1a1a1a] text-[28px] font-semibold m-0 mb-[8px]">
-								Seal
-							</Heading>
-							<Text className="text-[#6b7280] text-[14px] m-0">
-								Document Complete
-							</Text>
-						</Section>
+  return (
+    <Html>
+      <Head />
+      <Preview>{previewText}</Preview>
+      <Tailwind>
+        <Body className="mx-auto my-auto bg-[#f6f9fc] py-[40px] font-sans">
+          <Container className="mx-auto my-[40px] w-[520px] rounded-lg border border-solid border-[#e6ebf1] bg-white p-[40px]">
+            {/* Header */}
+            <Section className="text-center">
+              <Heading className="m-0 mb-[8px] text-[28px] font-semibold text-[#1a1a1a]">
+                Seal
+              </Heading>
+              <Text className="m-0 text-[14px] text-[#6b7280]">Document Complete</Text>
+            </Section>
 
-						<Hr className="border-[#e6ebf1] my-[24px]" />
+            <Hr className="my-[24px] border-[#e6ebf1]" />
 
-						{/* Success banner */}
-						<Section className="bg-[#f0fdf4] border border-solid border-[#bbf7d0] rounded-lg p-[20px] mb-[24px] text-center">
-							<Text className="text-[32px] m-0 mb-[8px]">✓</Text>
-							<Text className="text-[#166534] text-[18px] font-semibold m-0">
-								All Signatures Collected
-							</Text>
-						</Section>
+            {/* Success banner */}
+            <Section className="mb-[24px] rounded-lg border border-solid border-[#bbf7d0] bg-[#f0fdf4] p-[20px] text-center">
+              <Text className="m-0 mb-[8px] text-[32px]">✓</Text>
+              <Text className="m-0 text-[18px] font-semibold text-[#166534]">
+                All Signatures Collected
+              </Text>
+            </Section>
 
-						{/* Main content */}
-						<Section>
-							<Text className="text-[#1a1a1a] text-[16px] leading-[26px] m-0 mb-[16px]">
-								Hello {senderName},
-							</Text>
+            {/* Main content */}
+            <Section>
+              <Text className="m-0 mb-[16px] text-[16px] leading-[26px] text-[#1a1a1a]">
+                Hello {senderName},
+              </Text>
 
-							<Text className="text-[#4b5563] text-[16px] leading-[26px] m-0 mb-[24px]">
-								Great news! All recipients have completed their actions on your
-								document. Here's the summary:
-							</Text>
+              <Text className="m-0 mb-[24px] text-[16px] leading-[26px] text-[#4b5563]">
+                Great news! All recipients have completed their actions on your document. Here's the
+                summary:
+              </Text>
 
-							{/* Document card */}
-							<Section className="bg-[#f9fafb] border border-solid border-[#e5e7eb] rounded-lg p-[20px] mb-[24px]">
-								<Text className="text-[#1a1a1a] text-[18px] font-medium m-0 mb-[4px]">
-									{documentName}
-								</Text>
-								<Text className="text-[#6b7280] text-[14px] m-0">
-									Completed on: {formattedDate}
-								</Text>
-							</Section>
+              {/* Document card */}
+              <Section className="mb-[24px] rounded-lg border border-solid border-[#e5e7eb] bg-[#f9fafb] p-[20px]">
+                <Text className="m-0 mb-[4px] text-[18px] font-medium text-[#1a1a1a]">
+                  {documentName}
+                </Text>
+                <Text className="m-0 text-[14px] text-[#6b7280]">
+                  Completed on: {formattedDate}
+                </Text>
+              </Section>
 
-							{/* Recipients summary */}
-							{recipientsSummary.length > 0 && (
-								<Section className="mb-[24px]">
-									<Text className="text-[#1a1a1a] text-[14px] font-semibold m-0 mb-[12px]">
-										Recipient Activity:
-									</Text>
-									{recipientsSummary.map((recipient, index) => (
-										<Section
-											key={recipient.email}
-											className={`py-[12px] ${index < recipientsSummary.length - 1 ? "border-b border-solid border-[#e5e7eb]" : ""}`}
-										>
-											<Text className="text-[#1a1a1a] text-[14px] font-medium m-0">
-												{recipient.name}
-											</Text>
-											<Text className="text-[#6b7280] text-[12px] m-0 mt-[2px]">
-												{recipient.email}
-											</Text>
-											<Text className="text-[#059669] text-[12px] m-0 mt-[4px]">
-												{getRoleLabel(recipient.role)} •{" "}
-												{formatRecipientDate(recipient.completedAt)}
-											</Text>
-										</Section>
-									))}
-								</Section>
-							)}
+              {/* Recipients summary */}
+              {recipientsSummary.length > 0 && (
+                <Section className="mb-[24px]">
+                  <Text className="m-0 mb-[12px] text-[14px] font-semibold text-[#1a1a1a]">
+                    Recipient Activity:
+                  </Text>
+                  {recipientsSummary.map((recipient, index) => (
+                    <Section
+                      key={recipient.email}
+                      className={`py-[12px] ${index < recipientsSummary.length - 1 ? "border-b border-solid border-[#e5e7eb]" : ""}`}
+                    >
+                      <Text className="m-0 text-[14px] font-medium text-[#1a1a1a]">
+                        {recipient.name}
+                      </Text>
+                      <Text className="m-0 mt-[2px] text-[12px] text-[#6b7280]">
+                        {recipient.email}
+                      </Text>
+                      <Text className="m-0 mt-[4px] text-[12px] text-[#059669]">
+                        {getRoleLabel(recipient.role)} •{" "}
+                        {formatRecipientDate(recipient.completedAt)}
+                      </Text>
+                    </Section>
+                  ))}
+                </Section>
+              )}
 
-							{/* CTA Button */}
-							<Section className="text-center my-[32px]">
-								<Button
-									className="bg-[#0f172a] rounded-lg text-white text-[16px] font-medium no-underline text-center px-[32px] py-[14px]"
-									href={documentUrl}
-								>
-									View Completed Document
-								</Button>
-							</Section>
+              {/* CTA Button */}
+              <Section className="my-[32px] text-center">
+                <Button
+                  className="rounded-lg bg-[#0f172a] px-[32px] py-[14px] text-center text-[16px] font-medium text-white no-underline"
+                  href={documentUrl}
+                >
+                  View Completed Document
+                </Button>
+              </Section>
 
-							<Text className="text-[#4b5563] text-[14px] leading-[22px] m-0">
-								The signed document is now available in your Seal dashboard. You
-								can download it at any time.
-							</Text>
-						</Section>
+              <Text className="m-0 text-[14px] leading-[22px] text-[#4b5563]">
+                The signed document is now available in your Seal dashboard. You can download it at
+                any time.
+              </Text>
+            </Section>
 
-						<Hr className="border-[#e6ebf1] my-[24px]" />
+            <Hr className="my-[24px] border-[#e6ebf1]" />
 
-						{/* Footer */}
-						<Section>
-							<Text className="text-[#9ca3af] text-[12px] leading-[20px] m-0">
-								This notification was sent by Seal. Please keep this email for
-								your records.
-							</Text>
-							<Text className="text-[#9ca3af] text-[12px] leading-[20px] m-0 mt-[12px]">
-								© {new Date().getFullYear()} Seal. All rights reserved.
-							</Text>
-						</Section>
-					</Container>
-				</Body>
-			</Tailwind>
-		</Html>
-	);
+            {/* Footer */}
+            <Section>
+              <Text className="m-0 text-[12px] leading-[20px] text-[#9ca3af]">
+                This notification was sent by Seal. Please keep this email for your records.
+              </Text>
+              <Text className="m-0 mt-[12px] text-[12px] leading-[20px] text-[#9ca3af]">
+                © {new Date().getFullYear()} Seal. All rights reserved.
+              </Text>
+            </Section>
+          </Container>
+        </Body>
+      </Tailwind>
+    </Html>
+  );
 }
 
 export default DocumentCompleted;

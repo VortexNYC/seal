@@ -143,16 +143,19 @@
 ## Interaction Specifications
 
 ### Toggle Controls
+
 - **Radio Buttons**: Simple Enabled/Disabled for each notification type
 - **Auto-save**: Changes saved immediately on toggle
 - **Visual Feedback**: Immediate UI updates on selection
 
 ### Test Functionality
+
 - **Test Email**: Sends sample notification to user's email
 - **Delivery Confirmation**: Shows success/failure status
 - **Troubleshooting**: Help text for delivery issues
 
 ### Simplified Design
+
 - **Two Settings Only**: Email notifications, In-app notifications
 - **Clear Descriptions**: Explain what each notification type does
 - **No Complexity**: No frequency settings, no granular controls

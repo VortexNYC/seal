@@ -3,6 +3,7 @@
 ## Primary Status Tracking Flows
 
 ### Initial Status Tracking Flow (After Document Sent)
+
 ```
 ○ Sender Successfully Sends Document to Recipients
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### Real-Time Status Update Flow
+
 ```
 ○ Recipient Activity Triggers Status Update
     ↓
@@ -65,6 +67,7 @@
 ## Multi-Recipient Progress Tracking
 
 ### Parallel Signing Progress Flow
+
 ```
 ○ Document Sent to Multiple Recipients Simultaneously
     ↓
@@ -94,6 +97,7 @@
 ```
 
 ### Sequential Signing Progress Flow
+
 ```
 ○ Document Sent with Sequential Signing Order
     ↓
@@ -127,6 +131,7 @@
 ## Status Monitoring and Email Notifications
 
 ### Status Dashboard Monitoring Flow
+
 ```
 ○ Sender Wants to Monitor Document Progress
     ↓
@@ -156,6 +161,7 @@
 ```
 
 ### Email Notification System Flow
+
 ```
 ○ Document Status Change Occurs
     ↓
@@ -189,6 +195,7 @@
 ## Reminder and Follow-up Management
 
 ### Automated Email Reminder Flow
+
 ```
 ○ Document Sent with Reminder Schedule
     ↓
@@ -218,6 +225,7 @@
 ```
 
 ### Manual Reminder Flow
+
 ```
 ○ Sender Manually Sends Reminder
     ↓
@@ -251,6 +259,7 @@
 ## Document Completion
 
 ### Document Completion Flow
+
 ```
 ○ Final Recipient Completes Document Signing
     ↓
@@ -284,6 +293,7 @@
 ## Error Handling
 
 ### Email Delivery Failure Handling Flow
+
 ```
 ○ System Detects Email Delivery Failure
     ↓
@@ -313,6 +323,7 @@
 ```
 
 ### Document Cancellation Flow
+
 ```
 ○ Sender Needs to Cancel Document Process
     ↓

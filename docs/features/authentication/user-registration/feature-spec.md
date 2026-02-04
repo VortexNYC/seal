@@ -3,6 +3,7 @@
 ## Feature Requirements (from MVP Core Features)
 
 ### User Registration & Authentication ⭐ **Critical**
+
 - [ ] **Email/password signup and login**
 - [ ] **OAuth integration** (Google, GitHub via Clerk)
 - [ ] **Email verification** process
@@ -11,6 +12,7 @@
 - [ ] **Cross-workspace document signing** - users can sign documents from other workspaces
 
 ## Technology Stack Integration
+
 - **Clerk**: Production-ready authentication and organization management
 - **Convex**: Real-time backend with TypeScript integration
 - **React Email**: Component-based email templates (for transactional emails)
@@ -19,6 +21,7 @@
 - **TanStack Form**: Advanced form handling with validation
 
 ## Business Requirements
+
 - **Security audit** passed with no critical issues
 - **Legal compliance** verified for digital signatures
 - **User onboarding** flow completed in <5 minutes
@@ -30,6 +33,7 @@
 ## Edge Cases & Implementation Requirements
 
 ### Clerk Integration Requirements
+
 - **Core Auth**: All validation, rate limiting, session management via Clerk
 - **Organizations**: Team workspace creation, member invitations, role assignments
 - **Admin Features**: Platform admin access, multi-tenant management via Clerk dashboard
@@ -43,6 +47,7 @@
 ### Sign Up Flow States & Edge Cases
 
 #### Happy Path Workflow
+
 1. **Landing State**: Sign up form with email/password fields
 2. **Input Validation**: Real-time field validation following Clerk patterns
 3. **Submission State**: Loading spinner, form disabled
@@ -54,6 +59,7 @@
 9. **Onboarding Flow**: Self-service guided setup (B2C-style UX)
 
 #### Document Signing Context (NEW)
+
 1. **Signing Link Clicked**: User received document invitation
 2. **Document Context Page**: Shows document name, pre-fills recipient email
 3. **Create Account to Sign**: "Create Account & Continue to Sign" flow
@@ -61,6 +67,7 @@
 5. **Redirect to Signing**: Immediately taken to document signing interface
 
 #### Email Validation Edge Cases
+
 - [ ] **Valid Email Format**: user@domain.com → Continue normally
 - [ ] **Invalid Email Format**: Missing @, invalid domain
   - Error: "Please enter a valid email address"
@@ -76,6 +83,7 @@
   - Error: "Email address too long (max 200 characters)"
 
 #### Password Validation Edge Cases (Clerk Standards)
+
 - [ ] **Strong Password**: Meets Clerk requirements → Green checkmarks
 - [ ] **Too Short**: < 8 characters (Clerk minimum)
   - Error: Follow Clerk error messages
@@ -87,6 +95,7 @@
   - Error: "Passwords don't match"
 
 #### Email Verification (6-Digit OTP) Edge Cases
+
 - [ ] **OTP Code Sent**: 6-digit code via React Email + Resend
 - [ ] **Valid OTP**: Correct 6-digit code entered → Account verified
 - [ ] **Invalid OTP**: Wrong code entered
@@ -108,6 +117,7 @@
 ### Sign In Flow States & Edge Cases
 
 #### Happy Path Workflow
+
 1. **Sign In Form**: Email/password or OAuth (Google, Microsoft, Apple)
 2. **Clerk Validation**: Credential check via Clerk
 3. **Authentication Success**: JWT/session via Clerk + Convex
@@ -115,11 +125,13 @@
 5. **Session Management**: Clerk session handling
 
 #### Document Signing Context (NEW)
+
 1. **Signing Link Clicked**: Existing user needs to sign document
 2. **Sign In with Document Context**: Shows document name, pre-fills email
 3. **Sign In & Continue to Sign**: Direct to signing interface after auth
 
 #### OAuth Sign-In Edge Cases (Google, Microsoft, Apple)
+
 - [ ] **OAuth Success**: Provider auth successful via Clerk
 - [ ] **OAuth Cancelled**: User cancels OAuth flow
   - Info: "Sign in cancelled. Try again when ready"
@@ -131,6 +143,7 @@
   - Flow: Proceed to workspace creation like regular signup
 
 #### Rate Limiting & Security (Clerk)
+
 - [ ] **Normal Attempts**: Clerk rate limiting rules
 - [ ] **Excessive Attempts**: Clerk lockout mechanisms
 - [ ] **Admin Override**: Admin plugin allows admin access to unlock accounts
@@ -139,6 +152,7 @@
 ### Cross-Workspace Document Signing Edge Cases (NEW)
 
 #### Authentication Context Management
+
 - [ ] **Same Workspace Signing**: User signs document from their own workspace → Direct access
 - [ ] **Cross-Workspace Signing**: User signs document from different workspace
   - Flow: Maintain personal auth session → Access document in foreign workspace context → Sign document → Return to personal dashboard
@@ -148,6 +162,7 @@
   - Error: "Access denied. You're not authorized to view this document."
 
 #### Audit Trail Requirements
+
 - [ ] **Cross-Workspace Signatures**: Audit trail must include both workspaces
   - Record: Signer's workspace + Document's origin workspace
 - [ ] **Authentication Evidence**: Full verification chain for legal compliance
@@ -156,6 +171,7 @@
 ### Self-Service Onboarding Edge Cases
 
 #### First-Time User Experience (B2C-Style UX)
+
 - [ ] **Personal Email Signup**: Standard individual account flow
   - Welcome tour, sample documents, getting started guide
 - [ ] **Corporate Email Signup**: **Mandatory** team workspace
@@ -168,13 +184,14 @@
   - Progress: Clear step indicators, save state between steps
 
 #### Workspace Creation (All Users)
+
 - [ ] **Plan Selection**: Choose between Free and Pro Trial plans
   - Free: 10 docs/month, 1 user, no API access
   - Pro Trial: Unlimited everything, $10/month per seat after trial
 - [ ] **Workspace Naming**: User chooses workspace name during signup
 - [ ] **Owner Role Assignment**: Creator becomes workspace owner
   - Permissions: Full owner access via RBAC plugin
-- [ ] **Billing Setup**: 
+- [ ] **Billing Setup**:
   - Free Plan: No payment required
   - Pro Trial: Payment info required, 2-week trial starts immediately
 - [ ] **Optional Teammate Invitations**: "Want to invite teammates?"
@@ -184,6 +201,7 @@
 ### Account Deletion & Data Handling Edge Cases
 
 #### Deletion Process (90-Day Grace Period)
+
 - [ ] **Deletion Request**: User requests account deletion
 - [ ] **Active Documents Warning**: Pending signature requests
   - Warning: "X active documents will be cancelled"
@@ -197,6 +215,7 @@
 - [ ] **Admin Override**: Admin plugin allows forced recovery/deletion
 
 #### Multi-Tenant Data Handling (Admin Plugin)
+
 - [ ] **Organization Data**: Preserved per organization
 - [ ] **Cross-Organization**: User in multiple orgs
   - Behavior: Delete user, preserve org data
@@ -204,6 +223,7 @@
 - [ ] **Compliance Reports**: Admin can generate deletion reports
 
 ### Technical Integration Points
+
 - [ ] **Clerk Session**: JWT tokens, refresh handling
 - [ ] **Convex Real-time**: User presence, live updates
 - [ ] **Email Templates**: Clerk for auth emails, React Email for transactional
@@ -218,18 +238,21 @@
 ## Success Criteria
 
 ### Functional Requirements
+
 - [ ] **Account Creation**: >95% successful account creation rate
 - [ ] **Email Verification**: >90% email verification completion
 - [ ] **Cross-Workspace Signing**: 100% legal compliance for external signers
 - [ ] **Security**: Zero critical vulnerabilities in auth flows
 
 ### Performance Requirements
+
 - [ ] **Sign-Up Flow**: <3 minutes from start to workspace creation
 - [ ] **Sign-In Flow**: <30 seconds to dashboard
 - [ ] **Document Signing**: <60 seconds from email link to signing interface
 - [ ] **Mobile Performance**: Equal success rates on mobile devices
 
 ### Business Requirements
+
 - [ ] **Legal Validity**: All signatures legally compliant with account-based authentication
 - [ ] **User Experience**: <5% user drop-off during signing flows
 - [ ] **Support Volume**: <1% of authentications require support intervention

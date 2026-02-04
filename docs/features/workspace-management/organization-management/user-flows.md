@@ -3,6 +3,7 @@
 ## Primary User Flows
 
 ### Workspace Creation Flow (Required for All Users)
+
 ```
 ○ User Completes Registration
     ↓
@@ -35,6 +36,7 @@
 ```
 
 ### Multi-Workspace Context Management
+
 ```
 ○ User Belongs to Multiple Workspaces
     ↓
@@ -59,6 +61,7 @@
 ```
 
 ### Team Member Invitation Flow
+
 ```
 ○ Workspace Owner/Admin Invites Members
     ↓
@@ -87,6 +90,7 @@
 ```
 
 ### Invitation Response Flow
+
 ```
 ○ Recipient Receives Invitation Email
     ↓
@@ -117,6 +121,7 @@
 ```
 
 ### Role Management Flow
+
 ```
 ○ Owner/Admin Manages Member Roles
     ↓
@@ -148,6 +153,7 @@
 ## Advanced Management Flows
 
 ### Workspace Ownership Transfer
+
 ```
 ○ Current Owner Initiates Transfer
     ↓
@@ -175,6 +181,7 @@
 ```
 
 ### Billing-Driven Workspace Management
+
 ```
 ○ Workspace Billing Event Occurs
     ↓
@@ -204,6 +211,7 @@
 ```
 
 ### Multi-Workspace Billing Scenarios
+
 ```
 ○ User Active in Multiple Workspaces
     ↓
@@ -231,6 +239,7 @@
 ## Error Handling & Edge Case Flows
 
 ### Workspace Creation Failures
+
 ```
 ○ Workspace Creation Attempt Fails
     ↓
@@ -254,6 +263,7 @@
 ```
 
 ### Member Management Conflicts
+
 ```
 ○ Member Management Conflict Detected
     ↓
@@ -271,6 +281,7 @@
 ```
 
 ### Context Switching Failures
+
 ```
 ○ Workspace Switch Attempt Fails
     ↓
@@ -288,6 +299,7 @@
 ```
 
 ### Member Removal During Active Session
+
 ```
 ○ User Gets Removed From Workspace While Active
     ↓
@@ -309,24 +321,28 @@
 ## Integration Touch Points
 
 ### Organization Management System
+
 - **Workspace Creation**: Seamless organization creation with proper setup
 - **Member Management**: Built-in invitation system with token management
 - **Role Assignment**: RBAC integration for Owner/Admin/Member permissions
 - **Multi-workspace Support**: Handle users across multiple organizations
 
 ### RBAC System
+
 - **Permission Enforcement**: Real-time permission checking and updates
 - **Role Hierarchies**: Clear Owner > Admin > Member permission structure
 - **Context Switching**: Permission refresh when changing workspaces
 - **Audit Integration**: All role changes logged for compliance
 
 ### Stripe Billing Integration
+
 - **Per-Workspace Billing**: Independent subscriptions for each workspace
 - **Seat-Based Pricing**: $10/month per member seat model
 - **Trial Management**: 14-day free trial with automatic conversion
 - **Payment Failure Handling**: Grace periods and recovery processes
 
 ### Convex Real-Time Data Management
+
 - **Member Presence**: Live member status and activity tracking
 - **Permission Changes**: Instant permission updates across all clients
 - **Billing Status**: Real-time billing status and feature access updates
@@ -335,6 +351,7 @@
 - **Context Switching**: Seamless workspace context updates
 
 ### React Email + Resend
+
 - **Invitation Emails**: Professional invitation email templates
 - **Role Change Notifications**: Member role update communications
 - **Billing Alerts**: Payment failure and trial expiration notifications

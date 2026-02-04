@@ -28,6 +28,7 @@
 ```
 
 ### Create Template from Scratch Flow
+
 ```
 ○ User Wants to Build Reusable Template
     ↓
@@ -77,6 +78,7 @@
 ```
 
 ### Template Discovery Flow
+
 ```
 ○ User Looking for Templates
     ↓
@@ -120,6 +122,7 @@
 ```
 
 ### Template Sharing Flow
+
 ```
 ○ User Creates Valuable Template for Team Use
     ↓
@@ -141,6 +144,7 @@
 ## Template Error Handling
 
 ### Template Creation Issues Flow
+
 ```
 ○ User Attempts Template Creation with Document Problems
     ↓
@@ -158,6 +162,7 @@
 ```
 
 ### Template Application Issues Flow
+
 ```
 ○ User Tries to Use Template with Problems
     ↓
@@ -201,6 +206,7 @@
 ```
 
 ### Template Deletion Flow
+
 ```
 ○ User Wants to Delete Unused Template
     ↓
@@ -222,6 +228,7 @@
 ## Mobile Template Experience
 
 ### Mobile Template Usage Flow
+
 ```
 ○ Mobile User Needs Document from Template
     ↓
@@ -239,6 +246,7 @@
 ```
 
 ### Mobile Template Creation Flow
+
 ```
 ○ Mobile User Wants to Save Document as Template
     ↓

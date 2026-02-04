@@ -1,8 +1,8 @@
 {
-	"name": "@seal/tsconfig",
-	"private": true,
-	"version": "0.1.0",
-	"files": [
-		"*.json"
-	]
+  "name": "@seal/tsconfig",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "*.json"
+  ]
 }

@@ -1,5 +1,6 @@
-import { api } from "@seal/backend/convex/_generated/api";
 import { useQuery } from "convex/react";
+
+import { api } from "@seal/backend/convex/_generated/api";
 
 /**
  * Hook for checking subscription plan limits in the UI.
@@ -8,18 +9,18 @@ import { useQuery } from "convex/react";
  * for conditionally rendering Pro-only features.
  */
 export function useSubscriptionLimits() {
-	const subscription = useQuery(api.stripe.queries.getSubscriptionDetails);
+  const subscription = useQuery(api.stripe.queries.getSubscriptionDetails);
 
-	const isLoading = subscription === undefined;
+  const isLoading = subscription === undefined;
 
-	const tier = subscription?.tier ?? "free";
+  const tier = subscription?.tier ?? "free";
 
-	const isPro = subscription?.status === "active" && tier === "pro";
+  const isPro = subscription?.status === "active" && tier === "pro";
 
-	return {
-		isPro,
-		isLoading,
-		tier,
-		subscription,
-	};
+  return {
+    isPro,
+    isLoading,
+    tier,
+    subscription,
+  };
 }

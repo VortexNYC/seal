@@ -3,6 +3,7 @@
 ## Signature Method Selection Interface
 
 ### Main Signature Creation Interface
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Create Your Signature                                                         X │
@@ -39,6 +40,7 @@
 ## Draw Signature Interface
 
 ### Canvas Drawing Interface
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Draw Your Signature                                                           X │
@@ -69,6 +71,7 @@
 ```
 
 ### Drawing with Signature Preview
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Draw Your Signature                                                           X │
@@ -102,6 +105,7 @@
 ## Type Signature Interface
 
 ### Text Signature Creation
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Type Your Signature                                                           X │
@@ -137,6 +141,7 @@
 ```
 
 ### Font Selection Dropdown
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Type Your Signature - Font Selection                                         X │
@@ -170,6 +175,7 @@
 ## Upload Signature Interface
 
 ### File Upload Interface
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Upload Your Signature                                                         X │
@@ -205,6 +211,7 @@
 ```
 
 ### Upload with Preview
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Upload Your Signature - Preview                                              X │
@@ -240,6 +247,7 @@
 ## Signature Application Interface
 
 ### Signature Applied to Document
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Complete Your Signature - Step 3 of 5                                          │
@@ -275,6 +283,7 @@
 ## Error States
 
 ### Blank Signature Error
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Create Your Signature - Error                                                X │
@@ -305,6 +314,7 @@
 ```
 
 ### Invalid File Upload Error
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Upload Your Signature - Error                                                X │
@@ -341,6 +351,7 @@
 ## Mobile Signature Interface
 
 ### Mobile Draw Signature
+
 ```
 ┌─────────────────────────────────┐
 │ Create Signature                │

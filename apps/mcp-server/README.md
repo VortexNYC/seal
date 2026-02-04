@@ -7,6 +7,7 @@ An MCP (Model Context Protocol) server that enables AI assistants like Claude to
 ### Tools (25 total)
 
 **Documents (8 tools)**
+
 - `list_documents` - List documents with pagination and status filtering
 - `get_document` - Get document details with optional recipient info
 - `create_document` - Create a new document in draft status
@@ -17,6 +18,7 @@ An MCP (Model Context Protocol) server that enables AI assistants like Claude to
 - `download_document` - Get document download URL
 
 **Templates (7 tools)**
+
 - `list_templates` - List templates with pagination
 - `get_template` - Get template details
 - `get_template_fields` - Get template field definitions
@@ -26,6 +28,7 @@ An MCP (Model Context Protocol) server that enables AI assistants like Claude to
 - `use_template` - Create document from template
 
 **Recipients (6 tools)**
+
 - `list_recipients` - List document recipients
 - `get_recipient` - Get recipient details
 - `add_recipient` - Add recipient to document
@@ -34,12 +37,14 @@ An MCP (Model Context Protocol) server that enables AI assistants like Claude to
 - `send_reminder` - Send signing reminder
 
 **Signatures (4 tools)**
+
 - `list_signatures` - List document signatures
 - `get_signature` - Get signature details
 - `verify_document` - Verify signature integrity
 - `get_audit_trail` - Get document audit trail
 
 ### Resources
+
 - `seal://documents` - List of all documents
 - `seal://documents/{id}` - Single document details
 - `seal://templates` - List of all templates
@@ -65,6 +70,7 @@ Deploy to Vercel for hosted access with OAuth authentication via Clerk.
 ```
 
 The HTTP transport uses Clerk OAuth for authentication. When connecting, MCP clients will:
+
 1. Fetch `/.well-known/oauth-protected-resource` to discover the auth server
 2. Redirect users to Clerk for authentication
 3. Use the JWT token to authenticate requests
@@ -161,20 +167,21 @@ For HTTP transport with OAuth authentication:
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/mcp` | POST | Main MCP protocol endpoint |
-| `/mcp` | GET | SSE stream for server-sent events |
-| `/mcp` | DELETE | Close MCP session |
-| `/health` | GET | Health check |
-| `/.well-known/oauth-protected-resource` | GET | OAuth resource metadata |
-| `/.well-known/oauth-authorization-server` | GET | OAuth server metadata |
+| Endpoint                                  | Method | Description                       |
+| ----------------------------------------- | ------ | --------------------------------- |
+| `/mcp`                                    | POST   | Main MCP protocol endpoint        |
+| `/mcp`                                    | GET    | SSE stream for server-sent events |
+| `/mcp`                                    | DELETE | Close MCP session                 |
+| `/health`                                 | GET    | Health check                      |
+| `/.well-known/oauth-protected-resource`   | GET    | OAuth resource metadata           |
+| `/.well-known/oauth-authorization-server` | GET    | OAuth server metadata             |
 
 ## Usage Examples
 
 ### Complete Document Workflow
 
 **1. Upload a PDF file:**
+
 ```bash
 # In stdio mode (local development)
 upload_file(file_path="/path/to/contract.pdf")
@@ -184,6 +191,7 @@ upload_file_content(file_name="contract.pdf", content_base64="...")
 ```
 
 **2. Create a document:**
+
 ```bash
 create_document(
   title="Q4 Partnership Agreement",
@@ -196,6 +204,7 @@ create_document(
 ```
 
 **3. Add recipients:**
+
 ```bash
 add_recipient(
   document_id="doc_123456789",
@@ -215,6 +224,7 @@ add_recipient(
 ```
 
 **4. Send for signing:**
+
 ```bash
 send_document(
   id="doc_123456789",
@@ -223,6 +233,7 @@ send_document(
 ```
 
 **5. Monitor progress:**
+
 ```bash
 get_document(id="doc_123456789", include_recipients=true)
 ```
@@ -230,6 +241,7 @@ get_document(id="doc_123456789", include_recipients=true)
 ### Template Management
 
 **Create a template from existing document:**
+
 ```bash
 create_template(
   document_id="doc_123456789",
@@ -239,6 +251,7 @@ create_template(
 ```
 
 **Use template to create new document:**
+
 ```bash
 use_template(
   template_id="tmpl_123456789",
@@ -249,16 +262,19 @@ use_template(
 ### Document Administration
 
 **List documents with filtering:**
+
 ```bash
 list_documents(status="sent", limit=10)
 ```
 
 **Void a document:**
+
 ```bash
 void_document(id="doc_123456789", reason="Terms changed")
 ```
 
 **Get audit trail:**
+
 ```bash
 get_audit_trail(document_id="doc_123456789")
 ```
@@ -266,6 +282,7 @@ get_audit_trail(document_id="doc_123456789")
 ### Bulk Recipient Management
 
 **Add multiple recipients at once:**
+
 ```bash
 add_recipients_bulk(
   document_id="doc_123456789",
@@ -287,6 +304,7 @@ add_recipients_bulk(
 ```
 
 **Update multiple recipients:**
+
 ```bash
 update_recipients_bulk(
   document_id="doc_123456789",
@@ -307,56 +325,56 @@ update_recipients_bulk(
 
 ### Documents
 
-| Tool | Parameters | Response |
-|------|------------|----------|
-| `list_documents` | `limit?: number, cursor?: string, status?: DocumentStatus` | `{ data: Document[], has_more: boolean }` |
-| `get_document` | `id: string, include_recipients?: boolean` | `Document` with optional recipients array |
-| `create_document` | `title: string, storage_id: string, file_size: number, file_type: string, ...` | `{ id: string }` |
-| `update_document` | `id: string, title?: string, description?: string, deadline?: string` | `{ success: boolean }` |
-| `delete_document` | `id: string` | `{ success: boolean }` |
-| `send_document` | `id: string, message?: string` | `{ success: boolean }` |
-| `void_document` | `id: string, reason?: string` | `{ success: boolean }` |
-| `download_document` | `id: string` | `{ url: string }` |
+| Tool                | Parameters                                                                     | Response                                  |
+| ------------------- | ------------------------------------------------------------------------------ | ----------------------------------------- |
+| `list_documents`    | `limit?: number, cursor?: string, status?: DocumentStatus`                     | `{ data: Document[], has_more: boolean }` |
+| `get_document`      | `id: string, include_recipients?: boolean`                                     | `Document` with optional recipients array |
+| `create_document`   | `title: string, storage_id: string, file_size: number, file_type: string, ...` | `{ id: string }`                          |
+| `update_document`   | `id: string, title?: string, description?: string, deadline?: string`          | `{ success: boolean }`                    |
+| `delete_document`   | `id: string`                                                                   | `{ success: boolean }`                    |
+| `send_document`     | `id: string, message?: string`                                                 | `{ success: boolean }`                    |
+| `void_document`     | `id: string, reason?: string`                                                  | `{ success: boolean }`                    |
+| `download_document` | `id: string`                                                                   | `{ url: string }`                         |
 
 ### Templates
 
-| Tool | Parameters | Response |
-|------|------------|----------|
-| `list_templates` | `limit?: number, cursor?: string, status?: TemplateStatus` | `{ data: Template[], has_more: boolean }` |
-| `get_template` | `id: string` | `Template` |
-| `get_template_fields` | `id: string` | `Field[]` |
-| `create_template` | `document_id: string, name: string, description?: string` | `{ id: string }` |
-| `update_template` | `id: string, name?: string, description?: string, status?: TemplateStatus` | `{ success: boolean }` |
-| `delete_template` | `id: string` | `{ success: boolean }` |
-| `use_template` | `template_id: string, title: string` | `{ id: string }` |
+| Tool                  | Parameters                                                                 | Response                                  |
+| --------------------- | -------------------------------------------------------------------------- | ----------------------------------------- |
+| `list_templates`      | `limit?: number, cursor?: string, status?: TemplateStatus`                 | `{ data: Template[], has_more: boolean }` |
+| `get_template`        | `id: string`                                                               | `Template`                                |
+| `get_template_fields` | `id: string`                                                               | `Field[]`                                 |
+| `create_template`     | `document_id: string, name: string, description?: string`                  | `{ id: string }`                          |
+| `update_template`     | `id: string, name?: string, description?: string, status?: TemplateStatus` | `{ success: boolean }`                    |
+| `delete_template`     | `id: string`                                                               | `{ success: boolean }`                    |
+| `use_template`        | `template_id: string, title: string`                                       | `{ id: string }`                          |
 
 ### Recipients
 
-| Tool | Parameters | Response |
-|------|------------|----------|
-| `list_recipients` | `document_id: string` | `Recipient[]` |
-| `get_recipient` | `document_id: string, recipient_id: string` | `Recipient` |
-| `add_recipient` | `document_id: string, name: string, email: string, role: RecipientRole, order?: number` | `{ id: string }` |
-| `add_recipients_bulk` | `document_id: string, recipients: AddRecipientInput[]` | `{ added: number, recipients: { id: string, email: string }[] }` |
-| `update_recipient` | `document_id: string, recipient_id: string, name?: string, email?: string, role?: RecipientRole` | `{ success: boolean }` |
-| `update_recipients_bulk` | `document_id: string, updates: UpdateRecipientInput[]` | `{ updated: number }` |
-| `remove_recipient` | `document_id: string, recipient_id: string` | `{ success: boolean }` |
-| `send_reminder` | `document_id: string, recipient_id: string` | `{ success: boolean }` |
+| Tool                     | Parameters                                                                                       | Response                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `list_recipients`        | `document_id: string`                                                                            | `Recipient[]`                                                    |
+| `get_recipient`          | `document_id: string, recipient_id: string`                                                      | `Recipient`                                                      |
+| `add_recipient`          | `document_id: string, name: string, email: string, role: RecipientRole, order?: number`          | `{ id: string }`                                                 |
+| `add_recipients_bulk`    | `document_id: string, recipients: AddRecipientInput[]`                                           | `{ added: number, recipients: { id: string, email: string }[] }` |
+| `update_recipient`       | `document_id: string, recipient_id: string, name?: string, email?: string, role?: RecipientRole` | `{ success: boolean }`                                           |
+| `update_recipients_bulk` | `document_id: string, updates: UpdateRecipientInput[]`                                           | `{ updated: number }`                                            |
+| `remove_recipient`       | `document_id: string, recipient_id: string`                                                      | `{ success: boolean }`                                           |
+| `send_reminder`          | `document_id: string, recipient_id: string`                                                      | `{ success: boolean }`                                           |
 
 ### Signatures
 
-| Tool | Parameters | Response |
-|------|------------|----------|
-| `list_signatures` | `document_id: string` | `Signature[]` |
-| `get_signature` | `document_id: string, signature_id: string` | `Signature` |
-| `verify_document` | `document_id: string` | `{ valid: boolean, details: object }` |
-| `get_audit_trail` | `document_id: string` | `AuditEntry[]` |
+| Tool              | Parameters                                  | Response                              |
+| ----------------- | ------------------------------------------- | ------------------------------------- |
+| `list_signatures` | `document_id: string`                       | `Signature[]`                         |
+| `get_signature`   | `document_id: string, signature_id: string` | `Signature`                           |
+| `verify_document` | `document_id: string`                       | `{ valid: boolean, details: object }` |
+| `get_audit_trail` | `document_id: string`                       | `AuditEntry[]`                        |
 
 ### Uploads
 
-| Tool | Parameters | Response |
-|------|------------|----------|
-| `upload_file` | `file_path: string` *(stdio mode only)* | `{ storage_id: string, file_name: string, file_size: number }` |
+| Tool                  | Parameters                                  | Response                                                       |
+| --------------------- | ------------------------------------------- | -------------------------------------------------------------- |
+| `upload_file`         | `file_path: string` _(stdio mode only)_     | `{ storage_id: string, file_name: string, file_size: number }` |
 | `upload_file_content` | `file_name: string, content_base64: string` | `{ storage_id: string, file_name: string, file_size: number }` |
 
 ## API Scopes

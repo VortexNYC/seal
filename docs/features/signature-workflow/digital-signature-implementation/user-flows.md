@@ -3,6 +3,7 @@
 ## Primary Signature Creation Flows
 
 ### Signature Creation Selection Flow
+
 ```
 ○ User Encounters Signature Field During Signing
     ↓
@@ -34,6 +35,7 @@
 ## Signature Creation Methods
 
 ### Draw Signature Flow
+
 ```
 ○ User Selects "Draw" Signature Method
     ↓
@@ -63,6 +65,7 @@
 ```
 
 ### Type Signature Flow
+
 ```
 ○ User Selects "Type" Signature Method
     ↓
@@ -92,6 +95,7 @@
 ```
 
 ### Upload Signature Flow
+
 ```
 ○ User Selects "Upload" Signature Method
     ↓
@@ -123,6 +127,7 @@
 ## Signature Application Flow
 
 ### Signature Placement and Sizing
+
 ```
 ○ User Confirms Signature for Application
     ↓
@@ -154,6 +159,7 @@
 ## Cross-Device Signature Flows
 
 ### Mobile/Touch Device Signature Flow
+
 ```
 ○ User Opens Signature Interface on Mobile Device
     ↓
@@ -183,6 +189,7 @@
 ```
 
 ### Desktop/Mouse Signature Flow
+
 ```
 ○ User Opens Signature Interface on Desktop
     ↓
@@ -214,6 +221,7 @@
 ## Signature Validation and Error Handling
 
 ### Blank Signature Detection Flow
+
 ```
 ○ User Attempts to Apply Empty Signature
     ↓
@@ -245,6 +253,7 @@
 ## Audit Trail and Logging
 
 ### Signature Event Logging Flow
+
 ```
 ○ User Creates and Applies Signature
     ↓

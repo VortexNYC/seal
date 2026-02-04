@@ -65,63 +65,62 @@ The `clerkInvite` action performs these checks:
 
 ```typescript
 export const clerkInvite = action({
-	args: {
-		email: v.string(),
-		role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
-		organizationId: v.id("organizations"),
-	},
-	handler: async (ctx, args): Promise<{ ok: boolean; message: string }> => {
-		// ✅ Line 26-29: Check authentication
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) {
-			throw new ConvexError("Authentication required");
-		}
+  args: {
+    email: v.string(),
+    role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args): Promise<{ ok: boolean; message: string }> => {
+    // ✅ Line 26-29: Check authentication
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Authentication required");
+    }
 
-		// ✅ Line 32-37: Check Clerk configuration
-		if (!process.env.CLERK_SECRET_KEY) {
-			throw new ConvexError({
-				code: "MISSING_CONFIG",
-				message: "CLERK_SECRET_KEY environment variable is not set",
-			});
-		}
+    // ✅ Line 32-37: Check Clerk configuration
+    if (!process.env.CLERK_SECRET_KEY) {
+      throw new ConvexError({
+        code: "MISSING_CONFIG",
+        message: "CLERK_SECRET_KEY environment variable is not set",
+      });
+    }
 
-		// ✅ Line 40-46: Check organization exists
-		const organization = await ctx.runQuery(
-			internal.organizations.helpers.getOrganizationById,
-			{ organizationId: args.organizationId }
-		);
+    // ✅ Line 40-46: Check organization exists
+    const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
+      organizationId: args.organizationId,
+    });
 
-		if (!organization) {
-			throw new ConvexError("Organization not found");
-		}
+    if (!organization) {
+      throw new ConvexError("Organization not found");
+    }
 
-		// ✅ Line 48-53: Check Clerk sync
-		if (!organization.clerkId) {
-			throw new ConvexError({
-				code: "ORGANIZATION_NOT_SYNCED",
-				message: "This organization is not synced with Clerk...",
-			});
-		}
+    // ✅ Line 48-53: Check Clerk sync
+    if (!organization.clerkId) {
+      throw new ConvexError({
+        code: "ORGANIZATION_NOT_SYNCED",
+        message: "This organization is not synced with Clerk...",
+      });
+    }
 
-		// ❌ MISSING: Permission check for org:users:invite
-		// Any authenticated user can reach this point!
+    // ❌ MISSING: Permission check for org:users:invite
+    // Any authenticated user can reach this point!
 
-		// Line 56-69: Create invitation in Clerk
-		const clerk = createClerkClient({
-			secretKey: process.env.CLERK_SECRET_KEY,
-		});
+    // Line 56-69: Create invitation in Clerk
+    const clerk = createClerkClient({
+      secretKey: process.env.CLERK_SECRET_KEY,
+    });
 
-		await clerk.organizations.createOrganizationInvitation({
-			organizationId: organization.clerkId,
-			emailAddress: args.email.toLowerCase(),
-			role: "org:member",
-			publicMetadata: {
-				role: args.role,
-			},
-		});
+    await clerk.organizations.createOrganizationInvitation({
+      organizationId: organization.clerkId,
+      emailAddress: args.email.toLowerCase(),
+      role: "org:member",
+      publicMetadata: {
+        role: args.role,
+      },
+    });
 
-		return { ok: true, message: "Invitation sent successfully" };
-	},
+    return { ok: true, message: "Invitation sent successfully" };
+  },
 });
 ```
 
@@ -138,9 +137,9 @@ Any authenticated user can bypass frontend checks by calling the `clerkInvite` a
 ```typescript
 // Malicious code from browser console or API client
 const result = await client.action(api.organizations.actions.clerkInvite, {
-	email: "attacker@example.com",
-	role: "admin",
-	organizationId: "<any-org-they-are-member-of>",
+  email: "attacker@example.com",
+  role: "admin",
+  organizationId: "<any-org-they-are-member-of>",
 });
 ```
 
@@ -156,13 +155,13 @@ const result = await client.action(api.organizations.actions.clerkInvite, {
 
 According to `apps/backend/convex/auth.utils.ts` (lines 19-148):
 
-| Role | Has `org:users:invite` | Can Exploit Vulnerability |
-|------|------------------------|---------------------------|
-| system | ✅ Yes (wildcard) | No (authorized) |
-| owner | ✅ Yes | No (authorized) |
-| admin | ✅ Yes | No (authorized) |
-| member | ❌ **No** | ⚠️ **Yes - CRITICAL** |
-| viewer | ❌ **No** | ⚠️ **Yes - CRITICAL** |
+| Role   | Has `org:users:invite` | Can Exploit Vulnerability |
+| ------ | ---------------------- | ------------------------- |
+| system | ✅ Yes (wildcard)      | No (authorized)           |
+| owner  | ✅ Yes                 | No (authorized)           |
+| admin  | ✅ Yes                 | No (authorized)           |
+| member | ❌ **No**              | ⚠️ **Yes - CRITICAL**     |
+| viewer | ❌ **No**              | ⚠️ **Yes - CRITICAL**     |
 
 ---
 
@@ -171,6 +170,7 @@ According to `apps/backend/convex/auth.utils.ts` (lines 19-148):
 **File**: `apps/backend/convex/auth.utils.ts`
 
 ### System Role (lines 20-23)
+
 ```typescript
 system: [
 	// System-level permissions (all permissions)
@@ -179,6 +179,7 @@ system: [
 ```
 
 ### Owner Role (lines 24-72)
+
 ```typescript
 owner: [
 	// Organization management
@@ -194,6 +195,7 @@ owner: [
 ```
 
 ### Admin Role (lines 74-115)
+
 ```typescript
 admin: [
 	// Organization view
@@ -207,6 +209,7 @@ admin: [
 ```
 
 ### Member Role (lines 117-137)
+
 ```typescript
 member: [
 	// Documents (create and manage own)
@@ -219,6 +222,7 @@ member: [
 ```
 
 ### Viewer Role (lines 139-147)
+
 ```typescript
 viewer: [
 	// Read-only access
@@ -244,96 +248,93 @@ import { internal } from "../_generated/api";
 import { hasPermission, DOCUMENT_SIGNING_PERMISSIONS } from "../auth.utils"; // ADD THIS
 
 export const clerkInvite = action({
-	args: {
-		email: v.string(),
-		role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
-		organizationId: v.id("organizations"),
-	},
-	handler: async (ctx, args): Promise<{ ok: boolean; message: string }> => {
-		// Get the authenticated user
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) {
-			throw new ConvexError("Authentication required");
-		}
+  args: {
+    email: v.string(),
+    role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args): Promise<{ ok: boolean; message: string }> => {
+    // Get the authenticated user
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Authentication required");
+    }
 
-		// ===== ADD THIS SECTION =====
-		// Get the current user's membership in the organization
-		const userMember = await ctx.runQuery(
-			internal.organizations.helpers.getOrganizationMemberByUserIdAndOrgId,
-			{
-				userId: identity.subject, // or ctx.auth.user._id if available
-				organizationId: args.organizationId,
-			}
-		);
+    // ===== ADD THIS SECTION =====
+    // Get the current user's membership in the organization
+    const userMember = await ctx.runQuery(
+      internal.organizations.helpers.getOrganizationMemberByUserIdAndOrgId,
+      {
+        userId: identity.subject, // or ctx.auth.user._id if available
+        organizationId: args.organizationId,
+      },
+    );
 
-		if (!userMember) {
-			throw new ConvexError({
-				code: "NO_ACCESS",
-				message: "You don't have access to this organization",
-			});
-		}
+    if (!userMember) {
+      throw new ConvexError({
+        code: "NO_ACCESS",
+        message: "You don't have access to this organization",
+      });
+    }
 
-		// Check if user has permission to invite members
-		if (!hasPermission(userMember, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE)) {
-			throw new ConvexError({
-				code: "INSUFFICIENT_PERMISSIONS",
-				message: "You don't have permission to invite members to this organization",
-			});
-		}
-		// ===== END OF NEW SECTION =====
+    // Check if user has permission to invite members
+    if (!hasPermission(userMember, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE)) {
+      throw new ConvexError({
+        code: "INSUFFICIENT_PERMISSIONS",
+        message: "You don't have permission to invite members to this organization",
+      });
+    }
+    // ===== END OF NEW SECTION =====
 
-		// Check if Clerk is configured
-		if (!process.env.CLERK_SECRET_KEY) {
-			throw new ConvexError({
-				code: "MISSING_CONFIG",
-				message: "CLERK_SECRET_KEY environment variable is not set",
-			});
-		}
+    // Check if Clerk is configured
+    if (!process.env.CLERK_SECRET_KEY) {
+      throw new ConvexError({
+        code: "MISSING_CONFIG",
+        message: "CLERK_SECRET_KEY environment variable is not set",
+      });
+    }
 
-		// Get organization via internal query
-		const organization = await ctx.runQuery(
-			internal.organizations.helpers.getOrganizationById,
-			{
-				organizationId: args.organizationId,
-			}
-		);
+    // Get organization via internal query
+    const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
+      organizationId: args.organizationId,
+    });
 
-		if (!organization) {
-			throw new ConvexError("Organization not found");
-		}
+    if (!organization) {
+      throw new ConvexError("Organization not found");
+    }
 
-		if (!organization.clerkId) {
-			throw new ConvexError({
-				code: "ORGANIZATION_NOT_SYNCED",
-				message: "This organization is not synced with Clerk. Only Clerk-managed organizations can send invitations.",
-			});
-		}
+    if (!organization.clerkId) {
+      throw new ConvexError({
+        code: "ORGANIZATION_NOT_SYNCED",
+        message:
+          "This organization is not synced with Clerk. Only Clerk-managed organizations can send invitations.",
+      });
+    }
 
-		try {
-			const clerk = createClerkClient({
-				secretKey: process.env.CLERK_SECRET_KEY,
-			});
+    try {
+      const clerk = createClerkClient({
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
 
-			// Create invitation in Clerk
-			await clerk.organizations.createOrganizationInvitation({
-				organizationId: organization.clerkId,
-				emailAddress: args.email.toLowerCase(),
-				role: "org:member",
-				publicMetadata: {
-					role: args.role,
-				},
-			});
+      // Create invitation in Clerk
+      await clerk.organizations.createOrganizationInvitation({
+        organizationId: organization.clerkId,
+        emailAddress: args.email.toLowerCase(),
+        role: "org:member",
+        publicMetadata: {
+          role: args.role,
+        },
+      });
 
-			return { ok: true, message: "Invitation sent successfully" };
-		} catch (error) {
-			console.error("[clerkInvite] Error:", error);
-			throw new ConvexError({
-				code: "INVITATION_ERROR",
-				message:
-					error instanceof Error ? error.message : "Failed to send invitation",
-			});
-		}
-	},
+      return { ok: true, message: "Invitation sent successfully" };
+    } catch (error) {
+      console.error("[clerkInvite] Error:", error);
+      throw new ConvexError({
+        code: "INVITATION_ERROR",
+        message: error instanceof Error ? error.message : "Failed to send invitation",
+      });
+    }
+  },
 });
 ```
 
@@ -347,22 +348,20 @@ You may need to create a helper query in `apps/backend/convex/organizations/help
  * INTERNAL ONLY - used for permission checks
  */
 export const getOrganizationMemberByUserIdAndOrgId = internalQuery({
-	args: {
-		userId: v.id("users"),
-		organizationId: v.id("organizations"),
-	},
-	handler: async (ctx, args) => {
-		const member = await ctx.db
-			.query("organization_members")
-			.withIndex("by_user_organization", (q) =>
-				q
-					.eq("userId", args.userId)
-					.eq("organizationId", args.organizationId)
-			)
-			.first();
+  args: {
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    const member = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user_organization", (q) =>
+        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
+      )
+      .first();
 
-		return member;
-	},
+    return member;
+  },
 });
 ```
 
@@ -385,13 +384,14 @@ export const getOrganizationMemberByUserIdAndOrgId = internalQuery({
 **Current Status**: ⚠️ Partial validation
 
 **Lines 202-207**: Checks role but NOT permissions
+
 ```typescript
 // Prevent deleting owners
 if (member.role === "owner") {
-	throw new ConvexError({
-		code: "CANNOT_DELETE_OWNER",
-		message: "Cannot delete organization owner",
-	});
+  throw new ConvexError({
+    code: "CANNOT_DELETE_OWNER",
+    message: "Cannot delete organization owner",
+  });
 }
 ```
 
@@ -400,13 +400,14 @@ if (member.role === "owner") {
 **Required Permission**: `org:users:remove`
 
 **Fix**: Add permission validation:
+
 ```typescript
 // Check if current user has permission to remove members
 if (!hasPermission(currentUserMember, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_REMOVE)) {
-	throw new ConvexError({
-		code: "INSUFFICIENT_PERMISSIONS",
-		message: "You don't have permission to remove members",
-	});
+  throw new ConvexError({
+    code: "INSUFFICIENT_PERMISSIONS",
+    message: "You don't have permission to remove members",
+  });
 }
 ```
 
@@ -459,6 +460,7 @@ After implementing the fix, verify:
 **Priority**: 🔴 **P0 - Critical Security Issue**
 
 **Recommended Timeline**:
+
 - **Immediate**: Block production deployment until fixed
 - **Target**: Fix within 24 hours
 - **Testing**: 2-4 hours for comprehensive testing

@@ -15,6 +15,7 @@
 
 import type { GenericDatabaseReader } from "convex/server";
 import { ConvexError } from "convex/values";
+
 import type { DataModel, Doc, Id } from "../_generated/dataModel";
 import type { DocumentPermissionLevel } from "../schemas/document_access";
 
@@ -23,39 +24,38 @@ import type { DocumentPermissionLevel } from "../schemas/document_access";
  * Works with both raw QueryCtx/MutationCtx and auth-wrapped contexts.
  */
 type DbContext = {
-	db: GenericDatabaseReader<DataModel>;
+  db: GenericDatabaseReader<DataModel>;
 };
 
 /**
  * Document access check result
  */
 export interface DocumentAccessResult {
-	/** Whether the user has any access to the document */
-	hasAccess: boolean;
-	/** Whether the user is the document owner */
-	isOwner: boolean;
-	/** Whether access is via workspace sharing */
-	isWorkspaceAccess: boolean;
-	/** Whether access is via specific sharing */
-	isSpecificAccess: boolean;
-	/** Permission level if access is via specific sharing */
-	permissionLevel?: DocumentPermissionLevel;
-	/** The document access record if access is via specific sharing */
-	accessRecord?: Doc<"document_access">;
-	/** Whether user is an active organization member */
-	isOrgMember: boolean;
+  /** Whether the user has any access to the document */
+  hasAccess: boolean;
+  /** Whether the user is the document owner */
+  isOwner: boolean;
+  /** Whether access is via workspace sharing */
+  isWorkspaceAccess: boolean;
+  /** Whether access is via specific sharing */
+  isSpecificAccess: boolean;
+  /** Permission level if access is via specific sharing */
+  permissionLevel?: DocumentPermissionLevel;
+  /** The document access record if access is via specific sharing */
+  accessRecord?: Doc<"document_access">;
+  /** Whether user is an active organization member */
+  isOrgMember: boolean;
 }
 
 /**
  * Standard error messages for access denial
  */
 export const ACCESS_ERRORS = {
-	DOCUMENT_NOT_FOUND: "Document not found",
-	NO_ACCESS: "You don't have access to this document",
-	NOT_ORG_MEMBER: "You are not a member of this organization",
-	MANAGE_REQUIRED:
-		"Only the document owner or managers can perform this action",
-	OWNER_REQUIRED: "Only the document owner can perform this action",
+  DOCUMENT_NOT_FOUND: "Document not found",
+  NO_ACCESS: "You don't have access to this document",
+  NOT_ORG_MEMBER: "You are not a member of this organization",
+  MANAGE_REQUIRED: "Only the document owner or managers can perform this action",
+  OWNER_REQUIRED: "Only the document owner can perform this action",
 } as const;
 
 /**
@@ -76,66 +76,64 @@ export const ACCESS_ERRORS = {
  * }
  */
 export async function checkDocumentAccess(
-	ctx: DbContext,
-	userId: Id<"users">,
-	document: Doc<"documents">,
+  ctx: DbContext,
+  userId: Id<"users">,
+  document: Doc<"documents">,
 ): Promise<DocumentAccessResult> {
-	const result: DocumentAccessResult = {
-		hasAccess: false,
-		isOwner: false,
-		isWorkspaceAccess: false,
-		isSpecificAccess: false,
-		isOrgMember: false,
-	};
+  const result: DocumentAccessResult = {
+    hasAccess: false,
+    isOwner: false,
+    isWorkspaceAccess: false,
+    isSpecificAccess: false,
+    isOrgMember: false,
+  };
 
-	// 1. Check if user is the owner
-	if (document.ownerId === userId) {
-		result.hasAccess = true;
-		result.isOwner = true;
-		result.isOrgMember = true; // Owner is always a member
-		return result;
-	}
+  // 1. Check if user is the owner
+  if (document.ownerId === userId) {
+    result.hasAccess = true;
+    result.isOwner = true;
+    result.isOrgMember = true; // Owner is always a member
+    return result;
+  }
 
-	// 2. Check organization membership
-	const member = await ctx.db
-		.query("organization_members")
-		.withIndex("by_user_organization", (q) =>
-			q.eq("userId", userId).eq("organizationId", document.organizationId),
-		)
-		.first();
+  // 2. Check organization membership
+  const member = await ctx.db
+    .query("organization_members")
+    .withIndex("by_user_organization", (q) =>
+      q.eq("userId", userId).eq("organizationId", document.organizationId),
+    )
+    .first();
 
-	if (!member || member.status !== "active") {
-		return result; // Not an active member, no access
-	}
+  if (!member || member.status !== "active") {
+    return result; // Not an active member, no access
+  }
 
-	result.isOrgMember = true;
+  result.isOrgMember = true;
 
-	// 3. Check sharing mode
-	if (document.sharingMode === "workspace") {
-		result.hasAccess = true;
-		result.isWorkspaceAccess = true;
-		return result;
-	}
+  // 3. Check sharing mode
+  if (document.sharingMode === "workspace") {
+    result.hasAccess = true;
+    result.isWorkspaceAccess = true;
+    return result;
+  }
 
-	if (document.sharingMode === "specific") {
-		const access = await ctx.db
-			.query("document_access")
-			.withIndex("by_document_user", (q) =>
-				q.eq("documentId", document._id).eq("userId", userId),
-			)
-			.first();
+  if (document.sharingMode === "specific") {
+    const access = await ctx.db
+      .query("document_access")
+      .withIndex("by_document_user", (q) => q.eq("documentId", document._id).eq("userId", userId))
+      .first();
 
-		if (access && access.revokedAt === undefined) {
-			result.hasAccess = true;
-			result.isSpecificAccess = true;
-			result.permissionLevel = access.permissionLevel;
-			result.accessRecord = access;
-			return result;
-		}
-	}
+    if (access && access.revokedAt === undefined) {
+      result.hasAccess = true;
+      result.isSpecificAccess = true;
+      result.permissionLevel = access.permissionLevel;
+      result.accessRecord = access;
+      return result;
+    }
+  }
 
-	// "private" sharing mode or no specific access granted
-	return result;
+  // "private" sharing mode or no specific access granted
+  return result;
 }
 
 /**
@@ -156,18 +154,18 @@ export async function checkDocumentAccess(
  * // If we get here, user has access
  */
 export async function requireDocumentAccess(
-	ctx: DbContext,
-	userId: Id<"users">,
-	document: Doc<"documents">,
-	errorMessage?: string,
+  ctx: DbContext,
+  userId: Id<"users">,
+  document: Doc<"documents">,
+  errorMessage?: string,
 ): Promise<DocumentAccessResult> {
-	const result = await checkDocumentAccess(ctx, userId, document);
+  const result = await checkDocumentAccess(ctx, userId, document);
 
-	if (!result.hasAccess) {
-		throw new ConvexError(errorMessage ?? ACCESS_ERRORS.NO_ACCESS);
-	}
+  if (!result.hasAccess) {
+    throw new ConvexError(errorMessage ?? ACCESS_ERRORS.NO_ACCESS);
+  }
 
-	return result;
+  return result;
 }
 
 /**
@@ -182,28 +180,22 @@ export async function requireDocumentAccess(
  * @returns boolean indicating if user can manage
  */
 export async function canManageDocument(
-	ctx: DbContext,
-	userId: Id<"users">,
-	document: Doc<"documents">,
+  ctx: DbContext,
+  userId: Id<"users">,
+  document: Doc<"documents">,
 ): Promise<boolean> {
-	// Owner can always manage
-	if (document.ownerId === userId) {
-		return true;
-	}
+  // Owner can always manage
+  if (document.ownerId === userId) {
+    return true;
+  }
 
-	// Check for "manage" permission level
-	const access = await ctx.db
-		.query("document_access")
-		.withIndex("by_document_user", (q) =>
-			q.eq("documentId", document._id).eq("userId", userId),
-		)
-		.first();
+  // Check for "manage" permission level
+  const access = await ctx.db
+    .query("document_access")
+    .withIndex("by_document_user", (q) => q.eq("documentId", document._id).eq("userId", userId))
+    .first();
 
-	return (
-		access !== null &&
-		access.permissionLevel === "manage" &&
-		access.revokedAt === undefined
-	);
+  return access !== null && access.permissionLevel === "manage" && access.revokedAt === undefined;
 }
 
 /**
@@ -216,16 +208,16 @@ export async function canManageDocument(
  * @throws ConvexError if user cannot manage
  */
 export async function requireManageAccess(
-	ctx: DbContext,
-	userId: Id<"users">,
-	document: Doc<"documents">,
-	errorMessage?: string,
+  ctx: DbContext,
+  userId: Id<"users">,
+  document: Doc<"documents">,
+  errorMessage?: string,
 ): Promise<void> {
-	const canManage = await canManageDocument(ctx, userId, document);
+  const canManage = await canManageDocument(ctx, userId, document);
 
-	if (!canManage) {
-		throw new ConvexError(errorMessage ?? ACCESS_ERRORS.MANAGE_REQUIRED);
-	}
+  if (!canManage) {
+    throw new ConvexError(errorMessage ?? ACCESS_ERRORS.MANAGE_REQUIRED);
+  }
 }
 
 /**
@@ -237,13 +229,13 @@ export async function requireManageAccess(
  * @throws ConvexError if user is not the owner
  */
 export function requireOwnership(
-	userId: Id<"users">,
-	document: Doc<"documents">,
-	errorMessage?: string,
+  userId: Id<"users">,
+  document: Doc<"documents">,
+  errorMessage?: string,
 ): void {
-	if (document.ownerId !== userId) {
-		throw new ConvexError(errorMessage ?? ACCESS_ERRORS.OWNER_REQUIRED);
-	}
+  if (document.ownerId !== userId) {
+    throw new ConvexError(errorMessage ?? ACCESS_ERRORS.OWNER_REQUIRED);
+  }
 }
 
 /**
@@ -255,22 +247,22 @@ export function requireOwnership(
  * @returns The membership record if active, null otherwise
  */
 export async function getActiveMembership(
-	ctx: DbContext,
-	userId: Id<"users">,
-	organizationId: Id<"organizations">,
+  ctx: DbContext,
+  userId: Id<"users">,
+  organizationId: Id<"organizations">,
 ): Promise<Doc<"organization_members"> | null> {
-	const member = await ctx.db
-		.query("organization_members")
-		.withIndex("by_user_organization", (q) =>
-			q.eq("userId", userId).eq("organizationId", organizationId),
-		)
-		.first();
+  const member = await ctx.db
+    .query("organization_members")
+    .withIndex("by_user_organization", (q) =>
+      q.eq("userId", userId).eq("organizationId", organizationId),
+    )
+    .first();
 
-	if (!member || member.status !== "active") {
-		return null;
-	}
+  if (!member || member.status !== "active") {
+    return null;
+  }
 
-	return member;
+  return member;
 }
 
 /**
@@ -284,18 +276,18 @@ export async function getActiveMembership(
  * @throws ConvexError if user is not an active member
  */
 export async function requireActiveMembership(
-	ctx: DbContext,
-	userId: Id<"users">,
-	organizationId: Id<"organizations">,
-	errorMessage?: string,
+  ctx: DbContext,
+  userId: Id<"users">,
+  organizationId: Id<"organizations">,
+  errorMessage?: string,
 ): Promise<Doc<"organization_members">> {
-	const member = await getActiveMembership(ctx, userId, organizationId);
+  const member = await getActiveMembership(ctx, userId, organizationId);
 
-	if (!member) {
-		throw new ConvexError(errorMessage ?? ACCESS_ERRORS.NOT_ORG_MEMBER);
-	}
+  if (!member) {
+    throw new ConvexError(errorMessage ?? ACCESS_ERRORS.NOT_ORG_MEMBER);
+  }
 
-	return member;
+  return member;
 }
 
 /**
@@ -310,17 +302,17 @@ export async function requireActiveMembership(
  * @throws ConvexError if document not found or deleted
  */
 export async function getDocumentOrThrow(
-	ctx: DbContext,
-	documentId: Id<"documents">,
-	errorMessage?: string,
+  ctx: DbContext,
+  documentId: Id<"documents">,
+  errorMessage?: string,
 ): Promise<Doc<"documents">> {
-	const document = await ctx.db.get(documentId);
+  const document = await ctx.db.get(documentId);
 
-	if (!document || document.status === "deleted") {
-		throw new ConvexError(errorMessage ?? ACCESS_ERRORS.DOCUMENT_NOT_FOUND);
-	}
+  if (!document || document.status === "deleted") {
+    throw new ConvexError(errorMessage ?? ACCESS_ERRORS.DOCUMENT_NOT_FOUND);
+  }
 
-	return document;
+  return document;
 }
 
 /**
@@ -339,14 +331,14 @@ export async function getDocumentOrThrow(
  * // document is guaranteed to exist and user has access
  */
 export async function getDocumentWithAccessCheck(
-	ctx: DbContext,
-	userId: Id<"users">,
-	documentId: Id<"documents">,
+  ctx: DbContext,
+  userId: Id<"users">,
+  documentId: Id<"documents">,
 ): Promise<{ document: Doc<"documents">; access: DocumentAccessResult }> {
-	const document = await getDocumentOrThrow(ctx, documentId);
-	const access = await requireDocumentAccess(ctx, userId, document);
+  const document = await getDocumentOrThrow(ctx, documentId);
+  const access = await requireDocumentAccess(ctx, userId, document);
 
-	return { document, access };
+  return { document, access };
 }
 
 /**
@@ -361,14 +353,14 @@ export async function getDocumentWithAccessCheck(
  * @throws ConvexError if document not found or user cannot manage
  */
 export async function getDocumentWithManageCheck(
-	ctx: DbContext,
-	userId: Id<"users">,
-	documentId: Id<"documents">,
+  ctx: DbContext,
+  userId: Id<"users">,
+  documentId: Id<"documents">,
 ): Promise<Doc<"documents">> {
-	const document = await getDocumentOrThrow(ctx, documentId);
-	await requireManageAccess(ctx, userId, document);
+  const document = await getDocumentOrThrow(ctx, documentId);
+  await requireManageAccess(ctx, userId, document);
 
-	return document;
+  return document;
 }
 
 /**
@@ -383,18 +375,18 @@ export async function getDocumentWithManageCheck(
  * @returns Array of documents the user has access to
  */
 export async function filterAccessibleDocuments(
-	ctx: DbContext,
-	userId: Id<"users">,
-	documents: Doc<"documents">[],
+  ctx: DbContext,
+  userId: Id<"users">,
+  documents: Doc<"documents">[],
 ): Promise<Doc<"documents">[]> {
-	const accessible: Doc<"documents">[] = [];
+  const accessible: Doc<"documents">[] = [];
 
-	for (const doc of documents) {
-		const result = await checkDocumentAccess(ctx, userId, doc);
-		if (result.hasAccess) {
-			accessible.push(doc);
-		}
-	}
+  for (const doc of documents) {
+    const result = await checkDocumentAccess(ctx, userId, doc);
+    if (result.hasAccess) {
+      accessible.push(doc);
+    }
+  }
 
-	return accessible;
+  return accessible;
 }

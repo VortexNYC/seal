@@ -3,6 +3,7 @@
 ## Primary User Flows
 
 ### Document Integrity Verification Flow
+
 ```
 ○ Document Upload
     ↓
@@ -22,6 +23,7 @@
 ```
 
 ### Electronic Consent & Legal Compliance Flow
+
 ```
 ○ First-Time Signer Access
     ↓
@@ -55,6 +57,7 @@
 ```
 
 ### Audit Trail Generation Flow
+
 ```
 ○ Any Document Action Occurs
     ↓
@@ -72,6 +75,7 @@
 ```
 
 ### Document Access Security Flow
+
 ```
 ○ Document Access Request
     ↓
@@ -96,6 +100,7 @@
 ## Admin & Compliance Flows
 
 ### Audit Report Generation Flow
+
 ```
 ○ Admin Requests Audit Report
     ↓
@@ -120,6 +125,7 @@
 ```
 
 ### Legal Document Retention Flow
+
 ```
 ○ Document Completion Event
     ↓
@@ -143,6 +149,7 @@
 ```
 
 ### Compliance Monitoring Flow
+
 ```
 ○ System Monitoring (Automated)
     ↓
@@ -169,6 +176,7 @@
 ## Error Handling Flows
 
 ### Hash Verification Failure Flow
+
 ```
 ○ Hash Mismatch Detected
     ↓
@@ -194,6 +202,7 @@
 ```
 
 ### Missing Compliance Data Flow
+
 ```
 ○ Compliance Check Fails
     ↓
@@ -214,6 +223,7 @@
 ```
 
 ### Document Retention Error Flow
+
 ```
 ○ Retention Policy Violation Detected
     ↓
@@ -238,16 +248,19 @@
 ## Integration Touch Points
 
 ### Authentication Integration
+
 - **Session Security**: All compliance actions require active authenticated session
 - **MFA Requirements**: High-security actions (audit access) require MFA verification
 - **API Access**: Compliance APIs secured with API keys
 
 ### Convex Integration
+
 - **Real-time Monitoring**: Live compliance dashboard updates
 - **Secure Storage**: Encrypted document and audit data storage
 - **Data Validation**: Built-in validation for all compliance data
 
 ### React Email + Resend
+
 - **Compliance Notifications**: Automated alerts for compliance issues
 - **Document Distribution**: Secure delivery of signed documents
 - **Audit Summaries**: Regular compliance report emails to admins

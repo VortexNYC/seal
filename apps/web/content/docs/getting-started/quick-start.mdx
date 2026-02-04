@@ -22,11 +22,11 @@ First, generate a secure upload URL for your PDF document:
 ### TypeScript
 
 ```typescript
-const uploadResponse = await fetch('https://seal.convex.site/api/v1/uploads/generate-url', {
-  method: 'POST',
+const uploadResponse = await fetch("https://seal.convex.site/api/v1/uploads/generate-url", {
+  method: "POST",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here',
-  }
+    Authorization: "Bearer ak_your_api_key_here",
+  },
 });
 
 const { upload_url } = await uploadResponse.json();
@@ -55,19 +55,19 @@ Upload your PDF file to the generated URL:
 
 ```typescript
 // Read the PDF file
-const fileBlob = await fetch('/path/to/contract.pdf').then(r => r.blob());
+const fileBlob = await fetch("/path/to/contract.pdf").then((r) => r.blob());
 
 // Upload to storage
 const uploadResult = await fetch(upload_url, {
-  method: 'POST',
+  method: "POST",
   body: fileBlob,
   headers: {
-    'Content-Type': 'application/pdf'
-  }
+    "Content-Type": "application/pdf",
+  },
 });
 
 if (!uploadResult.ok) {
-  throw new Error('File upload failed');
+  throw new Error("File upload failed");
 }
 
 const { storageId } = await uploadResult.json();
@@ -90,23 +90,23 @@ Create a document record, then add recipients separately via the Recipients API:
 #### TypeScript
 
 ```typescript
-const documentResponse = await fetch('https://seal.convex.site/api/v1/documents', {
-  method: 'POST',
+const documentResponse = await fetch("https://seal.convex.site/api/v1/documents", {
+  method: "POST",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    title: 'Service Agreement',
-    description: 'Annual service contract for review and signature',
+    title: "Service Agreement",
+    description: "Annual service contract for review and signature",
     storage_id: storageId, // from Step 2
     file_size: fileBlob.size,
-    file_type: 'application/pdf'
-  })
+    file_type: "application/pdf",
+  }),
 });
 
 const document = await documentResponse.json();
-console.log('Document created:', document.id);
+console.log("Document created:", document.id);
 ```
 
 #### cURL
@@ -147,18 +147,18 @@ Add each recipient to the document using the Recipients API:
 
 ```typescript
 const recipients = [
-  { email: 'john@example.com', name: 'John Doe', role: 'signer', order: 1 },
-  { email: 'jane@example.com', name: 'Jane Smith', role: 'signer', order: 2 }
+  { email: "john@example.com", name: "John Doe", role: "signer", order: 1 },
+  { email: "jane@example.com", name: "Jane Smith", role: "signer", order: 2 },
 ];
 
 for (const recipient of recipients) {
   await fetch(`https://seal.convex.site/api/v1/recipients?document_id=${document.id}`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Authorization': 'Bearer ak_your_api_key_here',
-      'Content-Type': 'application/json'
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(recipient)
+    body: JSON.stringify(recipient),
   });
 }
 ```
@@ -194,19 +194,22 @@ Send the document to all recipients via email:
 ### TypeScript
 
 ```typescript
-const sendResponse = await fetch(`https://seal.convex.site/api/v1/documents/send?id=${document.id}`, {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer ak_your_api_key_here',
-    'Content-Type': 'application/json'
+const sendResponse = await fetch(
+  `https://seal.convex.site/api/v1/documents/send?id=${document.id}`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: "Please review and sign this service agreement at your earliest convenience.",
+    }),
   },
-  body: JSON.stringify({
-    message: 'Please review and sign this service agreement at your earliest convenience.'
-  })
-});
+);
 
 const result = await sendResponse.json();
-console.log('Document sent:', result);
+console.log("Document sent:", result);
 ```
 
 ### cURL
@@ -246,11 +249,14 @@ After sending the document:
 You can check the document status at any time:
 
 ```typescript
-const statusResponse = await fetch(`https://seal.convex.site/api/v1/documents/get?id=${document.id}`, {
-  headers: {
-    'Authorization': 'Bearer ak_your_api_key_here'
-  }
-});
+const statusResponse = await fetch(
+  `https://seal.convex.site/api/v1/documents/get?id=${document.id}`,
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
 
 const doc = await statusResponse.json();
 console.log(`Status: ${doc.status}, Signed: ${doc.signed_count}/${doc.recipients_count}`);
@@ -265,12 +271,13 @@ console.log(`Status: ${doc.status}, Signed: ${doc.signed_count}/${doc.recipients
 
 ## Common Recipient Roles
 
-| Role | Description | Can Sign | Can Approve | Can View |
-|------|-------------|----------|-------------|----------|
-| `signer` | Must sign the document | ✓ | - | ✓ |
-| `approver` | Must approve before signing | - | ✓ | ✓ |
-| `viewer` | Can only view the document | - | - | ✓ |
+| Role       | Description                 | Can Sign | Can Approve | Can View |
+| ---------- | --------------------------- | -------- | ----------- | -------- |
+| `signer`   | Must sign the document      | ✓        | -           | ✓        |
+| `approver` | Must approve before signing | -        | ✓           | ✓        |
+| `viewer`   | Can only view the document  | -        | -           | ✓        |
 
 <Callout type="info">
-  **Sequential Signing**: Set the `order` field on recipients to enforce a signing sequence. Recipient 2 won't receive the document until Recipient 1 completes their action.
+  **Sequential Signing**: Set the `order` field on recipients to enforce a signing sequence.
+  Recipient 2 won't receive the document until Recipient 1 completes their action.
 </Callout>

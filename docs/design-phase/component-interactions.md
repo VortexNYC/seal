@@ -9,16 +9,19 @@ This document maps how shadcn/ui components interact with each other, including 
 ## 🎯 Component Relationship Types
 
 ### **Composition Relationships**
+
 - **Container → Child**: Parent components that wrap child components
 - **Compound**: Multiple components that work together as a unit
 - **Trigger → Content**: Components that control the visibility of other components
 
-### **Data Flow Relationships**  
+### **Data Flow Relationships**
+
 - **Form Control**: Form fields that share validation state
 - **Selection**: Components that maintain selected state
 - **Filtering**: Components that control data display in other components
 
 ### **Event Relationships**
+
 - **Click Handlers**: Components that respond to user interactions
 - **Focus Management**: Components that control focus flow
 - **State Synchronization**: Components that share reactive state
@@ -48,6 +51,7 @@ Submit Flow: Button → Form onSubmit → validation → success/error states
 ```
 
 #### **Form Field Interactions**
+
 ```javascript
 // Real-time validation example:
 <FormField
@@ -114,6 +118,7 @@ Trigger Click → Dialog Opens → Focus Management → Action Buttons → Close
 ```
 
 #### **Dialog State Management**
+
 ```javascript
 // Controlled dialog pattern:
 const [open, setOpen] = useState(false)
@@ -190,6 +195,7 @@ Row Action → External State Update → Table Refresh
 ```
 
 #### **Table State Interactions**
+
 ```javascript
 // Table with external state management:
 const [data, setData] = useState(documents)
@@ -202,7 +208,7 @@ const table = useReactTable({
   columns,
   state: {
     sorting,
-    columnFilters, 
+    columnFilters,
     globalFilter,
   },
   onSortingChange: setSorting,
@@ -241,6 +247,7 @@ External State → Programmatic Tab Change → UI Update
 ```
 
 #### **Tabs with Form Integration**
+
 ```javascript
 // Tabs that preserve form state across switches:
 const [activeTab, setActiveTab] = useState("general")
@@ -251,18 +258,18 @@ const form = useForm() // Form state persists across tabs
     <TabsTrigger value="general">General</TabsTrigger>
     <TabsTrigger value="security">Security</TabsTrigger>
   </TabsList>
-  
+
   <Form {...form}>
     <TabsContent value="general">
       {/* General form fields */}
       <FormField name="name" ... />
     </TabsContent>
-    
+
     <TabsContent value="security">
       {/* Security form fields - same form context */}
       <FormField name="password" ... />
     </TabsContent>
-    
+
     {/* Submit button affects all tabs */}
     <Button type="submit">Save All Settings</Button>
   </Form>
@@ -293,6 +300,7 @@ Select Item → Execute Action → Close Dialog
 ```
 
 #### **Command Integration with App State**
+
 ```javascript
 // Command palette that integrates with routing and actions:
 const [open, setOpen] = useState(false)
@@ -322,7 +330,7 @@ useEffect(() => {
         Documents
       </CommandItem>
     </CommandGroup>
-    
+
     <CommandGroup heading="Actions">
       <CommandItem onSelect={() => {
         // Trigger external action
@@ -350,7 +358,7 @@ User Action → toast() Function Call → Toast Queue → Display → Auto-dismi
 
 Toast Types:
 ├─ Success: Green, auto-dismiss after 5s
-├─ Error: Red, persist until user action  
+├─ Error: Red, persist until user action
 ├─ Warning: Yellow, auto-dismiss after 8s
 ├─ Info: Blue, auto-dismiss after 4s
 └─ Loading: Gray, persist until manually updated
@@ -362,17 +370,18 @@ Toast with Actions:
 ```
 
 #### **Toast Integration Patterns**
+
 ```javascript
 // Toast with optimistic updates:
 const handleDelete = async (id: string) => {
   // Optimistic update
   setDocuments(docs => docs.filter(d => d.id !== id))
-  
+
   const { dismiss } = toast({
     title: "Document deleted",
     description: "Document has been removed.",
     action: (
-      <ToastAction 
+      <ToastAction
         altText="Undo delete"
         onClick={() => {
           // Revert optimistic update
@@ -384,7 +393,7 @@ const handleDelete = async (id: string) => {
       </ToastAction>
     ),
   })
-  
+
   try {
     await deleteDocument(id)
     // Success - toast auto-dismisses
@@ -392,7 +401,7 @@ const handleDelete = async (id: string) => {
     // Revert on error
     setDocuments(originalDocuments)
     dismiss()
-    
+
     toast({
       variant: "destructive",
       title: "Delete failed",
@@ -415,7 +424,7 @@ const handleDelete = async (id: string) => {
 
 ```javascript
 // Conditional component based on screen size:
-const isMobile = useMediaQuery("(max-width: 768px)")
+const isMobile = useMediaQuery("(max-width: 768px)");
 
 const SettingsModal = () => {
   if (isMobile) {
@@ -431,9 +440,9 @@ const SettingsModal = () => {
           <SettingsForm />
         </SheetContent>
       </Sheet>
-    )
+    );
   }
-  
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -446,8 +455,8 @@ const SettingsModal = () => {
         <SettingsForm />
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
 ```
 
 ---
@@ -469,7 +478,7 @@ Component Interaction Chain:
 
 State Dependencies:
 ├─ File Selection → Upload Form Validation
-├─ Upload Progress → Progress Bar + Button States  
+├─ Upload Progress → Progress Bar + Button States
 ├─ Upload Success → Dialog Close + Toast + Table Refresh
 └─ Upload Error → Error Alert + Retry Options
 ```
@@ -479,30 +488,30 @@ const DocumentUploadFlow = () => {
   const [uploadOpen, setUploadOpen] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploading, setUploading] = useState(false)
-  
+
   const handleUpload = async (file: File) => {
     setUploading(true)
-    
+
     try {
       await uploadWithProgress(file, (progress) => {
         setUploadProgress(progress) // Updates progress bar
       })
-      
+
       // Success chain:
       setUploadOpen(false) // Close dialog
       toast({
         title: "Upload successful",
         description: `${file.name} has been uploaded.`,
       })
-      
+
       // Refresh document list (external state)
       await refetchDocuments()
-      
+
     } catch (error) {
       // Error handling - keep dialog open
       toast({
         variant: "destructive",
-        title: "Upload failed", 
+        title: "Upload failed",
         description: error.message,
         action: <ToastAction onClick={() => handleUpload(file)}>Retry</ToastAction>
       })
@@ -511,19 +520,19 @@ const DocumentUploadFlow = () => {
       setUploadProgress(0)
     }
   }
-  
+
   return (
     <>
       <Button onClick={() => setUploadOpen(true)}>
         Upload Document
       </Button>
-      
+
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Upload Document</DialogTitle>
           </DialogHeader>
-          
+
           <Form onSubmit={handleUpload}>
             <FormField
               name="file"
@@ -539,7 +548,7 @@ const DocumentUploadFlow = () => {
                 </FormItem>
               )}
             />
-            
+
             {uploading && (
               <div className="space-y-2">
                 <Progress value={uploadProgress} />
@@ -549,16 +558,16 @@ const DocumentUploadFlow = () => {
               </div>
             )}
           </Form>
-          
+
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setUploadOpen(false)}
               disabled={uploading}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               type="submit"
               disabled={uploading || !form.watch("file")}
             >
@@ -577,6 +586,7 @@ const DocumentUploadFlow = () => {
 ## ✅ Component Interaction Checklist
 
 ### **When Designing Component Interactions**
+
 - [ ] **State Dependencies**: Which components share state?
 - [ ] **Event Propagation**: How do user actions flow between components?
 - [ ] **Focus Management**: Where does focus go after interactions?
@@ -585,7 +595,8 @@ const DocumentUploadFlow = () => {
 - [ ] **Responsive Behavior**: How do interactions change on mobile vs desktop?
 - [ ] **Accessibility**: Are all interactions keyboard and screen reader accessible?
 
-### **Performance Considerations** 
+### **Performance Considerations**
+
 - [ ] **Re-render Optimization**: Minimize unnecessary component updates
 - [ ] **State Locality**: Keep state as close to usage as possible
 - [ ] **Event Delegation**: Use efficient event handling patterns

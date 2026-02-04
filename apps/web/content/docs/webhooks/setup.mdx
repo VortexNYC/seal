@@ -18,30 +18,27 @@ This guide walks you through setting up webhook endpoints to receive real-time n
 Use the Webhooks API to create a new endpoint:
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/webhooks', {
-  method: 'POST',
+const response = await fetch("https://seal.convex.site/api/v1/webhooks", {
+  method: "POST",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    url: 'https://api.example.com/webhooks/seal',
-    events: [
-      'document.sent',
-      'document.completed',
-      'recipient.signed'
-    ],
-    description: 'Production webhook endpoint'
-  })
+    url: "https://api.example.com/webhooks/seal",
+    events: ["document.sent", "document.completed", "recipient.signed"],
+    description: "Production webhook endpoint",
+  }),
 });
 
 const webhook = await response.json();
-console.log('Webhook ID:', webhook.id);
-console.log('Secret:', webhook.secret); // Save this securely!
+console.log("Webhook ID:", webhook.id);
+console.log("Secret:", webhook.secret); // Save this securely!
 ```
 
 <Callout type="warn">
-  **Important**: The webhook secret is only shown once during creation. Store it securely in your environment variables or secrets manager.
+  **Important**: The webhook secret is only shown once during creation. Store it securely in your
+  environment variables or secrets manager.
 </Callout>
 
 ## Step 2: Implement Webhook Handler
@@ -49,73 +46,71 @@ console.log('Secret:', webhook.secret); // Save this securely!
 Create an HTTP endpoint that receives and processes webhook events:
 
 ```typescript
-import express from 'express';
-import { createHmac, timingSafeEqual } from 'crypto';
+import express from "express";
+import { createHmac, timingSafeEqual } from "crypto";
 
 const app = express();
 
 // Use raw body for signature verification
-app.use('/webhooks/seal', express.raw({ type: 'application/json' }));
+app.use("/webhooks/seal", express.raw({ type: "application/json" }));
 
-app.post('/webhooks/seal', async (req, res) => {
+app.post("/webhooks/seal", async (req, res) => {
   try {
     // Step 1: Verify signature
-    const signature = req.headers['seal-signature'] as string;
-    const payload = req.body.toString('utf8');
-    
+    const signature = req.headers["seal-signature"] as string;
+    const payload = req.body.toString("utf8");
+
     if (!verifySignature(payload, signature, process.env.WEBHOOK_SECRET!)) {
-      console.error('Invalid webhook signature');
-      return res.status(401).send('Unauthorized');
+      console.error("Invalid webhook signature");
+      return res.status(401).send("Unauthorized");
     }
-    
+
     // Step 2: Parse event
     const event = JSON.parse(payload);
-    console.log('Received event:', event.type, event.id);
-    
+    console.log("Received event:", event.type, event.id);
+
     // Step 3: Process event asynchronously
-    processEventAsync(event).catch(err => {
-      console.error('Event processing failed:', err);
+    processEventAsync(event).catch((err) => {
+      console.error("Event processing failed:", err);
     });
-    
+
     // Step 4: Respond immediately
-    res.status(200).send('OK');
+    res.status(200).send("OK");
   } catch (error) {
-    console.error('Webhook handler error:', error);
-    res.status(500).send('Internal Server Error');
+    console.error("Webhook handler error:", error);
+    res.status(500).send("Internal Server Error");
   }
 });
 
 function verifySignature(payload: string, signature: string, secret: string): boolean {
-  const expectedSignature = createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex');
-  
+  const expectedSignature = createHmac("sha256", secret).update(payload).digest("hex");
+
   // Use timing-safe comparison
-  const signatureBuffer = Buffer.from(signature, 'hex');
-  const expectedBuffer = Buffer.from(expectedSignature, 'hex');
-  
+  const signatureBuffer = Buffer.from(signature, "hex");
+  const expectedBuffer = Buffer.from(expectedSignature, "hex");
+
   if (signatureBuffer.length !== expectedBuffer.length) {
     return false;
   }
-  
+
   return timingSafeEqual(signatureBuffer, expectedBuffer);
 }
 
 async function processEventAsync(event: any) {
   switch (event.type) {
-    case 'document.completed':
+    case "document.completed":
       await handleDocumentCompleted(event.data);
       break;
-    case 'recipient.signed':
+    case "recipient.signed":
       await handleRecipientSigned(event.data);
       break;
     default:
-      console.log('Unhandled event type:', event.type);
+      console.log("Unhandled event type:", event.type);
   }
 }
 
 app.listen(3000, () => {
-  console.log('Webhook server listening on port 3000');
+  console.log("Webhook server listening on port 3000");
 });
 ```
 
@@ -141,15 +136,12 @@ ngrok http 3000
 Trigger a test event to verify your endpoint:
 
 ```typescript
-const response = await fetch(
-  'https://seal.convex.site/api/v1/webhooks/wh_abc123/test',
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ak_your_api_key_here'
-    }
-  }
-);
+const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123/test", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
 ```
 
 ## Event Subscription Patterns
@@ -173,6 +165,7 @@ Use wildcards to subscribe to all events in a category:
 ```
 
 This subscribes to:
+
 - All document events (created, sent, viewed, completed, voided, expired, declined)
 - All recipient events (added, viewed, signed, approved, declined, reminded)
 
@@ -189,10 +182,10 @@ This subscribes to:
 ### List All Webhooks
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/webhooks', {
+const response = await fetch("https://seal.convex.site/api/v1/webhooks", {
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here'
-  }
+    Authorization: "Bearer ak_your_api_key_here",
+  },
 });
 
 const webhooks = await response.json();
@@ -201,16 +194,16 @@ const webhooks = await response.json();
 ### Update Webhook
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/webhooks/wh_abc123', {
-  method: 'PATCH',
+const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123", {
+  method: "PATCH",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    events: ['document.*'],  // Update subscriptions
-    status: 'active'
-  })
+    events: ["document.*"], // Update subscriptions
+    status: "active",
+  }),
 });
 ```
 
@@ -219,39 +212,40 @@ const response = await fetch('https://seal.convex.site/api/v1/webhooks/wh_abc123
 Temporarily stop receiving events without deleting the endpoint:
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/webhooks/wh_abc123', {
-  method: 'PATCH',
+const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123", {
+  method: "PATCH",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    status: 'paused'
-  })
+    status: "paused",
+  }),
 });
 ```
 
 ### Delete Webhook
 
 ```typescript
-const response = await fetch('https://seal.convex.site/api/v1/webhooks/wh_abc123', {
-  method: 'DELETE',
+const response = await fetch("https://seal.convex.site/api/v1/webhooks/wh_abc123", {
+  method: "DELETE",
   headers: {
-    'Authorization': 'Bearer ak_your_api_key_here'
-  }
+    Authorization: "Bearer ak_your_api_key_here",
+  },
 });
 ```
 
 ## Webhook Status States
 
-| Status | Description |
-|--------|-------------|
-| `active` | Webhook is receiving events |
-| `paused` | Webhook is temporarily disabled |
+| Status     | Description                                         |
+| ---------- | --------------------------------------------------- |
+| `active`   | Webhook is receiving events                         |
+| `paused`   | Webhook is temporarily disabled                     |
 | `disabled` | Webhook failed too many times and was auto-disabled |
 
 <Callout type="info">
-  **Auto-Disable**: Webhooks are automatically disabled after 5 consecutive delivery failures. Re-enable them after fixing the issue.
+  **Auto-Disable**: Webhooks are automatically disabled after 5 consecutive delivery failures.
+  Re-enable them after fixing the issue.
 </Callout>
 
 ## Production Checklist

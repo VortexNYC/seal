@@ -3,6 +3,7 @@
 ## Document Library with Bulk Selection
 
 ### Document List with Multi-Select Interface
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Document Library - Bulk Operations                                             │
@@ -35,6 +36,7 @@
 ```
 
 ### All Documents Selected State
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Document Library - All Selected                                                │
@@ -73,6 +75,7 @@
 ## Bulk Delete Confirmation
 
 ### Delete Confirmation Dialog
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Confirm Bulk Delete                                                           X │
@@ -103,6 +106,7 @@
 ```
 
 ### Delete Confirmation - Ready to Delete
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Confirm Bulk Delete                                                           X │
@@ -137,6 +141,7 @@
 ## Bulk Status Change Interface
 
 ### Status Change Dialog
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Change Status - 5 Documents Selected                                         X │
@@ -185,6 +190,7 @@
 ## Bulk Download Interface
 
 ### Download Preparation Dialog
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Bulk Download - Prepare ZIP Archive                                          X │
@@ -222,6 +228,7 @@
 ```
 
 ### Download Progress Interface
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Creating ZIP Archive...                                                       X │
@@ -255,6 +262,7 @@
 ```
 
 ### Download Ready Interface
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Download Ready! 🎉                                                             X │
@@ -294,6 +302,7 @@
 ## Bulk Send Interface
 
 ### Bulk Send Confirmation
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Bulk Send - 3 Draft Documents                                                X │
@@ -332,6 +341,7 @@
 ```
 
 ### Bulk Send Progress
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Sending Documents...                                                          X │
@@ -368,6 +378,7 @@
 ## Error Handling Interface
 
 ### Partial Failure Results
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ Bulk Operation Results                                                        X │
@@ -406,6 +417,7 @@
 ## Mobile Bulk Operations
 
 ### Mobile Bulk Selection
+
 ```
 ┌─────────────────────────────────┐
 │ Documents - Bulk Select         │

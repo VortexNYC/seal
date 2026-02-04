@@ -345,12 +345,13 @@
 ## Interaction Specifications
 
 ### Form Field Behaviors
-- **Email Field**: 
+
+- **Email Field**:
   - Format validation on blur
   - Auto-complete support
   - Remember last used email
 
-- **Password Field**: 
+- **Password Field**:
   - Show/hide toggle
   - Auto-complete support for password managers
   - Clear on multiple failed attempts
@@ -361,12 +362,14 @@
   - Clear visual indication when checked
 
 ### Authentication Flow
+
 - **Rate Limiting**: Clerk handles attempt limiting
 - **Session Management**: JWT tokens via Clerk + Convex
 - **Multi-Workspace**: Show workspace selector after successful auth
 - **Plan Context**: User inherits features from the selected workspace's subscription plan
 
 ### OAuth Integration
+
 - **Provider Support**: Google, Microsoft, Apple via Clerk
 - **Error Handling**: Clear fallback to email/password
 - **Account Linking**: Handle existing account scenarios
@@ -376,12 +379,14 @@
 ## Security Features
 
 ### Failed Attempt Handling
+
 - Progressive warnings (2 attempts remaining, etc.)
 - Temporary lockout after 5 failed attempts
 - Clear recovery path via password reset
 - Rate limiting display with countdown timer
 
 ### Session Security
+
 - Secure cookie handling
 - Session timeout management
 - Device fingerprinting (future enhancement)
@@ -402,12 +407,14 @@
 ## Technical Integration
 
 ### Clerk Integration
+
 - Email/password authentication
 - OAuth provider configuration (Google, Microsoft, Apple)
 - Session management and refresh tokens
 - Rate limiting and security features
 
 ### State Management
+
 - Form state via TanStack Form
 - Authentication state via Clerk
 - Loading states and error handling

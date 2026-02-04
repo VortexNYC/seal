@@ -73,26 +73,31 @@
 ## Interactive Elements
 
 ### Document Overview Cards
+
 - **Click**: Navigate to detailed document list for that status
 - **Quick Action Buttons**: Perform common actions without navigation
 - **Real-time Updates**: Numbers update automatically via Convex
 
 ### Recent Activity Feed
+
 - **Activity Items**: Click to view document details
 - **Real-time Updates**: New activities appear automatically
 - **Scroll**: Show last 10 activities with "View All" option
 
 ### Priority Documents
+
 - **Priority Indicators**: Red (Urgent), Yellow (Medium), Green (Low)
 - **Quick Actions**: Direct action buttons for immediate workflow
 - **Deadline Tracking**: Visual countdown for approaching deadlines
 
 ### Quick Actions Bar
+
 - **New Document**: Opens document creation flow
-- **Send Reminders**: Bulk reminder for pending documents  
+- **Send Reminders**: Bulk reminder for pending documents
 - **Download Completed**: Bulk download of recent completions
 
 ### All Documents Table
+
 - **Search Bar**: Real-time document search
 - **Filters**: Status, date range, recipient, workspace
 - **Bulk Selection**: Checkboxes for bulk operations
@@ -153,6 +158,7 @@
 ## States and Loading
 
 ### Loading State
+
 ```
 ┌─────────────────────────────────────┐
 │         📊 SENDER DASHBOARD          │
@@ -167,6 +173,7 @@
 ```
 
 ### Error State
+
 ```
 ┌─────────────────────────────────────┐
 │         📊 SENDER DASHBOARD          │
@@ -178,6 +185,7 @@
 ```
 
 ### Empty State (New User)
+
 ```
 ┌─────────────────────────────────────┐
 │         📊 SENDER DASHBOARD          │

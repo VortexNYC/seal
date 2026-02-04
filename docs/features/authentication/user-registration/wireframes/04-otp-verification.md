@@ -385,6 +385,7 @@
 ## Interaction Specifications
 
 ### Code Input Behavior
+
 - **Auto-Focus**: Automatically focus first input on load
 - **Auto-Advance**: Move to next field after digit entry
 - **Auto-Submit**: Verify code when all 6 digits entered
@@ -392,12 +393,14 @@
 - **Paste Support**: Accept 6-digit paste across all fields
 
 ### Countdown Timer
+
 - **Real-time Updates**: Update every second
 - **Visual Feedback**: Change color as expiration approaches
 - **Auto-Expire**: Redirect to expired state at 00:00
 - **Grace Period**: Allow 30-second buffer for network delays
 
 ### Rate Limiting
+
 - **Attempt Tracking**: Count invalid attempts (max 5)
 - **Progressive Warnings**: Show remaining attempts
 - **Lockout Handling**: Force new code after max attempts
@@ -408,18 +411,21 @@
 ## Technical Integration
 
 ### OTP Generation & Validation
+
 - **Code Format**: 6-digit numeric code
 - **Expiration**: 10 minutes from generation
 - **Security**: Cryptographically secure random generation
 - **Single Use**: Invalidate code after successful verification
 
 ### Email Integration
+
 - **React Email**: Styled email templates
 - **Resend Service**: Reliable email delivery
 - **Template Variables**: Dynamic code and user info
 - **Delivery Tracking**: Monitor delivery status
 
 ### State Management
+
 - **Verification Status**: Track verification state
 - **Error Handling**: Clear error recovery flows
 - **Session Management**: Maintain auth state during verification
@@ -441,12 +447,14 @@
 ## Security Considerations
 
 ### Code Security
+
 - **Entropy**: High-entropy random generation
 - **Validation**: Server-side verification only
 - **Rate Limiting**: Prevent brute force attempts
 - **Invalidation**: Clear codes after use or expiration
 
 ### Email Security
+
 - **No Code Display**: Never show code in email subject
 - **Link Alternative**: Consider magic link as backup
 - **Spam Prevention**: Monitor delivery rates

@@ -19,21 +19,25 @@ This document provides a comprehensive plan to implement the catapult-vite roles
 ### What Seal Already Has
 
 **✅ Database Schema (Partially Ready)**
+
 - `convex/organizations/schema.ts` - Organization table with type field
 - `convex/organization_members/schema.ts` - Members table with role and status fields
 - `convex/users/schema.ts` - Users table with activeOrganization tracking
 
 **✅ Authentication**
+
 - Clerk integration via ClerkProvider
 - Convex auth with JWT tokens
 - `convex/auth/auth.utils.ts` - Basic auth context with `getAuthContext()`
 
 **✅ Frontend Auth**
+
 - Protected routes via TanStack Router
 - SignedIn/SignedOut components
 - `apps/web/src/hooks/use-current-user.ts` - User query hook
 
 **⚠️ Permissions System (Minimal)**
+
 - Basic role strings in organization_members (no enforcement)
 - Document-level access control (but no granular org permissions)
 - No permission validation on mutations/queries
@@ -42,25 +46,30 @@ This document provides a comprehensive plan to implement the catapult-vite roles
 ### What's Missing from Catapult-Vite System
 
 **❌ Permission Definitions**
+
 - No centralized permission constants
 - No role template definitions
 - No permission-to-role mappings
 
 **❌ Backend Enforcement**
+
 - No query/mutation wrappers with permission checks
 - No guard functions for role validation
 - No permission resolution in auth context
 
 **❌ Custom Roles**
+
 - No organization_roles table
 - No custom role CRUD operations
 - No role assignment UI
 
 **❌ Permission Overrides**
+
 - No add/remove permission overrides per member
 - No granular permission management
 
 **❌ Frontend Permission Checks**
+
 - No PermissionGate component
 - No useHasPermission hook
 - No role-based UI rendering
@@ -119,6 +128,7 @@ Execute Handler (if authorized)
 ## Implementation Phases
 
 ### Phase 0: Preparation (No Code Changes)
+
 **Duration**: 1 day
 
 - [x] Document catapult-vite system architecture
@@ -130,11 +140,13 @@ Execute Handler (if authorized)
 ---
 
 ### Phase 1: Core Permission System (Backend Foundation)
+
 **Duration**: 3-4 days
 
 **Goal**: Implement permission definitions, role templates, and helper functions
 
 #### 1.1 Create Permission Definitions
+
 **File**: `convex/auth/permissions.ts` (NEW)
 
 ```typescript
@@ -311,11 +323,11 @@ export const organizationMemberTable = defineTable({
   // NEW: Fine-grained permission overrides
   permissionOverrides: v.optional(
     v.object({
-      add: v.optional(v.array(v.string())),      // Additional permissions
-      remove: v.optional(v.array(v.string())),   // Remove specific permissions
+      add: v.optional(v.array(v.string())), // Additional permissions
+      remove: v.optional(v.array(v.string())), // Remove specific permissions
     }),
   ),
-})
+});
 ```
 
 **File**: `convex/organizations/schema.ts`
@@ -327,12 +339,8 @@ export const organizationTable = defineTable({
   // ... existing fields ...
 
   // NEW: Organization status
-  status: v.union(
-    v.literal("active"),
-    v.literal("suspended"),
-    v.literal("deleted"),
-  ),
-})
+  status: v.union(v.literal("active"), v.literal("suspended"), v.literal("deleted")),
+});
 ```
 
 **File**: `convex/users/schema.ts`
@@ -345,7 +353,7 @@ export const userTable = defineTable({
 
   // NEW: Super admin flag
   isSuperAdmin: v.optional(v.boolean()),
-})
+});
 ```
 
 **NEW File**: `convex/organization_roles/schema.ts`
@@ -358,10 +366,7 @@ export const organizationRolesTable = defineTable({
   name: v.string(),
   permissions: v.array(v.string()),
   organizationId: v.id("organizations"),
-  type: v.union(
-    v.literal("system"),
-    v.literal("custom"),
-  ),
+  type: v.union(v.literal("system"), v.literal("custom")),
   createdAt: v.number(),
   updatedAt: v.number(),
 })
@@ -548,11 +553,9 @@ export async function getAuthContextWithPermissions(
     permissions,
     isOwner,
     isAdmin,
-    hasPermission: (permission: string) =>
-      hasPermission(permissions, permission),
+    hasPermission: (permission: string) => hasPermission(permissions, permission),
     hasAnyPermission: (perms: string[]) => hasAnyPermission(permissions, perms),
-    hasAllPermissions: (perms: string[]) =>
-      hasAllPermissions(permissions, perms),
+    hasAllPermissions: (perms: string[]) => hasAllPermissions(permissions, perms),
   };
 }
 ```
@@ -560,6 +563,7 @@ export async function getAuthContextWithPermissions(
 ---
 
 ### Phase 2: Query/Mutation Wrappers (Backend Enforcement)
+
 **Duration**: 2-3 days
 
 **Goal**: Create reusable wrappers that automatically check permissions
@@ -825,6 +829,7 @@ export function ensureAdminForOrg(
 ---
 
 ### Phase 3: Apply Wrappers to Existing Endpoints
+
 **Duration**: 2-3 days
 
 **Goal**: Migrate all existing queries/mutations to use permission wrappers
@@ -834,6 +839,7 @@ export function ensureAdminForOrg(
 **File**: `convex/documents/queries.ts`
 
 Before:
+
 ```typescript
 export const list = query({
   args: {},
@@ -846,6 +852,7 @@ export const list = query({
 ```
 
 After:
+
 ```typescript
 import { permissionQuery } from "../auth/wrappers";
 
@@ -855,9 +862,7 @@ export const list = permissionQuery("documents:view")({
     // ctx.auth is automatically available with permissions
     const documents = await ctx.db
       .query("documents")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", ctx.auth.organizationId),
-      )
+      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
       .collect();
     return documents;
   },
@@ -945,6 +950,7 @@ export const remove = permissionMutation("documents:delete")({
 ```
 
 **Migration Checklist**:
+
 - [ ] `convex/documents/queries.ts`
 - [ ] `convex/documents/mutations.ts`
 - [ ] `convex/organizations/queries.ts`
@@ -959,6 +965,7 @@ export const remove = permissionMutation("documents:delete")({
 ---
 
 ### Phase 4: Custom Roles Management
+
 **Duration**: 2-3 days
 
 **Goal**: Allow organizations to create custom roles
@@ -976,9 +983,7 @@ export const list = permissionQuery("users:roles")({
   handler: async (ctx) => {
     const roles = await ctx.db
       .query("organization_roles")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", ctx.auth.organizationId),
-      )
+      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
       .collect();
     return roles;
   },
@@ -1025,17 +1030,13 @@ export const create = permissionMutation("users:roles")({
   },
   handler: async (ctx, args) => {
     // Validate permissions
-    const validPermissions = Array.from(
-      new Set(args.permissions.filter(isValidPermission)),
-    );
+    const validPermissions = Array.from(new Set(args.permissions.filter(isValidPermission)));
 
     // Check for duplicate name
     const existing = await ctx.db
       .query("organization_roles")
       .withIndex("by_name", (q) =>
-        q
-          .eq("organizationId", ctx.auth.organizationId)
-          .eq("name", args.name),
+        q.eq("organizationId", ctx.auth.organizationId).eq("name", args.name),
       )
       .first();
 
@@ -1095,9 +1096,7 @@ export const update = permissionMutation("users:roles")({
       const duplicate = await ctx.db
         .query("organization_roles")
         .withIndex("by_name", (q) =>
-          q
-            .eq("organizationId", ctx.auth.organizationId)
-            .eq("name", args.name),
+          q.eq("organizationId", ctx.auth.organizationId).eq("name", args.name),
         )
         .first();
 
@@ -1112,9 +1111,7 @@ export const update = permissionMutation("users:roles")({
     }
 
     if (args.permissions) {
-      updates.permissions = Array.from(
-        new Set(args.permissions.filter(isValidPermission)),
-      );
+      updates.permissions = Array.from(new Set(args.permissions.filter(isValidPermission)));
     }
 
     await ctx.db.patch(args.roleId, updates);
@@ -1150,9 +1147,7 @@ export const remove = permissionMutation("users:roles")({
     // Check if assigned to members
     const assigned = await ctx.db
       .query("organization_members")
-      .withIndex("by_organization_id", (q) =>
-        q.eq("organizationId", ctx.auth.organizationId),
-      )
+      .withIndex("by_organization_id", (q) => q.eq("organizationId", ctx.auth.organizationId))
       .filter((q) => q.eq(q.field("roleId"), args.roleId))
       .first();
 
@@ -1172,6 +1167,7 @@ export const remove = permissionMutation("users:roles")({
 ---
 
 ### Phase 5: Frontend Permission Checks
+
 **Duration**: 3-4 days
 
 **Goal**: Implement UI components and hooks for permission-based rendering
@@ -1407,6 +1403,7 @@ export function AppSidebar() {
 ---
 
 ### Phase 6: Role Management UI
+
 **Duration**: 3-4 days
 
 **Goal**: Build admin UI for managing roles and member permissions
@@ -1648,6 +1645,7 @@ export function CreateRoleDialog() {
 ---
 
 ### Phase 7: Member Role Assignment UI
+
 **Duration**: 2-3 days
 
 **Goal**: Allow admins to assign roles to members
@@ -1778,6 +1776,7 @@ export function RoleSelect({ value, roles, onChange }: RoleSelectProps) {
 ---
 
 ### Phase 8: Testing & Documentation
+
 **Duration**: 2-3 days
 
 **Goal**: Comprehensive testing and documentation
@@ -1855,6 +1854,7 @@ Test the full auth flow with permission checking.
 **File**: `ROLES_AND_PERMISSIONS.md`
 
 Update with:
+
 - Migration guide from old system
 - Permission list reference
 - Code examples for common patterns
@@ -1906,6 +1906,7 @@ export const addPermissionFields = internalMutation({
 ```
 
 **Run migration**:
+
 ```bash
 npx convex run migrations/001_add_permissions:addPermissionFields
 ```
@@ -1915,6 +1916,7 @@ npx convex run migrations/001_add_permissions:addPermissionFields
 ### Backward Compatibility
 
 During rollout:
+
 1. Keep old auth functions working
 2. Gradually migrate endpoints to use new wrappers
 3. Monitor error logs for permission denials
@@ -1925,17 +1927,20 @@ During rollout:
 ## Testing Plan
 
 ### Unit Tests
+
 - [ ] Permission helper functions
 - [ ] Permission expansion (wildcards)
 - [ ] Role template definitions
 
 ### Integration Tests
+
 - [ ] Auth context resolution
 - [ ] Permission checking in wrappers
 - [ ] Custom role CRUD operations
 - [ ] Role assignment
 
 ### E2E Tests
+
 - [ ] User login and role assignment
 - [ ] UI permission gates
 - [ ] Role management flows
@@ -1978,23 +1983,27 @@ During rollout:
 ## Rollout Strategy
 
 ### Stage 1: Internal Testing (1 week)
+
 - Deploy to development environment
 - Test with internal team
 - Fix critical bugs
 
 ### Stage 2: Beta Testing (2 weeks)
+
 - Deploy to staging with select users
 - Monitor error logs
 - Gather feedback
 - Refine permissions
 
 ### Stage 3: Gradual Rollout (2 weeks)
+
 - Enable for 10% of organizations
 - Monitor metrics (permission denials, errors)
 - Increase to 50%
 - Full rollout
 
 ### Stage 4: Cleanup (1 week)
+
 - Remove old auth code
 - Update documentation
 - Create video tutorials
@@ -2017,6 +2026,7 @@ During rollout:
 ### Risk: Permission Denial Blocks Users
 
 **Mitigation**:
+
 - Feature flag for rollback
 - Super admin bypass for emergencies
 - Detailed logging of permission checks
@@ -2025,6 +2035,7 @@ During rollout:
 ### Risk: Performance Degradation
 
 **Mitigation**:
+
 - Cache permission resolution results
 - Index organization_members by userId + organizationId
 - Monitor query performance
@@ -2033,6 +2044,7 @@ During rollout:
 ### Risk: Breaking Changes
 
 **Mitigation**:
+
 - Comprehensive test coverage
 - Gradual rollout
 - Backward compatibility during transition
@@ -2042,18 +2054,18 @@ During rollout:
 
 ## Timeline Summary
 
-| Phase | Duration | Start | End |
-|-------|----------|-------|-----|
-| 0. Preparation | 1 day | Day 0 | Day 1 |
-| 1. Core Permission System | 3-4 days | Day 1 | Day 5 |
-| 2. Query/Mutation Wrappers | 2-3 days | Day 5 | Day 8 |
-| 3. Apply Wrappers | 2-3 days | Day 8 | Day 11 |
-| 4. Custom Roles | 2-3 days | Day 11 | Day 14 |
-| 5. Frontend Permissions | 3-4 days | Day 14 | Day 18 |
-| 6. Role Management UI | 3-4 days | Day 18 | Day 22 |
-| 7. Member Assignment UI | 2-3 days | Day 22 | Day 25 |
-| 8. Testing & Docs | 2-3 days | Day 25 | Day 28 |
-| **Total** | **~4 weeks** | - | - |
+| Phase                      | Duration     | Start  | End    |
+| -------------------------- | ------------ | ------ | ------ |
+| 0. Preparation             | 1 day        | Day 0  | Day 1  |
+| 1. Core Permission System  | 3-4 days     | Day 1  | Day 5  |
+| 2. Query/Mutation Wrappers | 2-3 days     | Day 5  | Day 8  |
+| 3. Apply Wrappers          | 2-3 days     | Day 8  | Day 11 |
+| 4. Custom Roles            | 2-3 days     | Day 11 | Day 14 |
+| 5. Frontend Permissions    | 3-4 days     | Day 14 | Day 18 |
+| 6. Role Management UI      | 3-4 days     | Day 18 | Day 22 |
+| 7. Member Assignment UI    | 2-3 days     | Day 22 | Day 25 |
+| 8. Testing & Docs          | 2-3 days     | Day 25 | Day 28 |
+| **Total**                  | **~4 weeks** | -      | -      |
 
 ---
 
@@ -2094,6 +2106,7 @@ See `convex/auth/permissions.ts` for the complete list of permissions organized 
 ## Appendix: Code Patterns
 
 ### Pattern 1: Simple Permission Check
+
 ```typescript
 export const myQuery = permissionQuery("documents:view")({
   args: {},
@@ -2105,6 +2118,7 @@ export const myQuery = permissionQuery("documents:view")({
 ```
 
 ### Pattern 2: Multiple Permissions (Any)
+
 ```typescript
 export const myQuery = permissionAnyQuery(["documents:edit", "documents:delete"])({
   args: {},
@@ -2116,11 +2130,9 @@ export const myQuery = permissionAnyQuery(["documents:edit", "documents:delete"]
 ```
 
 ### Pattern 3: Multiple Permissions (All)
+
 ```typescript
-export const myMutation = permissionAllMutation([
-  "documents:edit",
-  "documents:share",
-])({
+export const myMutation = permissionAllMutation(["documents:edit", "documents:share"])({
   args: { id: v.id("documents") },
   handler: async (ctx, args) => {
     // User has both permissions
@@ -2130,6 +2142,7 @@ export const myMutation = permissionAllMutation([
 ```
 
 ### Pattern 4: Admin Only
+
 ```typescript
 export const dangerousMutation = adminMutation({
   args: {},
@@ -2141,6 +2154,7 @@ export const dangerousMutation = adminMutation({
 ```
 
 ### Pattern 5: Manual Check
+
 ```typescript
 export const flexibleQuery = authQuery({
   args: { includePrivate: v.optional(v.boolean()) },

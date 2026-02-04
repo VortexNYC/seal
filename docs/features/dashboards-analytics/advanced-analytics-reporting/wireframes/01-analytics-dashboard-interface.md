@@ -209,6 +209,7 @@
 ## Loading and Error States
 
 ### Analytics Loading State
+
 ```
 ┌─────────────────────────────────────┐
 │       📊 ANALYTICS DASHBOARD        │
@@ -223,6 +224,7 @@
 ```
 
 ### Permission Error State
+
 ```
 ┌─────────────────────────────────────┐
 │       📊 ANALYTICS DASHBOARD        │
@@ -238,6 +240,7 @@
 ```
 
 ### No Data State
+
 ```
 ┌─────────────────────────────────────┐
 │       📊 ANALYTICS DASHBOARD        │

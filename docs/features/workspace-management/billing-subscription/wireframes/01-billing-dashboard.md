@@ -338,17 +338,20 @@
 ## Interactive Elements
 
 ### Billing Dashboard Actions
+
 - **Upgrade Button**: Leads to payment method setup flow
 - **Usage Bars**: Visual progress indicators with hover tooltips
 - **Payment Method Links**: Quick access to edit/remove cards
 - **Invoice Downloads**: Direct PDF download links
 
 ### Payment Method Management
+
 - **Real-time Validation**: Card number, expiry, CVC validation
 - **Primary Method Toggle**: Set/unset primary payment method
 - **Remove Confirmation**: Two-step confirmation for removal
 
 ### Error States
+
 - **Payment Failures**: Clear error messages with recovery actions
 - **Grace Period**: Countdown timer with clear consequences
 - **Retry Mechanisms**: Automatic and manual retry options
@@ -358,6 +361,7 @@
 ## State Management
 
 ### Plan Transitions
+
 - **Free to Pro**: Immediate upgrade with prorated billing
 - **Pro to Free**: Scheduled downgrade at billing cycle end
 - **Trial to Pro**: Seamless transition with payment method
@@ -367,6 +371,7 @@
 ## Confirmation Dialogs
 
 ### Cancel Subscription Confirmation
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        ⚠️ Cancel Pro Subscription                           │
@@ -403,6 +408,7 @@
 ```
 
 ### Delete Payment Method Confirmation
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        🗑️ Remove Payment Method                            │
@@ -431,6 +437,7 @@
 ```
 
 ### Usage Tracking
+
 - **Real-time Updates**: Usage counters update with document creation
 - **Monthly Reset**: Usage resets on billing date
 - **Limit Enforcement**: Block actions when limits reached

@@ -11,12 +11,14 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 **Why first**: Can't build features without these working
 
 ### 1. Monorepo Setup
+
 - Initialize Turborepo with Bun workspaces
 - Configure Biome for linting/formatting
 - Setup TypeScript configs across packages
 - Get `bun install` and `bun run build` working
 
 **Documentation References**:
+
 - **Project Overview**: `/README.md`
 - **Tech Stack**: `/docusign-oss-vision.md` (lines 43-113)
 - **Monorepo Structure**: `/docusign-oss-vision.md` (lines 14-31)
@@ -28,6 +30,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 2. Frontend App Running
+
 - Vite + React app running on localhost
 - TanStack Router with basic routes (landing, sign-in, sign-up, dashboard)
 - Tailwind CSS configured and working
@@ -36,6 +39,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Error pages and states
 
 **Documentation References**:
+
 - **Tech Stack**: `/docusign-oss-vision.md` (lines 49-70)
 - **UI Design System**: `/design-phase/ui-specifications/component-library.md`
 - **Design Tokens**: `/design-phase/ui-specifications/design-tokens.md`
@@ -57,6 +61,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 3. Convex Database
+
 - Convex project initialized and deployed
 - Database schemas defined (users, organizations, workspaces, documents, signatures, audit_logs)
 - Basic queries and mutations working
@@ -64,6 +69,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Zod schemas for validation
 
 **Documentation References**:
+
 - **Tech Stack**: `/docusign-oss-vision.md` (lines 56-58, 67-70)
 - **Data Relationships**: `/design-phase/information-architecture/data-relationships.md`
 - **State Documentation Patterns**: `/design-phase/state-documentation-patterns.md`
@@ -73,6 +79,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 4. Clerk Authentication
+
 - Clerk project setup with OAuth providers (Google, Microsoft, Apple)
 - Email/password + email verification (6-digit OTP) working
 - Sign-up flow complete (email → verify → workspace creation)
@@ -86,6 +93,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Team collaboration (invitations, roles, permissions)
 
 **Documentation References**:
+
 - **Feature Spec (Auth)**: `/features/authentication/user-registration/feature-spec.md`
 - **User Flows (Auth)**: `/features/authentication/user-registration/user-flows.md`
 - **Wireframes (Auth)**:
@@ -125,6 +133,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 5. Stripe Payments
+
 - Stripe account configured with products (Free plan, Pro plan)
 - Subscription creation working
 - Checkout flow complete
@@ -134,6 +143,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Customer portal for managing billing
 
 **Documentation References**:
+
 - **Feature Spec**: `/features/workspace-management/billing-subscription/feature-spec.md`
 - **User Flows**: `/features/workspace-management/billing-subscription/user-flows.md`
 - **Wireframes**: `/features/workspace-management/billing-subscription/wireframes/01-billing-dashboard.md`
@@ -148,6 +158,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 **Why second**: Need docs before you can sign them
 
 ### 6. File Upload System
+
 - PDF upload to Convex file storage
 - Drag-and-drop upload UI with progress
 - File validation (PDF only, size limits)
@@ -158,6 +169,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - PDF processing and text extraction
 
 **Documentation References**:
+
 - **Feature Spec (Upload)**: `/features/document-management/document-upload/feature-spec.md`
 - **User Flows (Upload)**: `/features/document-management/document-upload/user-flows.md`
 - **Wireframes (Upload)**:
@@ -178,6 +190,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 7. Document Library & Search
+
 - Document list view with sorting and pagination
 - Fuzzy search with fuse.js
 - Filter by status, date, tags
@@ -186,6 +199,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Template library with "Use Template" feature
 
 **Documentation References**:
+
 - **Feature Spec (Library)**: `/features/document-management/document-library/feature-spec.md`
 - **User Flows (Library)**: `/features/document-management/document-library/user-flows.md`
 - **Wireframes (Library)**: `/features/document-management/document-library/wireframes/01-main-library-interface.md`
@@ -207,6 +221,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 **Why third**: Core value proposition of the product
 
 ### 8. Document Preparation
+
 - konva.js canvas layer over PDF
 - Drag-and-drop signature fields onto document
 - Field types: signature, text, date, checkbox
@@ -218,6 +233,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Preparation wizard (upload → place fields → assign recipients → preview)
 
 **Documentation References**:
+
 - **Feature Spec (Preparation)**: `/features/signature-workflow/document-preparation-interface/feature-spec.md`
 - **User Flows (Preparation)**: `/features/signature-workflow/document-preparation-interface/user-flows.md`
 - **Wireframes (Preparation)**: `/features/signature-workflow/document-preparation-interface/wireframes/01-document-preparation-interface.md`
@@ -238,6 +254,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 9. Signature Capture & Signing
+
 - react-signature-canvas for drawing signatures
 - Signature types: draw, type, upload image
 - Signature library (save and reuse signatures)
@@ -250,6 +267,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Make signed PDFs immutable
 
 **Documentation References**:
+
 - **Feature Spec**: `/features/signature-workflow/signing-experience/feature-spec.md`
 - **User Flows**: `/features/signature-workflow/signing-experience/user-flows.md`
 - **Wireframes**:
@@ -268,6 +286,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 10. Email Notifications
+
 - Resend email delivery setup
 - React Email templates for:
   - Document invitation
@@ -279,6 +298,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Email delivery tracking
 
 **Documentation References**:
+
 - **Feature Spec**: `/features/communications/email-integration/feature-spec.md`
 - **User Flows**: `/features/communications/email-integration/user-flows.md`
 - **Wireframes**:
@@ -291,6 +311,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 11. Document Status Tracking
+
 - Document status: draft, sent, viewed, completed, declined, expired
 - Status transitions with audit logging
 - Recipient tracking (viewed, signed, declined timestamps)
@@ -302,6 +323,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Toast notifications on status changes
 
 **Documentation References**:
+
 - **Feature Spec**: `/features/signature-workflow/document-status-tracking/feature-spec.md`
 - **User Flows**: `/features/signature-workflow/document-status-tracking/user-flows.md`
 - **Wireframes**: `/features/signature-workflow/document-status-tracking/wireframes/01-status-tracking-interface.md`
@@ -320,6 +342,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 **Why fourth**: Make it actually usable and delightful
 
 ### 12. Sender Dashboard
+
 - Stats cards (pending, completed, declined counts)
 - Recent documents list
 - Activity timeline
@@ -330,6 +353,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Export functionality
 
 **Documentation References**:
+
 - **Feature Spec**: `/features/dashboards-analytics/sender-dashboard/feature-spec.md`
 - **User Flows**: `/features/dashboards-analytics/sender-dashboard/user-flows.md`
 - **Wireframes**: `/features/dashboards-analytics/sender-dashboard/wireframes/01-sender-dashboard-interface.md`
@@ -340,6 +364,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 13. Mobile Optimization
+
 - All pages responsive (320px to 1920px)
 - Mobile-friendly signature canvas (touch optimized)
 - Larger touch targets (min 44px)
@@ -350,6 +375,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Bundle size optimization
 
 **Documentation References**:
+
 - **Responsive Breakpoints**: `/design-phase/ui-specifications/responsive-breakpoints.md`
 - **Mobile Signature Capture**: `/features/signature-workflow/signing-experience/wireframes/02-mobile-signature-capture.md`
 - **Component Interactions**: `/design-phase/component-interactions.md`
@@ -359,6 +385,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 14. Notifications & Onboarding
+
 - In-app notification center (toast notifications with sonner)
 - Real-time notification delivery via Convex
 - Notification preferences per user
@@ -370,6 +397,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Landing page
 
 **Documentation References**:
+
 - **Feature Spec (Onboarding)**: `/features/workspace-management/landing-onboarding/feature-spec.md`
 - **User Flows (Onboarding)**: `/features/workspace-management/landing-onboarding/user-flows.md`
 - **Wireframes (Onboarding)**:
@@ -389,6 +417,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 **Why fifth**: Enable developers to integrate
 
 ### 15. Public REST API
+
 - API route infrastructure
 - API key authentication via Clerk
 - Rate limiting
@@ -404,6 +433,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Authentication guide
 
 **Documentation References**:
+
 - **Feature Spec (External API)**: `/features/developer-api/external-api-integration/feature-spec.md`
 - **User Flows (External API)**: `/features/developer-api/external-api-integration/user-flows.md`
 - **Wireframes (API Integration)**: `/features/developer-api/external-api-integration/wireframes/01-api-integration-interface.md`
@@ -417,6 +447,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 16. Webhooks System
+
 - Webhook registration in database
 - Webhook delivery queue with retry logic (exponential backoff)
 - Webhook signature verification
@@ -430,6 +461,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Webhook delivery logs
 
 **Documentation References**:
+
 - **Feature Spec (External API)**: `/features/developer-api/external-api-integration/feature-spec.md`
 - **User Flows (External API)**: `/features/developer-api/external-api-integration/user-flows.md`
 - **Future: DocuSign Connect Equivalent**: `/future-work.md` (lines 40-46)
@@ -443,6 +475,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 **Why last**: Make sure it's solid before shipping
 
 ### 17. Testing
+
 - Vitest unit tests for Convex functions and React components (>80% coverage)
 - Integration tests for auth, document upload → sign → complete flow, API endpoints, webhooks, payments
 - Playwright E2E tests for critical user journeys:
@@ -458,6 +491,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
   - Load testing with 100 concurrent users
 
 **Documentation References**:
+
 - **Tech Stack (Testing)**: `/docusign-oss-vision.md` (lines 109-113)
 - **Performance Requirements**: `/future-work.md` (lines 207-212)
 - **Success Criteria**: `/mvp-gameplan-structure.md` (lines 107-118)
@@ -467,6 +501,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 18. Security & Compliance
+
 - Security scanning (npm audit, Snyk)
 - Auth vulnerability testing (CSRF, XSS)
 - File upload security audit
@@ -483,6 +518,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Data encryption at rest and in transit
 
 **Documentation References**:
+
 - **Feature Spec (Security)**: `/features/authentication/security-compliance/feature-spec.md`
 - **User Flows (Security)**: `/features/authentication/security-compliance/user-flows.md`
 - **Wireframes (Security)**:
@@ -500,6 +536,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 19. Production Deployment
+
 - Production Convex deployment
 - Vercel production deployment
 - Production environment variables configured
@@ -510,6 +547,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Production smoke tests passing
 
 **Documentation References**:
+
 - **Tech Stack (Deployment)**: `/docusign-oss-vision.md` (lines 62-65)
 - **Tech Stack (Monitoring)**: `/docusign-oss-vision.md` (lines 90-92)
 - **Deployment Architecture**: `/docusign-oss-vision.md` (lines 33-40)
@@ -519,6 +557,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ---
 
 ### 20. Launch Prep
+
 - Marketing landing page
 - Demo videos
 - User documentation
@@ -528,6 +567,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Launch announcements drafted (Product Hunt, HackerNews, Twitter)
 
 **Documentation References**:
+
 - **Brand Positioning**: `/docusign-oss-vision.md` (lines 206-286)
 - **Go-to-Market Strategy**: `/docusign-oss-vision.md` (lines 171-189)
 - **Community Strategy**: `/docusign-oss-vision.md` (lines 191-195)
@@ -559,9 +599,11 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 ## MVP Scope: What's IN vs OUT
 
 **IN (Must Build)**
+
 - Everything listed above (1-20)
 
 **OUT (Future Work)**
+
 - Advanced field types (calculated fields, conditional fields)
 - CRM integrations (HubSpot, Salesforce)
 - Advanced workflow automation
@@ -599,6 +641,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 Every deliverable above references existing documentation. Here's the complete documentation structure:
 
 ### Core Vision & Architecture
+
 - `/docusign-oss-vision.md` - Tech stack, brand positioning, competitive strategy
 - `/pdf-library-architecture.md` - PDF processing libraries and their roles
 - `/mvp-gameplan-structure.md` - Original MVP plan and phases
@@ -607,12 +650,15 @@ Every deliverable above references existing documentation. Here's the complete d
 - `/compliance-implementation-checklist.md` - Legal compliance requirements
 
 ### Feature Documentation (29 Features)
+
 Each feature has:
+
 - `feature-spec.md` - Requirements, edge cases, technical details
 - `user-flows.md` - User journey and interaction flows
 - `wireframes/` - ASCII wireframes for UI implementation
 
 **Feature Categories**:
+
 - `/features/authentication/` - User registration, profile, security compliance
 - `/features/document-management/` - Upload, library, templates, search, processing
 - `/features/signature-workflow/` - Document preparation, field management, signing, status tracking
@@ -625,6 +671,7 @@ Each feature has:
 - `/features/system/` - Error pages and system-level features
 
 ### Design System Documentation
+
 - `/design-phase/ui-specifications/` - Component library, design tokens, typography, breakpoints
 - `/design-phase/interaction-patterns/` - Drag-drop, forms, loading states, notifications
 - `/design-phase/information-architecture/` - Sitemap, navigation, data relationships
@@ -639,6 +686,7 @@ Each feature has:
 ## How To Use This Roadmap
 
 ### For Engineers
+
 1. **Pick a deliverable** (e.g., "4. Clerk Authentication")
 2. **Read the feature specs** listed in "Documentation References"
 3. **Review wireframes** to understand UI requirements
@@ -647,6 +695,7 @@ Each feature has:
 6. **Mark "Done when"** criteria is met
 
 ### For Product Review
+
 1. **Check the feature spec** to understand what was supposed to be built
 2. **Review user flows** to see expected user journey
 3. **Compare implementation** against wireframes
@@ -654,7 +703,9 @@ Each feature has:
 5. **Approve or provide feedback** for iteration
 
 ### For Creating Tickets
+
 Each deliverable becomes a ticket with:
+
 - **Title**: The deliverable name (e.g., "Clerk Authentication")
 - **Description**: The bullet list of what gets built
 - **Acceptance Criteria**: The "Done when" statement

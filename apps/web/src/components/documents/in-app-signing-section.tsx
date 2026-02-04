@@ -1,471 +1,441 @@
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 import { useMutation } from "convex/react";
 import {
-	CheckCircleIcon,
-	ChevronDownIcon,
-	ClockIcon,
-	FileSignatureIcon,
-	PenLineIcon,
-	XCircleIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ClockIcon,
+  FileSignatureIcon,
+  PenLineIcon,
+  XCircleIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
+
 import { Button } from "../ui/button";
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "../ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { DeclineDialog } from "./decline-dialog";
 import { FieldInputManager } from "./field-input-manager";
 import { SignatureCapture } from "./signature-capture";
 
 interface FieldWithValue {
-	_id: Id<"signature_fields">;
-	documentId: Id<"documents">;
-	recipientId: Id<"document_recipients">;
-	fieldType: FieldType;
-	page: number;
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-	label?: string;
-	isRequired: boolean;
-	isMainSignature?: boolean;
-	currentValue?: string;
-	currentSignatureImageUrl?: string;
-	isFilled: boolean;
-	signatureDetails?: {
-		signedAt: number;
-		signerName?: string;
-		signerEmail?: string;
-		signatureMethod?: string;
-	};
-	properties?: {
-		placeholder?: string;
-		defaultValue?: string;
-		options?: string[];
-		maxLength?: number;
-		minLength?: number;
-		pattern?: string;
-		helpText?: string;
-	};
+  _id: Id<"signature_fields">;
+  documentId: Id<"documents">;
+  recipientId: Id<"document_recipients">;
+  fieldType: FieldType;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label?: string;
+  isRequired: boolean;
+  isMainSignature?: boolean;
+  currentValue?: string;
+  currentSignatureImageUrl?: string;
+  isFilled: boolean;
+  signatureDetails?: {
+    signedAt: number;
+    signerName?: string;
+    signerEmail?: string;
+    signatureMethod?: string;
+  };
+  properties?: {
+    placeholder?: string;
+    defaultValue?: string;
+    options?: string[];
+    maxLength?: number;
+    minLength?: number;
+    pattern?: string;
+    helpText?: string;
+  };
 }
 
 interface RecipientData {
-	_id: Id<"document_recipients">;
-	documentId: Id<"documents">;
-	email: string;
-	name?: string;
-	role: "signer" | "viewer" | "approver";
-	status: "pending" | "viewed" | "signed" | "approved" | "declined";
-	documentWorkflowStatus?: string;
-	signatureData?: string;
-	signatureType?: string;
+  _id: Id<"document_recipients">;
+  documentId: Id<"documents">;
+  email: string;
+  name?: string;
+  role: "signer" | "viewer" | "approver";
+  status: "pending" | "viewed" | "signed" | "approved" | "declined";
+  documentWorkflowStatus?: string;
+  signatureData?: string;
+  signatureType?: string;
 }
 
 interface InAppSigningSectionProps {
-	documentId: Id<"documents">;
-	recipient: RecipientData;
-	fields: FieldWithValue[];
-	isOpen: boolean;
-	onOpenChange: () => void;
-	onFieldsRefetch: () => void;
+  documentId: Id<"documents">;
+  recipient: RecipientData;
+  fields: FieldWithValue[];
+  isOpen: boolean;
+  onOpenChange: () => void;
+  onFieldsRefetch: () => void;
 }
 
 export function InAppSigningSection({
-	documentId,
-	recipient,
-	fields,
-	isOpen,
-	onOpenChange,
-	onFieldsRefetch,
+  documentId,
+  recipient,
+  fields,
+  isOpen,
+  onOpenChange,
+  onFieldsRefetch,
 }: InAppSigningSectionProps) {
-	const [activeFieldId, setActiveFieldId] =
-		useState<Id<"signature_fields"> | null>(null);
-	const [showSignatureCapture, setShowSignatureCapture] = useState(false);
-	const [showDeclineDialog, setShowDeclineDialog] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeFieldId, setActiveFieldId] = useState<Id<"signature_fields"> | null>(null);
+  const [showSignatureCapture, setShowSignatureCapture] = useState(false);
+  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const saveFieldValue = useMutation(
-		api.signatures.mutations.saveFieldValueAuthenticated,
-	);
-	const submitSignature = useMutation(
-		api.documents.recipients_mutations.submitSignatureAuthenticated,
-	);
+  const saveFieldValue = useMutation(api.signatures.mutations.saveFieldValueAuthenticated);
+  const submitSignature = useMutation(
+    api.documents.recipients_mutations.submitSignatureAuthenticated,
+  );
 
-	// Calculate progress
-	const requiredFields = fields.filter((f) => f.isRequired);
-	const filledRequiredFields = requiredFields.filter((f) => f.isFilled);
-	const progress =
-		requiredFields.length > 0
-			? Math.round((filledRequiredFields.length / requiredFields.length) * 100)
-			: 100;
-	const allRequiredFilled =
-		filledRequiredFields.length === requiredFields.length;
+  // Calculate progress
+  const requiredFields = fields.filter((f) => f.isRequired);
+  const filledRequiredFields = requiredFields.filter((f) => f.isFilled);
+  const progress =
+    requiredFields.length > 0
+      ? Math.round((filledRequiredFields.length / requiredFields.length) * 100)
+      : 100;
+  const allRequiredFilled = filledRequiredFields.length === requiredFields.length;
 
-	// Get main signature field for final submission
-	const mainSignatureField = fields.find(
-		(f) => f.isMainSignature && f.fieldType === "signature",
-	);
+  // Get main signature field for final submission
+  const mainSignatureField = fields.find((f) => f.isMainSignature && f.fieldType === "signature");
 
-	// Check if signing is allowed
-	const canSign =
-		recipient.status === "pending" || recipient.status === "viewed";
-	const isCompleted =
-		recipient.status === "signed" || recipient.status === "approved";
-	const isDeclined = recipient.status === "declined";
+  // Check if signing is allowed
+  const canSign = recipient.status === "pending" || recipient.status === "viewed";
+  const isCompleted = recipient.status === "signed" || recipient.status === "approved";
+  const isDeclined = recipient.status === "declined";
 
-	const handleFieldClick = (fieldId: Id<"signature_fields">) => {
-		if (!canSign) return;
-		setActiveFieldId(fieldId);
-	};
+  const handleFieldClick = (fieldId: Id<"signature_fields">) => {
+    if (!canSign) return;
+    setActiveFieldId(fieldId);
+  };
 
-	const handleFieldSave = async (
-		value?: string,
-		signatureImageUrl?: string,
-	) => {
-		if (!activeFieldId) return;
+  const handleFieldSave = async (value?: string, signatureImageUrl?: string) => {
+    if (!activeFieldId) return;
 
-		try {
-			// Determine signature method from the data
-			let signatureMethod: "draw" | "type" | "upload" | undefined;
-			if (signatureImageUrl) {
-				// If it's a data URL, it could be drawn or uploaded
-				// Typed signatures are usually text values, not image URLs
-				signatureMethod = "draw";
-			}
+    try {
+      // Determine signature method from the data
+      let signatureMethod: "draw" | "type" | "upload" | undefined;
+      if (signatureImageUrl) {
+        // If it's a data URL, it could be drawn or uploaded
+        // Typed signatures are usually text values, not image URLs
+        signatureMethod = "draw";
+      }
 
-			await saveFieldValue({
-				documentId,
-				fieldId: activeFieldId,
-				value,
-				signatureImageUrl,
-				signatureMethod,
-				userAgent: navigator.userAgent,
-			});
-			toast.success("Field saved");
-			onFieldsRefetch();
-		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : "Failed to save field",
-			);
-		} finally {
-			setActiveFieldId(null);
-		}
-	};
+      await saveFieldValue({
+        documentId,
+        fieldId: activeFieldId,
+        value,
+        signatureImageUrl,
+        signatureMethod,
+        userAgent: navigator.userAgent,
+      });
+      toast.success("Field saved");
+      onFieldsRefetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save field");
+    } finally {
+      setActiveFieldId(null);
+    }
+  };
 
-	const handleSignDocument = async (
-		signatureData: string,
-		signatureType: "drawn" | "typed" | "uploaded",
-	) => {
-		setIsSubmitting(true);
-		try {
-			// If there's a main signature field, save it first
-			if (mainSignatureField && !mainSignatureField.isFilled) {
-				await saveFieldValue({
-					documentId,
-					fieldId: mainSignatureField._id,
-					signatureImageUrl: signatureData,
-					signatureMethod:
-						signatureType === "drawn"
-							? "draw"
-							: signatureType === "typed"
-								? "type"
-								: "upload",
-					userAgent: navigator.userAgent,
-				});
-			}
+  const handleSignDocument = async (
+    signatureData: string,
+    signatureType: "drawn" | "typed" | "uploaded",
+  ) => {
+    setIsSubmitting(true);
+    try {
+      // If there's a main signature field, save it first
+      if (mainSignatureField && !mainSignatureField.isFilled) {
+        await saveFieldValue({
+          documentId,
+          fieldId: mainSignatureField._id,
+          signatureImageUrl: signatureData,
+          signatureMethod:
+            signatureType === "drawn" ? "draw" : signatureType === "typed" ? "type" : "upload",
+          userAgent: navigator.userAgent,
+        });
+      }
 
-			// Submit the signature
-			await submitSignature({
-				documentId,
-				status: recipient.role === "approver" ? "approved" : "signed",
-				signatureData,
-				signatureType,
-			});
+      // Submit the signature
+      await submitSignature({
+        documentId,
+        status: recipient.role === "approver" ? "approved" : "signed",
+        signatureData,
+        signatureType,
+      });
 
-			toast.success(
-				recipient.role === "approver"
-					? "Document approved successfully"
-					: "Document signed successfully",
-			);
-			setShowSignatureCapture(false);
-			onFieldsRefetch();
-		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : "Failed to sign document",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
+      toast.success(
+        recipient.role === "approver"
+          ? "Document approved successfully"
+          : "Document signed successfully",
+      );
+      setShowSignatureCapture(false);
+      onFieldsRefetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to sign document");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-	const handleDecline = async (reason: string) => {
-		setIsSubmitting(true);
-		try {
-			await submitSignature({
-				documentId,
-				status: "declined",
-				declineReason: reason,
-			});
-			toast.success("Document declined");
-			setShowDeclineDialog(false);
-			onFieldsRefetch();
-		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : "Failed to decline document",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
+  const handleDecline = async (reason: string) => {
+    setIsSubmitting(true);
+    try {
+      await submitSignature({
+        documentId,
+        status: "declined",
+        declineReason: reason,
+      });
+      toast.success("Document declined");
+      setShowDeclineDialog(false);
+      onFieldsRefetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to decline document");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-	// Get the active field for the input manager
-	const activeField = activeFieldId
-		? fields.find((f) => f._id === activeFieldId)
-		: null;
+  // Get the active field for the input manager
+  const activeField = activeFieldId ? fields.find((f) => f._id === activeFieldId) : null;
 
-	// Status colors
-	const getStatusConfig = () => {
-		if (isCompleted) {
-			return {
-				bgColor: "bg-emerald-100 dark:bg-emerald-900",
-				textColor: "text-emerald-600 dark:text-emerald-400",
-				icon: CheckCircleIcon,
-				label: recipient.status === "approved" ? "Approved" : "Signed",
-			};
-		}
-		if (isDeclined) {
-			return {
-				bgColor: "bg-red-100 dark:bg-red-900",
-				textColor: "text-red-600 dark:text-red-400",
-				icon: XCircleIcon,
-				label: "Declined",
-			};
-		}
-		return {
-			bgColor: "bg-amber-100 dark:bg-amber-900",
-			textColor: "text-amber-600 dark:text-amber-400",
-			icon: ClockIcon,
-			label: "Pending",
-		};
-	};
+  // Status colors
+  const getStatusConfig = () => {
+    if (isCompleted) {
+      return {
+        bgColor: "bg-emerald-100 dark:bg-emerald-900",
+        textColor: "text-emerald-600 dark:text-emerald-400",
+        icon: CheckCircleIcon,
+        label: recipient.status === "approved" ? "Approved" : "Signed",
+      };
+    }
+    if (isDeclined) {
+      return {
+        bgColor: "bg-red-100 dark:bg-red-900",
+        textColor: "text-red-600 dark:text-red-400",
+        icon: XCircleIcon,
+        label: "Declined",
+      };
+    }
+    return {
+      bgColor: "bg-amber-100 dark:bg-amber-900",
+      textColor: "text-amber-600 dark:text-amber-400",
+      icon: ClockIcon,
+      label: "Pending",
+    };
+  };
 
-	const statusConfig = getStatusConfig();
-	const StatusIcon = statusConfig.icon;
+  const statusConfig = getStatusConfig();
+  const StatusIcon = statusConfig.icon;
 
-	return (
-		<>
-			<Collapsible
-				open={isOpen}
-				onOpenChange={onOpenChange}
-				className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 rounded-2xl border-2 border-amber-200 dark:border-amber-800 overflow-hidden shadow-sm sm:rounded-xl"
-			>
-				<CollapsibleTrigger asChild>
-					<button
-						type="button"
-						className="flex items-center justify-between w-full px-5 py-4 cursor-pointer select-none transition-colors hover:bg-amber-100/50 dark:hover:bg-amber-900/50 sm:px-4 sm:py-3.5"
-					>
-						<div className="flex items-center gap-3">
-							<div
-								className={`w-9 h-9 flex items-center justify-center rounded-[10px] ${statusConfig.bgColor} ${statusConfig.textColor} sm:w-8 sm:h-8 sm:rounded-lg`}
-							>
-								<PenLineIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-							</div>
-							<div className="text-left">
-								<span className="font-sans text-[0.9375rem] font-semibold text-slate-800 dark:text-slate-200 sm:text-sm block">
-									Your Signature
-								</span>
-								<span
-									className={`font-sans text-xs ${statusConfig.textColor} flex items-center gap-1`}
-								>
-									<StatusIcon className="h-3 w-3" />
-									{statusConfig.label}
-								</span>
-							</div>
-						</div>
-						<ChevronDownIcon
-							className={`h-4 w-4 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-						/>
-					</button>
-				</CollapsibleTrigger>
-				<CollapsibleContent className="px-5 pb-5 border-t border-amber-200/50 dark:border-amber-800/50 sm:px-4 sm:pb-4">
-					{/* Progress bar */}
-					{canSign && fields.length > 0 && (
-						<div className="mt-4 mb-4">
-							<div className="flex items-center justify-between mb-2">
-								<span className="font-sans text-xs font-medium text-slate-600 dark:text-slate-400">
-									Progress
-								</span>
-								<span className="font-sans text-xs text-slate-500 dark:text-slate-400">
-									{filledRequiredFields.length} of {requiredFields.length}{" "}
-									required fields
-								</span>
-							</div>
-							<div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-								<div
-									className="h-full bg-amber-500 rounded-full transition-all duration-300"
-									style={{ width: `${progress}%` }}
-								/>
-							</div>
-						</div>
-					)}
+  return (
+    <>
+      <Collapsible
+        open={isOpen}
+        onOpenChange={onOpenChange}
+        className="overflow-hidden rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm sm:rounded-xl dark:border-amber-800 dark:from-amber-950 dark:to-orange-950"
+      >
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-amber-100/50 sm:px-4 sm:py-3.5 dark:hover:bg-amber-900/50"
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-[10px] ${statusConfig.bgColor} ${statusConfig.textColor} sm:h-8 sm:w-8 sm:rounded-lg`}
+              >
+                <PenLineIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+              </div>
+              <div className="text-left">
+                <span className="block font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                  Your Signature
+                </span>
+                <span
+                  className={`font-sans text-xs ${statusConfig.textColor} flex items-center gap-1`}
+                >
+                  <StatusIcon className="h-3 w-3" />
+                  {statusConfig.label}
+                </span>
+              </div>
+            </div>
+            <ChevronDownIcon
+              className={`h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400 ${isOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="border-t border-amber-200/50 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-amber-800/50">
+          {/* Progress bar */}
+          {canSign && fields.length > 0 && (
+            <div className="mt-4 mb-4">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-sans text-xs font-medium text-slate-600 dark:text-slate-400">
+                  Progress
+                </span>
+                <span className="font-sans text-xs text-slate-500 dark:text-slate-400">
+                  {filledRequiredFields.length} of {requiredFields.length} required fields
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                <div
+                  className="h-full rounded-full bg-amber-500 transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
 
-					{/* Fields list */}
-					{canSign && fields.length > 0 && (
-						<div className="space-y-2 mb-4">
-							<div className="font-sans text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-								Fields to complete
-							</div>
-							{fields.map((field) => (
-								<button
-									key={field._id}
-									type="button"
-									onClick={() => handleFieldClick(field._id)}
-									disabled={!canSign}
-									className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors text-left ${
-										field.isFilled
-											? "bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800 cursor-default"
-											: "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950 cursor-pointer"
-									}`}
-								>
-									<div
-										className={`w-6 h-6 flex items-center justify-center rounded-md ${
-											field.isFilled
-												? "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400"
-												: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
-										}`}
-									>
-										{field.isFilled ? (
-											<CheckCircleIcon className="h-4 w-4" />
-										) : (
-											<FileSignatureIcon className="h-3.5 w-3.5" />
-										)}
-									</div>
-									<div className="flex-1 min-w-0">
-										<div className="font-sans text-sm text-slate-700 dark:text-slate-300 truncate">
-											{field.label || getFieldTypeLabel(field.fieldType)}
-										</div>
-										<div className="font-sans text-xs text-slate-500 dark:text-slate-400">
-											Page {field.page}
-											{field.isRequired && !field.isFilled && (
-												<span className="text-amber-600 dark:text-amber-400 ml-1">
-													• Required
-												</span>
-											)}
-										</div>
-									</div>
-								</button>
-							))}
-						</div>
-					)}
+          {/* Fields list */}
+          {canSign && fields.length > 0 && (
+            <div className="mb-4 space-y-2">
+              <div className="mb-2 font-sans text-xs font-medium text-slate-600 dark:text-slate-400">
+                Fields to complete
+              </div>
+              {fields.map((field) => (
+                <button
+                  key={field._id}
+                  type="button"
+                  onClick={() => handleFieldClick(field._id)}
+                  disabled={!canSign}
+                  className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                    field.isFilled
+                      ? "cursor-default border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950"
+                      : "cursor-pointer border-slate-200 bg-white hover:border-amber-300 hover:bg-amber-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-amber-700 dark:hover:bg-amber-950"
+                  }`}
+                >
+                  <div
+                    className={`flex h-6 w-6 items-center justify-center rounded-md ${
+                      field.isFilled
+                        ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400"
+                        : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                    }`}
+                  >
+                    {field.isFilled ? (
+                      <CheckCircleIcon className="h-4 w-4" />
+                    ) : (
+                      <FileSignatureIcon className="h-3.5 w-3.5" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-sans text-sm text-slate-700 dark:text-slate-300">
+                      {field.label || getFieldTypeLabel(field.fieldType)}
+                    </div>
+                    <div className="font-sans text-xs text-slate-500 dark:text-slate-400">
+                      Page {field.page}
+                      {field.isRequired && !field.isFilled && (
+                        <span className="ml-1 text-amber-600 dark:text-amber-400">• Required</span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
 
-					{/* Completed state */}
-					{isCompleted && (
-						<div className="mt-4 text-center py-4">
-							<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-emerald-100 dark:bg-emerald-900 rounded-full text-emerald-600 dark:text-emerald-400">
-								<CheckCircleIcon className="h-6 w-6" />
-							</div>
-							<div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300">
-								{recipient.status === "approved"
-									? "You have approved this document"
-									: "You have signed this document"}
-							</div>
-						</div>
-					)}
+          {/* Completed state */}
+          {isCompleted && (
+            <div className="mt-4 py-4 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
+                <CheckCircleIcon className="h-6 w-6" />
+              </div>
+              <div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {recipient.status === "approved"
+                  ? "You have approved this document"
+                  : "You have signed this document"}
+              </div>
+            </div>
+          )}
 
-					{/* Declined state */}
-					{isDeclined && (
-						<div className="mt-4 text-center py-4">
-							<div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center bg-red-100 dark:bg-red-900 rounded-full text-red-600 dark:text-red-400">
-								<XCircleIcon className="h-6 w-6" />
-							</div>
-							<div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300">
-								You have declined this document
-							</div>
-						</div>
-					)}
+          {/* Declined state */}
+          {isDeclined && (
+            <div className="mt-4 py-4 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400">
+                <XCircleIcon className="h-6 w-6" />
+              </div>
+              <div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300">
+                You have declined this document
+              </div>
+            </div>
+          )}
 
-					{/* Action buttons */}
-					{canSign && (
-						<div className="flex flex-col gap-2 mt-4">
-							<Button
-								onClick={() => setShowSignatureCapture(true)}
-								disabled={!allRequiredFilled || isSubmitting}
-								className="w-full"
-							>
-								<PenLineIcon className="h-4 w-4 mr-2" />
-								{recipient.role === "approver"
-									? "Approve Document"
-									: "Sign Document"}
-							</Button>
-							<Button
-								variant="outline"
-								onClick={() => setShowDeclineDialog(true)}
-								disabled={isSubmitting}
-								className="w-full text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-700 dark:hover:text-red-300"
-							>
-								<XCircleIcon className="h-4 w-4 mr-2" />
-								Decline
-							</Button>
-						</div>
-					)}
-				</CollapsibleContent>
-			</Collapsible>
+          {/* Action buttons */}
+          {canSign && (
+            <div className="mt-4 flex flex-col gap-2">
+              <Button
+                onClick={() => setShowSignatureCapture(true)}
+                disabled={!allRequiredFilled || isSubmitting}
+                className="w-full"
+              >
+                <PenLineIcon className="mr-2 h-4 w-4" />
+                {recipient.role === "approver" ? "Approve Document" : "Sign Document"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeclineDialog(true)}
+                disabled={isSubmitting}
+                className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950 dark:hover:text-red-300"
+              >
+                <XCircleIcon className="mr-2 h-4 w-4" />
+                Decline
+              </Button>
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
 
-			{/* Field Input Dialog */}
-			{activeField && (
-				<FieldInputManager
-					open={!!activeFieldId}
-					onOpenChange={(open) => {
-						if (!open) setActiveFieldId(null);
-					}}
-					fieldId={activeField._id}
-					fieldType={activeField.fieldType}
-					label={activeField.label || getFieldTypeLabel(activeField.fieldType)}
-					isRequired={activeField.isRequired}
-					currentValue={activeField.currentValue}
-					currentSignatureImageUrl={activeField.currentSignatureImageUrl}
-					properties={activeField.properties}
-					recipientName={recipient.name || recipient.email}
-					onSave={handleFieldSave}
-				/>
-			)}
+      {/* Field Input Dialog */}
+      {activeField && (
+        <FieldInputManager
+          open={!!activeFieldId}
+          onOpenChange={(open) => {
+            if (!open) setActiveFieldId(null);
+          }}
+          fieldId={activeField._id}
+          fieldType={activeField.fieldType}
+          label={activeField.label || getFieldTypeLabel(activeField.fieldType)}
+          isRequired={activeField.isRequired}
+          currentValue={activeField.currentValue}
+          currentSignatureImageUrl={activeField.currentSignatureImageUrl}
+          properties={activeField.properties}
+          recipientName={recipient.name || recipient.email}
+          onSave={handleFieldSave}
+        />
+      )}
 
-			{/* Signature Capture Dialog */}
-			{showSignatureCapture && (
-				<SignatureCapture
-					recipientName={recipient.name || recipient.email}
-					onSignatureCapture={handleSignDocument}
-					onCancel={() => setShowSignatureCapture(false)}
-					showLibrary={true}
-				/>
-			)}
+      {/* Signature Capture Dialog */}
+      {showSignatureCapture && (
+        <SignatureCapture
+          recipientName={recipient.name || recipient.email}
+          onSignatureCapture={handleSignDocument}
+          onCancel={() => setShowSignatureCapture(false)}
+          showLibrary={true}
+        />
+      )}
 
-			{/* Decline Dialog */}
-			<DeclineDialog
-				open={showDeclineDialog}
-				onOpenChange={setShowDeclineDialog}
-				onDecline={handleDecline}
-				isSubmitting={isSubmitting}
-			/>
-		</>
-	);
+      {/* Decline Dialog */}
+      <DeclineDialog
+        open={showDeclineDialog}
+        onOpenChange={setShowDeclineDialog}
+        onDecline={handleDecline}
+        isSubmitting={isSubmitting}
+      />
+    </>
+  );
 }
 
 function getFieldTypeLabel(fieldType: string): string {
-	const labels: Record<string, string> = {
-		signature: "Signature",
-		text: "Text",
-		date: "Date",
-		checkbox: "Checkbox",
-		dropdown: "Dropdown",
-		radio: "Radio",
-		attachment: "Attachment",
-	};
-	return labels[fieldType] || fieldType;
+  const labels: Record<string, string> = {
+    signature: "Signature",
+    text: "Text",
+    date: "Date",
+    checkbox: "Checkbox",
+    dropdown: "Dropdown",
+    radio: "Radio",
+    attachment: "Attachment",
+  };
+  return labels[fieldType] || fieldType;
 }

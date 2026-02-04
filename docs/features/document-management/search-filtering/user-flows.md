@@ -81,6 +81,7 @@
 ```
 
 ### Combined Search & Filter Flow
+
 ```
 ○ User Needs Complex Document Discovery
     ↓
@@ -108,6 +109,7 @@
 ## Folder-Based Search Flows
 
 ### Search Within Specific Folder
+
 ```
 ○ User Navigating in Folder Structure
     ↓
@@ -131,6 +133,7 @@
 ```
 
 ### Cross-Folder Search Flow
+
 ```
 ○ User Needs Documents Across Multiple Folders
     ↓
@@ -152,6 +155,7 @@
 ## Tag-Based Filtering Flows
 
 ### Tag Filter Application
+
 ```
 ○ User Wants Documents with Specific Tags
     ↓
@@ -175,6 +179,7 @@
 ```
 
 ### Tag Discovery Flow
+
 ```
 ○ User Exploring Available Tags
     ↓
@@ -196,6 +201,7 @@
 ## Search Performance & Large Library Flows
 
 ### High-Performance Search Flow
+
 ```
 ○ User with Large Document Library (1000+ docs)
     ↓
@@ -219,6 +225,7 @@
 ```
 
 ### Search Result Pagination Flow
+
 ```
 ○ Search Returns Many Results (100+)
     ↓
@@ -268,6 +275,7 @@
 ```
 
 ### Search Error Recovery Flow
+
 ```
 ○ Search Operation Fails
     ↓
@@ -295,6 +303,7 @@
 ## Mobile Search Experience
 
 ### Mobile Search Flow
+
 ```
 ○ Mobile User Needs Document Search
     ↓
@@ -344,6 +353,7 @@
 ```
 
 ### Pro Plan Enhanced Search
+
 ```
 ○ Pro Plan User Advanced Search
     ↓
@@ -365,6 +375,7 @@
 ## Real-time Search Updates
 
 ### Live Search Results Flow
+
 ```
 ○ User Has Active Search Query
     ↓

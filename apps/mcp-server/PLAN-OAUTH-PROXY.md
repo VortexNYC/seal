@@ -63,7 +63,7 @@ Claude Code → MCP Server OAuth (same domain) → Clerk (behind the scenes) →
 ```typescript
 // Tables for OAuth state
 export const mcp_oauth_clients = defineTable({
-  clientId: v.string(),           // Generated UUID
+  clientId: v.string(), // Generated UUID
   clientSecret: v.optional(v.string()), // Hashed, for confidential clients
   clientName: v.string(),
   redirectUris: v.array(v.string()),
@@ -71,23 +71,21 @@ export const mcp_oauth_clients = defineTable({
   responseTypes: v.array(v.string()),
   tokenEndpointAuthMethod: v.string(),
   createdAt: v.number(),
-})
-  .index("by_client_id", ["clientId"]);
+}).index("by_client_id", ["clientId"]);
 
 export const mcp_oauth_codes = defineTable({
-  code: v.string(),               // Hashed authorization code
+  code: v.string(), // Hashed authorization code
   clientId: v.string(),
-  userId: v.string(),             // Clerk user ID
+  userId: v.string(), // Clerk user ID
   redirectUri: v.string(),
   scope: v.string(),
   codeChallenge: v.optional(v.string()),
   codeChallengeMethod: v.optional(v.string()),
-  expiresAt: v.number(),          // 10 minutes from creation
-})
-  .index("by_code", ["code"]);
+  expiresAt: v.number(), // 10 minutes from creation
+}).index("by_code", ["code"]);
 
 export const mcp_oauth_refresh_tokens = defineTable({
-  tokenHash: v.string(),          // Hashed refresh token
+  tokenHash: v.string(), // Hashed refresh token
   clientId: v.string(),
   userId: v.string(),
   scope: v.string(),
@@ -222,6 +220,7 @@ export const mcp_oauth_refresh_tokens = defineTable({
 #### 3.4 Token Exchange (`/oauth/token`)
 
 **Grant type: authorization_code**
+
 ```
 1. Validate client_id (and client_secret if confidential)
 2. Validate authorization code from Convex
@@ -233,6 +232,7 @@ export const mcp_oauth_refresh_tokens = defineTable({
 ```
 
 **Grant type: refresh_token**
+
 ```
 1. Validate refresh token from Convex
 2. Generate new access token (JWT)
@@ -373,21 +373,22 @@ MCP_AUTH_CODE_TTL=600           # 10 minutes in seconds
 
 ## Estimated Implementation Time
 
-| Phase | Tasks | Estimate |
-|-------|-------|----------|
-| Phase 1 | Convex schema + API | 2-3 hours |
-| Phase 2 | MCP OAuth endpoints | 4-5 hours |
-| Phase 3 | OAuth flow logic | 3-4 hours |
-| Phase 4 | Token generation/validation | 2-3 hours |
-| Phase 5 | Discovery endpoints update | 1 hour |
-| Testing | End-to-end testing | 2-3 hours |
-| **Total** | | **14-19 hours** |
+| Phase     | Tasks                       | Estimate        |
+| --------- | --------------------------- | --------------- |
+| Phase 1   | Convex schema + API         | 2-3 hours       |
+| Phase 2   | MCP OAuth endpoints         | 4-5 hours       |
+| Phase 3   | OAuth flow logic            | 3-4 hours       |
+| Phase 4   | Token generation/validation | 2-3 hours       |
+| Phase 5   | Discovery endpoints update  | 1 hour          |
+| Testing   | End-to-end testing          | 2-3 hours       |
+| **Total** |                             | **14-19 hours** |
 
 ---
 
 ## Implementation Status
 
 ✅ **Phase 1: Convex Schema & API** - COMPLETED
+
 - Created `apps/backend/convex/schemas/mcp_oauth.ts`
 - Created `apps/backend/convex/mcp_oauth/mutations.ts`
 - Created `apps/backend/convex/mcp_oauth/queries.ts`
@@ -397,6 +398,7 @@ MCP_AUTH_CODE_TTL=600           # 10 minutes in seconds
 - Updated `apps/backend/convex/rls.ts` (added RLS rules)
 
 ✅ **Phase 2-4: MCP OAuth Endpoints** - COMPLETED
+
 - Created `apps/mcp-server/src/oauth/types.ts`
 - Created `apps/mcp-server/src/oauth/crypto.ts`
 - Created `apps/mcp-server/src/oauth/storage.ts`
@@ -404,6 +406,7 @@ MCP_AUTH_CODE_TTL=600           # 10 minutes in seconds
 - Created `apps/mcp-server/src/oauth/routes.ts`
 
 ✅ **Phase 5: Discovery & Integration** - COMPLETED
+
 - Updated `apps/mcp-server/src/index.ts`
 - Discovery endpoints now point to our own OAuth server
 - MCP endpoint validates our JWTs instead of Clerk tokens

@@ -95,6 +95,7 @@
 ```
 
 ### User Document Version Management Flow
+
 ```
 ○ User Wants to Update Existing Document
     ↓
@@ -150,6 +151,7 @@
 ```
 
 ### User Document Activity History Flow
+
 ```
 ○ User Wants to See Document History
     ↓
@@ -177,6 +179,7 @@
 ## User Document Sharing & Access Flows
 
 ### User Sets Document Access Controls Flow
+
 ```
 ○ User Wants to Control Document Access
     ↓
@@ -200,6 +203,7 @@
 ```
 
 ### User Multi-Device Access Flow
+
 ```
 ○ User Switches to Different Device
     ↓
@@ -221,6 +225,7 @@
 ## Processing Performance Flows
 
 ### User Experience with Large Documents Flow
+
 ```
 ○ User Uploads Large Document (20MB+ or 50+ pages)
     ↓
@@ -244,6 +249,7 @@
 ```
 
 ### User Processing Error & Recovery Flow
+
 ```
 ○ User's Document Processing Fails
     ↓
@@ -271,6 +277,7 @@
 ## Mobile User Processing Experience
 
 ### Mobile Document Processing Flow
+
 ```
 ○ Mobile User Uploads Document
     ↓
@@ -320,6 +327,7 @@
 ```
 
 ### Pro Plan User Processing Experience
+
 ```
 ○ Pro Plan User Document Processing
     ↓
@@ -341,6 +349,7 @@
 ## User Workflow Integration
 
 ### User Transition from Processing to Signing
+
 ```
 ○ User's Document Processing Completes
     ↓
@@ -358,6 +367,7 @@
 ```
 
 ### User Document Organization After Processing
+
 ```
 ○ User's Document Processing Complete
     ↓
@@ -379,6 +389,7 @@
 ## Additional Edge Case Processing Flows
 
 ### Partial Page Loading Flow
+
 ```
 ○ User's Document Processing Encounters Page Loading Issues
     ↓
@@ -402,6 +413,7 @@
 ```
 
 ### Text Search Limitations Flow
+
 ```
 ○ User's Document Processing Completes with Text Search Issues
     ↓
@@ -425,6 +437,7 @@
 ```
 
 ### Browser Memory Issues Flow
+
 ```
 ○ User's Browser Runs Low on Memory During Processing
     ↓
@@ -448,6 +461,7 @@
 ```
 
 ### Document Queuing Flow
+
 ```
 ○ User Uploads Document While Others Are Processing
     ↓
@@ -471,6 +485,7 @@
 ```
 
 ### Cross-Device Signing Flow
+
 ```
 ○ User Starts Processing on One Device, Continues on Another
     ↓
@@ -494,6 +509,7 @@
 ```
 
 ### Partial Feature Failure Flow
+
 ```
 ○ User's Document Processing Has Mixed Success
     ↓
@@ -517,6 +533,7 @@
 ```
 
 ### Processing State Recovery Flow
+
 ```
 ○ User's Processing Gets Interrupted (Browser Crash, Network Loss)
     ↓

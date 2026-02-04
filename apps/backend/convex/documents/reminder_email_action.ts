@@ -6,82 +6,79 @@
  */
 
 import { v } from "convex/values";
+
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import {
-	internalAction,
-	internalMutation,
-	internalQuery,
-} from "../_generated/server";
+import { internalAction, internalMutation, internalQuery } from "../_generated/server";
 import { sendReminder } from "./email";
 
 /**
  * Internal query to get reminder by ID
  */
 export const getReminderById = internalQuery({
-	args: { reminderId: v.id("document_reminders") },
-	handler: async (ctx, args) => {
-		return await ctx.db.get(args.reminderId);
-	},
+  args: { reminderId: v.id("document_reminders") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.reminderId);
+  },
 });
 
 /**
  * Internal query to get document by ID
  */
 export const getDocumentById = internalQuery({
-	args: { documentId: v.id("documents") },
-	handler: async (ctx, args) => {
-		return await ctx.db.get(args.documentId);
-	},
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.documentId);
+  },
 });
 
 /**
  * Internal query to get recipient by ID
  */
 export const getRecipientById = internalQuery({
-	args: { recipientId: v.id("document_recipients") },
-	handler: async (ctx, args) => {
-		return await ctx.db.get(args.recipientId);
-	},
+  args: { recipientId: v.id("document_recipients") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.recipientId);
+  },
 });
 
 /**
  * Internal query to get document owner
  */
 export const getDocumentOwner = internalQuery({
-	args: { ownerId: v.id("users") },
-	handler: async (ctx, args) => {
-		return await ctx.db.get(args.ownerId);
-	},
+  args: { ownerId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.ownerId);
+  },
 });
 
 /**
  * Internal mutation to update reminder status
  */
 export const updateReminderStatus = internalMutation({
-	args: {
-		reminderId: v.id("document_reminders"),
-		status: v.union(
-			v.literal("pending"),
-			v.literal("scheduled"),
-			v.literal("sent"),
-			v.literal("failed"),
-			v.literal("cancelled"),
-		),
-		sentAt: v.optional(v.number()),
-		failedAt: v.optional(v.number()),
-		cancelledAt: v.optional(v.number()),
-		lastError: v.optional(v.string()),
-		attemptCount: v.optional(v.number()),
-		messageId: v.optional(v.string()),
-	},
-	handler: async (ctx, args) => {
-		const { reminderId, ...updates } = args;
-		await ctx.db.patch(reminderId, {
-			...updates,
-			updatedAt: Date.now(),
-		});
-	},
+  args: {
+    reminderId: v.id("document_reminders"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("scheduled"),
+      v.literal("sent"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+    ),
+    sentAt: v.optional(v.number()),
+    failedAt: v.optional(v.number()),
+    cancelledAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    attemptCount: v.optional(v.number()),
+    messageId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { reminderId, ...updates } = args;
+    await ctx.db.patch(reminderId, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
+  },
 });
 
 /**
@@ -89,156 +86,138 @@ export const updateReminderStatus = internalMutation({
  * This is called by the scheduler after processReminder validates the reminder
  */
 export const sendReminderEmail = internalAction({
-	args: {
-		reminderId: v.id("document_reminders"),
-	},
-	handler: async (
-		ctx,
-		args,
-	): Promise<{
-		success: boolean;
-		messageId?: string;
-		error?: string;
-	}> => {
-		// 1. Get the reminder
-		const reminder: Doc<"document_reminders"> | null = await ctx.runQuery(
-			internal.documents.reminder_email_action.getReminderById,
-			{ reminderId: args.reminderId },
-		);
+  args: {
+    reminderId: v.id("document_reminders"),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    success: boolean;
+    messageId?: string;
+    error?: string;
+  }> => {
+    // 1. Get the reminder
+    const reminder: Doc<"document_reminders"> | null = await ctx.runQuery(
+      internal.documents.reminder_email_action.getReminderById,
+      { reminderId: args.reminderId },
+    );
 
-		if (!reminder) {
-			return { success: false, error: "Reminder not found" };
-		}
+    if (!reminder) {
+      return { success: false, error: "Reminder not found" };
+    }
 
-		// 2. Check if reminder should be sent
-		if (reminder.status === "cancelled") {
-			return { success: true }; // Already cancelled, nothing to do
-		}
+    // 2. Check if reminder should be sent
+    if (reminder.status === "cancelled") {
+      return { success: true }; // Already cancelled, nothing to do
+    }
 
-		if (reminder.status === "sent") {
-			return { success: true }; // Already sent
-		}
+    if (reminder.status === "sent") {
+      return { success: true }; // Already sent
+    }
 
-		// 3. Get the document
-		const document: Doc<"documents"> | null = await ctx.runQuery(
-			internal.documents.reminder_email_action.getDocumentById,
-			{ documentId: reminder.documentId },
-		);
+    // 3. Get the document
+    const document: Doc<"documents"> | null = await ctx.runQuery(
+      internal.documents.reminder_email_action.getDocumentById,
+      { documentId: reminder.documentId },
+    );
 
-		if (!document || document.status === "deleted") {
-			await ctx.runMutation(
-				internal.documents.reminder_email_action.updateReminderStatus,
-				{
-					reminderId: args.reminderId,
-					status: "failed",
-					failedAt: Date.now(),
-					lastError: "Document not found or deleted",
-				},
-			);
-			return { success: false, error: "Document not found" };
-		}
+    if (!document || document.status === "deleted") {
+      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
+        reminderId: args.reminderId,
+        status: "failed",
+        failedAt: Date.now(),
+        lastError: "Document not found or deleted",
+      });
+      return { success: false, error: "Document not found" };
+    }
 
-		// 4. Get recipient (if specific recipient)
-		if (!reminder.recipientId) {
-			await ctx.runMutation(
-				internal.documents.reminder_email_action.updateReminderStatus,
-				{
-					reminderId: args.reminderId,
-					status: "failed",
-					failedAt: Date.now(),
-					lastError: "No recipient specified for reminder",
-				},
-			);
-			return { success: false, error: "No recipient specified" };
-		}
+    // 4. Get recipient (if specific recipient)
+    if (!reminder.recipientId) {
+      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
+        reminderId: args.reminderId,
+        status: "failed",
+        failedAt: Date.now(),
+        lastError: "No recipient specified for reminder",
+      });
+      return { success: false, error: "No recipient specified" };
+    }
 
-		const recipient: Doc<"document_recipients"> | null = await ctx.runQuery(
-			internal.documents.reminder_email_action.getRecipientById,
-			{ recipientId: reminder.recipientId },
-		);
+    const recipient: Doc<"document_recipients"> | null = await ctx.runQuery(
+      internal.documents.reminder_email_action.getRecipientById,
+      { recipientId: reminder.recipientId },
+    );
 
-		if (!recipient) {
-			await ctx.runMutation(
-				internal.documents.reminder_email_action.updateReminderStatus,
-				{
-					reminderId: args.reminderId,
-					status: "failed",
-					failedAt: Date.now(),
-					lastError: "Recipient not found",
-				},
-			);
-			return { success: false, error: "Recipient not found" };
-		}
+    if (!recipient) {
+      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
+        reminderId: args.reminderId,
+        status: "failed",
+        failedAt: Date.now(),
+        lastError: "Recipient not found",
+      });
+      return { success: false, error: "Recipient not found" };
+    }
 
-		// 5. Check if recipient has already completed action
-		if (
-			recipient.status === "signed" ||
-			recipient.status === "approved" ||
-			recipient.status === "declined"
-		) {
-			await ctx.runMutation(
-				internal.documents.reminder_email_action.updateReminderStatus,
-				{
-					reminderId: args.reminderId,
-					status: "cancelled",
-					cancelledAt: Date.now(),
-				},
-			);
-			return { success: true }; // Not an error, just no longer needed
-		}
+    // 5. Check if recipient has already completed action
+    if (
+      recipient.status === "signed" ||
+      recipient.status === "approved" ||
+      recipient.status === "declined"
+    ) {
+      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
+        reminderId: args.reminderId,
+        status: "cancelled",
+        cancelledAt: Date.now(),
+      });
+      return { success: true }; // Not an error, just no longer needed
+    }
 
-		// 6. Get document owner for sender name
-		const owner: Doc<"users"> | null = await ctx.runQuery(
-			internal.documents.reminder_email_action.getDocumentOwner,
-			{ ownerId: document.ownerId },
-		);
+    // 6. Get document owner for sender name
+    const owner: Doc<"users"> | null = await ctx.runQuery(
+      internal.documents.reminder_email_action.getDocumentOwner,
+      { ownerId: document.ownerId },
+    );
 
-		const senderName = owner?.name || owner?.email || "Document Owner";
+    const senderName = owner?.name || owner?.email || "Document Owner";
 
-		// 7. Build signing URL
-		const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
-		const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
+    // 7. Build signing URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+    const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
 
-		// 8. Send the email
-		const result = await sendReminder({
-			to: recipient.email,
-			recipientName: recipient.name || recipient.email,
-			documentName: document.name,
-			senderName,
-			signingUrl,
-			customMessage: reminder.customMessage,
-			reminderCount: (reminder.attemptCount || 0) + 1,
-		});
+    // 8. Send the email
+    const result = await sendReminder({
+      to: recipient.email,
+      recipientName: recipient.name || recipient.email,
+      documentName: document.name,
+      senderName,
+      signingUrl,
+      customMessage: reminder.customMessage,
+      reminderCount: (reminder.attemptCount || 0) + 1,
+    });
 
-		// 9. Update reminder status based on result
-		if (result.success) {
-			await ctx.runMutation(
-				internal.documents.reminder_email_action.updateReminderStatus,
-				{
-					reminderId: args.reminderId,
-					status: "sent",
-					sentAt: Date.now(),
-					messageId: result.messageId,
-				},
-			);
-		} else {
-			const currentReminder = await ctx.runQuery(
-				internal.documents.reminder_email_action.getReminderById,
-				{ reminderId: args.reminderId },
-			);
+    // 9. Update reminder status based on result
+    if (result.success) {
+      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
+        reminderId: args.reminderId,
+        status: "sent",
+        sentAt: Date.now(),
+        messageId: result.messageId,
+      });
+    } else {
+      const currentReminder = await ctx.runQuery(
+        internal.documents.reminder_email_action.getReminderById,
+        { reminderId: args.reminderId },
+      );
 
-			await ctx.runMutation(
-				internal.documents.reminder_email_action.updateReminderStatus,
-				{
-					reminderId: args.reminderId,
-					status: "failed",
-					failedAt: Date.now(),
-					lastError: result.error,
-					attemptCount: (currentReminder?.attemptCount || 0) + 1,
-				},
-			);
-		}
+      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
+        reminderId: args.reminderId,
+        status: "failed",
+        failedAt: Date.now(),
+        lastError: result.error,
+        attemptCount: (currentReminder?.attemptCount || 0) + 1,
+      });
+    }
 
-		return result;
-	},
+    return result;
+  },
 });

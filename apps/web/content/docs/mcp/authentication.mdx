@@ -84,7 +84,8 @@ Edit `~/.config/Claude/claude_desktop_config.json`:
 7. **Return to Claude**: Browser redirects back to Claude Desktop
 
 <Callout type="info">
-  **Organization Selection**: You can only connect one organization at a time. To switch organizations, revoke access and re-authorize.
+  **Organization Selection**: You can only connect one organization at a time. To switch
+  organizations, revoke access and re-authorize.
 </Callout>
 
 ## OAuth Scopes
@@ -104,6 +105,7 @@ The MCP server requests full API access with all scopes:
 ### Token Storage
 
 OAuth tokens are stored securely by the MCP client (Claude Desktop):
+
 - **macOS**: Keychain
 - **Windows**: Credential Manager
 - **Linux**: Secret Service API
@@ -130,6 +132,7 @@ GET https://mcp.seal.nyc/.well-known/oauth-authorization-server
 ```
 
 Returns OAuth 2.0 server metadata including:
+
 - Authorization endpoint
 - Token endpoint
 - Supported grant types
@@ -142,6 +145,7 @@ GET https://mcp.seal.nyc/.well-known/oauth-protected-resource/mcp
 ```
 
 Returns protected resource metadata including:
+
 - Resource server identifier
 - Required scopes
 - Token introspection endpoint
@@ -151,6 +155,7 @@ Returns protected resource metadata including:
 ### What MCP Can Access
 
 With your authorization, the MCP server can:
+
 - ✓ Read all documents in your selected organization
 - ✓ Create, update, and delete documents
 - ✓ Manage recipients and send documents
@@ -160,6 +165,7 @@ With your authorization, the MCP server can:
 ### What MCP Cannot Access
 
 The MCP server cannot:
+
 - ✗ Access other organizations you belong to
 - ✗ Change organization settings
 - ✗ Manage billing or subscriptions
@@ -181,6 +187,7 @@ The MCP server cannot:
 **Problem**: Browser doesn't open or authorization fails
 
 **Solutions**:
+
 1. Check Claude Desktop configuration syntax
 2. Ensure you're signed in to Seal
 3. Try restarting Claude Desktop
@@ -191,6 +198,7 @@ The MCP server cannot:
 **Problem**: "Token expired" error after some time
 
 **Solution**: MCP client should auto-refresh. If it doesn't:
+
 1. Revoke access from Clerk dashboard
 2. Re-authorize in Claude Desktop
 
@@ -199,6 +207,7 @@ The MCP server cannot:
 **Problem**: MCP is connected to wrong organization
 
 **Solution**:
+
 1. Revoke access from Clerk dashboard
 2. Re-authorize and select correct organization
 
@@ -207,6 +216,7 @@ The MCP server cannot:
 **Problem**: "Permission denied" errors for certain actions
 
 **Solution**:
+
 1. Check your role in the organization
 2. Ensure you have required permissions
 3. Contact organization admin if needed
@@ -230,7 +240,8 @@ For stdio mode (local development), you can use API keys instead of OAuth:
 ```
 
 <Callout type="warn">
-  **Development Only**: API key authentication is only supported in stdio mode for local development. Production MCP servers must use OAuth.
+  **Development Only**: API key authentication is only supported in stdio mode for local
+  development. Production MCP servers must use OAuth.
 </Callout>
 
 ## Next Steps

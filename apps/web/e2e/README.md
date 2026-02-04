@@ -83,6 +83,7 @@ PLAYWRIGHT_BASE_URL=http://localhost:5173
 ### Playwright Configuration
 
 Configuration is in `playwright.config.ts`:
+
 - Base URL: `http://localhost:5173`
 - Browsers: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
 - Auto-starts dev server
@@ -94,20 +95,20 @@ Configuration is in `playwright.config.ts`:
 ### Basic Test Structure
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('example test', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByText('Welcome')).toBeVisible();
+test("example test", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText("Welcome")).toBeVisible();
 });
 ```
 
 ### Using Authentication Fixtures
 
 ```typescript
-import { test, expect } from '../fixtures/auth';
+import { test, expect } from "../fixtures/auth";
 
-test('authenticated test', async ({ authenticatedPage, organizationSlug }) => {
+test("authenticated test", async ({ authenticatedPage, organizationSlug }) => {
   // authenticatedPage is already logged in
   await authenticatedPage.goto(`/${organizationSlug}/documents`);
 });
@@ -116,23 +117,23 @@ test('authenticated test', async ({ authenticatedPage, organizationSlug }) => {
 ### Using Page Object Models
 
 ```typescript
-import { DocumentsListPage } from '../pages/documents/documents-list-page';
+import { DocumentsListPage } from "../pages/documents/documents-list-page";
 
-test('create document', async ({ authenticatedPage, organizationSlug }) => {
+test("create document", async ({ authenticatedPage, organizationSlug }) => {
   const documentsPage = new DocumentsListPage(authenticatedPage);
 
   await documentsPage.goto(organizationSlug);
-  await documentsPage.createDocument('./sample.pdf');
+  await documentsPage.createDocument("./sample.pdf");
 });
 ```
 
 ### Using Test Data Helpers
 
 ```typescript
-import { testData } from '../utils/test-data';
+import { testData } from "../utils/test-data";
 
-test('with test data', async ({ page }) => {
-  const email = testData.email('user');
+test("with test data", async ({ page }) => {
+  const email = testData.email("user");
   const docName = testData.documentName();
   // Use generated test data
 });
@@ -175,32 +176,33 @@ await page.pause();  // Opens Playwright Inspector
 ### Waiting for Convex Updates
 
 ```typescript
-import { waitForConvexMutation } from '../fixtures/convex-helpers';
+import { waitForConvexMutation } from "../fixtures/convex-helpers";
 
 // After mutation
-await waitForConvexMutation(page, 'createDocument');
+await waitForConvexMutation(page, "createDocument");
 ```
 
 ### Checking Toast Notifications
 
 ```typescript
-import { waitForToast } from '../utils/test-helpers';
+import { waitForToast } from "../utils/test-helpers";
 
-await waitForToast(page, 'Document created successfully');
+await waitForToast(page, "Document created successfully");
 ```
 
 ### Form Interactions
 
 ```typescript
-import { fillByLabel, clickButton } from '../utils/test-helpers';
+import { fillByLabel, clickButton } from "../utils/test-helpers";
 
-await fillByLabel(page, 'Document Name', 'My Document');
-await clickButton(page, 'Save');
+await fillByLabel(page, "Document Name", "My Document");
+await clickButton(page, "Save");
 ```
 
 ## 📊 CI/CD Integration
 
 Tests run automatically on:
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 
@@ -232,13 +234,13 @@ Configure these in GitHub repository settings:
 
 ```typescript
 // Good
-page.getByTestId('document-title')
-page.getByRole('button', { name: 'Save' })
-page.getByLabel('Email')
+page.getByTestId("document-title");
+page.getByRole("button", { name: "Save" });
+page.getByLabel("Email");
 
 // Avoid
-page.locator('.css-class-name')
-page.locator('div > span:nth-child(3)')
+page.locator(".css-class-name");
+page.locator("div > span:nth-child(3)");
 ```
 
 ### Page Object Models

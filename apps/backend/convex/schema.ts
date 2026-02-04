@@ -1,102 +1,69 @@
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
+
+import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
+import { type AuditAction, type AuditResourceType, auditLogsTable } from "./schemas/audit_logs";
+import { type DocumentPermissionLevel, documentAccessTable } from "./schemas/document_access";
 import {
-	connectedAppsTable,
-	integrationActivityLogsTable,
-} from "./schemas/api_keys";
-import {
-	type AuditAction,
-	type AuditResourceType,
-	auditLogsTable,
-} from "./schemas/audit_logs";
-import {
-	type DocumentPermissionLevel,
-	documentAccessTable,
-} from "./schemas/document_access";
-import {
-	type RecipientStatus as DocumentRecipientStatus,
-	documentRecipientsTable,
-	type RecipientRole,
+  type RecipientStatus as DocumentRecipientStatus,
+  documentRecipientsTable,
+  type RecipientRole,
 } from "./schemas/document_recipients";
 import {
-	documentRemindersTable,
-	type ReminderStatus,
-	type ReminderType,
+  documentRemindersTable,
+  type ReminderStatus,
+  type ReminderType,
 } from "./schemas/document_reminders";
+import { type DocumentSharingMode, type DocumentStatus, documentsTable } from "./schemas/documents";
+import { type EmailStatus, type EmailType, emailLogsTable } from "./schemas/email_logs";
 import {
-	type DocumentSharingMode,
-	type DocumentStatus,
-	documentsTable,
-} from "./schemas/documents";
-import {
-	type EmailStatus,
-	type EmailType,
-	emailLogsTable,
-} from "./schemas/email_logs";
-import {
-	mcpOauthClientsTable,
-	mcpOauthCodesTable,
-	mcpOauthRefreshTokensTable,
+  mcpOauthClientsTable,
+  mcpOauthCodesTable,
+  mcpOauthRefreshTokensTable,
 } from "./schemas/mcp_oauth";
-import {
-	type NotificationType,
-	notificationsTable,
-} from "./schemas/notifications";
+import { type NotificationType, notificationsTable } from "./schemas/notifications";
 import { organizationInvitationsTable } from "./schemas/organization_invitations";
 import {
-	type OrganizationMemberRole,
-	type OrganizationMemberStatus,
-	organizationMembersTable,
+  type OrganizationMemberRole,
+  type OrganizationMemberStatus,
+  organizationMembersTable,
 } from "./schemas/organization_members";
+import { type OrganizationRoleType, organizationRolesTable } from "./schemas/organization_roles";
 import {
-	type OrganizationRoleType,
-	organizationRolesTable,
-} from "./schemas/organization_roles";
-import {
-	type OrganizationStatus,
-	organizationsTable,
-	type organizationTypeTuple,
+  type OrganizationStatus,
+  organizationsTable,
+  type organizationTypeTuple,
 } from "./schemas/organizations";
 import { rateLimitBucketsTable, type WindowType } from "./schemas/rate_limits";
 import {
-	type AuthenticationMethod,
-	recipientsTable,
-	type RecipientStatus as WorkflowRecipientStatus,
+  type AuthenticationMethod,
+  recipientsTable,
+  type RecipientStatus as WorkflowRecipientStatus,
 } from "./schemas/recipients";
-import {
-	type SignatureType,
-	savedSignaturesTable,
-} from "./schemas/saved_signatures";
-import {
-	type FieldType,
-	signatureFieldsTable,
-} from "./schemas/signature_fields";
+import { type SignatureType, savedSignaturesTable } from "./schemas/saved_signatures";
+import { type FieldType, signatureFieldsTable } from "./schemas/signature_fields";
 import { signaturesTable } from "./schemas/signatures";
 import {
-	type SubscriptionCouponDuration,
-	type SubscriptionCouponType,
-	subscriptionCouponsTable,
+  type SubscriptionCouponDuration,
+  type SubscriptionCouponType,
+  subscriptionCouponsTable,
 } from "./schemas/subscription_coupons";
 import { subscriptionPricesTable } from "./schemas/subscription_prices";
 import { subscriptionProductsTable } from "./schemas/subscription_products";
 import {
-	type SubscriptionPromoCodeStatus,
-	subscriptionPromoCodesTable,
+  type SubscriptionPromoCodeStatus,
+  subscriptionPromoCodesTable,
 } from "./schemas/subscription_promo_codes";
 import { subscriptionsTable } from "./schemas/subscriptions";
-import {
-	type TemplateStatus,
-	templateFieldsTable,
-	templatesTable,
-} from "./schemas/templates";
+import { type TemplateStatus, templateFieldsTable, templatesTable } from "./schemas/templates";
 import { userProfilesTable } from "./schemas/user_profiles";
 import { type UserStatus, usersTable } from "./schemas/users";
 import {
-	type WebhookDeliveryStatus,
-	type WebhookEndpointStatus,
-	type WebhookEventType,
-	webhookDeliveries,
-	webhookEndpoints,
+  type WebhookDeliveryStatus,
+  type WebhookEndpointStatus,
+  type WebhookEventType,
+  webhookDeliveries,
+  webhookEndpoints,
 } from "./schemas/webhooks";
 
 // Re-export types for use in other files
@@ -107,11 +74,11 @@ export type OrganizationType = Infer<typeof organizationTypeTuple>;
 
 // Re-export status and role types
 export type {
-	OrganizationMemberRole,
-	OrganizationMemberStatus,
-	OrganizationRoleType,
-	OrganizationStatus,
-	UserStatus,
+  OrganizationMemberRole,
+  OrganizationMemberStatus,
+  OrganizationRoleType,
+  OrganizationStatus,
+  UserStatus,
 };
 
 // Re-export document types
@@ -121,12 +88,7 @@ export type { ReminderStatus, ReminderType };
 export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";
 
 // Re-export signature workflow types
-export type {
-	AuthenticationMethod,
-	FieldType,
-	SignatureType,
-	WorkflowRecipientStatus,
-};
+export type { AuthenticationMethod, FieldType, SignatureType, WorkflowRecipientStatus };
 
 // Re-export template types
 export type { TemplateStatus };
@@ -147,63 +109,59 @@ export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
 export type { WindowType };
 
 // Re-export subscription coupon/promo types
-export type {
-	SubscriptionCouponDuration,
-	SubscriptionCouponType,
-	SubscriptionPromoCodeStatus,
-};
+export type { SubscriptionCouponDuration, SubscriptionCouponType, SubscriptionPromoCodeStatus };
 
 export default defineSchema({
-	users: usersTable,
-	user_profiles: userProfilesTable,
-	organizations: organizationsTable,
-	organization_members: organizationMembersTable,
-	organization_invitations: organizationInvitationsTable,
-	organization_roles: organizationRolesTable,
+  users: usersTable,
+  user_profiles: userProfilesTable,
+  organizations: organizationsTable,
+  organization_members: organizationMembersTable,
+  organization_invitations: organizationInvitationsTable,
+  organization_roles: organizationRolesTable,
 
-	documents: documentsTable,
-	document_access: documentAccessTable,
-	document_recipients: documentRecipientsTable,
-	document_reminders: documentRemindersTable,
+  documents: documentsTable,
+  document_access: documentAccessTable,
+  document_recipients: documentRecipientsTable,
+  document_reminders: documentRemindersTable,
 
-	// Signature workflow tables
-	recipients: recipientsTable,
-	signature_fields: signatureFieldsTable,
-	signatures: signaturesTable,
-	saved_signatures: savedSignaturesTable,
+  // Signature workflow tables
+  recipients: recipientsTable,
+  signature_fields: signatureFieldsTable,
+  signatures: signaturesTable,
+  saved_signatures: savedSignaturesTable,
 
-	// Audit and compliance
-	audit_logs: auditLogsTable,
+  // Audit and compliance
+  audit_logs: auditLogsTable,
 
-	// Email tracking
-	email_logs: emailLogsTable,
+  // Email tracking
+  email_logs: emailLogsTable,
 
-	// Notifications
-	notifications: notificationsTable,
+  // Notifications
+  notifications: notificationsTable,
 
-	subscriptions: subscriptionsTable,
-	subscription_products: subscriptionProductsTable,
-	subscription_prices: subscriptionPricesTable,
-	subscription_coupons: subscriptionCouponsTable,
-	subscription_promo_codes: subscriptionPromoCodesTable,
+  subscriptions: subscriptionsTable,
+  subscription_products: subscriptionProductsTable,
+  subscription_prices: subscriptionPricesTable,
+  subscription_coupons: subscriptionCouponsTable,
+  subscription_promo_codes: subscriptionPromoCodesTable,
 
-	// Integrations
-	connected_apps: connectedAppsTable,
-	integration_activity_logs: integrationActivityLogsTable,
+  // Integrations
+  connected_apps: connectedAppsTable,
+  integration_activity_logs: integrationActivityLogsTable,
 
-	// Templates
-	templates: templatesTable,
-	template_fields: templateFieldsTable,
+  // Templates
+  templates: templatesTable,
+  template_fields: templateFieldsTable,
 
-	// Webhooks
-	webhook_endpoints: webhookEndpoints,
-	webhook_deliveries: webhookDeliveries,
+  // Webhooks
+  webhook_endpoints: webhookEndpoints,
+  webhook_deliveries: webhookDeliveries,
 
-	// Rate limiting
-	rate_limit_buckets: rateLimitBucketsTable,
+  // Rate limiting
+  rate_limit_buckets: rateLimitBucketsTable,
 
-	// MCP OAuth
-	mcp_oauth_clients: mcpOauthClientsTable,
-	mcp_oauth_codes: mcpOauthCodesTable,
-	mcp_oauth_refresh_tokens: mcpOauthRefreshTokensTable,
+  // MCP OAuth
+  mcp_oauth_clients: mcpOauthClientsTable,
+  mcp_oauth_codes: mcpOauthCodesTable,
+  mcp_oauth_refresh_tokens: mcpOauthRefreshTokensTable,
 });

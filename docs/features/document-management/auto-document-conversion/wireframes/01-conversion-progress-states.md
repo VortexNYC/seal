@@ -6,6 +6,7 @@
 ## Conversion Progress States
 
 ### Single Document Conversion Progress
+
 [Mobile Viewport: 375px with vertical progress layout]
 [Desktop Viewport: 1200px with horizontal progress monitoring]
 
@@ -42,6 +43,7 @@
 ```
 
 ### Conversion Queue Status
+
 [Component: Multi-document queue with individual progress tracking]
 [Mobile Viewport: Stacked queue items with collapsible details]
 
@@ -63,6 +65,7 @@
 ```
 
 ### Conversion Success State
+
 [Component: Success celebration with clear next actions]
 [Mobile Viewport: Vertical button stack with primary CTA prominent]
 
@@ -87,6 +90,7 @@
 ## Conversion Error States
 
 ### Conversion Failure Dialog
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           ❌ Conversion Failed                             │
@@ -109,6 +113,7 @@
 ```
 
 ### Service Unavailable State
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                      ⚠️ Conversion Service Unavailable                     │
@@ -131,6 +136,7 @@
 ```
 
 ### Complex Document Warning
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        ⚠️ Complex Document Detected                        │
@@ -155,6 +161,7 @@
 ## Freemium Model Integration
 
 ### Free Plan Conversion with Quota
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal                                    👤 Jane Smith   🆓 Free Plan      │
@@ -182,6 +189,7 @@
 ```
 
 ### Free Plan Limit Reached
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        🚫 Conversion Limit Reached                         │
@@ -209,6 +217,7 @@
 ## Advanced Conversion Scenarios
 
 ### Large Document Conversion
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                       🔄 Converting Large Document                         │
@@ -229,6 +238,7 @@
 ```
 
 ### Batch Conversion Progress
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                      🔄 Batch Document Conversion                          │
@@ -251,6 +261,7 @@
 ```
 
 ### Conversion Quality Review
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        📋 Conversion Review                                │
@@ -279,6 +290,7 @@
 ## Mobile Conversion Experience
 
 ### Mobile Conversion Progress
+
 ```
 ┌─────────────────────────────┐
 │         🔄 Converting       │
@@ -302,6 +314,7 @@
 ```
 
 ### Mobile Conversion Complete
+
 ```
 ┌─────────────────────────────┐
 │    ✅ Conversion Complete   │
@@ -327,6 +340,7 @@
 ## Integration States
 
 ### Conversion Within Upload Flow
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           📤 Processing Document                           │
@@ -348,6 +362,7 @@
 ```
 
 ### Ready for Signature Workflow
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         ✅ Document Ready!                                 │

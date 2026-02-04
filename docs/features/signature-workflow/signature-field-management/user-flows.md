@@ -3,6 +3,7 @@
 ## Primary Field Placement Flows
 
 ### Initial Field Placement Flow
+
 ```
 ○ User Has Processed Document Ready for Field Placement
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### Multi-Field Placement Flow
+
 ```
 ○ User Needs to Place Multiple Signature Fields
     ↓
@@ -59,6 +61,7 @@
 ## Field Editing and Management Flows
 
 ### Edit Existing Field Flow
+
 ```
 ○ User Wants to Modify Placed Field
     ↓
@@ -82,6 +85,7 @@
 ```
 
 ### Delete Field Flow
+
 ```
 ○ User Wants to Remove Placed Field
     ↓
@@ -109,6 +113,7 @@
 ## Multi-Page Field Management Flows
 
 ### Cross-Page Field Placement Flow
+
 ```
 ○ User Working with Multi-Page Document
     ↓
@@ -132,6 +137,7 @@
 ```
 
 ### Page-by-Page Field Review Flow
+
 ```
 ○ User Wants to Review All Field Placements
     ↓
@@ -159,6 +165,7 @@
 ## Field Property Management Flows
 
 ### Field Validation Setup Flow
+
 ```
 ○ User Placing Field That Needs Validation
     ↓
@@ -182,6 +189,7 @@
 ```
 
 ### Required vs Optional Field Flow
+
 ```
 ○ User Setting Field Requirements
     ↓
@@ -203,6 +211,7 @@
 ## Field Assignment and Recipient Management
 
 ### Assign Fields to Recipients Flow
+
 ```
 ○ User Has Multiple Recipients and Fields Placed
     ↓
@@ -226,6 +235,7 @@
 ```
 
 ### Recipient-Specific Field Management Flow
+
 ```
 ○ User Managing Fields for Specific Recipient
     ↓
@@ -253,6 +263,7 @@
 ## Field Error Handling and Recovery
 
 ### Field Placement Error Flow
+
 ```
 ○ User Attempts Field Placement with Issues
     ↓
@@ -276,6 +287,7 @@
 ```
 
 ### Field Save Error Recovery Flow
+
 ```
 ○ User's Field Changes Fail to Save
     ↓
@@ -303,6 +315,7 @@
 ## Mobile Field Management Experience
 
 ### Mobile Field Placement Flow
+
 ```
 ○ Mobile User Needs to Place Signature Fields
     ↓
@@ -330,6 +343,7 @@
 ## Field Integration with Document Workflow
 
 ### From Document Processing to Field Placement Flow
+
 ```
 ○ User's Document Processing Just Completed
     ↓
@@ -347,6 +361,7 @@
 ```
 
 ### From Field Placement to Recipient Management Flow
+
 ```
 ○ User Completes Field Placement and Assignment
     ↓

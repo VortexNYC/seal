@@ -11,30 +11,35 @@ Standardized patterns for documenting all possible states, transitions, triggers
 ### **Primary State Categories**
 
 #### **🔵 Initial States**
+
 - **Empty State**: No data exists yet
-- **Loading State**: Initial data fetch in progress  
+- **Loading State**: Initial data fetch in progress
 - **Default State**: Component in its initial configuration
 - **First-Time State**: New user experience
 
 #### **🟢 Success States**
+
 - **Populated State**: Component with data successfully loaded
 - **Completed State**: Action successfully finished
 - **Active State**: Component currently engaged/focused
 - **Valid State**: Input passes all validation rules
 
 #### **🟡 Processing States**
+
 - **Loading State**: Data fetch or processing in progress
 - **Validating State**: Input validation in progress
 - **Submitting State**: Form submission in progress
 - **Saving State**: Data persistence in progress
 
 #### **🔴 Error States**
+
 - **Validation Error**: Input fails validation rules
 - **Network Error**: API/connectivity issues
 - **Server Error**: Backend processing failure
 - **Permission Error**: Access denied
 
 #### **⚪ Edge Case States**
+
 - **Timeout State**: Operation took too long
 - **Offline State**: No network connectivity
 - **Maintenance State**: System temporarily unavailable
@@ -45,12 +50,14 @@ Standardized patterns for documenting all possible states, transitions, triggers
 ## 📋 State Documentation Template
 
 ### **Component State Specification**
+
 ```markdown
 ## Component Name State Documentation
 
 ### State Inventory
+
 - **🔵 Initial States**: [List all initial states]
-- **🟢 Success States**: [List all success states]  
+- **🟢 Success States**: [List all success states]
 - **🟡 Processing States**: [List all processing states]
 - **🔴 Error States**: [List all error states]
 - **⚪ Edge Case States**: [List all edge case states]
@@ -58,6 +65,7 @@ Standardized patterns for documenting all possible states, transitions, triggers
 ### State Definitions
 
 #### State Name (🎭 Category)
+
 - **Description**: What this state represents
 - **Triggers**: What causes transition to this state
 - **Appearance**: How the state is visually represented
@@ -72,16 +80,18 @@ Standardized patterns for documenting all possible states, transitions, triggers
 ## 🔄 State Transition Patterns
 
 ### **Basic State Machine**
+
 ```
 State Machine Format:
 
-[Current State] 
+[Current State]
     ├─ Trigger A → [Next State A]
-    ├─ Trigger B → [Next State B]  
+    ├─ Trigger B → [Next State B]
     └─ Error → [Error State] → Recovery → [Recovery State]
 ```
 
 ### **Form Input State Machine Example**
+
 ```
 Form Field States:
 
@@ -90,7 +100,7 @@ Form Field States:
     ├─ User pastes → 🟡 Validating
     └─ Auto-fill → 🟡 Validating
 
-🟡 Validating (processing)  
+🟡 Validating (processing)
     ├─ Validation passes → 🟢 Valid
     ├─ Validation fails → 🔴 Invalid
     └─ Validation timeout → ⚪ Timeout
@@ -112,6 +122,7 @@ Form Field States:
 ```
 
 ### **Document Lifecycle States**
+
 ```
 Document Processing States:
 
@@ -124,7 +135,7 @@ Document Processing States:
     ├─ Upload fails → 🔴 Upload Error
     └─ User cancels → ⚪ Cancelled
 
-🟡 Processing  
+🟡 Processing
     ├─ Conversion succeeds → 🟢 Ready
     ├─ Conversion fails → 🔴 Processing Error
     └─ Processing timeout → ⚪ Timeout
@@ -135,7 +146,7 @@ Document Processing States:
     └─ Archive → ⚪ Archived
 
 🟡 Preparing
-    ├─ Preparation complete → 🟢 Prepared  
+    ├─ Preparation complete → 🟢 Prepared
     └─ Validation fails → 🔴 Preparation Error
 
 🟡 Sending
@@ -156,6 +167,7 @@ Document Processing States:
 ### **Visual State Indicators**
 
 #### **Loading States**
+
 ```
 Loading Patterns:
 • Spinner: ⏳ "Processing..."
@@ -165,6 +177,7 @@ Loading Patterns:
 ```
 
 #### **Success States**
+
 ```
 Success Indicators:
 • Checkmark: ✅ "Completed successfully"
@@ -174,8 +187,9 @@ Success Indicators:
 ```
 
 #### **Error States**
+
 ```
-Error Indicators:  
+Error Indicators:
 • Error Icon: ❌ "Something went wrong"
 • Red Border: [Input Field] ❌
 • Error Message: 🚨 "Please fix the following errors"
@@ -183,6 +197,7 @@ Error Indicators:
 ```
 
 #### **Empty States**
+
 ```
 Empty State Patterns:
 • Illustration: [🔍 No results found]
@@ -198,10 +213,11 @@ Empty State Patterns:
 ### **Empty State Content Strategy**
 
 #### **First-Time User (🔵)**
+
 ```
 First-Time Empty State:
 ├─ Illustration: Friendly, encouraging imagery
-├─ Headline: "Welcome! Let's get started"  
+├─ Headline: "Welcome! Let's get started"
 ├─ Description: Brief explanation of what goes here
 ├─ Primary CTA: [Create Your First Document]
 ├─ Secondary CTA: [Watch Tutorial]
@@ -209,6 +225,7 @@ First-Time Empty State:
 ```
 
 #### **Return User - No Data (🔵)**
+
 ```
 Returning User Empty State:
 ├─ Illustration: More minimal, focused on action
@@ -220,12 +237,13 @@ Returning User Empty State:
 ```
 
 #### **Filtered Results - No Match (🔵)**
+
 ```
 No Search Results:
 ├─ Search Context: "No results for 'contract'"
-├─ Suggestions: 
+├─ Suggestions:
 │   ├─ Try different keywords
-│   ├─ Check spelling  
+│   ├─ Check spelling
 │   └─ Clear all filters
 ├─ Alternative Actions: [Browse all documents]
 └─ Help: <Search tips>
@@ -234,15 +252,17 @@ No Search Results:
 ### **Error State Content Strategy**
 
 #### **Validation Errors (🔴)**
+
 ```
 Input Validation Error:
 ├─ Specific Problem: "Email address is invalid"
-├─ Expected Format: "Example: user@company.com"  
+├─ Expected Format: "Example: user@company.com"
 ├─ Recovery Action: Clear next step to fix
 └─ Help Context: Link to format requirements
 ```
 
 #### **Network Errors (🔴)**
+
 ```
 Connection Error:
 ├─ Clear Explanation: "Unable to save your changes"
@@ -255,6 +275,7 @@ Connection Error:
 ```
 
 #### **Permission Errors (🔴)**
+
 ```
 Access Denied:
 ├─ Clear Message: "You don't have permission for this action"
@@ -273,15 +294,17 @@ Access Denied:
 ### **Time-Based State Changes**
 
 #### **Progressive Loading**
+
 ```
 Loading Sequence:
 0-1s:   ⏳ "Loading..."
-1-3s:   ⏳ "This is taking longer than usual..."  
+1-3s:   ⏳ "This is taking longer than usual..."
 3-5s:   ⏳ "Still working on it..."
 5s+:    ⚠️ "Something might be wrong. [Try again]"
 ```
 
-#### **Session Management**  
+#### **Session Management**
+
 ```
 Session States:
 Active Session:     🟢 Full functionality
@@ -290,6 +313,7 @@ Expired:           🔴 "Session expired [Sign in again]"
 ```
 
 #### **Document Expiration**
+
 ```
 Document Lifecycle:
 Active:            🟢 Normal functionality
@@ -304,6 +328,7 @@ Expired:          🔴 "Document expired [Resend]"
 ### **State Coverage Verification**
 
 #### **For Each Component/Screen**
+
 - [ ] **Empty State**: What shows when no data?
 - [ ] **Loading State**: What shows during data fetch?
 - [ ] **Success State**: What shows with data loaded?
@@ -311,6 +336,7 @@ Expired:          🔴 "Document expired [Resend]"
 - [ ] **Edge Cases**: What shows in unusual situations?
 
 #### **For Each User Action**
+
 - [ ] **Trigger State**: What initiates the action?
 - [ ] **Processing State**: What shows during action?
 - [ ] **Success State**: What shows on completion?
@@ -318,6 +344,7 @@ Expired:          🔴 "Document expired [Resend]"
 - [ ] **Recovery State**: How to retry/fix?
 
 ### **Transition Validation**
+
 - [ ] **Clear Triggers**: What causes each state change?
 - [ ] **Expected Duration**: How long should each state last?
 - [ ] **User Feedback**: Is progress clearly communicated?
@@ -329,12 +356,14 @@ Expired:          🔴 "Document expired [Resend]"
 ## 🎯 State Documentation Examples
 
 ### **Search Component States**
+
 ```markdown
 ## Search Component State Documentation
 
 ### State Inventory
+
 - **🔵 Initial**: Empty search bar, placeholder text
-- **🟡 Searching**: Query in progress, loading indicator  
+- **🟡 Searching**: Query in progress, loading indicator
 - **🟢 Results Found**: Search results displayed
 - **🔵 No Results**: Empty results with suggestions
 - **🔴 Search Error**: API error with retry option
@@ -342,12 +371,14 @@ Expired:          🔴 "Document expired [Resend]"
 ### Detailed State Definitions
 
 #### 🔵 Initial State
+
 - **Triggers**: Page load, search cleared
 - **Appearance**: Empty input with placeholder "Search documents..."
 - **User Actions**: Type to search, click for focus
 - **Auto Transitions**: None
 
-#### 🟡 Searching State  
+#### 🟡 Searching State
+
 - **Triggers**: User types (debounced 300ms), filter applied
 - **Appearance**: Loading spinner in search bar
 - **User Actions**: Continue typing, cancel search
@@ -355,18 +386,21 @@ Expired:          🔴 "Document expired [Resend]"
 - **Timeout**: 10 seconds → Search Error
 
 #### 🟢 Results Found State
+
 - **Triggers**: Search API returns results
 - **Appearance**: Results list with relevance sorting
 - **User Actions**: Click result, refine search, paginate
 - **Data Requirements**: Search results, total count, facets
 
 #### 🔵 No Results State
+
 - **Triggers**: Search API returns empty results
 - **Appearance**: Empty state with search suggestions
 - **User Actions**: Try new search, clear filters, browse all
 - **Content**: Search tips, alternative actions
 
 #### 🔴 Search Error State
+
 - **Triggers**: API timeout, server error, network failure
 - **Appearance**: Error message with retry option
 - **User Actions**: Retry search, report problem
@@ -378,18 +412,21 @@ Expired:          🔴 "Document expired [Resend]"
 ## 📋 State Maintenance Standards
 
 ### **Documentation Updates**
+
 - **When to Update**: Any time component behavior changes
-- **Version Control**: Track state changes with feature updates  
+- **Version Control**: Track state changes with feature updates
 - **Cross-Reference**: Update wireframes and flows when states change
 - **Testing Alignment**: Ensure test cases cover all documented states
 
 ### **State Consistency Rules**
+
 - **Similar Components**: Use consistent state patterns
 - **Error Messages**: Standardize error text and recovery actions
 - **Loading Patterns**: Use same loading indicators across app
 - **Empty States**: Follow consistent content strategy
 
 ### **Performance Considerations**
+
 - **State Transitions**: Keep transitions under 200ms where possible
 - **Loading States**: Show immediately for operations > 100ms
 - **Progressive Enhancement**: Design for slow networks first

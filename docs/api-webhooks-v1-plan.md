@@ -10,28 +10,28 @@ This plan outlines the implementation of a public API and outbound webhook syste
 
 ### Existing Infrastructure (Ready to Leverage)
 
-| Component | Status | Location |
-|-----------|--------|----------|
-| Clerk Backend SDK | ✅ Implemented | `organizations/actions.ts` |
-| Integration activity logging | ✅ Implemented | `schemas/api_keys.ts` |
-| Audit logs | ✅ Implemented | `schemas/audit_logs.ts`, `audit_logs/` |
-| Permission system | ✅ Implemented | `auth/permissions.ts`, `auth/wrappers.ts` |
-| Document access control | ✅ Implemented | `auth/access_control.ts` |
-| HTTP routing | ✅ Basic | `http.ts` |
-| Inbound webhooks (Clerk/Stripe) | ✅ Implemented | `http.ts`, `webhooks.ts` |
-| Custom API Keys schema | ⚠️ Legacy | `schemas/api_keys.ts` (to be deprecated) |
+| Component                       | Status         | Location                                  |
+| ------------------------------- | -------------- | ----------------------------------------- |
+| Clerk Backend SDK               | ✅ Implemented | `organizations/actions.ts`                |
+| Integration activity logging    | ✅ Implemented | `schemas/api_keys.ts`                     |
+| Audit logs                      | ✅ Implemented | `schemas/audit_logs.ts`, `audit_logs/`    |
+| Permission system               | ✅ Implemented | `auth/permissions.ts`, `auth/wrappers.ts` |
+| Document access control         | ✅ Implemented | `auth/access_control.ts`                  |
+| HTTP routing                    | ✅ Basic       | `http.ts`                                 |
+| Inbound webhooks (Clerk/Stripe) | ✅ Implemented | `http.ts`, `webhooks.ts`                  |
+| Custom API Keys schema          | ⚠️ Legacy      | `schemas/api_keys.ts` (to be deprecated)  |
 
 ### Missing Components (To Build)
 
-| Component | Priority | Effort |
-|-----------|----------|--------|
-| Clerk API Keys integration | High | Small |
-| Outbound webhook system | High | Large |
-| Public REST API endpoints | High | Large |
-| Rate limiting | Medium | Medium |
-| API versioning infrastructure | Medium | Small |
-| Webhook signature verification | High | Small |
-| Developer documentation | High | Medium |
+| Component                      | Priority | Effort |
+| ------------------------------ | -------- | ------ |
+| Clerk API Keys integration     | High     | Small  |
+| Outbound webhook system        | High     | Large  |
+| Public REST API endpoints      | High     | Large  |
+| Rate limiting                  | Medium   | Medium |
+| API versioning infrastructure  | Medium   | Small  |
+| Webhook signature verification | High     | Small  |
+| Developer documentation        | High     | Medium |
 
 ---
 
@@ -52,14 +52,14 @@ Instead of building a custom API key system, we will leverage [Clerk's API Keys 
 
 ### Benefits Over Custom Implementation
 
-| Feature | Custom Implementation | Clerk API Keys |
-|---------|----------------------|----------------|
-| Key storage | Must build & maintain | Managed by Clerk |
-| Key management UI | Must build | Built into Clerk components |
-| Revocation | Database update | Instant, managed by Clerk |
-| Secret rotation | Must implement | Built-in |
-| Audit trail | Must implement | Clerk Dashboard |
-| Verification | Hash comparison | `clerkClient.apiKeys.verify()` |
+| Feature           | Custom Implementation | Clerk API Keys                 |
+| ----------------- | --------------------- | ------------------------------ |
+| Key storage       | Must build & maintain | Managed by Clerk               |
+| Key management UI | Must build            | Built into Clerk components    |
+| Revocation        | Database update       | Instant, managed by Clerk      |
+| Secret rotation   | Must implement        | Built-in                       |
+| Audit trail       | Must implement        | Clerk Dashboard                |
+| Verification      | Hash comparison       | `clerkClient.apiKeys.verify()` |
 
 ### Scopes to Configure in Clerk Dashboard
 
@@ -79,6 +79,7 @@ seal:webhooks:manage    - Configure webhook endpoints
 ### Migration Plan
 
 The existing `schemas/api_keys.ts` custom implementation will be:
+
 1. **Phase 1:** Deprecated - new keys created via Clerk only
 2. **Phase 2:** Migration script to notify users of legacy keys
 3. **Phase 3:** Legacy keys disabled, full Clerk adoption
@@ -92,21 +93,25 @@ The existing `schemas/api_keys.ts` custom implementation will be:
 The existing RLS system relies on Convex's `ctx.auth.getUserIdentity()` which is populated by Clerk's session tokens. However, HTTP actions (used for REST API endpoints) don't have `ctx.auth` - they receive raw HTTP requests.
 
 **Current RLS Flow:**
+
 ```
 ctx.auth.getUserIdentity() → clerkId → users table → activeOrganizationId → membership → permissions → RLS
 ```
 
 **API Key Flow:**
+
 ```
 Authorization: Bearer <api_key> → clerkClient.apiKeys.verify() → { subject: "user_xxx", scopes: [...] }
 ```
 
 The API key verification returns:
+
 - `subject`: Clerk user ID (`user_xxx`) or org ID (`org_xxx`)
 - `scopes`: Custom scopes (e.g., `seal:documents:read`)
 - `claims`: Custom metadata
 
 But we need:
+
 - Internal `Id<"users">` and `Id<"organizations">`
 - Organization membership and permissions
 
@@ -116,7 +121,7 @@ Create an **API Context Bridge** that translates Clerk API key authentication in
 
 **File:** `apps/backend/convex/api/context.ts`
 
-```typescript
+````typescript
 /**
  * @fileoverview API Context Bridge - Translates Clerk API key auth to internal context.
  * Enables API endpoints to leverage existing RLS and permission systems.
@@ -198,7 +203,7 @@ export interface ApiAuthContext {
  */
 export async function resolveApiAuth(
   ctx: ActionCtx,
-  authHeader: string | null
+  authHeader: string | null,
 ): Promise<ApiAuthContext> {
   if (!authHeader) {
     throw new ApiError(401, "Missing Authorization header");
@@ -304,11 +309,11 @@ export async function resolveApiAuth(
     clerkUserId,
     subjectType: isOrgKey ? "organization" : "user",
     hasScope: (scope: string) => scopes.includes(scope),
-    hasAnyScope: (checkScopes: string[]) => checkScopes.some(s => scopes.includes(s)),
-    hasAllScopes: (checkScopes: string[]) => checkScopes.every(s => scopes.includes(s)),
+    hasAnyScope: (checkScopes: string[]) => checkScopes.some((s) => scopes.includes(s)),
+    hasAllScopes: (checkScopes: string[]) => checkScopes.every((s) => scopes.includes(s)),
   };
 }
-```
+````
 
 ### Internal Helper Queries
 
@@ -367,7 +372,7 @@ export const getMembership = internalQuery({
     return ctx.db
       .query("organization_members")
       .withIndex("by_user_organization", (q) =>
-        q.eq("userId", args.userId).eq("organizationId", args.organizationId)
+        q.eq("userId", args.userId).eq("organizationId", args.organizationId),
       )
       .first();
   },
@@ -454,22 +459,22 @@ export const SCOPE_PERMISSION_MAP = {
  */
 export function canUserUseScope(
   userPermissions: string[],
-  scope: keyof typeof SCOPE_PERMISSION_MAP
+  scope: keyof typeof SCOPE_PERMISSION_MAP,
 ): boolean {
   const requiredPerms = SCOPE_PERMISSION_MAP[scope];
-  return requiredPerms.some(perm => userPermissions.includes(perm));
+  return requiredPerms.some((perm) => userPermissions.includes(perm));
 }
 ```
 
 ### Key Design Decisions
 
-| Aspect | Decision | Rationale |
-|--------|----------|-----------|
-| **Auth Resolution** | Resolve API key to internal IDs | Enables reuse of existing queries |
-| **RLS Bypass** | Use internal queries | HTTP actions can't use RLS wrappers |
-| **Scope Model** | Separate from internal perms | API has coarser access patterns |
-| **Org Keys** | Store creator in claims | Org keys need a user context |
-| **Activity Logging** | Per-request logging | Audit trail for API usage |
+| Aspect               | Decision                        | Rationale                           |
+| -------------------- | ------------------------------- | ----------------------------------- |
+| **Auth Resolution**  | Resolve API key to internal IDs | Enables reuse of existing queries   |
+| **RLS Bypass**       | Use internal queries            | HTTP actions can't use RLS wrappers |
+| **Scope Model**      | Separate from internal perms    | API has coarser access patterns     |
+| **Org Keys**         | Store creator in claims         | Org keys need a user context        |
+| **Activity Logging** | Per-request logging             | Audit trail for API usage           |
 
 ### When to Check Scopes vs Internal Permissions
 
@@ -477,6 +482,7 @@ export function canUserUseScope(
 2. **Internal Permission Check** (optional): Does the user have the internal permission?
 
 For most API operations, scope check is sufficient. Internal permission checks are useful for:
+
 - Multi-tenant admin operations
 - Operations that affect other users
 - Sensitive operations beyond standard CRUD
@@ -534,7 +540,7 @@ For most API operations, scope check is sufficient. Internal permission checks a
 
 **File:** `apps/backend/convex/api/middleware.ts`
 
-```typescript
+````typescript
 /**
  * @fileoverview API authentication middleware using Clerk API Keys.
  * Provides API key validation via Clerk's backend SDK, scope checking,
@@ -604,9 +610,7 @@ export interface ApiKeyContext {
  * console.log(`Request from: ${apiKey.subject}`);
  * ```
  */
-export async function validateApiKey(
-  authHeader: string | null
-): Promise<ApiKeyContext> {
+export async function validateApiKey(authHeader: string | null): Promise<ApiKeyContext> {
   if (!authHeader) {
     throw new ApiError(401, "Missing Authorization header");
   }
@@ -630,8 +634,8 @@ export async function validateApiKey(
       claims: apiKey.claims || {},
       expiresAt: apiKey.expiresAt ? new Date(apiKey.expiresAt) : null,
       hasScope: (scope: string) => context.scopes.includes(scope),
-      hasAnyScope: (scopes: string[]) => scopes.some(s => context.scopes.includes(s)),
-      hasAllScopes: (scopes: string[]) => scopes.every(s => context.scopes.includes(s)),
+      hasAnyScope: (scopes: string[]) => scopes.some((s) => context.scopes.includes(s)),
+      hasAllScopes: (scopes: string[]) => scopes.every((s) => context.scopes.includes(s)),
     };
 
     return context;
@@ -660,13 +664,10 @@ export async function validateApiKey(
  * });
  * ```
  */
-export async function authenticateApiRequest(
-  request: Request
-): Promise<ApiKeyContext> {
-  const { isAuthenticated, toAuth } = await clerkClient.authenticateRequest(
-    request,
-    { acceptsToken: "api_key" }
-  );
+export async function authenticateApiRequest(request: Request): Promise<ApiKeyContext> {
+  const { isAuthenticated, toAuth } = await clerkClient.authenticateRequest(request, {
+    acceptsToken: "api_key",
+  });
 
   if (!isAuthenticated) {
     throw new ApiError(401, "Invalid or missing API key");
@@ -705,9 +706,10 @@ export const API_SCOPES = {
 } as const;
 
 export type ApiScope = (typeof API_SCOPES)[keyof typeof API_SCOPES];
-```
+````
 
 **Tasks:**
+
 - [ ] Enable API Keys in Clerk Dashboard (Settings → API Keys → Enable)
 - [ ] Configure scopes in Clerk Dashboard (seal:documents:read, etc.)
 - [ ] Create `validateApiKey()` function using `clerkClient.apiKeys.verify()`
@@ -721,7 +723,7 @@ export type ApiScope = (typeof API_SCOPES)[keyof typeof API_SCOPES];
 
 **File:** `apps/web/src/components/settings/api-keys-section.tsx`
 
-```typescript
+````typescript
 /**
  * @fileoverview API Keys management section using Clerk's built-in components.
  * Leverages Clerk's <UserProfile /> or <OrganizationProfile /> components
@@ -762,7 +764,7 @@ import { useClerk } from "@clerk/clerk-react";
  * });
  * ```
  */
-```
+````
 
 **Note:** When API Keys are enabled in Clerk Dashboard, the `<UserProfile />` and `<OrganizationProfile />` components automatically display an "API Keys" tab. No additional frontend work is required for basic functionality.
 
@@ -770,7 +772,7 @@ import { useClerk } from "@clerk/clerk-react";
 
 **File:** `apps/backend/convex/api/versioning.ts`
 
-```typescript
+````typescript
 /**
  * @fileoverview API versioning support for backwards compatibility.
  * Implements header-based versioning with fallback to latest stable.
@@ -794,15 +796,15 @@ import { useClerk } from "@clerk/clerk-react";
  * @type {Record<string, ApiVersion>}
  */
 export const API_VERSIONS = {
-  '2025-01-01': { status: 'current', deprecationDate: null },
+  "2025-01-01": { status: "current", deprecationDate: null },
 } as const;
-```
+````
 
 ### 1.3 Error Response Standardization
 
 **File:** `apps/backend/convex/api/errors.ts`
 
-```typescript
+````typescript
 /**
  * @fileoverview Standardized error responses for the public API.
  * Follows RFC 7807 Problem Details for HTTP APIs format.
@@ -838,7 +840,7 @@ export const API_VERSIONS = {
  * }
  * ```
  */
-```
+````
 
 ---
 
@@ -848,7 +850,7 @@ export const API_VERSIONS = {
 
 **File:** `apps/backend/convex/http.ts` (extend existing)
 
-```typescript
+````typescript
 /**
  * @fileoverview HTTP endpoint definitions for Seal.
  * Includes webhook receivers and public REST API endpoints.
@@ -871,13 +873,13 @@ export const API_VERSIONS = {
  */
 
 // Route definitions with comprehensive documentation
-```
+````
 
 ### 2.2 Documents API
 
 **File:** `apps/backend/convex/api/v1/documents.ts`
 
-```typescript
+````typescript
 /**
  * @fileoverview Documents REST API handlers.
  * Provides CRUD operations for documents via the public API.
@@ -1058,7 +1060,7 @@ export const API_VERSIONS = {
  *
  * @returns {Document} Updated document with voided status
  */
-```
+````
 
 ### 2.3 Recipients API
 
@@ -1130,7 +1132,7 @@ export const API_VERSIONS = {
 
 **File:** `apps/backend/convex/api/v1/templates.ts`
 
-```typescript
+````typescript
 /**
  * @fileoverview Templates REST API handlers.
  * Provides operations for reusable document templates.
@@ -1193,13 +1195,13 @@ export const API_VERSIONS = {
  * }
  * ```
  */
-```
+````
 
 ### 2.5 Signatures API
 
 **File:** `apps/backend/convex/api/v1/signatures.ts`
 
-```typescript
+````typescript
 /**
  * @fileoverview Signatures REST API handlers (read-only).
  * Provides access to signature verification and audit data.
@@ -1248,7 +1250,7 @@ export const API_VERSIONS = {
  * }
  * ```
  */
-```
+````
 
 ---
 
@@ -1321,11 +1323,7 @@ export const webhookEndpoints = defineTable({
    * - disabled: Disabled due to repeated failures
    * @type {"active" | "paused" | "disabled"}
    */
-  status: v.union(
-    v.literal("active"),
-    v.literal("paused"),
-    v.literal("disabled")
-  ),
+  status: v.union(v.literal("active"), v.literal("paused"), v.literal("disabled")),
 
   /**
    * API version for webhook payload format.
@@ -1414,7 +1412,7 @@ export const webhookDeliveries = defineTable({
     v.literal("pending"),
     v.literal("delivered"),
     v.literal("failed"),
-    v.literal("abandoned")
+    v.literal("abandoned"),
   ),
 
   /**
@@ -1465,7 +1463,7 @@ export const webhookDeliveries = defineTable({
 
 **File:** `apps/backend/convex/api/webhooks/events.ts`
 
-```typescript
+````typescript
 /**
  * @fileoverview Webhook event type definitions and payload schemas.
  * Defines all events that can trigger outbound webhooks.
@@ -1482,73 +1480,73 @@ export const webhookDeliveries = defineTable({
  */
 export const WEBHOOK_EVENT_TYPES = {
   // Document lifecycle events
-  'document.created': {
-    description: 'A new document was created',
-    category: 'documents',
+  "document.created": {
+    description: "A new document was created",
+    category: "documents",
   },
-  'document.sent': {
-    description: 'A document was sent for signing',
-    category: 'documents',
+  "document.sent": {
+    description: "A document was sent for signing",
+    category: "documents",
   },
-  'document.viewed': {
-    description: 'A document was viewed by a recipient',
-    category: 'documents',
+  "document.viewed": {
+    description: "A document was viewed by a recipient",
+    category: "documents",
   },
-  'document.completed': {
-    description: 'All recipients have signed the document',
-    category: 'documents',
+  "document.completed": {
+    description: "All recipients have signed the document",
+    category: "documents",
   },
-  'document.voided': {
-    description: 'A document was voided/cancelled',
-    category: 'documents',
+  "document.voided": {
+    description: "A document was voided/cancelled",
+    category: "documents",
   },
-  'document.expired': {
-    description: 'A document deadline has passed',
-    category: 'documents',
+  "document.expired": {
+    description: "A document deadline has passed",
+    category: "documents",
   },
-  'document.declined': {
-    description: 'A recipient declined to sign',
-    category: 'documents',
+  "document.declined": {
+    description: "A recipient declined to sign",
+    category: "documents",
   },
 
   // Recipient events
-  'recipient.added': {
-    description: 'A recipient was added to a document',
-    category: 'recipients',
+  "recipient.added": {
+    description: "A recipient was added to a document",
+    category: "recipients",
   },
-  'recipient.viewed': {
-    description: 'A recipient viewed the document',
-    category: 'recipients',
+  "recipient.viewed": {
+    description: "A recipient viewed the document",
+    category: "recipients",
   },
-  'recipient.signed': {
-    description: 'A recipient signed the document',
-    category: 'recipients',
+  "recipient.signed": {
+    description: "A recipient signed the document",
+    category: "recipients",
   },
-  'recipient.approved': {
-    description: 'A recipient approved the document',
-    category: 'recipients',
+  "recipient.approved": {
+    description: "A recipient approved the document",
+    category: "recipients",
   },
-  'recipient.declined': {
-    description: 'A recipient declined to sign',
-    category: 'recipients',
+  "recipient.declined": {
+    description: "A recipient declined to sign",
+    category: "recipients",
   },
-  'recipient.reminded': {
-    description: 'A reminder was sent to a recipient',
-    category: 'recipients',
+  "recipient.reminded": {
+    description: "A reminder was sent to a recipient",
+    category: "recipients",
   },
 
   // Template events
-  'template.created': {
-    description: 'A new template was created',
-    category: 'templates',
+  "template.created": {
+    description: "A new template was created",
+    category: "templates",
   },
-  'template.updated': {
-    description: 'A template was modified',
-    category: 'templates',
+  "template.updated": {
+    description: "A template was modified",
+    category: "templates",
   },
-  'template.used': {
-    description: 'A document was created from a template',
-    category: 'templates',
+  "template.used": {
+    description: "A document was created from a template",
+    category: "templates",
   },
 } as const;
 
@@ -1602,7 +1600,7 @@ export interface DocumentCompletedPayload {
   document: {
     id: string;
     title: string;
-    status: 'completed';
+    status: "completed";
     completed_at: string;
     download_url: string;
     recipients: Array<{
@@ -1636,13 +1634,13 @@ export interface RecipientSignedPayload {
   /** Remaining recipients who haven't signed */
   remaining_recipients: number;
 }
-```
+````
 
 ### 3.3 Webhook Delivery System
 
 **File:** `apps/backend/convex/api/webhooks/delivery.ts`
 
-```typescript
+````typescript
 /**
  * @fileoverview Webhook delivery and retry logic.
  * Handles reliable delivery with exponential backoff.
@@ -1716,13 +1714,13 @@ export interface RecipientSignedPayload {
  * After 7 failed attempts, delivery is marked as abandoned.
  */
 export const RETRY_SCHEDULE_MS = [
-  0,           // Immediate
-  60_000,      // 1 minute
-  300_000,     // 5 minutes
-  1_800_000,   // 30 minutes
-  7_200_000,   // 2 hours
-  28_800_000,  // 8 hours
-  86_400_000,  // 24 hours
+  0, // Immediate
+  60_000, // 1 minute
+  300_000, // 5 minutes
+  1_800_000, // 30 minutes
+  7_200_000, // 2 hours
+  28_800_000, // 8 hours
+  86_400_000, // 24 hours
 ];
 
 /**
@@ -1731,13 +1729,13 @@ export const RETRY_SCHEDULE_MS = [
  *
  * @param ctx - Convex action context
  */
-```
+````
 
 ### 3.4 Webhook Management API
 
 **File:** `apps/backend/convex/api/v1/webhooks.ts`
 
-```typescript
+````typescript
 /**
  * @fileoverview Webhook configuration REST API handlers.
  * Allows developers to manage their webhook endpoints.
@@ -1839,7 +1837,7 @@ export const RETRY_SCHEDULE_MS = [
  *
  * @returns {TestResult} Delivery result with response details
  */
-```
+````
 
 ---
 
@@ -2015,7 +2013,7 @@ export interface ApiDocument {
   /** Optional description */
   description?: string;
   /** Current workflow status */
-  status: 'draft' | 'sent' | 'in_progress' | 'completed' | 'voided' | 'expired';
+  status: "draft" | "sent" | "in_progress" | "completed" | "voided" | "expired";
   /** ISO 8601 creation timestamp */
   created_at: string;
   /** ISO 8601 last update timestamp */
@@ -2044,9 +2042,9 @@ export interface ApiRecipient {
   /** Recipient display name */
   name: string;
   /** Role in the signing workflow */
-  role: 'signer' | 'approver' | 'viewer';
+  role: "signer" | "approver" | "viewer";
   /** Current status */
-  status: 'pending' | 'viewed' | 'signed' | 'approved' | 'declined';
+  status: "pending" | "viewed" | "signed" | "approved" | "declined";
   /** Signing order (for sequential signing) */
   order?: number;
   /** ISO 8601 timestamp when viewed */
@@ -2084,15 +2082,15 @@ export const sendDocument = permissionMutation("documents:edit", {
 
     // Publish webhook event
     await publishWebhookEvent(ctx, {
-      type: 'document.sent',
+      type: "document.sent",
       organizationId: document.organizationId,
       data: {
         document: {
           id: document._id,
           title: document.title,
-          status: 'sent',
+          status: "sent",
           sent_at: new Date().toISOString(),
-          recipients: recipients.map(r => ({
+          recipients: recipients.map((r) => ({
             email: r.email,
             name: r.name,
             role: r.role,
@@ -2111,6 +2109,7 @@ export const sendDocument = permissionMutation("documents:edit", {
 ## Implementation Checklist
 
 ### Phase 1: Foundation ✅ COMPLETED
+
 - [x] Create `apps/backend/convex/api/` directory structure
 - [x] Implement Clerk API key authentication middleware (`validateApiKey()`)
 - [x] Create `apiHttpAction` wrapper for HTTP actions with Clerk auth
@@ -2124,6 +2123,7 @@ export const sendDocument = permissionMutation("documents:edit", {
 - [ ] Deprecate custom `schemas/api_keys.ts` (mark for future removal)
 
 ### Phase 2: REST API ✅ COMPLETED
+
 - [x] Extend `http.ts` with API routes structure
 - [x] Implement Documents API (`/api/v1/documents`)
   - [x] GET /api/v1/documents - List documents
@@ -2157,6 +2157,7 @@ export const sendDocument = permissionMutation("documents:edit", {
 - [x] Add comprehensive docstrings to all handlers
 
 ### Phase 3: Outbound Webhooks ✅ COMPLETED
+
 - [x] Create webhook schemas (`webhook_endpoints`, `webhook_deliveries`)
 - [x] Define all webhook event types
 - [x] Implement webhook UI queries/mutations (existing in webhooks/)
@@ -2172,18 +2173,21 @@ export const sendDocument = permissionMutation("documents:edit", {
 - [ ] Add webhook signature verification documentation - TODO
 
 ### Phase 4: Rate Limiting - TODO
+
 - [ ] Create rate limit schema
 - [ ] Implement sliding window rate limiter
 - [ ] Add rate limit headers to responses
 - [ ] Implement per-plan rate limit tiers
 
 ### Phase 5: Developer Experience - TODO
+
 - [ ] Set up OpenAPI spec generation
 - [ ] Export SDK types
 - [ ] Create example code snippets in docstrings
 - [ ] Document signature verification in multiple languages
 
 ### Phase 6: Event Integration - TODO
+
 - [ ] Add webhook publishing to document mutations
 - [ ] Add webhook publishing to recipient mutations
 - [ ] Add webhook publishing to template mutations

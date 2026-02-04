@@ -4,6 +4,7 @@
  */
 
 import { ConvexError } from "convex/values";
+
 import { mutation, query } from "./_generated/server";
 
 /**
@@ -14,58 +15,58 @@ import { mutation, query } from "./_generated/server";
  * Use ensureActiveOrganization mutation if you need to fix missing activeOrganizationId.
  */
 export const hasOrganization = query({
-	args: {},
-	handler: async (ctx) => {
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) {
-			throw new ConvexError("Authentication required");
-		}
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Authentication required");
+    }
 
-		// Get user by Clerk ID
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-			.first();
+    // Get user by Clerk ID
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
 
-		if (!user) {
-			// User doesn't exist yet (webhook might not have synced)
-			return { hasOrganization: false, userId: null, needsActiveOrgFix: false };
-		}
+    if (!user) {
+      // User doesn't exist yet (webhook might not have synced)
+      return { hasOrganization: false, userId: null, needsActiveOrgFix: false };
+    }
 
-		// Check if user has any organization memberships
-		const membership = await ctx.db
-			.query("organization_members")
-			.withIndex("by_user", (q) => q.eq("userId", user._id))
-			.first();
+    // Check if user has any organization memberships
+    const membership = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .first();
 
-		let activeOrganizationId = user.activeOrganizationId ?? null;
-		let activeOrganizationSlug: string | null = null;
-		let needsActiveOrgFix = false;
+    let activeOrganizationId = user.activeOrganizationId ?? null;
+    let activeOrganizationSlug: string | null = null;
+    let needsActiveOrgFix = false;
 
-		// If user has no activeOrganizationId but has a membership, flag it for fix
-		if (!activeOrganizationId && membership) {
-			activeOrganizationId = membership.organizationId;
-			needsActiveOrgFix = true;
-		}
+    // If user has no activeOrganizationId but has a membership, flag it for fix
+    if (!activeOrganizationId && membership) {
+      activeOrganizationId = membership.organizationId;
+      needsActiveOrgFix = true;
+    }
 
-		if (activeOrganizationId) {
-			const activeOrganization = await ctx.db.get(activeOrganizationId);
+    if (activeOrganizationId) {
+      const activeOrganization = await ctx.db.get(activeOrganizationId);
 
-			if (activeOrganization) {
-				activeOrganizationSlug = activeOrganization.slug;
-			} else {
-				activeOrganizationId = null;
-			}
-		}
+      if (activeOrganization) {
+        activeOrganizationSlug = activeOrganization.slug;
+      } else {
+        activeOrganizationId = null;
+      }
+    }
 
-		return {
-			hasOrganization: !!membership,
-			userId: user._id,
-			activeOrganizationId,
-			activeOrganizationSlug,
-			needsActiveOrgFix,
-		};
-	},
+    return {
+      hasOrganization: !!membership,
+      userId: user._id,
+      activeOrganizationId,
+      activeOrganizationSlug,
+      needsActiveOrgFix,
+    };
+  },
 });
 
 /**
@@ -73,106 +74,106 @@ export const hasOrganization = query({
  * If user has memberships but no activeOrganizationId, set the first one as active
  */
 export const ensureActiveOrganization = mutation({
-	args: {},
-	handler: async (ctx) => {
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) {
-			throw new ConvexError("Authentication required");
-		}
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Authentication required");
+    }
 
-		// Get user by Clerk ID
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-			.first();
+    // Get user by Clerk ID
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
 
-		if (!user) {
-			return { success: false, reason: "User not found" };
-		}
+    if (!user) {
+      return { success: false, reason: "User not found" };
+    }
 
-		// If user already has an active organization, verify it still exists
-		if (user.activeOrganizationId) {
-			const activeOrg = await ctx.db.get(user.activeOrganizationId);
-			if (activeOrg) {
-				return {
-					success: true,
-					activeOrganizationId: user.activeOrganizationId,
-					activeOrganizationSlug: activeOrg.slug,
-					wasFixed: false,
-				};
-			}
-			// Active org doesn't exist, fall through to find a new one
-		}
+    // If user already has an active organization, verify it still exists
+    if (user.activeOrganizationId) {
+      const activeOrg = await ctx.db.get(user.activeOrganizationId);
+      if (activeOrg) {
+        return {
+          success: true,
+          activeOrganizationId: user.activeOrganizationId,
+          activeOrganizationSlug: activeOrg.slug,
+          wasFixed: false,
+        };
+      }
+      // Active org doesn't exist, fall through to find a new one
+    }
 
-		// Find user's first membership
-		const membership = await ctx.db
-			.query("organization_members")
-			.withIndex("by_user", (q) => q.eq("userId", user._id))
-			.first();
+    // Find user's first membership
+    const membership = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .first();
 
-		if (!membership) {
-			return { success: false, reason: "No organization memberships found" };
-		}
+    if (!membership) {
+      return { success: false, reason: "No organization memberships found" };
+    }
 
-		// Get the organization
-		const organization = await ctx.db.get(membership.organizationId);
-		if (!organization) {
-			return { success: false, reason: "Organization not found" };
-		}
+    // Get the organization
+    const organization = await ctx.db.get(membership.organizationId);
+    if (!organization) {
+      return { success: false, reason: "Organization not found" };
+    }
 
-		// Update user's active organization
-		await ctx.db.patch(user._id, {
-			activeOrganizationId: organization._id,
-			updatedAt: Date.now(),
-		});
+    // Update user's active organization
+    await ctx.db.patch(user._id, {
+      activeOrganizationId: organization._id,
+      updatedAt: Date.now(),
+    });
 
-		return {
-			success: true,
-			activeOrganizationId: organization._id,
-			activeOrganizationSlug: organization.slug,
-			wasFixed: true,
-		};
-	},
+    return {
+      success: true,
+      activeOrganizationId: organization._id,
+      activeOrganizationSlug: organization.slug,
+      wasFixed: true,
+    };
+  },
 });
 
 export const listUserOrganizations = query({
-	args: {},
-	handler: async (ctx) => {
-		const identity = await ctx.auth.getUserIdentity();
-		if (!identity) {
-			throw new ConvexError("Authentication required");
-		}
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Authentication required");
+    }
 
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-			.first();
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
 
-		if (!user) {
-			return [];
-		}
+    if (!user) {
+      return [];
+    }
 
-		const memberships = await ctx.db
-			.query("organization_members")
-			.withIndex("by_user", (q) => q.eq("userId", user._id))
-			.collect();
+    const memberships = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
 
-		const organizations = await Promise.all(
-			memberships.map(async (membership) => {
-				const organization = await ctx.db.get(membership.organizationId);
-				if (!organization) {
-					return null;
-				}
+    const organizations = await Promise.all(
+      memberships.map(async (membership) => {
+        const organization = await ctx.db.get(membership.organizationId);
+        if (!organization) {
+          return null;
+        }
 
-				return {
-					organizationId: membership.organizationId,
-					organizationName: organization.name,
-					organizationSlug: organization.slug,
-					role: membership.role,
-				};
-			}),
-		);
+        return {
+          organizationId: membership.organizationId,
+          organizationName: organization.name,
+          organizationSlug: organization.slug,
+          role: membership.role,
+        };
+      }),
+    );
 
-		return organizations.filter((org) => org !== null);
-	},
+    return organizations.filter((org) => org !== null);
+  },
 });

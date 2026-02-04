@@ -339,18 +339,21 @@
 ## Interactive Elements
 
 ### Error Recovery Actions
+
 - **Primary Buttons**: Main recovery actions (Go Home, Try Again)
 - **Secondary Actions**: Alternative options (Search, Contact Support)
 - **Context Links**: Smart navigation based on error type
 - **Auto-retry**: Automatic reconnection for network issues
 
 ### Error Context
+
 - **Error IDs**: Reference numbers for support tickets
 - **Timestamps**: When error occurred or last activity
 - **User Context**: Current workspace and permission level
 - **Recovery Suggestions**: Specific next steps for each error
 
 ### Smart Navigation
+
 - **Back Button**: Context-aware back navigation
 - **Breadcrumbs**: Show user's path to error
 - **Safe Returns**: Always provide path to working area
@@ -361,17 +364,20 @@
 ## State Management
 
 ### Error Logging
+
 - **Client Errors**: JavaScript exceptions and user actions
 - **Server Errors**: API failures and application crashes
 - **Network Errors**: Connection status and retry attempts
 - **User Context**: Error context for support and debugging
 
 ### Recovery Tracking
+
 - **Retry Attempts**: Track user retry behavior
 - **Success Metrics**: Monitor error recovery success rates
 - **User Paths**: Analyze common error → recovery patterns
 
 ### Real-time Updates
+
 - **Connection Status**: Live network connectivity monitoring
 - **Permission Changes**: Real-time permission updates via Convex
 - **Session State**: Authentication status monitoring
@@ -381,12 +387,14 @@
 ## Error Prevention
 
 ### Proactive Measures
+
 - **Session Warnings**: Alert before session expires
 - **Connection Monitoring**: Detect unstable connections
 - **Permission Checks**: Validate access before showing features
 - **Graceful Degradation**: Partial functionality during errors
 
 ### User Guidance
+
 - **Clear Messaging**: Plain language error explanations
 - **Recovery Steps**: Specific actions to resolve issues
 - **Support Access**: Easy path to get help when stuck
@@ -407,6 +415,7 @@
 ## Document Processing Error States
 
 ### Document Processing Failed
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal          Workspace: Acme Corp ▼                    👤 John Doe ▼   │
@@ -438,6 +447,7 @@
 ```
 
 ### PDF Conversion Error
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal          Workspace: Acme Corp ▼                    👤 John Doe ▼   │
@@ -474,6 +484,7 @@
 ## Payment & Billing Error States
 
 ### Payment Declined
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal       🆓 Free Plan    Workspace: My Workspace ▼   👤 Jane Smith ▼   │
@@ -506,6 +517,7 @@
 ```
 
 ### Subscription Payment Failed
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal       🆓 Free Plan    Workspace: My Workspace ▼   👤 Jane Smith ▼   │
@@ -543,6 +555,7 @@
 ## Upload Quota Error States
 
 ### Free Plan Document Limit Reached (Mid-Upload)
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal       🆓 Free Plan    Workspace: My Workspace ▼   👤 Jane Smith ▼   │
@@ -575,6 +588,7 @@
 ```
 
 ### Bulk Upload Quota Exceeded
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🏠 Seal       🆓 Free Plan    Workspace: My Workspace ▼   👤 Jane Smith ▼   │

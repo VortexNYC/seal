@@ -6,6 +6,7 @@
 ## Template Interface Wireframes
 
 ### Template Creation from Prepared Document
+
 [Modal Component: Dialog with form validation]
 [Mobile Viewport: Full-screen modal on small screens]
 
@@ -45,6 +46,7 @@
 ```
 
 ### Template Library Interface
+
 [Component: Grid layout with template cards and filtering]
 [Mobile Viewport: 1-column template cards with larger thumbnails]
 
@@ -85,6 +87,7 @@
 ```
 
 ### Template Preview and Selection
+
 [Modal Component: Dialog with preview area and metadata display]
 [Desktop Viewport: 1200px width with detailed template information]
 
@@ -123,6 +126,7 @@
 ```
 
 ### Template Application - Recipient Mapping
+
 [Modal Component: Dialog with form for recipient assignment and message customization]
 [Mobile Viewport: Full-screen modal with stacked form fields]
 
@@ -162,6 +166,7 @@
 ## Template Management Interfaces
 
 ### Template Editing Interface
+
 [Component: Full-page template editor with signature field overlay]
 [Desktop Viewport: 1200px width with field editing tools and sidebar]
 
@@ -195,6 +200,7 @@
 ```
 
 ### Template Sharing Settings
+
 [Modal Component: Dialog with sharing configuration and permissions]
 [Mobile Viewport: Full-screen modal with stacked form elements]
 
@@ -235,6 +241,7 @@
 ## Template Creation from Scratch
 
 ### New Template Creation Interface
+
 [Modal Component: Dialog with file upload and template configuration]
 [Desktop Viewport: 1200px width with drag-and-drop area and form fields]
 
@@ -276,6 +283,7 @@
 ## Template Error Handling Interfaces
 
 ### Template Creation Error
+
 [Alert Component: Dialog with error details and recovery options]
 [Mobile Viewport: Full-screen error dialog with action buttons]
 
@@ -309,6 +317,7 @@
 ```
 
 ### Template Application Error
+
 [Alert Component: Dialog with application error details and alternatives]
 [Mobile Viewport: Full-screen error dialog with recovery options]
 
@@ -346,6 +355,7 @@
 ## Mobile Template Interface
 
 ### Mobile Template Library
+
 [Component: Mobile-optimized template library with search and cards]
 [Mobile Viewport: 375px width with stacked template cards]
 
@@ -382,6 +392,7 @@
 ```
 
 ### Mobile Template Application
+
 [Modal Component: Full-screen mobile form for template application]
 [Mobile Viewport: 375px width with stacked form fields and native inputs]
 
@@ -417,6 +428,7 @@
 ## Template Independence Confirmation
 
 ### Template Update Confirmation
+
 [Alert Component: Success dialog with template independence explanation]
 [Desktop Viewport: 1200px width with detailed confirmation message]
 

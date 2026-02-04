@@ -426,7 +426,7 @@
 ║     ║                               ║
 ╚╗    ╚═══════════════════════════════╝
  ╚╗                 ●
-  ╚╗            
+  ╚╗
    ╚╗
     ╚╗
      ╚═══════════════════════════════
@@ -464,7 +464,7 @@
 ║     ║                               ║
 ╚╗    ╚═══════════════════════════════╝
  ╚╗                 ●
-  ╚╗            
+  ╚╗
    ╚╗
     ╚╗
      ╚═══════════════════════════════
@@ -475,6 +475,7 @@
 ## Component Integration Specifications
 
 ### shadcn/ui Component Mapping
+
 - **Upload Area**: Card component with dashed border styling
 - **File Browser**: Dialog component with file selection
 - **Progress Indicators**: Progress components with neutral-900 fill
@@ -484,14 +485,16 @@
 - **Action Buttons**: Button components with variant styling
 
 ### Interactive States
+
 - **Hover Effects**: Card hover states on upload area and recent documents
 - **Focus States**: Clear focus rings on interactive elements
 - **Loading States**: Skeleton components during file processing
 - **Drag States**: Visual feedback during file drag operations
 
 ### Technical Implementation
+
 - **File Handling**: React Dropzone integration with shadcn/ui styling
-- **Progress Tracking**: Real-time upload progress with Convex subscriptions  
+- **Progress Tracking**: Real-time upload progress with Convex subscriptions
 - **Validation**: Zod schemas for file type and size validation
 - **Error Recovery**: Comprehensive error handling with retry mechanisms
 - **Mobile Optimization**: Touch-friendly interfaces with native file access

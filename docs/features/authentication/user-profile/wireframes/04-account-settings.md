@@ -164,11 +164,13 @@
 ## Interactive Elements
 
 ### Data Export
+
 - **Export Request**: Simple one-click export request
-- **Download Links**: Secure, time-limited download URLs  
+- **Download Links**: Secure, time-limited download URLs
 - **Email Notifications**: Status updates via email
 
 ### Account Deletion
+
 - **Two-step Confirmation**: Text confirmation + password
 - **Impact Summary**: Show what will be deleted
 - **Irreversible Warning**: Clear messaging about permanence
@@ -178,11 +180,13 @@
 ## State Management
 
 ### Export Processing
+
 - **Email Delivery**: Download link sent to user email
 - **Expiration**: Downloads expire after 30 days
 - **Status Tracking**: Show processing status
 
 ### Deletion Process
+
 - **Immediate**: Account deleted immediately on confirmation
 - **Cleanup**: All data removed from system
 - **Workspace Impact**: User removed from all workspaces
@@ -192,6 +196,7 @@
 ## Security Features
 
 ### Sensitive Operations
+
 - **Password Required**: Account deletion requires password
 - **Confirmation Text**: Must type "DELETE" to confirm
 - **Audit Logging**: Log account deletion events

@@ -19,15 +19,12 @@ import { app as expressApp } from "../dist/index.js";
 const app = expressApp as Express;
 
 export const config = {
-	runtime: "nodejs",
-	maxDuration: 60,
+  runtime: "nodejs",
+  maxDuration: 60,
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-	// Express app can be used directly as a request handler
-	// This works because Express apps are compatible with the (req, res) signature
-	return app(
-		req as unknown as Parameters<Express>[0],
-		res as unknown as Parameters<Express>[1],
-	);
+  // Express app can be used directly as a request handler
+  // This works because Express apps are compatible with the (req, res) signature
+  return app(req as unknown as Parameters<Express>[0], res as unknown as Parameters<Express>[1]);
 }

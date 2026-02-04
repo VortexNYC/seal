@@ -23,12 +23,12 @@ All error responses follow this consistent structure:
 
 ### Response Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `type` | string | URI reference identifying the error type |
-| `title` | string | Short, human-readable summary of the error |
-| `status` | number | HTTP status code |
-| `detail` | string | Detailed explanation of the specific error |
+| Field      | Type   | Description                                                 |
+| ---------- | ------ | ----------------------------------------------------------- |
+| `type`     | string | URI reference identifying the error type                    |
+| `title`    | string | Short, human-readable summary of the error                  |
+| `status`   | number | HTTP status code                                            |
+| `detail`   | string | Detailed explanation of the specific error                  |
 | `instance` | string | URI reference to the specific request that caused the error |
 
 ## Common Error Codes
@@ -38,6 +38,7 @@ All error responses follow this consistent structure:
 The request was malformed or contains invalid parameters.
 
 **Common Causes:**
+
 - Missing required fields in request body
 - Invalid JSON syntax
 - Malformed data (e.g., invalid email format, invalid date)
@@ -60,6 +61,7 @@ The request was malformed or contains invalid parameters.
 Authentication failed or credentials are missing.
 
 **Common Causes:**
+
 - Missing `Authorization` header
 - Invalid API key format
 - Expired API key
@@ -82,6 +84,7 @@ Authentication failed or credentials are missing.
 Authentication succeeded but you don't have permission to perform this action.
 
 **Common Causes:**
+
 - API key lacks required scope (e.g., trying to write with read-only scope)
 - User is not a member of the organization
 - User's role doesn't have the required permission
@@ -104,6 +107,7 @@ Authentication succeeded but you don't have permission to perform this action.
 The requested resource doesn't exist.
 
 **Common Causes:**
+
 - Invalid document/recipient/template ID
 - Resource was deleted
 - Typo in the endpoint URL
@@ -126,6 +130,7 @@ The requested resource doesn't exist.
 You've exceeded the rate limit for API requests.
 
 **Common Causes:**
+
 - Too many requests in a short time window
 - Burst traffic exceeding rate limits
 
@@ -142,6 +147,7 @@ You've exceeded the rate limit for API requests.
 ```
 
 **Retry Strategy:**
+
 - Wait before retrying (use exponential backoff)
 - Check `Retry-After` header if present
 - Implement request queuing to stay within limits
@@ -151,6 +157,7 @@ You've exceeded the rate limit for API requests.
 An unexpected error occurred on the server.
 
 **Common Causes:**
+
 - Temporary server issues
 - Database connectivity problems
 - Unexpected internal state
@@ -168,6 +175,7 @@ An unexpected error occurred on the server.
 ```
 
 **Retry Strategy:**
+
 - Retry with exponential backoff
 - Maximum 3 retry attempts
 - Log the error for investigation
@@ -187,53 +195,50 @@ interface ApiError {
 
 async function sendDocument(documentId: string, message: string) {
   try {
-    const response = await fetch(
-      `https://seal.convex.site/api/v1/documents/${documentId}/send`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.SEAL_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message })
-      }
-    );
+    const response = await fetch(`https://seal.convex.site/api/v1/documents/${documentId}/send`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.SEAL_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message }),
+    });
 
     if (!response.ok) {
       const error: ApiError = await response.json();
-      
+
       // Handle specific error types
       switch (error.status) {
         case 400:
-          console.error('Invalid request:', error.detail);
+          console.error("Invalid request:", error.detail);
           throw new Error(`Validation failed: ${error.detail}`);
-        
+
         case 401:
-          console.error('Authentication failed:', error.detail);
+          console.error("Authentication failed:", error.detail);
           // Refresh API key or re-authenticate
-          throw new Error('Authentication required');
-        
+          throw new Error("Authentication required");
+
         case 403:
-          console.error('Permission denied:', error.detail);
+          console.error("Permission denied:", error.detail);
           throw new Error(`Insufficient permissions: ${error.detail}`);
-        
+
         case 404:
-          console.error('Document not found:', error.detail);
-          throw new Error('Document does not exist');
-        
+          console.error("Document not found:", error.detail);
+          throw new Error("Document does not exist");
+
         case 429:
-          console.error('Rate limit exceeded. Retrying after delay...');
+          console.error("Rate limit exceeded. Retrying after delay...");
           // Implement exponential backoff
-          await new Promise(resolve => setTimeout(resolve, 60000));
+          await new Promise((resolve) => setTimeout(resolve, 60000));
           return sendDocument(documentId, message); // Retry
-        
+
         case 500:
-          console.error('Server error:', error.detail);
+          console.error("Server error:", error.detail);
           // Retry with exponential backoff
-          throw new Error('Server error. Please try again later.');
-        
+          throw new Error("Server error. Please try again later.");
+
         default:
-          console.error('Unexpected error:', error);
+          console.error("Unexpected error:", error);
           throw new Error(error.detail);
       }
     }
@@ -241,11 +246,11 @@ async function sendDocument(documentId: string, message: string) {
     return await response.json();
   } catch (error) {
     // Handle network errors
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.error('Network error:', error);
-      throw new Error('Network connection failed');
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      console.error("Network error:", error);
+      throw new Error("Network connection failed");
     }
-    
+
     throw error;
   }
 }
@@ -257,34 +262,32 @@ async function sendDocument(documentId: string, message: string) {
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
-  baseDelay: number = 1000
+  baseDelay: number = 1000,
 ): Promise<T> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       const isLastAttempt = attempt === maxRetries - 1;
-      const shouldRetry = error instanceof Error && 
-        (error.message.includes('500') || error.message.includes('429'));
-      
+      const shouldRetry =
+        error instanceof Error && (error.message.includes("500") || error.message.includes("429"));
+
       if (isLastAttempt || !shouldRetry) {
         throw error;
       }
-      
+
       // Exponential backoff: 1s, 2s, 4s, 8s...
       const delay = baseDelay * Math.pow(2, attempt);
       console.log(`Retry attempt ${attempt + 1} after ${delay}ms`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  
-  throw new Error('Max retries exceeded');
+
+  throw new Error("Max retries exceeded");
 }
 
 // Usage
-const result = await retryWithBackoff(() => 
-  sendDocument('doc123', 'Please sign')
-);
+const result = await retryWithBackoff(() => sendDocument("doc123", "Please sign"));
 ```
 
 ## Validation Errors
@@ -302,7 +305,8 @@ For 400 errors, the `detail` field often contains specific validation informatio
 ```
 
 <Callout type="info">
-  **Tip**: Always log the full error response (including `type` and `instance`) to help with debugging. The `instance` field shows exactly which request failed.
+  **Tip**: Always log the full error response (including `type` and `instance`) to help with
+  debugging. The `instance` field shows exactly which request failed.
 </Callout>
 
 ## Best Practices

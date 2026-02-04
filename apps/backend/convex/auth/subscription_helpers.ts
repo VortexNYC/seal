@@ -6,6 +6,7 @@
  */
 
 import { v } from "convex/values";
+
 import { internalQuery } from "../_generated/server";
 import { getSubscriptionPlan } from "./subscription_guards";
 
@@ -14,10 +15,10 @@ import { getSubscriptionPlan } from "./subscription_guards";
  * Designed to be called from actions via `ctx.runQuery(internal.auth.subscription_helpers.checkProFeature, ...)`.
  */
 export const checkProFeature = internalQuery({
-	args: {
-		userId: v.id("users"),
-	},
-	handler: async (ctx, args) => {
-		return await getSubscriptionPlan(ctx.db, args.userId);
-	},
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    return await getSubscriptionPlan(ctx.db, args.userId);
+  },
 });

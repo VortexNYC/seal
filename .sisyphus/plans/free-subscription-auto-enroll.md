@@ -3,16 +3,20 @@
 ## Context
 
 ### Original Request
+
 Guarantee all new users get a free subscription with the lookup key `free:personal:monthly:v1`
 
 ### Interview Summary
+
 **Key Discussions**:
+
 - User confirmed Stripe is already configured with a price that has `lookup_key="free:personal:monthly:v1"`
 - Environment variables (`AUTO_ENROLL_FREE_PLAN_ON_SIGNUP`, `DEFAULT_PLAN_LOOKUP_KEY`) are NOT configured yet
 - User wants end-to-end verification in Development/Preview environment
 - The code infrastructure already exists - this is a configuration task only
 
 **Research Findings**:
+
 - `apps/backend/convex/stripe/subscription_actions.ts:416` - `handleNewUserSignup` action creates Stripe customer and triggers enrollment
 - `apps/backend/convex/stripe/subscription_actions.ts:224` - `subscribeUserToDefaultPlan` subscribes user to default plan
 - `apps/backend/convex/stripe/subscription_actions.ts:28-32` - `isAutoEnrollEnabled()` checks for "1", "true", "TRUE", "yes", "on"
@@ -21,7 +25,9 @@ Guarantee all new users get a free subscription with the lookup key `free:person
 - Lookup key uses EXACT string match (case-sensitive, no normalization)
 
 ### Metis Review
+
 **Identified Gaps** (addressed):
+
 - **Sync prerequisite**: Must sync Stripe data to Convex BEFORE testing - price lookup will fail otherwise
 - **Exact key match**: Lookup key must be exactly `free:personal:monthly:v1` (case-sensitive)
 - **Verification criteria**: Need explicit success/failure criteria for each check
@@ -32,25 +38,30 @@ Guarantee all new users get a free subscription with the lookup key `free:person
 ## Work Objectives
 
 ### Core Objective
+
 Configure Convex environment to auto-enroll all new users to the free subscription plan, and verify the complete flow works end-to-end.
 
 ### Concrete Deliverables
+
 - Environment variables configured in Convex dev deployment
 - Verified price sync from Stripe to Convex
 - Test user created with active free subscription
 - Documentation of success criteria met
 
 ### Definition of Done
+
 - [x] New test user created via Clerk has `stripeCustomerId` in Convex `users` table
 - [x] `subscriptions` table has active record for the new user (VERIFIED: sub_1SttpiIlmpJUPMjL3STdFfTl - status: ACTIVE)
 - [x] Stripe Dashboard shows customer and active subscription (VERIFIED: cus_Trd5IQ4jG1VJ5Y with active subscription using free:personal:monthly:v1)
 
 ### Must Have
+
 - `AUTO_ENROLL_FREE_PLAN_ON_SIGNUP=true` configured in Convex dev environment
 - `DEFAULT_PLAN_LOOKUP_KEY=free:personal:monthly:v1` configured in Convex dev environment
 - Price with lookup key `free:personal:monthly:v1` exists in `subscription_prices` table
 
 ### Must NOT Have (Guardrails)
+
 - Do NOT configure production environment variables
 - Do NOT modify any code files
 - Do NOT change Stripe configuration (products, prices, lookup keys)
@@ -61,6 +72,7 @@ Configure Convex environment to auto-enroll all new users to the free subscripti
 ## Verification Strategy (MANDATORY)
 
 ### Test Decision
+
 - **Infrastructure exists**: NO (this is configuration, not code)
 - **User wants tests**: Manual-only
 - **Framework**: N/A
@@ -68,6 +80,7 @@ Configure Convex environment to auto-enroll all new users to the free subscripti
 ### Manual QA Procedures
 
 Each TODO includes verification steps using:
+
 - Convex Dashboard queries
 - Stripe Dashboard inspection
 - CLI commands
@@ -82,13 +95,13 @@ Task 1 (Pre-flight) → Task 2 (Sync) → Task 3 (Configure) → Task 4 (Test) �
 
 ## Parallelization
 
-| Task | Depends On | Reason |
-|------|------------|--------|
-| 1 | None | Independent pre-flight check |
-| 2 | 1 | Need STRIPE_SECRET_KEY confirmed before sync |
-| 3 | 2 | Must have price synced before configuring lookup key |
-| 4 | 3 | Env vars must be set before testing |
-| 5 | 4 | Need test user to exist before verification |
+| Task | Depends On | Reason                                               |
+| ---- | ---------- | ---------------------------------------------------- |
+| 1    | None       | Independent pre-flight check                         |
+| 2    | 1          | Need STRIPE_SECRET_KEY confirmed before sync         |
+| 3    | 2          | Must have price synced before configuring lookup key |
+| 4    | 3          | Env vars must be set before testing                  |
+| 5    | 4          | Need test user to exist before verification          |
 
 ---
 
@@ -108,10 +121,10 @@ Task 1 (Pre-flight) → Task 2 (Sync) → Task 3 (Configure) → Task 4 (Test) �
   **Parallelizable**: NO (foundational check)
 
   **References**:
-  
+
   **Pattern References**:
   - `apps/backend/convex/stripe/subscription_actions.ts:15-23` - Stripe initialization requires `STRIPE_SECRET_KEY`
-  
+
   **Documentation References**:
   - Stripe Dashboard: Products > [Free Plan] > Prices > lookup_key field
   - Clerk Dashboard: Webhooks > [Dev endpoint] > Recent deliveries
@@ -126,7 +139,7 @@ Task 1 (Pre-flight) → Task 2 (Sync) → Task 3 (Configure) → Task 4 (Test) �
   **Evidence Required:**
   - [ ] Note the exact lookup_key value from Stripe (must be `free:personal:monthly:v1`)
   - [ ] Note the Clerk webhook URL (should contain `.convex.site`)
-  
+
   **Commit**: NO
 
 ---
@@ -144,12 +157,12 @@ Task 1 (Pre-flight) → Task 2 (Sync) → Task 3 (Configure) → Task 4 (Test) �
   **Parallelizable**: NO (depends on Task 1)
 
   **References**:
-  
+
   **Pattern References**:
   - `apps/backend/convex/stripe/sync.ts` - Sync functions: `syncFromStripe()`
   - `apps/backend/convex/schemas/subscription_prices.ts:55` - `lookupKey` field definition
   - `apps/backend/convex/schemas/subscription_prices.ts:63` - `by_lookup_key` index
-  
+
   **API/Type References**:
   - `apps/backend/convex/stripe/sync_helpers.ts` - Maps Stripe `price.lookup_key` to Convex `lookupKey`
 
@@ -184,7 +197,7 @@ Task 1 (Pre-flight) → Task 2 (Sync) → Task 3 (Configure) → Task 4 (Test) �
   **Parallelizable**: NO (depends on Task 2)
 
   **References**:
-  
+
   **Pattern References**:
   - `apps/backend/convex/stripe/subscription_actions.ts:28-32` - `isAutoEnrollEnabled()` checks these specific values: `["1", "true", "TRUE", "yes", "on"]`
   - `apps/backend/convex/stripe/subscription_actions.ts:38-39` - `getDefaultPlanLookupKey()` reads key directly (no transformations)
@@ -228,7 +241,7 @@ Task 1 (Pre-flight) → Task 2 (Sync) → Task 3 (Configure) → Task 4 (Test) �
   **Parallelizable**: NO (depends on Task 3)
 
   **References**:
-  
+
   **Pattern References**:
   - `apps/backend/convex/http.ts:138-176` - Clerk `user.created` webhook handler
   - `apps/backend/convex/clerk_webhooks.ts:14-66` - `syncUser` mutation creates user and returns `isNewUser: true`
@@ -265,7 +278,7 @@ Task 1 (Pre-flight) → Task 2 (Sync) → Task 3 (Configure) → Task 4 (Test) �
   **Parallelizable**: NO (depends on Task 4)
 
   **References**:
-  
+
   **Pattern References**:
   - `apps/backend/convex/schemas/users.ts` - User schema with `stripeCustomerId` field
   - `apps/backend/convex/schemas/subscriptions.ts` - Subscription schema with `userId`, `status`, `externalPriceId`
@@ -274,20 +287,19 @@ Task 1 (Pre-flight) → Task 2 (Sync) → Task 3 (Configure) → Task 4 (Test) �
   **Acceptance Criteria**:
 
   **Manual Execution Verification:**
-  
+
   **Convex Verification:**
   - [ ] In Convex Dashboard: Navigate to Data > `users` table
   - [ ] Find user by email (the test email from Task 4)
   - [ ] Verify `stripeCustomerId` field is populated (should be `cus_xxx`)
   - [ ] Note the user's `_id` value
-  
   - [ ] Navigate to Data > `subscriptions` table
   - [ ] Filter/search for the user's `_id` in the `userId` field
   - [ ] Verify a subscription record exists with:
     - `status` = `"active"`
     - `externalPriceId` = the price ID noted in Task 2
     - `creditsIncluded` = expected value for free plan (likely 10 or whatever was set in Stripe product metadata)
-  
+
   **Stripe Verification:**
   - [ ] In Stripe Dashboard (test mode): Navigate to Customers
   - [ ] Find customer by email (the test email)
@@ -331,6 +343,7 @@ No commits required - this is a configuration-only task.
 ## Success Criteria
 
 ### Verification Commands
+
 ```bash
 # Check Convex logs for auto-enrollment
 bunx convex logs --tail
@@ -342,6 +355,7 @@ bunx convex logs --tail
 ```
 
 ### Final Checklist
+
 - [x] All "Must Have" present (env vars configured, price synced)
 - [x] All "Must NOT Have" absent (no production changes, no code changes)
 - [x] Test user has active subscription in both Convex and Stripe (VERIFIED: Customer cus_Trd5IQ4jG1VJ5Y has subscription sub_1SttpiIlmpJUPMjL3STdFfTl with status ACTIVE and lookup_key free:personal:monthly:v1)

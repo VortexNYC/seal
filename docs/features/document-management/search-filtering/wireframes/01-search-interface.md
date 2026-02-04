@@ -6,6 +6,7 @@
 ## Main Search Interface
 
 ### Global Search Bar
+
 [Mobile Viewport: 375px with collapsible filters]
 [Desktop Viewport: 1200px with persistent filter sidebar]
 
@@ -38,6 +39,7 @@
 ```
 
 ### Active Search with Real-time Results
+
 [Component: Live search with highlighted matches and result metrics]
 [Mobile Viewport: Simplified result cards with swipe actions]
 
@@ -73,6 +75,7 @@
 ```
 
 ### Search with No Results
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  🔍 [xyz123 document                      ] ❌ [🎛️ Filters]                 │
@@ -103,6 +106,7 @@
 ## Advanced Filter Interface
 
 ### Filter Panel Expanded
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  🔍 [contract                             ] ❌ [🎛️ Filters ▼]               │
@@ -136,6 +140,7 @@
 ```
 
 ### Folder Filter Dropdown
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  📁 Folders:                                                                │
@@ -156,6 +161,7 @@
 ```
 
 ### Date Range Filter
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  📅 Date Range:                                                             │
@@ -179,6 +185,7 @@
 ## Folder-Scoped Search
 
 ### Search Within Specific Folder
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 📄 Documents > 📁 Legal Documents                     [+ Upload Document]   │
@@ -208,6 +215,7 @@
 ```
 
 ### Folder-Scoped Search Results
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 📄 Documents > 📁 Legal Documents                                           │
@@ -240,6 +248,7 @@
 ## Tag-Based Filtering
 
 ### Tag Filter Selection
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  🏷️ Tags:                                                                   │
@@ -264,6 +273,7 @@
 ```
 
 ### Multi-Tag Filter Results
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  🔍 [                                     ] ❌ [🎛️ Filters ▼]               │
@@ -299,6 +309,7 @@
 ## Search Result Management
 
 ### Search Result Sorting
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  🔍 [contract                             ] ❌ [🎛️ Filters]                 │
@@ -324,6 +335,7 @@
 ```
 
 ### Search with Quick Actions
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  🎯 Search Results for "quarterly report" (3 documents found)              │
@@ -350,6 +362,7 @@
 ## Mobile Search Interface
 
 ### Mobile Search View
+
 ```
 ┌─────────────────────────────┐
 │ 🔍 [Search docs...]    [🎛️] │
@@ -387,6 +400,7 @@
 ```
 
 ### Mobile Filter Panel
+
 ```
 ┌─────────────────────────────┐
 │ 🎛️ Filters            [❌] │
@@ -418,6 +432,7 @@
 ## Advanced Search States
 
 ### Search Loading State
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  🔍 [complex search query with many terms] 🔎 [🎛️ Filters]                 │
@@ -437,6 +452,7 @@
 ```
 
 ### Search Error State
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  🔍 [contract terms agreement            ] ❌ [🎛️ Filters]                 │

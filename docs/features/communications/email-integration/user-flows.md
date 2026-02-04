@@ -3,6 +3,7 @@
 ## Primary Email Sending Flows
 
 ### Document Invitation Email Flow
+
 ```
 ○ User Sends Document for Signing
     ↓
@@ -32,6 +33,7 @@
 ```
 
 ### Email Template Selection Flow
+
 ```
 ○ User Wants to Send Document
     ↓
@@ -63,6 +65,7 @@
 ## Email Tracking Flows
 
 ### Delivery Status Tracking Flow
+
 ```
 ○ Email Sent to Recipients
     ↓
@@ -92,6 +95,7 @@
 ```
 
 ### Email Bounce Handling Flow
+
 ```
 ○ Email Delivery Fails (Bounce)
     ↓
@@ -123,6 +127,7 @@
 ## Reminder Email Flows
 
 ### Manual Reminder Email Flow
+
 ```
 ○ Sender Wants to Send Reminder
     ↓
@@ -152,6 +157,7 @@
 ```
 
 ### Automated Reminder Flow
+
 ```
 ○ Document Sent with Reminder Schedule
     ↓
@@ -183,6 +189,7 @@
 ## Completion Notification Flows
 
 ### Document Completion Email Flow
+
 ```
 ○ All Recipients Complete Signing
     ↓
@@ -214,6 +221,7 @@
 ## Error Recovery Flows
 
 ### Email Delivery Failure Recovery Flow
+
 ```
 ○ Email Delivery Fails
     ↓
