@@ -3,6 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, HeadContent, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import type { ConvexReactClient } from "convex/react";
+import { useEffect } from "react";
 
 import { ErrorBoundary } from "@/components/error-boundary";
 import { NotFoundPage } from "@/components/not-found-page";
@@ -28,6 +29,12 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      void import("react-grab");
+    }
+  }, []);
+
   return (
     <RootDocument>
       <ErrorBoundary>
