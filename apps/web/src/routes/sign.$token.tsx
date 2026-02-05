@@ -19,6 +19,7 @@ import {
   ClockIcon,
   DownloadIcon,
   FileTextIcon,
+  Loader2Icon,
   PenLineIcon,
   PlayCircleIcon,
   ShieldCheckIcon,
@@ -131,6 +132,9 @@ function SigningPage() {
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true,
   );
+
+  // Download state
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Track online/offline status
   useEffect(() => {
@@ -340,6 +344,29 @@ function SigningPage() {
     setDeclineReason("");
   };
 
+  // Download signed PDF handler
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      const { url, documentName } = await convexClient.action(
+        api.documents.sign_pdf_action.generateAndGetSignedPdfByToken,
+        { signingToken: token },
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${documentName || "document"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Download started");
+    } catch (error) {
+      console.error("Failed to download document:", error);
+      toast.error("Failed to download document");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   // Field handling
   const handleFieldClick = (fieldId: Id<"signature_fields">) => {
     setActiveFieldId(fieldId);
@@ -531,10 +558,10 @@ function SigningPage() {
         <div className="flex h-14 items-center justify-between px-6">
           {/* Left: Logo + Document context */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2.5">
+            <a href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
               <SealLogo size={32} variant="color" />
               <span className="font-semibold tracking-tight">Seal</span>
-            </div>
+            </a>
             <div className="bg-border/60 h-5 w-px" />
             <div className="flex items-center gap-2">
               <PenLineIcon className="text-muted-foreground h-4 w-4" />
@@ -594,10 +621,10 @@ function SigningPage() {
       <header className="dark:bg-background/80 border-border/50 sticky top-0 z-40 border-b bg-white/80 backdrop-blur-xl lg:hidden">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+            <a href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
               <SealLogo size={32} variant="color" />
               <span className="text-sm font-semibold tracking-tight">Seal</span>
-            </div>
+            </a>
             {!isCompleted && fields.length > 0 && (
               <div className="flex items-center gap-2">
                 <div className="bg-muted h-1.5 w-16 overflow-hidden rounded-full">
@@ -908,24 +935,21 @@ function SigningPage() {
           )}
 
           {/* Completed state footer */}
-          {isCompleted && recipient.status !== "declined" && pdfUrl && (
+          {isCompleted && recipient.status !== "declined" && (
             <div className="border-border/50 bg-muted/20 border-t p-6">
               <Button
                 variant="outline"
                 size="lg"
                 className="h-12 w-full"
-                onClick={() => {
-                  const link = document.createElement("a");
-                  link.href = pdfUrl;
-                  link.download = `${doc.name || "document"}.pdf`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  toast.success("Download started");
-                }}
+                onClick={handleDownload}
+                disabled={isDownloading}
               >
-                <DownloadIcon className="mr-2 h-4 w-4" />
-                Download Document
+                {isDownloading ? (
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <DownloadIcon className="mr-2 h-4 w-4" />
+                )}
+                {isDownloading ? "Preparing..." : "Download Document"}
               </Button>
             </div>
           )}
@@ -1208,29 +1232,24 @@ function SigningPage() {
           {/* Mobile Completed Footer */}
           {isCompleted && (
             <div className="dark:bg-background/95 border-border/50 safe-area-inset-bottom sticky bottom-0 z-40 border-t bg-white/95 p-4 backdrop-blur-xl lg:hidden">
-              {recipient.status !== "declined" && pdfUrl ? (
+              {recipient.status !== "declined" ? (
                 <Button
                   variant="outline"
                   size="lg"
                   className="h-12 w-full"
-                  onClick={() => {
-                    const link = document.createElement("a");
-                    link.href = pdfUrl;
-                    link.download = `${doc.name || "document"}.pdf`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    toast.success("Download started");
-                  }}
+                  onClick={handleDownload}
+                  disabled={isDownloading}
                 >
-                  <DownloadIcon className="mr-2 h-4 w-4" />
-                  Download Document
+                  {isDownloading ? (
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <DownloadIcon className="mr-2 h-4 w-4" />
+                  )}
+                  {isDownloading ? "Preparing..." : "Download Document"}
                 </Button>
               ) : (
                 <p className="text-muted-foreground text-center text-sm">
-                  {recipient.status === "declined"
-                    ? "You have declined this document."
-                    : "Thank you for completing this document."}
+                  You have declined this document.
                 </p>
               )}
             </div>
