@@ -2,6 +2,11 @@ import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../_generated/server";
 
+/**
+ * Internal queries/mutations for Stripe Connect account persistence.
+ * These are only called by actions and webhooks.
+ */
+
 export const getAccountByOrganizationId = internalQuery({
   args: {
     organizationId: v.id("organizations"),
@@ -50,8 +55,10 @@ export const upsertStripeAccount = internalMutation({
       }),
     ),
     feeHandling: v.optional(v.union(v.literal("absorb"), v.literal("pass_to_recipient"))),
+    defaultCurrency: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Upsert by Stripe account id to avoid duplicates across orgs.
     const existing = await ctx.db
       .query("stripe_accounts")
       .withIndex("by_stripe_account", (q) => q.eq("stripeAccountId", args.stripeAccountId))
@@ -68,6 +75,7 @@ export const upsertStripeAccount = internalMutation({
       requirements: args.requirements,
       capabilities: args.capabilities,
       feeHandling: args.feeHandling ?? existing?.feeHandling ?? "absorb",
+      defaultCurrency: args.defaultCurrency ?? existing?.defaultCurrency,
       updatedAt: now,
     };
 
@@ -97,6 +105,7 @@ export const markAccountDisconnected = internalMutation({
       return null;
     }
 
+    // Preserve the record but mark it as disconnected.
     await ctx.db.patch(existing._id, {
       chargesEnabled: false,
       payoutsEnabled: false,

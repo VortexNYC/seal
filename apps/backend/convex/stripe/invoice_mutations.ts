@@ -2,6 +2,11 @@ import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../_generated/server";
 
+/**
+ * Internal queries/mutations for document-scoped Stripe invoices.
+ * The Stripe invoice remains the source of truth; this table is for quick lookups.
+ */
+
 export const getInvoiceByStripeId = internalQuery({
   args: { stripeInvoiceId: v.string() },
   handler: async (ctx, args) => {
@@ -30,6 +35,7 @@ export const upsertInvoiceRecord = internalMutation({
     organizationId: v.id("organizations"),
     stripeAccountId: v.string(),
     stripeInvoiceId: v.string(),
+    stripeCustomerId: v.optional(v.string()),
     status: v.union(
       v.literal("draft"),
       v.literal("open"),
@@ -45,6 +51,7 @@ export const upsertInvoiceRecord = internalMutation({
     hostedInvoiceUrl: v.optional(v.string()),
     invoicePdf: v.optional(v.string()),
     finalizedAt: v.optional(v.number()),
+    paidAt: v.optional(v.number()),
     voidedAt: v.optional(v.number()),
     deletedAt: v.optional(v.number()),
   },
@@ -60,6 +67,7 @@ export const upsertInvoiceRecord = internalMutation({
       organizationId: args.organizationId,
       stripeAccountId: args.stripeAccountId,
       stripeInvoiceId: args.stripeInvoiceId,
+      stripeCustomerId: args.stripeCustomerId,
       status: args.status,
       customerEmail: args.customerEmail,
       customerName: args.customerName,
@@ -68,6 +76,7 @@ export const upsertInvoiceRecord = internalMutation({
       hostedInvoiceUrl: args.hostedInvoiceUrl,
       invoicePdf: args.invoicePdf,
       finalizedAt: args.finalizedAt,
+      paidAt: args.paidAt,
       voidedAt: args.voidedAt,
       deletedAt: args.deletedAt,
       updatedAt: now,
@@ -82,6 +91,45 @@ export const upsertInvoiceRecord = internalMutation({
       ...payload,
       createdAt: now,
     });
+  },
+});
+
+export const updateInvoiceStatus = internalMutation({
+  args: {
+    stripeInvoiceId: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("open"),
+      v.literal("paid"),
+      v.literal("void"),
+      v.literal("uncollectible"),
+      v.literal("deleted"),
+    ),
+    paidAt: v.optional(v.number()),
+    voidedAt: v.optional(v.number()),
+    hostedInvoiceUrl: v.optional(v.string()),
+    invoicePdf: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .first();
+
+    if (!existing) {
+      return null;
+    }
+
+    await ctx.db.patch(existing._id, {
+      status: args.status,
+      paidAt: args.paidAt,
+      voidedAt: args.voidedAt,
+      hostedInvoiceUrl: args.hostedInvoiceUrl ?? existing.hostedInvoiceUrl,
+      invoicePdf: args.invoicePdf ?? existing.invoicePdf,
+      updatedAt: Date.now(),
+    });
+
+    return existing._id;
   },
 });
 

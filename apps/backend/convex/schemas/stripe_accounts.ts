@@ -24,6 +24,7 @@ export const stripeAccountsTable = defineTable({
     }),
   ),
   feeHandling: v.union(v.literal("absorb"), v.literal("pass_to_recipient")),
+  defaultCurrency: v.optional(v.string()),
   createdAt: v.number(),
   updatedAt: v.number(),
 })
