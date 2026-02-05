@@ -84,17 +84,22 @@ export function getConnectionStatus(account: {
   detailsSubmitted: boolean;
   requirements?: StripeRequirements;
 }): "pending" | "restricted" | "connected" {
+  // Account has a disabled reason - restricted
+  if (account.requirements?.disabledReason) {
+    return "restricted";
+  }
+
+  // Onboarding not complete or has pending requirements
   if (!account.detailsSubmitted || (account.requirements?.currentlyDue?.length ?? 0) > 0) {
     return "pending";
   }
 
-  if (!account.chargesEnabled || (account.requirements?.disabledReason ?? undefined)) {
+  // Charges not enabled - restricted (cannot accept payments)
+  if (!account.chargesEnabled) {
     return "restricted";
   }
 
-  if (account.payoutsEnabled && account.chargesEnabled) {
-    return "connected";
-  }
-
-  return "pending";
+  // chargesEnabled is the primary requirement for accepting payments.
+  // payoutsEnabled may be pending (bank verification) but account is usable.
+  return "connected";
 }
