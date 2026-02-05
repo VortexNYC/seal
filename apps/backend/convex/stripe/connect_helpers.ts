@@ -1,5 +1,43 @@
 import type Stripe from "stripe";
 
+/**
+ * Search for an existing customer by email on a connected account, or create one if not found.
+ * This prevents customer duplication when creating multiple invoices for the same recipient.
+ */
+export async function getOrCreateConnectedCustomer(
+  stripe: Stripe,
+  stripeAccountId: string,
+  email: string,
+  name?: string,
+): Promise<Stripe.Customer> {
+  // Search for existing customer by email on the connected account
+  const existingCustomers = await stripe.customers.list(
+    {
+      email,
+      limit: 1,
+    },
+    { stripeAccount: stripeAccountId },
+  );
+
+  if (existingCustomers.data.length > 0) {
+    const existing = existingCustomers.data[0];
+    // Update name if provided and different
+    if (name && existing.name !== name) {
+      return stripe.customers.update(existing.id, { name }, { stripeAccount: stripeAccountId });
+    }
+    return existing;
+  }
+
+  // Create new customer if none exists
+  return stripe.customers.create(
+    {
+      email,
+      name: name ?? undefined,
+    },
+    { stripeAccount: stripeAccountId },
+  );
+}
+
 export type StripeRequirements = {
   currentlyDue: string[];
   eventuallyDue: string[];
