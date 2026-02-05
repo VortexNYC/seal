@@ -1575,6 +1575,7 @@ function DocumentDetailPage() {
 
         {/* Send document dialog */}
         <SendDocumentDialog
+          slug={slug}
           documentId={documentId as Id<"documents">}
           documentName={documentData.name}
           recipients={recipients}

@@ -4,10 +4,10 @@
  * and optional signing deadline
  */
 
-import { useAction } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { addDays, format } from "date-fns";
 import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, Loader2Icon, SendIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { getErrorMessage } from "@/lib/utils";
@@ -25,11 +25,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 
 interface SendDocumentDialogProps {
+  slug: string;
   documentId: Id<"documents">;
   documentName: string;
   recipients: Array<{
@@ -47,7 +51,15 @@ interface SendDocumentDialogProps {
   onSuccess?: () => void;
 }
 
+type ConnectedAccountResult = {
+  status: "not_connected" | "pending" | "restricted" | "connected";
+  account: {
+    chargesEnabled: boolean;
+  } | null;
+};
+
 export function SendDocumentDialog({
+  slug,
   documentId,
   documentName,
   recipients,
@@ -68,11 +80,77 @@ export function SendDocumentDialog({
   const [deadline, setDeadline] = useState<Date | undefined>(undefined);
 
   const sendDocumentEmails = useAction(api.documents.send_document_action.sendDocumentEmails);
+  const createDraftInvoice = useAction(api.stripe.invoice_actions.createDraftInvoiceForDocument);
+  const deleteDraftInvoice = useAction(api.stripe.invoice_actions.deleteDraftInvoice);
+
+  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, {
+    slug,
+  }) as ConnectedAccountResult | undefined;
 
   // Count pending recipients
   const pendingRecipients = recipients.filter(
     (r) => r.status !== "signed" && r.status !== "approved" && r.status !== "declined",
   );
+
+  const [includeInvoice, setIncludeInvoice] = useState(false);
+  const [invoiceRecipientId, setInvoiceRecipientId] = useState<string>("");
+  const [invoiceDescription, setInvoiceDescription] = useState("Document service fee");
+  const [invoiceAmount, setInvoiceAmount] = useState<string>("");
+  const [invoicePreview, setInvoicePreview] = useState<{
+    stripeInvoiceId: string;
+    amountDue: number;
+    currency: string;
+    lines: Array<{
+      id: string;
+      description: string;
+      quantity: number | null;
+      amount: number;
+      currency: string;
+    }>;
+  } | null>(null);
+  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
+
+  const chargesEnabled = connectedAccount?.account?.chargesEnabled ?? false;
+  const canUseInvoices = connectedAccount?.status === "connected" && chargesEnabled;
+
+  const resetInvoiceState = () => {
+    setInvoicePreview(null);
+    setInvoiceRecipientId("");
+    setInvoiceAmount("");
+    setInvoiceDescription("Document service fee");
+  };
+
+  useEffect(() => {
+    if (open || !invoicePreview?.stripeInvoiceId) {
+      return;
+    }
+
+    deleteDraftInvoice({
+      documentId,
+      stripeInvoiceId: invoicePreview.stripeInvoiceId,
+    })
+      .then(() => {
+        resetInvoiceState();
+      })
+      .catch((error) => {
+        console.error("Failed to delete invoice draft on close", error);
+      });
+  }, [open, invoicePreview?.stripeInvoiceId, deleteDraftInvoice, documentId]);
+
+  useEffect(() => {
+    if (!includeInvoice || invoiceRecipientId || pendingRecipients.length === 0) {
+      return;
+    }
+    setInvoiceRecipientId(pendingRecipients[0]?._id ?? "");
+  }, [includeInvoice, invoiceRecipientId, pendingRecipients]);
+
+  useEffect(() => {
+    if (!invoicePreview) {
+      return;
+    }
+    setInvoicePreview(null);
+  }, [invoiceAmount, invoiceDescription, invoiceRecipientId, invoicePreview]);
 
   // SEA-119: Get message for a specific recipient
   const getRecipientMessage = (recipientId: string) => {
@@ -105,6 +183,14 @@ export function SendDocumentDialog({
     setIsSending(true);
 
     try {
+      if (includeInvoice) {
+        if (!invoicePreview?.stripeInvoiceId) {
+          toast.error("Create an invoice preview before sending");
+          setIsSending(false);
+          return;
+        }
+      }
+
       // SEA-119: Build per-recipient messages array
       const perRecipientMessages = pendingRecipients
         .filter((r) => recipientMessages[r._id]?.trim())
@@ -118,6 +204,7 @@ export function SendDocumentDialog({
         customMessage: customMessage.trim() || undefined,
         recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
         deadline: deadline?.getTime(),
+        stripeInvoiceId: includeInvoice ? invoicePreview?.stripeInvoiceId : undefined,
       });
 
       if (result.success) {
@@ -130,6 +217,8 @@ export function SendDocumentDialog({
         setCustomMessage("");
         setRecipientMessages({});
         setDeadline(undefined);
+        setIncludeInvoice(false);
+        resetInvoiceState();
       } else {
         toast.error(
           `Failed to send to ${result.emailsFailed} recipient${result.emailsFailed !== 1 ? "s" : ""}`,
@@ -145,6 +234,75 @@ export function SendDocumentDialog({
     }
   };
 
+  const handleCreateInvoicePreview = async () => {
+    if (!includeInvoice) return;
+    if (!canUseInvoices) {
+      toast.error("Connect Stripe before creating invoices");
+      return;
+    }
+
+    const amountCents = Math.round(Number(invoiceAmount) * 100);
+    if (!invoiceAmount || Number.isNaN(amountCents) || amountCents <= 0) {
+      toast.error("Enter a valid invoice amount");
+      return;
+    }
+
+    const recipient = pendingRecipients.find((r) => r._id === invoiceRecipientId);
+    if (!recipient) {
+      toast.error("Select a recipient for the invoice");
+      return;
+    }
+
+    setIsCreatingInvoice(true);
+
+    try {
+      const preview = await createDraftInvoice({
+        documentId,
+        recipientEmail: recipient.email,
+        recipientName: recipient.name,
+        description: invoiceDescription.trim() || "Document service fee",
+        amountCents,
+        currency: "usd",
+      });
+      setInvoicePreview({
+        stripeInvoiceId: preview.stripeInvoiceId,
+        amountDue: preview.amountDue ?? amountCents,
+        currency: preview.currency ?? "usd",
+        lines: preview.lines ?? [],
+      });
+      toast.success("Invoice preview created");
+    } catch (error) {
+      toast.error("Failed to create invoice preview", {
+        description: getErrorMessage(error),
+      });
+    } finally {
+      setIsCreatingInvoice(false);
+    }
+  };
+
+  const handleDeleteInvoicePreview = async () => {
+    if (!invoicePreview?.stripeInvoiceId) {
+      setInvoicePreview(null);
+      return;
+    }
+
+    setIsDeletingInvoice(true);
+    try {
+      await deleteDraftInvoice({
+        documentId,
+        stripeInvoiceId: invoicePreview.stripeInvoiceId,
+      });
+      resetInvoiceState();
+      toast.success("Invoice draft deleted");
+    } catch (error) {
+      toast.error("Failed to delete invoice draft", {
+        description: getErrorMessage(error),
+      });
+    } finally {
+      setIsDeletingInvoice(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
@@ -157,6 +315,147 @@ export function SendDocumentDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          <div className="rounded-md border p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <Label className="text-sm font-medium">Include Stripe invoice</Label>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Create a Stripe draft invoice and attach the payment link to this email.
+                </p>
+              </div>
+              <Switch
+                checked={includeInvoice}
+                onCheckedChange={(checked) => {
+                  setIncludeInvoice(checked);
+                  if (!checked) {
+                    handleDeleteInvoicePreview();
+                  }
+                }}
+              />
+            </div>
+
+            {includeInvoice && (
+              <div className="mt-4 space-y-3">
+                {!canUseInvoices && (
+                  <div className="bg-muted text-muted-foreground rounded-md p-3 text-xs">
+                    Stripe must be connected and enabled for charges. Update settings in{" "}
+                    <a
+                      href={`/${slug}/settings/payments`}
+                      className="text-primary underline-offset-2 hover:underline"
+                    >
+                      Payments
+                    </a>{" "}
+                    before creating invoices.
+                  </div>
+                )}
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="invoice-amount" className="text-xs">
+                      Amount (USD)
+                    </Label>
+                    <Input
+                      id="invoice-amount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={invoiceAmount}
+                      onChange={(event) => setInvoiceAmount(event.target.value)}
+                      disabled={!canUseInvoices}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="invoice-recipient" className="text-xs">
+                      Invoice recipient
+                    </Label>
+                    <Select
+                      value={invoiceRecipientId}
+                      onValueChange={setInvoiceRecipientId}
+                      disabled={!canUseInvoices}
+                    >
+                      <SelectTrigger id="invoice-recipient">
+                        <SelectValue placeholder="Select recipient" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pendingRecipients.map((recipient) => (
+                          <SelectItem key={recipient._id} value={recipient._id}>
+                            {recipient.name || recipient.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="invoice-description" className="text-xs">
+                    Line item description
+                  </Label>
+                  <Input
+                    id="invoice-description"
+                    value={invoiceDescription}
+                    onChange={(event) => setInvoiceDescription(event.target.value)}
+                    disabled={!canUseInvoices}
+                  />
+                </div>
+
+                <p className="text-muted-foreground text-xs">
+                  The invoice link will be sent only to the selected recipient.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCreateInvoicePreview}
+                    disabled={!canUseInvoices || isCreatingInvoice}
+                  >
+                    {isCreatingInvoice ? "Creating..." : "Create invoice preview"}
+                  </Button>
+                  {invoicePreview && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDeleteInvoicePreview}
+                      disabled={isDeletingInvoice}
+                    >
+                      {isDeletingInvoice ? "Removing..." : "Discard draft"}
+                    </Button>
+                  )}
+                </div>
+
+                {invoicePreview && (
+                  <div className="bg-muted/40 rounded-md border p-3 text-xs">
+                    <p className="text-sm font-semibold">Invoice preview</p>
+                    <ul className="mt-2 space-y-1">
+                      {invoicePreview.lines.length > 0 ? (
+                        invoicePreview.lines.map((line) => (
+                          <li key={line.id} className="flex items-center justify-between gap-2">
+                            <span className="truncate">{line.description}</span>
+                            <span className="shrink-0">
+                              {(line.amount / 100).toFixed(2)} {line.currency.toUpperCase()}
+                            </span>
+                          </li>
+                        ))
+                      ) : (
+                        <li>No line items available.</li>
+                      )}
+                    </ul>
+                    <div className="mt-2 flex items-center justify-between border-t pt-2">
+                      <span>Total due</span>
+                      <span className="font-semibold">
+                        {(invoicePreview.amountDue / 100).toFixed(2)}{" "}
+                        {invoicePreview.currency.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* SEA-119: Recipients list with per-recipient message */}
           <div>
             <Label className="mb-2 text-sm font-medium">Recipients</Label>

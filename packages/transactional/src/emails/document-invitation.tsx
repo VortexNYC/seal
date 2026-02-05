@@ -20,6 +20,9 @@ export interface DocumentInvitationProps {
   signingUrl: string;
   customMessage?: string;
   expiresAt?: number;
+  invoiceUrl?: string;
+  invoiceAmount?: number;
+  invoiceCurrency?: string;
 }
 
 export function DocumentInvitation({
@@ -29,8 +32,13 @@ export function DocumentInvitation({
   signingUrl = "https://seal.nyc/sign/example",
   customMessage,
   expiresAt,
+  invoiceUrl,
+  invoiceAmount,
+  invoiceCurrency,
 }: DocumentInvitationProps) {
-  const previewText = `${senderName} sent you "${documentName}" to sign`;
+  const previewText = invoiceUrl
+    ? `${senderName} sent you "${documentName}" with an invoice`
+    : `${senderName} sent you "${documentName}" to sign`;
   const expirationDate = expiresAt
     ? new Date(expiresAt).toLocaleDateString("en-US", {
         weekday: "long",
@@ -39,6 +47,13 @@ export function DocumentInvitation({
         day: "numeric",
       })
     : null;
+  const invoiceAmountFormatted =
+    invoiceAmount && invoiceCurrency
+      ? new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: invoiceCurrency.toUpperCase(),
+        }).format(invoiceAmount / 100)
+      : null;
 
   return (
     <Html>
@@ -83,6 +98,33 @@ export function DocumentInvitation({
                 <Section className="mb-[24px] border-l-4 border-solid border-[#eab308] bg-[#fefce8] py-[12px] pr-[12px] pl-[16px]">
                   <Text className="m-0 text-[14px] text-[#713f12] italic">"{customMessage}"</Text>
                   <Text className="m-0 mt-[4px] text-[12px] text-[#a16207]">— {senderName}</Text>
+                </Section>
+              )}
+
+              {invoiceUrl && (
+                <Section className="mb-[24px] rounded-lg border border-solid border-[#dbeafe] bg-[#eff6ff] p-[16px]">
+                  <Text className="m-0 text-[14px] font-semibold text-[#1e3a8a]">
+                    Invoice attached
+                  </Text>
+                  <Text className="m-0 mt-[4px] text-[13px] text-[#1e40af]">
+                    {invoiceAmountFormatted
+                      ? `Amount due: ${invoiceAmountFormatted}`
+                      : "Please review and pay the invoice before signing."}
+                  </Text>
+                  <Section className="mt-[12px] text-center">
+                    <Button
+                      className="rounded-lg bg-[#2563eb] px-[24px] py-[10px] text-center text-[14px] font-medium text-white no-underline"
+                      href={invoiceUrl}
+                    >
+                      Review Invoice
+                    </Button>
+                  </Section>
+                  <Text className="m-0 mt-[10px] text-[12px] text-[#64748b]">
+                    Or open this link:{" "}
+                    <Link href={invoiceUrl} className="break-all text-[#2563eb]">
+                      {invoiceUrl}
+                    </Link>
+                  </Text>
                 </Section>
               )}
 
