@@ -233,3 +233,50 @@ export const connectExistingAccount = internalAction({
     });
   },
 });
+
+/**
+ * Refresh the connected account status from Stripe.
+ * Called when the user returns from onboarding to ensure local state is up-to-date
+ * (webhooks may not have arrived yet).
+ */
+export const refreshConnectedAccount = action({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args): Promise<{ status: "not_connected" | "refreshed" }> => {
+    await resolveAdminMembership(ctx, args.organizationId);
+
+    const existing = await ctx.runQuery(
+      internal.stripe.connect_mutations.getAccountByOrganizationId,
+      {
+        organizationId: args.organizationId,
+      },
+    );
+
+    if (!existing) {
+      return { status: "not_connected" };
+    }
+
+    const stripe = initializeStripe();
+    const account = await stripe.accounts.retrieve(existing.stripeAccountId);
+
+    if (!account || typeof account === "string") {
+      throw new ConvexError("Stripe account not found");
+    }
+
+    // Update local record with latest Stripe state
+    await ctx.runMutation(internal.stripe.connect_mutations.upsertStripeAccount, {
+      organizationId: args.organizationId,
+      stripeAccountId: account.id,
+      accountType: account.type === "express" ? "express" : "standard",
+      chargesEnabled: account.charges_enabled,
+      payoutsEnabled: account.payouts_enabled,
+      detailsSubmitted: account.details_submitted,
+      requirements: mapStripeRequirements(account),
+      capabilities: mapStripeCapabilities(account),
+      feeHandling: undefined, // Preserve existing value
+    });
+
+    return { status: "refreshed" };
+  },
+});

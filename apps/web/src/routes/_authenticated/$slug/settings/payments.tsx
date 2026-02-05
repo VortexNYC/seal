@@ -99,6 +99,7 @@ function PaymentsSettingsPage() {
   const createAccountLink = useAction(api.stripe.connect_actions.createAccountLink);
   const createConnectOAuthUrl = useAction(api.stripe.connect_actions.createConnectOAuthUrl);
   const exchangeConnectOAuthCode = useAction(api.stripe.connect_actions.exchangeConnectOAuthCode);
+  const refreshConnectedAccount = useAction(api.stripe.connect_actions.refreshConnectedAccount);
 
   const updateFeeHandling = useMutation(api.stripe.connect_public_mutations.updateFeeHandling);
 
@@ -106,6 +107,7 @@ function PaymentsSettingsPage() {
   const [isContinuing, setIsContinuing] = useState(false);
   const [isOAuthConnecting, setIsOAuthConnecting] = useState(false);
   const [isSavingFeeHandling, setIsSavingFeeHandling] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
@@ -134,6 +136,39 @@ function PaymentsSettingsPage() {
     };
   }, [connectedAccount]);
 
+  // Refresh account status when returning from Stripe onboarding
+  useEffect(() => {
+    if (!orgId) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get("connected");
+    const refresh = params.get("refresh");
+
+    if (!connected && !refresh) {
+      return;
+    }
+
+    setIsRefreshing(true);
+
+    refreshConnectedAccount({ organizationId: orgId })
+      .then(() => {
+        if (connected) {
+          toast.success("Stripe account status updated");
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to refresh account status:", error);
+      })
+      .finally(() => {
+        setIsRefreshing(false);
+        const cleanUrl = `${window.location.pathname}`;
+        window.history.replaceState({}, "", cleanUrl);
+      });
+  }, [refreshConnectedAccount, orgId]);
+
+  // Handle OAuth code exchange
   useEffect(() => {
     if (!orgId) {
       return;
@@ -276,10 +311,16 @@ function PaymentsSettingsPage() {
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
                 Stripe Connection
-                {isPro ? getStatusIcon(status) : getStatusIcon("not_connected")}
+                {isRefreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isPro ? (
+                  getStatusIcon(status)
+                ) : (
+                  getStatusIcon("not_connected")
+                )}
               </span>
               <span className="text-sm font-medium">
-                {isPro ? getStatusLabel(status) : "Pro Required"}
+                {isRefreshing ? "Refreshing…" : isPro ? getStatusLabel(status) : "Pro Required"}
               </span>
             </CardTitle>
             <CardDescription>
@@ -402,14 +443,15 @@ function PaymentsSettingsPage() {
         {status === "connected" && isPro && connectedAccount?.account && (
           <Card>
             <CardHeader>
-              <CardTitle>Fee Handling</CardTitle>
+              <CardTitle>Platform Fee</CardTitle>
               <CardDescription>
-                Choose whether you absorb processing fees or pass them to recipients.
+                Seal charges a 0.25% platform fee on Pro plans for each invoice payment. Choose who
+                pays this fee.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Default fee handling</Label>
+                <Label>Who pays the platform fee?</Label>
                 <RadioGroup
                   value={feeHandling}
                   onValueChange={(value) => handleUpdateFeeHandling(value as FeeHandling)}
@@ -418,16 +460,21 @@ function PaymentsSettingsPage() {
                 >
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="absorb" id="fee-absorb" />
-                    <Label htmlFor="fee-absorb">Absorb fees (sender pays)</Label>
+                    <Label htmlFor="fee-absorb">
+                      I'll absorb the fee (deducted from my payout)
+                    </Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="pass_to_recipient" id="fee-pass" />
-                    <Label htmlFor="fee-pass">Pass fees to recipient</Label>
+                    <Label htmlFor="fee-pass">Add fee to invoice total (recipient pays)</Label>
                   </div>
                 </RadioGroup>
                 {isSavingFeeHandling && (
                   <p className="text-muted-foreground text-xs">Saving fee preference…</p>
                 )}
+                <p className="text-muted-foreground text-xs">
+                  Note: Stripe's payment processing fees are separate and handled by Stripe.
+                </p>
               </div>
             </CardContent>
           </Card>
