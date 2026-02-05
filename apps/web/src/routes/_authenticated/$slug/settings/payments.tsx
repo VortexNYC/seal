@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -85,6 +86,8 @@ function getStatusIcon(status: ConnectionStatus) {
 
 function PaymentsSettingsPage() {
   const { slug } = Route.useParams();
+
+  const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
 
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
 
@@ -261,6 +264,11 @@ function PaymentsSettingsPage() {
         <p className="text-muted-foreground text-sm">
           Connect Stripe to accept payments through documents. Only workspace owners and admins can
           manage payment settings.
+          {!isPro && !isLoadingPlan && (
+            <span className="mt-1 block text-amber-600 dark:text-amber-400">
+              Stripe Connect requires a Pro plan.
+            </span>
+          )}
         </p>
 
         <Card>
@@ -268,12 +276,19 @@ function PaymentsSettingsPage() {
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
                 Stripe Connection
-                {getStatusIcon(status)}
+                {isPro ? getStatusIcon(status) : getStatusIcon("not_connected")}
               </span>
-              <span className="text-sm font-medium">{getStatusLabel(status)}</span>
+              <span className="text-sm font-medium">
+                {isPro ? getStatusLabel(status) : "Pro Required"}
+              </span>
             </CardTitle>
             <CardDescription>
               Manage onboarding status, required actions, and connection health.
+              {!isPro && !isLoadingPlan && (
+                <span className="mt-1 block text-amber-600 dark:text-amber-400">
+                  Upgrade to Pro to connect Stripe and accept payments.
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -284,7 +299,7 @@ function PaymentsSettingsPage() {
               </div>
             )}
 
-            {status === "not_connected" && (
+            {status === "not_connected" && isPro && (
               <div className="space-y-3">
                 <p className="text-sm">
                   No Stripe account connected. Connect a new Stripe account or authorize an existing
@@ -318,7 +333,19 @@ function PaymentsSettingsPage() {
               </div>
             )}
 
-            {(status === "pending" || status === "restricted") && (
+            {status === "not_connected" && !isPro && !isLoadingPlan && (
+              <div className="space-y-3">
+                <p className="text-sm">
+                  Stripe Connect is available on the Pro plan. Upgrade to accept payments through
+                  your documents.
+                </p>
+                <Button asChild>
+                  <a href={`/${slug}/settings/billing`}>Upgrade to Pro</a>
+                </Button>
+              </div>
+            )}
+
+            {(status === "pending" || status === "restricted") && isPro && (
               <div className="space-y-3">
                 <p className="text-sm">
                   Your Stripe account needs additional setup before you can accept payments.
@@ -355,7 +382,7 @@ function PaymentsSettingsPage() {
               </div>
             )}
 
-            {status === "connected" && (
+            {status === "connected" && isPro && (
               <div className="space-y-3">
                 <p className="text-sm">
                   Stripe is connected and ready for payments. You can manage account details in the
@@ -372,7 +399,7 @@ function PaymentsSettingsPage() {
           </CardContent>
         </Card>
 
-        {status === "connected" && connectedAccount?.account && (
+        {status === "connected" && isPro && connectedAccount?.account && (
           <Card>
             <CardHeader>
               <CardTitle>Fee Handling</CardTitle>

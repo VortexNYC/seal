@@ -10,6 +10,7 @@ import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, Loader2Icon, SendIcon } f
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { getErrorMessage } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
@@ -83,6 +84,8 @@ export function SendDocumentDialog({
   const createDraftInvoice = useAction(api.stripe.invoice_actions.createDraftInvoiceForDocument);
   const deleteDraftInvoice = useAction(api.stripe.invoice_actions.deleteDraftInvoice);
 
+  const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
+
   const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, {
     slug,
   }) as ConnectedAccountResult | undefined;
@@ -116,7 +119,7 @@ export function SendDocumentDialog({
   const isMountedRef = useRef(true);
 
   const chargesEnabled = connectedAccount?.account?.chargesEnabled ?? false;
-  const canUseInvoices = connectedAccount?.status === "connected" && chargesEnabled;
+  const canUseInvoices = isPro && connectedAccount?.status === "connected" && chargesEnabled;
 
   const resetInvoiceState = () => {
     setInvoicePreview(null);
@@ -367,16 +370,31 @@ export function SendDocumentDialog({
             {includeInvoice && (
               <div className="mt-4 space-y-3">
                 {/* Draft invoice preview: created in Stripe before send, finalized on send */}
-                {!canUseInvoices && (
+                {!canUseInvoices && !isLoadingPlan && (
                   <div className="bg-muted text-muted-foreground rounded-md p-3 text-xs">
-                    Stripe must be connected and enabled for charges. Update settings in{" "}
-                    <a
-                      href={`/${slug}/settings/payments`}
-                      className="text-primary underline-offset-2 hover:underline"
-                    >
-                      Payments
-                    </a>{" "}
-                    before creating invoices.
+                    {!isPro ? (
+                      <>
+                        Invoices require a Pro plan.{" "}
+                        <a
+                          href={`/${slug}/settings/billing`}
+                          className="text-primary underline-offset-2 hover:underline"
+                        >
+                          Upgrade to Pro
+                        </a>{" "}
+                        to accept payments through documents.
+                      </>
+                    ) : (
+                      <>
+                        Stripe must be connected and enabled for charges. Update settings in{" "}
+                        <a
+                          href={`/${slug}/settings/payments`}
+                          className="text-primary underline-offset-2 hover:underline"
+                        >
+                          Payments
+                        </a>{" "}
+                        before creating invoices.
+                      </>
+                    )}
                   </div>
                 )}
 
