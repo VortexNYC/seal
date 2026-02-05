@@ -34,7 +34,6 @@ import {
 } from "../ui/dialog";
 import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 
 interface SendDocumentDialogProps {
@@ -74,9 +73,6 @@ export function SendDocumentDialog({
 
   // SEA-119: Deadline picker state
   const [deadline, setDeadline] = useState<Date | undefined>(undefined);
-
-  // Invoice toggle state - only for including existing draft invoices
-  const [includeExistingInvoice, setIncludeExistingInvoice] = useState(false);
 
   const sendDocumentEmails = useAction(api.documents.send_document_action.sendDocumentEmails);
 
@@ -134,10 +130,9 @@ export function SendDocumentDialog({
         customMessage: customMessage.trim() || undefined,
         recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
         deadline: deadline?.getTime(),
+        // Always include invoice if one exists as draft
         stripeInvoiceId:
-          includeExistingInvoice && existingInvoice?.status === "draft"
-            ? existingInvoice.stripeInvoiceId
-            : undefined,
+          existingInvoice?.status === "draft" ? existingInvoice.stripeInvoiceId : undefined,
       });
 
       if (result.success) {
@@ -150,7 +145,6 @@ export function SendDocumentDialog({
         setCustomMessage("");
         setRecipientMessages({});
         setDeadline(undefined);
-        setIncludeExistingInvoice(false);
       } else {
         toast.error(
           `Failed to send to ${result.emailsFailed} recipient${result.emailsFailed !== 1 ? "s" : ""}`,
@@ -178,27 +172,23 @@ export function SendDocumentDialog({
         </DialogHeader>
 
         <div className="-mx-6 flex-1 space-y-4 overflow-y-auto px-6 py-4">
-          {/* Existing Invoice Toggle */}
+          {/* Invoice Info - Always included when exists */}
           {existingInvoice && existingInvoice.status === "draft" && (
-            <div className="rounded-md border p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
-                    <CreditCardIcon className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Include invoice</Label>
-                    <p className="text-muted-foreground mt-0.5 text-xs">
-                      {(existingInvoice.amountDue / 100).toFixed(2)}{" "}
-                      {existingInvoice.currency.toUpperCase()} invoice to{" "}
-                      {existingInvoice.customerEmail}
-                    </p>
-                  </div>
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
+                  <CreditCardIcon className="h-4 w-4" />
                 </div>
-                <Switch
-                  checked={includeExistingInvoice}
-                  onCheckedChange={setIncludeExistingInvoice}
-                />
+                <div>
+                  <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+                    Invoice will be included
+                  </p>
+                  <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">
+                    {(existingInvoice.amountDue / 100).toFixed(2)}{" "}
+                    {existingInvoice.currency.toUpperCase()} invoice to{" "}
+                    {existingInvoice.customerEmail}
+                  </p>
+                </div>
               </div>
             </div>
           )}
