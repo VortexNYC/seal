@@ -168,6 +168,11 @@ function buildNavSections({
       visible:
         canView(permissionFlags?.canViewBilling) || canView(permissionFlags?.canManageBilling),
     },
+    {
+      title: "Payments",
+      url: buildOrganizationPath(slug, "/settings/payments"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
   ].filter((item) => item.visible);
 
   const developerItems = [
