@@ -7,7 +7,7 @@
 import { useAction, useQuery } from "convex/react";
 import { addDays, format } from "date-fns";
 import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, Loader2Icon, SendIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { getErrorMessage } from "@/lib/utils";
@@ -111,32 +111,62 @@ export function SendDocumentDialog({
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [isDeletingInvoice, setIsDeletingInvoice] = useState(false);
 
+  // Refs to preserve invoice ID for cleanup and track mount state
+  const invoiceIdRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
+
   const chargesEnabled = connectedAccount?.account?.chargesEnabled ?? false;
   const canUseInvoices = connectedAccount?.status === "connected" && chargesEnabled;
 
   const resetInvoiceState = () => {
     setInvoicePreview(null);
+    invoiceIdRef.current = null;
     setInvoiceRecipientId("");
     setInvoiceAmount("");
     setInvoiceDescription("Document service fee");
   };
 
+  // Keep ref in sync with state
   useEffect(() => {
-    if (open || !invoicePreview?.stripeInvoiceId) {
+    invoiceIdRef.current = invoicePreview?.stripeInvoiceId ?? null;
+  }, [invoicePreview?.stripeInvoiceId]);
+
+  // Track mount state for async cleanup
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Cleanup draft invoice when dialog closes
+  useEffect(() => {
+    if (open) {
       return;
     }
 
+    // Read from ref to avoid stale state in cleanup
+    const invoiceIdToDelete = invoiceIdRef.current;
+    if (!invoiceIdToDelete) {
+      return;
+    }
+
+    // Clear ref immediately to prevent double-deletion
+    invoiceIdRef.current = null;
+
     deleteDraftInvoice({
       documentId,
-      stripeInvoiceId: invoicePreview.stripeInvoiceId,
+      stripeInvoiceId: invoiceIdToDelete,
     })
       .then(() => {
-        resetInvoiceState();
+        if (isMountedRef.current) {
+          resetInvoiceState();
+        }
       })
       .catch((error) => {
         console.error("Failed to delete invoice draft on close", error);
       });
-  }, [open, invoicePreview?.stripeInvoiceId, deleteDraftInvoice, documentId]);
+  }, [open, deleteDraftInvoice, documentId]);
 
   useEffect(() => {
     if (!includeInvoice || invoiceRecipientId || pendingRecipients.length === 0) {
@@ -145,12 +175,12 @@ export function SendDocumentDialog({
     setInvoiceRecipientId(pendingRecipients[0]?._id ?? "");
   }, [includeInvoice, invoiceRecipientId, pendingRecipients]);
 
+  // Clear invoice preview when inputs change (invalidate stale preview)
   useEffect(() => {
-    if (!invoicePreview) {
-      return;
+    if (invoiceIdRef.current) {
+      setInvoicePreview(null);
     }
-    setInvoicePreview(null);
-  }, [invoiceAmount, invoiceDescription, invoiceRecipientId, invoicePreview]);
+  }, [invoiceAmount, invoiceDescription, invoiceRecipientId]);
 
   // SEA-119: Get message for a specific recipient
   const getRecipientMessage = (recipientId: string) => {
@@ -336,6 +366,7 @@ export function SendDocumentDialog({
 
             {includeInvoice && (
               <div className="mt-4 space-y-3">
+                {/* Draft invoice preview: created in Stripe before send, finalized on send */}
                 {!canUseInvoices && (
                   <div className="bg-muted text-muted-foreground rounded-md p-3 text-xs">
                     Stripe must be connected and enabled for charges. Update settings in{" "}
