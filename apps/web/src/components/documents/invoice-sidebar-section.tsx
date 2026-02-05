@@ -6,6 +6,7 @@ import {
   EyeIcon,
   HelpCircleIcon,
   Loader2Icon,
+  RefreshCwIcon,
   Trash2Icon,
 } from "lucide-react";
 import { useState } from "react";
@@ -65,6 +66,7 @@ export function InvoiceSidebarSection({
   const [invoiceRecipientId, setInvoiceRecipientId] = useState<string>("");
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [previewData, setPreviewData] = useState<{
@@ -90,6 +92,7 @@ export function InvoiceSidebarSection({
   const createDraftInvoice = useAction(api.stripe.invoice_actions.createDraftInvoiceForDocument);
   const deleteDraftInvoice = useAction(api.stripe.invoice_actions.deleteDraftInvoice);
   const getInvoicePreview = useAction(api.stripe.invoice_actions.getInvoicePreview);
+  const syncInvoiceStatus = useAction(api.stripe.invoice_actions.syncInvoiceStatus);
 
   const chargesEnabled = connectedAccount?.account?.chargesEnabled ?? false;
   const canUseInvoices = isPro && connectedAccount?.status === "connected" && chargesEnabled;
@@ -187,6 +190,26 @@ export function InvoiceSidebarSection({
       } finally {
         setIsLoadingPreview(false);
       }
+    }
+  };
+
+  const handleSyncStatus = async () => {
+    if (!existingInvoice?.stripeInvoiceId) return;
+
+    setIsSyncing(true);
+    try {
+      const result = await syncInvoiceStatus({
+        documentId,
+        stripeInvoiceId: existingInvoice.stripeInvoiceId,
+      });
+      toast.success(`Invoice status synced: ${result.status}`);
+      onInvoiceChange?.();
+    } catch (error) {
+      toast.error("Failed to sync invoice status", {
+        description: getErrorMessage(error),
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -391,50 +414,73 @@ export function InvoiceSidebarSection({
                 existingInvoice.status === "void" ||
                 existingInvoice.status === "uncollectible") && (
                 <div className="bg-muted/40 rounded-md border p-3">
-                  <div className="flex items-center gap-2">
-                    {existingInvoice.status === "paid" && (
-                      <CheckCircleIcon className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">
-                          {existingInvoice.status === "paid"
-                            ? "Invoice Paid"
-                            : existingInvoice.status === "open"
-                              ? "Invoice Sent"
-                              : existingInvoice.status === "void"
-                                ? "Invoice Voided"
-                                : "Invoice Uncollectible"}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2">
+                      {existingInvoice.status === "paid" && (
+                        <CheckCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">
+                            {existingInvoice.status === "paid"
+                              ? "Invoice Paid"
+                              : existingInvoice.status === "open"
+                                ? "Invoice Sent"
+                                : existingInvoice.status === "void"
+                                  ? "Invoice Voided"
+                                  : "Invoice Uncollectible"}
+                          </p>
+                          {existingInvoice.status === "open" && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="flex cursor-help items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+                                  Awaiting Payment
+                                  <HelpCircleIcon className="h-2.5 w-2.5 opacity-60" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[250px]">
+                                <p className="text-xs">{statusConfig.description}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          {(existingInvoice.amountDue / 100).toFixed(2)}{" "}
+                          {existingInvoice.currency.toUpperCase()} - {existingInvoice.customerEmail}
                         </p>
-                        {existingInvoice.status === "open" && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="flex cursor-help items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900 dark:text-amber-300">
-                                Awaiting Payment
-                                <HelpCircleIcon className="h-2.5 w-2.5 opacity-60" />
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[250px]">
-                              <p className="text-xs">{statusConfig.description}</p>
-                            </TooltipContent>
-                          </Tooltip>
+                        {existingInvoice.hostedInvoiceUrl && existingInvoice.status !== "void" && (
+                          <a
+                            href={existingInvoice.hostedInvoiceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary mt-1 block text-xs underline-offset-2 hover:underline"
+                          >
+                            View invoice
+                          </a>
                         )}
                       </div>
-                      <p className="text-muted-foreground mt-1 text-xs">
-                        {(existingInvoice.amountDue / 100).toFixed(2)}{" "}
-                        {existingInvoice.currency.toUpperCase()} - {existingInvoice.customerEmail}
-                      </p>
-                      {existingInvoice.hostedInvoiceUrl && existingInvoice.status !== "void" && (
-                        <a
-                          href={existingInvoice.hostedInvoiceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary mt-1 block text-xs underline-offset-2 hover:underline"
-                        >
-                          View invoice
-                        </a>
-                      )}
                     </div>
+                    {/* Sync button for open invoices */}
+                    {existingInvoice.status === "open" && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleSyncStatus}
+                            disabled={isSyncing}
+                            className="shrink-0"
+                          >
+                            {isSyncing ? (
+                              <Loader2Icon className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCwIcon className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Refresh payment status</TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                 </div>
               )}

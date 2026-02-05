@@ -82,13 +82,33 @@ async function handleCapabilityUpdated(
 
 async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
   // Invoice has been paid - update local status
-  await ctx.runMutation(internal.stripe.invoice_mutations.updateInvoiceStatus, {
+  console.info("Processing invoice.paid webhook", {
+    operation: "stripeConnect.invoicePaid",
+    stripeInvoiceId: invoice.id,
+    status: invoice.status,
+    amountPaid: invoice.amount_paid,
+  });
+
+  const result = await ctx.runMutation(internal.stripe.invoice_mutations.updateInvoiceStatus, {
     stripeInvoiceId: invoice.id,
     status: "paid",
     paidAt: Date.now(),
     hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
     invoicePdf: invoice.invoice_pdf ?? undefined,
   });
+
+  if (!result) {
+    console.warn("Invoice not found in database for paid webhook", {
+      operation: "stripeConnect.invoicePaid",
+      stripeInvoiceId: invoice.id,
+    });
+  } else {
+    console.info("Invoice status updated to paid", {
+      operation: "stripeConnect.invoicePaid",
+      stripeInvoiceId: invoice.id,
+      documentInvoiceId: result,
+    });
+  }
 }
 
 async function handleInvoicePaymentFailed(

@@ -366,3 +366,68 @@ export const deleteDraftInvoice = action({
     return { success: true };
   },
 });
+
+/**
+ * Manually sync invoice status from Stripe.
+ * Useful as a fallback when webhooks are delayed or missed.
+ */
+export const syncInvoiceStatus = action({
+  args: {
+    documentId: v.id("documents"),
+    stripeInvoiceId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { organizationId } = await authorizeDocumentOwner(ctx, args.documentId);
+    const { stripeAccountId } = await resolveConnectedAccount(ctx, organizationId);
+
+    const stripe = initializeStripe();
+    const invoice = await stripe.invoices.retrieve(args.stripeInvoiceId, {
+      stripeAccount: stripeAccountId,
+    });
+
+    // Map Stripe status to our status values
+    let status: "draft" | "open" | "paid" | "void" | "uncollectible" | "deleted";
+    switch (invoice.status) {
+      case "draft":
+        status = "draft";
+        break;
+      case "open":
+        status = "open";
+        break;
+      case "paid":
+        status = "paid";
+        break;
+      case "void":
+        status = "void";
+        break;
+      case "uncollectible":
+        status = "uncollectible";
+        break;
+      default:
+        status = "open";
+    }
+
+    await ctx.runMutation(internal.stripe.invoice_mutations.updateInvoiceStatus, {
+      stripeInvoiceId: invoice.id,
+      status,
+      paidAt:
+        invoice.status === "paid"
+          ? (invoice.status_transitions?.paid_at ?? Date.now()) * 1000
+          : undefined,
+      voidedAt:
+        invoice.status === "void"
+          ? (invoice.status_transitions?.voided_at ?? Date.now()) * 1000
+          : undefined,
+      hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
+      invoicePdf: invoice.invoice_pdf ?? undefined,
+    });
+
+    return {
+      stripeInvoiceId: invoice.id,
+      status: invoice.status,
+      amountDue: invoice.amount_due,
+      amountPaid: invoice.amount_paid,
+      hostedInvoiceUrl: invoice.hosted_invoice_url,
+    };
+  },
+});
