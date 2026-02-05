@@ -30,7 +30,11 @@ function initializeStripe(): Stripe {
 async function authorizeDocumentOwner(
   ctx: ActionCtx,
   documentId: Id<"documents">,
-): Promise<{ documentId: Id<"documents">; organizationId: Id<"organizations"> }> {
+): Promise<{
+  documentId: Id<"documents">;
+  organizationId: Id<"organizations">;
+  userId: Id<"users">;
+}> {
   // Only the document owner can create or finalize invoices for a document.
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -69,7 +73,7 @@ async function authorizeDocumentOwner(
     throw new ConvexError("You don't have access to this document");
   }
 
-  return { documentId: document._id, organizationId: document.organizationId };
+  return { documentId: document._id, organizationId: document.organizationId, userId: user._id };
 }
 
 async function resolveConnectedAccount(
@@ -106,13 +110,21 @@ function assertAmount(amountCents: number) {
 }
 
 /**
- * Calculate application fee for "pass_to_recipient" fee handling.
- * Uses standard Stripe fee structure: 2.9% + $0.30
+ * Platform fee rates for Seal.
+ * Free tier: 1%, Pro tier: 0.25%
  */
-function calculateApplicationFee(amountCents: number): number {
-  const percentageFee = Math.round(amountCents * 0.029);
-  const fixedFee = 30; // 30 cents
-  return percentageFee + fixedFee;
+const PLATFORM_FEE_RATES = {
+  free: 0.01, // 1%
+  pro: 0.0025, // 0.25%
+} as const;
+
+/**
+ * Calculate Seal's platform fee (application_fee_amount).
+ * This is Seal's revenue from the transaction, NOT Stripe's processing fees.
+ */
+function calculatePlatformFee(amountCents: number, isPro: boolean): number {
+  const feeRate = isPro ? PLATFORM_FEE_RATES.pro : PLATFORM_FEE_RATES.free;
+  return Math.round(amountCents * feeRate);
 }
 
 export const createDraftInvoiceForDocument = action({
@@ -127,11 +139,18 @@ export const createDraftInvoiceForDocument = action({
   handler: async (ctx, args) => {
     assertAmount(args.amountCents);
 
-    const { organizationId } = await authorizeDocumentOwner(ctx, args.documentId);
+    const { organizationId, userId } = await authorizeDocumentOwner(ctx, args.documentId);
     const { stripeAccountId, feeHandling, defaultCurrency } = await resolveConnectedAccount(
       ctx,
       organizationId,
     );
+
+    // Get user's subscription status to determine platform fee rate
+    const subscriptionStatus: { isPro: boolean; plan: "free" | "pro" } = await ctx.runQuery(
+      internal.auth.subscription_helpers.checkProFeature,
+      { userId },
+    );
+    const isPro = subscriptionStatus.isPro;
 
     const stripe = initializeStripe();
     const currency = (args.currency ?? defaultCurrency ?? "usd").toLowerCase();
@@ -180,9 +199,12 @@ export const createDraftInvoiceForDocument = action({
       { stripeAccount: stripeAccountId },
     );
 
-    // Calculate application fee if passing fees to recipient
+    // Calculate platform fee based on subscription tier and fee handling preference
+    // Platform fee: 1% for Free tier, 0.25% for Pro tier
     const applicationFeeAmount =
-      feeHandling === "pass_to_recipient" ? calculateApplicationFee(args.amountCents) : undefined;
+      feeHandling === "pass_to_recipient"
+        ? calculatePlatformFee(args.amountCents, isPro)
+        : undefined;
 
     const invoice = await stripe.invoices.create(
       {
