@@ -27,6 +27,7 @@ export interface SendDocumentInvitationParams {
   signingUrl: string;
   customMessage?: string;
   expiresAt?: number;
+  // Stripe invoice details (optional, included only for the invoice recipient)
   invoiceUrl?: string;
   invoiceAmount?: number;
   invoiceCurrency?: string;

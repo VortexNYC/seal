@@ -226,6 +226,7 @@ export const sendDocumentEmails = action({
     }
 
     // 4. Optional Stripe invoice finalize (if requested)
+    // Draft invoices have no hosted link; finalize before emailing recipients.
     let invoicePayload:
       | {
           hostedInvoiceUrl?: string;
@@ -266,6 +267,7 @@ export const sendDocumentEmails = action({
     }
 
     // 7. Send emails to all recipients
+    // Invoice link is only sent to the recipient matching the invoice customer email.
     const emailResults: Array<{
       recipientId: Id<"document_recipients">;
       success: boolean;

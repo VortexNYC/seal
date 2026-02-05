@@ -1,5 +1,10 @@
 "use node";
-
+/**
+ * Stripe Connect actions (Node runtime).
+ *
+ * These actions call Stripe APIs to create/connect accounts and generate onboarding links.
+ * All callers must be owners/admins for the target organization.
+ */
 import { randomUUID } from "crypto";
 
 import { ConvexError, v } from "convex/values";
@@ -24,6 +29,7 @@ function initializeStripe(): Stripe {
 }
 
 async function resolveAdminMembership(ctx: ActionCtx, organizationId: Id<"organizations">) {
+  // Guard: only owners/admins can manage Stripe connection settings.
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new ConvexError("Authentication required");
@@ -64,6 +70,7 @@ export const createConnectedAccount = action({
   handler: async (ctx, args): Promise<{ stripeAccountId: string }> => {
     await resolveAdminMembership(ctx, args.organizationId);
 
+    // If a connected account already exists, return it instead of creating another.
     const existing = await ctx.runQuery(
       internal.stripe.connect_mutations.getAccountByOrganizationId,
       {
@@ -77,6 +84,7 @@ export const createConnectedAccount = action({
 
     const stripe = initializeStripe();
 
+    // Standard Connect account: Stripe-hosted onboarding and dashboard access.
     const account = await stripe.accounts.create({
       type: "standard",
       country: "US",
@@ -126,6 +134,7 @@ export const createAccountLink = action({
     }
 
     const stripe = initializeStripe();
+    // Account Links are short-lived onboarding URLs for Standard accounts.
     const accountLink = await stripe.accountLinks.create({
       account: account.stripeAccountId,
       refresh_url: args.refreshUrl,
@@ -150,6 +159,7 @@ export const createConnectOAuthUrl = action({
       throw new ConvexError("STRIPE_CONNECT_CLIENT_ID not configured");
     }
 
+    // State binds the OAuth callback to a specific org and protects against CSRF.
     const state = `${args.organizationId}:${randomUUID()}`;
 
     const url = new URL("https://connect.stripe.com/oauth/authorize");
@@ -172,6 +182,7 @@ export const exchangeConnectOAuthCode = action({
   handler: async (ctx, args): Promise<{ stripeAccountId: string }> => {
     await resolveAdminMembership(ctx, args.organizationId);
 
+    // Ensure the OAuth callback is for the same org that initiated the flow.
     if (!args.state.startsWith(`${args.organizationId}:`)) {
       throw new ConvexError("Invalid OAuth state");
     }
@@ -208,6 +219,7 @@ export const connectExistingAccount = internalAction({
       throw new ConvexError("Stripe account not found");
     }
 
+    // Persist the latest account capabilities and requirements in Convex.
     await ctx.runMutation(internal.stripe.connect_mutations.upsertStripeAccount, {
       organizationId: args.organizationId,
       stripeAccountId: account.id,
