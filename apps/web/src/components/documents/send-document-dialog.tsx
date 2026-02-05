@@ -338,7 +338,7 @@ export function SendDocumentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Send Document</DialogTitle>
           <DialogDescription>
@@ -347,7 +347,7 @@ export function SendDocumentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="-mx-6 flex-1 space-y-4 overflow-y-auto px-6 py-4">
           <div className="rounded-md border p-4">
             <div className="flex items-center justify-between gap-2">
               <div>
@@ -367,142 +367,147 @@ export function SendDocumentDialog({
               />
             </div>
 
-            {includeInvoice && (
-              <div className="mt-4 space-y-3">
-                {/* Draft invoice preview: created in Stripe before send, finalized on send */}
-                {!canUseInvoices && !isLoadingPlan && (
-                  <div className="bg-muted text-muted-foreground rounded-md p-3 text-xs">
-                    {!isPro ? (
-                      <>
-                        Invoices require a Pro plan.{" "}
-                        <a
-                          href={`/${slug}/settings/billing`}
-                          className="text-primary underline-offset-2 hover:underline"
-                        >
-                          Upgrade to Pro
-                        </a>{" "}
-                        to accept payments through documents.
-                      </>
-                    ) : (
-                      <>
-                        Stripe must be connected and enabled for charges. Update settings in{" "}
-                        <a
-                          href={`/${slug}/settings/payments`}
-                          className="text-primary underline-offset-2 hover:underline"
-                        >
-                          Payments
-                        </a>{" "}
-                        before creating invoices.
-                      </>
-                    )}
-                  </div>
-                )}
+            <div
+              className="-m-1 grid transition-[grid-template-rows] duration-300 ease-out"
+              style={{ gridTemplateRows: includeInvoice ? "1fr" : "0fr" }}
+            >
+              <div className="overflow-hidden p-1">
+                <div className="mt-4 space-y-3">
+                  {/* Draft invoice preview: created in Stripe before send, finalized on send */}
+                  {!canUseInvoices && !isLoadingPlan && (
+                    <div className="bg-muted text-muted-foreground rounded-md p-3 text-xs">
+                      {!isPro ? (
+                        <>
+                          Invoices require a Pro plan.{" "}
+                          <a
+                            href={`/${slug}/settings/billing`}
+                            className="text-primary underline-offset-2 hover:underline"
+                          >
+                            Upgrade to Pro
+                          </a>{" "}
+                          to accept payments through documents.
+                        </>
+                      ) : (
+                        <>
+                          Stripe must be connected and enabled for charges. Update settings in{" "}
+                          <a
+                            href={`/${slug}/settings/payments`}
+                            className="text-primary underline-offset-2 hover:underline"
+                          >
+                            Payments
+                          </a>{" "}
+                          before creating invoices.
+                        </>
+                      )}
+                    </div>
+                  )}
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="invoice-amount" className="text-xs">
+                        Amount (USD)
+                      </Label>
+                      <Input
+                        id="invoice-amount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={invoiceAmount}
+                        onChange={(event) => setInvoiceAmount(event.target.value)}
+                        disabled={!canUseInvoices}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="invoice-recipient" className="text-xs">
+                        Invoice recipient
+                      </Label>
+                      <Select
+                        value={invoiceRecipientId}
+                        onValueChange={setInvoiceRecipientId}
+                        disabled={!canUseInvoices}
+                      >
+                        <SelectTrigger id="invoice-recipient">
+                          <SelectValue placeholder="Select recipient" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pendingRecipients.map((recipient) => (
+                            <SelectItem key={recipient._id} value={recipient._id}>
+                              {recipient.name || recipient.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   <div className="space-y-1">
-                    <Label htmlFor="invoice-amount" className="text-xs">
-                      Amount (USD)
+                    <Label htmlFor="invoice-description" className="text-xs">
+                      Line item description
                     </Label>
                     <Input
-                      id="invoice-amount"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={invoiceAmount}
-                      onChange={(event) => setInvoiceAmount(event.target.value)}
+                      id="invoice-description"
+                      value={invoiceDescription}
+                      onChange={(event) => setInvoiceDescription(event.target.value)}
                       disabled={!canUseInvoices}
                     />
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="invoice-recipient" className="text-xs">
-                      Invoice recipient
-                    </Label>
-                    <Select
-                      value={invoiceRecipientId}
-                      onValueChange={setInvoiceRecipientId}
-                      disabled={!canUseInvoices}
-                    >
-                      <SelectTrigger id="invoice-recipient">
-                        <SelectValue placeholder="Select recipient" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {pendingRecipients.map((recipient) => (
-                          <SelectItem key={recipient._id} value={recipient._id}>
-                            {recipient.name || recipient.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
 
-                <div className="space-y-1">
-                  <Label htmlFor="invoice-description" className="text-xs">
-                    Line item description
-                  </Label>
-                  <Input
-                    id="invoice-description"
-                    value={invoiceDescription}
-                    onChange={(event) => setInvoiceDescription(event.target.value)}
-                    disabled={!canUseInvoices}
-                  />
-                </div>
+                  <p className="text-muted-foreground text-xs">
+                    The invoice link will be sent only to the selected recipient.
+                  </p>
 
-                <p className="text-muted-foreground text-xs">
-                  The invoice link will be sent only to the selected recipient.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCreateInvoicePreview}
-                    disabled={!canUseInvoices || isCreatingInvoice}
-                  >
-                    {isCreatingInvoice ? "Creating..." : "Create invoice preview"}
-                  </Button>
-                  {invoicePreview && (
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={handleDeleteInvoicePreview}
-                      disabled={isDeletingInvoice}
+                      onClick={handleCreateInvoicePreview}
+                      disabled={!canUseInvoices || isCreatingInvoice}
                     >
-                      {isDeletingInvoice ? "Removing..." : "Discard draft"}
+                      {isCreatingInvoice ? "Creating..." : "Create invoice preview"}
                     </Button>
+                    {invoicePreview && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDeleteInvoicePreview}
+                        disabled={isDeletingInvoice}
+                      >
+                        {isDeletingInvoice ? "Removing..." : "Discard draft"}
+                      </Button>
+                    )}
+                  </div>
+
+                  {invoicePreview && (
+                    <div className="bg-muted/40 rounded-md border p-3 text-xs">
+                      <p className="text-sm font-semibold">Invoice preview</p>
+                      <ul className="mt-2 space-y-1">
+                        {invoicePreview.lines.length > 0 ? (
+                          invoicePreview.lines.map((line) => (
+                            <li key={line.id} className="flex items-center justify-between gap-2">
+                              <span className="truncate">{line.description}</span>
+                              <span className="shrink-0">
+                                {(line.amount / 100).toFixed(2)} {line.currency.toUpperCase()}
+                              </span>
+                            </li>
+                          ))
+                        ) : (
+                          <li>No line items available.</li>
+                        )}
+                      </ul>
+                      <div className="mt-2 flex items-center justify-between border-t pt-2">
+                        <span>Total due</span>
+                        <span className="font-semibold">
+                          {(invoicePreview.amountDue / 100).toFixed(2)}{" "}
+                          {invoicePreview.currency.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
-
-                {invoicePreview && (
-                  <div className="bg-muted/40 rounded-md border p-3 text-xs">
-                    <p className="text-sm font-semibold">Invoice preview</p>
-                    <ul className="mt-2 space-y-1">
-                      {invoicePreview.lines.length > 0 ? (
-                        invoicePreview.lines.map((line) => (
-                          <li key={line.id} className="flex items-center justify-between gap-2">
-                            <span className="truncate">{line.description}</span>
-                            <span className="shrink-0">
-                              {(line.amount / 100).toFixed(2)} {line.currency.toUpperCase()}
-                            </span>
-                          </li>
-                        ))
-                      ) : (
-                        <li>No line items available.</li>
-                      )}
-                    </ul>
-                    <div className="mt-2 flex items-center justify-between border-t pt-2">
-                      <span>Total due</span>
-                      <span className="font-semibold">
-                        {(invoicePreview.amountDue / 100).toFixed(2)}{" "}
-                        {invoicePreview.currency.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* SEA-119: Recipients list with per-recipient message */}
