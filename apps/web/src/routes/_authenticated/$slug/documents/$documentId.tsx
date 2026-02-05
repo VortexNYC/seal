@@ -1129,81 +1129,6 @@ function DocumentDetailPage() {
                 />
               )}
 
-            {/* Signature Fields Section */}
-            {(signatureFields.length > 0 || canEdit) && (
-              <Collapsible
-                open={openSections.has("fields")}
-                onOpenChange={() => toggleSection("fields")}
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
-              >
-                <CollapsibleTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-violet-100 text-violet-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-violet-900 dark:text-violet-400">
-                        <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-                      </div>
-                      <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
-                        Signature Fields
-                      </span>
-                      {signatureFields.length > 0 && (
-                        <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                          {signatureFields.length}
-                        </span>
-                      )}
-                    </div>
-                    <ChevronDownIcon
-                      className={`h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400 ${openSections.has("fields") ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
-                  {canEdit && (
-                    <div className="mt-4 mb-4">
-                      <FieldToolbar
-                        onFieldDragStart={(fieldType) => setDraggingFieldType(fieldType)}
-                        onFieldDragEnd={() => setDraggingFieldType(null)}
-                        disabled={recipients.filter((r) => r.role === "signer").length === 0}
-                      />
-                    </div>
-                  )}
-                  {signatureFields.length > 0 ? (
-                    <FieldList
-                      fields={signatureFields}
-                      recipients={recipients}
-                      selectedFieldId={canEdit ? selectedFieldId : null}
-                      canEdit={canEdit}
-                      onFieldSelect={canEdit ? handleFieldSelect : undefined}
-                      onFieldDelete={canEdit ? requestFieldDelete : undefined}
-                      onFieldProperties={
-                        canEdit
-                          ? (fieldId) => {
-                              setFieldPropertiesId(fieldId);
-                              setShowFieldProperties(true);
-                            }
-                          : undefined
-                      }
-                    />
-                  ) : (
-                    <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
-                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-10 sm:w-10 sm:rounded-[10px] dark:bg-slate-800 dark:text-slate-400">
-                        <FileSignatureIcon className="h-6 w-6" />
-                      </div>
-                      <div className="mb-1 font-sans text-sm font-semibold text-slate-700 sm:text-[0.8125rem] dark:text-slate-300">
-                        No fields yet
-                      </div>
-                      <div className="font-sans text-xs leading-relaxed text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
-                        Drag fields from above onto the document to mark where recipients should
-                        sign or fill in information.
-                      </div>
-                    </div>
-                  )}
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
             {/* Recipients Section */}
             <Collapsible
               open={openSections.has("recipients")}
@@ -1341,6 +1266,81 @@ function DocumentDetailPage() {
                 )}
               </CollapsibleContent>
             </Collapsible>
+
+            {/* Signature Fields Section */}
+            {(signatureFields.length > 0 || canEdit) && (
+              <Collapsible
+                open={openSections.has("fields")}
+                onOpenChange={() => toggleSection("fields")}
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+              >
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-violet-100 text-violet-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-violet-900 dark:text-violet-400">
+                        <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+                      </div>
+                      <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                        Signature Fields
+                      </span>
+                      {signatureFields.length > 0 && (
+                        <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                          {signatureFields.length}
+                        </span>
+                      )}
+                    </div>
+                    <ChevronDownIcon
+                      className={`h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400 ${openSections.has("fields") ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+                  {canEdit && (
+                    <div className="mt-4 mb-4">
+                      <FieldToolbar
+                        onFieldDragStart={(fieldType) => setDraggingFieldType(fieldType)}
+                        onFieldDragEnd={() => setDraggingFieldType(null)}
+                        disabled={recipients.filter((r) => r.role === "signer").length === 0}
+                      />
+                    </div>
+                  )}
+                  {signatureFields.length > 0 ? (
+                    <FieldList
+                      fields={signatureFields}
+                      recipients={recipients}
+                      selectedFieldId={canEdit ? selectedFieldId : null}
+                      canEdit={canEdit}
+                      onFieldSelect={canEdit ? handleFieldSelect : undefined}
+                      onFieldDelete={canEdit ? requestFieldDelete : undefined}
+                      onFieldProperties={
+                        canEdit
+                          ? (fieldId) => {
+                              setFieldPropertiesId(fieldId);
+                              setShowFieldProperties(true);
+                            }
+                          : undefined
+                      }
+                    />
+                  ) : (
+                    <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
+                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-10 sm:w-10 sm:rounded-[10px] dark:bg-slate-800 dark:text-slate-400">
+                        <FileSignatureIcon className="h-6 w-6" />
+                      </div>
+                      <div className="mb-1 font-sans text-sm font-semibold text-slate-700 sm:text-[0.8125rem] dark:text-slate-300">
+                        No fields yet
+                      </div>
+                      <div className="font-sans text-xs leading-relaxed text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
+                        Drag fields from above onto the document to mark where recipients should
+                        sign or fill in information.
+                      </div>
+                    </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+            )}
 
             {/* Document Details Section */}
             <Collapsible
