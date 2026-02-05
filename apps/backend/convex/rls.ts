@@ -641,6 +641,18 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       },
     },
 
+    stripe_webhook_events: {
+      read: async () => {
+        // Internal only - used for idempotency checks
+        if (!rlsCtx) return false;
+        return rlsCtx.isSuperAdmin;
+      },
+      modify: async () => {
+        // Modified via internal mutations only (webhook handlers)
+        return false;
+      },
+    },
+
     // ====================
     // Integrations
     // ====================

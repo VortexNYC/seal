@@ -25,4 +25,11 @@ crons.interval(
   internal.api.rate_limit_mutations.cleanupExpiredBuckets,
 );
 
+// Clean up old webhook events daily (idempotency records older than 7 days)
+crons.daily(
+  "cleanup-stripe-webhook-events",
+  { hourUTC: 2, minuteUTC: 0 },
+  internal.stripe.webhook_idempotency.cleanupOldEvents,
+);
+
 export default crons;

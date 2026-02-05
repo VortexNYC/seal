@@ -3,6 +3,10 @@
  *
  * These update local account state from Stripe Connect events.
  * Source of truth for chargesEnabled, payoutsEnabled, and requirements.
+ *
+ * Includes idempotency handling to prevent duplicate processing.
+ *
+ * SEA-170: Stripe Connect Implementation
  */
 
 import type { GenericActionCtx } from "convex/server";
@@ -149,34 +153,117 @@ async function handleInvoiceDeleted(ctx: HttpActionCtx, invoice: Stripe.Invoice)
   });
 }
 
+async function handlePayoutPaid(ctx: HttpActionCtx, payout: Stripe.Payout): Promise<void> {
+  // Payout to connected account succeeded
+  const stripeAccountId = payout.destination as string | null;
+
+  console.info("Payout paid to connected account", {
+    operation: "stripeConnect.payoutPaid",
+    payoutId: payout.id,
+    stripeAccountId,
+    amount: payout.amount,
+    currency: payout.currency,
+    arrivalDate: payout.arrival_date,
+  });
+
+  // Future: Could store payout records or trigger notifications
+  // For now, just log for audit trail
+}
+
+async function handlePayoutFailed(ctx: HttpActionCtx, payout: Stripe.Payout): Promise<void> {
+  // Payout to connected account failed
+  const stripeAccountId = payout.destination as string | null;
+
+  console.warn("Payout failed for connected account", {
+    operation: "stripeConnect.payoutFailed",
+    payoutId: payout.id,
+    stripeAccountId,
+    amount: payout.amount,
+    currency: payout.currency,
+    failureCode: payout.failure_code,
+    failureMessage: payout.failure_message,
+  });
+
+  // If we have the account, we could notify the org owner
+  if (stripeAccountId) {
+    const account = await ctx.runQuery(internal.stripe.connect_mutations.getAccountByStripeId, {
+      stripeAccountId,
+    });
+
+    if (account) {
+      // Future: Send notification to org admins about failed payout
+      console.warn("Payout failed for organization", {
+        operation: "stripeConnect.payoutFailed",
+        organizationId: account.organizationId,
+        payoutId: payout.id,
+        failureCode: payout.failure_code,
+      });
+    }
+  }
+}
+
 export async function processStripeConnectWebhookEvent(
   ctx: HttpActionCtx,
   event: Stripe.Event,
 ): Promise<void> {
+  // Idempotency check: skip if we've already processed this event
+  const alreadyProcessed = await ctx.runQuery(
+    internal.stripe.webhook_idempotency.isEventProcessed,
+    { eventId: event.id },
+  );
+
+  if (alreadyProcessed) {
+    console.info("Skipping duplicate webhook event", {
+      operation: "stripeConnect.webhookIdempotency",
+      eventId: event.id,
+      eventType: event.type,
+    });
+    return;
+  }
+
   // Handle Connect-specific events and invoice lifecycle events.
   switch (event.type) {
     case "account.updated":
       await handleAccountUpdated(ctx, event.data.object as Stripe.Account);
-      return;
+      break;
     case "capability.updated":
       await handleCapabilityUpdated(ctx, event.data.object as Stripe.Capability);
-      return;
+      break;
     case "invoice.paid":
       await handleInvoicePaid(ctx, event.data.object as Stripe.Invoice);
-      return;
+      break;
     case "invoice.payment_failed":
       await handleInvoicePaymentFailed(ctx, event.data.object as Stripe.Invoice);
-      return;
+      break;
     case "invoice.voided":
       await handleInvoiceVoided(ctx, event.data.object as Stripe.Invoice);
-      return;
+      break;
     case "invoice.marked_uncollectible":
       await handleInvoiceMarkedUncollectible(ctx, event.data.object as Stripe.Invoice);
-      return;
+      break;
     case "invoice.deleted":
       await handleInvoiceDeleted(ctx, event.data.object as Stripe.Invoice);
-      return;
+      break;
+    case "payout.paid":
+      await handlePayoutPaid(ctx, event.data.object as Stripe.Payout);
+      break;
+    case "payout.failed":
+      await handlePayoutFailed(ctx, event.data.object as Stripe.Payout);
+      break;
     default:
-      return;
+      // Unknown event type - log but don't fail
+      console.info("Unhandled Connect webhook event type", {
+        operation: "stripeConnect.webhookUnhandled",
+        eventType: event.type,
+        eventId: event.id,
+      });
+      return; // Don't mark as processed since we didn't handle it
   }
+
+  // Mark event as processed for idempotency
+  await ctx.runMutation(internal.stripe.webhook_idempotency.markEventProcessed, {
+    eventId: event.id,
+    eventType: event.type,
+    source: "connect",
+  });
 }
