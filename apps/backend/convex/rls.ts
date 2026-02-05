@@ -402,6 +402,20 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       },
     },
 
+    document_invoices: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (doc.organizationId !== rlsCtx.orgId) return false;
+        return rlsCtx.isAdmin;
+      },
+    },
+
     // ====================
     // Signature Workflow (legacy recipients table)
     // ====================
@@ -610,6 +624,20 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       modify: async () => {
         // Modified via webhooks/internal mutations only
         return false;
+      },
+    },
+
+    stripe_accounts: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (doc.organizationId !== rlsCtx.orgId) return false;
+        return rlsCtx.isAdmin;
       },
     },
 
