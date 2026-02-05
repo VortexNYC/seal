@@ -951,18 +951,19 @@ function DocumentDetailPage() {
   return (
     <PageWrapper
       title={documentData.name}
-      actions={[
-        {
-          label: "Back",
-          onClick: () => router.navigate({ to: "/$slug/documents", params: { slug } }),
-          icon: ArrowLeftIcon,
-          variant: "ghost",
-        },
-      ]}
       headerActions={
         <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-          {saveAsTemplateButton}
+          <Button
+            onClick={() => router.navigate({ to: "/$slug/documents", params: { slug } })}
+            variant="ghost"
+            size="sm"
+            className="flex-1 sm:flex-none"
+          >
+            <ArrowLeftIcon className="mr-2 h-4 w-4" />
+            <span className="truncate">Back</span>
+          </Button>
           {sendDocumentButton}
+          {saveAsTemplateButton}
         </div>
       }
     >
@@ -1242,16 +1243,6 @@ function DocumentDetailPage() {
                 </CollapsibleContent>
               </Collapsible>
 
-              {/* Invoice Section - Always show, but only allow editing in draft mode */}
-              <InvoiceSidebarSection
-                documentId={documentId as Id<"documents">}
-                slug={slug}
-                recipients={recipients}
-                isOpen={openSections.has("invoice")}
-                onOpenChange={() => toggleSection("invoice")}
-                canEdit={documentData.workflowStatus === "draft" && canEdit}
-              />
-
               {/* Signature Fields Section */}
               {(signatureFields.length > 0 || canEdit) && (
                 <Collapsible
@@ -1326,6 +1317,16 @@ function DocumentDetailPage() {
                   </CollapsibleContent>
                 </Collapsible>
               )}
+
+              {/* Invoice Section - Always show, but only allow editing in draft mode */}
+              <InvoiceSidebarSection
+                documentId={documentId as Id<"documents">}
+                slug={slug}
+                recipients={recipients}
+                isOpen={openSections.has("invoice")}
+                onOpenChange={() => toggleSection("invoice")}
+                canEdit={documentData.workflowStatus === "draft" && canEdit}
+              />
 
               {/* Document Details Section */}
               <Collapsible
