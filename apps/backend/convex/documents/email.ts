@@ -27,6 +27,10 @@ export interface SendDocumentInvitationParams {
   signingUrl: string;
   customMessage?: string;
   expiresAt?: number;
+  // Stripe invoice details (optional, included only for the invoice recipient)
+  invoiceUrl?: string;
+  invoiceAmount?: number;
+  invoiceCurrency?: string;
 }
 
 /**
@@ -36,8 +40,18 @@ export async function sendDocumentInvitation(
   params: SendDocumentInvitationParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const { to, recipientName, documentName, senderName, signingUrl, customMessage, expiresAt } =
-      params;
+    const {
+      to,
+      recipientName,
+      documentName,
+      senderName,
+      signingUrl,
+      customMessage,
+      expiresAt,
+      invoiceUrl,
+      invoiceAmount,
+      invoiceCurrency,
+    } = params;
 
     const html = await renderDocumentInvitation({
       recipientName,
@@ -46,6 +60,9 @@ export async function sendDocumentInvitation(
       signingUrl,
       customMessage,
       expiresAt,
+      invoiceUrl,
+      invoiceAmount,
+      invoiceCurrency,
     });
 
     const { data, error } = await resend.emails.send({

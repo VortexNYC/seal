@@ -1,7 +1,10 @@
 /**
  * Stripe Webhook Event Handlers
  *
- * Extracted handlers for Stripe subscription and payment events
+ * Extracted handlers for Stripe subscription and payment events.
+ * Includes idempotency handling to prevent duplicate processing.
+ *
+ * SEA-170: Added idempotency support
  */
 
 import type { GenericActionCtx } from "convex/server";
@@ -310,9 +313,31 @@ export async function processStripeWebhookEvent(
   ctx: HttpActionCtx,
   event: Stripe.Event,
 ): Promise<void> {
+  // Idempotency check: skip if we've already processed this event
+  const alreadyProcessed = await ctx.runQuery(
+    internal.stripe.webhook_idempotency.isEventProcessed,
+    { eventId: event.id },
+  );
+
+  if (alreadyProcessed) {
+    console.info("Skipping duplicate webhook event", {
+      operation: "stripe.webhookIdempotency",
+      eventId: event.id,
+      eventType: event.type,
+    });
+    return;
+  }
+
   const handler = EVENT_HANDLERS[event.type];
   if (handler) {
     await handler(ctx, event.data.object);
+
+    // Mark event as processed for idempotency
+    await ctx.runMutation(internal.stripe.webhook_idempotency.markEventProcessed, {
+      eventId: event.id,
+      eventType: event.type,
+      source: "main",
+    });
   } else {
     console.warn(`Unhandled Stripe event type: ${event.type}`);
   }

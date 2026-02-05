@@ -7,8 +7,6 @@ import {
   ActivityIcon,
   ArrowLeftIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   FileSignatureIcon,
   FileTextIcon,
   InfoIcon,
@@ -51,6 +49,7 @@ import { FieldPropertiesDialog } from "../../../../components/documents/field-pr
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { InAppSigningSection } from "../../../../components/documents/in-app-signing-section";
+import { InvoiceSidebarSection } from "../../../../components/documents/invoice-sidebar-section";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
 import { PdfViewerControls } from "../../../../components/documents/pdf-viewer-controls";
 import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";
@@ -803,7 +802,7 @@ function DocumentDetailPage() {
 
   // Collapsible section state
   const [openSections, setOpenSections] = useState<Set<string>>(
-    new Set(["fields", "recipients", "your-signature"]),
+    new Set(["fields", "recipients", "your-signature", "invoice"]),
   );
 
   const toggleSection = (section: string) => {
@@ -952,18 +951,19 @@ function DocumentDetailPage() {
   return (
     <PageWrapper
       title={documentData.name}
-      actions={[
-        {
-          label: "Back",
-          onClick: () => router.navigate({ to: "/$slug/documents", params: { slug } }),
-          icon: ArrowLeftIcon,
-          variant: "ghost",
-        },
-      ]}
       headerActions={
         <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-          {saveAsTemplateButton}
+          <Button
+            onClick={() => router.navigate({ to: "/$slug/documents", params: { slug } })}
+            variant="ghost"
+            size="sm"
+            className="flex-1 sm:flex-none"
+          >
+            <ArrowLeftIcon className="mr-2 h-4 w-4" />
+            <span className="truncate">Back</span>
+          </Button>
           {sendDocumentButton}
+          {saveAsTemplateButton}
         </div>
       }
     >
@@ -973,15 +973,6 @@ function DocumentDetailPage() {
           {/* Left column: PDF Preview */}
           <div className="lg:col-span-2">
             <div className="relative min-h-[600px] rounded-2xl bg-stone-100 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-stone-900">
-              <div className="mb-4 flex items-center gap-3 font-serif text-lg font-medium text-stone-800 sm:flex-wrap sm:text-base dark:text-stone-200">
-                <span>Document Preview</span>
-                {numPages && (
-                  <span className="rounded-full bg-stone-200 px-2.5 py-1 font-sans text-xs font-medium text-stone-500 dark:bg-stone-700 dark:text-stone-400">
-                    {numPages} {numPages === 1 ? "page" : "pages"}
-                  </span>
-                )}
-              </div>
-
               {pdfUrl ? (
                 <TransformWrapper
                   initialScale={1}
@@ -996,16 +987,19 @@ function DocumentDetailPage() {
                     setCurrentZoom(state.scale);
                   }}
                 >
-                  <div className="mb-4 flex justify-center">
-                    <div className="flex items-center justify-center gap-1 rounded-lg border border-stone-200 bg-white px-2 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                      <PdfViewerControls
-                        currentZoom={currentZoom}
-                        currentPage={currentPage}
-                        totalPages={numPages ?? 1}
-                        onPageChange={handlePageChange}
-                        enableKeyboardShortcuts={true}
-                      />
+                  <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <div className="flex items-center gap-2 font-serif text-base font-medium text-stone-800 sm:gap-3 sm:text-lg dark:text-stone-200">
+                      <span>Document Preview</span>
                     </div>
+
+                    <PdfViewerControls
+                      currentZoom={currentZoom}
+                      currentPage={currentPage}
+                      totalPages={numPages ?? 1}
+                      onPageChange={handlePageChange}
+                      enableKeyboardShortcuts={true}
+                      className="w-full justify-center sm:w-auto sm:justify-start"
+                    />
                   </div>
                   <TransformComponent
                     wrapperClass="w-full"
@@ -1055,85 +1049,66 @@ function DocumentDetailPage() {
                       </Document>
                     </div>
                   </TransformComponent>
-
-                  {/* Bottom page navigation controls */}
-                  {numPages && numPages > 1 && (
-                    <div className="mt-4 flex justify-center">
-                      <div className="flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-4 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePageChange(currentPage - 1)}
-                          disabled={currentPage <= 1}
-                        >
-                          <ChevronLeftIcon className="mr-1 h-4 w-4" />
-                          Previous
-                        </Button>
-
-                        <span className="text-muted-foreground min-w-[60px] text-center text-sm font-medium">
-                          {currentPage} of {numPages}
-                        </span>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePageChange(currentPage + 1)}
-                          disabled={currentPage >= numPages}
-                        >
-                          Next
-                          <ChevronRightIcon className="ml-1 h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 </TransformWrapper>
               ) : (
-                <div className="relative overflow-hidden rounded-lg border border-stone-200 bg-white p-16 text-center text-stone-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-stone-400">
-                  <div className="animate-pulse">Loading document...</div>
-                </div>
+                <>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 font-serif text-lg font-medium text-stone-800 sm:flex-wrap sm:text-base dark:text-stone-200">
+                      <span>Document Preview</span>
+                      {numPages && (
+                        <span className="rounded-full bg-stone-200 px-2.5 py-1 font-sans text-xs font-medium text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+                          {numPages} {numPages === 1 ? "page" : "pages"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="relative overflow-hidden rounded-lg border border-stone-200 bg-white p-16 text-center text-stone-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-stone-400">
+                    <div className="animate-pulse">Loading document...</div>
+                  </div>
+                </>
               )}
             </div>
           </div>
 
           {/* Right column: Document Options Panel */}
-          <div className="flex flex-col gap-5 sm:gap-4">
-            {/* Status Hero */}
-            <DocumentStatusHero
-              workflowStatus={documentData.workflowStatus}
-              createdAt={documentData.createdAt}
-            />
+          <div>
+            <div className="flex flex-col gap-5 sm:gap-4">
+              {/* Status Hero */}
+              <DocumentStatusHero
+                workflowStatus={documentData.workflowStatus}
+                createdAt={documentData.createdAt}
+              />
 
-            {/* Progress Ring - Only show when document is sent */}
-            {progress && documentData.workflowStatus !== "draft" && (
-              <DocumentProgressRing progress={progress} />
-            )}
-
-            {/* In-App Signing Section - Show when user is a recipient who needs to sign */}
-            {currentUserRecipient &&
-              documentData.workflowStatus !== "draft" &&
-              documentData.workflowStatus !== "completed" &&
-              (currentUserRecipient.role === "signer" ||
-                currentUserRecipient.role === "approver") && (
-                <InAppSigningSection
-                  documentId={documentId as Id<"documents">}
-                  recipient={currentUserRecipient}
-                  fields={currentUserFields}
-                  isOpen={openSections.has("your-signature")}
-                  onOpenChange={() => toggleSection("your-signature")}
-                  onFieldsRefetch={() => {
-                    refetchCurrentUserFields();
-                    refetchCurrentUserRecipient();
-                    refetchRecipients();
-                    refetchFields();
-                  }}
-                />
+              {/* Progress Ring - Only show when document is sent */}
+              {progress && documentData.workflowStatus !== "draft" && (
+                <DocumentProgressRing progress={progress} />
               )}
 
-            {/* Signature Fields Section */}
-            {(signatureFields.length > 0 || canEdit) && (
+              {/* In-App Signing Section - Show when user is a recipient who needs to sign */}
+              {currentUserRecipient &&
+                documentData.workflowStatus !== "draft" &&
+                documentData.workflowStatus !== "completed" &&
+                (currentUserRecipient.role === "signer" ||
+                  currentUserRecipient.role === "approver") && (
+                  <InAppSigningSection
+                    documentId={documentId as Id<"documents">}
+                    recipient={currentUserRecipient}
+                    fields={currentUserFields}
+                    isOpen={openSections.has("your-signature")}
+                    onOpenChange={() => toggleSection("your-signature")}
+                    onFieldsRefetch={() => {
+                      refetchCurrentUserFields();
+                      refetchCurrentUserRecipient();
+                      refetchRecipients();
+                      refetchFields();
+                    }}
+                  />
+                )}
+
+              {/* Recipients Section */}
               <Collapsible
-                open={openSections.has("fields")}
-                onOpenChange={() => toggleSection("fields")}
+                open={openSections.has("recipients")}
+                onOpenChange={() => toggleSection("recipients")}
                 className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
               >
                 <CollapsibleTrigger asChild>
@@ -1142,355 +1117,367 @@ function DocumentDetailPage() {
                     className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-violet-100 text-violet-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-violet-900 dark:text-violet-400">
-                        <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+                      <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-blue-100 text-blue-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-blue-900 dark:text-blue-400">
+                        <UsersIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
                       </div>
                       <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
-                        Signature Fields
+                        Recipients
                       </span>
-                      {signatureFields.length > 0 && (
+                      {recipients.length > 0 && (
                         <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                          {signatureFields.length}
+                          {recipients.length}
                         </span>
                       )}
                     </div>
                     <ChevronDownIcon
-                      className={`h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400 ${openSections.has("fields") ? "rotate-180" : ""}`}
+                      className={`h-4 w-4 text-slate-500 transition-transform dark:text-slate-400 ${openSections.has("recipients") ? "rotate-180" : ""}`}
                     />
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
-                  {canEdit && (
-                    <div className="mt-4 mb-4">
-                      <FieldToolbar
-                        onFieldDragStart={(fieldType) => setDraggingFieldType(fieldType)}
-                        onFieldDragEnd={() => setDraggingFieldType(null)}
-                        disabled={recipients.filter((r) => r.role === "signer").length === 0}
-                      />
-                    </div>
+                  {canEdit && !isUserAlreadyRecipient && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 mb-3 w-full"
+                      onClick={() => setAddMyselfOpen(true)}
+                    >
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      Add myself as signer
+                    </Button>
                   )}
-                  {signatureFields.length > 0 ? (
-                    <FieldList
-                      fields={signatureFields}
-                      recipients={recipients}
-                      selectedFieldId={canEdit ? selectedFieldId : null}
-                      canEdit={canEdit}
-                      onFieldSelect={canEdit ? handleFieldSelect : undefined}
-                      onFieldDelete={canEdit ? requestFieldDelete : undefined}
-                      onFieldProperties={
-                        canEdit
-                          ? (fieldId) => {
-                              setFieldPropertiesId(fieldId);
-                              setShowFieldProperties(true);
-                            }
-                          : undefined
-                      }
-                    />
+                  {recipients.length > 0 ? (
+                    <div className="mt-4 flex flex-col gap-2.5 sm:gap-2">
+                      {recipients.map((recipient) => (
+                        <div
+                          key={recipient._id}
+                          className="flex items-center gap-3.5 rounded-xl border border-transparent bg-slate-50 p-3.5 transition-all hover:border-slate-200 hover:bg-slate-100 sm:flex-wrap sm:gap-2.5 sm:p-3 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700"
+                        >
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold sm:h-9 sm:w-9 sm:text-[0.8125rem] ${
+                              recipient.status === "pending"
+                                ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                                : recipient.status === "viewed"
+                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                                  : recipient.status === "signed" || recipient.status === "approved"
+                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                                    : recipient.status === "declined"
+                                      ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                                      : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                            }`}
+                          >
+                            {getInitials(recipient.name, recipient.email)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate font-sans text-sm font-semibold text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+                              {recipient.name || recipient.email}
+                            </div>
+                            {recipient.name && (
+                              <div className="truncate font-sans text-xs text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
+                                {recipient.email}
+                              </div>
+                            )}
+                          </div>
+                          <span
+                            className={`rounded-full px-2.5 py-1 font-sans text-[0.6875rem] font-semibold whitespace-nowrap sm:px-2 sm:py-0.5 sm:text-[0.625rem] ${
+                              recipient.status === "pending"
+                                ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                                : recipient.status === "viewed"
+                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                                  : recipient.status === "signed" || recipient.status === "approved"
+                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                                    : recipient.status === "declined"
+                                      ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                                      : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                            }`}
+                          >
+                            {recipient.status.charAt(0).toUpperCase() + recipient.status.slice(1)}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => {
+                              setSelectedRecipientForOptions({
+                                _id: recipient._id,
+                                email: recipient.email,
+                                name: recipient.name,
+                                role: recipient.role,
+                                status: recipient.status,
+                                signingToken:
+                                  "signingToken" in recipient
+                                    ? (recipient.signingToken as string)
+                                    : undefined,
+                              });
+                              setRecipientOptionsOpen(true);
+                            }}
+                            title="Recipient options"
+                          >
+                            <SettingsIcon className="text-muted-foreground h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
                       <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-10 sm:w-10 sm:rounded-[10px] dark:bg-slate-800 dark:text-slate-400">
-                        <FileSignatureIcon className="h-6 w-6" />
+                        <UsersIcon className="h-6 w-6" />
                       </div>
                       <div className="mb-1 font-sans text-sm font-semibold text-slate-700 sm:text-[0.8125rem] dark:text-slate-300">
-                        No fields yet
+                        No recipients
                       </div>
                       <div className="font-sans text-xs leading-relaxed text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
-                        Drag fields from above onto the document to mark where recipients should
-                        sign or fill in information.
+                        Add recipients who need to sign or view this document.
+                      </div>
+                    </div>
+                  )}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 border-dashed border-slate-200 bg-transparent p-3 font-sans text-[0.8125rem] font-semibold text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 sm:rounded-lg sm:p-2.5 sm:text-xs dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400"
+                      onClick={() => setAddRecipientOpen(true)}
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                      Add Recipient
+                    </button>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* Signature Fields Section */}
+              {(signatureFields.length > 0 || canEdit) && (
+                <Collapsible
+                  open={openSections.has("fields")}
+                  onOpenChange={() => toggleSection("fields")}
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-violet-100 text-violet-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-violet-900 dark:text-violet-400">
+                          <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+                        </div>
+                        <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                          Signature Fields
+                        </span>
+                        {signatureFields.length > 0 && (
+                          <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                            {signatureFields.length}
+                          </span>
+                        )}
+                      </div>
+                      <ChevronDownIcon
+                        className={`h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400 ${openSections.has("fields") ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+                    {canEdit && (
+                      <div className="mt-4 mb-4">
+                        <FieldToolbar
+                          onFieldDragStart={(fieldType) => setDraggingFieldType(fieldType)}
+                          onFieldDragEnd={() => setDraggingFieldType(null)}
+                          disabled={recipients.filter((r) => r.role === "signer").length === 0}
+                        />
+                      </div>
+                    )}
+                    {signatureFields.length > 0 ? (
+                      <FieldList
+                        fields={signatureFields}
+                        recipients={recipients}
+                        selectedFieldId={canEdit ? selectedFieldId : null}
+                        canEdit={canEdit}
+                        onFieldSelect={canEdit ? handleFieldSelect : undefined}
+                        onFieldDelete={canEdit ? requestFieldDelete : undefined}
+                        onFieldProperties={
+                          canEdit
+                            ? (fieldId) => {
+                                setFieldPropertiesId(fieldId);
+                                setShowFieldProperties(true);
+                              }
+                            : undefined
+                        }
+                      />
+                    ) : (
+                      <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-10 sm:w-10 sm:rounded-[10px] dark:bg-slate-800 dark:text-slate-400">
+                          <FileSignatureIcon className="h-6 w-6" />
+                        </div>
+                        <div className="mb-1 font-sans text-sm font-semibold text-slate-700 sm:text-[0.8125rem] dark:text-slate-300">
+                          No fields yet
+                        </div>
+                        <div className="font-sans text-xs leading-relaxed text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
+                          Drag fields from above onto the document to mark where recipients should
+                          sign or fill in information.
+                        </div>
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Invoice Section - Always show, but only allow editing in draft mode */}
+              <InvoiceSidebarSection
+                documentId={documentId as Id<"documents">}
+                slug={slug}
+                recipients={recipients}
+                isOpen={openSections.has("invoice")}
+                onOpenChange={() => toggleSection("invoice")}
+                canEdit={documentData.workflowStatus === "draft" && canEdit}
+              />
+
+              {/* Document Details Section */}
+              <Collapsible
+                open={openSections.has("details")}
+                onOpenChange={() => toggleSection("details")}
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+              >
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-teal-100 text-teal-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-teal-900 dark:text-teal-400">
+                        <InfoIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+                      </div>
+                      <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                        Details
+                      </span>
+                    </div>
+                    <ChevronDownIcon
+                      className={`h-4 w-4 text-slate-500 transition-transform dark:text-slate-400 ${openSections.has("details") ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+                  <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-2.5">
+                    <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
+                      <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
+                        File Size
+                      </div>
+                      <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+                        {formatFileSize(documentData.fileSize)}
+                      </div>
+                    </div>
+                    <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
+                      <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
+                        Pages
+                      </div>
+                      <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+                        {documentData.pageCount || numPages || "—"}
+                      </div>
+                    </div>
+                    <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
+                      <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
+                        Uploaded
+                      </div>
+                      <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+                        {formatDate(documentData.createdAt)}
+                      </div>
+                    </div>
+                    <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
+                      <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
+                        Fields
+                      </div>
+                      <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+                        {signatureFields.length}
+                      </div>
+                    </div>
+                  </div>
+                  {documentData.description && (
+                    <div className="col-span-2 mt-4 rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
+                      <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
+                        Description
+                      </div>
+                      <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+                        {documentData.description}
                       </div>
                     </div>
                   )}
                 </CollapsibleContent>
               </Collapsible>
-            )}
 
-            {/* Recipients Section */}
-            <Collapsible
-              open={openSections.has("recipients")}
-              onOpenChange={() => toggleSection("recipients")}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
-            >
-              <CollapsibleTrigger asChild>
-                <button
-                  type="button"
-                  className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-blue-100 text-blue-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-blue-900 dark:text-blue-400">
-                      <UsersIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-                    </div>
-                    <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
-                      Recipients
-                    </span>
-                    {recipients.length > 0 && (
-                      <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                        {recipients.length}
-                      </span>
-                    )}
-                  </div>
-                  <ChevronDownIcon
-                    className={`h-4 w-4 text-slate-500 transition-transform dark:text-slate-400 ${openSections.has("recipients") ? "rotate-180" : ""}`}
-                  />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
-                {canEdit && !isUserAlreadyRecipient && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 mb-3 w-full"
-                    onClick={() => setAddMyselfOpen(true)}
-                  >
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    Add myself as signer
-                  </Button>
-                )}
-                {recipients.length > 0 ? (
-                  <div className="mt-4 flex flex-col gap-2.5 sm:gap-2">
-                    {recipients.map((recipient) => (
-                      <div
-                        key={recipient._id}
-                        className="flex items-center gap-3.5 rounded-xl border border-transparent bg-slate-50 p-3.5 transition-all hover:border-slate-200 hover:bg-slate-100 sm:flex-wrap sm:gap-2.5 sm:p-3 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700"
-                      >
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold sm:h-9 sm:w-9 sm:text-[0.8125rem] ${
-                            recipient.status === "pending"
-                              ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
-                              : recipient.status === "viewed"
-                                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                                : recipient.status === "signed" || recipient.status === "approved"
-                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-                                  : recipient.status === "declined"
-                                    ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                                    : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
-                          }`}
-                        >
-                          {getInitials(recipient.name, recipient.email)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate font-sans text-sm font-semibold text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
-                            {recipient.name || recipient.email}
-                          </div>
-                          {recipient.name && (
-                            <div className="truncate font-sans text-xs text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
-                              {recipient.email}
-                            </div>
-                          )}
-                        </div>
-                        <span
-                          className={`rounded-full px-2.5 py-1 font-sans text-[0.6875rem] font-semibold whitespace-nowrap sm:px-2 sm:py-0.5 sm:text-[0.625rem] ${
-                            recipient.status === "pending"
-                              ? "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
-                              : recipient.status === "viewed"
-                                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                                : recipient.status === "signed" || recipient.status === "approved"
-                                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-                                  : recipient.status === "declined"
-                                    ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                                    : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
-                          }`}
-                        >
-                          {recipient.status.charAt(0).toUpperCase() + recipient.status.slice(1)}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => {
-                            setSelectedRecipientForOptions({
-                              _id: recipient._id,
-                              email: recipient.email,
-                              name: recipient.name,
-                              role: recipient.role,
-                              status: recipient.status,
-                              signingToken:
-                                "signingToken" in recipient
-                                  ? (recipient.signingToken as string)
-                                  : undefined,
-                            });
-                            setRecipientOptionsOpen(true);
-                          }}
-                          title="Recipient options"
-                        >
-                          <SettingsIcon className="text-muted-foreground h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-10 sm:w-10 sm:rounded-[10px] dark:bg-slate-800 dark:text-slate-400">
-                      <UsersIcon className="h-6 w-6" />
-                    </div>
-                    <div className="mb-1 font-sans text-sm font-semibold text-slate-700 sm:text-[0.8125rem] dark:text-slate-300">
-                      No recipients
-                    </div>
-                    <div className="font-sans text-xs leading-relaxed text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
-                      Add recipients who need to sign or view this document.
-                    </div>
-                  </div>
-                )}
-                {canEdit && (
+              {/* Activity Section */}
+              <Collapsible
+                open={openSections.has("activity")}
+                onOpenChange={() => toggleSection("activity")}
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+              >
+                <CollapsibleTrigger asChild>
                   <button
                     type="button"
-                    className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 border-dashed border-slate-200 bg-transparent p-3 font-sans text-[0.8125rem] font-semibold text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 sm:rounded-lg sm:p-2.5 sm:text-xs dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400"
-                    onClick={() => setAddRecipientOpen(true)}
+                    className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
                   >
-                    <PlusIcon className="h-4 w-4" />
-                    Add Recipient
-                  </button>
-                )}
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Document Details Section */}
-            <Collapsible
-              open={openSections.has("details")}
-              onOpenChange={() => toggleSection("details")}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
-            >
-              <CollapsibleTrigger asChild>
-                <button
-                  type="button"
-                  className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-teal-100 text-teal-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-teal-900 dark:text-teal-400">
-                      <InfoIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-                    </div>
-                    <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
-                      Details
-                    </span>
-                  </div>
-                  <ChevronDownIcon
-                    className={`h-4 w-4 text-slate-500 transition-transform dark:text-slate-400 ${openSections.has("details") ? "rotate-180" : ""}`}
-                  />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
-                <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-2.5">
-                  <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
-                    <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
-                      File Size
-                    </div>
-                    <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
-                      {formatFileSize(documentData.fileSize)}
-                    </div>
-                  </div>
-                  <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
-                    <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
-                      Pages
-                    </div>
-                    <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
-                      {documentData.pageCount || numPages || "—"}
-                    </div>
-                  </div>
-                  <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
-                    <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
-                      Uploaded
-                    </div>
-                    <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
-                      {formatDate(documentData.createdAt)}
-                    </div>
-                  </div>
-                  <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
-                    <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
-                      Fields
-                    </div>
-                    <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
-                      {signatureFields.length}
-                    </div>
-                  </div>
-                </div>
-                {documentData.description && (
-                  <div className="col-span-2 mt-4 rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
-                    <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
-                      Description
-                    </div>
-                    <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
-                      {documentData.description}
-                    </div>
-                  </div>
-                )}
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Activity Section */}
-            <Collapsible
-              open={openSections.has("activity")}
-              onOpenChange={() => toggleSection("activity")}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
-            >
-              <CollapsibleTrigger asChild>
-                <button
-                  type="button"
-                  className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-amber-100 text-amber-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-amber-900 dark:text-amber-400">
-                      <ActivityIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-                    </div>
-                    <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
-                      Activity
-                    </span>
-                    {activityEvents.length > 0 && (
-                      <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                        {activityEvents.length}
-                      </span>
-                    )}
-                  </div>
-                  <ChevronDownIcon
-                    className={`h-4 w-4 text-slate-500 transition-transform dark:text-slate-400 ${openSections.has("activity") ? "rotate-180" : ""}`}
-                  />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
-                {activityEvents.length > 0 ? (
-                  <div className="relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-0.5 before:rounded-sm before:bg-slate-200 before:content-[''] sm:before:left-[13px] dark:before:bg-slate-700">
-                    {activityEvents.slice(0, 10).map((event, index) => (
-                      <div
-                        key={`${event.type}-${event.timestamp}`}
-                        className={`relative flex gap-4 py-3 first:pt-0 last:pb-0 ${
-                          event.type === "signed" ||
-                          event.type === "approved" ||
-                          event.type === "completed"
-                            ? "[&_.activity-dot]:border-emerald-300 [&_.activity-dot]:bg-emerald-50 [&_.activity-dot]:text-emerald-600 dark:[&_.activity-dot]:border-emerald-700 dark:[&_.activity-dot]:bg-emerald-950 dark:[&_.activity-dot]:text-emerald-400"
-                            : event.type === "viewed"
-                              ? "[&_.activity-dot]:border-blue-300 [&_.activity-dot]:bg-blue-50 [&_.activity-dot]:text-blue-600 dark:[&_.activity-dot]:border-blue-700 dark:[&_.activity-dot]:bg-blue-950 dark:[&_.activity-dot]:text-blue-400"
-                              : event.type === "declined"
-                                ? "[&_.activity-dot]:border-red-300 [&_.activity-dot]:bg-red-50 [&_.activity-dot]:text-red-600 dark:[&_.activity-dot]:border-red-700 dark:[&_.activity-dot]:bg-red-950 dark:[&_.activity-dot]:text-red-400"
-                                : "[&_.activity-dot]:border-slate-200 [&_.activity-dot]:bg-white [&_.activity-dot]:text-slate-500 dark:[&_.activity-dot]:border-slate-700 dark:[&_.activity-dot]:bg-slate-900 dark:[&_.activity-dot]:text-slate-400"
-                        }`}
-                        style={{ animationDelay: `${index * 0.05}s` }}
-                      >
-                        <div className="activity-dot relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 sm:h-7 sm:w-7">
-                          {getActivityIcon(event.type)}
-                        </div>
-                        <div className="min-w-0 flex-1 pt-1">
-                          <div className="font-sans text-[0.8125rem] leading-snug text-slate-700 sm:text-xs dark:text-slate-300">
-                            {event.description}
-                          </div>
-                          <div className="mt-1 font-sans text-[0.6875rem] text-slate-500 sm:text-[0.625rem] dark:text-slate-400">
-                            {formatRelativeTime(event.timestamp)}
-                          </div>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-amber-100 text-amber-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-amber-900 dark:text-amber-400">
+                        <ActivityIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-10 sm:w-10 sm:rounded-[10px] dark:bg-slate-800 dark:text-slate-400">
-                      <ActivityIcon className="h-6 w-6" />
+                      <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                        Activity
+                      </span>
+                      {activityEvents.length > 0 && (
+                        <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                          {activityEvents.length}
+                        </span>
+                      )}
                     </div>
-                    <div className="mb-1 font-sans text-sm font-semibold text-slate-700 sm:text-[0.8125rem] dark:text-slate-300">
-                      No activity yet
+                    <ChevronDownIcon
+                      className={`h-4 w-4 text-slate-500 transition-transform dark:text-slate-400 ${openSections.has("activity") ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+                  {activityEvents.length > 0 ? (
+                    <div className="relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-0.5 before:rounded-sm before:bg-slate-200 before:content-[''] sm:before:left-[13px] dark:before:bg-slate-700">
+                      {activityEvents.slice(0, 10).map((event, index) => (
+                        <div
+                          key={`${event.type}-${event.timestamp}`}
+                          className={`relative flex gap-4 py-3 first:pt-0 last:pb-0 ${
+                            event.type === "signed" ||
+                            event.type === "approved" ||
+                            event.type === "completed"
+                              ? "[&_.activity-dot]:border-emerald-300 [&_.activity-dot]:bg-emerald-50 [&_.activity-dot]:text-emerald-600 dark:[&_.activity-dot]:border-emerald-700 dark:[&_.activity-dot]:bg-emerald-950 dark:[&_.activity-dot]:text-emerald-400"
+                              : event.type === "viewed"
+                                ? "[&_.activity-dot]:border-blue-300 [&_.activity-dot]:bg-blue-50 [&_.activity-dot]:text-blue-600 dark:[&_.activity-dot]:border-blue-700 dark:[&_.activity-dot]:bg-blue-950 dark:[&_.activity-dot]:text-blue-400"
+                                : event.type === "declined"
+                                  ? "[&_.activity-dot]:border-red-300 [&_.activity-dot]:bg-red-50 [&_.activity-dot]:text-red-600 dark:[&_.activity-dot]:border-red-700 dark:[&_.activity-dot]:bg-red-950 dark:[&_.activity-dot]:text-red-400"
+                                  : "[&_.activity-dot]:border-slate-200 [&_.activity-dot]:bg-white [&_.activity-dot]:text-slate-500 dark:[&_.activity-dot]:border-slate-700 dark:[&_.activity-dot]:bg-slate-900 dark:[&_.activity-dot]:text-slate-400"
+                          }`}
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          <div className="activity-dot relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 sm:h-7 sm:w-7">
+                            {getActivityIcon(event.type)}
+                          </div>
+                          <div className="min-w-0 flex-1 pt-1">
+                            <div className="font-sans text-[0.8125rem] leading-snug text-slate-700 sm:text-xs dark:text-slate-300">
+                              {event.description}
+                            </div>
+                            <div className="mt-1 font-sans text-[0.6875rem] text-slate-500 sm:text-[0.625rem] dark:text-slate-400">
+                              {formatRelativeTime(event.timestamp)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="font-sans text-xs leading-relaxed text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
-                      Activity will appear here as recipients interact with this document.
+                  ) : (
+                    <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
+                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-10 sm:w-10 sm:rounded-[10px] dark:bg-slate-800 dark:text-slate-400">
+                        <ActivityIcon className="h-6 w-6" />
+                      </div>
+                      <div className="mb-1 font-sans text-sm font-semibold text-slate-700 sm:text-[0.8125rem] dark:text-slate-300">
+                        No activity yet
+                      </div>
+                      <div className="font-sans text-xs leading-relaxed text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
+                        Activity will appear here as recipients interact with this document.
+                      </div>
                     </div>
-                  </div>
-                )}
-              </CollapsibleContent>
-            </Collapsible>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
           </div>
         </div>
 

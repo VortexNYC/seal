@@ -148,6 +148,10 @@ This project has comprehensive documentation covering the authentication, author
 1. Go to: **QUICK_START_ROLES.md** → "Two-Level Document Access"
 2. Deep dive: **ROLES_AND_PERMISSIONS.md** → "Document Access Control"
 
+### I need to understand Stripe invoice flow
+
+1. Read: **features/payments/stripe-invoices.md** → Stripe Invoices (Document Send Flow)
+
 ---
 
 ## Key Concepts
@@ -166,6 +170,13 @@ This project has comprehensive documentation covering the authentication, author
 
 - **Org-level**: Role determines if you can create docs (member can, viewer cannot)
 - **Doc-level**: Sharing mode (private, workspace, specific) + permission level (view, edit, manage)
+
+### Payments (Stripe Invoices)
+
+- **Draft first**: Invoices are created as drafts for preview (no hosted link yet).
+- **Finalize on send**: Finalization generates `hosted_invoice_url` used in emails.
+- **Recipient scoped**: Invoice links are only sent to the selected invoice recipient.
+- **Cancel behavior**: Drafts are deleted when the send flow is canceled.
 
 ### Permission Hierarchy
 

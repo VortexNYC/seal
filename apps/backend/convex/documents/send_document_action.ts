@@ -167,6 +167,7 @@ export const sendDocumentEmails = action({
   args: {
     documentId: v.id("documents"),
     customMessage: v.optional(v.string()), // Default message for all recipients
+    stripeInvoiceId: v.optional(v.string()),
     recipientMessages: v.optional(
       v.array(
         v.object({
@@ -224,12 +225,40 @@ export const sendDocumentEmails = action({
       );
     }
 
-    // 4. Get sender information from document owner
+    // 4. Optional Stripe invoice finalize (if requested)
+    // Draft invoices have no hosted link; finalize before emailing recipients.
+    let invoicePayload:
+      | {
+          hostedInvoiceUrl?: string;
+          amountDue?: number;
+          currency?: string;
+          customerEmail?: string;
+        }
+      | undefined;
+
+    if (args.stripeInvoiceId) {
+      const invoiceResult = await ctx.runAction(
+        internal.stripe.invoice_actions.finalizeInvoiceForDocumentInternal,
+        {
+          documentId: args.documentId,
+          stripeInvoiceId: args.stripeInvoiceId,
+        },
+      );
+
+      invoicePayload = {
+        hostedInvoiceUrl: invoiceResult.hostedInvoiceUrl ?? undefined,
+        amountDue: invoiceResult.amountDue ?? undefined,
+        currency: invoiceResult.currency ?? undefined,
+        customerEmail: invoiceResult.customerEmail ?? undefined,
+      };
+    }
+
+    // 5. Get sender information from document owner
     // For now, we'll get it from the document query
     // TODO: Add user query or get from context
     const senderName = "Seal User";
 
-    // 5. Build a map of per-recipient messages (SEA-119)
+    // 6. Build a map of per-recipient messages (SEA-119)
     const recipientMessageMap = new Map<Id<"document_recipients">, string>();
     if (args.recipientMessages) {
       for (const rm of args.recipientMessages) {
@@ -237,7 +266,8 @@ export const sendDocumentEmails = action({
       }
     }
 
-    // 6. Send emails to all recipients
+    // 7. Send emails to all recipients
+    // Invoice link is only sent to the recipient matching the invoice customer email.
     const emailResults: Array<{
       recipientId: Id<"document_recipients">;
       success: boolean;
@@ -273,6 +303,20 @@ export const sendDocumentEmails = action({
         signingUrl,
         customMessage: messageForRecipient,
         expiresAt,
+        invoiceUrl:
+          invoicePayload?.hostedInvoiceUrl &&
+          invoicePayload?.customerEmail &&
+          invoicePayload.customerEmail === recipient.email
+            ? invoicePayload.hostedInvoiceUrl
+            : undefined,
+        invoiceAmount:
+          invoicePayload?.customerEmail && invoicePayload.customerEmail === recipient.email
+            ? invoicePayload.amountDue
+            : undefined,
+        invoiceCurrency:
+          invoicePayload?.customerEmail && invoicePayload.customerEmail === recipient.email
+            ? invoicePayload.currency
+            : undefined,
       });
 
       emailResults.push({

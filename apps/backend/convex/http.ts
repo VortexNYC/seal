@@ -48,6 +48,7 @@ import {
   updateRefreshToken as mcpUpdateRefreshToken,
   validateRedirectUri as mcpValidateRedirectUri,
 } from "./mcp_oauth/http";
+import { processStripeConnectWebhookEvent } from "./stripe/connect_webhook_handlers";
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
 
 interface ClerkWebhookEvent {
@@ -356,6 +357,50 @@ http.route({
 
     // Handle different event types
     await processStripeWebhookEvent(ctx, event);
+
+    return new Response("Webhook processed", { status: 200 });
+  }),
+});
+
+http.route({
+  path: "/stripe-connect-webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const webhookSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET;
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!webhookSecret || !stripeSecretKey) {
+      console.error("Stripe Connect webhook configuration missing", {
+        operation: "stripeConnectWebhook.configCheck",
+        requiredConfig: !webhookSecret ? "STRIPE_CONNECT_WEBHOOK_SECRET" : "STRIPE_SECRET_KEY",
+      });
+      return new Response("Webhook configuration error", { status: 500 });
+    }
+
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2025-12-15.clover",
+    });
+
+    const signature = request.headers.get("stripe-signature");
+    if (!signature) {
+      return new Response("Missing stripe-signature header", { status: 400 });
+    }
+
+    const body = await request.text();
+
+    let event: Stripe.Event;
+    try {
+      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
+    } catch (err) {
+      console.error("Stripe Connect webhook signature verification failed", {
+        operation: "stripeConnectWebhook.signatureVerification",
+        hasSignature: !!signature,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return new Response("Invalid signature", { status: 400 });
+    }
+
+    await processStripeConnectWebhookEvent(ctx, event);
 
     return new Response("Webhook processed", { status: 200 });
   }),

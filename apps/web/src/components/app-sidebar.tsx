@@ -168,6 +168,11 @@ function buildNavSections({
       visible:
         canView(permissionFlags?.canViewBilling) || canView(permissionFlags?.canManageBilling),
     },
+    {
+      title: "Payments",
+      url: buildOrganizationPath(slug, "/settings/payments"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
   ].filter((item) => item.visible);
 
   const developerItems = [
@@ -388,19 +393,29 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
           <SidebarMenuItem>
             <div className="flex items-center justify-between px-2">
               <NotificationsPopover slug={slug} />
-              <SidebarMenuButton
-                className="ml-2 flex-1 justify-between"
-                onClick={handleThemeToggle}
-              >
-                <div className="flex items-center gap-2">
-                  {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
-                  <span className="group-data-[collapsible=icon]:hidden">Dark mode</span>
+              <SidebarMenuButton asChild className="ml-2 flex-1 justify-between">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleThemeToggle}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleThemeToggle();
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
+                    <span className="group-data-[collapsible=icon]:hidden">Dark mode</span>
+                  </div>
+                  <Switch
+                    checked={isDark}
+                    className="group-data-[collapsible=icon]:hidden"
+                    aria-label="Toggle dark mode"
+                    tabIndex={-1}
+                  />
                 </div>
-                <Switch
-                  checked={isDark}
-                  className="group-data-[collapsible=icon]:hidden"
-                  aria-label="Toggle dark mode"
-                />
               </SidebarMenuButton>
             </div>
           </SidebarMenuItem>

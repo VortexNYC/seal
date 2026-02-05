@@ -4,6 +4,7 @@ import type { Infer } from "convex/values";
 import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
 import { type AuditAction, type AuditResourceType, auditLogsTable } from "./schemas/audit_logs";
 import { type DocumentPermissionLevel, documentAccessTable } from "./schemas/document_access";
+import { documentInvoicesTable } from "./schemas/document_invoices";
 import {
   type RecipientStatus as DocumentRecipientStatus,
   documentRecipientsTable,
@@ -43,6 +44,12 @@ import {
 import { type SignatureType, savedSignaturesTable } from "./schemas/saved_signatures";
 import { type FieldType, signatureFieldsTable } from "./schemas/signature_fields";
 import { signaturesTable } from "./schemas/signatures";
+import {
+  type StripeAccountType,
+  type StripeFeeHandling,
+  stripeAccountsTable,
+} from "./schemas/stripe_accounts";
+import { stripeWebhookEventsTable } from "./schemas/stripe_webhook_events";
 import {
   type SubscriptionCouponDuration,
   type SubscriptionCouponType,
@@ -108,6 +115,9 @@ export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
 // Re-export rate limit types
 export type { WindowType };
 
+// Re-export Stripe Connect types
+export type { StripeAccountType, StripeFeeHandling };
+
 // Re-export subscription coupon/promo types
 export type { SubscriptionCouponDuration, SubscriptionCouponType, SubscriptionPromoCodeStatus };
 
@@ -120,6 +130,7 @@ export default defineSchema({
   organization_roles: organizationRolesTable,
 
   documents: documentsTable,
+  document_invoices: documentInvoicesTable,
   document_access: documentAccessTable,
   document_recipients: documentRecipientsTable,
   document_reminders: documentRemindersTable,
@@ -144,6 +155,8 @@ export default defineSchema({
   subscription_prices: subscriptionPricesTable,
   subscription_coupons: subscriptionCouponsTable,
   subscription_promo_codes: subscriptionPromoCodesTable,
+  stripe_accounts: stripeAccountsTable,
+  stripe_webhook_events: stripeWebhookEventsTable,
 
   // Integrations
   connected_apps: connectedAppsTable,

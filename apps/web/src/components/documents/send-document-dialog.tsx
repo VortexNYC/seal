@@ -4,9 +4,16 @@
  * and optional signing deadline
  */
 
-import { useAction } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { addDays, format } from "date-fns";
-import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, Loader2Icon, SendIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  CreditCardIcon,
+  Loader2Icon,
+  SendIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -69,6 +76,11 @@ export function SendDocumentDialog({
 
   const sendDocumentEmails = useAction(api.documents.send_document_action.sendDocumentEmails);
 
+  // Query for existing draft invoice
+  const existingInvoice = useQuery(api.stripe.invoice_queries.getInvoiceByDocument, {
+    documentId,
+  });
+
   // Count pending recipients
   const pendingRecipients = recipients.filter(
     (r) => r.status !== "signed" && r.status !== "approved" && r.status !== "declined",
@@ -118,6 +130,9 @@ export function SendDocumentDialog({
         customMessage: customMessage.trim() || undefined,
         recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
         deadline: deadline?.getTime(),
+        // Always include invoice if one exists as draft
+        stripeInvoiceId:
+          existingInvoice?.status === "draft" ? existingInvoice.stripeInvoiceId : undefined,
       });
 
       if (result.success) {
@@ -147,7 +162,7 @@ export function SendDocumentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Send Document</DialogTitle>
           <DialogDescription>
@@ -156,7 +171,28 @@ export function SendDocumentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="-mx-6 flex-1 space-y-4 overflow-y-auto px-6 py-4">
+          {/* Invoice Info - Always included when exists */}
+          {existingInvoice && existingInvoice.status === "draft" && (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
+                  <CreditCardIcon className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+                    Invoice will be included
+                  </p>
+                  <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">
+                    {(existingInvoice.amountDue / 100).toFixed(2)}{" "}
+                    {existingInvoice.currency.toUpperCase()} invoice to{" "}
+                    {existingInvoice.customerEmail}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* SEA-119: Recipients list with per-recipient message */}
           <div>
             <Label className="mb-2 text-sm font-medium">Recipients</Label>
