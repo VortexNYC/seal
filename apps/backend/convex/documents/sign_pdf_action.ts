@@ -18,6 +18,7 @@ import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib";
 import { api, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { action } from "../_generated/server";
+import { isRecipientComplete } from "../schemas/document_recipients";
 
 /**
  * Embed signature images and data into a PDF
@@ -753,15 +754,25 @@ export const generateAndGetSignedPdfByToken = action({
       throw new ConvexError("Document not found");
     }
 
-    // 3. Check if signed PDF already exists
-    if (document.signedStorageId) {
+    // 3. Get recipients for name labels and completion check
+    const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
+      internal.documents.recipients_queries.getDocumentRecipientsInternal,
+      { documentId: document._id },
+    );
+
+    const allRecipientsComplete =
+      recipients.length > 0 &&
+      recipients.every((recipient) => isRecipientComplete(recipient.role, recipient.status));
+
+    // 4. Check if signed PDF already exists and document is fully complete
+    if (document.signedStorageId && allRecipientsComplete) {
       const url = await ctx.storage.getUrl(document.signedStorageId);
       if (url) {
         return { url, documentName: document.name };
       }
     }
 
-    // 4. Get all signatures for this document
+    // 5. Get all signatures for this document
     const signatures = await ctx.runQuery(
       internal.signatures.queries.getSignaturesByDocumentInternal,
       {
@@ -776,7 +787,7 @@ export const generateAndGetSignedPdfByToken = action({
       return { url, documentName: document.name };
     }
 
-    // 5. Get the original PDF
+    // 6. Get the original PDF
     const pdfUrl = await ctx.storage.getUrl(document.storageId);
     if (!pdfUrl) {
       throw new ConvexError("PDF file not found in storage");
@@ -789,7 +800,7 @@ export const generateAndGetSignedPdfByToken = action({
 
     const pdfBuffer = await response.arrayBuffer();
 
-    // 6. Load PDF and prepare for signing
+    // 7. Load PDF and prepare for signing
     const { PDFDocument: PDFDocumentLib, StandardFonts: StandardFontsLib } =
       await import("pdf-lib");
     const pdfDoc = await PDFDocumentLib.load(pdfBuffer);
@@ -800,17 +811,11 @@ export const generateAndGetSignedPdfByToken = action({
       { documentId: document._id },
     );
 
-    // Get recipients for name labels
-    const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
-      internal.documents.recipients_queries.getDocumentRecipientsInternal,
-      { documentId: document._id },
-    );
-
     // Embed fonts for text rendering
     const helvetica = await pdfDoc.embedFont(StandardFontsLib.Helvetica);
     const helveticaBold = await pdfDoc.embedFont(StandardFontsLib.HelveticaBold);
 
-    // 7. Embed signatures into the PDF
+    // 8. Embed signatures into the PDF
     await embedSignaturesIntoPdf(
       pdfDoc,
       document,
@@ -821,22 +826,24 @@ export const generateAndGetSignedPdfByToken = action({
       helveticaBold,
     );
 
-    // 8. Save the signed PDF
+    // 9. Save the signed PDF
     const signedPdfBytes = await pdfDoc.save();
 
-    // 9. Store the signed PDF
+    // 10. Store the signed PDF
     const signedBlob = new Blob([signedPdfBytes as BlobPart], {
       type: "application/pdf",
     });
     const signedStorageId = await ctx.storage.store(signedBlob);
 
-    // 10. Update the document with the signed PDF reference
-    await ctx.runMutation(internal.documents.mutations.updateSignedStorageId, {
-      documentId: document._id,
-      signedStorageId,
-    });
+    // 11. Update the document with the signed PDF reference only once fully complete
+    if (allRecipientsComplete) {
+      await ctx.runMutation(internal.documents.mutations.updateSignedStorageId, {
+        documentId: document._id,
+        signedStorageId,
+      });
+    }
 
-    // 11. Return the signed PDF URL
+    // 12. Return the signed PDF URL
     const signedUrl = await ctx.storage.getUrl(signedStorageId);
     if (!signedUrl) {
       throw new ConvexError("Failed to get signed PDF URL");
