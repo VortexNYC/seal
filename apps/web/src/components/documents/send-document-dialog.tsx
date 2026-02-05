@@ -27,6 +27,7 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
+import { InputCurrency, parseCurrency } from "../ui/input-currency";
 import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -274,7 +275,8 @@ export function SendDocumentDialog({
       return;
     }
 
-    const amountCents = Math.round(Number(invoiceAmount) * 100);
+    const amount = parseCurrency(invoiceAmount);
+    const amountCents = Math.round(amount * 100);
     if (!invoiceAmount || Number.isNaN(amountCents) || amountCents <= 0) {
       toast.error("Enter a valid invoice amount");
       return;
@@ -407,11 +409,8 @@ export function SendDocumentDialog({
                       <Label htmlFor="invoice-amount" className="text-xs">
                         Amount (USD)
                       </Label>
-                      <Input
+                      <InputCurrency
                         id="invoice-amount"
-                        type="number"
-                        min="0"
-                        step="0.01"
                         value={invoiceAmount}
                         onChange={(event) => setInvoiceAmount(event.target.value)}
                         disabled={!canUseInvoices}
