@@ -188,12 +188,10 @@ export const createDraftInvoiceForDocument = action({
       args.recipientName,
     );
 
-    // Calculate platform fee based on subscription tier and fee handling preference
+    // Calculate platform fee based on subscription tier
     // Platform fee: 1% for Free tier, 0.25% for Pro tier
-    const applicationFeeAmount =
-      feeHandling === "pass_to_recipient"
-        ? calculatePlatformFee(args.amountCents, isPro)
-        : undefined;
+    const platformFeeCents = calculatePlatformFee(args.amountCents, isPro);
+    const applicationFeeAmount = platformFeeCents > 0 ? platformFeeCents : undefined;
 
     // Create invoice first, excluding any orphaned pending items from previous drafts
     const invoice = await stripe.invoices.create(
@@ -223,6 +221,19 @@ export const createDraftInvoiceForDocument = action({
       },
       { stripeAccount: stripeAccountId },
     );
+
+    if (feeHandling === "pass_to_recipient" && platformFeeCents > 0) {
+      await stripe.invoiceItems.create(
+        {
+          customer: customer.id,
+          invoice: invoice.id,
+          amount: platformFeeCents,
+          currency,
+          description: "Platform fee (Seal)",
+        },
+        { stripeAccount: stripeAccountId },
+      );
+    }
 
     const expandedInvoice = await stripe.invoices.retrieve(
       invoice.id,
@@ -305,11 +316,20 @@ export const finalizeInvoiceForDocumentInternal = internalAction({
     const { stripeAccountId } = await resolveConnectedAccount(ctx, organizationId);
 
     const stripe = initializeStripe();
-    const invoice = await stripe.invoices.finalizeInvoice(
+    const existingInvoice = await stripe.invoices.retrieve(
       args.stripeInvoiceId,
-      { auto_advance: false },
+      {},
       { stripeAccount: stripeAccountId },
     );
+
+    const invoice =
+      existingInvoice.status === "draft"
+        ? await stripe.invoices.finalizeInvoice(
+            args.stripeInvoiceId,
+            { auto_advance: false },
+            { stripeAccount: stripeAccountId },
+          )
+        : existingInvoice;
 
     await ctx.runMutation(internal.stripe.invoice_mutations.upsertInvoiceRecord, {
       documentId: args.documentId,
