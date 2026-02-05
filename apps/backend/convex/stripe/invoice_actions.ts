@@ -188,17 +188,6 @@ export const createDraftInvoiceForDocument = action({
       args.recipientName,
     );
 
-    // Create a single line item (basic invoice MVP).
-    await stripe.invoiceItems.create(
-      {
-        customer: customer.id,
-        amount: args.amountCents,
-        currency,
-        description: args.description,
-      },
-      { stripeAccount: stripeAccountId },
-    );
-
     // Calculate platform fee based on subscription tier and fee handling preference
     // Platform fee: 1% for Free tier, 0.25% for Pro tier
     const applicationFeeAmount =
@@ -206,17 +195,31 @@ export const createDraftInvoiceForDocument = action({
         ? calculatePlatformFee(args.amountCents, isPro)
         : undefined;
 
+    // Create invoice first, excluding any orphaned pending items from previous drafts
     const invoice = await stripe.invoices.create(
       {
         customer: customer.id,
         collection_method: "send_invoice",
         days_until_due: 7,
         auto_advance: false,
+        pending_invoice_items_behavior: "exclude",
         application_fee_amount: applicationFeeAmount,
         metadata: {
           documentId: args.documentId,
           organizationId,
         },
+      },
+      { stripeAccount: stripeAccountId },
+    );
+
+    // Attach the line item directly to this invoice (avoids orphaned item issues)
+    await stripe.invoiceItems.create(
+      {
+        customer: customer.id,
+        invoice: invoice.id,
+        amount: args.amountCents,
+        currency,
+        description: args.description,
       },
       { stripeAccount: stripeAccountId },
     );
