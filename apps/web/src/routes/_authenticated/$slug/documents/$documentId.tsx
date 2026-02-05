@@ -7,8 +7,6 @@ import {
   ActivityIcon,
   ArrowLeftIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   FileSignatureIcon,
   FileTextIcon,
   InfoIcon,
@@ -51,6 +49,7 @@ import { FieldPropertiesDialog } from "../../../../components/documents/field-pr
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { InAppSigningSection } from "../../../../components/documents/in-app-signing-section";
+import { InvoiceSidebarSection } from "../../../../components/documents/invoice-sidebar-section";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
 import { PdfViewerControls } from "../../../../components/documents/pdf-viewer-controls";
 import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";
@@ -803,7 +802,7 @@ function DocumentDetailPage() {
 
   // Collapsible section state
   const [openSections, setOpenSections] = useState<Set<string>>(
-    new Set(["fields", "recipients", "your-signature"]),
+    new Set(["fields", "recipients", "your-signature", "invoice"]),
   );
 
   const toggleSection = (section: string) => {
@@ -973,15 +972,6 @@ function DocumentDetailPage() {
           {/* Left column: PDF Preview */}
           <div className="lg:col-span-2">
             <div className="relative min-h-[600px] rounded-2xl bg-stone-100 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-stone-900">
-              <div className="mb-4 flex items-center gap-3 font-serif text-lg font-medium text-stone-800 sm:flex-wrap sm:text-base dark:text-stone-200">
-                <span>Document Preview</span>
-                {numPages && (
-                  <span className="rounded-full bg-stone-200 px-2.5 py-1 font-sans text-xs font-medium text-stone-500 dark:bg-stone-700 dark:text-stone-400">
-                    {numPages} {numPages === 1 ? "page" : "pages"}
-                  </span>
-                )}
-              </div>
-
               {pdfUrl ? (
                 <TransformWrapper
                   initialScale={1}
@@ -996,16 +986,19 @@ function DocumentDetailPage() {
                     setCurrentZoom(state.scale);
                   }}
                 >
-                  <div className="mb-4 flex justify-center">
-                    <div className="flex items-center justify-center gap-1 rounded-lg border border-stone-200 bg-white px-2 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                      <PdfViewerControls
-                        currentZoom={currentZoom}
-                        currentPage={currentPage}
-                        totalPages={numPages ?? 1}
-                        onPageChange={handlePageChange}
-                        enableKeyboardShortcuts={true}
-                      />
+                  <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <div className="flex items-center gap-2 font-serif text-base font-medium text-stone-800 sm:gap-3 sm:text-lg dark:text-stone-200">
+                      <span>Document Preview</span>
                     </div>
+
+                    <PdfViewerControls
+                      currentZoom={currentZoom}
+                      currentPage={currentPage}
+                      totalPages={numPages ?? 1}
+                      onPageChange={handlePageChange}
+                      enableKeyboardShortcuts={true}
+                      className="w-full justify-center sm:w-auto sm:justify-start"
+                    />
                   </div>
                   <TransformComponent
                     wrapperClass="w-full"
@@ -1055,42 +1048,23 @@ function DocumentDetailPage() {
                       </Document>
                     </div>
                   </TransformComponent>
-
-                  {/* Bottom page navigation controls */}
-                  {numPages && numPages > 1 && (
-                    <div className="mt-4 flex justify-center">
-                      <div className="flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-4 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePageChange(currentPage - 1)}
-                          disabled={currentPage <= 1}
-                        >
-                          <ChevronLeftIcon className="mr-1 h-4 w-4" />
-                          Previous
-                        </Button>
-
-                        <span className="text-muted-foreground min-w-[60px] text-center text-sm font-medium">
-                          {currentPage} of {numPages}
-                        </span>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePageChange(currentPage + 1)}
-                          disabled={currentPage >= numPages}
-                        >
-                          Next
-                          <ChevronRightIcon className="ml-1 h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 </TransformWrapper>
               ) : (
-                <div className="relative overflow-hidden rounded-lg border border-stone-200 bg-white p-16 text-center text-stone-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-stone-400">
-                  <div className="animate-pulse">Loading document...</div>
-                </div>
+                <>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 font-serif text-lg font-medium text-stone-800 sm:flex-wrap sm:text-base dark:text-stone-200">
+                      <span>Document Preview</span>
+                      {numPages && (
+                        <span className="rounded-full bg-stone-200 px-2.5 py-1 font-sans text-xs font-medium text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+                          {numPages} {numPages === 1 ? "page" : "pages"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="relative overflow-hidden rounded-lg border border-stone-200 bg-white p-16 text-center text-stone-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-stone-400">
+                    <div className="animate-pulse">Loading document...</div>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -1266,6 +1240,16 @@ function DocumentDetailPage() {
                 )}
               </CollapsibleContent>
             </Collapsible>
+
+            {/* Invoice Section - Always show, but only allow editing in draft mode */}
+            <InvoiceSidebarSection
+              documentId={documentId as Id<"documents">}
+              slug={slug}
+              recipients={recipients}
+              isOpen={openSections.has("invoice")}
+              onOpenChange={() => toggleSection("invoice")}
+              canEdit={documentData.workflowStatus === "draft" && canEdit}
+            />
 
             {/* Signature Fields Section */}
             {(signatureFields.length > 0 || canEdit) && (
@@ -1575,7 +1559,6 @@ function DocumentDetailPage() {
 
         {/* Send document dialog */}
         <SendDocumentDialog
-          slug={slug}
           documentId={documentId as Id<"documents">}
           documentName={documentData.name}
           recipients={recipients}
