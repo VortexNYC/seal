@@ -193,7 +193,7 @@ export const sendDocumentEmails = action({
     }>;
   }> => {
     // 1. Authenticate and authorize
-    const { document } = await authorizeDocumentOwner(ctx, args.documentId);
+    const { document, userId } = await authorizeDocumentOwner(ctx, args.documentId);
 
     // 2. Get all recipients
     const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
@@ -225,7 +225,23 @@ export const sendDocumentEmails = action({
       );
     }
 
-    // 4. Optional Stripe invoice finalize (if requested)
+    // 3b. Validate payment fields have configs
+    const paymentFields = signatureFields.filter((f) => f.fieldType === "payment");
+    if (paymentFields.length > 0) {
+      const paymentConfigs = await ctx.runQuery(
+        internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
+        { documentId: args.documentId },
+      );
+      const configuredFieldIds = new Set(paymentConfigs.map((c) => c.fieldId.toString()));
+      const unconfigured = paymentFields.filter((f) => !configuredFieldIds.has(f._id.toString()));
+      if (unconfigured.length > 0) {
+        throw new ConvexError(
+          "All payment fields must be configured before sending. Please configure payment details for each payment field.",
+        );
+      }
+    }
+
+    // 4. Optional Stripe invoice finalize (if requested — legacy invoice system)
     // Draft invoices have no hosted link; finalize before emailing recipients.
     let invoicePayload:
       | {
@@ -251,6 +267,27 @@ export const sendDocumentEmails = action({
         currency: invoiceResult.currency ?? undefined,
         customerEmail: invoiceResult.customerEmail ?? undefined,
       };
+    }
+
+    // 4b. Create Stripe invoices for payment field configs
+    let paymentInvoiceLinks: Array<{
+      recipientEmail: string;
+      hostedInvoiceUrl: string | null;
+      stripeInvoiceId: string;
+      totalAmountCents: number;
+      currency: string;
+    }> = [];
+
+    if (paymentFields.length > 0) {
+      const paymentResult = await ctx.runAction(
+        internal.stripe.payment_field_actions.createStripeObjectsForPaymentFields,
+        {
+          documentId: args.documentId,
+          organizationId: document.organizationId,
+          userId,
+        },
+      );
+      paymentInvoiceLinks = paymentResult.invoiceLinks;
     }
 
     // 5. Get sender information from document owner
@@ -294,6 +331,28 @@ export const sendDocumentEmails = action({
       // SEA-119: Use deadline if provided, otherwise use token expiration
       const expiresAt = args.deadline || recipient.tokenExpiresAt;
 
+      // Resolve invoice link: prefer payment field invoice, fallback to legacy invoice
+      const paymentLink = paymentInvoiceLinks.find(
+        (link) => link.recipientEmail === recipient.email,
+      );
+      const resolvedInvoiceUrl =
+        paymentLink?.hostedInvoiceUrl ??
+        (invoicePayload?.hostedInvoiceUrl &&
+        invoicePayload?.customerEmail &&
+        invoicePayload.customerEmail === recipient.email
+          ? invoicePayload.hostedInvoiceUrl
+          : undefined);
+      const resolvedInvoiceAmount = paymentLink
+        ? paymentLink.totalAmountCents
+        : invoicePayload?.customerEmail && invoicePayload.customerEmail === recipient.email
+          ? invoicePayload.amountDue
+          : undefined;
+      const resolvedInvoiceCurrency = paymentLink
+        ? paymentLink.currency
+        : invoicePayload?.customerEmail && invoicePayload.customerEmail === recipient.email
+          ? invoicePayload.currency
+          : undefined;
+
       // Send email
       const emailResult = await sendDocumentInvitation({
         to: recipient.email,
@@ -303,20 +362,9 @@ export const sendDocumentEmails = action({
         signingUrl,
         customMessage: messageForRecipient,
         expiresAt,
-        invoiceUrl:
-          invoicePayload?.hostedInvoiceUrl &&
-          invoicePayload?.customerEmail &&
-          invoicePayload.customerEmail === recipient.email
-            ? invoicePayload.hostedInvoiceUrl
-            : undefined,
-        invoiceAmount:
-          invoicePayload?.customerEmail && invoicePayload.customerEmail === recipient.email
-            ? invoicePayload.amountDue
-            : undefined,
-        invoiceCurrency:
-          invoicePayload?.customerEmail && invoicePayload.customerEmail === recipient.email
-            ? invoicePayload.currency
-            : undefined,
+        invoiceUrl: resolvedInvoiceUrl ?? undefined,
+        invoiceAmount: resolvedInvoiceAmount,
+        invoiceCurrency: resolvedInvoiceCurrency,
       });
 
       emailResults.push({

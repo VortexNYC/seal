@@ -1,5 +1,9 @@
 "use node";
 /**
+ * @deprecated Legacy document-level invoice system.
+ * Replaced by per-recipient payment fields in `payment_field_actions.ts`.
+ * Kept for backward compatibility with existing invoices in the database.
+ *
  * Stripe Invoice actions (Node runtime).
  *
  * Flow:

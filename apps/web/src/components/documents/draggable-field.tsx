@@ -34,6 +34,8 @@ function getFieldTypeLabel(fieldType: FieldType): string {
       return "Radio";
     case "attachment":
       return "Attachment";
+    case "payment":
+      return "Payment";
     default:
       return fieldType;
   }
@@ -118,6 +120,11 @@ const FIELD_COLORS: Record<FieldType, { ink: string; accent: string; glow: strin
     accent: "#84cc16",
     glow: "rgba(132, 204, 22, 0.25)",
   },
+  payment: {
+    ink: "#065f46",
+    accent: "#10b981",
+    glow: "rgba(16, 185, 129, 0.25)",
+  },
 };
 
 /**
@@ -131,6 +138,7 @@ const FIELD_LABELS: Record<FieldType, string> = {
   dropdown: "Select",
   radio: "Choice",
   attachment: "File",
+  payment: "Payment",
 };
 
 /**
@@ -144,6 +152,7 @@ export const FIELD_DIMENSIONS: Record<FieldType, { width: number; height: number
   dropdown: { width: 180, height: 36 },
   radio: { width: 140, height: 36 },
   attachment: { width: 180, height: 44 },
+  payment: { width: 220, height: 60 },
 };
 
 /**

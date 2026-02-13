@@ -1,3 +1,4 @@
+import { CreditCardIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -164,6 +165,16 @@ export function FieldInputManager({
 
       case "attachment":
         return <AttachmentFieldInput {...commonProps} />;
+
+      case "payment":
+        return (
+          <div className="flex flex-col items-center gap-2 py-4">
+            <CreditCardIcon className="h-8 w-8 text-emerald-500" />
+            <p className="text-muted-foreground text-sm">
+              Payment fields are configured by the document sender.
+            </p>
+          </div>
+        );
 
       case "signature":
         return (

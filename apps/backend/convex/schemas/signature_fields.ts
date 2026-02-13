@@ -20,6 +20,7 @@ export const fieldTypeTuple = v.union(
   v.literal("dropdown"), // Dropdown select field
   v.literal("radio"), // Radio button group
   v.literal("attachment"), // File attachment field
+  v.literal("payment"), // Payment/invoice field (config stored in payment_field_configs)
 );
 export type FieldType = Infer<typeof fieldTypeTuple>;
 

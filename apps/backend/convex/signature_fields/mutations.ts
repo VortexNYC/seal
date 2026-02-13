@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import { mutation } from "../_generated/server";
 import { logFieldAction } from "../audit_logs/helpers";
+import { findExistingPaymentFieldForRecipient } from "../payment_fields/helpers";
 import { fieldTypeTuple } from "../schemas/signature_fields";
 import {
   validateFieldAssignment,
@@ -111,6 +112,18 @@ export const createField = mutation({
     const typeValidation = validateFieldType(args.fieldType, args.properties);
     if (!typeValidation.valid) {
       throw new Error(typeValidation.error);
+    }
+
+    // Guard: only one payment field per recipient
+    if (args.fieldType === "payment") {
+      const existingPaymentField = await findExistingPaymentFieldForRecipient(
+        ctx,
+        args.documentId,
+        args.recipientId,
+      );
+      if (existingPaymentField) {
+        throw new ConvexError("Each recipient can only have one payment field");
+      }
     }
 
     // Auto-designate main signature if this is the first signature field for this recipient
@@ -422,6 +435,17 @@ export const deleteField = mutation({
         height: field.height,
       },
     };
+
+    // Cascade-delete payment config if this is a payment field
+    if (field.fieldType === "payment") {
+      const paymentConfig = await ctx.db
+        .query("payment_field_configs")
+        .withIndex("by_field", (q) => q.eq("fieldId", args.fieldId))
+        .unique();
+      if (paymentConfig) {
+        await ctx.db.delete(paymentConfig._id);
+      }
+    }
 
     // Delete field
     await ctx.db.delete(args.fieldId);

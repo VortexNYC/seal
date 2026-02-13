@@ -2,7 +2,7 @@ import { useUser } from "@clerk/clerk-react";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouteContext, useRouter } from "@tanstack/react-router";
-import { useAction, useMutation } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import {
   ActivityIcon,
   ArrowLeftIcon,
@@ -49,7 +49,7 @@ import { FieldPropertiesDialog } from "../../../../components/documents/field-pr
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
 import { InAppSigningSection } from "../../../../components/documents/in-app-signing-section";
-import { InvoiceSidebarSection } from "../../../../components/documents/invoice-sidebar-section";
+import { PaymentConfigModal } from "../../../../components/documents/payment-config-modal";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
 import { PdfViewerControls } from "../../../../components/documents/pdf-viewer-controls";
 import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";
@@ -146,6 +146,12 @@ function DocumentDetailPage() {
   const [showFieldProperties, setShowFieldProperties] = useState(false);
   const [fieldPropertiesId, setFieldPropertiesId] = useState<string | null>(null);
 
+  // Payment config modal
+  const [showPaymentConfigModal, setShowPaymentConfigModal] = useState(false);
+  const [paymentConfigFieldId, setPaymentConfigFieldId] = useState<Id<"signature_fields"> | null>(
+    null,
+  );
+
   const { data: documentData, refetch: refetchDocument } = useSuspenseQuery(
     convexQuery(api.documents.queries.getDocument, {
       documentId: documentId as Id<"documents">,
@@ -196,6 +202,14 @@ function DocumentDetailPage() {
       documentId: documentId as Id<"documents">,
     }),
   );
+
+  // Stripe connected account status for payment fields
+  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, {
+    slug,
+  }) as { status: string; account: { chargesEnabled: boolean } | null } | undefined;
+  const stripeConnected =
+    connectedAccount?.status === "connected" &&
+    (connectedAccount?.account?.chargesEnabled ?? false);
 
   // Create a map of fieldId to signature data for easy lookup (memoized to prevent infinite loops)
   const signaturesByFieldId = useMemo(
@@ -421,6 +435,7 @@ function DocumentDetailPage() {
       dropdown: "Dropdown",
       radio: "Radio",
       attachment: "Attachment",
+      payment: "Payment",
     };
     return `${typeLabels[fieldType]} Field`;
   };
@@ -523,6 +538,12 @@ function DocumentDetailPage() {
       // Select the newly created field
       setSelectedFieldId(fieldId);
       setDraggingFieldType(null);
+
+      // Auto-open payment config modal for newly created payment fields
+      if (pendingFieldData.fieldType === "payment") {
+        setPaymentConfigFieldId(fieldId);
+        setShowPaymentConfigModal(true);
+      }
 
       // Refetch fields to sync with database
       await refetchFields();
@@ -1280,6 +1301,7 @@ function DocumentDetailPage() {
                           onFieldDragStart={(fieldType) => setDraggingFieldType(fieldType)}
                           onFieldDragEnd={() => setDraggingFieldType(null)}
                           disabled={recipients.filter((r) => r.role === "signer").length === 0}
+                          stripeConnected={stripeConnected}
                         />
                       </div>
                     )}
@@ -1317,16 +1339,6 @@ function DocumentDetailPage() {
                   </CollapsibleContent>
                 </Collapsible>
               )}
-
-              {/* Invoice Section - Always show, but only allow editing in draft mode */}
-              <InvoiceSidebarSection
-                documentId={documentId as Id<"documents">}
-                slug={slug}
-                recipients={recipients}
-                isOpen={openSections.has("invoice")}
-                onOpenChange={() => toggleSection("invoice")}
-                canEdit={documentData.workflowStatus === "draft" && canEdit}
-              />
 
               {/* Document Details Section */}
               <Collapsible
@@ -1558,6 +1570,21 @@ function DocumentDetailPage() {
           onSave={() => {
             refetchFields();
           }}
+          onConfigurePayment={(fieldId) => {
+            setShowFieldProperties(false);
+            setPaymentConfigFieldId(fieldId);
+            setShowPaymentConfigModal(true);
+          }}
+        />
+
+        {/* Payment config modal */}
+        <PaymentConfigModal
+          open={showPaymentConfigModal}
+          onOpenChange={(open) => {
+            setShowPaymentConfigModal(open);
+            if (!open) setPaymentConfigFieldId(null);
+          }}
+          fieldId={paymentConfigFieldId}
         />
 
         {/* Send document dialog */}

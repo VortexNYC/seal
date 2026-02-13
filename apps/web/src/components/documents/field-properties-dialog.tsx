@@ -40,6 +40,7 @@ interface FieldPropertiesDialogProps {
   field: FieldData | null;
   recipients: Recipient[];
   onSave?: () => void;
+  onConfigurePayment?: (fieldId: Id<"signature_fields">) => void;
 }
 
 export function FieldPropertiesDialog({
@@ -48,6 +49,7 @@ export function FieldPropertiesDialog({
   field,
   recipients,
   onSave,
+  onConfigurePayment,
 }: FieldPropertiesDialogProps) {
   if (!field) return null;
 
@@ -62,6 +64,7 @@ export function FieldPropertiesDialog({
           recipients={recipients}
           onClose={() => onOpenChange(false)}
           onSave={onSave}
+          onConfigurePayment={onConfigurePayment}
         />
       </DialogContent>
     </Dialog>

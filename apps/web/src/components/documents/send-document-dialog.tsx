@@ -76,8 +76,13 @@ export function SendDocumentDialog({
 
   const sendDocumentEmails = useAction(api.documents.send_document_action.sendDocumentEmails);
 
-  // Query for existing draft invoice
+  // Query for existing draft invoice (legacy)
   const existingInvoice = useQuery(api.stripe.invoice_queries.getInvoiceByDocument, {
+    documentId,
+  });
+
+  // Query payment field configs for this document
+  const paymentConfigs = useQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
     documentId,
   });
 
@@ -172,8 +177,8 @@ export function SendDocumentDialog({
         </DialogHeader>
 
         <div className="-mx-6 flex-1 space-y-4 overflow-y-auto px-6 py-4">
-          {/* Invoice Info - Always included when exists */}
-          {existingInvoice && existingInvoice.status === "draft" && (
+          {/* Payment Fields Summary */}
+          {paymentConfigs && paymentConfigs.length > 0 && (
             <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
@@ -181,17 +186,51 @@ export function SendDocumentDialog({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
-                    Invoice will be included
+                    {paymentConfigs.length === 1
+                      ? "Payment will be included"
+                      : `${paymentConfigs.length} payments will be included`}
                   </p>
-                  <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">
-                    {(existingInvoice.amountDue / 100).toFixed(2)}{" "}
-                    {existingInvoice.currency.toUpperCase()} invoice to{" "}
-                    {existingInvoice.customerEmail}
-                  </p>
+                  <div className="mt-1 space-y-0.5">
+                    {paymentConfigs.map((config) => (
+                      <p
+                        key={config._id}
+                        className="text-xs text-emerald-700 dark:text-emerald-300"
+                      >
+                        {new Intl.NumberFormat("en-US", {
+                          style: "currency",
+                          currency: config.currency.toUpperCase(),
+                        }).format(config.totalAmountCents / 100)}{" "}
+                        {config.currency.toUpperCase()}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           )}
+
+          {/* Legacy Invoice Info - for backwards compatibility */}
+          {existingInvoice &&
+            existingInvoice.status === "draft" &&
+            (!paymentConfigs || paymentConfigs.length === 0) && (
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
+                    <CreditCardIcon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+                      Invoice will be included
+                    </p>
+                    <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">
+                      {(existingInvoice.amountDue / 100).toFixed(2)}{" "}
+                      {existingInvoice.currency.toUpperCase()} invoice to{" "}
+                      {existingInvoice.customerEmail}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
           {/* SEA-119: Recipients list with per-recipient message */}
           <div>

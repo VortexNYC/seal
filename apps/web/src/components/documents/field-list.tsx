@@ -1,6 +1,7 @@
 import {
   CalendarIcon,
   CheckSquareIcon,
+  CreditCardIcon,
   PenToolIcon,
   SettingsIcon,
   TrashIcon,
@@ -49,6 +50,7 @@ const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   dropdown: <TypeIcon className="h-4 w-4" />,
   radio: <CheckSquareIcon className="h-4 w-4" />,
   attachment: <TypeIcon className="h-4 w-4" />,
+  payment: <CreditCardIcon className="h-4 w-4" />,
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
@@ -59,6 +61,7 @@ const FIELD_COLORS: Record<FieldType, string> = {
   dropdown: "bg-cyan-100 text-cyan-700 border-cyan-200",
   radio: "bg-pink-100 text-pink-700 border-pink-200",
   attachment: "bg-lime-100 text-lime-700 border-lime-200",
+  payment: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
 const FIELD_LABELS: Record<FieldType, string> = {
@@ -69,6 +72,7 @@ const FIELD_LABELS: Record<FieldType, string> = {
   dropdown: "Dropdown",
   radio: "Radio",
   attachment: "Attachment",
+  payment: "Payment",
 };
 
 export function FieldList({

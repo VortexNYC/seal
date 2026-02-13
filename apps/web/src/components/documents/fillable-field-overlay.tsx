@@ -3,6 +3,7 @@ import {
   CheckSquareIcon,
   ChevronDownIcon,
   CircleDotIcon,
+  CreditCardIcon,
   FileIcon,
   PenToolIcon,
   StarIcon,
@@ -58,6 +59,8 @@ function getFieldIcon(fieldType: FieldType) {
       return <CircleDotIcon className="h-3 w-3" />;
     case "attachment":
       return <FileIcon className="h-3 w-3" />;
+    case "payment":
+      return <CreditCardIcon className="h-3 w-3" />;
     default:
       return <TypeIcon className="h-3 w-3" />;
   }
@@ -79,6 +82,8 @@ function getFieldTypeLabel(fieldType: FieldType): string {
       return "Radio";
     case "attachment":
       return "Attachment";
+    case "payment":
+      return "Payment";
     default:
       return fieldType;
   }

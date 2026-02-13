@@ -95,6 +95,11 @@ export function validateFieldType(
     helpText?: string;
   },
 ): { valid: boolean; error?: string } {
+  // Payment fields don't use standard properties — config lives in payment_field_configs
+  if (fieldType === "payment") {
+    return { valid: true };
+  }
+
   // Dropdown and radio fields must have options
   if (fieldType === "dropdown" || fieldType === "radio") {
     if (!properties?.options || properties.options.length === 0) {

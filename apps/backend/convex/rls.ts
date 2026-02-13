@@ -416,6 +416,34 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       },
     },
 
+    payment_field_configs: {
+      read: async (ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+
+        // Org members can read payment configs for their org's documents
+        if (doc.organizationId === rlsCtx.orgId) return true;
+
+        // Recipients can read payment configs for documents they're signing
+        if (rlsCtx.recipientContext) {
+          return doc.documentId === rlsCtx.recipientContext.documentId;
+        }
+
+        return false;
+      },
+      modify: async (ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (doc.organizationId !== rlsCtx.orgId) return false;
+
+        // Document owner can modify payment configs
+        const document = await ctx.db.get(doc.documentId);
+        if (!document) return false;
+        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        return access === "owner";
+      },
+    },
+
     // ====================
     // Signature Workflow (legacy recipients table)
     // ====================

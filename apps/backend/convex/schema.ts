@@ -35,6 +35,13 @@ import {
   organizationsTable,
   type organizationTypeTuple,
 } from "./schemas/organizations";
+import {
+  type DueDateTerms,
+  type PaymentMethod,
+  type PaymentStatus,
+  type PaymentType,
+  paymentFieldConfigsTable,
+} from "./schemas/payment_field_configs";
 import { rateLimitBucketsTable, type WindowType } from "./schemas/rate_limits";
 import {
   type AuthenticationMethod,
@@ -121,6 +128,9 @@ export type { StripeAccountType, StripeFeeHandling };
 // Re-export subscription coupon/promo types
 export type { SubscriptionCouponDuration, SubscriptionCouponType, SubscriptionPromoCodeStatus };
 
+// Re-export payment field config types
+export type { DueDateTerms, PaymentMethod, PaymentStatus, PaymentType };
+
 export default defineSchema({
   users: usersTable,
   user_profiles: userProfilesTable,
@@ -140,6 +150,7 @@ export default defineSchema({
   signature_fields: signatureFieldsTable,
   signatures: signaturesTable,
   saved_signatures: savedSignaturesTable,
+  payment_field_configs: paymentFieldConfigsTable,
 
   // Audit and compliance
   audit_logs: auditLogsTable,

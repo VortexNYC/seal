@@ -11,6 +11,7 @@ import {
   AlertCircleIcon,
   CalendarIcon,
   CheckSquareIcon,
+  CreditCardIcon,
   HelpCircleIcon,
   PenToolIcon,
   TypeIcon,
@@ -82,6 +83,7 @@ interface FieldPropertiesPanelProps {
   recipients: Recipient[];
   onClose: () => void;
   onSave?: () => void;
+  onConfigurePayment?: (fieldId: Id<"signature_fields">) => void;
 }
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
@@ -92,6 +94,7 @@ const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   dropdown: <TypeIcon className="h-4 w-4" />,
   radio: <CheckSquareIcon className="h-4 w-4" />,
   attachment: <TypeIcon className="h-4 w-4" />,
+  payment: <CreditCardIcon className="h-4 w-4" />,
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
@@ -102,6 +105,7 @@ const FIELD_COLORS: Record<FieldType, string> = {
   dropdown: "bg-cyan-100 text-cyan-700 border-cyan-200",
   radio: "bg-pink-100 text-pink-700 border-pink-200",
   attachment: "bg-lime-100 text-lime-700 border-lime-200",
+  payment: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
 const FIELD_TYPE_LABELS: Record<FieldType, string> = {
@@ -112,6 +116,7 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   dropdown: "Dropdown",
   radio: "Radio",
   attachment: "Attachment",
+  payment: "Payment",
 };
 
 export function FieldPropertiesPanel({
@@ -119,6 +124,7 @@ export function FieldPropertiesPanel({
   recipients,
   onClose,
   onSave,
+  onConfigurePayment,
 }: FieldPropertiesPanelProps) {
   // Local state for form fields
   const [label, setLabel] = useState(field.label);
@@ -269,6 +275,23 @@ export function FieldPropertiesPanel({
                 </span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Configure Payment button for payment fields */}
+        {field.fieldType === "payment" && onConfigurePayment && (
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              onClick={() => onConfigurePayment(field._id)}
+            >
+              <CreditCardIcon className="mr-2 h-4 w-4" />
+              Configure Payment
+            </Button>
+            <p className="text-muted-foreground text-xs">
+              Set up line items, payment terms, and methods
+            </p>
           </div>
         )}
 
