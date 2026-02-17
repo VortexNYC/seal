@@ -7,6 +7,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
+import { logDocumentAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { ensureDocumentLimit, ensureStorageLimit } from "../auth/subscription_guards";
 import { validateFile } from "./upload_config";
@@ -91,6 +92,17 @@ export const createDocument = permissionMutation("documents:create")({
       workflowStatus: "draft", // Default to draft workflow status
       createdAt: Date.now(),
       updatedAt: Date.now(),
+    });
+
+    // Audit trail
+    await logDocumentAction(ctx, {
+      organizationId: args.organizationId,
+      userId: ctx.auth.user.clerkId,
+      action: "document.created",
+      documentId,
+      newValues: { name: args.name, fileType: args.fileType },
+      description: "Document created",
+      ipAddress: "web-authenticated",
     });
 
     return documentId;

@@ -12,6 +12,7 @@ import {
   recipientRoleTuple,
   recipientStatusTuple,
 } from "../schemas/document_recipients";
+import { logRecipientAction } from "../audit_logs/helpers";
 import { verifyDocumentOwnership } from "./recipient_helpers";
 
 /**
@@ -353,7 +354,32 @@ export const submitRecipientSignature = mutation({
 
     await ctx.db.patch(recipient._id, updateData);
 
-    // 7. Schedule post-signature emails if recipient completed their action
+    // 7. Audit trail
+    const document = await ctx.db.get(recipient.documentId);
+    if (document) {
+      const auditAction =
+        args.status === "signed" || args.status === "approved"
+          ? ("recipient.signed" as const)
+          : args.status === "declined"
+            ? ("recipient.declined" as const)
+            : args.status === "viewed"
+              ? ("recipient.viewed" as const)
+              : null;
+      if (auditAction) {
+        await logRecipientAction(ctx, {
+          organizationId: document.organizationId,
+          actorType: "recipient",
+          actorId: recipient._id,
+          action: auditAction,
+          documentId: recipient.documentId,
+          recipientId: recipient._id,
+          newValues: { status: args.status },
+          ipAddress: args.ipAddress ?? "0.0.0.0",
+        });
+      }
+    }
+
+    // 8. Schedule post-signature emails if recipient completed their action
     // (signed, approved, or declined - but not just viewed)
     if (isRecipientComplete(recipient.role, args.status)) {
       await ctx.scheduler.runAfter(
@@ -495,7 +521,32 @@ export const submitSignatureAuthenticated = authMutation({
 
     await ctx.db.patch(recipient._id, updateData);
 
-    // 8. Schedule post-signature emails if recipient completed their action
+    // 8. Audit trail
+    {
+      const auditAction =
+        args.status === "signed" || args.status === "approved"
+          ? ("recipient.signed" as const)
+          : args.status === "declined"
+            ? ("recipient.declined" as const)
+            : args.status === "viewed"
+              ? ("recipient.viewed" as const)
+              : null;
+      if (auditAction) {
+        await logRecipientAction(ctx, {
+          organizationId: document.organizationId,
+          actorType: "user",
+          actorId: user.clerkId,
+          userId: user.clerkId,
+          action: auditAction,
+          documentId: args.documentId,
+          recipientId: recipient._id,
+          newValues: { status: args.status },
+          ipAddress: "web-authenticated",
+        });
+      }
+    }
+
+    // 9. Schedule post-signature emails if recipient completed their action
     if (isRecipientComplete(recipient.role, args.status)) {
       await ctx.scheduler.runAfter(
         0,

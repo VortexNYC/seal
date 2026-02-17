@@ -8,6 +8,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { type ActionCtx, action, internalMutation } from "../_generated/server";
+import { logDocumentAction } from "../audit_logs/helpers";
 import { sendDocumentInvitation } from "./email";
 
 async function authorizeDocumentOwner(
@@ -63,6 +64,7 @@ export const markDocumentAsSent = internalMutation({
   args: {
     documentId: v.id("documents"),
     deadline: v.optional(v.number()), // SEA-119: Signing deadline
+    userId: v.optional(v.string()), // Clerk ID for audit trail
   },
   handler: async (ctx, args) => {
     const document = await ctx.db.get(args.documentId);
@@ -154,6 +156,19 @@ export const markDocumentAsSent = internalMutation({
       ...(args.deadline && { deadline: args.deadline }), // SEA-119: Save deadline if provided
     });
 
+    // Audit trail
+    if (args.userId) {
+      await logDocumentAction(ctx, {
+        organizationId: document.organizationId,
+        userId: args.userId,
+        action: "document.sent",
+        documentId: args.documentId,
+        newValues: { workflowStatus: "sent" },
+        description: "Document sent to recipients",
+        ipAddress: "web-authenticated",
+      });
+    }
+
     return { success: true };
   },
 });
@@ -167,7 +182,6 @@ export const sendDocumentEmails = action({
   args: {
     documentId: v.id("documents"),
     customMessage: v.optional(v.string()), // Default message for all recipients
-    stripeInvoiceId: v.optional(v.string()),
     recipientMessages: v.optional(
       v.array(
         v.object({
@@ -241,35 +255,7 @@ export const sendDocumentEmails = action({
       }
     }
 
-    // 4. Optional Stripe invoice finalize (if requested — legacy invoice system)
-    // Draft invoices have no hosted link; finalize before emailing recipients.
-    let invoicePayload:
-      | {
-          hostedInvoiceUrl?: string;
-          amountDue?: number;
-          currency?: string;
-          customerEmail?: string;
-        }
-      | undefined;
-
-    if (args.stripeInvoiceId) {
-      const invoiceResult = await ctx.runAction(
-        internal.stripe.invoice_actions.finalizeInvoiceForDocumentInternal,
-        {
-          documentId: args.documentId,
-          stripeInvoiceId: args.stripeInvoiceId,
-        },
-      );
-
-      invoicePayload = {
-        hostedInvoiceUrl: invoiceResult.hostedInvoiceUrl ?? undefined,
-        amountDue: invoiceResult.amountDue ?? undefined,
-        currency: invoiceResult.currency ?? undefined,
-        customerEmail: invoiceResult.customerEmail ?? undefined,
-      };
-    }
-
-    // 4b. Create Stripe invoices for payment field configs
+    // 4. Create Stripe invoices for payment field configs
     let paymentInvoiceLinks: Array<{
       recipientEmail: string;
       hostedInvoiceUrl: string | null;
@@ -291,9 +277,10 @@ export const sendDocumentEmails = action({
     }
 
     // 5. Get sender information from document owner
-    // For now, we'll get it from the document query
-    // TODO: Add user query or get from context
-    const senderName = "Seal User";
+    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+      userId,
+    });
+    const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
 
     // 6. Build a map of per-recipient messages (SEA-119)
     const recipientMessageMap = new Map<Id<"document_recipients">, string>();
@@ -331,27 +318,13 @@ export const sendDocumentEmails = action({
       // SEA-119: Use deadline if provided, otherwise use token expiration
       const expiresAt = args.deadline || recipient.tokenExpiresAt;
 
-      // Resolve invoice link: prefer payment field invoice, fallback to legacy invoice
+      // Resolve invoice link from payment field system
       const paymentLink = paymentInvoiceLinks.find(
         (link) => link.recipientEmail === recipient.email,
       );
-      const resolvedInvoiceUrl =
-        paymentLink?.hostedInvoiceUrl ??
-        (invoicePayload?.hostedInvoiceUrl &&
-        invoicePayload?.customerEmail &&
-        invoicePayload.customerEmail === recipient.email
-          ? invoicePayload.hostedInvoiceUrl
-          : undefined);
-      const resolvedInvoiceAmount = paymentLink
-        ? paymentLink.totalAmountCents
-        : invoicePayload?.customerEmail && invoicePayload.customerEmail === recipient.email
-          ? invoicePayload.amountDue
-          : undefined;
-      const resolvedInvoiceCurrency = paymentLink
-        ? paymentLink.currency
-        : invoicePayload?.customerEmail && invoicePayload.customerEmail === recipient.email
-          ? invoicePayload.currency
-          : undefined;
+      const resolvedInvoiceUrl = paymentLink?.hostedInvoiceUrl ?? undefined;
+      const resolvedInvoiceAmount = paymentLink?.totalAmountCents;
+      const resolvedInvoiceCurrency = paymentLink?.currency;
 
       // Send email
       const emailResult = await sendDocumentInvitation({
@@ -383,6 +356,7 @@ export const sendDocumentEmails = action({
       await ctx.runMutation(internal.documents.send_document_action.markDocumentAsSent, {
         documentId: args.documentId,
         deadline: args.deadline, // SEA-119: Pass deadline to be saved
+        userId: senderUser?.clerkId,
       });
     }
 
@@ -414,7 +388,7 @@ export const resendRecipientEmail = action({
     error?: string;
   }> => {
     // 1. Authenticate and authorize
-    const { document } = await authorizeDocumentOwner(ctx, args.documentId);
+    const { document, userId } = await authorizeDocumentOwner(ctx, args.documentId);
 
     // 2. Verify document has been sent (not in draft)
     const workflowStatus = document.workflowStatus ?? "draft";
@@ -455,8 +429,10 @@ export const resendRecipientEmail = action({
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
 
     // 6. Get sender information
-    // TODO: Get actual sender name from user
-    const senderName = "Seal User";
+    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+      userId,
+    });
+    const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
 
     // 7. Send email
     const emailResult = await sendDocumentInvitation({
