@@ -24,6 +24,8 @@ function getFieldTypeLabel(fieldType: FieldType): string {
       return "Signature";
     case "text":
       return "Text";
+    case "number":
+      return "Number";
     case "date":
       return "Date";
     case "checkbox":
@@ -57,6 +59,8 @@ export interface PlacedField {
     defaultValue?: string;
     helpText?: string;
   };
+  /** Payment total in cents for display on canvas */
+  paymentTotalCents?: number;
   /** Signature data if field has been filled */
   signatureData?: {
     signatureImageUrl?: string;
@@ -94,6 +98,11 @@ const FIELD_COLORS: Record<FieldType, { ink: string; accent: string; glow: strin
     ink: "#14532d",
     accent: "#22c55e",
     glow: "rgba(34, 197, 94, 0.25)",
+  },
+  number: {
+    ink: "#78350f",
+    accent: "#f59e0b",
+    glow: "rgba(245, 158, 11, 0.25)",
   },
   date: {
     ink: "#4c1d95",
@@ -133,6 +142,7 @@ const FIELD_COLORS: Record<FieldType, { ink: string; accent: string; glow: strin
 const FIELD_LABELS: Record<FieldType, string> = {
   signature: "Signature",
   text: "Text",
+  number: "Number",
   date: "Date",
   checkbox: "",
   dropdown: "Select",
@@ -147,6 +157,7 @@ const FIELD_LABELS: Record<FieldType, string> = {
 export const FIELD_DIMENSIONS: Record<FieldType, { width: number; height: number }> = {
   signature: { width: 200, height: 50 },
   text: { width: 180, height: 36 },
+  number: { width: 180, height: 36 },
   date: { width: 140, height: 36 },
   checkbox: { width: 28, height: 28 },
   dropdown: { width: 180, height: 36 },
@@ -425,7 +436,42 @@ export function DraggableField({
           </Group>
         )}
 
-        {label && (
+        {label && field.fieldType === "payment" && field.paymentTotalCents !== undefined ? (
+          <>
+            <Text
+              x={textOffsetX}
+              y={8}
+              width={field.width - textOffsetX - 4}
+              height={field.height / 2 - 4}
+              text={isUnassigned ? `${label} (unassigned)` : label}
+              fontSize={10}
+              fontFamily="'DM Sans', system-ui, sans-serif"
+              fontStyle="600"
+              fill={colors.ink}
+              opacity={isUnassigned ? 0.6 : 0.7}
+              align="left"
+              verticalAlign="top"
+              letterSpacing={0.3}
+              listening={false}
+            />
+            <Text
+              x={textOffsetX}
+              y={field.height / 2 - 2}
+              width={field.width - textOffsetX - 4}
+              height={field.height / 2}
+              text={`$${(field.paymentTotalCents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              fontSize={16}
+              fontFamily="'DM Sans', system-ui, sans-serif"
+              fontStyle="700"
+              fill={colors.accent}
+              opacity={0.9}
+              align="left"
+              verticalAlign="top"
+              letterSpacing={0.3}
+              listening={false}
+            />
+          </>
+        ) : label ? (
           <Text
             x={textOffsetX}
             y={0}
@@ -442,7 +488,7 @@ export function DraggableField({
             letterSpacing={0.3}
             listening={false}
           />
-        )}
+        ) : null}
       </>
     );
   };

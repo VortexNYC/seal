@@ -226,6 +226,66 @@ export const updatePaymentStatus = mutation({
 });
 
 /**
+ * Internal mutation to update payment status from Stripe webhook handlers.
+ * Looks up the config by stripeInvoiceId (set during the send flow).
+ * Returns the config ID if found and updated, or null if not found.
+ */
+export const updatePaymentStatusFromWebhook = internalMutation({
+  args: {
+    stripeInvoiceId: v.string(),
+    paymentStatus: paymentStatusTuple,
+  },
+  handler: async (ctx, args) => {
+    const config = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .first();
+
+    if (!config) {
+      return null;
+    }
+
+    await ctx.db.patch(config._id, {
+      paymentStatus: args.paymentStatus,
+      updatedAt: Date.now(),
+    });
+
+    return config._id;
+  },
+});
+
+/**
+ * Internal mutation to update payment status from Stripe subscription webhooks.
+ * Looks up the config by stripeSubscriptionId.
+ * Returns the config ID if found and updated, or null if not found.
+ */
+export const updatePaymentStatusFromSubscriptionWebhook = internalMutation({
+  args: {
+    stripeSubscriptionId: v.string(),
+    paymentStatus: paymentStatusTuple,
+  },
+  handler: async (ctx, args) => {
+    const config = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_stripe_subscription", (q) =>
+        q.eq("stripeSubscriptionId", args.stripeSubscriptionId),
+      )
+      .first();
+
+    if (!config) {
+      return null;
+    }
+
+    await ctx.db.patch(config._id, {
+      paymentStatus: args.paymentStatus,
+      updatedAt: Date.now(),
+    });
+
+    return config._id;
+  },
+});
+
+/**
  * Internal mutation to store Stripe IDs back on a payment config
  * after Stripe objects are created during the send flow.
  */
@@ -236,6 +296,7 @@ export const storeStripeIds = internalMutation({
     stripeInvoiceId: v.optional(v.string()),
     stripeSubscriptionId: v.optional(v.string()),
     stripePaymentIntentId: v.optional(v.string()),
+    hostedInvoiceUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const config = await ctx.db.get(args.configId);
@@ -252,6 +313,7 @@ export const storeStripeIds = internalMutation({
       ...(args.stripePaymentIntentId !== undefined && {
         stripePaymentIntentId: args.stripePaymentIntentId,
       }),
+      ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
       updatedAt: Date.now(),
     });
   },

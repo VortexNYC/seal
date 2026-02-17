@@ -20,12 +20,12 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 
 **Implementation Checklist**:
 
-- [ ] Clear UI showing user is about to sign (not just clicking randomly)
-- [ ] Explicit "I agree to sign" button/action
-- [ ] Record signature method used (drawn, typed, uploaded image)
+- [x] Clear UI showing user is about to sign (not just clicking randomly) — "Accept & Sign" button with legal disclaimer in `signature-capture.tsx`
+- [x] Explicit "I agree to sign" button/action — "Accept & Sign" button text at line 636
+- [x] Record signature method used (drawn, typed, uploaded image) — `signatureType` stored in schema
 - [ ] Capture user interaction data during signing process
-- [ ] Store timestamp of signature action
-- [ ] Log IP address and device information
+- [x] Store timestamp of signature action — `signedAt` stored per recipient
+- [ ] Log IP address and device information — **IP hardcoded as "0.0.0.0"** in `sign.$token.tsx:406`
 
 **Reference**: Feature #9 - Digital Signature Implementation (`/features/signature-workflow/digital-signature-implementation/feature-spec.md:62-67`)
 
@@ -70,12 +70,12 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 
 **Implementation Checklist**:
 
-- [ ] Automatic email delivery to all signers upon completion
-- [ ] Sender receives copy of completed document
-- [ ] Generate secure download links (time-limited)
+- [x] Automatic email delivery to all signers upon completion — `sendSigningComplete` in `recipient_email_action.ts`
+- [x] Sender receives copy of completed document — `sendDocumentCompleted` triggered on all-complete
+- [ ] Generate secure download links (time-limited) — completion emails link to management page, not a direct download
 - [ ] Track delivery confirmations (email opened, downloaded)
 - [ ] Store proof of delivery in audit trail
-- [ ] Resend option if delivery fails
+- [x] Resend option if delivery fails — email retry logic exists in cron
 
 **Reference**: Feature #26 - Security & Compliance (`/features/authentication/security-compliance/feature-spec.md:72-74`)
 
@@ -105,11 +105,11 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 
 **Implementation Checklist**:
 
-- [ ] Generate SHA-256 hash on document upload (Web Crypto API)
-- [ ] Store document hash in database
-- [ ] Verify hash before signature process starts
-- [ ] Generate final signed document hash
-- [ ] Detect hash mismatches and block signing if detected
+- [ ] Generate SHA-256 hash on document upload (Web Crypto API) — `hashDocument` action exists with real SHA-256 (`crypto/node_helpers.ts`) but **never called at upload time**
+- [x] Store document hash in database — `documentHash` field in documents schema
+- [ ] Verify hash before signature process starts — not implemented
+- [x] Generate final signed document hash — `documentHashAtSigning` stored per signature
+- [ ] Detect hash mismatches and block signing if detected — not implemented
 - [ ] Log all hash verification events
 
 **Reference**: Feature #26 - Security & Compliance (`/features/authentication/security-compliance/feature-spec.md:48-60`)
@@ -120,16 +120,16 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 
 **Implementation Checklist**:
 
-- [ ] **Document Actions**: Log upload, modification, deletion
-- [ ] **Signature Fields**: Log additions, changes, removals
-- [ ] **Recipients**: Log additions, modifications, removals
-- [ ] **Document Lifecycle**: Log sending, viewing, signing, completion
+- [ ] **Document Actions**: Log upload, modification, deletion — `document.created` and `document.sent` not logged
+- [x] **Signature Fields**: Log additions, changes, removals — `logFieldAction` called from `signature_fields/mutations.ts`
+- [ ] **Recipients**: Log additions, modifications, removals — not audit-logged
+- [ ] **Document Lifecycle**: Log sending, viewing, signing, completion — `submitRecipientSignature` does NOT call audit log
 - [ ] **User Sessions**: Log authentication and session events
-- [ ] **Immutable Storage**: Use Convex immutable data structure
-- [ ] **Timestamps**: Precise timestamps for every event (UTC)
-- [ ] **User Attribution**: Link every action to authenticated user
-- [ ] **IP Address Tracking**: Store IP for security and compliance
-- [ ] **Device Information**: Basic device/browser info
+- [x] **Immutable Storage**: Use Convex immutable data structure — `audit_logs` table with 24 action types
+- [x] **Timestamps**: Precise timestamps for every event (UTC) — `timestamp` field on all audit entries
+- [x] **User Attribution**: Link every action to authenticated user — `userId` on audit entries
+- [ ] **IP Address Tracking**: Store IP for security and compliance — schema has `ipAddress` field but hardcoded as "0.0.0.0" or "web-authenticated"
+- [ ] **Device Information**: Basic device/browser info — user agent captured in signatures but not in audit logs
 
 **Critical Rule**: ⚠️ **If audit logging fails, BLOCK the action from proceeding**
 
@@ -174,13 +174,13 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 
 **Implementation Checklist**:
 
-- [ ] Use Web Crypto API for cryptographic operations
-- [ ] Generate unique signature for each signing event
-- [ ] Store signature data securely (encrypted)
-- [ ] Validate signature authenticity
-- [ ] Prevent signature reuse or copying
-- [ ] Signature timestamp verification
-- [ ] Support multiple signature types (draw, type, upload)
+- [ ] Use Web Crypto API for cryptographic operations — SHA-256 exists for document hash (`crypto/node_helpers.ts`); **per-signature hash uses weak non-cryptographic rolling hash** (`crypto/helpers.ts:generateStringHash`)
+- [x] Generate unique signature for each signing event — unique token + timestamp per signature
+- [ ] Store signature data securely (encrypted) — signature data stored as base64 data URL, not encrypted
+- [ ] Validate signature authenticity — `generateSignatureCertificate` checks `integrityVerified` but relies on weak hash
+- [ ] Prevent signature reuse or copying — not implemented
+- [x] Signature timestamp verification — `signedAt` stored per signature
+- [x] Support multiple signature types (draw, type, upload) — all three implemented in `signature-capture.tsx`
 
 **Reference**: Feature #9 - Digital Signature Implementation (`/features/signature-workflow/digital-signature-implementation/feature-spec.md`)
 
@@ -190,13 +190,13 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 
 **Implementation Checklist**:
 
-- [ ] Generate audit reports for specific documents
+- [x] Generate audit reports for specific documents — `exportDocumentAuditTrail` query in `audit_logs/queries.ts`
 - [ ] Generate audit reports for date ranges
-- [ ] Export in multiple formats (PDF, CSV, JSON)
-- [ ] Search audit logs by document, user, or date
+- [ ] Export in multiple formats (PDF, CSV, JSON) — JSON export exists; no PDF or CSV
+- [ ] Search audit logs by document, user, or date — query by document exists; no general search UI
 - [ ] Legal-ready documentation format
-- [ ] Chronological event timelines
-- [ ] Include all verification data
+- [x] Chronological event timelines — audit trail returned chronologically
+- [x] Include all verification data — signatures, certificates, hashes included in export
 
 **Reference**: Feature #23 - Audit Trail & Compliance (`/features/compliance-audit/feature-spec.md:100-114`)
 
@@ -246,6 +246,6 @@ Before launching to production, verify:
 
 ---
 
-**Last Updated**: 2025-10-20
+**Last Updated**: 2026-02-17
 **Owner**: Development Team
 **Reviewer**: Legal Counsel (required before launch)

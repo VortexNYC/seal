@@ -76,11 +76,6 @@ export function SendDocumentDialog({
 
   const sendDocumentEmails = useAction(api.documents.send_document_action.sendDocumentEmails);
 
-  // Query for existing draft invoice (legacy)
-  const existingInvoice = useQuery(api.stripe.invoice_queries.getInvoiceByDocument, {
-    documentId,
-  });
-
   // Query payment field configs for this document
   const paymentConfigs = useQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
     documentId,
@@ -135,9 +130,6 @@ export function SendDocumentDialog({
         customMessage: customMessage.trim() || undefined,
         recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
         deadline: deadline?.getTime(),
-        // Always include invoice if one exists as draft
-        stripeInvoiceId:
-          existingInvoice?.status === "draft" ? existingInvoice.stripeInvoiceId : undefined,
       });
 
       if (result.success) {
@@ -208,29 +200,6 @@ export function SendDocumentDialog({
               </div>
             </div>
           )}
-
-          {/* Legacy Invoice Info - for backwards compatibility */}
-          {existingInvoice &&
-            existingInvoice.status === "draft" &&
-            (!paymentConfigs || paymentConfigs.length === 0) && (
-              <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
-                    <CreditCardIcon className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
-                      Invoice will be included
-                    </p>
-                    <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">
-                      {(existingInvoice.amountDue / 100).toFixed(2)}{" "}
-                      {existingInvoice.currency.toUpperCase()} invoice to{" "}
-                      {existingInvoice.customerEmail}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
 
           {/* SEA-119: Recipients list with per-recipient message */}
           <div>

@@ -40,11 +40,13 @@ function formatFieldTypeLabel(fieldType: string): string {
   const typeLabels: Record<string, string> = {
     signature: "Signature",
     text: "Text",
+    number: "Number",
     date: "Date",
     checkbox: "Checkbox",
     dropdown: "Dropdown",
     radio: "Radio",
     attachment: "Attachment",
+    payment: "Payment",
   };
   return typeLabels[fieldType] || fieldType;
 }
@@ -104,7 +106,7 @@ export function RecipientSelectorDialog({
             {signers.length > 0 ? (
               <>
                 <Select
-                  value={selectedRecipientId ?? undefined}
+                  value={selectedRecipientId ?? ""}
                   onValueChange={(value) => {
                     if (value) {
                       onRecipientSelect(value as Id<"document_recipients">);

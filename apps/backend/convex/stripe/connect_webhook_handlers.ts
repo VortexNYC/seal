@@ -16,6 +16,8 @@ import { internal } from "../_generated/api";
 import type { DataModel, Id } from "../_generated/dataModel";
 import { mapStripeCapabilities, mapStripeRequirements } from "./connect_helpers";
 
+import type { PaymentStatus } from "../schemas/payment_field_configs";
+
 type HttpActionCtx = GenericActionCtx<DataModel>;
 
 async function resolveOrganizationId(
@@ -84,8 +86,36 @@ async function handleCapabilityUpdated(
   });
 }
 
+/**
+ * Update payment_field_configs status from a Stripe invoice event.
+ * Looks up the config by stripeInvoiceId. Returns the config ID if found, null otherwise.
+ */
+async function updatePaymentFieldFromInvoice(
+  ctx: HttpActionCtx,
+  invoice: Stripe.Invoice,
+  paymentStatus: PaymentStatus,
+): Promise<string | null> {
+  const result = await ctx.runMutation(
+    internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
+    {
+      stripeInvoiceId: invoice.id,
+      paymentStatus,
+    },
+  );
+
+  if (result) {
+    console.info("Payment field config status updated", {
+      operation: "stripeConnect.paymentFieldUpdate",
+      stripeInvoiceId: invoice.id,
+      paymentStatus,
+      configId: result,
+    });
+  }
+
+  return result;
+}
+
 async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
-  // Invoice has been paid - update local status
   console.info("Processing invoice.paid webhook", {
     operation: "stripeConnect.invoicePaid",
     stripeInvoiceId: invoice.id,
@@ -93,64 +123,113 @@ async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): P
     amountPaid: invoice.amount_paid,
   });
 
-  const result = await ctx.runMutation(internal.stripe.invoice_mutations.updateInvoiceStatus, {
-    stripeInvoiceId: invoice.id,
-    status: "paid",
-    paidAt: Date.now(),
-    hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
-    invoicePdf: invoice.invoice_pdf ?? undefined,
-  });
-
-  if (!result) {
-    console.warn("Invoice not found in database for paid webhook", {
-      operation: "stripeConnect.invoicePaid",
-      stripeInvoiceId: invoice.id,
-    });
-  } else {
-    console.info("Invoice status updated to paid", {
-      operation: "stripeConnect.invoicePaid",
-      stripeInvoiceId: invoice.id,
-      documentInvoiceId: result,
-    });
-  }
+  // Update payment_field_configs (new system)
+  await updatePaymentFieldFromInvoice(ctx, invoice, "paid");
 }
 
 async function handleInvoicePaymentFailed(
-  _ctx: HttpActionCtx,
+  ctx: HttpActionCtx,
   invoice: Stripe.Invoice,
 ): Promise<void> {
-  // Payment failed - log but keep status as "open" (Stripe will retry)
   console.warn("Invoice payment failed", {
     operation: "stripeConnect.invoicePaymentFailed",
     stripeInvoiceId: invoice.id,
   });
+
+  // Update payment_field_configs (new system)
+  await updatePaymentFieldFromInvoice(ctx, invoice, "failed");
 }
 
 async function handleInvoiceVoided(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
-  // Invoice was voided - update local status
-  await ctx.runMutation(internal.stripe.invoice_mutations.updateInvoiceStatus, {
-    stripeInvoiceId: invoice.id,
-    status: "void",
-    voidedAt: Date.now(),
-  });
+  // Update payment_field_configs (new system)
+  await updatePaymentFieldFromInvoice(ctx, invoice, "cancelled");
 }
 
 async function handleInvoiceMarkedUncollectible(
   ctx: HttpActionCtx,
   invoice: Stripe.Invoice,
 ): Promise<void> {
-  // Invoice marked as uncollectible - update local status
-  await ctx.runMutation(internal.stripe.invoice_mutations.updateInvoiceStatus, {
-    stripeInvoiceId: invoice.id,
-    status: "uncollectible",
-  });
+  // Update payment_field_configs (new system)
+  await updatePaymentFieldFromInvoice(ctx, invoice, "failed");
 }
 
 async function handleInvoiceDeleted(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
-  // Invoice deleted (e.g., from Stripe dashboard) - sync to our database
-  await ctx.runMutation(internal.stripe.invoice_mutations.markInvoiceDeleted, {
-    stripeInvoiceId: invoice.id,
+  // Update payment_field_configs (new system)
+  await updatePaymentFieldFromInvoice(ctx, invoice, "cancelled");
+}
+
+/**
+ * Update payment_field_configs status from a Stripe subscription event.
+ * Looks up the config by stripeSubscriptionId.
+ */
+async function updatePaymentFieldFromSubscription(
+  ctx: HttpActionCtx,
+  subscription: Stripe.Subscription,
+  paymentStatus: PaymentStatus,
+): Promise<string | null> {
+  const result = await ctx.runMutation(
+    internal.payment_fields.mutations.updatePaymentStatusFromSubscriptionWebhook,
+    {
+      stripeSubscriptionId: subscription.id,
+      paymentStatus,
+    },
+  );
+
+  if (result) {
+    console.info("Payment field config status updated from subscription event", {
+      operation: "stripeConnect.subscriptionPaymentFieldUpdate",
+      stripeSubscriptionId: subscription.id,
+      paymentStatus,
+      configId: result,
+    });
+  }
+
+  return result;
+}
+
+async function handleSubscriptionUpdated(
+  ctx: HttpActionCtx,
+  subscription: Stripe.Subscription,
+): Promise<void> {
+  console.info("Processing customer.subscription.updated webhook", {
+    operation: "stripeConnect.subscriptionUpdated",
+    stripeSubscriptionId: subscription.id,
+    status: subscription.status,
   });
+
+  // Map Stripe subscription status to our payment status
+  const statusMap: Record<string, PaymentStatus> = {
+    active: "awaiting", // Active subscription = awaiting next payment
+    past_due: "failed",
+    canceled: "cancelled",
+    unpaid: "failed",
+    incomplete: "awaiting",
+    incomplete_expired: "cancelled",
+    trialing: "awaiting",
+    paused: "awaiting",
+  };
+
+  const paymentStatus = statusMap[subscription.status];
+  if (paymentStatus) {
+    await updatePaymentFieldFromSubscription(ctx, subscription, paymentStatus);
+  }
+}
+
+async function handleSubscriptionDeleted(
+  ctx: HttpActionCtx,
+  subscription: Stripe.Subscription,
+): Promise<void> {
+  console.info("Processing customer.subscription.deleted webhook", {
+    operation: "stripeConnect.subscriptionDeleted",
+    stripeSubscriptionId: subscription.id,
+  });
+
+  // Check if subscription completed all iterations (ended naturally) vs. was cancelled
+  // If ended_at is set, it means the subscription ran its course
+  const paymentStatus: PaymentStatus =
+    subscription.ended_at && subscription.cancel_at_period_end ? "paid" : "cancelled";
+
+  await updatePaymentFieldFromSubscription(ctx, subscription, paymentStatus);
 }
 
 async function handlePayoutPaid(ctx: HttpActionCtx, payout: Stripe.Payout): Promise<void> {
@@ -243,6 +322,12 @@ export async function processStripeConnectWebhookEvent(
       break;
     case "invoice.deleted":
       await handleInvoiceDeleted(ctx, event.data.object as Stripe.Invoice);
+      break;
+    case "customer.subscription.updated":
+      await handleSubscriptionUpdated(ctx, event.data.object as Stripe.Subscription);
+      break;
+    case "customer.subscription.deleted":
+      await handleSubscriptionDeleted(ctx, event.data.object as Stripe.Subscription);
       break;
     case "payout.paid":
       await handlePayoutPaid(ctx, event.data.object as Stripe.Payout);

@@ -202,6 +202,7 @@ async function createOneTimeInvoice(
       configId: config._id,
       paymentStatus: "awaiting",
       stripeInvoiceId: finalizedInvoice.id,
+      hostedInvoiceUrl: finalizedInvoice.hosted_invoice_url ?? undefined,
     });
 
     return {
@@ -220,6 +221,648 @@ async function createOneTimeInvoice(
     }
     throw error;
   }
+}
+
+/**
+ * Create two Stripe invoices for a deposit + balance payment config.
+ * Invoice 1 (deposit): due immediately (days_until_due: 1)
+ * Invoice 2 (balance): due after N days per config
+ */
+async function createDepositBalanceInvoices(
+  ctx: ActionCtx,
+  stripe: Stripe,
+  config: PaymentFieldConfig,
+  stripeAccountId: string,
+  recipientEmail: string,
+  recipientName: string | undefined,
+  isPro: boolean,
+  depositBalanceConfig: { depositPercent: number; balanceDueDays: number },
+): Promise<{ stripeInvoiceId: string; hostedInvoiceUrl: string | null }> {
+  const customer = await getOrCreateConnectedCustomer(
+    stripe,
+    stripeAccountId,
+    recipientEmail,
+    recipientName,
+  );
+
+  const depositAmountCents = Math.round(
+    config.totalAmountCents * (depositBalanceConfig.depositPercent / 100),
+  );
+  const balanceAmountCents = config.totalAmountCents - depositAmountCents;
+
+  const platformFeeCents = calculatePlatformFee(config.totalAmountCents, isPro);
+  // Split platform fee proportionally between the two invoices
+  const depositFeeCents = Math.round(platformFeeCents * (depositAmountCents / config.totalAmountCents));
+  const balanceFeeCents = platformFeeCents - depositFeeCents;
+
+  const stripePaymentMethods = toStripePaymentMethodTypes(config.allowedPaymentMethods);
+  const paymentSettings =
+    stripePaymentMethods.length > 0 ? { payment_method_types: stripePaymentMethods } : undefined;
+
+  const commonMetadata = {
+    documentId: config.documentId,
+    organizationId: config.organizationId,
+    paymentFieldConfigId: config._id,
+    paymentFieldId: config.fieldId,
+  };
+
+  // Create deposit invoice (due immediately)
+  const depositInvoice = await stripe.invoices.create(
+    {
+      customer: customer.id,
+      collection_method: "send_invoice",
+      days_until_due: 1,
+      auto_advance: false,
+      pending_invoice_items_behavior: "exclude",
+      application_fee_amount: depositFeeCents > 0 ? depositFeeCents : undefined,
+      metadata: { ...commonMetadata, invoiceType: "deposit" },
+      ...(paymentSettings && { payment_settings: paymentSettings }),
+    },
+    { stripeAccount: stripeAccountId },
+  );
+
+  let balanceInvoice: Stripe.Invoice | undefined;
+
+  try {
+    // Add deposit line item
+    await stripe.invoiceItems.create(
+      {
+        customer: customer.id,
+        invoice: depositInvoice.id,
+        amount: depositAmountCents,
+        currency: config.currency,
+        description: `Deposit (${depositBalanceConfig.depositPercent}%)`,
+      },
+      { stripeAccount: stripeAccountId },
+    );
+
+    // Pass-through fee on deposit
+    if (config.feeHandling === "pass_to_recipient" && depositFeeCents > 0) {
+      await stripe.invoiceItems.create(
+        {
+          customer: customer.id,
+          invoice: depositInvoice.id,
+          amount: depositFeeCents,
+          currency: config.currency,
+          description: "Platform fee (Seal)",
+        },
+        { stripeAccount: stripeAccountId },
+      );
+    }
+
+    const finalizedDeposit = await stripe.invoices.finalizeInvoice(
+      depositInvoice.id,
+      { auto_advance: false },
+      { stripeAccount: stripeAccountId },
+    );
+
+    // Create balance invoice
+    balanceInvoice = await stripe.invoices.create(
+      {
+        customer: customer.id,
+        collection_method: "send_invoice",
+        days_until_due: depositBalanceConfig.balanceDueDays,
+        auto_advance: false,
+        pending_invoice_items_behavior: "exclude",
+        application_fee_amount: balanceFeeCents > 0 ? balanceFeeCents : undefined,
+        metadata: { ...commonMetadata, invoiceType: "balance" },
+        ...(paymentSettings && { payment_settings: paymentSettings }),
+      },
+      { stripeAccount: stripeAccountId },
+    );
+
+    // Add balance line items (original items minus deposit)
+    for (const item of config.items) {
+      const itemTotal = item.unitPrice * item.quantity;
+      const itemBalancePortion = Math.round(
+        itemTotal * (balanceAmountCents / config.totalAmountCents),
+      );
+      await stripe.invoiceItems.create(
+        {
+          customer: customer.id,
+          invoice: balanceInvoice.id,
+          amount: itemBalancePortion,
+          currency: config.currency,
+          description: `${item.description} (balance)`,
+        },
+        { stripeAccount: stripeAccountId },
+      );
+    }
+
+    // Pass-through fee on balance
+    if (config.feeHandling === "pass_to_recipient" && balanceFeeCents > 0) {
+      await stripe.invoiceItems.create(
+        {
+          customer: customer.id,
+          invoice: balanceInvoice.id,
+          amount: balanceFeeCents,
+          currency: config.currency,
+          description: "Platform fee (Seal)",
+        },
+        { stripeAccount: stripeAccountId },
+      );
+    }
+
+    await stripe.invoices.finalizeInvoice(
+      balanceInvoice.id,
+      { auto_advance: false },
+      { stripeAccount: stripeAccountId },
+    );
+
+    // Store primary (deposit) invoice ID; balance invoice ID in metadata via stripePaymentIntentId field
+    await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+      configId: config._id,
+      paymentStatus: "awaiting",
+      stripeInvoiceId: finalizedDeposit.id,
+      stripePaymentIntentId: balanceInvoice.id, // Reusing this field for the second invoice ID
+      hostedInvoiceUrl: finalizedDeposit.hosted_invoice_url ?? undefined,
+    });
+
+    return {
+      stripeInvoiceId: finalizedDeposit.id,
+      hostedInvoiceUrl: finalizedDeposit.hosted_invoice_url ?? null,
+    };
+  } catch (error) {
+    // Clean up orphaned invoices
+    const cleanupIds = [depositInvoice.id, balanceInvoice?.id].filter(Boolean) as string[];
+    for (const invoiceId of cleanupIds) {
+      try {
+        await stripe.invoices.del(invoiceId, { stripeAccount: stripeAccountId });
+      } catch (deleteError) {
+        console.warn("Failed to clean up orphaned draft invoice", {
+          stripeInvoiceId: invoiceId,
+          error: deleteError instanceof Error ? deleteError.message : String(deleteError),
+        });
+      }
+    }
+    throw error;
+  }
+}
+
+/**
+ * Create a Stripe Subscription (via Subscription Schedule when iterations are needed)
+ * for a recurring payment config.
+ *
+ * Creates a Price on the connected account and starts the subscription.
+ * Returns the first invoice's hosted URL for the recipient.
+ */
+async function createRecurringSubscription(
+  ctx: ActionCtx,
+  stripe: Stripe,
+  config: PaymentFieldConfig,
+  stripeAccountId: string,
+  recipientEmail: string,
+  recipientName: string | undefined,
+  isPro: boolean,
+  recurringConfig: {
+    interval: "week" | "month" | "year";
+    intervalCount: number;
+    endCondition: "never" | "after_count" | "on_date";
+    endAfterCount?: number;
+    endOnDate?: number;
+  },
+): Promise<{ stripeInvoiceId: string; hostedInvoiceUrl: string | null }> {
+  const customer = await getOrCreateConnectedCustomer(
+    stripe,
+    stripeAccountId,
+    recipientEmail,
+    recipientName,
+  );
+
+  const stripePaymentMethods = toStripePaymentMethodTypes(config.allowedPaymentMethods);
+
+  // Calculate platform fee as a percentage for subscriptions
+  const platformFeePercent = isPro ? 0.25 : 1;
+
+  // Create a recurring price on the connected account
+  const price = await stripe.prices.create(
+    {
+      unit_amount: config.totalAmountCents,
+      currency: config.currency,
+      recurring: {
+        interval: recurringConfig.interval,
+        interval_count: recurringConfig.intervalCount,
+      },
+      product_data: {
+        name: config.items.map((i) => i.description).join(", "),
+        metadata: {
+          documentId: config.documentId,
+          paymentFieldConfigId: config._id,
+        },
+      },
+    },
+    { stripeAccount: stripeAccountId },
+  );
+
+  const commonMetadata = {
+    documentId: config.documentId,
+    organizationId: config.organizationId,
+    paymentFieldConfigId: config._id,
+    paymentFieldId: config.fieldId,
+  };
+
+  let subscriptionId: string;
+  let firstInvoiceId: string | undefined;
+  let hostedInvoiceUrl: string | null = null;
+
+  if (
+    recurringConfig.endCondition === "after_count" &&
+    recurringConfig.endAfterCount !== undefined
+  ) {
+    // Use Subscription Schedule for fixed iteration count
+    // duration = total billing periods (iterations × interval_count)
+    const totalIntervals = recurringConfig.endAfterCount * recurringConfig.intervalCount;
+    const schedule = await stripe.subscriptionSchedules.create(
+      {
+        customer: customer.id,
+        start_date: "now",
+        end_behavior: "cancel",
+        phases: [
+          {
+            items: [{ price: price.id }],
+            duration: {
+              interval: recurringConfig.interval,
+              interval_count: totalIntervals,
+            },
+            application_fee_percent: platformFeePercent,
+            collection_method: "send_invoice",
+            invoice_settings: {
+              days_until_due: getDaysUntilDue(config.dueDateTerms, config.customDueDays),
+            },
+            metadata: commonMetadata,
+          },
+        ],
+        metadata: commonMetadata,
+      },
+      { stripeAccount: stripeAccountId },
+    );
+
+    subscriptionId = schedule.subscription as string;
+  } else if (
+    recurringConfig.endCondition === "on_date" &&
+    recurringConfig.endOnDate !== undefined
+  ) {
+    // Create subscription with cancel_at for date-based end
+    const subscription = await stripe.subscriptions.create(
+      {
+        customer: customer.id,
+        items: [{ price: price.id }],
+        collection_method: "send_invoice",
+        days_until_due: getDaysUntilDue(config.dueDateTerms, config.customDueDays),
+        application_fee_percent: platformFeePercent,
+        cancel_at: Math.floor(recurringConfig.endOnDate / 1000), // Convert ms to seconds
+        metadata: commonMetadata,
+        ...(stripePaymentMethods.length > 0 && {
+          payment_settings: {
+            payment_method_types:
+              stripePaymentMethods as Stripe.SubscriptionCreateParams.PaymentSettings.PaymentMethodType[],
+          },
+        }),
+      },
+      { stripeAccount: stripeAccountId },
+    );
+
+    subscriptionId = subscription.id;
+  } else {
+    // Open-ended recurring: no end condition
+    const subscription = await stripe.subscriptions.create(
+      {
+        customer: customer.id,
+        items: [{ price: price.id }],
+        collection_method: "send_invoice",
+        days_until_due: getDaysUntilDue(config.dueDateTerms, config.customDueDays),
+        application_fee_percent: platformFeePercent,
+        metadata: commonMetadata,
+        ...(stripePaymentMethods.length > 0 && {
+          payment_settings: {
+            payment_method_types:
+              stripePaymentMethods as Stripe.SubscriptionCreateParams.PaymentSettings.PaymentMethodType[],
+          },
+        }),
+      },
+      { stripeAccount: stripeAccountId },
+    );
+
+    subscriptionId = subscription.id;
+  }
+
+  // Retrieve the subscription to get the latest invoice
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+    stripeAccount: stripeAccountId,
+  });
+
+  firstInvoiceId = subscription.latest_invoice as string | undefined;
+
+  if (firstInvoiceId) {
+    // Finalize the first invoice to generate hosted URL
+    try {
+      const invoice = await stripe.invoices.retrieve(firstInvoiceId, {
+        stripeAccount: stripeAccountId,
+      });
+
+      if (invoice.status === "draft") {
+        const finalized = await stripe.invoices.finalizeInvoice(
+          firstInvoiceId,
+          { auto_advance: false },
+          { stripeAccount: stripeAccountId },
+        );
+        hostedInvoiceUrl = finalized.hosted_invoice_url ?? null;
+      } else {
+        hostedInvoiceUrl = invoice.hosted_invoice_url ?? null;
+      }
+    } catch (invoiceError) {
+      console.warn("Failed to finalize first subscription invoice", {
+        subscriptionId,
+        invoiceId: firstInvoiceId,
+        error: invoiceError instanceof Error ? invoiceError.message : String(invoiceError),
+      });
+    }
+  }
+
+  await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+    configId: config._id,
+    paymentStatus: "awaiting",
+    stripeSubscriptionId: subscriptionId,
+    stripeInvoiceId: firstInvoiceId,
+    hostedInvoiceUrl: hostedInvoiceUrl ?? undefined,
+  });
+
+  return {
+    stripeInvoiceId: firstInvoiceId ?? subscriptionId,
+    hostedInvoiceUrl,
+  };
+}
+
+/**
+ * Create installment payments using a Subscription Schedule with fixed iterations.
+ * Each installment is an equal portion of the total (or custom first payment if specified).
+ */
+async function createInstallmentSubscription(
+  ctx: ActionCtx,
+  stripe: Stripe,
+  config: PaymentFieldConfig,
+  stripeAccountId: string,
+  recipientEmail: string,
+  recipientName: string | undefined,
+  isPro: boolean,
+  installmentsConfig: {
+    count: number;
+    interval: "week" | "month";
+    firstPaymentAmount?: number;
+  },
+): Promise<{ stripeInvoiceId: string; hostedInvoiceUrl: string | null }> {
+  const customer = await getOrCreateConnectedCustomer(
+    stripe,
+    stripeAccountId,
+    recipientEmail,
+    recipientName,
+  );
+
+  const stripePaymentMethods = toStripePaymentMethodTypes(config.allowedPaymentMethods);
+  const platformFeePercent = isPro ? 0.25 : 1;
+  const daysUntilDue = getDaysUntilDue(config.dueDateTerms, config.customDueDays);
+
+  const commonMetadata = {
+    documentId: config.documentId,
+    organizationId: config.organizationId,
+    paymentFieldConfigId: config._id,
+    paymentFieldId: config.fieldId,
+  };
+
+  const hasCustomFirstPayment =
+    installmentsConfig.firstPaymentAmount !== undefined &&
+    installmentsConfig.firstPaymentAmount > 0;
+
+  if (hasCustomFirstPayment) {
+    // Different first payment: create one-time invoice for first payment,
+    // then subscription for remaining installments
+    const firstAmount = installmentsConfig.firstPaymentAmount!;
+    const remainingTotal = config.totalAmountCents - firstAmount;
+    const remainingCount = installmentsConfig.count - 1;
+    const installmentAmount = Math.round(remainingTotal / remainingCount);
+
+    // Create first payment as one-time invoice
+    const firstInvoice = await createOneTimeInvoiceForAmount(
+      stripe,
+      customer.id,
+      stripeAccountId,
+      firstAmount,
+      config.currency,
+      `Installment 1 of ${installmentsConfig.count}`,
+      daysUntilDue,
+      calculatePlatformFee(firstAmount, isPro),
+      config.feeHandling,
+      stripePaymentMethods,
+      commonMetadata,
+    );
+
+    // Create subscription for remaining installments
+    const price = await stripe.prices.create(
+      {
+        unit_amount: installmentAmount,
+        currency: config.currency,
+        recurring: {
+          interval: installmentsConfig.interval,
+          interval_count: 1,
+        },
+        product_data: {
+          name: `Installments (${remainingCount} remaining) - ${config.items.map((i) => i.description).join(", ")}`,
+          metadata: { documentId: config.documentId, paymentFieldConfigId: config._id },
+        },
+      },
+      { stripeAccount: stripeAccountId },
+    );
+
+    const schedule = await stripe.subscriptionSchedules.create(
+      {
+        customer: customer.id,
+        start_date: "now",
+        end_behavior: "cancel",
+        phases: [
+          {
+            items: [{ price: price.id }],
+            duration: {
+              interval: installmentsConfig.interval,
+              interval_count: remainingCount,
+            },
+            application_fee_percent: platformFeePercent,
+            collection_method: "send_invoice",
+            invoice_settings: { days_until_due: daysUntilDue },
+            metadata: commonMetadata,
+          },
+        ],
+        metadata: commonMetadata,
+      },
+      { stripeAccount: stripeAccountId },
+    );
+
+    const subscriptionId = schedule.subscription as string;
+
+    await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+      configId: config._id,
+      paymentStatus: "awaiting",
+      stripeInvoiceId: firstInvoice.id,
+      stripeSubscriptionId: subscriptionId,
+      hostedInvoiceUrl: firstInvoice.hosted_invoice_url ?? undefined,
+    });
+
+    return {
+      stripeInvoiceId: firstInvoice.id,
+      hostedInvoiceUrl: firstInvoice.hosted_invoice_url ?? null,
+    };
+  }
+
+  // Equal installments: use subscription schedule with iterations
+  const installmentAmount = Math.round(config.totalAmountCents / installmentsConfig.count);
+
+  const price = await stripe.prices.create(
+    {
+      unit_amount: installmentAmount,
+      currency: config.currency,
+      recurring: {
+        interval: installmentsConfig.interval,
+        interval_count: 1,
+      },
+      product_data: {
+        name: `Installments (${installmentsConfig.count}x) - ${config.items.map((i) => i.description).join(", ")}`,
+        metadata: { documentId: config.documentId, paymentFieldConfigId: config._id },
+      },
+    },
+    { stripeAccount: stripeAccountId },
+  );
+
+  const schedule = await stripe.subscriptionSchedules.create(
+    {
+      customer: customer.id,
+      start_date: "now",
+      end_behavior: "cancel",
+      phases: [
+        {
+          items: [{ price: price.id }],
+          duration: {
+            interval: installmentsConfig.interval,
+            interval_count: installmentsConfig.count,
+          },
+          application_fee_percent: platformFeePercent,
+          collection_method: "send_invoice",
+          invoice_settings: { days_until_due: daysUntilDue },
+          metadata: commonMetadata,
+        },
+      ],
+      metadata: commonMetadata,
+    },
+    { stripeAccount: stripeAccountId },
+  );
+
+  const subscriptionId = schedule.subscription as string;
+
+  // Get first invoice from subscription
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+    stripeAccount: stripeAccountId,
+  });
+
+  const firstInvoiceId = subscription.latest_invoice as string | undefined;
+  let hostedInvoiceUrl: string | null = null;
+
+  if (firstInvoiceId) {
+    try {
+      const invoice = await stripe.invoices.retrieve(firstInvoiceId, {
+        stripeAccount: stripeAccountId,
+      });
+      if (invoice.status === "draft") {
+        const finalized = await stripe.invoices.finalizeInvoice(
+          firstInvoiceId,
+          { auto_advance: false },
+          { stripeAccount: stripeAccountId },
+        );
+        hostedInvoiceUrl = finalized.hosted_invoice_url ?? null;
+      } else {
+        hostedInvoiceUrl = invoice.hosted_invoice_url ?? null;
+      }
+    } catch (invoiceError) {
+      console.warn("Failed to finalize first installment invoice", {
+        subscriptionId,
+        invoiceId: firstInvoiceId,
+        error: invoiceError instanceof Error ? invoiceError.message : String(invoiceError),
+      });
+    }
+  }
+
+  await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
+    configId: config._id,
+    paymentStatus: "awaiting",
+    stripeSubscriptionId: subscriptionId,
+    stripeInvoiceId: firstInvoiceId,
+    hostedInvoiceUrl: hostedInvoiceUrl ?? undefined,
+  });
+
+  return {
+    stripeInvoiceId: firstInvoiceId ?? subscriptionId,
+    hostedInvoiceUrl,
+  };
+}
+
+/**
+ * Helper: create a one-time invoice for a specific amount (used by installments with custom first payment).
+ */
+async function createOneTimeInvoiceForAmount(
+  stripe: Stripe,
+  customerId: string,
+  stripeAccountId: string,
+  amountCents: number,
+  currency: string,
+  description: string,
+  daysUntilDue: number,
+  platformFeeCents: number,
+  feeHandling: string,
+  stripePaymentMethods: Stripe.InvoiceCreateParams.PaymentSettings.PaymentMethodType[],
+  metadata: Record<string, string>,
+): Promise<Stripe.Invoice> {
+  const invoice = await stripe.invoices.create(
+    {
+      customer: customerId,
+      collection_method: "send_invoice",
+      days_until_due: daysUntilDue,
+      auto_advance: false,
+      pending_invoice_items_behavior: "exclude",
+      application_fee_amount: platformFeeCents > 0 ? platformFeeCents : undefined,
+      metadata,
+      ...(stripePaymentMethods.length > 0 && {
+        payment_settings: { payment_method_types: stripePaymentMethods },
+      }),
+    },
+    { stripeAccount: stripeAccountId },
+  );
+
+  await stripe.invoiceItems.create(
+    {
+      customer: customerId,
+      invoice: invoice.id,
+      amount: amountCents,
+      currency,
+      description,
+    },
+    { stripeAccount: stripeAccountId },
+  );
+
+  if (feeHandling === "pass_to_recipient" && platformFeeCents > 0) {
+    await stripe.invoiceItems.create(
+      {
+        customer: customerId,
+        invoice: invoice.id,
+        amount: platformFeeCents,
+        currency,
+        description: "Platform fee (Seal)",
+      },
+      { stripeAccount: stripeAccountId },
+    );
+  }
+
+  return stripe.invoices.finalizeInvoice(
+    invoice.id,
+    { auto_advance: false },
+    { stripeAccount: stripeAccountId },
+  );
 }
 
 /**
@@ -289,14 +932,6 @@ export const createStripeObjectsForPaymentFields = internalAction({
 
     // Create Stripe objects for each config
     for (const config of configs) {
-      // Validate: only one_time supported for now
-      // (recurring/installments/deposit_balance will be added later)
-      if (config.paymentType !== "one_time") {
-        throw new ConvexError(
-          `Payment type "${config.paymentType}" is not yet supported for automatic sending. Only one-time payments are currently supported.`,
-        );
-      }
-
       // Validate config has items
       if (config.items.length === 0) {
         throw new ConvexError("Payment field has no line items configured");
@@ -313,15 +948,80 @@ export const createStripeObjectsForPaymentFields = internalAction({
         throw new ConvexError("Recipient for payment field not found");
       }
 
-      const result = await createOneTimeInvoice(
-        ctx,
-        stripe,
-        config as PaymentFieldConfig,
-        account.stripeAccountId,
-        recipient.email,
-        recipient.name,
-        subscriptionStatus.isPro,
-      );
+      const typedConfig = config as PaymentFieldConfig;
+      let result: { stripeInvoiceId: string; hostedInvoiceUrl: string | null };
+
+      switch (config.paymentType) {
+        case "one_time":
+          result = await createOneTimeInvoice(
+            ctx,
+            stripe,
+            typedConfig,
+            account.stripeAccountId,
+            recipient.email,
+            recipient.name,
+            subscriptionStatus.isPro,
+          );
+          break;
+
+        case "deposit_balance": {
+          if (!config.depositBalanceConfig) {
+            throw new ConvexError("Deposit/balance config is missing for deposit_balance payment");
+          }
+          result = await createDepositBalanceInvoices(
+            ctx,
+            stripe,
+            typedConfig,
+            account.stripeAccountId,
+            recipient.email,
+            recipient.name,
+            subscriptionStatus.isPro,
+            config.depositBalanceConfig,
+          );
+          break;
+        }
+
+        case "recurring": {
+          if (!config.recurringConfig) {
+            throw new ConvexError("Recurring config is missing for recurring payment");
+          }
+          result = await createRecurringSubscription(
+            ctx,
+            stripe,
+            typedConfig,
+            account.stripeAccountId,
+            recipient.email,
+            recipient.name,
+            subscriptionStatus.isPro,
+            config.recurringConfig,
+          );
+          break;
+        }
+
+        case "installments": {
+          if (!config.installmentsConfig) {
+            throw new ConvexError("Installments config is missing for installment payment");
+          }
+          result = await createInstallmentSubscription(
+            ctx,
+            stripe,
+            typedConfig,
+            account.stripeAccountId,
+            recipient.email,
+            recipient.name,
+            subscriptionStatus.isPro,
+            config.installmentsConfig,
+          );
+          break;
+        }
+
+        default: {
+          const _exhaustive: never = config.paymentType;
+          throw new ConvexError(
+            `Unsupported payment type: "${String(_exhaustive)}"`,
+          );
+        }
+      }
 
       invoiceLinks.push({
         recipientEmail: recipient.email,

@@ -1,4 +1,3 @@
-import { CreditCardIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -20,6 +19,8 @@ import {
   CheckboxFieldInput,
   DateFieldInput,
   DropdownFieldInput,
+  NumberFieldInput,
+  PaymentFieldSummary,
   RadioFieldInput,
   TextFieldInput,
 } from "./field-inputs";
@@ -43,6 +44,10 @@ interface FieldInputManagerProps {
     pattern?: string;
     helpText?: string;
   };
+  validationRules?: {
+    min?: number;
+    max?: number;
+  };
   onSave: (value?: string, signatureImageUrl?: string) => Promise<void>;
   recipientName?: string;
 }
@@ -50,13 +55,14 @@ interface FieldInputManagerProps {
 export function FieldInputManager({
   open,
   onOpenChange,
-  fieldId: _fieldId,
+  fieldId,
   fieldType,
   label,
   isRequired,
   currentValue,
   currentSignatureImageUrl,
   properties,
+  validationRules,
   onSave,
   recipientName,
 }: FieldInputManagerProps) {
@@ -151,6 +157,16 @@ export function FieldInputManager({
           />
         );
 
+      case "number":
+        return (
+          <NumberFieldInput
+            {...commonProps}
+            placeholder={properties?.placeholder}
+            min={validationRules?.min}
+            max={validationRules?.max}
+          />
+        );
+
       case "date":
         return <DateFieldInput {...commonProps} />;
 
@@ -167,14 +183,7 @@ export function FieldInputManager({
         return <AttachmentFieldInput {...commonProps} />;
 
       case "payment":
-        return (
-          <div className="flex flex-col items-center gap-2 py-4">
-            <CreditCardIcon className="h-8 w-8 text-emerald-500" />
-            <p className="text-muted-foreground text-sm">
-              Payment fields are configured by the document sender.
-            </p>
-          </div>
-        );
+        return <PaymentFieldSummary fieldId={fieldId} />;
 
       case "signature":
         return (
@@ -196,28 +205,43 @@ export function FieldInputManager({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={fieldType === "signature" ? "max-w-2xl" : "max-w-md"}>
+      <DialogContent className={fieldType === "signature" ? "max-w-2xl" : fieldType === "payment" ? "max-w-lg" : "max-w-md"}>
         <DialogHeader>
-          <DialogTitle>{fieldType === "signature" ? "Sign Here" : "Fill Field"}</DialogTitle>
+          <DialogTitle>
+            {fieldType === "signature"
+              ? "Sign Here"
+              : fieldType === "payment"
+                ? "Payment Details"
+                : "Fill Field"}
+          </DialogTitle>
           <DialogDescription>
             {fieldType === "signature"
               ? "Draw, type, or upload your signature below."
-              : isRequired
-                ? "This field is required. Please provide a value."
-                : "Fill in the field value below."}
+              : fieldType === "payment"
+                ? "Review the payment details below."
+                : isRequired
+                  ? "This field is required. Please provide a value."
+                  : "Fill in the field value below."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">{renderFieldInput()}</div>
 
-        {/* Only show footer for non-signature fields (signature has its own buttons) */}
-        {fieldType !== "signature" && (
+        {/* Only show footer for non-signature, non-payment fields (signature has its own buttons, payment is read-only) */}
+        {fieldType !== "signature" && fieldType !== "payment" && (
           <DialogFooter>
             <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={isSaving || (!isValid && isRequired)}>
               {isSaving ? "Saving..." : "Save Field"}
+            </Button>
+          </DialogFooter>
+        )}
+        {fieldType === "payment" && (
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
             </Button>
           </DialogFooter>
         )}

@@ -142,10 +142,7 @@ import type * as stripe_connect_webhook_handlers from "../stripe/connect_webhook
 import type * as stripe_coupon from "../stripe/coupon.js";
 import type * as stripe_handlers from "../stripe/handlers.js";
 import type * as stripe_helpers from "../stripe/helpers.js";
-import type * as stripe_invoice_actions from "../stripe/invoice_actions.js";
-import type * as stripe_invoice_mutations from "../stripe/invoice_mutations.js";
 import type * as stripe_payment_field_actions from "../stripe/payment_field_actions.js";
-import type * as stripe_invoice_queries from "../stripe/invoice_queries.js";
 import type * as stripe_pricing from "../stripe/pricing.js";
 import type * as stripe_promo_code from "../stripe/promo_code.js";
 import type * as stripe_queries from "../stripe/queries.js";
@@ -308,10 +305,7 @@ declare const fullApi: ApiFromModules<{
   "stripe/coupon": typeof stripe_coupon;
   "stripe/handlers": typeof stripe_handlers;
   "stripe/helpers": typeof stripe_helpers;
-  "stripe/invoice_actions": typeof stripe_invoice_actions;
-  "stripe/invoice_mutations": typeof stripe_invoice_mutations;
   "stripe/payment_field_actions": typeof stripe_payment_field_actions;
-  "stripe/invoice_queries": typeof stripe_invoice_queries;
   "stripe/pricing": typeof stripe_pricing;
   "stripe/promo_code": typeof stripe_promo_code;
   "stripe/queries": typeof stripe_queries;

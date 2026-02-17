@@ -185,6 +185,29 @@ function DocumentDetailPage() {
     }),
   );
 
+  // Load payment configs for canvas display (shows total amount on payment fields)
+  const { data: paymentConfigs = [] } = useSuspenseQuery(
+    convexQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
+      documentId: documentId as Id<"documents">,
+    }),
+  );
+
+  const paymentConfigByFieldId = useMemo(() => {
+    const map = new Map<
+      string,
+      { totalAmountCents: number; currency: string; paymentType: string; paymentStatus?: string }
+    >();
+    for (const config of paymentConfigs) {
+      map.set(config.fieldId, {
+        totalAmountCents: config.totalAmountCents,
+        currency: config.currency,
+        paymentType: config.paymentType,
+        paymentStatus: config.paymentStatus,
+      });
+    }
+    return map;
+  }, [paymentConfigs]);
+
   const recipientsById = useMemo(() => {
     return new Map(recipients.map((recipient) => [recipient._id, recipient]));
   }, [recipients]);
@@ -281,10 +304,11 @@ function DocumentDetailPage() {
       recipientId: field.recipientId,
       label: field.label,
       properties: field.properties,
+      paymentTotalCents: paymentConfigByFieldId.get(field._id)?.totalAmountCents,
       signatureData: signaturesByFieldId.get(field._id),
     }));
     setPlacedFields(fields);
-  }, [signatureFields, signaturesByFieldId]);
+  }, [signatureFields, signaturesByFieldId, paymentConfigByFieldId]);
 
   // SEA-84: Handle window resize to maintain canvas-PDF alignment
   useEffect(() => {
@@ -430,6 +454,7 @@ function DocumentDetailPage() {
     const typeLabels: Record<FieldType, string> = {
       signature: "Signature",
       text: "Text",
+      number: "Number",
       date: "Date",
       checkbox: "Checkbox",
       dropdown: "Dropdown",
@@ -1307,7 +1332,10 @@ function DocumentDetailPage() {
                     )}
                     {signatureFields.length > 0 ? (
                       <FieldList
-                        fields={signatureFields}
+                        fields={signatureFields.map((f) => ({
+                          ...f,
+                          paymentConfig: paymentConfigByFieldId.get(f._id),
+                        }))}
                         recipients={recipients}
                         selectedFieldId={canEdit ? selectedFieldId : null}
                         canEdit={canEdit}

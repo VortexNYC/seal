@@ -360,24 +360,33 @@ const access = await getDocumentAccessLevel(ctx, document, userId, orgId);
 
 ## Known Issues & Technical Debt
 
+*Last reviewed: 2026-02-17*
+
 ### High Priority
 
-1. **IP Address Tracking**: Hardcoded as "0.0.0.0" in signature audit trail - should capture actual IP from request context
-2. **Rate Limiting**: Middleware exists but rate limiting is not actually enforced (stub only)
-3. **Document Detail Page Complexity**: `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` is 1,878 lines with 30+ state variables - should be split into smaller components
+1. **IP Address Tracking**: Hardcoded as "0.0.0.0" in signature audit trail — should capture actual IP from request context
+2. **Per-Signature Hash Uses Weak Algorithm**: `crypto/helpers.ts:generateStringHash` is a non-cryptographic rolling hash; per-signature integrity should use SHA-256 (the document-level hash in `crypto/node_helpers.ts` is correct)
+3. **Webhook HTTP Delivery Not Implemented**: Webhook management API is complete, but the actual HTTP delivery action with HMAC-SHA256 signatures does not exist — webhooks can be configured but never fire
+4. **Document Detail Page Complexity**: `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` is ~1,900 lines with 30+ state variables — should be split into smaller components
 
 ### Medium Priority
 
-4. **Missing Email Triggers**: Some API endpoints don't trigger email notifications (see TODO comments in `api/v1/`)
-5. **Recipient Token Security**: Tokens stored in plaintext - should be hashed/salted
-6. **Form Validation**: Frontend lacks schema-based validation (no Zod integration)
-7. **Field List Virtualization**: Long field lists in document editor don't use virtualization
+5. **Missing Email Triggers**: Some API endpoints don't trigger email notifications (see TODO comments in `api/v1/`)
+6. **Recipient Token Security**: Tokens stored in plaintext — should be hashed/salted
+7. **Form Validation**: Frontend lacks schema-based validation (no Zod integration)
+8. **ESIGN Consent Flow**: No explicit "consent to do business electronically" modal before signing — required by ESIGN Act
+9. **Audit Trail Gaps**: `submitRecipientSignature` does not write to audit log; document creation/sending not logged
 
 ### Low Priority
 
-8. **Checkbox Fields**: Multi-option rendering incomplete
-9. **File Upload Fields**: Attachment field input is stubbed
-10. **Sentry Integration**: Error boundary not logging to Sentry in production
+10. **Checkbox Fields**: Multi-option rendering incomplete
+11. **File Upload Fields**: Attachment field input is stubbed
+12. **Sentry Integration**: Error boundary not logging to Sentry in production
+13. **Field List Virtualization**: Long field lists in document editor don't use virtualization
+
+### Resolved (previously listed)
+
+- ~~**Rate Limiting**: Middleware exists but rate limiting is not actually enforced (stub only)~~ — **Fixed**: Sliding window rate limiter fully implemented in `api/rate_limit.ts` with DB-backed counters, rate limit headers, and hourly cleanup cron
 
 ## Component Guidelines
 

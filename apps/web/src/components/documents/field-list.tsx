@@ -2,6 +2,7 @@ import {
   CalendarIcon,
   CheckSquareIcon,
   CreditCardIcon,
+  HashIcon,
   PenToolIcon,
   SettingsIcon,
   TrashIcon,
@@ -24,6 +25,12 @@ interface FieldListItem {
   recipientEmail?: string;
   x: number;
   y: number;
+  paymentConfig?: {
+    totalAmountCents: number;
+    currency: string;
+    paymentType: string;
+    paymentStatus?: string;
+  };
 }
 
 interface Recipient {
@@ -45,6 +52,7 @@ interface FieldListProps {
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   signature: <PenToolIcon className="h-4 w-4" />,
   text: <TypeIcon className="h-4 w-4" />,
+  number: <HashIcon className="h-4 w-4" />,
   date: <CalendarIcon className="h-4 w-4" />,
   checkbox: <CheckSquareIcon className="h-4 w-4" />,
   dropdown: <TypeIcon className="h-4 w-4" />,
@@ -56,6 +64,7 @@ const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
 const FIELD_COLORS: Record<FieldType, string> = {
   signature: "bg-blue-100 text-blue-700 border-blue-200",
   text: "bg-green-100 text-green-700 border-green-200",
+  number: "bg-amber-100 text-amber-700 border-amber-200",
   date: "bg-purple-100 text-purple-700 border-purple-200",
   checkbox: "bg-orange-100 text-orange-700 border-orange-200",
   dropdown: "bg-cyan-100 text-cyan-700 border-cyan-200",
@@ -67,6 +76,7 @@ const FIELD_COLORS: Record<FieldType, string> = {
 const FIELD_LABELS: Record<FieldType, string> = {
   signature: "Signature",
   text: "Text",
+  number: "Number",
   date: "Date",
   checkbox: "Checkbox",
   dropdown: "Dropdown",
@@ -74,6 +84,22 @@ const FIELD_LABELS: Record<FieldType, string> = {
   attachment: "Attachment",
   payment: "Payment",
 };
+
+const PAYMENT_TYPE_LABELS: Record<string, string> = {
+  one_time: "One-time",
+  recurring: "Recurring",
+  installments: "Installments",
+  deposit_balance: "Deposit + Balance",
+};
+
+function formatCents(cents: number, currency = "usd"): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+}
 
 export function FieldList({
   fields,
@@ -133,6 +159,20 @@ export function FieldList({
                       )}
                       <p className="truncate">{recipient.email}</p>
                     </div>
+                  )}
+                  {field.fieldType === "payment" && field.paymentConfig && (
+                    <div className="mt-1 flex items-center gap-1.5 text-xs">
+                      <span className="font-semibold text-emerald-700">
+                        {formatCents(field.paymentConfig.totalAmountCents, field.paymentConfig.currency)}
+                      </span>
+                      <span className="text-muted-foreground">•</span>
+                      <span className="text-muted-foreground">
+                        {PAYMENT_TYPE_LABELS[field.paymentConfig.paymentType] ?? field.paymentConfig.paymentType}
+                      </span>
+                    </div>
+                  )}
+                  {field.fieldType === "payment" && !field.paymentConfig && (
+                    <p className="text-muted-foreground mt-1 text-xs italic">Not configured</p>
                   )}
                 </div>
               </div>

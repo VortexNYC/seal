@@ -27,7 +27,7 @@ import {
   WifiOffIcon,
   XCircleIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { toast } from "sonner";
 
@@ -103,6 +103,28 @@ function SigningPage() {
       signingToken: token,
     }),
   );
+
+  // Load payment configs for payment field overlays
+  const { data: paymentConfigs = [] } = useSuspenseQuery(
+    convexQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
+      documentId: doc._id,
+    }),
+  );
+
+  const paymentInfoByFieldId = useMemo(() => {
+    const map = new Map<
+      string,
+      { totalAmountCents: number; currency: string; paymentStatus?: string }
+    >();
+    for (const config of paymentConfigs) {
+      map.set(config.fieldId, {
+        totalAmountCents: config.totalAmountCents,
+        currency: config.currency,
+        paymentStatus: config.paymentStatus,
+      });
+    }
+    return map;
+  }, [paymentConfigs]);
 
   // PDF viewer state
   const [numPages, setNumPages] = useState<number | null>(null);
@@ -1118,6 +1140,7 @@ function SigningPage() {
                                   isFilled={field.isFilled}
                                   isActive={!isCompleted && activeFieldId === field._id}
                                   signatureDetails={field.signatureDetails}
+                                  paymentInfo={paymentInfoByFieldId.get(field._id)}
                                   onClick={isCompleted ? () => {} : handleFieldClick}
                                 />
                               );

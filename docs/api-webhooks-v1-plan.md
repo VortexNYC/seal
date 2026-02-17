@@ -2156,7 +2156,7 @@ export const sendDocument = permissionMutation("documents:edit", {
   - [x] GET /api/v1/signatures/audit?document_id=xxx - Get audit trail
 - [x] Add comprehensive docstrings to all handlers
 
-### Phase 3: Outbound Webhooks ✅ COMPLETED
+### Phase 3: Outbound Webhooks 🟡 PARTIAL
 
 - [x] Create webhook schemas (`webhook_endpoints`, `webhook_deliveries`)
 - [x] Define all webhook event types
@@ -2169,15 +2169,15 @@ export const sendDocument = permissionMutation("documents:edit", {
   - [x] DELETE /api/v1/webhooks/delete?id=xxx - Delete endpoint
   - [x] POST /api/v1/webhooks/rotate-secret?id=xxx - Rotate secret
   - [x] GET /api/v1/webhooks/events - Get event types
-- [ ] Implement webhook HTTP delivery action with HMAC-SHA256 signatures - TODO
-- [ ] Add webhook signature verification documentation - TODO
+- [ ] Implement webhook HTTP delivery action with HMAC-SHA256 signatures — **Not implemented**: management API is done but no actual HTTP delivery action exists
+- [ ] Add webhook signature verification documentation — blocked by delivery implementation
 
-### Phase 4: Rate Limiting - TODO
+### Phase 4: Rate Limiting ✅ COMPLETED
 
-- [ ] Create rate limit schema
-- [ ] Implement sliding window rate limiter
-- [ ] Add rate limit headers to responses
-- [ ] Implement per-plan rate limit tiers
+- [x] Create rate limit schema — `api_rate_limits` table in `schemas/api_rate_limits.ts`
+- [x] Implement sliding window rate limiter — `api/rate_limit.ts` with DB-backed counters
+- [x] Add rate limit headers to responses — `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` in `api/middleware.ts`
+- [x] Implement per-plan rate limit tiers — configured in `api/rate_limit.ts`, cleanup via hourly cron in `crons.ts`
 
 ### Phase 5: Developer Experience - TODO
 

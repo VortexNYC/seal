@@ -15,6 +15,7 @@ import { type Infer, v } from "convex/values";
 export const fieldTypeTuple = v.union(
   v.literal("signature"), // Signature capture field
   v.literal("text"), // Text input field
+  v.literal("number"), // Number input field
   v.literal("date"), // Date picker field
   v.literal("checkbox"), // Checkbox field
   v.literal("dropdown"), // Dropdown select field

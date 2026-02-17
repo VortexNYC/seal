@@ -24,6 +24,15 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
   deposit_balance: "Deposit + Balance",
 };
 
+const PAYMENT_STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  pending: { label: "Pending", variant: "secondary" },
+  created: { label: "Created", variant: "secondary" },
+  awaiting: { label: "Awaiting Payment", variant: "outline" },
+  paid: { label: "Paid", variant: "default" },
+  failed: { label: "Failed", variant: "destructive" },
+  cancelled: { label: "Cancelled", variant: "destructive" },
+};
+
 /**
  * Read-only summary of a payment field's configuration.
  * Used in the signing view to show what payment is required.
@@ -84,6 +93,31 @@ export function PaymentFieldSummary({ fieldId }: PaymentFieldSummaryProps) {
           {formatCents(config.totalAmountCents, config.currency)}
         </span>
       </div>
+
+      {/* Payment status */}
+      {config.paymentStatus && (
+        <div className="flex items-center justify-between border-t border-emerald-200 pt-2">
+          <span className="text-muted-foreground text-xs">Status</span>
+          <Badge variant={PAYMENT_STATUS_CONFIG[config.paymentStatus]?.variant ?? "secondary"}>
+            {PAYMENT_STATUS_CONFIG[config.paymentStatus]?.label ?? config.paymentStatus}
+          </Badge>
+        </div>
+      )}
+
+      {/* Pay Now link */}
+      {config.hostedInvoiceUrl &&
+        config.paymentStatus !== "paid" &&
+        config.paymentStatus !== "cancelled" &&
+        config.paymentStatus !== "failed" && (
+          <a
+            href={config.hostedInvoiceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex w-full items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+          >
+            Pay Now &rarr;
+          </a>
+        )}
     </div>
   );
 }

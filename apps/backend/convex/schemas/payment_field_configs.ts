@@ -41,7 +41,6 @@ export const paymentStatusTuple = v.union(
   v.literal("created"),
   v.literal("awaiting"),
   v.literal("paid"),
-  v.literal("partially_paid"),
   v.literal("failed"),
   v.literal("cancelled"),
 );
@@ -122,6 +121,7 @@ export const paymentFieldConfigsTable = defineTable({
   stripeInvoiceId: v.optional(v.string()),
   stripeSubscriptionId: v.optional(v.string()),
   stripePaymentIntentId: v.optional(v.string()),
+  hostedInvoiceUrl: v.optional(v.string()),
 
   // Payment status
   paymentStatus: v.optional(paymentStatusTuple),
@@ -133,4 +133,5 @@ export const paymentFieldConfigsTable = defineTable({
   .index("by_field", ["fieldId"])
   .index("by_document", ["documentId"])
   .index("by_organization", ["organizationId"])
-  .index("by_stripe_invoice", ["stripeInvoiceId"]);
+  .index("by_stripe_invoice", ["stripeInvoiceId"])
+  .index("by_stripe_subscription", ["stripeSubscriptionId"]);

@@ -1,7 +1,11 @@
 import {
   CalendarIcon,
+  CheckSquareIcon,
+  ChevronDownSquareIcon,
+  CircleDotIcon,
   CreditCardIcon,
   GripVerticalIcon,
+  HashIcon,
   PenToolIcon,
   TypeIcon,
 } from "lucide-react";
@@ -12,6 +16,7 @@ import { FIELD_DIMENSIONS } from "./draggable-field";
 export type FieldType =
   | "signature"
   | "text"
+  | "number"
   | "date"
   | "checkbox"
   | "dropdown"
@@ -52,6 +57,10 @@ const FIELD_CONFIG: Record<
   text: {
     label: "Text",
     accentColor: "#22c55e",
+  },
+  number: {
+    label: "Number",
+    accentColor: "#f59e0b",
   },
   date: {
     label: "Date",
@@ -215,6 +224,15 @@ export function FieldToolbar({
         />
 
         <FieldButton
+          type="number"
+          icon={<HashIcon className="h-4 w-4" />}
+          label="Number"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled}
+        />
+
+        <FieldButton
           type="date"
           icon={<CalendarIcon className="h-4 w-4" />}
           label="Date"
@@ -232,16 +250,32 @@ export function FieldToolbar({
           disabled={disabled || !stripeConnected}
         />
 
-        {/* TODO: Re-enable checkbox field once multi-option rendering is complete
-				<FieldButton
-					type="checkbox"
-					icon={<CheckSquareIcon className="w-4 h-4" />}
-					label="Checkbox"
-					onDragStart={handleDragStart}
-					onDragEnd={handleDragEnd}
-					disabled={disabled}
-				/>
-				*/}
+        <FieldButton
+          type="checkbox"
+          icon={<CheckSquareIcon className="h-4 w-4" />}
+          label="Checkbox"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled}
+        />
+
+        <FieldButton
+          type="dropdown"
+          icon={<ChevronDownSquareIcon className="h-4 w-4" />}
+          label="Select"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled}
+        />
+
+        <FieldButton
+          type="radio"
+          icon={<CircleDotIcon className="h-4 w-4" />}
+          label="Choice"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled}
+        />
       </div>
     </div>
   );
