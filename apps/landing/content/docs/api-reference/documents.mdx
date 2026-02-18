@@ -1,0 +1,605 @@
+---
+title: Documents API
+description: Complete API reference for document management endpoints
+---
+
+# Documents API
+
+The Documents API allows you to upload, send, track, void, and download signed documents. Documents are the core resource in Seal's signing workflow.
+
+## The Document Object
+
+### Attributes
+
+| Attribute          | Type   | Description                                                                           |
+| ------------------ | ------ | ------------------------------------------------------------------------------------- |
+| `id`               | string | Unique document identifier                                                            |
+| `title`            | string | Document title                                                                        |
+| `description`      | string | Optional document description                                                         |
+| `status`           | string | Workflow status: `draft`, `sent`, `in_progress`, `completed`, `cancelled`, `declined` |
+| `created_at`       | string | ISO 8601 creation timestamp                                                           |
+| `updated_at`       | string | ISO 8601 last update timestamp                                                        |
+| `recipients_count` | number | Total number of recipients                                                            |
+| `signed_count`     | number | Number of recipients who have signed                                                  |
+| `deadline`         | string | Optional ISO 8601 signing deadline                                                    |
+
+### Example Object
+
+```json
+{
+  "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+  "title": "Service Agreement",
+  "description": "Annual service contract for review and signature",
+  "status": "sent",
+  "created_at": "2024-01-27T10:30:00Z",
+  "updated_at": "2024-01-27T10:31:00Z",
+  "recipients_count": 2,
+  "signed_count": 0,
+  "deadline": "2024-02-10T23:59:59Z"
+}
+```
+
+## List Documents
+
+Retrieve a paginated list of documents for your organization.
+
+### Endpoint
+
+```
+GET /api/v1/documents
+```
+
+### Required Scope
+
+`seal:documents:read`
+
+### Query Parameters
+
+| Parameter | Type   | Description                              |
+| --------- | ------ | ---------------------------------------- |
+| `limit`   | number | Number of results (max 100, default 20)  |
+| `cursor`  | string | Pagination cursor from previous response |
+| `status`  | string | Filter by workflow status                |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/documents?limit=20&status=sent", {
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
+
+const { documents, has_more, next_cursor } = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://seal.convex.site/api/v1/documents?limit=20&status=sent" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "documents": [
+    {
+      "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+      "title": "Service Agreement",
+      "status": "sent",
+      "created_at": "2024-01-27T10:30:00Z",
+      "updated_at": "2024-01-27T10:31:00Z",
+      "recipients_count": 2,
+      "signed_count": 0
+    }
+  ],
+  "has_more": false,
+  "next_cursor": null
+}
+```
+
+## Get Document
+
+Retrieve a single document by ID.
+
+### Endpoint
+
+```
+GET /api/v1/documents/get?id={id}
+```
+
+### Required Scope
+
+`seal:documents:read`
+
+### Query Parameters
+
+| Parameter            | Type    | Description                           |
+| -------------------- | ------- | ------------------------------------- |
+| `id`                 | string  | **Required.** Document ID             |
+| `include_recipients` | boolean | Include recipient details in response |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/get?id=jd7k8l9m0n1p2q3r4s5t6u7v&include_recipients=true",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const document = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://seal.convex.site/api/v1/documents/get?id=jd7k8l9m0n1p2q3r4s5t6u7v&include_recipients=true" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+  "title": "Service Agreement",
+  "description": "Annual service contract",
+  "status": "sent",
+  "created_at": "2024-01-27T10:30:00Z",
+  "updated_at": "2024-01-27T10:31:00Z",
+  "recipients_count": 2,
+  "signed_count": 1,
+  "download_url": "https://storage.convex.cloud/...",
+  "recipients": [
+    {
+      "id": "rec_abc123",
+      "email": "john@example.com",
+      "name": "John Doe",
+      "role": "signer",
+      "status": "signed",
+      "signed_at": "2024-01-27T11:00:00Z"
+    },
+    {
+      "id": "rec_def456",
+      "email": "jane@example.com",
+      "name": "Jane Smith",
+      "role": "signer",
+      "status": "pending"
+    }
+  ]
+}
+```
+
+## Create Document
+
+Create a new document from an uploaded file.
+
+### Endpoint
+
+```
+POST /api/v1/documents
+```
+
+### Required Scope
+
+`seal:documents:write`
+
+### Request Body
+
+| Field         | Type   | Required | Description                         |
+| ------------- | ------ | -------- | ----------------------------------- |
+| `title`       | string | Yes      | Document title                      |
+| `description` | string | No       | Document description                |
+| `storage_id`  | string | Yes      | Storage ID from upload endpoint     |
+| `file_size`   | number | Yes      | File size in bytes                  |
+| `file_type`   | string | Yes      | MIME type (e.g., "application/pdf") |
+| `page_count`  | number | No       | Number of pages in document         |
+| `deadline`    | string | No       | ISO 8601 signing deadline           |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/documents", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    title: "Service Agreement",
+    description: "Annual service contract",
+    storage_id: "kg2h4j5k6l7m8n9p0q1r2s3t",
+    file_size: 245760,
+    file_type: "application/pdf",
+    page_count: 5,
+    deadline: "2024-02-10T23:59:59Z",
+  }),
+});
+
+const document = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X POST https://seal.convex.site/api/v1/documents \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Service Agreement",
+    "description": "Annual service contract",
+    "storage_id": "kg2h4j5k6l7m8n9p0q1r2s3t",
+    "file_size": 245760,
+    "file_type": "application/pdf",
+    "page_count": 5,
+    "deadline": "2024-02-10T23:59:59Z"
+  }'
+```
+
+### Response
+
+```json
+{
+  "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+  "title": "Service Agreement",
+  "description": "Annual service contract",
+  "status": "draft",
+  "created_at": "2024-01-27T10:30:00Z",
+  "updated_at": "2024-01-27T10:30:00Z",
+  "recipients_count": 0,
+  "signed_count": 0,
+  "deadline": "2024-02-10T23:59:59Z"
+}
+```
+
+## Update Document
+
+Update a document's metadata.
+
+### Endpoint
+
+```
+PUT /api/v1/documents/update?id={id}
+```
+
+### Required Scope
+
+`seal:documents:write`
+
+### Query Parameters
+
+| Parameter | Type   | Description               |
+| --------- | ------ | ------------------------- |
+| `id`      | string | **Required.** Document ID |
+
+### Request Body
+
+| Field         | Type   | Description                   |
+| ------------- | ------ | ----------------------------- |
+| `title`       | string | New document title            |
+| `description` | string | New document description      |
+| `deadline`    | string | New ISO 8601 signing deadline |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/update?id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  {
+    method: "PUT",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      title: "Updated Service Agreement",
+      deadline: "2024-02-15T23:59:59Z",
+    }),
+  },
+);
+
+const document = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X PUT "https://seal.convex.site/api/v1/documents/update?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Updated Service Agreement",
+    "deadline": "2024-02-15T23:59:59Z"
+  }'
+```
+
+## Delete Document
+
+Permanently delete a document.
+
+### Endpoint
+
+```
+DELETE /api/v1/documents/delete?id={id}
+```
+
+### Required Scope
+
+`seal:documents:write`
+
+### Query Parameters
+
+| Parameter | Type   | Description               |
+| --------- | ------ | ------------------------- |
+| `id`      | string | **Required.** Document ID |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/delete?id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  {
+    method: "DELETE",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const result = await response.json();
+// Returns { "deleted": true } with status 200
+```
+
+### cURL Example
+
+```bash
+curl -X DELETE "https://seal.convex.site/api/v1/documents/delete?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "deleted": true
+}
+```
+
+<Callout type="warn">
+  **Warning**: Deleting a document is permanent and cannot be undone. All associated recipients,
+  signatures, and audit trail data will also be deleted.
+</Callout>
+
+## Send Document
+
+Send a document to all recipients for signing.
+
+### Endpoint
+
+```
+POST /api/v1/documents/send?id={id}
+```
+
+### Required Scope
+
+`seal:documents:write`
+
+### Query Parameters
+
+| Parameter | Type   | Description               |
+| --------- | ------ | ------------------------- |
+| `id`      | string | **Required.** Document ID |
+
+### Request Body
+
+| Field     | Type   | Required | Description                                     |
+| --------- | ------ | -------- | ----------------------------------------------- |
+| `message` | string | No       | Custom message to include in email notification |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: "Please review and sign this agreement at your earliest convenience.",
+    }),
+  },
+);
+
+const result = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://seal.convex.site/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Please review and sign this agreement."
+  }'
+```
+
+### Response
+
+```json
+{
+  "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+  "status": "sent",
+  "sent_at": "2024-01-27T10:31:00Z",
+  "recipients_notified": 2
+}
+```
+
+## Void Document
+
+Cancel a document and prevent further signing.
+
+### Endpoint
+
+```
+POST /api/v1/documents/void?id={id}
+```
+
+### Required Scope
+
+`seal:documents:write`
+
+### Query Parameters
+
+| Parameter | Type   | Description               |
+| --------- | ------ | ------------------------- |
+| `id`      | string | **Required.** Document ID |
+
+### Request Body
+
+| Field    | Type   | Required | Description                     |
+| -------- | ------ | -------- | ------------------------------- |
+| `reason` | string | No       | Reason for voiding the document |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/void?id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      reason: "Contract terms changed, new version required",
+    }),
+  },
+);
+
+const result = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://seal.convex.site/api/v1/documents/void?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "Contract terms changed"
+  }'
+```
+
+### Response
+
+```json
+{
+  "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+  "status": "cancelled",
+  "voided_at": "2024-01-27T12:00:00Z",
+  "void_reason": "Contract terms changed"
+}
+```
+
+<Callout type="info">
+  **Note**: Voiding a document prevents recipients from signing but preserves the document and audit
+  trail for record-keeping.
+</Callout>
+
+## Download Document
+
+Get a temporary download URL for the document PDF.
+
+### Endpoint
+
+```
+GET /api/v1/documents/download?id={id}
+```
+
+### Required Scope
+
+`seal:documents:read`
+
+### Query Parameters
+
+| Parameter | Type   | Description               |
+| --------- | ------ | ------------------------- |
+| `id`      | string | **Required.** Document ID |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/download?id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const { download_url, expires_at } = await response.json();
+
+// Download the file
+const fileResponse = await fetch(download_url);
+const blob = await fileResponse.blob();
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://seal.convex.site/api/v1/documents/download?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "download_url": "https://storage.convex.cloud/...",
+  "expires_at": "2024-01-27T11:00:00Z"
+}
+```
+
+<Callout type="info">
+  **Note**: Download URLs are temporary and expire after a short period (typically 1 hour). Generate
+  a new URL if the previous one has expired.
+</Callout>
+
+## Document Status Workflow
+
+Documents progress through the following statuses:
+
+```
+draft → sent → in_progress → completed
+                    ↓
+                cancelled (voided)
+                    ↓
+                declined (recipient declined)
+```
+
+| Status        | Description                                 |
+| ------------- | ------------------------------------------- |
+| `draft`       | Document created but not yet sent           |
+| `sent`        | Document sent to recipients                 |
+| `in_progress` | At least one recipient has viewed/signed    |
+| `completed`   | All recipients have completed their actions |
+| `cancelled`   | Document voided by sender                   |
+| `declined`    | Document declined by a recipient            |
+
+## Next Steps
+
+- **[Recipients API](/docs/api-reference/recipients)** - Manage document recipients
+- **[Uploads API](/docs/api-reference/uploads)** - Generate upload URLs for documents
+- **[Webhooks](/docs/webhooks)** - Receive real-time document status updates

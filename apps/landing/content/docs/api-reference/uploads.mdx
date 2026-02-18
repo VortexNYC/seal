@@ -1,0 +1,266 @@
+---
+title: Uploads API
+description: Generate secure upload URLs for document files
+---
+
+# Uploads API
+
+The Uploads API provides secure, temporary URLs for uploading document files directly to Seal's storage. This two-step process ensures secure file handling and prevents exposing storage credentials.
+
+## Upload Flow
+
+1. **Generate Upload URL**: Request a temporary upload URL from the API
+2. **Upload File**: POST the file directly to the generated URL and receive a `storageId` in the response
+3. **Create Document**: Use the returned `storageId` as `storage_id` to create a document
+
+## Generate Upload URL
+
+Generate a temporary URL for uploading a document file.
+
+### Endpoint
+
+```
+POST /api/v1/uploads/generate-url
+```
+
+### Required Scope
+
+`seal:documents:write`
+
+### Request Body
+
+No request body is needed. Simply send an authenticated POST request.
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/uploads/generate-url", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
+
+const { upload_url } = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X POST https://seal.convex.site/api/v1/uploads/generate-url \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "upload_url": "https://storage.convex.cloud/upload/..."
+}
+```
+
+<Callout type="info">
+  **Expiration**: Upload URLs expire after 1 hour. Generate a new URL if the previous one has
+  expired.
+</Callout>
+
+## Upload File
+
+Upload the file to the generated URL. The response from Convex storage returns a `storageId` that you use when creating the document.
+
+### Endpoint
+
+```
+POST {upload_url}
+```
+
+### Request
+
+- **Method**: POST
+- **Body**: Raw file binary data
+- **Headers**: `Content-Type: {content_type}`
+
+### TypeScript Example
+
+```typescript
+// Step 1: Generate upload URL
+const urlResponse = await fetch("https://seal.convex.site/api/v1/uploads/generate-url", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
+
+const { upload_url } = await urlResponse.json();
+
+// Step 2: Upload file
+const fileBlob = await fetch("/path/to/contract.pdf").then((r) => r.blob());
+
+const uploadResponse = await fetch(upload_url, {
+  method: "POST",
+  body: fileBlob,
+  headers: {
+    "Content-Type": "application/pdf",
+  },
+});
+
+if (!uploadResponse.ok) {
+  throw new Error("File upload failed");
+}
+
+const { storageId } = await uploadResponse.json();
+
+// Step 3: Create document with storage_id
+const docResponse = await fetch("https://seal.convex.site/api/v1/documents", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    title: "Service Agreement",
+    storage_id: storageId,
+    file_size: fileBlob.size,
+    file_type: "application/pdf",
+  }),
+});
+
+const document = await docResponse.json();
+```
+
+### cURL Example
+
+```bash
+# Step 1: Generate upload URL
+RESPONSE=$(curl -X POST https://seal.convex.site/api/v1/uploads/generate-url \
+  -H "Authorization: Bearer ak_your_api_key_here")
+
+UPLOAD_URL=$(echo $RESPONSE | jq -r '.upload_url')
+
+# Step 2: Upload file
+UPLOAD_RESPONSE=$(curl -X POST "$UPLOAD_URL" \
+  -H "Content-Type: application/pdf" \
+  --data-binary "@contract.pdf")
+
+STORAGE_ID=$(echo $UPLOAD_RESPONSE | jq -r '.storageId')
+
+# Step 3: Create document
+curl -X POST https://seal.convex.site/api/v1/documents \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"title\": \"Service Agreement\",
+    \"storage_id\": \"$STORAGE_ID\",
+    \"file_size\": $(wc -c < contract.pdf),
+    \"file_type\": \"application/pdf\"
+  }"
+```
+
+## Supported File Types
+
+| MIME Type                                                                 | Extension   | Description                 |
+| ------------------------------------------------------------------------- | ----------- | --------------------------- |
+| `application/pdf`                                                         | .pdf        | PDF documents (recommended) |
+| `application/msword`                                                      | .doc        | Microsoft Word (legacy)     |
+| `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | .docx       | Microsoft Word              |
+| `image/png`                                                               | .png        | PNG images                  |
+| `image/jpeg`                                                              | .jpg, .jpeg | JPEG images                 |
+
+<Callout type="warn">
+  **File Size Limit**: Maximum file size is 50 MB. Larger files will be rejected during upload.
+</Callout>
+
+## Error Handling
+
+### Upload URL Generation Errors
+
+| Status | Error                | Description                          |
+| ------ | -------------------- | ------------------------------------ |
+| 401    | `UNAUTHORIZED`       | Invalid API key                      |
+| 403    | `INSUFFICIENT_SCOPE` | Missing `seal:documents:write` scope |
+
+### File Upload Errors
+
+| Status | Error            | Description                                 |
+| ------ | ---------------- | ------------------------------------------- |
+| 400    | `FILE_TOO_LARGE` | File exceeds 50 MB limit                    |
+| 410    | `URL_EXPIRED`    | Upload URL has expired (generate a new one) |
+
+## Best Practices
+
+1. **Generate URL Just-In-Time**: Create upload URLs immediately before uploading to minimize expiration risk
+
+2. **Validate File Size**: Check file size client-side before requesting an upload URL
+
+3. **Handle Expiration**: Implement retry logic that generates a new URL if upload fails due to expiration
+
+4. **Verify Upload**: Check the upload response status before proceeding to document creation
+
+5. **Store Storage ID**: Save the `storageId` from the upload response for document creation
+
+## Complete Upload Example
+
+```typescript
+async function uploadAndCreateDocument(file: File, title: string) {
+  try {
+    // Step 1: Generate upload URL
+    const urlResponse = await fetch("https://seal.convex.site/api/v1/uploads/generate-url", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.SEAL_API_KEY}`,
+      },
+    });
+
+    if (!urlResponse.ok) {
+      throw new Error("Failed to generate upload URL");
+    }
+
+    const { upload_url } = await urlResponse.json();
+
+    // Step 2: Upload file
+    const uploadResponse = await fetch(upload_url, {
+      method: "POST",
+      body: file,
+      headers: {
+        "Content-Type": file.type,
+      },
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error("File upload failed");
+    }
+
+    const { storageId } = await uploadResponse.json();
+
+    // Step 3: Create document
+    const docResponse = await fetch("https://seal.convex.site/api/v1/documents", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.SEAL_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title,
+        storage_id: storageId,
+        file_size: file.size,
+        file_type: file.type,
+      }),
+    });
+
+    if (!docResponse.ok) {
+      throw new Error("Document creation failed");
+    }
+
+    return await docResponse.json();
+  } catch (error) {
+    console.error("Upload failed:", error);
+    throw error;
+  }
+}
+```
+
+## Next Steps
+
+- **[Documents API](/docs/api-reference/documents)** - Create documents after uploading
+- **[Quick Start](/docs/getting-started/quick-start)** - Complete integration tutorial
+- **[Error Handling](/docs/getting-started/error-handling)** - Handle upload errors

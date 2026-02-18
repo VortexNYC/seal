@@ -1,0 +1,251 @@
+---
+title: MCP Authentication
+description: Configure OAuth authentication for the Seal MCP server
+---
+
+# MCP Authentication
+
+The Seal MCP server uses Clerk OAuth 2.0 for secure authentication. This guide walks you through configuring OAuth access for AI assistants.
+
+## Authentication Flow
+
+1. **Authorization Request**: MCP client redirects to Clerk authorization page
+2. **User Consent**: You authorize access and select organization
+3. **Authorization Code**: Clerk returns authorization code to MCP client
+4. **Token Exchange**: MCP client exchanges code for access token
+5. **API Access**: MCP client uses access token for all API requests
+
+## Claude Desktop Setup
+
+Add Seal to your Claude Desktop configuration file:
+
+### macOS
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "seal": {
+      "url": "https://mcp.seal.nyc",
+      "auth": {
+        "type": "oauth",
+        "authorizationUrl": "https://mcp.seal.nyc/.well-known/oauth-authorization-server"
+      }
+    }
+  }
+}
+```
+
+### Windows
+
+Edit `%APPDATA%\Claude\claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "seal": {
+      "url": "https://mcp.seal.nyc",
+      "auth": {
+        "type": "oauth",
+        "authorizationUrl": "https://mcp.seal.nyc/.well-known/oauth-authorization-server"
+      }
+    }
+  }
+}
+```
+
+### Linux
+
+Edit `~/.config/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "seal": {
+      "url": "https://mcp.seal.nyc",
+      "auth": {
+        "type": "oauth",
+        "authorizationUrl": "https://mcp.seal.nyc/.well-known/oauth-authorization-server"
+      }
+    }
+  }
+}
+```
+
+## First-Time Authorization
+
+1. **Restart Claude Desktop** after updating configuration
+2. **Trigger MCP**: Ask Claude to interact with Seal (e.g., "List my documents")
+3. **Authorize**: Claude opens browser for authorization
+4. **Sign In**: Sign in to your Seal account if not already signed in
+5. **Select Organization**: Choose which organization to connect
+6. **Grant Access**: Click "Authorize" to grant Claude access
+7. **Return to Claude**: Browser redirects back to Claude Desktop
+
+<Callout type="info">
+  **Organization Selection**: You can only connect one organization at a time. To switch
+  organizations, revoke access and re-authorize.
+</Callout>
+
+## OAuth Scopes
+
+The MCP server requests full API access with all scopes:
+
+- `seal:documents:read` - Read documents
+- `seal:documents:write` - Create, update, delete documents
+- `seal:templates:read` - Read templates
+- `seal:templates:write` - Create, update, delete templates
+- `seal:recipients:read` - Read recipients
+- `seal:recipients:write` - Manage recipients
+- `seal:signatures:read` - Read signatures and audit trails
+
+## Token Management
+
+### Token Storage
+
+OAuth tokens are stored securely by the MCP client (Claude Desktop):
+
+- **macOS**: Keychain
+- **Windows**: Credential Manager
+- **Linux**: Secret Service API
+
+### Token Refresh
+
+Access tokens expire after 1 hour. The MCP client automatically refreshes tokens using the refresh token.
+
+### Token Revocation
+
+Revoke MCP access from your Clerk dashboard:
+
+1. Go to [Clerk Dashboard](https://dashboard.clerk.com)
+2. Navigate to **Sessions**
+3. Find the MCP session
+4. Click **Revoke**
+
+## OAuth Endpoints
+
+### Authorization Server Metadata
+
+```
+GET https://mcp.seal.nyc/.well-known/oauth-authorization-server
+```
+
+Returns OAuth 2.0 server metadata including:
+
+- Authorization endpoint
+- Token endpoint
+- Supported grant types
+- Supported scopes
+
+### Protected Resource Metadata
+
+```
+GET https://mcp.seal.nyc/.well-known/oauth-protected-resource/mcp
+```
+
+Returns protected resource metadata including:
+
+- Resource server identifier
+- Required scopes
+- Token introspection endpoint
+
+## Security Considerations
+
+### What MCP Can Access
+
+With your authorization, the MCP server can:
+
+- ✓ Read all documents in your selected organization
+- ✓ Create, update, and delete documents
+- ✓ Manage recipients and send documents
+- ✓ Access templates and signatures
+- ✓ View audit trails
+
+### What MCP Cannot Access
+
+The MCP server cannot:
+
+- ✗ Access other organizations you belong to
+- ✗ Change organization settings
+- ✗ Manage billing or subscriptions
+- ✗ Access your Clerk account settings
+- ✗ Impersonate you in the web application
+
+### Best Practices
+
+1. **Review Permissions**: Understand what access you're granting
+2. **Monitor Activity**: Check audit trails for MCP actions
+3. **Revoke When Done**: Revoke access if you stop using MCP
+4. **Use Separate Org**: Consider using a separate organization for testing
+5. **Report Issues**: Report suspicious activity immediately
+
+## Troubleshooting
+
+### Authorization Fails
+
+**Problem**: Browser doesn't open or authorization fails
+
+**Solutions**:
+
+1. Check Claude Desktop configuration syntax
+2. Ensure you're signed in to Seal
+3. Try restarting Claude Desktop
+4. Check browser console for errors
+
+### Token Expired
+
+**Problem**: "Token expired" error after some time
+
+**Solution**: MCP client should auto-refresh. If it doesn't:
+
+1. Revoke access from Clerk dashboard
+2. Re-authorize in Claude Desktop
+
+### Wrong Organization
+
+**Problem**: MCP is connected to wrong organization
+
+**Solution**:
+
+1. Revoke access from Clerk dashboard
+2. Re-authorize and select correct organization
+
+### Permission Denied
+
+**Problem**: "Permission denied" errors for certain actions
+
+**Solution**:
+
+1. Check your role in the organization
+2. Ensure you have required permissions
+3. Contact organization admin if needed
+
+## API Key Fallback
+
+For stdio mode (local development), you can use API keys instead of OAuth:
+
+```json
+{
+  "mcpServers": {
+    "seal": {
+      "command": "node",
+      "args": ["/path/to/mcp-server/dist/index.js"],
+      "env": {
+        "SEAL_API_KEY": "ak_your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+<Callout type="warn">
+  **Development Only**: API key authentication is only supported in stdio mode for local
+  development. Production MCP servers must use OAuth.
+</Callout>
+
+## Next Steps
+
+- **[MCP Tools](/docs/mcp/tools)** - Complete tool reference
+- **[API Reference](/docs/api-reference)** - Underlying REST API
+- **[Authentication Guide](/docs/getting-started/authentication)** - API key authentication

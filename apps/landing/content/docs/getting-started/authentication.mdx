@@ -1,0 +1,98 @@
+---
+title: Authentication
+description: Learn how to authenticate API requests using Clerk API keys with scope-based access control
+---
+
+# Authentication
+
+The Seal API uses Clerk API keys for authentication. All API requests must include a valid API key in the `Authorization` header.
+
+## Creating an API Key
+
+API keys are created through the Clerk Dashboard:
+
+1. Navigate to your Clerk Dashboard
+2. Go to **API Keys** section
+3. Click **Create API Key**
+4. Select the required scopes for your integration
+5. Copy the generated API key (format: `ak_xxx`)
+
+<Callout type="warn">
+  **Security Best Practice**: Store API keys securely and never commit them to version control.
+  Rotate keys regularly and use environment variables in production.
+</Callout>
+
+## API Scopes
+
+Seal uses scope-based access control to limit what each API key can do. Select only the scopes your integration needs:
+
+| Scope                   | Description                          | Endpoints                                                                                                        |
+| ----------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `seal:documents:read`   | Read document metadata and content   | GET /documents, GET /documents/:id, GET /documents/:id/download                                                  |
+| `seal:documents:write`  | Create, update, delete documents     | POST /documents, PATCH /documents/:id, DELETE /documents/:id, POST /documents/:id/send, POST /documents/:id/void |
+| `seal:templates:read`   | Read template metadata and fields    | GET /templates, GET /templates/:id, GET /templates/:id/fields                                                    |
+| `seal:templates:write`  | Create, update, delete templates     | POST /templates, PATCH /templates/:id, DELETE /templates/:id                                                     |
+| `seal:recipients:read`  | Read recipient information           | GET /documents/:id/recipients, GET /recipients/:id                                                               |
+| `seal:recipients:write` | Manage document recipients           | POST /documents/:id/recipients, PATCH /recipients/:id, DELETE /recipients/:id, POST /recipients/:id/remind       |
+| `seal:signatures:read`  | Read signature data and audit trails | GET /signatures, GET /signatures/:id, GET /signatures/:id/verify, GET /signatures/:id/audit                      |
+
+## Making Authenticated Requests
+
+Include your API key in the `Authorization` header using the Bearer scheme:
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/documents", {
+  method: "GET",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+});
+
+if (!response.ok) {
+  const error = await response.json();
+  console.error("API Error:", error);
+  throw new Error(error.detail);
+}
+
+const documents = await response.json();
+console.log("Documents:", documents);
+```
+
+### cURL Example
+
+```bash
+curl -X GET https://seal.convex.site/api/v1/documents \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json"
+```
+
+## Authentication Errors
+
+| Status Code | Error                        | Description                                    |
+| ----------- | ---------------------------- | ---------------------------------------------- |
+| 401         | `MISSING_AUTH_HEADER`        | No Authorization header provided               |
+| 401         | `INVALID_AUTH_FORMAT`        | Authorization header format is incorrect       |
+| 401         | `INVALID_API_KEY`            | API key is invalid or expired                  |
+| 403         | `INSUFFICIENT_SCOPE`         | API key lacks required scope for this endpoint |
+| 403         | `ORGANIZATION_ACCESS_DENIED` | User has no active organization                |
+
+## Best Practices
+
+<Callout type="info">
+  **Scope Principle of Least Privilege**: Only request the minimum scopes needed for your
+  integration. For example, if you only need to read documents, use `seal:documents:read` instead of
+  `seal:documents:write`.
+</Callout>
+
+- **Use HTTPS**: Always make requests over HTTPS to protect your API key in transit
+- **Rotate Keys**: Regularly rotate API keys, especially if they may have been compromised
+- **Environment Variables**: Store API keys in environment variables, never hardcode them
+- **Monitor Usage**: Track API key usage in the Clerk Dashboard to detect anomalies
+- **Separate Keys**: Use different API keys for development, staging, and production environments
+
+## Next Steps
+
+Now that you understand authentication, check out the [Quick Start](/docs/getting-started/quick-start) guide to send your first document for signing.

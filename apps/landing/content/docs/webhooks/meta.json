@@ -1,0 +1,5 @@
+{
+  "title": "Webhooks",
+  "pages": ["setup", "verification"],
+  "defaultOpen": true
+}
