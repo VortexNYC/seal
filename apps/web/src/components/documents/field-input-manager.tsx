@@ -50,6 +50,7 @@ interface FieldInputManagerProps {
   };
   onSave: (value?: string, signatureImageUrl?: string) => Promise<void>;
   recipientName?: string;
+  signingToken?: string;
 }
 
 export function FieldInputManager({
@@ -65,6 +66,7 @@ export function FieldInputManager({
   validationRules,
   onSave,
   recipientName,
+  signingToken,
 }: FieldInputManagerProps) {
   const [value, setValue] = useState(currentValue || properties?.defaultValue || "");
   const [signatureImageUrl, setSignatureImageUrl] = useState(currentSignatureImageUrl);
@@ -171,7 +173,7 @@ export function FieldInputManager({
         return <DateFieldInput {...commonProps} />;
 
       case "checkbox":
-        return <CheckboxFieldInput {...commonProps} />;
+        return <CheckboxFieldInput {...commonProps} options={properties?.options || []} />;
 
       case "dropdown":
         return <DropdownFieldInput {...commonProps} options={properties?.options || []} />;
@@ -180,7 +182,7 @@ export function FieldInputManager({
         return <RadioFieldInput {...commonProps} options={properties?.options || []} />;
 
       case "attachment":
-        return <AttachmentFieldInput {...commonProps} />;
+        return <AttachmentFieldInput {...commonProps} signingToken={signingToken} />;
 
       case "payment":
         return <PaymentFieldSummary fieldId={fieldId} />;

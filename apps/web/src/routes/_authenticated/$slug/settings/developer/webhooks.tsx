@@ -95,7 +95,7 @@ function formatRelativeTime(timestamp: number): string {
   return formatDate(timestamp);
 }
 
-type WebhookEndpointWithStats = Doc<"webhook_endpoints"> & {
+type WebhookEndpointWithStats = Omit<Doc<"webhook_endpoints">, "secret" | "secretHash"> & {
   stats: {
     recentDeliveries: number;
     delivered: number;
@@ -530,7 +530,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 
   const deliveries = useQuery(
     api.webhooks.queries.listDeliveries,
-    isExpanded ? { endpointId: endpoint._id, limit: 10 } : "skip",
+    isExpanded ? { endpointId: endpoint._id, limit: 25 } : "skip",
   );
 
   const handleToggleStatus = async () => {
@@ -802,6 +802,8 @@ interface DeliveryRowProps {
 }
 
 function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
   const statusConfig = {
     pending: {
       icon: <Clock className="h-4 w-4 text-sky-600 dark:text-sky-400" />,
@@ -830,6 +832,14 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
         ? "text-rose-600 dark:text-rose-400"
         : "text-amber-600 dark:text-amber-400";
 
+  const parsedPayload = (() => {
+    try {
+      return JSON.stringify(JSON.parse(delivery.payload), null, 2);
+    } catch {
+      return delivery.payload;
+    }
+  })();
+
   return (
     <div className="relative flex items-start gap-3">
       {!isLast && <div className="bg-border absolute top-7 bottom-0 left-[11px] w-px" />}
@@ -838,23 +848,94 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
       >
         {config.icon}
       </div>
-      <div className="bg-muted/30 flex flex-1 items-center justify-between gap-2 rounded-lg border px-3 py-2">
-        <div className="flex items-center gap-2">
-          <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs text-purple-700 dark:text-purple-300">
-            {delivery.eventType}
-          </code>
-        </div>
-        <div className="text-muted-foreground flex items-center gap-3 text-xs">
-          {delivery.responseCode && (
-            <span className={`font-mono font-medium ${responseCodeColor}`}>
-              {delivery.responseCode}
-            </span>
-          )}
-          {delivery.responseTimeMs && (
-            <span className="font-mono">{delivery.responseTimeMs}ms</span>
-          )}
-          <span>{formatRelativeTime(delivery.createdAt)}</span>
-        </div>
+      <div className="flex-1">
+        <button
+          type="button"
+          onClick={() => setIsDetailOpen(!isDetailOpen)}
+          className="bg-muted/30 hover:bg-muted/50 flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs text-purple-700 dark:text-purple-300">
+              {delivery.eventType}
+            </code>
+          </div>
+          <div className="text-muted-foreground flex items-center gap-3 text-xs">
+            {delivery.responseCode && (
+              <span className={`font-mono font-medium ${responseCodeColor}`}>
+                {delivery.responseCode}
+              </span>
+            )}
+            {delivery.responseTimeMs && (
+              <span className="font-mono">{delivery.responseTimeMs}ms</span>
+            )}
+            <span>{formatRelativeTime(delivery.createdAt)}</span>
+            {isDetailOpen ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
+            )}
+          </div>
+        </button>
+
+        {isDetailOpen && (
+          <div className="mt-2 space-y-3 rounded-lg border p-3">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="text-muted-foreground">Status</span>
+                <div className="mt-0.5 font-medium capitalize">{delivery.status}</div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Attempts</span>
+                <div className="mt-0.5 font-mono font-medium">{delivery.attemptCount}</div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Event ID</span>
+                <div className="mt-0.5 truncate font-mono">{delivery.eventId}</div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Created</span>
+                <div className="mt-0.5">{formatDate(delivery.createdAt)}</div>
+              </div>
+              {delivery.deliveredAt && (
+                <div>
+                  <span className="text-muted-foreground">Delivered</span>
+                  <div className="mt-0.5">{formatDate(delivery.deliveredAt)}</div>
+                </div>
+              )}
+              {delivery.nextRetryAt && (
+                <div>
+                  <span className="text-muted-foreground">Next Retry</span>
+                  <div className="mt-0.5">{formatDate(delivery.nextRetryAt)}</div>
+                </div>
+              )}
+            </div>
+
+            {delivery.errorMessage && (
+              <div>
+                <span className="text-muted-foreground text-xs">Error</span>
+                <div className="bg-destructive/10 mt-1 rounded border border-rose-200 p-2 font-mono text-xs text-rose-700 dark:border-rose-800 dark:text-rose-300">
+                  {delivery.errorMessage}
+                </div>
+              </div>
+            )}
+
+            {delivery.responseBody && (
+              <div>
+                <span className="text-muted-foreground text-xs">Response Body</span>
+                <pre className="bg-muted mt-1 max-h-24 overflow-auto rounded border p-2 font-mono text-xs">
+                  {delivery.responseBody}
+                </pre>
+              </div>
+            )}
+
+            <div>
+              <span className="text-muted-foreground text-xs">Payload</span>
+              <pre className="bg-muted mt-1 max-h-48 overflow-auto rounded border p-2 font-mono text-xs">
+                {parsedPayload}
+              </pre>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

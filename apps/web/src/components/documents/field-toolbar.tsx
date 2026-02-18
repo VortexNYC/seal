@@ -6,6 +6,7 @@ import {
   CreditCardIcon,
   GripVerticalIcon,
   HashIcon,
+  PaperclipIcon,
   PenToolIcon,
   TypeIcon,
 } from "lucide-react";
@@ -272,6 +273,15 @@ export function FieldToolbar({
           type="radio"
           icon={<CircleDotIcon className="h-4 w-4" />}
           label="Choice"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled}
+        />
+
+        <FieldButton
+          type="attachment"
+          icon={<PaperclipIcon className="h-4 w-4" />}
+          label="File"
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           disabled={disabled}

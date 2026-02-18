@@ -31,6 +31,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { toast } from "sonner";
 
+import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { SignatureCapture } from "@/components/documents/signature-capture";
@@ -97,6 +98,10 @@ function SigningPage() {
 
   const { recipient, document: doc } = data;
 
+  // ESIGN consent state — skip modal if already consented
+  const [hasConsented, setHasConsented] = useState(!!recipient.esignConsentAt);
+  const [isConsentSubmitting, setIsConsentSubmitting] = useState(false);
+
   // Fetch fields assigned to this recipient
   const { data: fields = [], refetch: refetchFields } = useSuspenseQuery(
     convexQuery(api.signature_fields.queries.getFieldsBySigningToken, {
@@ -124,6 +129,13 @@ function SigningPage() {
       });
     }
     return map;
+  }, [paymentConfigs]);
+
+  // Check if all payment fields are paid (blocks signing if not)
+  const hasUnpaidPayments = useMemo(() => {
+    return paymentConfigs.some(
+      (config) => config.paymentStatus !== "paid",
+    );
   }, [paymentConfigs]);
 
   // PDF viewer state
@@ -157,6 +169,59 @@ function SigningPage() {
 
   // Download state
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Client IP for audit trail (fetched from Convex HTTP endpoint)
+  const [clientIp, setClientIp] = useState("unknown");
+  useEffect(() => {
+    const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
+    if (!convexUrl) return;
+    const siteUrl = convexUrl.replace(".convex.cloud", ".convex.site");
+    fetch(`${siteUrl}/api/v1/ip`)
+      .then((res) => res.json())
+      .then((data: { ip: string }) => setClientIp(data.ip))
+      .catch(() => {
+        // Silently fall back to "unknown" — IP is best-effort
+      });
+  }, []);
+
+  // ESIGN consent handlers
+  const handleConsentAccept = useCallback(async () => {
+    setIsConsentSubmitting(true);
+    try {
+      await convexClient.mutation(api.documents.recipients_mutations.recordEsignConsent, {
+        signingToken: token,
+        ipAddress: clientIp,
+        consentVersion: "1.0",
+      });
+      setHasConsented(true);
+    } catch (error) {
+      toast.error("Failed to record consent. Please try again.");
+      console.error("ESIGN consent error:", error);
+    } finally {
+      setIsConsentSubmitting(false);
+    }
+  }, [convexClient, token, clientIp]);
+
+  const handleConsentDecline = useCallback(() => {
+    // The decline state is handled inside the consent dialog component.
+    // If the user truly wants to leave, they navigate away themselves.
+  }, []);
+
+  const handleOptOut = useCallback(
+    async (method: string) => {
+      try {
+        await convexClient.mutation(api.documents.recipients_mutations.recordEsignOptOut, {
+          signingToken: token,
+          ipAddress: clientIp,
+          method,
+        });
+      } catch (error) {
+        // Opt-out logging is best-effort — don't block the user's action
+        console.error("Failed to log opt-out:", error);
+      }
+    },
+    [convexClient, token, clientIp],
+  );
 
   // Track online/offline status
   useEffect(() => {
@@ -226,6 +291,7 @@ function SigningPage() {
           await convexClient.mutation(api.documents.recipients_mutations.submitRecipientSignature, {
             signingToken: token,
             status: "viewed",
+            ipAddress: clientIp,
           });
         } catch (error) {
           // Silent failure - viewing tracking is not critical
@@ -264,6 +330,7 @@ function SigningPage() {
           status,
           signatureData: status === "signed" ? signatureData : undefined,
           signatureType: status === "signed" ? signatureType : undefined,
+          ipAddress: clientIp,
         },
       );
     },
@@ -292,6 +359,12 @@ function SigningPage() {
   };
 
   const handleSignButtonClick = () => {
+    // Check if all payments are completed
+    if (hasUnpaidPayments) {
+      toast.error("Please complete all payments before signing");
+      return;
+    }
+
     // Check if all required fields are filled
     if (!allRequiredFieldsFilled) {
       const unfilledFields = requiredFields.filter((f) => !f.isFilled);
@@ -330,6 +403,7 @@ function SigningPage() {
           signingToken: token,
           status: "declined",
           declineReason: reason,
+          ipAddress: clientIp,
         },
       );
     },
@@ -403,7 +477,7 @@ function SigningPage() {
       fieldId: activeFieldId,
       value,
       signatureImageUrl,
-      ipAddress: "0.0.0.0", // TODO: Get actual IP
+      ipAddress: clientIp,
       userAgent: navigator.userAgent,
     });
 
@@ -560,6 +634,21 @@ function SigningPage() {
   };
 
   const statusBadge = getStatusBadge(recipient.status);
+
+  // Show ESIGN consent modal before allowing document access
+  // Skip for recipients who already consented or are in a terminal state
+  if (!hasConsented && !isCompleted) {
+    return (
+      <EsignConsentDialog
+        recipientEmail={recipient.email}
+        onAccept={handleConsentAccept}
+        onDecline={handleConsentDecline}
+        onDownloadPdf={handleDownload}
+        onOptOut={handleOptOut}
+        isSubmitting={isConsentSubmitting}
+      />
+    );
+  }
 
   return (
     <div className="dark:bg-background flex h-screen flex-col overflow-hidden bg-[#FAFAF9]">
@@ -760,7 +849,12 @@ function SigningPage() {
                       style={{ width: `${fieldCompletionPercent}%` }}
                     />
                   </div>
-                  {!allRequiredFieldsFilled && (
+                  {hasUnpaidPayments && (
+                    <p className="text-destructive text-xs font-medium">
+                      Complete all payments before signing
+                    </p>
+                  )}
+                  {!allRequiredFieldsFilled && !hasUnpaidPayments && (
                     <p className="text-muted-foreground text-xs">
                       Complete all required fields to sign
                     </p>
@@ -922,7 +1016,7 @@ function SigningPage() {
                   size="lg"
                   className="h-12 w-full text-base font-medium shadow-sm transition-shadow hover:shadow"
                   onClick={handleSignButtonClick}
-                  disabled={submitSignatureMutation.isPending}
+                  disabled={submitSignatureMutation.isPending || hasUnpaidPayments}
                 >
                   {submitSignatureMutation.isPending ? (
                     "Submitting..."
@@ -1216,7 +1310,7 @@ function SigningPage() {
 
           {/* Mobile Action Bar - Fixed at bottom on mobile */}
           {!isCompleted && !showSignatureCapture && (
-            <div className="dark:bg-background/95 border-border/50 safe-area-inset-bottom sticky bottom-0 z-40 border-t bg-white/95 p-4 backdrop-blur-xl lg:hidden">
+            <div className="dark:bg-background/95 border-border/50 pb-[env(safe-area-inset-bottom)] sticky bottom-0 z-40 border-t bg-white/95 p-4 backdrop-blur-xl lg:hidden">
               <div className="flex gap-3">
                 <Button
                   variant="outline"
@@ -1254,7 +1348,7 @@ function SigningPage() {
 
           {/* Mobile Completed Footer */}
           {isCompleted && (
-            <div className="dark:bg-background/95 border-border/50 safe-area-inset-bottom sticky bottom-0 z-40 border-t bg-white/95 p-4 backdrop-blur-xl lg:hidden">
+            <div className="dark:bg-background/95 border-border/50 pb-[env(safe-area-inset-bottom)] sticky bottom-0 z-40 border-t bg-white/95 p-4 backdrop-blur-xl lg:hidden">
               {recipient.status !== "declined" ? (
                 <Button
                   variant="outline"
@@ -1349,6 +1443,7 @@ function SigningPage() {
           properties={fields.find((f) => f._id === activeFieldId)?.properties}
           onSave={handleFieldSave}
           recipientName={recipient.name}
+          signingToken={token}
         />
       )}
     </div>
