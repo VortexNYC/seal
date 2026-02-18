@@ -7,6 +7,7 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import { permissionMutation } from "../auth";
+import { publishWebhookEvent } from "../webhooks/publish";
 import { verifyDocumentOwnership } from "./recipient_helpers";
 
 /**
@@ -219,6 +220,17 @@ export const completeDocument = permissionMutation("documents:edit")({
       });
     }
 
+    // Publish webhook event
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "document.completed",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        completed_at: new Date().toISOString(),
+      },
+    });
+
     return { success: true, remindersCancelled: allPendingReminders.length };
   },
 });
@@ -274,6 +286,18 @@ export const cancelDocument = permissionMutation("documents:edit")({
         updatedAt: Date.now(),
       });
     }
+
+    // Publish webhook event
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "document.voided",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        reason: args.reason,
+        voided_at: new Date().toISOString(),
+      },
+    });
 
     return { success: true, remindersCancelled: activeReminders.length };
   },
@@ -347,6 +371,17 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
         updatedAt: Date.now(),
       });
     }
+
+    // Publish webhook event
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "document.completed",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        completed_at: new Date().toISOString(),
+      },
+    });
 
     return {
       success: true,

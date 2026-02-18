@@ -13,14 +13,14 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import { action } from "../_generated/server";
+import { action, internalAction } from "../_generated/server";
 import { generateSHA256Hash } from "../crypto/node_helpers";
 
 /**
  * Compute and store the SHA-256 hash of a document
- * Should be called after document upload to establish integrity baseline
+ * Called automatically after document upload to establish integrity baseline
  */
-export const hashDocument = action({
+export const hashDocument = internalAction({
   args: {
     documentId: v.id("documents"),
   },

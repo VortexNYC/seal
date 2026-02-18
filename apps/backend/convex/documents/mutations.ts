@@ -105,6 +105,12 @@ export const createDocument = permissionMutation("documents:create")({
       ipAddress: "web-authenticated",
     });
 
+    // 6. Schedule SHA-256 hash computation for document integrity baseline
+    // Runs as an action since it needs to download the PDF from storage
+    await ctx.scheduler.runAfter(0, internal.documents.hash_document_action.hashDocument, {
+      documentId,
+    });
+
     return documentId;
   },
 });
@@ -129,6 +135,15 @@ export const deleteDocument = permissionMutation("documents:delete")({
     // 2. Verify user is the owner (only owners can delete)
     if (document.ownerId !== userId) {
       throw new ConvexError("Only the document owner can delete this document");
+    }
+
+    // 2b. Enforce retention policy — completed documents cannot be deleted within retention period
+    if (document.retainUntil && document.retainUntil > Date.now()) {
+      const retainDate = new Date(document.retainUntil).toLocaleDateString("en-US");
+      throw new ConvexError({
+        code: "RETENTION_POLICY",
+        message: `This document is under a legal retention policy and cannot be deleted until ${retainDate}. Completed documents must be retained for 7 years per ESIGN Act compliance.`,
+      });
     }
 
     // 3. Mark as deleted (soft delete)
@@ -179,7 +194,16 @@ export const updateDocument = permissionMutation("documents:edit")({
       throw new ConvexError("Document not found");
     }
 
-    // 2. Check if user has edit access (owner or has "edit"/"manage" permission)
+    // 2. Block modifications to completed documents (immutable after signing)
+    if (document.workflowStatus === "completed") {
+      throw new ConvexError({
+        code: "DOCUMENT_IMMUTABLE",
+        message:
+          "Completed documents cannot be modified. They are immutable for legal compliance.",
+      });
+    }
+
+    // 3. Check if user has edit access (owner or has "edit"/"manage" permission)
     let hasEditAccess = false;
     if (document.ownerId !== userId) {
       const access = await ctx.db
@@ -238,7 +262,16 @@ export const updateThumbnail = authMutation({
       throw new ConvexError("Document not found");
     }
 
-    // 2. Verify user has access (owner or org member)
+    // 2. Block modifications to completed documents (immutable after signing)
+    if (document.workflowStatus === "completed") {
+      throw new ConvexError({
+        code: "DOCUMENT_IMMUTABLE",
+        message:
+          "Completed documents cannot be modified. They are immutable for legal compliance.",
+      });
+    }
+
+    // 3. Verify user has access (owner or org member)
     let hasAccess = document.ownerId === userId;
 
     if (!hasAccess) {
