@@ -80,13 +80,19 @@ export const webhookEndpoints = defineTable({
 
   /**
    * Secret key for HMAC-SHA256 signature generation.
-   * Used by recipients to verify webhook authenticity.
-   * Stored hashed, original provided once at creation.
+   * Stored hashed for verification purposes.
    */
   secretHash: v.string(),
 
   /**
-   * First 8 characters of the secret for identification.
+   * Raw secret key used for HMAC-SHA256 webhook payload signing.
+   * Convex encrypts data at rest, so storing the raw secret is acceptable.
+   * Needed because HMAC signing requires the original key (hash is one-way).
+   */
+  secret: v.string(),
+
+  /**
+   * First 12 characters of the secret for identification.
    * Displayed in UI as "whsec_xxxx..."
    */
   secretPrefix: v.string(),

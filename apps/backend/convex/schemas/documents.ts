@@ -34,6 +34,7 @@ export const documentsTable = defineTable({
   storageId: v.string(), // ID returned from storage.store() - Original uploaded PDF
   fillableStorageId: v.optional(v.string()), // ID of the fillable PDF with embedded form fields (SEA-100)
   signedStorageId: v.optional(v.string()), // ID of the digitally signed PDF (SEA-108)
+  certificateStorageId: v.optional(v.string()), // ID of the completion certificate PDF
 
   // Cryptographic hash for document integrity verification (SEA-108)
   documentHash: v.optional(v.string()), // SHA-256 hash of original PDF
@@ -56,6 +57,9 @@ export const documentsTable = defineTable({
 
   // SEA-119: Signing deadline for recipients
   deadline: v.optional(v.number()), // Timestamp when signing must be completed by
+
+  // Retention policy: completed documents must be retained for 7 years (ESIGN Act)
+  retainUntil: v.optional(v.number()), // Timestamp after which the document can be deleted
 
   // Timestamps
   createdAt: v.number(),

@@ -775,6 +775,14 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
     },
 
     // ====================
+    // Download Tokens (Internal Use Only)
+    // ====================
+    download_tokens: {
+      read: async () => false,
+      modify: async () => false,
+    },
+
+    // ====================
     // MCP OAuth (Internal Use Only)
     // ====================
     mcp_oauth_clients: {
@@ -832,6 +840,22 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       modify: async () => {
         // Promo codes are only modified by internal webhook handlers
         return false;
+      },
+    },
+
+    // ====================
+    // Data Exports (GDPR/CCPA)
+    // ====================
+    data_exports: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        // Users can only read their own export records
+        return doc.userId === rlsCtx.userId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        // Users can only create exports for themselves
+        return doc.userId === rlsCtx.userId;
       },
     },
   };

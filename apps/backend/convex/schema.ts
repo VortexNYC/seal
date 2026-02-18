@@ -2,8 +2,10 @@ import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
 
 import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
+import { dataExportsTable } from "./schemas/data_exports";
 import { type AuditAction, type AuditResourceType, auditLogsTable } from "./schemas/audit_logs";
 import { type DocumentPermissionLevel, documentAccessTable } from "./schemas/document_access";
+import { downloadTokensTable } from "./schemas/download_tokens";
 import { documentInvoicesTable } from "./schemas/document_invoices";
 import {
   type RecipientStatus as DocumentRecipientStatus,
@@ -154,6 +156,7 @@ export default defineSchema({
 
   // Audit and compliance
   audit_logs: auditLogsTable,
+  download_tokens: downloadTokensTable,
 
   // Email tracking
   email_logs: emailLogsTable,
@@ -183,6 +186,9 @@ export default defineSchema({
 
   // Rate limiting
   rate_limit_buckets: rateLimitBucketsTable,
+
+  // Data exports (GDPR/CCPA compliance)
+  data_exports: dataExportsTable,
 
   // MCP OAuth
   mcp_oauth_clients: mcpOauthClientsTable,

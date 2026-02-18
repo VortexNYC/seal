@@ -34,6 +34,8 @@ export const auditActionTuple = v.union(
   v.literal("recipient.viewed"),
   v.literal("recipient.signed"),
   v.literal("recipient.declined"),
+  v.literal("recipient.esign_consent"),
+  v.literal("recipient.esign_opt_out"),
 
   // Signature actions
   v.literal("signature.created"),
@@ -55,6 +57,11 @@ export const auditActionTuple = v.union(
   v.literal("user.logout"),
   v.literal("user.updated"),
 
+  // Email delivery actions
+  v.literal("email.delivered"),
+  v.literal("email.opened"),
+  v.literal("email.bounced"),
+
   // Generic action for extensibility
   v.literal("other"),
 );
@@ -69,6 +76,7 @@ export const auditResourceTypeTuple = v.union(
   v.literal("organization"),
   v.literal("user"),
   v.literal("member"),
+  v.literal("email"),
   v.literal("other"),
 );
 export type AuditResourceType = Infer<typeof auditResourceTypeTuple>;

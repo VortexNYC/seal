@@ -44,7 +44,8 @@ export const documentRecipientsTable = defineTable({
   order: v.optional(v.number()), // For sequential signing workflows
 
   // Signing token for secure access
-  signingToken: v.string(), // Unique token for this recipient
+  signingToken: v.string(), // Unique token for this recipient (plaintext — being deprecated)
+  tokenHash: v.optional(v.string()), // SHA-256 hash of signingToken for secure lookup
   tokenExpiresAt: v.number(), // Token expiration timestamp
 
   // Activity timestamps
@@ -70,6 +71,11 @@ export const documentRecipientsTable = defineTable({
     ),
   ),
 
+  // ESIGN Act consent tracking
+  esignConsentAt: v.optional(v.number()), // Timestamp when consent was given
+  esignConsentIp: v.optional(v.string()), // IP address at time of consent
+  esignConsentVersion: v.optional(v.string()), // Version of consent text accepted
+
   // IP address for audit trail
   ipAddress: v.optional(v.string()),
 
@@ -80,6 +86,7 @@ export const documentRecipientsTable = defineTable({
   .index("by_document", ["documentId"])
   .index("by_document_status", ["documentId", "status"])
   .index("by_token", ["signingToken"])
+  .index("by_token_hash", ["tokenHash"])
   .index("by_email", ["email"])
   .index("by_document_order", ["documentId", "order"]);
 

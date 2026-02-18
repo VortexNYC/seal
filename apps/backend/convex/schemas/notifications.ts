@@ -125,10 +125,12 @@ export const notificationsTable = defineTable({
   emailSentAt: v.optional(v.number()),
   emailAttempts: v.optional(v.number()),
   lastEmailError: v.optional(v.string()),
+  emailMessageId: v.optional(v.string()), // Resend message ID for delivery tracking
 })
   .index("by_user", ["userId"])
   .index("by_user_unread", ["userId", "read"])
   .index("by_user_created", ["userId", "createdAt"])
   .index("by_organization", ["organizationId"])
   .index("by_organization_user", ["organizationId", "userId"])
-  .index("by_email_status", ["emailStatus"]);
+  .index("by_email_status", ["emailStatus"])
+  .index("by_email_message_id", ["emailMessageId"]);

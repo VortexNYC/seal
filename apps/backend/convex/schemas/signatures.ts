@@ -25,6 +25,7 @@ export const signaturesTable = defineTable({
 
   // Cryptographic signature data (SEA-108)
   signatureHash: v.optional(v.string()), // SHA-256 hash of signature data for verification
+  signatureImageHash: v.optional(v.string()), // SHA-256 hash of just the image data (for reuse detection)
   documentHashAtSigning: v.optional(v.string()), // Document hash at time of signing (tamper detection)
   signatureMethod: v.optional(
     v.union(
@@ -53,4 +54,5 @@ export const signaturesTable = defineTable({
   .index("by_field", ["fieldId"])
   .index("by_recipient", ["recipientId"])
   .index("by_document", ["documentId"])
-  .index("by_document_recipient", ["documentId", "recipientId"]);
+  .index("by_document_recipient", ["documentId", "recipientId"])
+  .index("by_signature_image_hash", ["signatureImageHash"]);
