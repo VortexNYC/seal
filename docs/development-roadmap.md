@@ -32,8 +32,8 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 | 15 | Public REST API | ✅ DONE | Full v1 endpoints (documents, recipients, templates, signatures), Clerk API key auth, rate limiting. **Gap**: 3 API endpoints missing email triggers (TODO comments) |
 | 16 | Webhooks System | 🟡 PARTIAL | Management API + schema + event types done. **Gap**: no HTTP delivery action (no HMAC-SHA256 signing, no retry), no event publishing from mutations |
 | **Quality & Launch Layer** | | | |
-| 17 | Testing | 🟡 PARTIAL | Vitest backend (99 tests), frontend (29 tests), Playwright E2E setup. **Gap**: no performance testing, no load testing, coverage unknown |
-| 18 | Security & Compliance | 🔴 NOT STARTED | See `compliance-implementation-checklist.md` — no ESIGN items completed. IP hardcoded as "0.0.0.0", tokens in plaintext |
+| 17 | Testing | 🟡 PARTIAL | Vitest backend (113 tests), frontend (29 tests), Playwright E2E setup. **Gap**: no performance testing, no load testing, coverage unknown |
+| 18 | Security & Compliance | 🟡 PARTIAL | Audit trail gaps closed (signature submission, document creation/sending now logged). See `compliance-implementation-checklist.md`. **Remaining**: IP hardcoded as "0.0.0.0", tokens in plaintext, no ESIGN consent modal |
 | 19 | Production Deployment | 🟡 PARTIAL | Convex + Vercel deployed. Sentry SDK initialized but error boundary not wired. **Gap**: no smoke tests |
 | 20 | Launch Prep | 🟡 PARTIAL | Landing page done. **Gap**: no demo videos, no user/developer docs site, no GitHub open-source prep |
 

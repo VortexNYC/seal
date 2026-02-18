@@ -120,14 +120,14 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 
 **Implementation Checklist**:
 
-- [ ] **Document Actions**: Log upload, modification, deletion — `document.created` and `document.sent` not logged
+- [x] **Document Actions**: Log upload, modification, deletion — `document.created` logged in `createDocument`, `document.sent` logged in `markDocumentAsSent`
 - [x] **Signature Fields**: Log additions, changes, removals — `logFieldAction` called from `signature_fields/mutations.ts`
 - [ ] **Recipients**: Log additions, modifications, removals — not audit-logged
-- [ ] **Document Lifecycle**: Log sending, viewing, signing, completion — `submitRecipientSignature` does NOT call audit log
+- [x] **Document Lifecycle**: Log sending, viewing, signing, completion — `logRecipientAction` called from `submitRecipientSignature` (token-based) and `submitSignatureAuthenticated` (authenticated); covers signed, declined, viewed
 - [ ] **User Sessions**: Log authentication and session events
 - [x] **Immutable Storage**: Use Convex immutable data structure — `audit_logs` table with 24 action types
 - [x] **Timestamps**: Precise timestamps for every event (UTC) — `timestamp` field on all audit entries
-- [x] **User Attribution**: Link every action to authenticated user — `userId` on audit entries
+- [x] **User Attribution**: Link every action to authenticated user — `userId` on audit entries; recipient-only flows use `actorType: "recipient"` with `recipientId`
 - [ ] **IP Address Tracking**: Store IP for security and compliance — schema has `ipAddress` field but hardcoded as "0.0.0.0" or "web-authenticated"
 - [ ] **Device Information**: Basic device/browser info — user agent captured in signatures but not in audit logs
 
