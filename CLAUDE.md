@@ -360,33 +360,27 @@ const access = await getDocumentAccessLevel(ctx, document, userId, orgId);
 
 ## Known Issues & Technical Debt
 
-*Last reviewed: 2026-02-17*
+*Last reviewed: 2026-02-18*
 
-### High Priority
+### Open
 
-1. **IP Address Tracking**: Hardcoded as "0.0.0.0" in signature audit trail — should capture actual IP from request context
-2. **Per-Signature Hash Uses Weak Algorithm**: `crypto/helpers.ts:generateStringHash` is a non-cryptographic rolling hash; per-signature integrity should use SHA-256 (the document-level hash in `crypto/node_helpers.ts` is correct)
-3. **Webhook HTTP Delivery Not Implemented**: Webhook management API is complete, but the actual HTTP delivery action with HMAC-SHA256 signatures does not exist — webhooks can be configured but never fire
-4. **Document Detail Page Complexity**: `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` is ~1,900 lines with 30+ state variables — should be split into smaller components
+1. **Document Detail Page Complexity**: `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` is ~1,667 lines — should be split into smaller components with custom hooks
+2. **Form Validation**: Frontend lacks schema-based validation (no Zod integration with forms)
+3. **Field List Virtualization**: Long field lists in document editor don't use virtualization (consider `@tanstack/react-virtual` for lists >50 items)
 
-### Medium Priority
+### Resolved
 
-5. **Missing Email Triggers**: Some API endpoints don't trigger email notifications (see TODO comments in `api/v1/`)
-6. **Recipient Token Security**: Tokens stored in plaintext — should be hashed/salted
-7. **Form Validation**: Frontend lacks schema-based validation (no Zod integration)
-8. **ESIGN Consent Flow**: No explicit "consent to do business electronically" modal before signing — required by ESIGN Act
-9. ~~**Audit Trail Gaps**: `submitRecipientSignature` does not write to audit log; document creation/sending not logged~~ — **Fixed**: `logRecipientAction` added for signing/viewing/declining; audit logging added to `submitRecipientSignature`, `submitSignatureAuthenticated`, `createDocument`, and `markDocumentAsSent`
-
-### Low Priority
-
-10. **Checkbox Fields**: Multi-option rendering incomplete
-11. **File Upload Fields**: Attachment field input is stubbed
-12. **Sentry Integration**: Error boundary not logging to Sentry in production
-13. **Field List Virtualization**: Long field lists in document editor don't use virtualization
-
-### Resolved (previously listed)
-
-- ~~**Rate Limiting**: Middleware exists but rate limiting is not actually enforced (stub only)~~ — **Fixed**: Sliding window rate limiter fully implemented in `api/rate_limit.ts` with DB-backed counters, rate limit headers, and hourly cleanup cron
+- ~~**IP Address Tracking**: Hardcoded as "0.0.0.0"~~ — **Fixed**: `extractClientIp` utility in `http.ts` reads proxy headers; `/api/v1/ip` endpoint returns client IP; signing page fetches and passes IP through all mutations
+- ~~**Per-Signature Hash Uses Weak Algorithm**~~ — **Fixed**: `generateStringHash` now uses SHA-256 via Web Crypto API (`crypto.subtle.digest`)
+- ~~**Webhook HTTP Delivery Not Implemented**~~ — **Fixed**: Full delivery system in `webhooks/delivery.ts` with HMAC-SHA256 signing, exponential backoff retries, and cron-based processing
+- ~~**Missing Email Triggers**~~ — **Fixed**: API `sendDocument` schedules `sendDocumentEmailsInternal`, `voidDocument` schedules `sendCancellationEmails`, `sendReminder` schedules `sendReminderEmailDirect`
+- ~~**Recipient Token Security**~~ — **Fixed**: SHA-256 hashed tokens with `by_token_hash` index; `findRecipientByToken` does hash-based lookup with plaintext fallback for pre-migration records
+- ~~**ESIGN Consent Flow**~~ — **Fixed**: `EsignConsentDialog` component gates signing page; `recordEsignConsent`/`recordEsignOptOut` mutations with audit trail
+- ~~**Audit Trail Gaps**~~ — **Fixed**: `logRecipientAction` for signing/viewing/declining; audit logging on `submitRecipientSignature`, `submitSignatureAuthenticated`, `createDocument`, `markDocumentAsSent`; recipient CRUD audit logging
+- ~~**Checkbox Fields**~~ — **Fixed**: Multi-option rendering with JSON array storage in `CheckboxFieldInput`
+- ~~**File Upload Fields**~~ — **Fixed**: Convex Storage upload via `generateAttachmentUploadUrl` mutation; stores `storageId` instead of base64
+- ~~**Sentry Integration**~~ — **Fixed**: `Sentry.captureException` called in `ErrorBoundary.componentDidCatch`
+- ~~**Rate Limiting**~~ — **Fixed**: Sliding window rate limiter in `api/rate_limit.ts` with DB-backed counters and hourly cleanup cron
 
 ## Component Guidelines
 

@@ -6,7 +6,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 
 ---
 
-## Implementation Status (Updated 2026-02-17)
+## Implementation Status (Updated 2026-02-18)
 
 | # | Deliverable | Status | Notes |
 |---|---|---|---|
@@ -21,30 +21,32 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 | 7 | Document Library & Search | ✅ DONE | List, sort, search, PDF viewer, templates |
 | **Signature Workflow Layer** | | | |
 | 8 | Document Preparation | ✅ DONE | Konva canvas, drag-drop fields, recipient assignment, field properties |
-| 9 | Signature Capture & Signing | ✅ DONE | Draw/type/upload, signing page, field navigation. **Gap**: per-signature hash uses weak non-crypto algorithm; SHA-256 document hash exists but not called at upload |
-| 10 | Email Notifications | ✅ DONE | Resend + React Email: invitation, completion, reminder, welcome, team invite |
+| 9 | Signature Capture & Signing | ✅ DONE | Draw/type/upload, signing page, field navigation. SHA-256 hashing, document integrity verification, signature encryption (AES-256-GCM) |
+| 10 | Email Notifications | ✅ DONE | Resend + React Email: invitation, completion, reminder, cancellation, welcome, team invite. Resend webhook delivery tracking |
 | 11 | Document Status Tracking | ✅ DONE | Real-time status, recipient tracking, activity feed, reminders |
 | **User Experience Layer** | | | |
-| 12 | Sender Dashboard | ✅ DONE | Stats cards, recharts trends, recent docs, quick actions. **Gap**: `/analytics` route is a stub |
-| 13 | Mobile Optimization | 🟡 PARTIAL | Responsive Tailwind classes throughout; `useIsMobile` hook. **Gap**: document editor canvas not touch-optimized |
-| 14 | Notifications & Onboarding | 🟡 PARTIAL | In-app notifications + landing page done. **Gap**: no welcome tour, no guided walkthrough, no onboarding wizard |
+| 12 | Sender Dashboard | ✅ DONE | Stats cards, recharts trends, recent docs, quick actions. Analytics page with area/bar/pie charts |
+| 13 | Mobile Optimization | 🟡 PARTIAL | Responsive Tailwind classes throughout; `useIsMobile` hook. **Gap**: document editor canvas not touch-optimized (tap-to-place needed) |
+| 14 | Notifications & Onboarding | 🟡 PARTIAL | In-app notifications with user preference enforcement done. **Gap**: no welcome tour, no guided walkthrough, no onboarding wizard |
 | **Business Integration Layer** | | | |
-| 15 | Public REST API | ✅ DONE | Full v1 endpoints (documents, recipients, templates, signatures), Clerk API key auth, rate limiting. **Gap**: 3 API endpoints missing email triggers (TODO comments) |
-| 16 | Webhooks System | 🟡 PARTIAL | Management API + schema + event types done. **Gap**: no HTTP delivery action (no HMAC-SHA256 signing, no retry), no event publishing from mutations |
+| 15 | Public REST API | ✅ DONE | Full v1 endpoints with email triggers wired. Clerk API key auth, sliding window rate limiting |
+| 16 | Webhooks System | ✅ DONE | Full delivery pipeline: management API, HMAC-SHA256 signed HTTP delivery, exponential backoff retries, cron processing, event publishing from mutations |
 | **Quality & Launch Layer** | | | |
 | 17 | Testing | 🟡 PARTIAL | Vitest backend (113 tests), frontend (29 tests), Playwright E2E setup. **Gap**: no performance testing, no load testing, coverage unknown |
-| 18 | Security & Compliance | 🟡 PARTIAL | Audit trail gaps closed (signature submission, document creation/sending now logged). See `compliance-implementation-checklist.md`. **Remaining**: IP hardcoded as "0.0.0.0", tokens in plaintext, no ESIGN consent modal |
-| 19 | Production Deployment | 🟡 PARTIAL | Convex + Vercel deployed. Sentry SDK initialized but error boundary not wired. **Gap**: no smoke tests |
+| 18 | Security & Compliance | ✅ DONE | ESIGN Act 5 requirements implemented: consent modal, IP tracking, SHA-256 integrity, token hashing, 7-year retention, certificate of completion. See `compliance-implementation-checklist.md`. **Remaining**: legal review, security audit, pen testing |
+| 19 | Production Deployment | 🟡 PARTIAL | Convex + Vercel deployed. Sentry wired in error boundary. Security headers configured. CI/CD via GitHub Actions. **Gap**: no smoke tests |
 | 20 | Launch Prep | 🟡 PARTIAL | Landing page done. **Gap**: no demo videos, no user/developer docs site, no GitHub open-source prep |
 
 ### Additional Work Not in Original Roadmap
 
 | Feature | Status | Notes |
 |---|---|---|
-| Payment Field Builder | ✅ DONE | Stripe Connect invoicing: one-time, recurring, installments, deposit+balance. Hosted invoice URLs stored and surfaced in signer UI |
+| Payment Field Builder | ✅ DONE | Stripe Connect invoicing: one-time, recurring, installments, deposit+balance. Payment completion enforced before signing |
 | Document Sharing System | ✅ DONE (core) | Share dialog, access levels, Pro plan gates. See `IMPROVEMENT_PLAN_SHARED_DOCUMENTS.md` for 9 remaining items |
 | Row-Level Security (RLS) | ✅ DONE | Private/workspace/specific access modes |
-| Advanced Field Types | 🟡 PARTIAL | Dropdown, radio, number, date: done. Checkbox multi-option fill: missing. File upload: base64 stub |
+| Advanced Field Types | ✅ DONE | Dropdown, radio, number, date, checkbox (multi-option), attachment (Convex Storage upload), payment |
+| ESIGN Compliance Suite | ✅ DONE | Consent dialog, audit trail hardening (logActionRequired), certificate of completion, download tokens, data export (GDPR/CCPA), signature encryption |
+| Webhook Delivery | ✅ DONE | HMAC-SHA256 signing, exponential backoff, cron processing, auto-disable after 10 failures |
 
 ---
 

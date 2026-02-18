@@ -10,7 +10,7 @@
 
 **Branch**: `feature/payment-field-builder`
 
-**Last completed work**: Compliance items — Resend webhook delivery tracking, 7-year retention policy, immutable document guard for completed documents, GDPR data export capability.
+**Last completed work**: Full compliance & security sprint — 9 structured commits pushed covering schemas, crypto (SHA-256 + AES-256-GCM), audit trail hardening, webhook delivery system, document compliance (ESIGN consent, retention, certificates, download tokens), email actions + API wiring, signatures + recipient mutations, frontend improvements (analytics dashboard, ESIGN consent dialog, advanced field types), and CI/CD + docs.
 
 **Next up**: Mobile optimization (#13). We did a full audit of mobile readiness and found:
 - **Signing page (recipient side)**: Already mobile-ready (responsive layout, touch signature capture, safe-area padding)
@@ -27,8 +27,6 @@
 - `apps/web/src/components/documents/pdf-canvas-layer.tsx` — Add tap-to-place handler on canvas
 - `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` — Wire up tap-to-place state, add mobile bottom sheet
 - `apps/web/src/components/documents/draggable-field.tsx` — Larger transform handles on touch
-
-**Uncommitted changes**: Compliance work (Tasks #36-39) — Resend webhooks, retention policy, immutable guard, data export. Need to commit before starting mobile work.
 
 ---
 
@@ -323,12 +321,12 @@
 | REST API (#15) | 1 | 1 | 0 |
 | Webhooks (#16) | 6 | 6 | 0 |
 | Testing (#17) | 10 | 0 | 0 |
-| Security & Compliance (#18) | 22 | 20 | 0 |
+| Security & Compliance (#18) | 28 | 26 | 0 |
 | Production Deployment (#19) | 5 | 3 | 0 |
 | Launch Prep (#20) | 6 | 2 | 0 |
 | Advanced Field Types | 4 | 4 | 0 |
 | Other (sharing, analytics) | 2 | 1 | 0 |
-| **Total** | **73** | **52** | **0** |
+| **Total** | **79** | **52** | **0** |
 
 **All 16 blockers resolved.**
 
