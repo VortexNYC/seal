@@ -7,8 +7,9 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { type ActionCtx, action, internalMutation } from "../_generated/server";
+import { type ActionCtx, action, internalAction, internalMutation } from "../_generated/server";
 import { logDocumentAction } from "../audit_logs/helpers";
+import { publishWebhookEvent } from "../webhooks/publish";
 import { sendDocumentInvitation } from "./email";
 
 async function authorizeDocumentOwner(
@@ -168,6 +169,18 @@ export const markDocumentAsSent = internalMutation({
         ipAddress: "web-authenticated",
       });
     }
+
+    // Publish webhook event
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "document.sent",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        recipient_count: recipients.length,
+        sent_at: new Date().toISOString(),
+      },
+    });
 
     return { success: true };
   },
@@ -449,5 +462,64 @@ export const resendRecipientEmail = action({
       success: emailResult.success,
       error: emailResult.error,
     };
+  },
+});
+
+/**
+ * Internal action to send document invitation emails without auth checks.
+ * Used by the REST API after the mutation has already verified permissions.
+ */
+export const sendDocumentEmailsInternal = internalAction({
+  args: {
+    documentId: v.id("documents"),
+    customMessage: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    // Get document
+    const document: Doc<"documents"> | null = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      { documentId: args.documentId },
+    );
+
+    if (!document) return;
+
+    // Get recipients
+    const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
+      internal.documents.recipients_queries.getDocumentRecipientsInternal,
+      { documentId: args.documentId },
+    );
+
+    if (recipients.length === 0) return;
+
+    // Get sender information
+    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+      userId: document.ownerId,
+    });
+    const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+
+    // Send emails to all pending recipients
+    for (const recipient of recipients) {
+      if (
+        recipient.status === "signed" ||
+        recipient.status === "approved" ||
+        recipient.status === "declined"
+      ) {
+        continue;
+      }
+
+      const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
+
+      await sendDocumentInvitation({
+        to: recipient.email,
+        recipientName: recipient.name || recipient.email,
+        documentName: document.name,
+        senderName,
+        signingUrl,
+        customMessage: args.customMessage,
+        expiresAt: recipient.tokenExpiresAt,
+      });
+    }
   },
 });

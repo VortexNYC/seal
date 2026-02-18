@@ -9,6 +9,7 @@
 
 import { v } from "convex/values";
 
+import { internal } from "../../_generated/api";
 import { internalMutation, internalQuery } from "../../_generated/server";
 import type { DocumentWorkflowStatus } from "../../schemas/document_workflow_status";
 
@@ -392,7 +393,15 @@ export const sendDocument = internalMutation({
       });
     }
 
-    // TODO: Trigger email sending via action
+    // Schedule email sending as a background action
+    await ctx.scheduler.runAfter(
+      0,
+      internal.documents.send_document_action.sendDocumentEmailsInternal,
+      {
+        documentId: args.documentId,
+        customMessage: args.message,
+      },
+    );
 
     return { success: true };
   },
@@ -438,7 +447,15 @@ export const voidDocument = internalMutation({
       updatedAt: Date.now(),
     });
 
-    // TODO: Notify recipients about cancellation
+    // Schedule cancellation notification emails
+    await ctx.scheduler.runAfter(
+      0,
+      internal.documents.cancellation_email_action.sendCancellationEmails,
+      {
+        documentId: args.documentId,
+        reason: args.reason,
+      },
+    );
 
     return { success: true };
   },

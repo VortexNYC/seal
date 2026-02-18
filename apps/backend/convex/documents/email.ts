@@ -142,6 +142,7 @@ export interface SendDocumentCompletedParams {
   senderName: string;
   documentName: string;
   documentUrl: string;
+  downloadUrl?: string;
   completedAt: number;
   recipientsSummary: Array<{
     name: string;
@@ -338,6 +339,53 @@ export async function sendTeamInvitation(
     return { success: true, messageId: data?.id };
   } catch (error) {
     console.error("Unexpected error sending team invitation email:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export interface SendCancellationNotificationParams {
+  to: string;
+  recipientName: string;
+  documentName: string;
+  senderName: string;
+  reason?: string;
+}
+
+/**
+ * Send cancellation notification email to recipient
+ */
+export async function sendCancellationNotification(
+  params: SendCancellationNotificationParams,
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const { to, recipientName, documentName, senderName, reason } = params;
+
+    const reasonText = reason ? `\n\nReason: ${reason}` : "";
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
+      subject: `Document cancelled: ${documentName}`,
+      html: `
+        <p>Hi ${recipientName},</p>
+        <p>${senderName} has cancelled the document <strong>"${documentName}"</strong>. No further action is required from you.${reasonText}</p>
+        <p>If you have questions, please contact the sender directly.</p>
+        <br/>
+        <p style="color: #6b7280; font-size: 14px;">— Seal</p>
+      `,
+    });
+
+    if (error) {
+      console.error("Error sending cancellation email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, messageId: data?.id };
+  } catch (error) {
+    console.error("Unexpected error sending cancellation email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

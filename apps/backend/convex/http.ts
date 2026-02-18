@@ -51,6 +51,30 @@ import {
 import { processStripeConnectWebhookEvent } from "./stripe/connect_webhook_handlers";
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
 
+/**
+ * Extract client IP address from request headers
+ * Checks standard proxy headers used by Vercel, Cloudflare, and other CDNs
+ */
+function extractClientIp(request: Request): string {
+  // Vercel / generic proxy
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    // x-forwarded-for can contain multiple IPs: "client, proxy1, proxy2"
+    const firstIp = forwarded.split(",")[0]?.trim();
+    if (firstIp) return firstIp;
+  }
+
+  // Cloudflare
+  const cfIp = request.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp;
+
+  // Vercel-specific
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) return realIp;
+
+  return "unknown";
+}
+
 interface ClerkWebhookEvent {
   type:
     | "user.created"
@@ -64,7 +88,11 @@ interface ClerkWebhookEvent {
     | "organizationMembership.deleted"
     | "organizationInvitation.created"
     | "organizationInvitation.accepted"
-    | "organizationInvitation.revoked";
+    | "organizationInvitation.revoked"
+    | "session.created"
+    | "session.ended"
+    | "session.removed"
+    | "session.revoked";
   data: {
     id: string;
     first_name?: string;
@@ -89,6 +117,10 @@ interface ClerkWebhookEvent {
     status?: string;
     created_at?: number;
     updated_at?: number;
+    // For session events
+    user_id?: string;
+    client_id?: string;
+    last_active_at?: number;
   };
 }
 
@@ -304,6 +336,30 @@ http.route({
           console.info(`[Clerk Webhook] Invitation revoked: ${data.id}`);
           break;
 
+        case "session.created":
+          if (data.user_id) {
+            await ctx.runMutation(internal.clerk_webhooks.logSessionEvent, {
+              clerkUserId: data.user_id,
+              sessionId: data.id,
+              action: "user.login",
+            });
+            console.info(`[Clerk Webhook] Session logged: ${data.user_id}`);
+          }
+          break;
+
+        case "session.ended":
+        case "session.removed":
+        case "session.revoked":
+          if (data.user_id) {
+            await ctx.runMutation(internal.clerk_webhooks.logSessionEvent, {
+              clerkUserId: data.user_id,
+              sessionId: data.id,
+              action: "user.logout",
+            });
+            console.info(`[Clerk Webhook] Session end logged: ${data.user_id}`);
+          }
+          break;
+
         default:
           console.info(`[Clerk Webhook] Unhandled event type: ${type}`);
           break;
@@ -505,6 +561,29 @@ http.route({
       timestamp: new Date().toISOString(),
       version: "2025-01-01",
       versions: listApiVersions(),
+    });
+  }),
+});
+
+/**
+ * Client IP endpoint - Returns the caller's IP address
+ * Used by the signing page to capture IP for audit trail compliance
+ *
+ * @route GET /api/v1/ip
+ * @public
+ */
+http.route({
+  path: "/api/v1/ip",
+  method: "GET",
+  handler: httpAction(async (_ctx, request) => {
+    const ip = extractClientIp(request);
+    return new Response(JSON.stringify({ ip }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": process.env.CLIENT_ORIGIN ?? "*",
+        "Cache-Control": "no-store",
+      },
     });
   }),
 });
@@ -2051,6 +2130,156 @@ http.route({
     },
     { scope: API_SCOPES.WEBHOOKS_MANAGE },
   ),
+});
+
+// =============================================================================
+// PUBLIC DOWNLOAD (Token-Based)
+// =============================================================================
+
+/**
+ * @route POST /resend-webhooks
+ * Resend email delivery webhook handler.
+ * Processes: email.delivered, email.opened, email.bounced
+ * Logs delivery confirmations to audit trail for ESIGN compliance.
+ */
+http.route({
+  path: "/resend-webhooks",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.error("RESEND_WEBHOOK_SECRET not configured");
+      return new Response("Webhook secret not configured", { status: 500 });
+    }
+
+    // Resend uses Svix for webhook signatures (same as Clerk)
+    const svixId = request.headers.get("svix-id");
+    const svixTimestamp = request.headers.get("svix-timestamp");
+    const svixSignature = request.headers.get("svix-signature");
+
+    if (!svixId || !svixTimestamp || !svixSignature) {
+      return new Response("Missing webhook headers", { status: 400 });
+    }
+
+    const payload = await request.text();
+
+    // Verify webhook signature
+    const wh = new Webhook(webhookSecret);
+    let event: {
+      type: string;
+      data: {
+        email_id?: string;
+        to?: string[];
+        created_at?: string;
+        bounce?: { type?: string };
+      };
+    };
+
+    try {
+      event = wh.verify(payload, {
+        "svix-id": svixId,
+        "svix-timestamp": svixTimestamp,
+        "svix-signature": svixSignature,
+      }) as typeof event;
+    } catch (err) {
+      console.error("Resend webhook signature verification failed:", err);
+      return new Response("Invalid signature", { status: 401 });
+    }
+
+    // Map Resend event types to our audit action types
+    const eventTypeMap: Record<string, "email.delivered" | "email.opened" | "email.bounced"> = {
+      "email.delivered": "email.delivered",
+      "email.opened": "email.opened",
+      "email.bounced": "email.bounced",
+    };
+
+    const eventType = eventTypeMap[event.type];
+    if (!eventType) {
+      // Acknowledge but ignore event types we don't track
+      return new Response("OK", { status: 200 });
+    }
+
+    const emailId = event.data.email_id;
+    const recipientEmail = event.data.to?.[0] ?? "unknown";
+
+    if (!emailId) {
+      return new Response("Missing email_id", { status: 400 });
+    }
+
+    await ctx.runMutation(internal.resend_webhooks.logEmailEvent, {
+      resendMessageId: emailId,
+      eventType,
+      recipientEmail,
+      timestamp: event.data.created_at ? new Date(event.data.created_at).getTime() : Date.now(),
+      bounceType: event.data.bounce?.type,
+    });
+
+    return new Response("OK", { status: 200 });
+  }),
+});
+
+/**
+ * Download a completed document using a time-limited token.
+ *
+ * @route GET /download
+ * @queryparam {string} token - Download token (required)
+ *
+ * No authentication required — the token grants temporary access.
+ */
+http.route({
+  path: "/download",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const token = url.searchParams.get("token");
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Missing download token" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate token and get document ID
+    const result = await ctx.runMutation(
+      internal.documents.download_tokens.validateAndUseToken,
+      { token },
+    );
+
+    if (!result.valid) {
+      return new Response(JSON.stringify({ error: result.error }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Get the document to find its storage ID
+    const document = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      { documentId: result.documentId },
+    );
+
+    if (!document || !document.storageId) {
+      return new Response(JSON.stringify({ error: "Document not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Get a temporary URL from Convex Storage
+    const downloadUrl = await ctx.storage.getUrl(document.storageId);
+
+    if (!downloadUrl) {
+      return new Response(JSON.stringify({ error: "File not available" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Redirect to the time-limited Convex Storage URL
+    return Response.redirect(downloadUrl, 302);
+  }),
 });
 
 export default http;
