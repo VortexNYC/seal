@@ -4,8 +4,9 @@
 
 import { ConvexError } from "convex/values";
 
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { generateStringHash } from "../crypto/helpers";
 
 // Generic context type that works with both standard and custom auth contexts
 type GenericCtx = Pick<MutationCtx | QueryCtx, "db">;
@@ -26,6 +27,36 @@ export async function verifyDocumentOwnership(
   if (document.ownerId !== userId) {
     throw new ConvexError("Only the document owner can perform this action");
   }
+}
+
+/**
+ * Find a recipient by their signing token using hash-based lookup.
+ * Tries the secure tokenHash index first, falls back to plaintext
+ * index for pre-migration records.
+ *
+ * @returns The recipient document, or null if not found
+ */
+export async function findRecipientByToken(
+  ctx: GenericCtx,
+  signingToken: string,
+): Promise<Doc<"document_recipients"> | null> {
+  const tokenHash = await generateStringHash(signingToken);
+
+  // Try hash-based lookup first (secure path for new records)
+  let recipient = await ctx.db
+    .query("document_recipients")
+    .withIndex("by_token_hash", (q) => q.eq("tokenHash", tokenHash))
+    .first();
+
+  // Fallback to plaintext lookup for pre-migration records
+  if (!recipient) {
+    recipient = await ctx.db
+      .query("document_recipients")
+      .withIndex("by_token", (q) => q.eq("signingToken", signingToken))
+      .first();
+  }
+
+  return recipient;
 }
 
 /**

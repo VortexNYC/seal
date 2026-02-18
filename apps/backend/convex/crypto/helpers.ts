@@ -9,40 +9,17 @@
  */
 
 /**
- * Simple hash function for string data
- * Uses a basic but effective hashing algorithm suitable for signature verification
- * Note: For document hashing, use the Node.js crypto module in actions
+ * Generate SHA-256 hash of a string using Web Crypto API
+ * Works in Convex's V8 runtime (no Node.js required)
  *
  * @param data - The string to hash
- * @returns Hexadecimal hash string
+ * @returns Hexadecimal hash string (64 characters)
  */
-export function generateStringHash(data: string): string {
-  // Simple hash implementation using Web-compatible algorithm
-  // This creates a deterministic hash suitable for signature verification
-  let hash = 0;
-  const str = data;
-
-  if (str.length === 0) return "0";
-
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-
-  // Convert to hex and pad to ensure consistent length
-  const hexHash = Math.abs(hash).toString(16);
-
-  // Create a longer hash by combining multiple rounds
-  let extendedHash = hexHash;
-  let seed = hash;
-  for (let round = 0; round < 7; round++) {
-    seed = Math.imul(seed, 0x5bd1e995);
-    seed ^= seed >>> 15;
-    extendedHash += Math.abs(seed).toString(16);
-  }
-
-  return extendedHash.padStart(64, "0").substring(0, 64);
+export async function generateStringHash(data: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(data));
+  const hashArray = new Uint8Array(hashBuffer);
+  return Array.from(hashArray, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 /**
@@ -56,13 +33,13 @@ export function generateStringHash(data: string): string {
  * @param timestamp - The signing timestamp
  * @returns Hexadecimal hash string
  */
-export function generateSignatureHash(
+export async function generateSignatureHash(
   signatureData: string,
   recipientId: string,
   fieldId: string,
   documentHash: string,
   timestamp: number,
-): string {
+): Promise<string> {
   const dataToHash = [signatureData, recipientId, fieldId, documentHash, timestamp.toString()].join(
     "|",
   );
@@ -82,15 +59,15 @@ export function generateSignatureHash(
  * @param storedHash - The stored signature hash to verify against
  * @returns True if hash matches, false otherwise
  */
-export function verifySignatureHash(
+export async function verifySignatureHash(
   signatureData: string,
   recipientId: string,
   fieldId: string,
   documentHash: string,
   timestamp: number,
   storedHash: string,
-): boolean {
-  const calculatedHash = generateSignatureHash(
+): Promise<boolean> {
+  const calculatedHash = await generateSignatureHash(
     signatureData,
     recipientId,
     fieldId,
@@ -98,6 +75,25 @@ export function verifySignatureHash(
     timestamp,
   );
   return calculatedHash === storedHash;
+}
+
+/**
+ * Generate a SHA-256 hash of signature image data for reuse detection.
+ * This hashes only the raw image content (stripping the data URL prefix if present),
+ * allowing detection of the same signature image across different documents.
+ *
+ * @param imageData - The signature image data (base64 data URL or raw base64)
+ * @returns Hexadecimal hash string, or undefined if no image data
+ */
+export async function generateSignatureImageHash(
+  imageData: string | undefined,
+): Promise<string | undefined> {
+  if (!imageData) return undefined;
+
+  // Strip data URL prefix (e.g., "data:image/png;base64,") to hash only the raw image bytes
+  const rawData = imageData.includes(",") ? imageData.split(",")[1] ?? imageData : imageData;
+
+  return generateStringHash(rawData);
 }
 
 /**
