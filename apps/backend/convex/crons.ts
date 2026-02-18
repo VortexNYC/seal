@@ -25,11 +25,25 @@ crons.interval(
   internal.api.rate_limit_mutations.cleanupExpiredBuckets,
 );
 
+// Process pending webhook deliveries every minute
+crons.interval(
+  "process-webhook-deliveries",
+  { minutes: 1 },
+  internal.webhooks.delivery.processWebhookDeliveries,
+);
+
 // Clean up old webhook events daily (idempotency records older than 7 days)
 crons.daily(
   "cleanup-stripe-webhook-events",
   { hourUTC: 2, minuteUTC: 0 },
   internal.stripe.webhook_idempotency.cleanupOldEvents,
+);
+
+// Clean up expired download tokens weekly
+crons.weekly(
+  "cleanup-expired-download-tokens",
+  { dayOfWeek: "sunday", hourUTC: 3, minuteUTC: 0 },
+  internal.documents.download_tokens.cleanupExpiredTokens,
 );
 
 export default crons;
