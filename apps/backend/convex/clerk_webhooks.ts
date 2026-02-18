@@ -7,6 +7,7 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import { internalMutation, mutation } from "./_generated/server";
+import { logAction } from "./audit_logs/helpers";
 import type { OrganizationRole } from "./schema";
 
 /**
@@ -816,5 +817,59 @@ export const handleInvitationRevoked = internalMutation({
 
     console.info(`✅ Revoked invitation: ${args.clerkInvitationId}`);
     return { revoked: true, _id: invitation._id };
+  },
+});
+
+/**
+ * Log a user session/authentication event to the audit trail.
+ * Called from the Clerk webhook handler when session.created fires.
+ */
+export const logSessionEvent = internalMutation({
+  args: {
+    clerkUserId: v.string(),
+    sessionId: v.string(),
+    action: v.union(v.literal("user.login"), v.literal("user.logout")),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Look up internal user by clerk ID
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .unique();
+
+    if (!user) {
+      console.warn(`[Session Audit] User not found for clerkId: ${args.clerkUserId}`);
+      return;
+    }
+
+    // Find user's primary organization for the audit log
+    const membership = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .first();
+
+    if (!membership) {
+      console.warn(`[Session Audit] No active org membership for user: ${user._id}`);
+      return;
+    }
+
+    await logAction(ctx, {
+      organizationId: membership.organizationId,
+      userId: args.clerkUserId,
+      actorType: "user",
+      actorId: args.clerkUserId,
+      action: args.action,
+      resourceType: "user",
+      resourceId: user._id,
+      metadata: {
+        sessionId: args.sessionId,
+        source: "clerk-webhook",
+      },
+      ipAddress: args.ipAddress ?? "unknown",
+      userAgent: args.userAgent,
+    });
   },
 });
