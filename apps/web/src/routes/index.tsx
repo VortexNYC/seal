@@ -45,12 +45,12 @@ function HomePage() {
               >
                 Pricing
               </a>
-              <Link
-                to="/docs"
+              <a
+                href="https://seal.co/docs"
                 className="hover:text-brand-700 dark:hover:text-brand-400 text-sm font-medium text-gray-600 transition-colors dark:text-gray-300"
               >
                 Docs
-              </Link>
+              </a>
               <SignedIn>
                 <Button
                   asChild

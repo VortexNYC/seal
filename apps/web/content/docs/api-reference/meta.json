@@ -1,5 +1,0 @@
-{
-  "title": "API Reference",
-  "pages": ["documents", "recipients", "templates", "signatures", "webhooks", "uploads"],
-  "defaultOpen": true
-}

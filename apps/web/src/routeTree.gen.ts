@@ -10,13 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LogoTestRouteImport } from './routes/logo-test'
-import { Route as DocsRouteImport } from './routes/docs'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignTokenRouteImport } from './routes/sign.$token'
-import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
@@ -50,11 +48,6 @@ const LogoTestRoute = LogoTestRouteImport.update({
   path: '/logo-test',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocsRoute = DocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -77,11 +70,6 @@ const SignTokenRoute = SignTokenRouteImport.update({
   id: '/sign/$token',
   path: '/sign/$token',
   getParentRoute: () => rootRouteImport,
-} as any)
-const DocsSplatRoute = DocsSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
-  getParentRoute: () => DocsRoute,
 } as any)
 const AuthenticatedSlugRoute = AuthenticatedSlugRouteImport.update({
   id: '/$slug',
@@ -243,13 +231,11 @@ const AuthenticatedSlugSettingsDeveloperApiKeysRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
-  '/docs': typeof DocsRouteWithChildren
   '/logo-test': typeof LogoTestRoute
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/$slug': typeof AuthenticatedSlugRouteWithChildren
-  '/docs/$': typeof DocsSplatRoute
   '/sign/$token': typeof SignTokenRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
@@ -278,12 +264,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
-  '/docs': typeof DocsRouteWithChildren
   '/logo-test': typeof LogoTestRoute
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
-  '/docs/$': typeof DocsSplatRoute
   '/sign/$token': typeof SignTokenRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
@@ -312,13 +296,11 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/app': typeof AppRoute
-  '/docs': typeof DocsRouteWithChildren
   '/logo-test': typeof LogoTestRoute
   '/_auth/accept-invite': typeof AuthAcceptInviteRoute
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_authenticated/$slug': typeof AuthenticatedSlugRouteWithChildren
-  '/docs/$': typeof DocsSplatRoute
   '/sign/$token': typeof SignTokenRoute
   '/_authenticated/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/_authenticated/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
@@ -349,13 +331,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
-    | '/docs'
     | '/logo-test'
     | '/accept-invite'
     | '/sign-in'
     | '/sign-up'
     | '/$slug'
-    | '/docs/$'
     | '/sign/$token'
     | '/$slug/analytics'
     | '/$slug/documents'
@@ -384,12 +364,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
-    | '/docs'
     | '/logo-test'
     | '/accept-invite'
     | '/sign-in'
     | '/sign-up'
-    | '/docs/$'
     | '/sign/$token'
     | '/$slug/analytics'
     | '/$slug/home'
@@ -417,13 +395,11 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/_authenticated'
     | '/app'
-    | '/docs'
     | '/logo-test'
     | '/_auth/accept-invite'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
     | '/_authenticated/$slug'
-    | '/docs/$'
     | '/sign/$token'
     | '/_authenticated/$slug/analytics'
     | '/_authenticated/$slug/documents'
@@ -455,7 +431,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AppRoute: typeof AppRoute
-  DocsRoute: typeof DocsRouteWithChildren
   LogoTestRoute: typeof LogoTestRoute
   SignTokenRoute: typeof SignTokenRoute
 }
@@ -467,13 +442,6 @@ declare module '@tanstack/react-router' {
       path: '/logo-test'
       fullPath: '/logo-test'
       preLoaderRoute: typeof LogoTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs': {
-      id: '/docs'
-      path: '/docs'
-      fullPath: '/docs'
-      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -510,13 +478,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/sign/$token'
       preLoaderRoute: typeof SignTokenRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/docs/$': {
-      id: '/docs/$'
-      path: '/$'
-      fullPath: '/docs/$'
-      preLoaderRoute: typeof DocsSplatRouteImport
-      parentRoute: typeof DocsRoute
     }
     '/_authenticated/$slug': {
       id: '/_authenticated/$slug'
@@ -842,22 +803,11 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
-interface DocsRouteChildren {
-  DocsSplatRoute: typeof DocsSplatRoute
-}
-
-const DocsRouteChildren: DocsRouteChildren = {
-  DocsSplatRoute: DocsSplatRoute,
-}
-
-const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AppRoute: AppRoute,
-  DocsRoute: DocsRouteWithChildren,
   LogoTestRoute: LogoTestRoute,
   SignTokenRoute: SignTokenRoute,
 }
