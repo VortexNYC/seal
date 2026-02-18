@@ -375,7 +375,7 @@ const access = await getDocumentAccessLevel(ctx, document, userId, orgId);
 6. **Recipient Token Security**: Tokens stored in plaintext — should be hashed/salted
 7. **Form Validation**: Frontend lacks schema-based validation (no Zod integration)
 8. **ESIGN Consent Flow**: No explicit "consent to do business electronically" modal before signing — required by ESIGN Act
-9. **Audit Trail Gaps**: `submitRecipientSignature` does not write to audit log; document creation/sending not logged
+9. ~~**Audit Trail Gaps**: `submitRecipientSignature` does not write to audit log; document creation/sending not logged~~ — **Fixed**: `logRecipientAction` added for signing/viewing/declining; audit logging added to `submitRecipientSignature`, `submitSignatureAuthenticated`, `createDocument`, and `markDocumentAsSent`
 
 ### Low Priority
 
