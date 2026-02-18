@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import { mutation } from "../_generated/server";
 import { logFieldAction } from "../audit_logs/helpers";
+import { findRecipientByToken } from "../documents/recipient_helpers";
 import { findExistingPaymentFieldForRecipient } from "../payment_fields/helpers";
 import { fieldTypeTuple } from "../schemas/signature_fields";
 import {
@@ -647,5 +648,25 @@ export const setMainSignature = mutation({
     });
 
     return { success: true, message: "Main signature updated" };
+  },
+});
+
+/**
+ * Generate a Convex Storage upload URL for attachment fields.
+ * Validates the signing token to ensure only legitimate recipients can upload.
+ */
+export const generateAttachmentUploadUrl = mutation({
+  args: {
+    signingToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
+    if (!recipient) {
+      throw new ConvexError("Invalid signing token");
+    }
+    if (recipient.tokenExpiresAt < Date.now()) {
+      throw new ConvexError("Signing token has expired");
+    }
+    return await ctx.storage.generateUploadUrl();
   },
 });

@@ -6,6 +6,7 @@ import { ConvexError, v } from "convex/values";
 
 import { internalQuery, query } from "../_generated/server";
 import { authQuery } from "../auth";
+import { findRecipientByToken } from "./recipient_helpers";
 import {
   checkDocumentAccess,
   getDocumentWithAccessCheck,
@@ -345,11 +346,8 @@ export const getDocumentComplete = authQuery({
 export const getDocumentUrlByToken = query({
   args: { signingToken: v.string() },
   handler: async (ctx, args) => {
-    // 1. Find recipient by signing token
-    const recipient = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
-      .first();
+    // 1. Find recipient by signing token (hash-based lookup with plaintext fallback)
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
 
     if (!recipient) {
       throw new ConvexError("Invalid signing token");

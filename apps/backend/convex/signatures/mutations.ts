@@ -4,9 +4,21 @@ import type { MutationCtx } from "../_generated/server";
 import { mutation } from "../_generated/server";
 import { logSignatureAction } from "../audit_logs/helpers";
 import { authMutation } from "../auth";
-import { generateSignatureHash } from "../crypto/helpers";
+import { encryptSignatureData } from "../crypto/encryption";
+import { generateSignatureHash, generateSignatureImageHash } from "../crypto/helpers";
+
+/** Get the signature encryption key from environment (undefined in dev = no encryption). */
+function getEncryptionKey(): string | undefined {
+  return process.env.SIGNATURE_ENCRYPTION_KEY;
+}
+import { findRecipientByToken } from "../documents/recipient_helpers";
 import { authenticationMethodTuple } from "../schemas/recipients";
-import { validateAgainstRules, validateSignature } from "./helpers";
+import { publishWebhookEvent } from "../webhooks/publish";
+import {
+  validateAgainstRules,
+  validateSignature,
+  verifyDocumentIntegrityForSigning,
+} from "./helpers";
 
 // Signature method type
 const signatureMethodTuple = v.union(v.literal("draw"), v.literal("type"), v.literal("upload"));
@@ -57,6 +69,9 @@ export const createSignature = mutation({
       throw new Error("Document not found");
     }
 
+    // Verify document integrity before signing
+    await verifyDocumentIntegrityForSigning(ctx, document);
+
     // Validate signature data based on field type
     const signatureValidation = validateSignature(
       field.fieldType,
@@ -85,13 +100,21 @@ export const createSignature = mutation({
       throw new Error("Field already has a signature");
     }
 
+    // Compute signature image hash for reuse detection (hash raw data before encryption)
+    const signatureImageHash = await generateSignatureImageHash(args.signatureImageUrl);
+
+    // Encrypt signature image data before storage
+    const encKey = getEncryptionKey();
+    const encryptedImageUrl = await encryptSignatureData(args.signatureImageUrl, encKey);
+
     // Create signature
     const signatureId = await ctx.db.insert("signatures", {
       fieldId: args.fieldId,
       recipientId: args.recipientId,
       documentId: field.documentId,
       value: args.value,
-      signatureImageUrl: args.signatureImageUrl,
+      signatureImageUrl: encryptedImageUrl,
+      signatureImageHash,
       signedAt: Date.now(),
       ipAddress: args.ipAddress,
       userAgent: args.userAgent,
@@ -179,12 +202,24 @@ export const updateSignature = mutation({
       signatureImageUrl: signature.signatureImageUrl,
     };
 
+    // Compute updated image hash for reuse detection (hash raw data before encryption)
+    const updatedImageHash = await generateSignatureImageHash(
+      args.signatureImageUrl ?? signature.signatureImageUrl,
+    );
+
+    // Encrypt signature image data before storage
+    const encKey = getEncryptionKey();
+    const encryptedImageUrl = args.signatureImageUrl
+      ? await encryptSignatureData(args.signatureImageUrl, encKey)
+      : undefined;
+
     // Update signature
     await ctx.db.patch(args.signatureId, {
       ...(args.value !== undefined && { value: args.value }),
-      ...(args.signatureImageUrl !== undefined && {
-        signatureImageUrl: args.signatureImageUrl,
+      ...(encryptedImageUrl !== undefined && {
+        signatureImageUrl: encryptedImageUrl,
       }),
+      signatureImageHash: updatedImageHash,
       signedAt: Date.now(), // Update timestamp
       ipAddress: args.ipAddress,
       userAgent: args.userAgent,
@@ -290,11 +325,8 @@ export const saveFieldValue = mutation({
     userAgent: v.string(),
   },
   handler: async (ctx, args) => {
-    // 1. Validate signing token and get recipient
-    const recipient = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
-      .first();
+    // 1. Validate signing token and get recipient (hash-based lookup with plaintext fallback)
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
 
     if (!recipient) {
       throw new Error("Invalid signing token");
@@ -331,6 +363,9 @@ export const saveFieldValue = mutation({
       throw new Error("Cannot modify fields on completed document");
     }
 
+    // 6b. Verify document integrity — block if document was modified after prior signatures
+    await verifyDocumentIntegrityForSigning(ctx, document);
+
     // 7. Validate signature data based on field type
     const signatureValidation = validateSignature(
       field.fieldType,
@@ -361,7 +396,7 @@ export const saveFieldValue = mutation({
     const signedAt = Date.now();
     const signatureData = args.value || args.signatureImageUrl || "";
     const documentHash = document.documentHash || "";
-    const signatureHash = generateSignatureHash(
+    const signatureHash = await generateSignatureHash(
       signatureData,
       recipient._id,
       args.fieldId,
@@ -369,18 +404,26 @@ export const saveFieldValue = mutation({
       signedAt,
     );
 
+    // Compute signature image hash for reuse detection (hash raw data before encryption)
+    const signatureImageHash = await generateSignatureImageHash(args.signatureImageUrl);
+
+    // Encrypt signature image data before storage
+    const encKey = getEncryptionKey();
+    const encryptedImageUrl = await encryptSignatureData(args.signatureImageUrl, encKey);
+
     if (existingSignature) {
       // Update existing signature
       await ctx.db.patch(existingSignature._id, {
         ...(args.value !== undefined && { value: args.value }),
         ...(args.signatureImageUrl !== undefined && {
-          signatureImageUrl: args.signatureImageUrl,
+          signatureImageUrl: encryptedImageUrl,
         }),
         signedAt,
         ipAddress: args.ipAddress,
         userAgent: args.userAgent,
         // SEA-108: Update cryptographic fields
         signatureHash,
+        signatureImageHash,
         documentHashAtSigning: documentHash,
         signatureMethod: args.signatureMethod,
         updatedAt: Date.now(),
@@ -397,11 +440,9 @@ export const saveFieldValue = mutation({
         documentId: field.documentId,
         oldValues: {
           value: existingSignature.value,
-          signatureImageUrl: existingSignature.signatureImageUrl,
         },
         newValues: {
           value: args.value,
-          signatureImageUrl: args.signatureImageUrl,
           signatureHash,
         },
         ipAddress: args.ipAddress,
@@ -414,9 +455,10 @@ export const saveFieldValue = mutation({
         recipientId: recipient._id,
         documentId: field.documentId,
         value: args.value,
-        signatureImageUrl: args.signatureImageUrl,
+        signatureImageUrl: encryptedImageUrl,
         // SEA-108: Cryptographic signature data
         signatureHash,
+        signatureImageHash,
         documentHashAtSigning: documentHash,
         signatureMethod: args.signatureMethod,
         signedAt,
@@ -436,7 +478,6 @@ export const saveFieldValue = mutation({
         documentId: field.documentId,
         newValues: {
           value: args.value,
-          signatureImageUrl: args.signatureImageUrl,
           signatureHash,
         },
         ipAddress: args.ipAddress,
@@ -462,6 +503,21 @@ export const saveFieldValue = mutation({
         signedAt: status === "signed" ? Date.now() : undefined,
         approvedAt: status === "approved" ? Date.now() : undefined,
       });
+
+      // Publish webhook event for recipient signing
+      if (status === "signed" || status === "approved") {
+        await publishWebhookEvent(ctx, {
+          organizationId: document.organizationId,
+          eventType: "recipient.signed",
+          data: {
+            document_id: field.documentId,
+            recipient_id: recipient._id,
+            recipient_email: recipient.email,
+            status,
+            signed_at: new Date().toISOString(),
+          },
+        });
+      }
     }
 
     return { signatureId, isUpdate: !!existingSignature };
@@ -513,6 +569,9 @@ export const saveFieldValueAuthenticated = authMutation({
     if (document.workflowStatus === "completed") {
       throw new Error("Cannot modify fields on completed document");
     }
+
+    // 2b. Verify document integrity — block if document was modified after prior signatures
+    await verifyDocumentIntegrityForSigning(ctx, document);
 
     // 3. Find recipient by document + email match
     const recipient = await ctx.db
@@ -576,7 +635,7 @@ export const saveFieldValueAuthenticated = authMutation({
     const signedAt = Date.now();
     const signatureData = args.value || args.signatureImageUrl || "";
     const documentHash = document.documentHash || "";
-    const signatureHash = generateSignatureHash(
+    const signatureHash = await generateSignatureHash(
       signatureData,
       recipient._id,
       args.fieldId,
@@ -587,17 +646,25 @@ export const saveFieldValueAuthenticated = authMutation({
     // Get IP address from args or use default for authenticated flow
     const ipAddress = args.ipAddress ?? "web-authenticated";
 
+    // Compute signature image hash for reuse detection (hash raw data before encryption)
+    const signatureImageHash = await generateSignatureImageHash(args.signatureImageUrl);
+
+    // Encrypt signature image data before storage
+    const encKey = getEncryptionKey();
+    const encryptedImageUrl = await encryptSignatureData(args.signatureImageUrl, encKey);
+
     if (existingSignature) {
       // Update existing signature
       await ctx.db.patch(existingSignature._id, {
         ...(args.value !== undefined && { value: args.value }),
         ...(args.signatureImageUrl !== undefined && {
-          signatureImageUrl: args.signatureImageUrl,
+          signatureImageUrl: encryptedImageUrl,
         }),
         signedAt,
         ipAddress,
         userAgent: args.userAgent,
         signatureHash,
+        signatureImageHash,
         documentHashAtSigning: documentHash,
         signatureMethod: args.signatureMethod,
         updatedAt: Date.now(),
@@ -615,11 +682,9 @@ export const saveFieldValueAuthenticated = authMutation({
         documentId: args.documentId,
         oldValues: {
           value: existingSignature.value,
-          signatureImageUrl: existingSignature.signatureImageUrl,
         },
         newValues: {
           value: args.value,
-          signatureImageUrl: args.signatureImageUrl,
           signatureHash,
         },
         ipAddress,
@@ -632,8 +697,9 @@ export const saveFieldValueAuthenticated = authMutation({
         recipientId: recipient._id,
         documentId: args.documentId,
         value: args.value,
-        signatureImageUrl: args.signatureImageUrl,
+        signatureImageUrl: encryptedImageUrl,
         signatureHash,
+        signatureImageHash,
         documentHashAtSigning: documentHash,
         signatureMethod: args.signatureMethod,
         signedAt,
@@ -654,7 +720,6 @@ export const saveFieldValueAuthenticated = authMutation({
         documentId: args.documentId,
         newValues: {
           value: args.value,
-          signatureImageUrl: args.signatureImageUrl,
           signatureHash,
         },
         ipAddress,

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
 import { internalQuery, query } from "../_generated/server";
+import { decryptSignatureData } from "../crypto/encryption";
 import { checkRecipientComplete, getDocumentCompletionStatus } from "./helpers";
 
 /**
@@ -223,5 +224,28 @@ export const getSignaturesByDocumentInternal = internalQuery({
       .query("signatures")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
+  },
+});
+
+/**
+ * Internal query to get signatures with decrypted image data.
+ * Used by the PDF signing action which needs the raw image data to embed.
+ */
+export const getDecryptedSignaturesByDocumentInternal = internalQuery({
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const signatures = await ctx.db
+      .query("signatures")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
+
+    const encKey = process.env.SIGNATURE_ENCRYPTION_KEY;
+
+    return Promise.all(
+      signatures.map(async (sig) => ({
+        ...sig,
+        signatureImageUrl: await decryptSignatureData(sig.signatureImageUrl, encKey),
+      })),
+    );
   },
 });
