@@ -114,10 +114,12 @@ function buildNavSections({
   slug,
   currentPath,
   permissions,
+  hasStripeConnect,
 }: {
   slug: string;
   currentPath: string;
   permissions: PermissionSet | undefined;
+  hasStripeConnect: boolean;
 }): NavMainItem[] {
   const permissionFlags = permissions?.permissions;
   const canView = (flag?: boolean) => (flag === undefined ? true : Boolean(flag));
@@ -172,6 +174,31 @@ function buildNavSections({
       title: "Payments",
       url: buildOrganizationPath(slug, "/settings/payments"),
       visible: canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Payment History",
+      url: buildOrganizationPath(slug, "/settings/payment-history"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Payouts",
+      url: buildOrganizationPath(slug, "/settings/payouts"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Balances",
+      url: buildOrganizationPath(slug, "/settings/balances"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Disputes",
+      url: buildOrganizationPath(slug, "/settings/disputes"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Tax Documents",
+      url: buildOrganizationPath(slug, "/settings/tax-documents"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
     },
   ].filter((item) => item.visible);
 
@@ -286,6 +313,8 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
   const { signOut } = useClerk();
   const { reset: resetAnalytics } = useAnalytics();
   const organizations = useQuery(api.check_membership.listUserOrganizations);
+  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const hasStripeConnect = connectedAccount?.status === "connected";
 
   // Wrapper to reset PostHog identity before signing out
   const handleSignOut = React.useCallback(async () => {
@@ -304,8 +333,9 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
         slug,
         currentPath: location.pathname,
         permissions,
+        hasStripeConnect,
       }),
-    [slug, location.pathname, permissions],
+    [slug, location.pathname, permissions, hasStripeConnect],
   );
 
   const activeTeamSlug = slug;

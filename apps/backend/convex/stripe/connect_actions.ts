@@ -271,6 +271,12 @@ export const createAccountSession = action({
         account_onboarding: { enabled: true },
         account_management: { enabled: true },
         notification_banner: { enabled: true },
+        payments: { enabled: true },
+        payouts: { enabled: true },
+        payouts_list: { enabled: true },
+        balances: { enabled: true },
+        disputes_list: { enabled: true },
+        documents: { enabled: true },
       },
     });
 
