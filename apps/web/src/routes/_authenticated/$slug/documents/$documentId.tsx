@@ -260,8 +260,10 @@ function DocumentDetailPage() {
   // Compute field counts per recipient for the send dialog
   const fieldCountsByRecipient = new Map<string, number>();
   for (const field of signatureFields) {
-    const count = fieldCountsByRecipient.get(field.recipientId) ?? 0;
-    fieldCountsByRecipient.set(field.recipientId, count + 1);
+    if (field.recipientId) {
+      const count = fieldCountsByRecipient.get(field.recipientId) ?? 0;
+      fieldCountsByRecipient.set(field.recipientId, count + 1);
+    }
   }
 
   const removeRecipient = useMutation(api.documents.recipients_mutations.removeRecipient);
@@ -936,6 +938,15 @@ function DocumentDetailPage() {
       };
     }
 
+    // Check for unassigned fields (e.g. from templates)
+    const unassignedFields = signatureFields.filter((f) => !f.recipientId);
+    if (unassignedFields.length > 0) {
+      return {
+        canSend: false,
+        tooltip: `${unassignedFields.length} field(s) are not assigned to a recipient. Assign all fields before sending.`,
+      };
+    }
+
     // Check that all signers have at least one signature field
     const signers = recipients.filter((r) => r.role === "signer");
     const signersWithoutFields = signers.filter(
@@ -1139,7 +1150,10 @@ function DocumentDetailPage() {
                   <InAppSigningSection
                     documentId={documentId as Id<"documents">}
                     recipient={currentUserRecipient}
-                    fields={currentUserFields}
+                    fields={currentUserFields.filter(
+                      (f): f is typeof f & { recipientId: Id<"document_recipients"> } =>
+                        !!f.recipientId,
+                    )}
                     isOpen={openSections.has("your-signature")}
                     onOpenChange={() => toggleSection("your-signature")}
                     onFieldsRefetch={() => {

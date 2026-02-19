@@ -15,7 +15,7 @@ interface FieldData {
   fieldType: FieldType;
   label: string;
   isRequired: boolean;
-  recipientId: Id<"document_recipients">;
+  recipientId?: Id<"document_recipients">;
   properties?: {
     placeholder?: string;
     defaultValue?: string;
