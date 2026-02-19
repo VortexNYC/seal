@@ -10,10 +10,12 @@ import {
   FileSignatureIcon,
   FileTextIcon,
   InfoIcon,
+  LoaderIcon,
   PlusIcon,
   SaveIcon,
   SendIcon,
   SettingsIcon,
+  SparklesIcon,
   UserIcon,
   UserPlusIcon,
   UsersIcon,
@@ -33,6 +35,13 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
+import {
+  AIFieldOverlays,
+  AIFieldReviewBar,
+  useAIFieldSuggestions,
+} from "../../../../components/documents/ai-field-suggestions";
+import { AIChatPanel } from "../../../../components/documents/ai-chat-panel";
+import { useDocumentThread } from "../../../../components/documents/hooks/use-document-thread";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import { DocumentProgressRing } from "../../../../components/documents/document-progress-ring";
 import { DocumentStatusHero } from "../../../../components/documents/document-status-hero";
@@ -348,6 +357,34 @@ function DocumentDetailPage() {
 
   // Resend email action
   const resendRecipientEmail = useAction(api.documents.send_document_action.resendRecipientEmail);
+
+  // AI field analysis + chat
+  const aiSuggestions = useAIFieldSuggestions(documentId as Id<"documents">);
+  const { threadId, getOrCreateThread, isCreating: isAnalyzing } = useDocumentThread(
+    documentId as Id<"documents">,
+  );
+  const [showAIChat, setShowAIChat] = useState(false);
+  const sendMessageMutation = useMutation(api.ai.threads.sendMessage);
+
+  const handleAnalyzeWithAI = useCallback(async () => {
+    // If thread already exists, just open the chat panel
+    if (threadId) {
+      setShowAIChat(true);
+      return;
+    }
+
+    try {
+      const tid = await getOrCreateThread();
+      setShowAIChat(true);
+      // Send the initial analysis prompt for new threads
+      await sendMessageMutation({
+        threadId: tid,
+        prompt: `Analyze the document with ID "${documentId}" and detect all form fields that should be placed on it.`,
+      });
+    } catch {
+      toast.error("AI analysis failed. Please try again.");
+    }
+  }, [threadId, getOrCreateThread, sendMessageMutation, documentId]);
 
   // SEA-72: PDF document load handlers
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
@@ -967,6 +1004,24 @@ function DocumentDetailPage() {
   const sendDocumentValidation = getSendDocumentValidation();
 
   // Create conditional buttons
+  const analyzeWithAIButton = canEdit ? (
+    <Button
+      key="analyze-ai"
+      onClick={handleAnalyzeWithAI}
+      disabled={isAnalyzing}
+      size="sm"
+      variant="outline"
+      className="flex-1 border-violet-200 text-violet-700 hover:bg-violet-50 sm:flex-none dark:border-violet-800 dark:text-violet-400 dark:hover:bg-violet-950"
+    >
+      {isAnalyzing ? (
+        <LoaderIcon className="mr-2 h-4 w-4 animate-spin" />
+      ) : (
+        <SparklesIcon className="mr-2 h-4 w-4" />
+      )}
+      <span className="truncate">{isAnalyzing ? "Analyzing..." : "Analyze with AI"}</span>
+    </Button>
+  ) : null;
+
   const saveAsTemplateButton =
     canEdit && signatureFields.length > 0 ? (
       <Button
@@ -1020,6 +1075,7 @@ function DocumentDetailPage() {
             <span className="truncate">Back</span>
           </Button>
           {sendDocumentButton}
+          {analyzeWithAIButton}
           {saveAsTemplateButton}
         </div>
       }
@@ -1104,8 +1160,35 @@ function DocumentDetailPage() {
                           }}
                         />
                       </Document>
+
+                      {/* AI field suggestion overlays — inside TransformComponent so they zoom with PDF */}
+                      {canEdit && aiSuggestions.suggestions && (
+                        <AIFieldOverlays
+                          suggestions={aiSuggestions.suggestions}
+                          selectedIndices={aiSuggestions.selectedIndices}
+                          toggleField={aiSuggestions.toggleField}
+                          currentPage={currentPage}
+                          pdfPageWidth={pdfWidth}
+                          pdfPageHeight={pdfHeight}
+                        />
+                      )}
                     </div>
                   </TransformComponent>
+
+                  {/* AI review bar — outside TransformComponent so it stays at fixed size */}
+                  {canEdit && aiSuggestions.suggestions && (
+                    <div className="mt-3">
+                      <AIFieldReviewBar
+                        suggestions={aiSuggestions.suggestions}
+                        selectedIndices={aiSuggestions.selectedIndices}
+                        isApplying={aiSuggestions.isApplying}
+                        selectAll={aiSuggestions.selectAll}
+                        selectHighConfidence={aiSuggestions.selectHighConfidence}
+                        handleApply={aiSuggestions.handleApply}
+                        handleDismiss={aiSuggestions.handleDismiss}
+                      />
+                    </div>
+                  )}
                 </TransformWrapper>
               ) : (
                 <>
@@ -1302,6 +1385,14 @@ function DocumentDetailPage() {
                   )}
                 </CollapsibleContent>
               </Collapsible>
+
+              {/* AI Chat Panel - Shows when user opens AI assistant */}
+              {canEdit && showAIChat && threadId && (
+                <AIChatPanel
+                  threadId={threadId}
+                  onClose={() => setShowAIChat(false)}
+                />
+              )}
 
               {/* Signature Fields Section */}
               {(signatureFields.length > 0 || canEdit) && (
