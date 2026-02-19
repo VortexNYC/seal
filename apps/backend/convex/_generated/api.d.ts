@@ -54,6 +54,7 @@ import type * as documents_cleanup from "../documents/cleanup.js";
 import type * as documents_document_shared_action from "../documents/document_shared_action.js";
 import type * as documents_download_tokens from "../documents/download_tokens.js";
 import type * as documents_email from "../documents/email.js";
+import type * as documents_extract_text_action from "../documents/extract_text_action.js";
 import type * as documents_generate_fillable_pdf from "../documents/generate_fillable_pdf.js";
 import type * as documents_hash_document_action from "../documents/hash_document_action.js";
 import type * as documents_mutations from "../documents/mutations.js";
@@ -227,6 +228,7 @@ declare const fullApi: ApiFromModules<{
   "documents/document_shared_action": typeof documents_document_shared_action;
   "documents/download_tokens": typeof documents_download_tokens;
   "documents/email": typeof documents_email;
+  "documents/extract_text_action": typeof documents_extract_text_action;
   "documents/generate_fillable_pdf": typeof documents_generate_fillable_pdf;
   "documents/hash_document_action": typeof documents_hash_document_action;
   "documents/mutations": typeof documents_mutations;

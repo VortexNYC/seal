@@ -416,6 +416,28 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       },
     },
 
+    document_versions: {
+      read: async (ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        // Access follows the parent document's access rules
+        const document = await ctx.db.get(doc.documentId);
+        if (!document) return false;
+        if (document.ownerId === rlsCtx.userId) return true;
+        if (document.sharingMode === "workspace" && document.organizationId === rlsCtx.orgId)
+          return true;
+        return false;
+      },
+      modify: async (ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        // Only the document owner can create/modify versions
+        const document = await ctx.db.get(doc.documentId);
+        if (!document) return false;
+        return document.ownerId === rlsCtx.userId;
+      },
+    },
+
     payment_field_configs: {
       read: async (ctx, doc) => {
         if (!rlsCtx) return false;

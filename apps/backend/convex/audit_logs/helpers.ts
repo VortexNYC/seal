@@ -126,7 +126,7 @@ export async function logFieldAction(
     action: "field.created" | "field.updated" | "field.deleted";
     fieldId: Id<"signature_fields">;
     documentId: Id<"documents">;
-    recipientId: Id<"document_recipients">;
+    recipientId?: Id<"document_recipients">;
     oldValues?: Partial<Doc<"signature_fields">>;
     newValues?: Partial<Doc<"signature_fields">>;
     ipAddress: string;

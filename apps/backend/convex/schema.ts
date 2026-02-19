@@ -17,6 +17,7 @@ import {
   type ReminderStatus,
   type ReminderType,
 } from "./schemas/document_reminders";
+import { type DocumentVersionChangeType, documentVersionsTable } from "./schemas/document_versions";
 import { type DocumentSharingMode, type DocumentStatus, documentsTable } from "./schemas/documents";
 import { type EmailStatus, type EmailType, emailLogsTable } from "./schemas/email_logs";
 import {
@@ -98,7 +99,7 @@ export type {
 };
 
 // Re-export document types
-export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus };
+export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus, DocumentVersionChangeType };
 export type { RecipientRole, DocumentRecipientStatus };
 export type { ReminderStatus, ReminderType };
 export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";
@@ -142,6 +143,7 @@ export default defineSchema({
   organization_roles: organizationRolesTable,
 
   documents: documentsTable,
+  document_versions: documentVersionsTable,
   document_invoices: documentInvoicesTable,
   document_access: documentAccessTable,
   document_recipients: documentRecipientsTable,

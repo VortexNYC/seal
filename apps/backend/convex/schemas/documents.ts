@@ -30,6 +30,9 @@ export const documentsTable = defineTable({
   pageCount: v.optional(v.number()), // Number of pages in the PDF (SEA-64)
   thumbnailDataUrl: v.optional(v.string()), // Base64 data URL of first page thumbnail (SEA-69)
 
+  // Template reference (if created from a template)
+  sourceTemplateId: v.optional(v.id("templates")),
+
   // Convex Storage reference
   storageId: v.string(), // ID returned from storage.store() - Original uploaded PDF
   fillableStorageId: v.optional(v.string()), // ID of the fillable PDF with embedded form fields (SEA-100)
@@ -38,6 +41,9 @@ export const documentsTable = defineTable({
 
   // Cryptographic hash for document integrity verification (SEA-108)
   documentHash: v.optional(v.string()), // SHA-256 hash of original PDF
+
+  // Extracted text content for search indexing
+  extractedText: v.optional(v.string()), // Full text extracted from PDF pages
 
   // Sharing configuration
   sharingMode: documentSharingModeTuple,
@@ -61,6 +67,9 @@ export const documentsTable = defineTable({
   // Retention policy: completed documents must be retained for 7 years (ESIGN Act)
   retainUntil: v.optional(v.number()), // Timestamp after which the document can be deleted
 
+  // Version tracking
+  currentVersion: v.optional(v.number()), // Current version number (1-based), optional for migration
+
   // Timestamps
   createdAt: v.number(),
   updatedAt: v.number(),
@@ -72,4 +81,8 @@ export const documentsTable = defineTable({
   .index("by_organization_status", ["organizationId", "status"])
   .index("by_workflow_status", ["workflowStatus"])
   .index("by_organization_workflow", ["organizationId", "workflowStatus"])
-  .index("by_owner_workflow", ["ownerId", "workflowStatus"]);
+  .index("by_owner_workflow", ["ownerId", "workflowStatus"])
+  .searchIndex("search_text", {
+    searchField: "extractedText",
+    filterFields: ["organizationId", "status"],
+  });
