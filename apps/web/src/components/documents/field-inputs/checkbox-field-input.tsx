@@ -59,23 +59,6 @@ export function CheckboxFieldInput({
     [isRequired],
   );
 
-  const handleSingleChange = (newChecked: boolean) => {
-    setChecked(newChecked);
-    onChange(newChecked ? "true" : "false");
-    const validation = validateSingle(newChecked);
-    onValidationChange(validation.isValid, validation.error);
-  };
-
-  const handleOptionToggle = (option: string) => {
-    const newSelected = selectedOptions.includes(option)
-      ? selectedOptions.filter((o) => o !== option)
-      : [...selectedOptions, option];
-    setSelectedOptions(newSelected);
-    onChange(JSON.stringify(newSelected));
-    const validation = validateMulti(newSelected);
-    onValidationChange(validation.isValid, validation.error);
-  };
-
   const [error, setError] = useState<string | undefined>(() => {
     if (isMultiOption) {
       const v = validateMulti(selectedOptions);

@@ -300,7 +300,7 @@ function SigningPage() {
       }
     };
     markAsViewed();
-  }, [convexClient, token, recipient.status]);
+  }, [convexClient, token, recipient.status, clientIp]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);

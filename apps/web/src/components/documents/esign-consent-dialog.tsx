@@ -49,7 +49,8 @@ export function EsignConsentDialog({
 
   const handleDecline = useCallback(() => {
     setConsentState("declined");
-  }, []);
+    onDecline();
+  }, [onDecline]);
 
   const handleBackToConsent = useCallback(() => {
     setConsentState("pending");

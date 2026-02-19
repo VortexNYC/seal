@@ -15,7 +15,7 @@ import { ConvexError, v } from "convex/values";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 import { internal } from "../_generated/api";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import { internalAction, internalMutation } from "../_generated/server";
 
 const PAGE_WIDTH = 595.28; // A4
