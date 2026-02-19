@@ -185,7 +185,13 @@ export function FieldInputManager({
         return <AttachmentFieldInput {...commonProps} signingToken={signingToken} />;
 
       case "payment":
-        return <PaymentFieldSummary fieldId={fieldId} />;
+        return (
+          <PaymentFieldSummary
+            fieldId={fieldId}
+            token={signingToken}
+            showInlinePayment={!!signingToken}
+          />
+        );
 
       case "signature":
         return (
@@ -207,7 +213,15 @@ export function FieldInputManager({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={fieldType === "signature" ? "max-w-2xl" : fieldType === "payment" ? "max-w-lg" : "max-w-md"}>
+      <DialogContent
+        className={
+          fieldType === "signature"
+            ? "max-w-2xl"
+            : fieldType === "payment"
+              ? "max-w-lg"
+              : "max-w-md"
+        }
+      >
         <DialogHeader>
           <DialogTitle>
             {fieldType === "signature"

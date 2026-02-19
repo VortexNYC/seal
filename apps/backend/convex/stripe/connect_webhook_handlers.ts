@@ -14,9 +14,8 @@ import type Stripe from "stripe";
 
 import { internal } from "../_generated/api";
 import type { DataModel, Id } from "../_generated/dataModel";
-import { mapStripeCapabilities, mapStripeRequirements } from "./connect_helpers";
-
 import type { PaymentStatus } from "../schemas/payment_field_configs";
+import { mapStripeCapabilities, mapStripeRequirements } from "./connect_helpers";
 
 type HttpActionCtx = GenericActionCtx<DataModel>;
 
@@ -94,7 +93,7 @@ async function updatePaymentFieldFromInvoice(
   ctx: HttpActionCtx,
   invoice: Stripe.Invoice,
   paymentStatus: PaymentStatus,
-): Promise<string | null> {
+): Promise<{ configId: string; documentId: string } | null> {
   const result = await ctx.runMutation(
     internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
     {
@@ -108,7 +107,8 @@ async function updatePaymentFieldFromInvoice(
       operation: "stripeConnect.paymentFieldUpdate",
       stripeInvoiceId: invoice.id,
       paymentStatus,
-      configId: result,
+      configId: result.configId,
+      documentId: result.documentId,
     });
   }
 
@@ -124,7 +124,14 @@ async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): P
   });
 
   // Update payment_field_configs (new system)
-  await updatePaymentFieldFromInvoice(ctx, invoice, "paid");
+  const result = await updatePaymentFieldFromInvoice(ctx, invoice, "paid");
+
+  // If a payment config was updated, check if the document can now complete
+  if (result?.documentId) {
+    await ctx.runMutation(internal.documents.workflow_mutations.checkPaymentCompletionAndFinalize, {
+      documentId: result.documentId as Id<"documents">,
+    });
+  }
 }
 
 async function handleInvoicePaymentFailed(

@@ -228,7 +228,7 @@ export const updatePaymentStatus = mutation({
 /**
  * Internal mutation to update payment status from Stripe webhook handlers.
  * Looks up the config by stripeInvoiceId (set during the send flow).
- * Returns the config ID if found and updated, or null if not found.
+ * Returns the config ID and documentId if found, or null if not found.
  */
 export const updatePaymentStatusFromWebhook = internalMutation({
   args: {
@@ -250,7 +250,7 @@ export const updatePaymentStatusFromWebhook = internalMutation({
       updatedAt: Date.now(),
     });
 
-    return config._id;
+    return { configId: config._id, documentId: config.documentId };
   },
 });
 

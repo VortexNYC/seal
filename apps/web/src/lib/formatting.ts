@@ -64,12 +64,21 @@ export function getInitials(name?: string, email?: string): string {
  * Get a human-readable label for a document workflow status
  */
 export function getStatusLabel(
-  status: "draft" | "sent" | "in_progress" | "completed" | "cancelled" | "declined" | undefined,
+  status:
+    | "draft"
+    | "sent"
+    | "in_progress"
+    | "waiting_for_payment"
+    | "completed"
+    | "cancelled"
+    | "declined"
+    | undefined,
 ): string {
   const labels = {
     draft: "Draft",
     sent: "Sent",
     in_progress: "In Progress",
+    waiting_for_payment: "Awaiting Payment",
     completed: "Completed",
     cancelled: "Cancelled",
     declined: "Declined",

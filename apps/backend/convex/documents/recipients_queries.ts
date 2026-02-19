@@ -141,6 +141,7 @@ export const getRecipientByToken = query({
         description: document.description,
         fileType: document.fileType,
         storageId: document.storageId,
+        workflowStatus: document.workflowStatus,
       },
     };
   },
@@ -345,5 +346,16 @@ export const getDocumentRecipientsInternal = internalQuery({
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
+  },
+});
+
+/**
+ * Internal query to find a recipient by signing token.
+ * Used by actions that authenticate via signing token instead of Clerk.
+ */
+export const findRecipientByTokenInternal = internalQuery({
+  args: { signingToken: v.string() },
+  handler: async (ctx, args) => {
+    return await findRecipientByToken(ctx, args.signingToken);
   },
 });

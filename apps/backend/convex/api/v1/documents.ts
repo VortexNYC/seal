@@ -25,7 +25,14 @@ export interface ApiDocument {
   /** Optional description */
   description?: string;
   /** Current workflow status */
-  status: "draft" | "sent" | "in_progress" | "completed" | "cancelled" | "declined";
+  status:
+    | "draft"
+    | "sent"
+    | "in_progress"
+    | "waiting_for_payment"
+    | "completed"
+    | "cancelled"
+    | "declined";
   /** ISO 8601 creation timestamp */
   created_at: string;
   /** ISO 8601 last update timestamp */

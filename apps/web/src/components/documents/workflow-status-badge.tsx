@@ -4,6 +4,7 @@ export type DocumentWorkflowStatus =
   | "draft"
   | "sent"
   | "in_progress"
+  | "waiting_for_payment"
   | "completed"
   | "cancelled"
   | "declined";
@@ -38,6 +39,11 @@ export function WorkflowStatusBadge({ status, className }: WorkflowStatusBadgePr
       label: "In Progress",
       variant: "default",
       className: "bg-warning hover:bg-warning/90 text-warning-foreground",
+    },
+    waiting_for_payment: {
+      label: "Awaiting Payment",
+      variant: "default",
+      className: "bg-amber-500 hover:bg-amber-500/90 text-white",
     },
     completed: {
       label: "Completed",

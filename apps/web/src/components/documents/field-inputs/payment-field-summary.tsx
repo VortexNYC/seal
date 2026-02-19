@@ -5,9 +5,14 @@ import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Badge } from "../../ui/badge";
+import { PaymentFieldInline } from "./payment-field-inline";
 
 interface PaymentFieldSummaryProps {
   fieldId: Id<"signature_fields">;
+  /** Recipient signing token for payment authentication (signing page only) */
+  token?: string;
+  /** Whether to show inline payment form instead of "Pay Now" link */
+  showInlinePayment?: boolean;
 }
 
 function formatCents(cents: number, currency = "usd"): string {
@@ -24,7 +29,10 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
   deposit_balance: "Deposit + Balance",
 };
 
-const PAYMENT_STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+const PAYMENT_STATUS_CONFIG: Record<
+  string,
+  { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+> = {
   pending: { label: "Pending", variant: "secondary" },
   created: { label: "Created", variant: "secondary" },
   awaiting: { label: "Awaiting Payment", variant: "outline" },
@@ -36,8 +44,14 @@ const PAYMENT_STATUS_CONFIG: Record<string, { label: string; variant: "default" 
 /**
  * Read-only summary of a payment field's configuration.
  * Used in the signing view to show what payment is required.
+ * When `showInlinePayment` is true and a `token` is provided,
+ * renders an inline PaymentElement instead of the "Pay Now" link.
  */
-export function PaymentFieldSummary({ fieldId }: PaymentFieldSummaryProps) {
+export function PaymentFieldSummary({
+  fieldId,
+  token,
+  showInlinePayment,
+}: PaymentFieldSummaryProps) {
   const config = useQuery(api.payment_fields.queries.getPaymentConfigByField, { fieldId });
 
   if (config === undefined) {
@@ -56,6 +70,11 @@ export function PaymentFieldSummary({ fieldId }: PaymentFieldSummaryProps) {
       </div>
     );
   }
+
+  const isPayable =
+    config.paymentStatus !== "paid" &&
+    config.paymentStatus !== "cancelled" &&
+    config.paymentStatus !== "failed";
 
   return (
     <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
@@ -104,20 +123,27 @@ export function PaymentFieldSummary({ fieldId }: PaymentFieldSummaryProps) {
         </div>
       )}
 
-      {/* Pay Now link */}
-      {config.hostedInvoiceUrl &&
-        config.paymentStatus !== "paid" &&
-        config.paymentStatus !== "cancelled" &&
-        config.paymentStatus !== "failed" && (
-          <a
-            href={config.hostedInvoiceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-1 inline-flex w-full items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-          >
-            Pay Now &rarr;
-          </a>
-        )}
+      {/* Inline payment form (when on signing page with active payment) */}
+      {showInlinePayment && token && isPayable && (
+        <PaymentFieldInline
+          configId={config._id}
+          token={token}
+          totalAmountCents={config.totalAmountCents}
+          currency={config.currency}
+        />
+      )}
+
+      {/* Fallback: Pay Now link (when inline is not available) */}
+      {!showInlinePayment && config.hostedInvoiceUrl && isPayable && (
+        <a
+          href={config.hostedInvoiceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 inline-flex w-full items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+        >
+          Pay Now &rarr;
+        </a>
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@
 import { v } from "convex/values";
 
 import { adminQuery, permissionQuery } from "../auth";
+import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
 
 /**
  * Get document statistics for the dashboard
@@ -166,7 +167,7 @@ export const getDocumentTrends = permissionQuery("documents:view")({
     const now = Date.now();
     const endDate = args.endDate ?? now;
     const days = args.days ?? 30;
-    const startDate = args.startDate ?? (endDate - days * 24 * 60 * 60 * 1000);
+    const startDate = args.startDate ?? endDate - days * 24 * 60 * 60 * 1000;
 
     // Get documents created in the time range
     let documents = await ctx.db
@@ -368,16 +369,7 @@ export const getPeriodStats = permissionQuery("documents:view")({
  */
 export const getDocumentsForExport = permissionQuery("documents:view")({
   args: {
-    workflowStatus: v.optional(
-      v.union(
-        v.literal("draft"),
-        v.literal("sent"),
-        v.literal("in_progress"),
-        v.literal("completed"),
-        v.literal("cancelled"),
-        v.literal("declined"),
-      ),
-    ),
+    workflowStatus: v.optional(documentWorkflowStatusTuple),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
   },

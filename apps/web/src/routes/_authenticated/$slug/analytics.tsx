@@ -22,7 +22,14 @@ import {
   UsersIcon,
   XCircleIcon,
 } from "lucide-react";
-import { type Dispatch, type SetStateAction, Suspense, useCallback, useMemo, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  Suspense,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
 import type { DateRange } from "react-day-picker";
 import {
   Area,
@@ -153,11 +160,7 @@ function AnalyticsContent() {
             customRange={customRange}
             onCustomRangeChange={setCustomRange}
           />
-          <TrendChart
-            preset={trendPreset}
-            customRange={customRange}
-            scope={effectiveScope}
-          />
+          <TrendChart preset={trendPreset} customRange={customRange} scope={effectiveScope} />
         </TabsContent>
 
         <TabsContent value="status" className="space-y-4">
@@ -185,7 +188,10 @@ function AnalyticsContent() {
   );
 }
 
-function OverviewStats({ stats, scope }: {
+function OverviewStats({
+  stats,
+  scope,
+}: {
   stats: {
     total: number;
     draft: number;
@@ -270,9 +276,7 @@ function StatCard({
           {trend === "down" && <ArrowDownIcon className="h-4 w-4 text-red-500" />}
         </div>
         {progress !== undefined && <Progress value={progress} className="mt-2 h-2" />}
-        {description && (
-          <p className="text-muted-foreground mt-1 text-xs">{description}</p>
-        )}
+        {description && <p className="text-muted-foreground mt-1 text-xs">{description}</p>}
       </CardContent>
     </Card>
   );
@@ -356,7 +360,9 @@ function TrendChart({
   const queryArgs = useMemo(() => {
     if (preset === "custom" && customRange?.from) {
       const startDate = customRange.from.getTime();
-      const endDate = customRange.to ? customRange.to.getTime() + 24 * 60 * 60 * 1000 - 1 : Date.now();
+      const endDate = customRange.to
+        ? customRange.to.getTime() + 24 * 60 * 60 * 1000 - 1
+        : Date.now();
       return { startDate, endDate, scope };
     }
     return { days: Number(preset), scope };
@@ -382,9 +388,7 @@ function TrendChart({
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Document Trends</CardTitle>
-        <CardDescription>
-          Documents created and completed over the selected period
-        </CardDescription>
+        <CardDescription>Documents created and completed over the selected period</CardDescription>
       </CardHeader>
       <CardContent className="pl-0 sm:pl-6">
         {hasData ? (
@@ -460,9 +464,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function StatusPieChart() {
-  const { data: stats } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentStats, {}),
-  );
+  const { data: stats } = useSuspenseQuery(convexQuery(api.dashboard.queries.getDocumentStats, {}));
 
   const pieData = useMemo(() => {
     const items = [
@@ -526,10 +528,7 @@ function StatusPieChart() {
         <div className="mt-2 flex flex-wrap justify-center gap-3">
           {pieData.map((entry) => (
             <div key={entry.name} className="flex items-center gap-1.5 text-xs">
-              <div
-                className="size-2.5 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              />
+              <div className="size-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
               <span className="text-muted-foreground">
                 {entry.name} ({entry.value})
               </span>
@@ -542,9 +541,7 @@ function StatusPieChart() {
 }
 
 function StatusBarChart() {
-  const { data: stats } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentStats, {}),
-  );
+  const { data: stats } = useSuspenseQuery(convexQuery(api.dashboard.queries.getDocumentStats, {}));
 
   const barData = useMemo(
     () => [
@@ -567,12 +564,7 @@ function StatusBarChart() {
       <CardContent>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={barData} margin={{ left: 0, right: 8 }}>
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 10 }}
-              tickLine={false}
-              axisLine={false}
-            />
+            <XAxis dataKey="name" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
             <YAxis
               tick={{ fontSize: 10 }}
               tickLine={false}
@@ -600,16 +592,55 @@ function StatusBarChart() {
   );
 }
 
-const ACTION_LABELS: Record<string, { label: string; icon: React.ReactNode; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  "document.created": { label: "Created", icon: <FileTextIcon className="h-3 w-3" />, variant: "secondary" },
+const ACTION_LABELS: Record<
+  string,
+  {
+    label: string;
+    icon: React.ReactNode;
+    variant: "default" | "secondary" | "destructive" | "outline";
+  }
+> = {
+  "document.created": {
+    label: "Created",
+    icon: <FileTextIcon className="h-3 w-3" />,
+    variant: "secondary",
+  },
   "document.sent": { label: "Sent", icon: <ClockIcon className="h-3 w-3" />, variant: "default" },
-  "document.completed": { label: "Completed", icon: <CheckCircle2Icon className="h-3 w-3" />, variant: "default" },
-  "document.cancelled": { label: "Cancelled", icon: <XCircleIcon className="h-3 w-3" />, variant: "destructive" },
-  "recipient.signed": { label: "Signed", icon: <CheckCircle2Icon className="h-3 w-3" />, variant: "default" },
-  "recipient.viewed": { label: "Viewed", icon: <FileTextIcon className="h-3 w-3" />, variant: "outline" },
-  "recipient.declined": { label: "Declined", icon: <XCircleIcon className="h-3 w-3" />, variant: "destructive" },
-  "signature.created": { label: "Signature", icon: <CheckCircle2Icon className="h-3 w-3" />, variant: "default" },
-  "field.created": { label: "Field Added", icon: <BarChart3Icon className="h-3 w-3" />, variant: "secondary" },
+  "document.completed": {
+    label: "Completed",
+    icon: <CheckCircle2Icon className="h-3 w-3" />,
+    variant: "default",
+  },
+  "document.cancelled": {
+    label: "Cancelled",
+    icon: <XCircleIcon className="h-3 w-3" />,
+    variant: "destructive",
+  },
+  "recipient.signed": {
+    label: "Signed",
+    icon: <CheckCircle2Icon className="h-3 w-3" />,
+    variant: "default",
+  },
+  "recipient.viewed": {
+    label: "Viewed",
+    icon: <FileTextIcon className="h-3 w-3" />,
+    variant: "outline",
+  },
+  "recipient.declined": {
+    label: "Declined",
+    icon: <XCircleIcon className="h-3 w-3" />,
+    variant: "destructive",
+  },
+  "signature.created": {
+    label: "Signature",
+    icon: <CheckCircle2Icon className="h-3 w-3" />,
+    variant: "default",
+  },
+  "field.created": {
+    label: "Field Added",
+    icon: <BarChart3Icon className="h-3 w-3" />,
+    variant: "secondary",
+  },
 };
 
 function formatSigningTime(ms: number | null): string {
@@ -684,10 +715,11 @@ function RecentActivityFeed() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium">
-                      {item.actorName}
-                    </span>
-                    <Badge variant={actionInfo?.variant ?? "secondary"} className="shrink-0 text-[10px]">
+                    <span className="truncate text-sm font-medium">{item.actorName}</span>
+                    <Badge
+                      variant={actionInfo?.variant ?? "secondary"}
+                      className="shrink-0 text-[10px]"
+                    >
                       {actionLabel}
                     </Badge>
                   </div>
@@ -787,7 +819,15 @@ function MemberActivityTable() {
   );
 }
 
-type ExportStatus = "all" | "draft" | "sent" | "in_progress" | "completed" | "cancelled" | "declined";
+type ExportStatus =
+  | "all"
+  | "draft"
+  | "sent"
+  | "in_progress"
+  | "waiting_for_payment"
+  | "completed"
+  | "cancelled"
+  | "declined";
 type ExportPeriod = "all" | "week" | "month" | "quarter" | "year";
 
 function ExportPanel() {
@@ -798,7 +838,14 @@ function ExportPanel() {
   // Build query args based on filters
   const queryArgs = useMemo(() => {
     const args: {
-      workflowStatus?: "draft" | "sent" | "in_progress" | "completed" | "cancelled" | "declined";
+      workflowStatus?:
+        | "draft"
+        | "sent"
+        | "in_progress"
+        | "waiting_for_payment"
+        | "completed"
+        | "cancelled"
+        | "declined";
       startDate?: number;
       endDate?: number;
     } = {};
@@ -866,13 +913,13 @@ function ExportPanel() {
       const csvContent = [
         headers.join(","),
         ...rows.map((row) =>
-          row.map((cell) => {
-            const str = String(cell);
-            // Escape cells that contain commas or quotes
-            return str.includes(",") || str.includes('"')
-              ? `"${str.replace(/"/g, '""')}"`
-              : str;
-          }).join(","),
+          row
+            .map((cell) => {
+              const str = String(cell);
+              // Escape cells that contain commas or quotes
+              return str.includes(",") || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+            })
+            .join(","),
         ),
       ].join("\n");
 
@@ -951,7 +998,9 @@ function ExportPanel() {
     <Card>
       <CardHeader className="pb-4">
         <CardTitle className="text-base">Export Documents</CardTitle>
-        <CardDescription>Download document data as CSV or PDF for external analysis</CardDescription>
+        <CardDescription>
+          Download document data as CSV or PDF for external analysis
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-end gap-4">

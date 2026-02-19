@@ -18,6 +18,8 @@ export function DocumentStatusHero({ workflowStatus, createdAt }: DocumentStatus
         return "bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800";
       case "in_progress":
         return "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800";
+      case "waiting_for_payment":
+        return "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800";
       case "sent":
         return "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800";
       default:

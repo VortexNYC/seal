@@ -39,6 +39,18 @@ export const getPaymentConfigsByDocument = query({
 });
 
 /**
+ * Internal query to get a single payment config by ID (used by actions).
+ */
+export const getPaymentConfigInternal = internalQuery({
+  args: {
+    configId: v.id("payment_field_configs"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.configId);
+  },
+});
+
+/**
  * Internal query for payment configs by document (used by actions).
  */
 export const getPaymentConfigsByDocumentInternal = internalQuery({

@@ -8,7 +8,8 @@ import { type Infer, v } from "convex/values";
  * - draft: Document created but not sent to recipients yet
  * - sent: Document sent to recipients, waiting for action
  * - in_progress: At least one recipient has viewed/started signing
- * - completed: All required signatures collected
+ * - waiting_for_payment: All signatures collected, payment pending
+ * - completed: All required signatures collected and payment received
  * - cancelled: Workflow cancelled by sender
  * - declined: One or more recipients declined to sign
  */
@@ -16,6 +17,7 @@ export const documentWorkflowStatusTuple = v.union(
   v.literal("draft"),
   v.literal("sent"),
   v.literal("in_progress"),
+  v.literal("waiting_for_payment"),
   v.literal("completed"),
   v.literal("cancelled"),
   v.literal("declined"),
@@ -29,7 +31,8 @@ export type DocumentWorkflowStatus = Infer<typeof documentWorkflowStatusTuple>;
 export const WORKFLOW_TRANSITIONS: Record<DocumentWorkflowStatus, DocumentWorkflowStatus[]> = {
   draft: ["sent", "cancelled"],
   sent: ["in_progress", "cancelled", "declined"],
-  in_progress: ["completed", "cancelled", "declined"],
+  in_progress: ["completed", "waiting_for_payment", "cancelled", "declined"],
+  waiting_for_payment: ["completed", "cancelled"],
   completed: [], // Terminal state
   cancelled: [], // Terminal state
   declined: [], // Terminal state
@@ -53,6 +56,7 @@ export function getWorkflowStatusLabel(status: DocumentWorkflowStatus): string {
     draft: "Draft",
     sent: "Sent",
     in_progress: "In Progress",
+    waiting_for_payment: "Awaiting Payment",
     completed: "Completed",
     cancelled: "Cancelled",
     declined: "Declined",
