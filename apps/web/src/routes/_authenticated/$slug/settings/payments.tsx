@@ -1,25 +1,23 @@
 /**
  * Payments Settings Page
  *
- * Stripe Connect onboarding and account status.
+ * Stripe Connect embedded onboarding and account management.
  * Route: /{slug}/settings/payments
  */
 
+import {
+  ConnectAccountManagement,
+  ConnectAccountOnboarding,
+  ConnectNotificationBanner,
+} from "@stripe/react-connect-js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useAction, useMutation, useQuery } from "convex/react";
-import {
-  AlertTriangle,
-  BadgeCheck,
-  BadgeX,
-  ExternalLink,
-  Link2,
-  Loader2,
-  PlugZap,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, BadgeCheck, BadgeX, Loader2, PlugZap } from "lucide-react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { StripeConnectProvider } from "@/components/stripe/connect-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -96,16 +94,11 @@ function PaymentsSettingsPage() {
     | undefined;
 
   const createConnectedAccount = useAction(api.stripe.connect_actions.createConnectedAccount);
-  const createAccountLink = useAction(api.stripe.connect_actions.createAccountLink);
-  const createConnectOAuthUrl = useAction(api.stripe.connect_actions.createConnectOAuthUrl);
-  const exchangeConnectOAuthCode = useAction(api.stripe.connect_actions.exchangeConnectOAuthCode);
   const refreshConnectedAccount = useAction(api.stripe.connect_actions.refreshConnectedAccount);
 
   const updateFeeHandling = useMutation(api.stripe.connect_public_mutations.updateFeeHandling);
 
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isContinuing, setIsContinuing] = useState(false);
-  const [isOAuthConnecting, setIsOAuthConnecting] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isSavingFeeHandling, setIsSavingFeeHandling] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -113,169 +106,41 @@ function PaymentsSettingsPage() {
 
   const status = connectedAccount?.status ?? "not_connected";
   const canManage = connectedAccount?.canManage ?? false;
+  const hasStripeAccount = connectedAccount?.account !== null && connectedAccount?.account !== undefined;
 
   const feeHandling = connectedAccount?.account?.feeHandling ?? "absorb";
 
-  const requirementsSummary = useMemo(() => {
-    const requirements = connectedAccount?.account?.requirements;
-    if (!requirements) {
-      return null;
+  // Create a Stripe account (required before embedded onboarding can render)
+  async function handleCreateAccount() {
+    if (!orgId) return;
+
+    setIsCreatingAccount(true);
+    try {
+      await createConnectedAccount({ organizationId: orgId });
+      toast.success("Stripe account created — complete onboarding below");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create Stripe account");
+    } finally {
+      setIsCreatingAccount(false);
     }
+  }
 
-    const currentlyDue = requirements.currentlyDue?.length ?? 0;
-    const pastDue = requirements.pastDue?.length ?? 0;
-
-    if (currentlyDue === 0 && pastDue === 0) {
-      return null;
-    }
-
-    return {
-      currentlyDue,
-      pastDue,
-      disabledReason: requirements.disabledReason,
-    };
-  }, [connectedAccount]);
-
-  // Refresh account status when returning from Stripe onboarding
-  useEffect(() => {
-    if (!orgId) {
-      return;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const connected = params.get("connected");
-    const refresh = params.get("refresh");
-
-    if (!connected && !refresh) {
-      return;
-    }
+  // Called when embedded onboarding component exits
+  const handleOnboardingExit = useCallback(async () => {
+    if (!orgId) return;
 
     setIsRefreshing(true);
-
-    refreshConnectedAccount({ organizationId: orgId })
-      .then(() => {
-        if (connected) {
-          toast.success("Stripe account status updated");
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to refresh account status:", error);
-      })
-      .finally(() => {
-        setIsRefreshing(false);
-        const cleanUrl = `${window.location.pathname}`;
-        window.history.replaceState({}, "", cleanUrl);
-      });
-  }, [refreshConnectedAccount, orgId]);
-
-  // Handle OAuth code exchange
-  useEffect(() => {
-    if (!orgId) {
-      return;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    const state = params.get("state");
-
-    if (!code || !state) {
-      return;
-    }
-
-    setIsOAuthConnecting(true);
-
-    exchangeConnectOAuthCode({
-      organizationId: orgId,
-      code,
-      state,
-    })
-      .then(() => {
-        toast.success("Stripe account connected successfully");
-      })
-      .catch((error) => {
-        toast.error(error instanceof Error ? error.message : "Failed to connect Stripe account");
-      })
-      .finally(() => {
-        setIsOAuthConnecting(false);
-        const cleanUrl = `${window.location.pathname}`;
-        window.history.replaceState({}, "", cleanUrl);
-      });
-  }, [exchangeConnectOAuthCode, orgId]);
-
-  async function handleConnectNewAccount() {
-    if (!orgId) {
-      return;
-    }
-
-    setIsConnecting(true);
-
     try {
-      const { stripeAccountId } = await createConnectedAccount({
-        organizationId: orgId,
-      });
-
-      if (!stripeAccountId) {
-        throw new Error("Stripe account was not created");
+      const result = await refreshConnectedAccount({ organizationId: orgId });
+      if (result.status === "refreshed") {
+        toast.success("Stripe account status updated");
       }
-
-      const baseUrl = `${window.location.origin}/${slug}/settings/payments`;
-
-      const { url } = await createAccountLink({
-        organizationId: orgId,
-        returnUrl: `${baseUrl}?connected=true`,
-        refreshUrl: `${baseUrl}?refresh=true`,
-      });
-
-      window.location.href = url;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to start Stripe onboarding");
-      setIsConnecting(false);
+      console.error("Failed to refresh account status:", error);
+    } finally {
+      setIsRefreshing(false);
     }
-  }
-
-  async function handleContinueSetup() {
-    if (!orgId) {
-      return;
-    }
-
-    setIsContinuing(true);
-
-    try {
-      const baseUrl = `${window.location.origin}/${slug}/settings/payments`;
-      const { url } = await createAccountLink({
-        organizationId: orgId,
-        returnUrl: `${baseUrl}?connected=true`,
-        refreshUrl: `${baseUrl}?refresh=true`,
-      });
-
-      window.location.href = url;
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to continue Stripe setup");
-      setIsContinuing(false);
-    }
-  }
-
-  async function handleConnectExistingAccount() {
-    if (!orgId) {
-      return;
-    }
-
-    setIsOAuthConnecting(true);
-
-    try {
-      const baseUrl = `${window.location.origin}/${slug}/settings/payments`;
-      const { url } = await createConnectOAuthUrl({
-        organizationId: orgId,
-        redirectUri: baseUrl,
-      });
-      window.location.href = url;
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to start Stripe OAuth connection",
-      );
-      setIsOAuthConnecting(false);
-    }
-  }
+  }, [refreshConnectedAccount, orgId]);
 
   async function handleUpdateFeeHandling(value: FeeHandling) {
     setIsSavingFeeHandling(true);
@@ -340,40 +205,43 @@ function PaymentsSettingsPage() {
               </div>
             )}
 
-            {status === "not_connected" && isPro && (
+            {/* Not connected + no Stripe account yet → create account button */}
+            {status === "not_connected" && isPro && !hasStripeAccount && (
               <div className="space-y-3">
                 <p className="text-sm">
-                  No Stripe account connected. Connect a new Stripe account or authorize an existing
-                  account to enable payment fields.
+                  No Stripe account connected. Create a Stripe account to start accepting payments
+                  through your documents.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    onClick={handleConnectNewAccount}
-                    disabled={!canManage || isConnecting || isOAuthConnecting}
-                  >
-                    {isConnecting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <PlugZap className="mr-2 h-4 w-4" />
-                    )}
-                    Connect with Stripe
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleConnectExistingAccount}
-                    disabled={!canManage || isOAuthConnecting || isConnecting}
-                  >
-                    {isOAuthConnecting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Link2 className="mr-2 h-4 w-4" />
-                    )}
-                    Connect existing account
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleCreateAccount}
+                  disabled={!canManage || isCreatingAccount}
+                >
+                  {isCreatingAccount ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <PlugZap className="mr-2 h-4 w-4" />
+                  )}
+                  Connect with Stripe
+                </Button>
               </div>
             )}
 
+            {/* Stripe account exists but not fully onboarded → show embedded onboarding */}
+            {(status === "not_connected" || status === "pending" || status === "restricted") &&
+              isPro &&
+              hasStripeAccount &&
+              orgId && (
+                <StripeConnectProvider organizationId={orgId}>
+                  <div className="space-y-4">
+                    {(status === "pending" || status === "restricted") && (
+                      <ConnectNotificationBanner />
+                    )}
+                    <ConnectAccountOnboarding onExit={handleOnboardingExit} />
+                  </div>
+                </StripeConnectProvider>
+              )}
+
+            {/* Not on Pro plan */}
             {status === "not_connected" && !isPro && !isLoadingPlan && (
               <div className="space-y-3">
                 <p className="text-sm">
@@ -386,56 +254,14 @@ function PaymentsSettingsPage() {
               </div>
             )}
 
-            {(status === "pending" || status === "restricted") && isPro && (
-              <div className="space-y-3">
-                <p className="text-sm">
-                  Your Stripe account needs additional setup before you can accept payments.
-                </p>
-                {requirementsSummary && (
-                  <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-900">
-                    {requirementsSummary.currentlyDue > 0 && (
-                      <p>{requirementsSummary.currentlyDue} items currently due.</p>
-                    )}
-                    {requirementsSummary.pastDue > 0 && (
-                      <p>{requirementsSummary.pastDue} items past due.</p>
-                    )}
-                    {requirementsSummary.disabledReason && (
-                      <p>Reason: {requirementsSummary.disabledReason}</p>
-                    )}
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={handleContinueSetup} disabled={!canManage || isContinuing}>
-                    {isContinuing ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <PlugZap className="mr-2 h-4 w-4" />
-                    )}
-                    Continue setup
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <a href="https://dashboard.stripe.com/" target="_blank" rel="noreferrer">
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Open Stripe Dashboard
-                    </a>
-                  </Button>
+            {/* Connected → show account management inline */}
+            {status === "connected" && isPro && orgId && (
+              <StripeConnectProvider organizationId={orgId}>
+                <div className="space-y-4">
+                  <ConnectNotificationBanner />
+                  <ConnectAccountManagement />
                 </div>
-              </div>
-            )}
-
-            {status === "connected" && isPro && (
-              <div className="space-y-3">
-                <p className="text-sm">
-                  Stripe is connected and ready for payments. You can manage account details in the
-                  Stripe dashboard.
-                </p>
-                <Button variant="outline" asChild>
-                  <a href="https://dashboard.stripe.com/" target="_blank" rel="noreferrer">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Manage in Stripe
-                  </a>
-                </Button>
-              </div>
+              </StripeConnectProvider>
             )}
           </CardContent>
         </Card>

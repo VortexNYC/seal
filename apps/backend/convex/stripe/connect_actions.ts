@@ -239,6 +239,45 @@ export const connectExistingAccount = internalAction({
  * Called when the user returns from onboarding to ensure local state is up-to-date
  * (webhooks may not have arrived yet).
  */
+/**
+ * Create a Stripe AccountSession for embedded Connect components.
+ * Returns a client_secret that the frontend passes to `loadConnectAndInitialize()`.
+ * The session is scoped to a specific connected account and set of enabled components.
+ */
+export const createAccountSession = action({
+  args: {
+    organizationId: v.id("organizations"),
+    components: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args): Promise<{ clientSecret: string }> => {
+    await resolveAdminMembership(ctx, args.organizationId);
+
+    const account = await ctx.runQuery(
+      internal.stripe.connect_mutations.getAccountByOrganizationId,
+      {
+        organizationId: args.organizationId,
+      },
+    );
+
+    if (!account) {
+      throw new ConvexError("No Stripe account found for this organization");
+    }
+
+    const stripe = initializeStripe();
+
+    const accountSession = await stripe.accountSessions.create({
+      account: account.stripeAccountId,
+      components: {
+        account_onboarding: { enabled: true },
+        account_management: { enabled: true },
+        notification_banner: { enabled: true },
+      },
+    });
+
+    return { clientSecret: accountSession.client_secret };
+  },
+});
+
 export const refreshConnectedAccount = action({
   args: {
     organizationId: v.id("organizations"),
