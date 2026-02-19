@@ -880,6 +880,47 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
         return doc.userId === rlsCtx.userId;
       },
     },
+
+    // ====================
+    // AI
+    // ====================
+    ai_threads: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+    },
+
+    ai_progress: {
+      read: async () => {
+        // Progress is keyed by threadId which is already org-scoped via ai_threads.
+        // Allow any authenticated user to read progress (they need the threadId).
+        return rlsCtx !== null;
+      },
+      modify: async () => {
+        // Progress is only modified by internal mutations
+        return false;
+      },
+    },
+
+    ai_field_suggestions: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+    },
   };
 
   return rules as Rules<QueryCtx, DataModel>;

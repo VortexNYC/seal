@@ -1,6 +1,9 @@
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
 
+import { aiFieldSuggestionsTable } from "./schemas/ai_field_suggestions";
+import { aiProgressTable } from "./schemas/ai_progress";
+import { aiThreadsTable } from "./schemas/ai_threads";
 import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
 import { type AuditAction, type AuditResourceType, auditLogsTable } from "./schemas/audit_logs";
 import { dataExportsTable } from "./schemas/data_exports";
@@ -196,6 +199,11 @@ export default defineSchema({
 
   // Data exports (GDPR/CCPA compliance)
   data_exports: dataExportsTable,
+
+  // AI
+  ai_field_suggestions: aiFieldSuggestionsTable,
+  ai_threads: aiThreadsTable,
+  ai_progress: aiProgressTable,
 
   // MCP OAuth
   mcp_oauth_clients: mcpOauthClientsTable,
