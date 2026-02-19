@@ -943,6 +943,9 @@ export const createStripeObjectsForPaymentFields = internalAction({
         throw new ConvexError("Payment field not found");
       }
 
+      if (!field.recipientId) {
+        throw new ConvexError("Payment field must be assigned to a recipient before processing");
+      }
       const recipient = recipientMap.get(field.recipientId.toString());
       if (!recipient) {
         throw new ConvexError("Recipient for payment field not found");

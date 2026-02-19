@@ -120,7 +120,7 @@ export const getFieldWithRecipient = query({
       return null;
     }
 
-    const recipient = await ctx.db.get(field.recipientId);
+    const recipient = field.recipientId ? await ctx.db.get(field.recipientId) : null;
 
     return {
       field,

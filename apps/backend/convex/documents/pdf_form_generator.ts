@@ -40,7 +40,7 @@ export async function generateFillablePdf(
 
     // Add form fields for each signature field
     for (const field of pageFields) {
-      const recipient = recipients.get(field.recipientId);
+      const recipient = field.recipientId ? recipients.get(field.recipientId) : undefined;
       const fieldName = `${field.fieldType}_${field._id}`;
 
       // Convert percentage coordinates back to pixels

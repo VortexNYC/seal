@@ -39,7 +39,7 @@ function verifyDocumentIsDraft(document: Doc<"documents">): void {
 export const createField = mutation({
   args: {
     documentId: v.id("documents"),
-    recipientId: v.id("document_recipients"),
+    recipientId: v.optional(v.id("document_recipients")),
     fieldType: fieldTypeTuple,
     label: v.string(),
     isRequired: v.boolean(),
@@ -68,6 +68,7 @@ export const createField = mutation({
         customMessage: v.optional(v.string()),
       }),
     ),
+    templateFieldId: v.optional(v.id("template_fields")),
     ipAddress: v.optional(v.string()),
     userAgent: v.optional(v.string()),
   },
@@ -99,14 +100,16 @@ export const createField = mutation({
       throw new Error(pageValidation.error);
     }
 
-    // Validate field assignment to recipient
-    const assignmentValidation = await validateFieldAssignment(
-      ctx,
-      args.documentId,
-      args.recipientId,
-    );
-    if (!assignmentValidation.valid) {
-      throw new Error(assignmentValidation.error);
+    // Validate field assignment to recipient (only if assigned)
+    if (args.recipientId) {
+      const assignmentValidation = await validateFieldAssignment(
+        ctx,
+        args.documentId,
+        args.recipientId,
+      );
+      if (!assignmentValidation.valid) {
+        throw new Error(assignmentValidation.error);
+      }
     }
 
     // Validate field type and properties
@@ -115,8 +118,8 @@ export const createField = mutation({
       throw new Error(typeValidation.error);
     }
 
-    // Guard: only one payment field per recipient
-    if (args.fieldType === "payment") {
+    // Guard: only one payment field per recipient (only when assigned)
+    if (args.fieldType === "payment" && args.recipientId) {
       const existingPaymentField = await findExistingPaymentFieldForRecipient(
         ctx,
         args.documentId,
@@ -129,8 +132,7 @@ export const createField = mutation({
 
     // Auto-designate main signature if this is the first signature field for this recipient
     let isMainSignature: boolean | undefined;
-    if (args.fieldType === "signature") {
-      // Check how many signature fields this recipient already has
+    if (args.fieldType === "signature" && args.recipientId) {
       const existingSignatureFields = await ctx.db
         .query("signature_fields")
         .withIndex("by_document_recipient", (q) =>
@@ -139,7 +141,6 @@ export const createField = mutation({
         .filter((q) => q.eq(q.field("fieldType"), "signature"))
         .collect();
 
-      // If this is the first signature field, make it the main one
       if (existingSignatureFields.length === 0) {
         isMainSignature = true;
       }
@@ -160,6 +161,7 @@ export const createField = mutation({
       page: args.page,
       properties: args.properties,
       validationRules: args.validationRules,
+      templateFieldId: args.templateFieldId,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -469,6 +471,92 @@ export const deleteField = mutation({
 });
 
 /**
+ * Assign an unassigned field to a recipient
+ * Used when template-created fields need to be assigned to signers
+ */
+export const assignFieldToRecipient = mutation({
+  args: {
+    fieldId: v.id("signature_fields"),
+    recipientId: v.id("document_recipients"),
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const field = await ctx.db.get(args.fieldId);
+    if (!field) {
+      throw new Error("Field not found");
+    }
+
+    const document = await ctx.db.get(field.documentId);
+    if (!document) {
+      throw new Error("Document not found");
+    }
+
+    verifyDocumentIsDraft(document);
+
+    // Validate the recipient belongs to this document
+    const assignmentValidation = await validateFieldAssignment(
+      ctx,
+      field.documentId,
+      args.recipientId,
+    );
+    if (!assignmentValidation.valid) {
+      throw new Error(assignmentValidation.error);
+    }
+
+    const oldRecipientId = field.recipientId;
+
+    await ctx.db.patch(args.fieldId, {
+      recipientId: args.recipientId,
+      updatedAt: Date.now(),
+    });
+
+    // Auto-designate main signature if this is the first signature field for this recipient
+    if (field.fieldType === "signature") {
+      const existingSignatureFields = await ctx.db
+        .query("signature_fields")
+        .withIndex("by_document_recipient", (q) =>
+          q.eq("documentId", field.documentId).eq("recipientId", args.recipientId),
+        )
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("fieldType"), "signature"),
+            q.eq(q.field("isMainSignature"), true),
+          ),
+        )
+        .first();
+
+      if (!existingSignatureFields) {
+        await ctx.db.patch(args.fieldId, {
+          isMainSignature: true,
+          updatedAt: Date.now(),
+        });
+      }
+    }
+
+    await logFieldAction(ctx, {
+      organizationId: document.organizationId,
+      userId: identity.subject,
+      action: "field.updated",
+      fieldId: args.fieldId,
+      documentId: field.documentId,
+      recipientId: args.recipientId,
+      oldValues: { recipientId: oldRecipientId },
+      newValues: { recipientId: args.recipientId },
+      ipAddress: args.ipAddress ?? "web-authenticated",
+      userAgent: args.userAgent ?? "web",
+    });
+
+    return { success: true };
+  },
+});
+
+/**
  * Create multiple fields at once (useful for templates)
  */
 export const bulkCreateFields = mutation({
@@ -476,7 +564,7 @@ export const bulkCreateFields = mutation({
     fields: v.array(
       v.object({
         documentId: v.id("documents"),
-        recipientId: v.id("document_recipients"),
+        recipientId: v.optional(v.id("document_recipients")),
         fieldType: fieldTypeTuple,
         label: v.string(),
         isRequired: v.boolean(),
@@ -496,6 +584,7 @@ export const bulkCreateFields = mutation({
             helpText: v.optional(v.string()),
           }),
         ),
+        templateFieldId: v.optional(v.id("template_fields")),
       }),
     ),
   },
@@ -537,14 +626,16 @@ export const bulkCreateFields = mutation({
         throw new Error(`Field "${fieldData.label}": ${pageValidation.error}`);
       }
 
-      // Validate field assignment
-      const assignmentValidation = await validateFieldAssignment(
-        ctx,
-        fieldData.documentId,
-        fieldData.recipientId,
-      );
-      if (!assignmentValidation.valid) {
-        throw new Error(`Field "${fieldData.label}": ${assignmentValidation.error}`);
+      // Validate field assignment (only if assigned to a recipient)
+      if (fieldData.recipientId) {
+        const assignmentValidation = await validateFieldAssignment(
+          ctx,
+          fieldData.documentId,
+          fieldData.recipientId,
+        );
+        if (!assignmentValidation.valid) {
+          throw new Error(`Field "${fieldData.label}": ${assignmentValidation.error}`);
+        }
       }
 
       // Validate field type
@@ -607,6 +698,11 @@ export const setMainSignature = mutation({
     // If already main signature, nothing to do
     if (field.isMainSignature === true) {
       return { success: true, message: "Already set as main signature" };
+    }
+
+    // Cannot set main signature on unassigned field
+    if (!field.recipientId) {
+      throw new Error("Cannot set main signature on an unassigned field");
     }
 
     // Find any other main signature for this recipient and unset it
