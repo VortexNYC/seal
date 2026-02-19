@@ -18,6 +18,8 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.30",
     "@clerk/backend": "^2.29.4",
+    "@convex-dev/action-cache": "^0.3.0",
+    "@convex-dev/action-retrier": "^0.3.0",
     "@convex-dev/agent": "^0.3.2",
     "@convex-dev/rate-limiter": "^0.3.2",
     "@seal/transactional": "workspace:*",
