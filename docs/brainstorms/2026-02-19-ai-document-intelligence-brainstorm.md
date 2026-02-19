@@ -354,12 +354,69 @@ Each phase is independently shippable and valuable.
 - **Visual PDF annotations for redlining**: Matches how lawyers actually work. More intuitive than a text sidebar.
 - **Per-workspace vector index**: Scales naturally with Convex. Org-scoped for data isolation.
 
-## Open Questions
+## Business Decisions
 
-- **Gemini API key management**: Store in Convex env vars (same pattern as Stripe). One key per deployment or per-org?
+### Resolved
+
+- **Gemini API key**: Seal-managed only. Single key stored in Convex env vars (same pattern as Stripe). Simpler for users, we control everything.
+- **Recipient visibility**: Sender-only by default. AI features (field suggestions, redlines) only visible to document creator. May add per-document toggle later.
+- **Trigger model**: Manual default ("Analyze with AI" button). Auto-analyze available as a workspace setting.
+
+### Open (Deciding Later)
+
+- **Plan gating**: Not gated for now. Will decide plan limits after seeing real usage patterns and costs. Could be Pro-only, free-with-limits, or usage-based.
+- **Cost model**: Need to decide how to handle Gemini API costs. Options: absorb into plan pricing, usage-based addon, or absorb with soft caps. Will revisit after Phase 1 ships and we have real cost data.
 - **Embedding model**: Gemini's `text-embedding-004` (768 dims) vs a dedicated embedding model. Start with Gemini for simplicity.
 - **Document versioning**: When a document is re-uploaded, do we re-analyze? Probably yes, with a "re-analyze" button.
-- **Plan gating**: Which plan gets AI features? Pro only? Or free with limits?
+
+---
+
+## Convex Components to Adopt
+
+These components should be integrated as we build each phase:
+
+### Phase 1 (Auto Field Placement)
+| Component | Purpose |
+|---|---|
+| **AI Agent** (`@convex-dev/agent`) | Orchestration, tool calling, usage tracking |
+| **Action Cache** (`@convex-dev/action-cache`) | Cache Gemini responses — same PDF analyzed twice returns cached result |
+| **Action Retrier** (`@convex-dev/action-retrier`) | Auto-retry Gemini API failures with backoff |
+| **Workflow** (`@convex-dev/workflow`) | Durable multi-step pipeline: analyze -> extract -> suggest fields |
+
+### Phase 2 (Payment Extraction)
+| Component | Purpose |
+|---|---|
+| (Reuses Phase 1 infra) | Extends the Agent with payment-specific tools |
+
+### Phase 3 (Document Redlining)
+| Component | Purpose |
+|---|---|
+| (Reuses Phase 1 infra) | Extends the Agent with redlining tools |
+
+### Phase 4 (Cross-Document Search)
+| Component | Purpose |
+|---|---|
+| **RAG** (`@convex-dev/rag`) | Chunking, embedding, vector indexing for document search |
+| **Persistent Text Streaming** (`@convex-dev/persistent-text-streaming`) | Stream search answers while persisting them |
+
+### Cross-Cutting (All Phases)
+| Component | Purpose |
+|---|---|
+| **Neutral Cost** (`@convex-dev/neutralcost`) | Track AI costs per-org, per-user, per-agent for billing decisions |
+| **Rate Limiter** (`@convex-dev/rate-limiter`) | Per-user/per-org rate limiting on AI requests (replace our custom impl) |
+| **Aggregate** (`@convex-dev/aggregate`) | Track usage counts efficiently (AI analyses per org per month) |
+| **Workpool** (`@convex-dev/workpool`) | Priority queues — Pro users get priority AI processing |
+
+### Future Enhancements
+| Component | Purpose |
+|---|---|
+| **Timeline** (`@convex-dev/timeline`) | Undo/redo for AI field placement in document editor |
+| **Presence** (`@convex-dev/presence`) | Show who's viewing a document in real-time |
+| **Files Control** (`@convex-dev/files-control`) | Upgrade file uploads with access control and lifecycle cleanup |
+| **Durable Agents** (`@convex-dev/durable-agents`) | Long-running AI agents for batch processing entire doc libraries |
+| **Migrations** (`@convex-dev/migrations`) | Backfill AI embeddings across existing documents |
+
+---
 
 ## Next Steps
 
