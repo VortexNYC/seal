@@ -13,10 +13,7 @@ const SanityStudio = lazy(() =>
 export const Route = createFileRoute("/studio")({
   component: StudioRouteComponent,
   head: () => ({
-    meta: [
-      { title: "Seal Studio" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ title: "Seal Studio" }, { name: "robots", content: "noindex, nofollow" }],
   }),
 });
 

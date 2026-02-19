@@ -162,7 +162,12 @@ export function EsignConsentDialog({
                 {recipientEmail}
               </p>
               <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                Consent Date: {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                Consent Date:{" "}
+                {new Date().toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
               </p>
             </CardContent>
           </Card>
@@ -240,7 +245,10 @@ export function EsignConsentDialog({
             onCheckedChange={(checked) => setIsChecked(checked === true)}
             className="mt-0.5"
           />
-          <Label htmlFor="esign-consent" className="cursor-pointer text-sm font-medium leading-snug">
+          <Label
+            htmlFor="esign-consent"
+            className="cursor-pointer text-sm font-medium leading-snug"
+          >
             I consent to use electronic signatures as described above
           </Label>
         </div>

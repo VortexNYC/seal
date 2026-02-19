@@ -163,7 +163,8 @@ function FieldRow({
                 </span>
                 <span className="text-muted-foreground">•</span>
                 <span className="text-muted-foreground">
-                  {PAYMENT_TYPE_LABELS[field.paymentConfig.paymentType] ?? field.paymentConfig.paymentType}
+                  {PAYMENT_TYPE_LABELS[field.paymentConfig.paymentType] ??
+                    field.paymentConfig.paymentType}
                 </span>
               </div>
             )}
@@ -237,10 +238,7 @@ function VirtualizedFieldList({
 
   return (
     <div ref={parentRef} className="max-h-[60vh] overflow-y-auto">
-      <div
-        className="relative w-full"
-        style={{ height: `${virtualizer.getTotalSize()}px` }}
-      >
+      <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const field = fields[virtualRow.index];
           const recipient = field.recipientId ? recipientMap.get(field.recipientId) : undefined;

@@ -80,7 +80,10 @@ async function generateCertificatePdf(data: CertificateData): Promise<Uint8Array
     ["Document Name:", data.document.name],
     ["Document ID:", data.document._id],
     ["Status:", "Completed"],
-    ["Created:", new Date(data.document._creationTime).toLocaleString("en-US", { timeZone: "UTC" })],
+    [
+      "Created:",
+      new Date(data.document._creationTime).toLocaleString("en-US", { timeZone: "UTC" }),
+    ],
     [
       "Completed:",
       data.document.completedAt
@@ -253,16 +256,13 @@ async function generateCertificatePdf(data: CertificateData): Promise<Uint8Array
   });
   y -= 12;
 
-  page.drawText(
-    `Generated: ${new Date().toLocaleString("en-US", { timeZone: "UTC" })} UTC`,
-    {
-      x: MARGIN,
-      y,
-      size: 8,
-      font: helvetica,
-      color: rgb(0.5, 0.5, 0.5),
-    },
-  );
+  page.drawText(`Generated: ${new Date().toLocaleString("en-US", { timeZone: "UTC" })} UTC`, {
+    x: MARGIN,
+    y,
+    size: 8,
+    font: helvetica,
+    color: rgb(0.5, 0.5, 0.5),
+  });
   y -= 12;
 
   page.drawText(
@@ -318,9 +318,12 @@ export const generateCertificate = internalAction({
     );
 
     // 3. Get audit trail
-    const auditLogs = await ctx.runQuery(internal.audit_logs.queries.getDocumentAuditTrailInternal, {
-      documentId: args.documentId,
-    });
+    const auditLogs = await ctx.runQuery(
+      internal.audit_logs.queries.getDocumentAuditTrailInternal,
+      {
+        documentId: args.documentId,
+      },
+    );
 
     // 4. Generate PDF
     const pdfBytes = await generateCertificatePdf({

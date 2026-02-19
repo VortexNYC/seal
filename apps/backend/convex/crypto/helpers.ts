@@ -91,7 +91,7 @@ export async function generateSignatureImageHash(
   if (!imageData) return undefined;
 
   // Strip data URL prefix (e.g., "data:image/png;base64,") to hash only the raw image bytes
-  const rawData = imageData.includes(",") ? imageData.split(",")[1] ?? imageData : imageData;
+  const rawData = imageData.includes(",") ? (imageData.split(",")[1] ?? imageData) : imageData;
 
   return generateStringHash(rawData);
 }

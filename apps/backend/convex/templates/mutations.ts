@@ -363,9 +363,7 @@ export const addTemplateField = permissionMutation("templates:edit")({
       .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
       .collect();
     const nextOrder =
-      existingFields.length > 0
-        ? Math.max(...existingFields.map((f) => f.order)) + 1
-        : 0;
+      existingFields.length > 0 ? Math.max(...existingFields.map((f) => f.order)) + 1 : 0;
 
     const fieldId = await ctx.db.insert("template_fields", {
       templateId: args.templateId,

@@ -52,14 +52,16 @@ export const logEmailEvent = internalMutation({
     }
 
     // Extract documentId from the notification data (nested in data object)
-    const documentId = "documentId" in notification.data
-      ? (notification.data.documentId as Id<"documents"> | undefined)
-      : undefined;
+    const documentId =
+      "documentId" in notification.data
+        ? (notification.data.documentId as Id<"documents"> | undefined)
+        : undefined;
 
     // Extract recipientId if present
-    const recipientId = "recipientId" in notification.data
-      ? (notification.data.recipientId as Id<"document_recipients"> | undefined)
-      : undefined;
+    const recipientId =
+      "recipientId" in notification.data
+        ? (notification.data.recipientId as Id<"document_recipients"> | undefined)
+        : undefined;
 
     await logAction(ctx, {
       organizationId: notification.organizationId,

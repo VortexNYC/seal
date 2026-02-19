@@ -1,11 +1,7 @@
 import { urlFor } from "~/lib/sanity/image";
 import type { TestimonialsSectionBlock } from "~/lib/sanity/queries";
 
-export function TestimonialsBlockComponent({
-  block,
-}: {
-  block: TestimonialsSectionBlock;
-}) {
+export function TestimonialsBlockComponent({ block }: { block: TestimonialsSectionBlock }) {
   return (
     <section className="relative py-24 sm:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,9 +40,7 @@ export function TestimonialsBlockComponent({
                     </div>
                   )}
                   <div>
-                    <div className="font-semibold text-white">
-                      {testimonial.author}
-                    </div>
+                    <div className="font-semibold text-white">{testimonial.author}</div>
                     <div className="text-sm text-white/50">
                       {testimonial.role}
                       {testimonial.company && `, ${testimonial.company}`}

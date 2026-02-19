@@ -1,6 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
+
 import { Button } from "~/components/ui/button";
 import {
   Sheet,
@@ -43,11 +44,7 @@ export function Navbar() {
     >
       <div className="container mx-auto flex h-14 items-center justify-between px-4 sm:h-16 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link
-          aria-label="Seal homepage"
-          className="flex items-center gap-2"
-          to="/"
-        >
+        <Link aria-label="Seal homepage" className="flex items-center gap-2" to="/">
           <div className="flex size-8 items-center justify-center rounded-lg bg-teal-600">
             <span className="text-sm font-bold text-white">S</span>
           </div>
@@ -88,12 +85,7 @@ export function Navbar() {
         <div className="flex items-center gap-2 md:hidden">
           <Sheet onOpenChange={setIsOpen} open={isOpen}>
             <SheetTrigger asChild>
-              <Button
-                aria-label="Open menu"
-                className="size-11"
-                size="icon"
-                variant="ghost"
-              >
+              <Button aria-label="Open menu" className="size-11" size="icon" variant="ghost">
                 <Menu aria-hidden="true" className="size-5" />
               </Button>
             </SheetTrigger>

@@ -247,10 +247,7 @@ export async function verifyDocumentIntegrityForSigning(
     .collect();
 
   for (const sig of existingSignatures) {
-    if (
-      sig.documentHashAtSigning &&
-      sig.documentHashAtSigning !== document.documentHash
-    ) {
+    if (sig.documentHashAtSigning && sig.documentHashAtSigning !== document.documentHash) {
       throw new ConvexError({
         code: "INTEGRITY_ERROR",
         message:

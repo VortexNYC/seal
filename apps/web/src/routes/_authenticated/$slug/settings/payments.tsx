@@ -106,7 +106,8 @@ function PaymentsSettingsPage() {
 
   const status = connectedAccount?.status ?? "not_connected";
   const canManage = connectedAccount?.canManage ?? false;
-  const hasStripeAccount = connectedAccount?.account !== null && connectedAccount?.account !== undefined;
+  const hasStripeAccount =
+    connectedAccount?.account !== null && connectedAccount?.account !== undefined;
 
   const feeHandling = connectedAccount?.account?.feeHandling ?? "absorb";
 
@@ -212,10 +213,7 @@ function PaymentsSettingsPage() {
                   No Stripe account connected. Create a Stripe account to start accepting payments
                   through your documents.
                 </p>
-                <Button
-                  onClick={handleCreateAccount}
-                  disabled={!canManage || isCreatingAccount}
-                >
+                <Button onClick={handleCreateAccount} disabled={!canManage || isCreatingAccount}>
                   {isCreatingAccount ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (

@@ -61,7 +61,10 @@ export const pricingTier = defineType({
   preview: {
     select: { title: "name", subtitle: "price" },
     prepare({ title, subtitle }) {
-      return { title, subtitle: subtitle !== null && subtitle !== undefined ? `$${subtitle}` : "Custom" };
+      return {
+        title,
+        subtitle: subtitle !== null && subtitle !== undefined ? `$${subtitle}` : "Custom",
+      };
     },
   },
 });

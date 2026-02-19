@@ -1,4 +1,5 @@
 import { Send, Shield, Users, Zap } from "lucide-react";
+
 import type { FeaturesSectionBlock } from "~/lib/sanity/queries";
 
 const GRID_LAYOUTS: Record<string, string> = {
@@ -7,8 +8,7 @@ const GRID_LAYOUTS: Record<string, string> = {
 };
 
 export function FeaturesBlockComponent({ block }: { block: FeaturesSectionBlock }) {
-  const gridCols =
-    GRID_LAYOUTS[block.layout ?? ""] ?? "sm:grid-cols-2 lg:grid-cols-3";
+  const gridCols = GRID_LAYOUTS[block.layout ?? ""] ?? "sm:grid-cols-2 lg:grid-cols-3";
 
   return (
     <section className="relative py-24 sm:py-32">
@@ -40,13 +40,9 @@ export function FeaturesBlockComponent({ block }: { block: FeaturesSectionBlock 
                     <span className="text-2xl">{feature.icon}</span>
                   </div>
                 )}
-                <h3 className="mb-3 text-xl font-semibold text-white">
-                  {feature.title}
-                </h3>
+                <h3 className="mb-3 text-xl font-semibold text-white">{feature.title}</h3>
                 {feature.description && (
-                  <p className="leading-relaxed text-white/60">
-                    {feature.description}
-                  </p>
+                  <p className="leading-relaxed text-white/60">{feature.description}</p>
                 )}
               </div>
             </div>
@@ -115,17 +111,10 @@ export function StaticFeatures() {
                 <div
                   className={`mb-6 flex size-14 items-center justify-center rounded-2xl ${feature.bgClass}`}
                 >
-                  <feature.icon
-                    aria-hidden="true"
-                    className={`size-7 ${feature.textClass}`}
-                  />
+                  <feature.icon aria-hidden="true" className={`size-7 ${feature.textClass}`} />
                 </div>
-                <h3 className="mb-3 text-xl font-semibold text-white">
-                  {feature.title}
-                </h3>
-                <p className="leading-relaxed text-white/60">
-                  {feature.description}
-                </p>
+                <h3 className="mb-3 text-xl font-semibold text-white">{feature.title}</h3>
+                <p className="leading-relaxed text-white/60">{feature.description}</p>
               </div>
             </div>
           ))}

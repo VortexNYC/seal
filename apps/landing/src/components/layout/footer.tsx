@@ -30,22 +30,13 @@ export function Footer() {
 
           {/* Links */}
           <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-            <a
-              className="transition-colors hover:text-foreground"
-              href="https://seal.co/docs"
-            >
+            <a className="transition-colors hover:text-foreground" href="https://seal.co/docs">
               Docs
             </a>
-            <Link
-              className="transition-colors hover:text-foreground"
-              to="/changelog"
-            >
+            <Link className="transition-colors hover:text-foreground" to="/changelog">
               Changelog
             </Link>
-            <a
-              className="transition-colors hover:text-foreground"
-              href="mailto:support@seal.co"
-            >
+            <a className="transition-colors hover:text-foreground" href="mailto:support@seal.co">
               Support
             </a>
           </div>

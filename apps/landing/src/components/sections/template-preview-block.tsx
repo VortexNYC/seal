@@ -1,13 +1,9 @@
 import { FileText } from "lucide-react";
 
-import type { TemplatePreviewBlock } from "~/lib/sanity/queries";
 import { urlFor } from "~/lib/sanity/image";
+import type { TemplatePreviewBlock } from "~/lib/sanity/queries";
 
-export function TemplatePreviewBlockComponent({
-  block,
-}: {
-  block: TemplatePreviewBlock;
-}) {
+export function TemplatePreviewBlockComponent({ block }: { block: TemplatePreviewBlock }) {
   return (
     <section className="py-24 sm:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,9 +15,7 @@ export function TemplatePreviewBlockComponent({
               </h2>
             )}
             {block.description && (
-              <p className="text-lg text-white/60 text-pretty">
-                {block.description}
-              </p>
+              <p className="text-lg text-white/60 text-pretty">{block.description}</p>
             )}
           </div>
         )}
@@ -52,13 +46,9 @@ export function TemplatePreviewBlockComponent({
                     {template.category}
                   </span>
                 )}
-                <h3 className="mb-1 text-lg font-semibold text-white">
-                  {template.name}
-                </h3>
+                <h3 className="mb-1 text-lg font-semibold text-white">{template.name}</h3>
                 {template.description && (
-                  <p className="text-sm text-white/50 text-pretty">
-                    {template.description}
-                  </p>
+                  <p className="text-sm text-white/50 text-pretty">{template.description}</p>
                 )}
               </div>
             </div>

@@ -269,7 +269,8 @@ export const processWebhookDeliveries = internalAction({
           const shouldAbandon = attemptCount >= MAX_ATTEMPTS;
           const nextRetryAt = shouldAbandon
             ? undefined
-            : Date.now() + (RETRY_INTERVALS[attemptCount - 1] ?? RETRY_INTERVALS[RETRY_INTERVALS.length - 1]!);
+            : Date.now() +
+              (RETRY_INTERVALS[attemptCount - 1] ?? RETRY_INTERVALS[RETRY_INTERVALS.length - 1]!);
 
           await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
             deliveryId: delivery._id,
@@ -293,7 +294,8 @@ export const processWebhookDeliveries = internalAction({
         const shouldAbandon = attemptCount >= MAX_ATTEMPTS;
         const nextRetryAt = shouldAbandon
           ? undefined
-          : Date.now() + (RETRY_INTERVALS[attemptCount - 1] ?? RETRY_INTERVALS[RETRY_INTERVALS.length - 1]!);
+          : Date.now() +
+            (RETRY_INTERVALS[attemptCount - 1] ?? RETRY_INTERVALS[RETRY_INTERVALS.length - 1]!);
 
         const errorMessage =
           error instanceof Error

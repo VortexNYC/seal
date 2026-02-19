@@ -1,12 +1,7 @@
 /// <reference types="vite/client" />
-import {
-  createRootRoute,
-  HeadContent,
-  Outlet,
-  Scripts,
-  useLocation,
-} from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Outlet, Scripts, useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+
 import appCss from "~/app/globals.css?url";
 import { Footer } from "~/components/layout/footer";
 import { Navbar } from "~/components/layout/navbar";

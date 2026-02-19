@@ -8,5 +8,4 @@ export const dataExportsTable = defineTable({
   error: v.optional(v.string()),
   requestedAt: v.number(),
   completedAt: v.optional(v.number()),
-})
-  .index("by_user", ["userId"]);
+}).index("by_user", ["userId"]);

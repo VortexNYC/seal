@@ -6,6 +6,7 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import { mutation } from "../_generated/server";
+import { logRecipientAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { generateStringHash } from "../crypto/helpers";
 import {
@@ -13,7 +14,6 @@ import {
   recipientRoleTuple,
   recipientStatusTuple,
 } from "../schemas/document_recipients";
-import { logRecipientAction } from "../audit_logs/helpers";
 import { publishWebhookEvent } from "../webhooks/publish";
 import { findRecipientByToken, verifyDocumentOwnership } from "./recipient_helpers";
 
@@ -28,13 +28,10 @@ async function generateSigningToken(): Promise<{
 }> {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  const token = Array.from(array, (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
+  const token = Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
   const tokenHash = await generateStringHash(token);
   return { token, tokenHash };
 }
-
 
 /**
  * Add recipients to a document
@@ -117,7 +114,11 @@ export const addRecipients = permissionMutation("documents:edit")({
           action: "recipient.added",
           documentId: args.documentId,
           recipientId,
-          newValues: { email: recipient.email.toLowerCase(), name: recipient.name, role: recipient.role },
+          newValues: {
+            email: recipient.email.toLowerCase(),
+            name: recipient.name,
+            role: recipient.role,
+          },
           ipAddress: "web-authenticated",
         });
       }
@@ -183,7 +184,12 @@ export const removeRecipient = permissionMutation("documents:edit")({
         action: "recipient.removed",
         documentId: recipient.documentId,
         recipientId: args.recipientId,
-        newValues: { email: recipient.email, name: recipient.name, role: recipient.role, deletedFieldsCount: fieldsToDelete.length },
+        newValues: {
+          email: recipient.email,
+          name: recipient.name,
+          role: recipient.role,
+          deletedFieldsCount: fieldsToDelete.length,
+        },
         ipAddress: "web-authenticated",
       });
     }
@@ -818,8 +824,7 @@ export const regenerateSigningToken = permissionMutation("documents:edit")({
 
     // 4. Generate new token with extended expiration
     const now = Date.now();
-    const { token: newToken, tokenHash: newTokenHash } =
-      await generateSigningToken();
+    const { token: newToken, tokenHash: newTokenHash } = await generateSigningToken();
     const newExpiration = now + 30 * 24 * 60 * 60 * 1000; // 30 days from now
 
     await ctx.db.patch(args.recipientId, {

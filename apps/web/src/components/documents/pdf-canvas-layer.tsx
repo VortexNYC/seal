@@ -115,7 +115,6 @@ export function PdfCanvasLayer({
               }}
             />
           ))}
-
         </Layer>
       </Stage>
     </div>

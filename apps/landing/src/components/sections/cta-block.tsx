@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+
 import { Button } from "~/components/ui/button";
 import type { CtaSectionBlock } from "~/lib/sanity/queries";
 
@@ -54,9 +55,7 @@ export function CtaBlockComponent({ block }: { block: CtaSectionBlock }) {
                   size="lg"
                   variant="outline"
                 >
-                  <a href={block.secondaryCta.link}>
-                    {block.secondaryCta.text}
-                  </a>
+                  <a href={block.secondaryCta.link}>{block.secondaryCta.text}</a>
                 </Button>
               )}
             </div>
@@ -78,8 +77,8 @@ export function StaticCta() {
             Ready to sign smarter?
           </h2>
           <p className="mx-auto mb-12 max-w-2xl text-xl text-white/60 text-pretty">
-            Join thousands of professionals who trust Seal for their document
-            signatures. Free to start, no credit card required.
+            Join thousands of professionals who trust Seal for their document signatures. Free to
+            start, no credit card required.
           </p>
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button

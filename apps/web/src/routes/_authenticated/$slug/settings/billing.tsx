@@ -135,10 +135,7 @@ function BillingSettingsPage() {
   }, [createEmbeddedCheckout, checkoutLookupKey]);
 
   // Memoize options so EmbeddedCheckoutProvider doesn't re-initialize
-  const checkoutOptions = useMemo(
-    () => ({ fetchClientSecret }),
-    [fetchClientSecret],
-  );
+  const checkoutOptions = useMemo(() => ({ fetchClientSecret }), [fetchClientSecret]);
 
   function handleUpgrade(lookupKey: string) {
     setCheckoutLookupKey(lookupKey);
@@ -203,9 +200,7 @@ function BillingSettingsPage() {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              <CardDescription>
-                Enter your payment details below to upgrade to Pro.
-              </CardDescription>
+              <CardDescription>Enter your payment details below to upgrade to Pro.</CardDescription>
             </CardHeader>
             <CardContent>
               <EmbeddedCheckoutProvider stripe={stripePromise} options={checkoutOptions}>
@@ -287,7 +282,10 @@ function BillingSettingsPage() {
                     {proFeatures.length > 0 && (
                       <ul className="space-y-2 text-sm">
                         {proFeatures.map((feature: string) => (
-                          <li key={feature} className="text-muted-foreground flex items-center gap-2">
+                          <li
+                            key={feature}
+                            className="text-muted-foreground flex items-center gap-2"
+                          >
                             <Check className="text-primary h-3.5 w-3.5 shrink-0" />
                             {formatFeatureLabel(feature)}
                           </li>
@@ -295,10 +293,7 @@ function BillingSettingsPage() {
                       </ul>
                     )}
                     {proMonthlyLookupKey && (
-                      <Button
-                        className="w-full"
-                        onClick={() => handleUpgrade(proMonthlyLookupKey)}
-                      >
+                      <Button className="w-full" onClick={() => handleUpgrade(proMonthlyLookupKey)}>
                         <Sparkles className="mr-2 h-4 w-4" />
                         Upgrade to Pro
                       </Button>

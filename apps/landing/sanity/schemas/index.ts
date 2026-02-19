@@ -5,11 +5,4 @@ import { pricingTier } from "./pricingTier";
 import { siteSettings } from "./siteSettings";
 import { testimonial } from "./testimonial";
 
-export const schemaTypes = [
-  faqItem,
-  pricingTier,
-  testimonial,
-  siteSettings,
-  changelog,
-  page,
-];
+export const schemaTypes = [faqItem, pricingTier, testimonial, siteSettings, changelog, page];

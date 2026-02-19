@@ -2,10 +2,9 @@ import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
 
 import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
-import { dataExportsTable } from "./schemas/data_exports";
 import { type AuditAction, type AuditResourceType, auditLogsTable } from "./schemas/audit_logs";
+import { dataExportsTable } from "./schemas/data_exports";
 import { type DocumentPermissionLevel, documentAccessTable } from "./schemas/document_access";
-import { downloadTokensTable } from "./schemas/download_tokens";
 import { documentInvoicesTable } from "./schemas/document_invoices";
 import {
   type RecipientStatus as DocumentRecipientStatus,
@@ -19,6 +18,7 @@ import {
 } from "./schemas/document_reminders";
 import { type DocumentVersionChangeType, documentVersionsTable } from "./schemas/document_versions";
 import { type DocumentSharingMode, type DocumentStatus, documentsTable } from "./schemas/documents";
+import { downloadTokensTable } from "./schemas/download_tokens";
 import { type EmailStatus, type EmailType, emailLogsTable } from "./schemas/email_logs";
 import {
   mcpOauthClientsTable,
@@ -99,7 +99,12 @@ export type {
 };
 
 // Re-export document types
-export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus, DocumentVersionChangeType };
+export type {
+  DocumentPermissionLevel,
+  DocumentSharingMode,
+  DocumentStatus,
+  DocumentVersionChangeType,
+};
 export type { RecipientRole, DocumentRecipientStatus };
 export type { ReminderStatus, ReminderType };
 export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";

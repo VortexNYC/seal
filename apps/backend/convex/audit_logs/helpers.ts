@@ -240,7 +240,15 @@ export async function logRecipientAction(
     actorType: "user" | "recipient";
     actorId: string;
     userId?: string;
-    action: "recipient.added" | "recipient.updated" | "recipient.removed" | "recipient.viewed" | "recipient.signed" | "recipient.declined" | "recipient.esign_consent" | "recipient.esign_opt_out";
+    action:
+      | "recipient.added"
+      | "recipient.updated"
+      | "recipient.removed"
+      | "recipient.viewed"
+      | "recipient.signed"
+      | "recipient.declined"
+      | "recipient.esign_consent"
+      | "recipient.esign_opt_out";
     documentId: Id<"documents">;
     recipientId: Id<"document_recipients">;
     newValues?: Record<string, unknown>;

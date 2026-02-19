@@ -1,11 +1,8 @@
 import { Check, X } from "lucide-react";
+
 import type { ComparisonTableBlock } from "~/lib/sanity/queries";
 
-export function ComparisonTableBlockComponent({
-  block,
-}: {
-  block: ComparisonTableBlock;
-}) {
+export function ComparisonTableBlockComponent({ block }: { block: ComparisonTableBlock }) {
   const allFeatureKeys = Object.keys(block.sealFeatures);
 
   return (
@@ -28,12 +25,8 @@ export function ComparisonTableBlockComponent({
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="pb-4 pr-4 text-sm font-medium text-white/40">
-                  Feature
-                </th>
-                <th className="pb-4 px-4 text-center text-sm font-bold text-teal-400">
-                  Seal
-                </th>
+                <th className="pb-4 pr-4 text-sm font-medium text-white/40">Feature</th>
+                <th className="pb-4 px-4 text-center text-sm font-bold text-teal-400">Seal</th>
                 {block.competitors.map((competitor) => (
                   <th
                     className="pb-4 px-4 text-center text-sm font-medium text-white/40"

@@ -1,12 +1,6 @@
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 import { FieldPropertiesPanel } from "./field-properties-panel";
 import type { FieldType } from "./field-toolbar";
 
@@ -64,9 +58,7 @@ export function FieldPropertiesDialog({
       <DialogContent className="max-w-md gap-0 overflow-hidden p-0 [&>button]:hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>Field Properties</DialogTitle>
-          <DialogDescription>
-            Edit field label, requirements, and configuration
-          </DialogDescription>
+          <DialogDescription>Edit field label, requirements, and configuration</DialogDescription>
         </DialogHeader>
         <FieldPropertiesPanel
           field={field}

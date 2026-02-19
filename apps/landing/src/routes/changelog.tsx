@@ -67,30 +67,22 @@ function ChangelogPage() {
                     <div className="flex-1 pb-8">
                       {/* Meta info */}
                       <div className="mb-3 flex flex-wrap items-center gap-3">
-                        <Badge
-                          className="border-teal-500/30 text-teal-400"
-                          variant="outline"
-                        >
+                        <Badge className="border-teal-500/30 text-teal-400" variant="outline">
                           <Tag className="mr-1 size-3" />
                           {entry.version}
                         </Badge>
                         <span className="flex items-center gap-1 text-sm text-white/40">
                           <Calendar className="size-3" />
-                          {new Date(entry.releaseDate).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            },
-                          )}
+                          {new Date(entry.releaseDate).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
                         </span>
                       </div>
 
                       {/* Title */}
-                      <h2 className="mb-2 text-2xl font-bold text-white">
-                        {entry.title}
-                      </h2>
+                      <h2 className="mb-2 text-2xl font-bold text-white">{entry.title}</h2>
 
                       {/* Summary */}
                       {entry.summary && (
@@ -105,10 +97,7 @@ function ChangelogPage() {
                             className="h-auto w-full"
                             height={400}
                             loading="lazy"
-                            src={urlFor(entry.coverImage)
-                              .width(800)
-                              .height(400)
-                              .url()}
+                            src={urlFor(entry.coverImage).width(800).height(400).url()}
                             width={800}
                           />
                         </div>

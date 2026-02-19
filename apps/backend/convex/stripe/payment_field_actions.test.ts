@@ -88,7 +88,13 @@ describe("toStripePaymentMethodTypes", () => {
   });
 
   test("mixed methods: filters wallets, maps ach_debit, keeps card", () => {
-    const result = toStripePaymentMethodTypes(["card", "apple_pay", "ach_debit", "google_pay", "link"]);
+    const result = toStripePaymentMethodTypes([
+      "card",
+      "apple_pay",
+      "ach_debit",
+      "google_pay",
+      "link",
+    ]);
     expect(result).toEqual(["card", "us_bank_account", "link"]);
   });
 });

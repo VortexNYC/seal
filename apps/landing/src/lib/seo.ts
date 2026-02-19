@@ -149,9 +149,7 @@ export function generateWebSiteSchema() {
 /**
  * Generate FAQ JSON-LD schema from an array of Q&A pairs
  */
-export function generateFAQSchema(
-  faqs: Array<{ question: string; answer: string }>,
-) {
+export function generateFAQSchema(faqs: Array<{ question: string; answer: string }>) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",

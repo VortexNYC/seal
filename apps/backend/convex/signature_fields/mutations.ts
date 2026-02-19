@@ -524,10 +524,7 @@ export const assignFieldToRecipient = mutation({
           q.eq("documentId", field.documentId).eq("recipientId", args.recipientId),
         )
         .filter((q) =>
-          q.and(
-            q.eq(q.field("fieldType"), "signature"),
-            q.eq(q.field("isMainSignature"), true),
-          ),
+          q.and(q.eq(q.field("fieldType"), "signature"), q.eq(q.field("isMainSignature"), true)),
         )
         .first();
 

@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+
 import { Button } from "~/components/ui/button";
 import { urlFor } from "~/lib/sanity/image";
 import type { HeroBlock } from "~/lib/sanity/queries";
@@ -49,9 +50,7 @@ export function HeroBlockComponent({ block }: { block: HeroBlock }) {
                 size="lg"
                 variant="outline"
               >
-                <a href={block.secondaryCta.link}>
-                  {block.secondaryCta.text}
-                </a>
+                <a href={block.secondaryCta.link}>{block.secondaryCta.text}</a>
               </Button>
             )}
           </div>
@@ -136,9 +135,7 @@ export function StaticHero() {
             size="lg"
             variant="outline"
           >
-            <a href="/docs">
-              View Docs
-            </a>
+            <a href="/docs">View Docs</a>
           </Button>
         </div>
 
@@ -171,10 +168,7 @@ export function StaticHero() {
                   Recipients
                 </div>
                 {["Signer 1", "Signer 2", "CC: Legal"].map((name) => (
-                  <div
-                    className="rounded-lg border border-white/10 bg-white/5 p-3"
-                    key={name}
-                  >
+                  <div className="rounded-lg border border-white/10 bg-white/5 p-3" key={name}>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-white/80">{name}</span>
                       <span className="rounded bg-teal-500/20 px-2 py-0.5 text-xs text-teal-400">

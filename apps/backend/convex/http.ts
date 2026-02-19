@@ -2242,10 +2242,9 @@ http.route({
     }
 
     // Validate token and get document ID
-    const result = await ctx.runMutation(
-      internal.documents.download_tokens.validateAndUseToken,
-      { token },
-    );
+    const result = await ctx.runMutation(internal.documents.download_tokens.validateAndUseToken, {
+      token,
+    });
 
     if (!result.valid) {
       return new Response(JSON.stringify({ error: result.error }), {
@@ -2255,10 +2254,9 @@ http.route({
     }
 
     // Get the document to find its storage ID
-    const document = await ctx.runQuery(
-      internal.documents.queries.getDocumentInternal,
-      { documentId: result.documentId },
-    );
+    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
+      documentId: result.documentId,
+    });
 
     if (!document || !document.storageId) {
       return new Response(JSON.stringify({ error: "Document not found" }), {

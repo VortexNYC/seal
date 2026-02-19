@@ -1,13 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import {
-  ArrowLeft,
-  Bug,
-  Calendar,
-  Rocket,
-  Sparkles,
-  Tag,
-  TriangleAlert,
-} from "lucide-react";
+import { ArrowLeft, Bug, Calendar, Rocket, Sparkles, Tag, TriangleAlert } from "lucide-react";
 
 import { Badge } from "~/components/ui/badge";
 import { urlFor } from "~/lib/sanity/image";
@@ -29,8 +21,7 @@ export const Route = createFileRoute("/changelog/$slug")({
         },
         {
           name: "description",
-          content:
-            data?.entry?.summary || "See what's new in this Seal release.",
+          content: data?.entry?.summary || "See what's new in this Seal release.",
         },
       ],
     };
@@ -67,10 +58,7 @@ function ChangelogDetailPage() {
           {/* Header */}
           <header className="mb-12">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <Badge
-                className="border-teal-500/30 text-teal-400"
-                variant="outline"
-              >
+              <Badge className="border-teal-500/30 text-teal-400" variant="outline">
                 <Tag className="mr-1 size-3" />
                 {entry.version}
               </Badge>
@@ -88,9 +76,7 @@ function ChangelogDetailPage() {
               {entry.title}
             </h1>
 
-            {entry.summary && (
-              <p className="text-xl text-white/60 text-pretty">{entry.summary}</p>
-            )}
+            {entry.summary && <p className="text-xl text-white/60 text-pretty">{entry.summary}</p>}
           </header>
 
           {/* Cover image */}
@@ -119,9 +105,7 @@ function ChangelogDetailPage() {
                     className="rounded-xl border border-white/10 bg-white/5 p-6"
                     key={`feature-${feature.title}`}
                   >
-                    <h3 className="mb-2 text-lg font-semibold text-white">
-                      {feature.title}
-                    </h3>
+                    <h3 className="mb-2 text-lg font-semibold text-white">{feature.title}</h3>
                     {feature.description && (
                       <p className="text-white/60 text-pretty">{feature.description}</p>
                     )}
@@ -132,10 +116,7 @@ function ChangelogDetailPage() {
                           className="h-auto w-full"
                           height={400}
                           loading="lazy"
-                          src={urlFor(feature.image)
-                            .width(800)
-                            .height(400)
-                            .url()}
+                          src={urlFor(feature.image).width(800).height(400).url()}
                           width={800}
                         />
                       </div>

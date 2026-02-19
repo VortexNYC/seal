@@ -291,10 +291,7 @@ export const getFieldsBySigningToken = query({
         }
 
         // Decrypt signature image data for display
-        const decryptedImageUrl = await decryptSignatureData(
-          signature?.signatureImageUrl,
-          encKey,
-        );
+        const decryptedImageUrl = await decryptSignatureData(signature?.signatureImageUrl, encKey);
 
         return {
           ...field,
@@ -392,10 +389,7 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
         }
 
         // Decrypt signature image data for display
-        const decryptedImageUrl = await decryptSignatureData(
-          signature?.signatureImageUrl,
-          encKey,
-        );
+        const decryptedImageUrl = await decryptSignatureData(signature?.signatureImageUrl, encKey);
 
         return {
           ...field,

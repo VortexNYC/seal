@@ -6,13 +6,13 @@ import { ConvexError, v } from "convex/values";
 
 import { internalQuery, query } from "../_generated/server";
 import { authQuery } from "../auth";
-import { findRecipientByToken } from "./recipient_helpers";
 import {
   checkDocumentAccess,
   getDocumentWithAccessCheck,
   requireActiveMembership,
 } from "../auth/access_control";
 import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
+import { findRecipientByToken } from "./recipient_helpers";
 
 /**
  * Get storage URL by storage ID
@@ -467,7 +467,10 @@ export const searchDocuments = authQuery({
     const results = await ctx.db
       .query("documents")
       .withSearchIndex("search_text", (q) =>
-        q.search("extractedText", args.query).eq("organizationId", organizationId).eq("status", "active"),
+        q
+          .search("extractedText", args.query)
+          .eq("organizationId", organizationId)
+          .eq("status", "active"),
       )
       .take(maxResults);
 

@@ -11,17 +11,14 @@
  * - Loading skeleton and error states
  */
 
-import {
-  loadConnectAndInitialize,
-  type StripeConnectInstance,
-} from "@stripe/connect-js";
+import { loadConnectAndInitialize, type StripeConnectInstance } from "@stripe/connect-js";
 import { ConnectComponentsProvider } from "@stripe/react-connect-js";
 import { useAction } from "convex/react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
 import { useTheme } from "@/components/theme-provider";
-import { cn } from "@/lib/utils";
 import { getStripeConnectAppearance } from "@/lib/stripe-theme";
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -39,8 +36,9 @@ export function StripeConnectProvider({
   const { resolvedTheme } = useTheme();
   const createAccountSession = useAction(api.stripe.connect_actions.createAccountSession);
 
-  const [stripeConnectInstance, setStripeConnectInstance] =
-    useState<StripeConnectInstance | null>(null);
+  const [stripeConnectInstance, setStripeConnectInstance] = useState<StripeConnectInstance | null>(
+    null,
+  );
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,8 +80,7 @@ export function StripeConnectProvider({
         setStripeConnectInstance(instance);
         hasInitialized.current = true;
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to initialize Stripe Connect";
+        const message = err instanceof Error ? err.message : "Failed to initialize Stripe Connect";
         setError(message);
         console.error("Stripe Connect initialization failed:", err);
       } finally {
@@ -132,7 +129,12 @@ export function StripeConnectProvider({
 
   if (error) {
     return (
-      <div className={cn("rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950", className)}>
+      <div
+        className={cn(
+          "rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950",
+          className,
+        )}
+      >
         <p className="text-sm font-medium text-red-800 dark:text-red-200">
           Failed to load Stripe components
         </p>

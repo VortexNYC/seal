@@ -213,8 +213,7 @@ export const updateDocument = permissionMutation("documents:edit")({
     if (document.workflowStatus === "completed") {
       throw new ConvexError({
         code: "DOCUMENT_IMMUTABLE",
-        message:
-          "Completed documents cannot be modified. They are immutable for legal compliance.",
+        message: "Completed documents cannot be modified. They are immutable for legal compliance.",
       });
     }
 
@@ -281,8 +280,7 @@ export const updateThumbnail = authMutation({
     if (document.workflowStatus === "completed") {
       throw new ConvexError({
         code: "DOCUMENT_IMMUTABLE",
-        message:
-          "Completed documents cannot be modified. They are immutable for legal compliance.",
+        message: "Completed documents cannot be modified. They are immutable for legal compliance.",
       });
     }
 

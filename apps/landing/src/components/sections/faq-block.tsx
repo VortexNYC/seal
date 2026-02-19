@@ -1,5 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
+
 import type { FaqSectionBlock } from "~/lib/sanity/queries";
 
 export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
@@ -34,9 +35,7 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                   type="button"
                 >
-                  <span className="text-lg font-medium text-white sm:text-xl">
-                    {faq.question}
-                  </span>
+                  <span className="text-lg font-medium text-white sm:text-xl">{faq.question}</span>
                   <div
                     className="shrink-0 transition-transform duration-200"
                     style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
@@ -142,9 +141,7 @@ export function StaticFaq() {
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                   type="button"
                 >
-                  <span className="text-lg font-medium text-white sm:text-xl">
-                    {faq.question}
-                  </span>
+                  <span className="text-lg font-medium text-white sm:text-xl">{faq.question}</span>
                   <div
                     className="shrink-0 transition-transform duration-200"
                     style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}

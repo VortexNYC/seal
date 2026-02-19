@@ -442,7 +442,9 @@ function RecentActivity() {
                       <span className="font-medium">{activity.actorName}</span>{" "}
                       <span className="text-muted-foreground">{label}</span>
                     </p>
-                    <p className="text-muted-foreground text-xs">{formatTimestamp(activity.timestamp)}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {formatTimestamp(activity.timestamp)}
+                    </p>
                   </div>
                 </div>
               );

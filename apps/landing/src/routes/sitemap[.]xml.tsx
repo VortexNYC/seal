@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+
 import { getAllPageSlugs, getChangelogList } from "~/lib/sanity/queries";
 import { source } from "~/lib/source";
 

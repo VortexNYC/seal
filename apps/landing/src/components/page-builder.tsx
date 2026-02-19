@@ -1,4 +1,5 @@
 import type { PageBlock } from "~/lib/sanity/queries";
+
 import {
   ComparisonTableBlockComponent,
   CtaBlockComponent,

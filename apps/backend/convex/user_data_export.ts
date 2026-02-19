@@ -28,7 +28,9 @@ export const requestDataExport = authMutation({
       .first();
 
     if (existing && existing.status === "processing") {
-      throw new ConvexError("A data export is already in progress. Please wait for it to complete.");
+      throw new ConvexError(
+        "A data export is already in progress. Please wait for it to complete.",
+      );
     }
 
     // Create export record

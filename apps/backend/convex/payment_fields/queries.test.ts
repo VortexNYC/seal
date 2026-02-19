@@ -322,7 +322,9 @@ describe("Payment field queries", () => {
       const result = await t.run(async (ctx) => {
         return await ctx.db
           .query("payment_field_configs")
-          .withIndex("by_stripe_subscription", (q) => q.eq("stripeSubscriptionId", "sub_nonexistent"))
+          .withIndex("by_stripe_subscription", (q) =>
+            q.eq("stripeSubscriptionId", "sub_nonexistent"),
+          )
           .first();
       });
 

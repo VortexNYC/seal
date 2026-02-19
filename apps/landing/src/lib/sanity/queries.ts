@@ -198,10 +198,7 @@ export function getChangelogList() {
 }
 
 export function getChangelogEntry(slug: string) {
-  return sanityServerClient.fetch<ChangelogEntryFull | null>(
-    CHANGELOG_DETAIL_QUERY,
-    { slug },
-  );
+  return sanityServerClient.fetch<ChangelogEntryFull | null>(CHANGELOG_DETAIL_QUERY, { slug });
 }
 
 export function getPage(slug: string) {

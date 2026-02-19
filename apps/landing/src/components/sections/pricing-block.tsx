@@ -1,4 +1,5 @@
 import { ArrowRight, Check, Sparkles } from "lucide-react";
+
 import { Button } from "~/components/ui/button";
 import type { PricingSectionBlock } from "~/lib/sanity/queries";
 
@@ -34,17 +35,13 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
                 {tier.highlighted && (
                   <div className="absolute -top-4 left-8 inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-4 py-1.5">
                     <Sparkles aria-hidden="true" className="size-3.5 text-white" />
-                    <span className="text-xs font-semibold text-white">
-                      Most Popular
-                    </span>
+                    <span className="text-xs font-semibold text-white">Most Popular</span>
                   </div>
                 )}
 
                 <div className="mb-8">
                   <h3 className="mb-2 text-2xl font-bold text-white">{tier.name}</h3>
-                  {tier.description && (
-                    <p className="text-white/50">{tier.description}</p>
-                  )}
+                  {tier.description && <p className="text-white/50">{tier.description}</p>}
                 </div>
 
                 <div className="mb-8">
@@ -199,9 +196,7 @@ export function StaticPricing() {
                   <span className="text-5xl font-bold tracking-tight text-white lg:text-6xl">
                     {plan.price}
                   </span>
-                  {plan.price !== "Custom" && (
-                    <span className="text-white/50">/mo</span>
-                  )}
+                  {plan.price !== "Custom" && <span className="text-white/50">/mo</span>}
                 </div>
 
                 <ul className="mb-10 space-y-4">
@@ -214,9 +209,7 @@ export function StaticPricing() {
                       >
                         <Check
                           aria-hidden="true"
-                          className={`size-3 ${
-                            plan.highlight ? "text-teal-400" : "text-white/60"
-                          }`}
+                          className={`size-3 ${plan.highlight ? "text-teal-400" : "text-white/60"}`}
                         />
                       </div>
                       <span className="text-white/70">{feature}</span>
