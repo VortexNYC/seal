@@ -68,7 +68,12 @@ export const extractPaymentTermsForSuggestion = internalAction({
     const response = await fetch(pdfUrl);
     if (!response.ok) throw new Error("Failed to download PDF");
     const pdfBuffer = await response.arrayBuffer();
-    const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
+    const bytes = new Uint8Array(pdfBuffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 8192) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    }
+    const pdfBase64 = btoa(binary);
 
     // Extract payment terms via Gemini
     const startTime = Date.now();
