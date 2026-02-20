@@ -1,8 +1,7 @@
 /**
  * Exposed search queries and actions for the frontend.
  *
- * quickSearch — lightweight hybrid search for command palette (Cmd+K)
- * fullSearch — filtered search for the dedicated search page
+ * fullSearch — filtered hybrid search for command palette (Cmd+K) and API use
  */
 
 import { ConvexError, v } from "convex/values";
@@ -12,7 +11,7 @@ import { action, internalQuery } from "../_generated/server";
 import type { SearchResult } from "./search";
 
 /**
- * Internal query: resolve a Clerk user's active organization.
+ * Internal query: resolve a Clerk user's active organization and user ID.
  * Used by search actions that need auth context without the authAction wrapper.
  */
 export const getCurrentUserOrg = internalQuery({
@@ -25,42 +24,12 @@ export const getCurrentUserOrg = internalQuery({
 
     if (!user?.activeOrganizationId) return null;
 
-    return { organizationId: user.activeOrganizationId };
+    return { organizationId: user.activeOrganizationId, userId: user._id };
   },
 });
 
 /**
- * Quick search for command palette (Cmd+K).
- * Returns top 5 results without going through the agent.
- * Optimized for low latency — no agent, no streaming, just ranked results.
- */
-export const quickSearch = action({
-  args: {
-    query: v.string(),
-  },
-  handler: async (ctx, args): Promise<SearchResult[]> => {
-    // Manual auth check (no authAction wrapper available)
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new ConvexError("Not authenticated");
-
-    if (args.query.trim().length < 2) return [];
-
-    // Look up the user's organization
-    const result = await ctx.runQuery(internal.ai.search_queries.getCurrentUserOrg, {
-      clerkUserId: identity.subject,
-    });
-    if (!result) return [];
-
-    return ctx.runAction(internal.ai.search.hybridSearchDocuments, {
-      organizationId: result.organizationId,
-      query: args.query.trim(),
-      limit: 5,
-    });
-  },
-});
-
-/**
- * Full search with filters for the dedicated search page.
+ * Full search with filters. Used by Cmd+K command palette.
  * Supports workflow status and date range filtering.
  */
 export const fullSearch = action({
@@ -82,7 +51,8 @@ export const fullSearch = action({
     });
     if (!result) return [];
 
-    return ctx.runAction(internal.ai.search.hybridSearchDocuments, {
+    const startMs = Date.now();
+    const results = await ctx.runAction(internal.ai.search.hybridSearchDocuments, {
       organizationId: result.organizationId,
       query: args.query.trim(),
       limit: args.limit ?? 20,
@@ -90,5 +60,18 @@ export const fullSearch = action({
       dateFrom: args.dateFrom,
       dateTo: args.dateTo,
     });
+    const durationMs = Date.now() - startMs;
+
+    // Log search usage
+    await ctx.runMutation(internal.ai.usage.logAiUsage, {
+      organizationId: result.organizationId,
+      userId: result.userId,
+      action: "search" as const,
+      tokensUsed: Math.ceil(args.query.length * 1.5) + results.length * 100,
+      durationMs,
+      modelUsed: "text-embedding-005",
+    });
+
+    return results;
   },
 });
