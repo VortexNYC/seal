@@ -23,6 +23,18 @@ import { getModel } from "./model";
 // Types
 // ---------------------------------------------------------------------------
 
+export interface AnnotationResult {
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  category: "obligation" | "payment" | "risk" | "dates" | "terms";
+  severity: "informational" | "important" | "critical";
+  text: string;
+  summary: string;
+}
+
 export interface FieldAnalysisResult {
   fields: {
     fieldType: FieldType;
@@ -35,6 +47,7 @@ export interface FieldAnalysisResult {
     confidence: number;
     isRequired: boolean;
   }[];
+  annotations: AnnotationResult[];
   tokensUsed: number;
   processingTimeMs: number;
 }
@@ -43,7 +56,7 @@ export interface FieldAnalysisResult {
 // Schema & prompt (shared with the tool)
 // ---------------------------------------------------------------------------
 
-export const FieldSuggestionSchema = z.object({
+export const DocumentAnalysisSchema = z.object({
   fields: z.array(
     z.object({
       fieldType: z.enum([
@@ -67,11 +80,27 @@ export const FieldSuggestionSchema = z.object({
       isRequired: z.boolean().describe("Whether the field appears to be required"),
     }),
   ),
+  annotations: z.array(
+    z.object({
+      page: z.number().int().positive().describe("1-indexed page number"),
+      x: z.number().min(0).max(100).describe("X position as percentage of page width"),
+      y: z.number().min(0).max(100).describe("Y position as percentage of page height"),
+      width: z.number().min(1).max(100).describe("Width as percentage of page width"),
+      height: z.number().min(0.5).max(30).describe("Height as percentage of page height"),
+      category: z.enum(["obligation", "payment", "risk", "dates", "terms"]).describe("Clause category"),
+      severity: z.enum(["informational", "important", "critical"]).describe("Severity level"),
+      text: z.string().describe("The exact clause text being annotated"),
+      summary: z.string().max(120).describe("One-sentence plain-English explanation of this clause"),
+    }),
+  ),
 });
 
-const FIELD_ANALYSIS_PROMPT = `You are analyzing a PDF document for a document signing platform. Your job is to identify all locations where form fields should be placed for recipients to fill in.
+const DOCUMENT_ANALYSIS_PROMPT = `You are analyzing a PDF document for a document signing platform. You have two jobs:
 
-## Field Types
+## JOB 1: FIELD DETECTION
+Identify all locations where form fields should be placed for recipients to fill in.
+
+### Field Types
 - **signature**: Signature lines, "Sign here" labels, signature blocks
 - **text**: Name fields, address fields, title fields, any free-text input areas
 - **number**: Numeric fields like amounts, quantities, phone numbers
@@ -82,13 +111,7 @@ const FIELD_ANALYSIS_PROMPT = `You are analyzing a PDF document for a document s
 - **attachment**: Areas indicating file upload or attachment requirements
 - **payment**: Payment amount fields, invoice totals, amounts due
 
-## Coordinate System
-- All positions are **percentages of page dimensions** (0-100)
-- x=0 is left edge, x=100 is right edge
-- y=0 is top edge, y=100 is bottom edge
-- Width and height are also percentages of page dimensions
-
-## Guidelines
+### Field Guidelines
 1. Look for blank lines, underscores, boxes, or labeled areas meant for input
 2. Signature blocks are typically at the bottom of documents
 3. Date fields often appear near signature lines
@@ -96,10 +119,39 @@ const FIELD_ANALYSIS_PROMPT = `You are analyzing a PDF document for a document s
 5. Consider the document context — contracts have signature/date blocks, invoices have payment fields
 6. Set confidence higher (0.8-1.0) when you see clear visual indicators (underlines, boxes, labels)
 7. Set confidence lower (0.5-0.7) when inferring from context or document structure
-8. Mark fields as required when they have asterisks, "required" labels, or are core to the document (main signatures)
+8. Mark fields as required when they have asterisks, "required" labels, or are core to the document
 9. Size fields appropriately — signatures need more space (~20-30% width, ~5-8% height), text fields less
 
-Analyze the document and return all detected fields.`;
+## JOB 2: DOCUMENT REDLINING
+Identify key clauses in the document that a reader should pay attention to. Annotate them with precise bounding boxes.
+
+### Annotation Categories
+- **obligation**: Duties, commitments — "shall", "must", "agrees to", deliverables, deadlines
+- **payment**: Amounts, due dates, payment schedules, penalties, fees, pricing
+- **risk**: Indemnification, limitation of liability, termination, warranties, disclaimers
+- **dates**: Effective dates, expiration dates, renewal periods, notice periods
+- **terms**: Key defined terms that affect interpretation of the document
+
+### Annotation Severity
+- **informational**: Standard clause, good to be aware of
+- **important**: Clause with significant implications — financial commitments, deadlines, restrictions
+- **critical**: High-risk clause — large liability exposure, unusual terms, penalty clauses
+
+### Annotation Guidelines
+1. The bounding box should tightly cover the clause text being annotated
+2. Summary must be one sentence, plain English, max 120 characters — explain what this means for the reader
+3. Focus on substantive clauses, not boilerplate headers or formatting
+4. For multi-line clauses, the bounding box should cover the full clause
+5. Prefer fewer high-quality annotations over many low-value ones — aim for 5-20 per document
+6. Every annotation must have real substance — don't annotate obvious things like "This is a contract"
+
+## Coordinate System
+- All positions are **percentages of page dimensions** (0-100)
+- x=0 is left edge, x=100 is right edge
+- y=0 is top edge, y=100 is bottom edge
+- Width and height are also percentages
+
+Analyze the document and return both detected fields AND clause annotations.`;
 
 // ---------------------------------------------------------------------------
 // Internal action (the expensive Gemini call)
@@ -121,12 +173,12 @@ export const analyzeFieldsInternal = internalAction({
     const startTime = Date.now();
     const result = await generateObject({
       model: getModel("google/gemini-3-flash"),
-      schema: FieldSuggestionSchema,
+      schema: DocumentAnalysisSchema,
       messages: [
         {
           role: "user",
           content: [
-            { type: "text", text: FIELD_ANALYSIS_PROMPT },
+            { type: "text", text: DOCUMENT_ANALYSIS_PROMPT },
             { type: "file", data: pdfBase64, mediaType: "application/pdf" },
           ],
         },
@@ -134,10 +186,11 @@ export const analyzeFieldsInternal = internalAction({
     });
     const processingTimeMs = Date.now() - startTime;
 
-    const validatedFields = FieldSuggestionSchema.parse(result.object);
+    const validated = DocumentAnalysisSchema.parse(result.object);
 
     return {
-      fields: validatedFields.fields,
+      fields: validated.fields,
+      annotations: validated.annotations,
       tokensUsed: result.usage?.totalTokens ?? 0,
       processingTimeMs,
     };

@@ -14,6 +14,18 @@ export const getFieldSuggestions = authQuery({
   },
 });
 
+export const getDocumentAnnotations = authQuery({
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("ai_document_annotations")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .order("desc")
+      .first();
+  },
+});
+
 export const getAIAnalysisStatus = authQuery({
   args: { documentId: v.id("documents") },
   handler: async (ctx, args) => {

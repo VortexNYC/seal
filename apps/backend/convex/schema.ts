@@ -1,6 +1,11 @@
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
 
+import {
+  aiDocumentAnnotationsTable,
+  type AnnotationCategory,
+  type AnnotationSeverity,
+} from "./schemas/ai_document_annotations";
 import { aiFieldSuggestionsTable } from "./schemas/ai_field_suggestions";
 import { aiProgressTable } from "./schemas/ai_progress";
 import { aiThreadsTable } from "./schemas/ai_threads";
@@ -142,6 +147,9 @@ export type { SubscriptionCouponDuration, SubscriptionCouponType, SubscriptionPr
 // Re-export payment field config types
 export type { DueDateTerms, PaymentMethod, PaymentStatus, PaymentType };
 
+// Re-export AI annotation types
+export type { AnnotationCategory, AnnotationSeverity };
+
 export default defineSchema({
   users: usersTable,
   user_profiles: userProfilesTable,
@@ -202,6 +210,7 @@ export default defineSchema({
 
   // AI
   ai_field_suggestions: aiFieldSuggestionsTable,
+  ai_document_annotations: aiDocumentAnnotationsTable,
   ai_threads: aiThreadsTable,
   ai_progress: aiProgressTable,
 

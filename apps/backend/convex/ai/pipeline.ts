@@ -48,7 +48,19 @@ export const processDocument = internalAction({
         processingTimeMs: result.processingTimeMs,
       });
 
-      // 5. Index document for cross-document search (needs extractedText)
+      // 5. Save document annotations (redlining)
+      if (result.annotations && result.annotations.length > 0) {
+        await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
+          documentId: args.documentId,
+          organizationId: args.organizationId,
+          annotations: result.annotations,
+          modelUsed: "gemini-3-flash",
+          tokensUsed: result.tokensUsed,
+          processingTimeMs: result.processingTimeMs,
+        });
+      }
+
+      // 6. Index document for cross-document search (needs extractedText)
       try {
         await ctx.runAction(internal.ai.search.indexDocumentForSearch, {
           documentId: args.documentId,
@@ -59,7 +71,7 @@ export const processDocument = internalAction({
         console.error(`[Pipeline] Search indexing failed for ${args.documentId}:`, searchError);
       }
 
-      // 6. Mark completed
+      // 7. Mark completed
       await ctx.runMutation(internal.ai.pipeline_mutations.setAiProcessingStatus, {
         documentId: args.documentId,
         status: "completed",

@@ -5,6 +5,10 @@ import type { Doc } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
 import { authMutation } from "../auth/wrappers";
 import { computeTotalAmountCents } from "../payment_fields/helpers";
+import {
+  annotationCategoryTuple,
+  annotationSeverityTuple,
+} from "../schemas/ai_document_annotations";
 import { dueDateTermsTuple, paymentTypeTuple } from "../schemas/payment_field_configs";
 import { fieldTypeTuple } from "../schemas/signature_fields";
 
@@ -349,5 +353,70 @@ export const saveExtractedPaymentConfig = internalMutation({
       createdAt: now,
       updatedAt: now,
     });
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Document annotations (redlining)
+// ---------------------------------------------------------------------------
+
+export const saveDocumentAnnotations = internalMutation({
+  args: {
+    documentId: v.id("documents"),
+    organizationId: v.id("organizations"),
+    annotations: v.array(
+      v.object({
+        page: v.number(),
+        x: v.number(),
+        y: v.number(),
+        width: v.number(),
+        height: v.number(),
+        category: annotationCategoryTuple,
+        severity: annotationSeverityTuple,
+        text: v.string(),
+        summary: v.string(),
+      }),
+    ),
+    modelUsed: v.string(),
+    tokensUsed: v.number(),
+    processingTimeMs: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Dismiss any existing active annotations for this document
+    const existing = await ctx.db
+      .query("ai_document_annotations")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("status"), "pending"),
+          q.eq(q.field("status"), "active"),
+        ),
+      )
+      .collect();
+
+    for (const annotation of existing) {
+      await ctx.db.patch(annotation._id, { status: "dismissed" as const });
+    }
+
+    // Skip if no annotations detected
+    if (args.annotations.length === 0) return null;
+
+    return await ctx.db.insert("ai_document_annotations", {
+      documentId: args.documentId,
+      organizationId: args.organizationId,
+      annotations: args.annotations,
+      modelUsed: args.modelUsed,
+      tokensUsed: args.tokensUsed,
+      processingTimeMs: args.processingTimeMs,
+      status: "active",
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const dismissDocumentAnnotations = authMutation({
+  args: { annotationId: v.id("ai_document_annotations") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.annotationId, { status: "dismissed" as const });
   },
 });
