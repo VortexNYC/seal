@@ -1,16 +1,18 @@
 /**
- * Command Palette (Cmd+K) — global document search.
+ * Power Command Palette (Cmd+K) — full workspace search with filters.
  *
- * Uses the quickSearch action for fast, debounced hybrid search.
- * Click a result to navigate to the document page.
+ * Uses fullSearch for filtered hybrid search with up to 15 results.
+ * Inline filter bar for status and date range filtering.
  */
 
 import { useAction } from "convex/react";
-import { FileTextIcon, Loader2Icon, SearchIcon } from "lucide-react";
+import { CalendarIcon, FileTextIcon, Loader2Icon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useDebounce } from "use-debounce";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   CommandDialog,
   CommandEmpty,
@@ -19,6 +21,16 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { api } from "@seal/backend/convex/_generated/api";
 
 interface SearchResult {
@@ -34,17 +46,34 @@ interface CommandPaletteProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: "draft", label: "Draft" },
+  { value: "sent", label: "Sent" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "declined", label: "Declined" },
+];
+
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const { slug } = useParams({ strict: false }) as { slug?: string };
   const navigate = useNavigate();
-  const quickSearch = useAction(api.ai.search_queries.quickSearch);
+  const fullSearch = useAction(api.ai.search_queries.fullSearch);
 
   const [query, setQuery] = useState("");
-  const [debouncedQuery] = useDebounce(query, 150);
+  const [debouncedQuery] = useDebounce(query, 200);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Run search when debounced query changes
+  // Filters
+  const [workflowStatus, setWorkflowStatus] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const hasActiveFilters = workflowStatus !== "all" || dateFrom !== "" || dateTo !== "";
+
+  // Run search when debounced query or filters change
   useEffect(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) {
       setResults([]);
@@ -54,7 +83,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     let cancelled = false;
     setIsSearching(true);
 
-    quickSearch({ query: debouncedQuery })
+    fullSearch({
+      query: debouncedQuery,
+      workflowStatus: workflowStatus !== "all" ? workflowStatus : undefined,
+      dateFrom: dateFrom ? new Date(dateFrom).getTime() : undefined,
+      dateTo: dateTo ? new Date(dateTo).getTime() : undefined,
+      limit: 15,
+    })
       .then((res) => {
         if (!cancelled) setResults(res);
       })
@@ -68,7 +103,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery, quickSearch]);
+  }, [debouncedQuery, fullSearch, workflowStatus, dateFrom, dateTo]);
 
   // Reset on close
   useEffect(() => {
@@ -88,12 +123,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     [navigate, onOpenChange, slug],
   );
 
-  const handleOpenFullSearch = useCallback(() => {
-    onOpenChange(false);
-    if (slug) {
-      navigate({ to: "/$slug/search", params: { slug } });
-    }
-  }, [navigate, onOpenChange, slug]);
+  const clearFilters = useCallback(() => {
+    setWorkflowStatus("all");
+    setDateFrom("");
+    setDateTo("");
+  }, []);
 
   return (
     <CommandDialog
@@ -103,7 +137,72 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       description="Search across all workspace documents"
     >
       <CommandInput placeholder="Search documents..." value={query} onValueChange={setQuery} />
-      <CommandList>
+
+      {/* Inline filter bar */}
+      <div className="flex items-center gap-2 border-b px-3 py-2">
+        <Select value={workflowStatus} onValueChange={setWorkflowStatus}>
+          <SelectTrigger className="h-7 w-[140px] text-xs">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 gap-1 text-xs">
+              <CalendarIcon className="h-3 w-3" />
+              Date
+              {(dateFrom || dateTo) && (
+                <Badge variant="secondary" className="ml-1 px-1 py-0 text-[9px]">
+                  set
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56" align="start">
+            <div className="space-y-2">
+              <div>
+                <Label className="text-xs">From</Label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="mt-1 h-8 text-xs"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">To</Label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="mt-1 h-8 text-xs"
+                />
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFilters}
+            className="h-7 gap-1 text-xs text-muted-foreground"
+          >
+            <XIcon className="h-3 w-3" />
+            Clear
+          </Button>
+        )}
+      </div>
+
+      <CommandList className="max-h-[400px]">
         {isSearching ? (
           <div className="flex items-center justify-center py-6">
             <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -111,53 +210,40 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         ) : query.length >= 2 && results.length === 0 ? (
           <CommandEmpty>No documents found.</CommandEmpty>
         ) : (
-          <>
-            {results.length > 0 && (
-              <CommandGroup heading="Documents">
-                {results.map((result) => (
-                  <CommandItem
-                    key={`${result.documentId}-${result.pageNumber}`}
-                    value={`${result.documentName} ${result.excerpt}`}
-                    onSelect={() => handleSelect(result.documentId)}
-                    className="flex items-start gap-3 py-3"
-                  >
-                    <FileTextIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{result.documentName}</span>
-                        {result.pageNumber > 0 && (
-                          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                            p.{result.pageNumber}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                        {result.excerpt}
-                      </p>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-            {query.length >= 2 && (
-              <CommandGroup>
+          results.length > 0 && (
+            <CommandGroup heading={`${results.length} result${results.length !== 1 ? "s" : ""}`}>
+              {results.map((result) => (
                 <CommandItem
-                  onSelect={handleOpenFullSearch}
-                  className="justify-center text-sm text-muted-foreground"
+                  key={`${result.documentId}-${result.pageNumber}`}
+                  value={`${result.documentName} ${result.excerpt}`}
+                  onSelect={() => handleSelect(result.documentId)}
+                  className="flex items-start gap-3 py-3"
                 >
-                  <SearchIcon className="mr-2 h-4 w-4" />
-                  Open full search
+                  <FileTextIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{result.documentName}</span>
+                      {result.pageNumber > 0 && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                          p.{result.pageNumber}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                      {result.excerpt}
+                    </p>
+                  </div>
                 </CommandItem>
-              </CommandGroup>
-            )}
-          </>
+              ))}
+            </CommandGroup>
+          )
         )}
       </CommandList>
       <div className="border-t px-3 py-2 text-[10px] text-muted-foreground">
-        <kbd className="rounded border bg-muted px-1">↑↓</kbd> navigate
-        <span className="mx-2">·</span>
-        <kbd className="rounded border bg-muted px-1">↵</kbd> select
-        <span className="mx-2">·</span>
+        <kbd className="rounded border bg-muted px-1">&uarr;&darr;</kbd> navigate
+        <span className="mx-2">&middot;</span>
+        <kbd className="rounded border bg-muted px-1">&crarr;</kbd> select
+        <span className="mx-2">&middot;</span>
         <kbd className="rounded border bg-muted px-1">esc</kbd> close
       </div>
     </CommandDialog>
