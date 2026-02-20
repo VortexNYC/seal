@@ -27,6 +27,8 @@ import type * as ai_tools_analyze_fields from "../ai/tools/analyze_fields.js";
 import type * as ai_tools_extract_payment_terms from "../ai/tools/extract_payment_terms.js";
 import type * as ai_tools_search_documents from "../ai/tools/search_documents.js";
 import type * as ai_types from "../ai/types.js";
+import type * as ai_usage from "../ai/usage.js";
+import type * as ai_workpool from "../ai/workpool.js";
 import type * as api_context from "../api/context.js";
 import type * as api_errors from "../api/errors.js";
 import type * as api_helpers from "../api/helpers.js";
@@ -227,6 +229,8 @@ declare const fullApi: ApiFromModules<{
   "ai/tools/extract_payment_terms": typeof ai_tools_extract_payment_terms;
   "ai/tools/search_documents": typeof ai_tools_search_documents;
   "ai/types": typeof ai_types;
+  "ai/usage": typeof ai_usage;
+  "ai/workpool": typeof ai_workpool;
   "api/context": typeof api_context;
   "api/errors": typeof api_errors;
   "api/helpers": typeof api_helpers;

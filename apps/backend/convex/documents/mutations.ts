@@ -136,7 +136,7 @@ export const createDocument = permissionMutation("documents:create")({
 
     // 8. Schedule AI field analysis pipeline (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, args.organizationId)) {
-      await enqueueAiPipeline(ctx, ctx.db, documentId, args.organizationId);
+      await enqueueAiPipeline(ctx, ctx.db, documentId, args.organizationId, ctx.auth.user._id);
       await ctx.db.patch(documentId, { aiProcessingStatus: "pending" });
     }
 
@@ -655,7 +655,7 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
 
     // 8. Schedule AI field analysis for new PDF (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
-      await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId);
+      await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId, ctx.auth.user._id);
       await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
     }
 
@@ -759,7 +759,7 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
 
     // 8. Schedule AI field analysis for restored PDF (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
-      await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId);
+      await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId, ctx.auth.user._id);
       await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
     }
 

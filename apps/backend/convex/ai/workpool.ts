@@ -38,6 +38,7 @@ export async function enqueueAiPipeline(
   db: DatabaseReader,
   documentId: Id<"documents">,
   organizationId: Id<"organizations">,
+  userId?: Id<"users">,
 ) {
   const isPro = await isProOrganization(db, organizationId);
   const pool = isPro ? aiPoolPro : aiPoolFree;
@@ -45,6 +46,7 @@ export async function enqueueAiPipeline(
   await pool.enqueueAction(ctx, internal.ai.pipeline.processDocument, {
     documentId,
     organizationId,
+    userId,
   });
 }
 

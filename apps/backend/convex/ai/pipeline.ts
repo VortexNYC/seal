@@ -18,6 +18,7 @@ export const processDocument = internalAction({
   args: {
     documentId: v.id("documents"),
     organizationId: v.id("organizations"),
+    userId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
     // 0. Check if AI is enabled for this workspace
@@ -55,6 +56,19 @@ export const processDocument = internalAction({
         processingTimeMs: result.processingTimeMs,
       });
 
+      // 4b. Log field analysis usage
+      if (args.userId) {
+        await ctx.runMutation(internal.ai.usage.logAiUsage, {
+          organizationId: args.organizationId,
+          userId: args.userId,
+          action: "field_analysis" as const,
+          tokensUsed: result.tokensUsed,
+          durationMs: result.processingTimeMs,
+          documentId: args.documentId,
+          modelUsed: "gemini-3-flash",
+        });
+      }
+
       // 5. Save document annotations (redlining)
       if (result.annotations && result.annotations.length > 0) {
         await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
@@ -65,6 +79,19 @@ export const processDocument = internalAction({
           tokensUsed: result.tokensUsed,
           processingTimeMs: result.processingTimeMs,
           forceOverrideDismissal: true,
+        });
+      }
+
+      // 5b. Log redlining usage
+      if (result.annotations && result.annotations.length > 0 && args.userId) {
+        await ctx.runMutation(internal.ai.usage.logAiUsage, {
+          organizationId: args.organizationId,
+          userId: args.userId,
+          action: "redlining" as const,
+          tokensUsed: result.tokensUsed,
+          durationMs: result.processingTimeMs,
+          documentId: args.documentId,
+          modelUsed: "gemini-3-flash",
         });
       }
 
