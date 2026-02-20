@@ -15,6 +15,7 @@ import {
   Loader2Icon,
   PlusIcon,
   SaveIcon,
+  ScanSearchIcon,
   SendIcon,
   SettingsIcon,
   UserIcon,
@@ -37,6 +38,11 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
 import { AIChatPanel } from "../../../../components/documents/ai-chat-panel";
+import {
+  AIAnnotationOverlays,
+  AIInsightsPanel,
+  useDocumentAnnotations,
+} from "../../../../components/documents/ai-annotation-overlays";
 import {
   AIFieldOverlays,
   AIFieldReviewBar,
@@ -359,8 +365,9 @@ function DocumentDetailPage() {
   // Resend email action
   const resendRecipientEmail = useAction(api.documents.send_document_action.resendRecipientEmail);
 
-  // AI field analysis + chat
+  // AI field analysis, annotations, + chat
   const aiSuggestions = useAIFieldSuggestions(documentId as Id<"documents">);
+  const documentAnnotations = useDocumentAnnotations(documentId as Id<"documents">);
   const aiPreferences = useQuery(api.user_profiles.queries.getAiPreferences);
   const updateAiPreferences = useMutation(api.user_profiles.mutations.updateAiPreferences);
   const showAiSuggestions = aiPreferences?.showFieldSuggestions !== false;
@@ -1167,6 +1174,17 @@ function DocumentDetailPage() {
                           pdfPageHeight={pdfHeight}
                         />
                       )}
+
+                      {/* AI annotation overlays (redlining) — inside TransformComponent */}
+                      {canEdit && documentAnnotations.annotations && (
+                        <AIAnnotationOverlays
+                          annotations={documentAnnotations.annotations}
+                          enabledCategories={documentAnnotations.enabledCategories}
+                          currentPage={currentPage}
+                          pdfPageWidth={pdfWidth}
+                          pdfPageHeight={pdfHeight}
+                        />
+                      )}
                     </div>
                   </TransformComponent>
 
@@ -1384,6 +1402,48 @@ function DocumentDetailPage() {
               {/* AI Chat Panel - Shows when user opens AI assistant */}
               {canEdit && showAIChat && threadId && (
                 <AIChatPanel threadId={threadId} onClose={() => setShowAIChat(false)} />
+              )}
+
+              {/* AI Insights (Redlining) */}
+              {canEdit && documentAnnotations.annotations && (
+                <Collapsible
+                  open={openSections.has("insights")}
+                  onOpenChange={() => toggleSection("insights")}
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-rose-100 text-rose-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-rose-900 dark:text-rose-400">
+                          <ScanSearchIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+                        </div>
+                        <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                          Insights
+                        </span>
+                        <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                          {documentAnnotations.annotations.annotations.length}
+                        </span>
+                      </div>
+                      <ChevronDownIcon
+                        className={`h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400 ${openSections.has("insights") ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+                    <div className="mt-3">
+                      <AIInsightsPanel
+                        annotations={documentAnnotations.annotations}
+                        enabledCategories={documentAnnotations.enabledCategories}
+                        toggleCategory={documentAnnotations.toggleCategory}
+                        onDismiss={documentAnnotations.handleDismiss}
+                        onPageJump={(page) => setCurrentPage(page)}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               )}
 
               {/* Signature Fields Section */}
