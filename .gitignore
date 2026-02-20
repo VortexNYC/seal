@@ -82,3 +82,4 @@ localhost-*.log
 .playwright-mcp/
 apps/web/.env.test
 sample-doc.pdf
+.playwright-cli/
