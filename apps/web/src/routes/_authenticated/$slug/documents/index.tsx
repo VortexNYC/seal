@@ -15,9 +15,11 @@ import {
   FileTextIcon,
   LayoutGridIcon,
   LayoutListIcon,
+  Loader2Icon,
   MoreVerticalIcon,
   SearchIcon,
   SendIcon,
+  SparklesIcon,
   Share2Icon,
   TrashIcon,
   UploadIcon,
@@ -64,6 +66,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { pageSEO } from "@/lib/seo";
 import { api } from "@seal/backend/convex/_generated/api";
@@ -516,7 +519,25 @@ function DocumentsList({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <WorkflowStatusBadge status={doc.workflowStatus} />
+                        <div className="flex items-center gap-2">
+                          <WorkflowStatusBadge status={doc.workflowStatus} />
+                          {doc.aiProcessingStatus === "processing" && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Loader2Icon className="h-3 w-3 animate-spin text-violet-500" />
+                              </TooltipTrigger>
+                              <TooltipContent>AI analyzing document</TooltipContent>
+                            </Tooltip>
+                          )}
+                          {doc.aiProcessingStatus === "completed" && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <SparklesIcon className="h-3 w-3 text-violet-500" />
+                              </TooltipTrigger>
+                              <TooltipContent>AI analysis complete</TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -665,7 +686,15 @@ function DocumentsList({
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Status</span>
-                        <WorkflowStatusBadge status={doc.workflowStatus} />
+                        <div className="flex items-center gap-1.5">
+                          <WorkflowStatusBadge status={doc.workflowStatus} />
+                          {doc.aiProcessingStatus === "processing" && (
+                            <Loader2Icon className="h-3 w-3 animate-spin text-violet-500" />
+                          )}
+                          {doc.aiProcessingStatus === "completed" && (
+                            <SparklesIcon className="h-3 w-3 text-violet-500" />
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Size</span>
