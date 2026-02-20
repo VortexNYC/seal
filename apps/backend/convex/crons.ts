@@ -46,4 +46,25 @@ crons.weekly(
   internal.documents.download_tokens.cleanupExpiredTokens,
 );
 
+// Clean up old AI usage logs weekly (entries older than 90 days)
+crons.weekly(
+  "cleanup-ai-usage-logs",
+  { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 0 },
+  internal.ai.cleanup.cleanupOldUsageLogs,
+);
+
+// Clean up dismissed AI suggestions weekly (dismissed >30 days ago)
+crons.weekly(
+  "cleanup-ai-dismissed-suggestions",
+  { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 15 },
+  internal.ai.cleanup.cleanupDismissedSuggestions,
+);
+
+// Clean up dismissed AI annotations weekly (dismissed >30 days ago)
+crons.weekly(
+  "cleanup-ai-dismissed-annotations",
+  { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 30 },
+  internal.ai.cleanup.cleanupDismissedAnnotations,
+);
+
 export default crons;
