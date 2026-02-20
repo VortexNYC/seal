@@ -12,6 +12,7 @@ import { authMutation, permissionMutation } from "../auth";
 import { ensureDocumentLimit, ensureStorageLimit } from "../auth/subscription_guards";
 import { validateFile } from "./upload_config";
 import { createVersionSnapshot } from "./version_helpers";
+import type { DatabaseReader } from "../_generated/server";
 import {
   canCancelDocument,
   canCompleteDocument,
@@ -19,6 +20,12 @@ import {
   transitionWorkflowStatus,
   verifyDocumentOwnership,
 } from "./workflow_helpers";
+
+/** Check if the org has AI auto-analyze enabled (defaults to true). */
+async function shouldAutoAnalyze(db: DatabaseReader, organizationId: Id<"organizations">) {
+  const org = await db.get(organizationId);
+  return org?.aiSettings?.aiAutoAnalyze !== false;
+}
 
 /**
  * Generate an upload URL for document storage
@@ -126,12 +133,14 @@ export const createDocument = permissionMutation("documents:create")({
       documentId,
     });
 
-    // 8. Schedule AI field analysis pipeline
-    await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
-      documentId,
-      organizationId: args.organizationId,
-    });
-    await ctx.db.patch(documentId, { aiProcessingStatus: "pending" });
+    // 8. Schedule AI field analysis pipeline (if auto-analyze is on)
+    if (await shouldAutoAnalyze(ctx.db, args.organizationId)) {
+      await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
+        documentId,
+        organizationId: args.organizationId,
+      });
+      await ctx.db.patch(documentId, { aiProcessingStatus: "pending" });
+    }
 
     return documentId;
   },
@@ -646,12 +655,14 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
       documentId: args.documentId,
     });
 
-    // 8. Schedule AI field analysis for new PDF
-    await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
-      documentId: args.documentId,
-      organizationId: document.organizationId,
-    });
-    await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
+    // 8. Schedule AI field analysis for new PDF (if auto-analyze is on)
+    if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
+      await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
+        documentId: args.documentId,
+        organizationId: document.organizationId,
+      });
+      await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
+    }
 
     return { success: true, versionNumber: newVersionNumber };
   },
@@ -751,12 +762,14 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
       documentId: args.documentId,
     });
 
-    // 8. Schedule AI field analysis for restored PDF
-    await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
-      documentId: args.documentId,
-      organizationId: document.organizationId,
-    });
-    await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
+    // 8. Schedule AI field analysis for restored PDF (if auto-analyze is on)
+    if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
+      await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
+        documentId: args.documentId,
+        organizationId: document.organizationId,
+      });
+      await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
+    }
 
     return { success: true, versionNumber: newVersionNumber };
   },
