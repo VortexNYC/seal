@@ -21,6 +21,7 @@ import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
 import { Route as AuthAcceptInviteRouteImport } from './routes/_auth/accept-invite'
 import { Route as AuthenticatedSlugIndexRouteImport } from './routes/_authenticated/$slug/index'
 import { Route as AuthenticatedSlugTemplatesRouteImport } from './routes/_authenticated/$slug/templates'
+import { Route as AuthenticatedSlugSearchRouteImport } from './routes/_authenticated/$slug/search'
 import { Route as AuthenticatedSlugHomeRouteImport } from './routes/_authenticated/$slug/home'
 import { Route as AuthenticatedSlugDocumentsRouteImport } from './routes/_authenticated/$slug/documents'
 import { Route as AuthenticatedSlugAnalyticsRouteImport } from './routes/_authenticated/$slug/analytics'
@@ -107,6 +108,11 @@ const AuthenticatedSlugTemplatesRoute =
     path: '/templates',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
+const AuthenticatedSlugSearchRoute = AuthenticatedSlugSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any)
 const AuthenticatedSlugHomeRoute = AuthenticatedSlugHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
+  '/$slug/search': typeof AuthenticatedSlugSearchRoute
   '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
   '/$slug/': typeof AuthenticatedSlugIndexRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
@@ -311,6 +318,7 @@ export interface FileRoutesByTo {
   '/sign/$token': typeof SignTokenRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
+  '/$slug/search': typeof AuthenticatedSlugSearchRoute
   '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
   '/$slug': typeof AuthenticatedSlugIndexRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
@@ -350,6 +358,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/_authenticated/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
   '/_authenticated/$slug/home': typeof AuthenticatedSlugHomeRoute
+  '/_authenticated/$slug/search': typeof AuthenticatedSlugSearchRoute
   '/_authenticated/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
   '/_authenticated/$slug/': typeof AuthenticatedSlugIndexRoute
   '/_authenticated/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
@@ -390,6 +399,7 @@ export interface FileRouteTypes {
     | '/$slug/analytics'
     | '/$slug/documents'
     | '/$slug/home'
+    | '/$slug/search'
     | '/$slug/templates'
     | '/$slug/'
     | '/$slug/documents/$documentId'
@@ -426,6 +436,7 @@ export interface FileRouteTypes {
     | '/sign/$token'
     | '/$slug/analytics'
     | '/$slug/home'
+    | '/$slug/search'
     | '/$slug/templates'
     | '/$slug'
     | '/$slug/documents/$documentId'
@@ -464,6 +475,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/analytics'
     | '/_authenticated/$slug/documents'
     | '/_authenticated/$slug/home'
+    | '/_authenticated/$slug/search'
     | '/_authenticated/$slug/templates'
     | '/_authenticated/$slug/'
     | '/_authenticated/$slug/documents/$documentId'
@@ -584,6 +596,13 @@ declare module '@tanstack/react-router' {
       path: '/templates'
       fullPath: '/$slug/templates'
       preLoaderRoute: typeof AuthenticatedSlugTemplatesRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/search': {
+      id: '/_authenticated/$slug/search'
+      path: '/search'
+      fullPath: '/$slug/search'
+      preLoaderRoute: typeof AuthenticatedSlugSearchRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
     '/_authenticated/$slug/home': {
@@ -851,6 +870,7 @@ interface AuthenticatedSlugRouteChildren {
   AuthenticatedSlugAnalyticsRoute: typeof AuthenticatedSlugAnalyticsRoute
   AuthenticatedSlugDocumentsRoute: typeof AuthenticatedSlugDocumentsRouteWithChildren
   AuthenticatedSlugHomeRoute: typeof AuthenticatedSlugHomeRoute
+  AuthenticatedSlugSearchRoute: typeof AuthenticatedSlugSearchRoute
   AuthenticatedSlugTemplatesRoute: typeof AuthenticatedSlugTemplatesRoute
   AuthenticatedSlugIndexRoute: typeof AuthenticatedSlugIndexRoute
   AuthenticatedSlugSettingsBalancesRoute: typeof AuthenticatedSlugSettingsBalancesRoute
@@ -872,6 +892,7 @@ const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
   AuthenticatedSlugAnalyticsRoute: AuthenticatedSlugAnalyticsRoute,
   AuthenticatedSlugDocumentsRoute: AuthenticatedSlugDocumentsRouteWithChildren,
   AuthenticatedSlugHomeRoute: AuthenticatedSlugHomeRoute,
+  AuthenticatedSlugSearchRoute: AuthenticatedSlugSearchRoute,
   AuthenticatedSlugTemplatesRoute: AuthenticatedSlugTemplatesRoute,
   AuthenticatedSlugIndexRoute: AuthenticatedSlugIndexRoute,
   AuthenticatedSlugSettingsBalancesRoute:

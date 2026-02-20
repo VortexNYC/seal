@@ -13,12 +13,19 @@ import type * as ai_agent from "../ai/agent.js";
 import type * as ai_analyzeFieldsAction from "../ai/analyzeFieldsAction.js";
 import type * as ai_model from "../ai/model.js";
 import type * as ai_mutations from "../ai/mutations.js";
+import type * as ai_paymentExtraction from "../ai/paymentExtraction.js";
+import type * as ai_pipeline from "../ai/pipeline.js";
+import type * as ai_pipeline_mutations from "../ai/pipeline_mutations.js";
 import type * as ai_progress from "../ai/progress.js";
 import type * as ai_queries from "../ai/queries.js";
 import type * as ai_rateLimiting from "../ai/rateLimiting.js";
+import type * as ai_search from "../ai/search.js";
+import type * as ai_search_queries from "../ai/search_queries.js";
 import type * as ai_threadQueries from "../ai/threadQueries.js";
 import type * as ai_threads from "../ai/threads.js";
 import type * as ai_tools_analyze_fields from "../ai/tools/analyze_fields.js";
+import type * as ai_tools_extract_payment_terms from "../ai/tools/extract_payment_terms.js";
+import type * as ai_tools_search_documents from "../ai/tools/search_documents.js";
 import type * as ai_types from "../ai/types.js";
 import type * as api_context from "../api/context.js";
 import type * as api_errors from "../api/errors.js";
@@ -204,12 +211,19 @@ declare const fullApi: ApiFromModules<{
   "ai/analyzeFieldsAction": typeof ai_analyzeFieldsAction;
   "ai/model": typeof ai_model;
   "ai/mutations": typeof ai_mutations;
+  "ai/paymentExtraction": typeof ai_paymentExtraction;
+  "ai/pipeline": typeof ai_pipeline;
+  "ai/pipeline_mutations": typeof ai_pipeline_mutations;
   "ai/progress": typeof ai_progress;
   "ai/queries": typeof ai_queries;
   "ai/rateLimiting": typeof ai_rateLimiting;
+  "ai/search": typeof ai_search;
+  "ai/search_queries": typeof ai_search_queries;
   "ai/threadQueries": typeof ai_threadQueries;
   "ai/threads": typeof ai_threads;
   "ai/tools/analyze_fields": typeof ai_tools_analyze_fields;
+  "ai/tools/extract_payment_terms": typeof ai_tools_extract_payment_terms;
+  "ai/tools/search_documents": typeof ai_tools_search_documents;
   "ai/types": typeof ai_types;
   "api/context": typeof api_context;
   "api/errors": typeof api_errors;
@@ -3482,6 +3496,407 @@ export declare const components: {
               | { type: "canceled" };
             type: "completed";
           }
+      >;
+    };
+  };
+  rag: {
+    chunks: {
+      insert: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          chunks: Array<{
+            content: { metadata?: Record<string, any>; text: string };
+            embedding: Array<number>;
+            searchableText?: string;
+          }>;
+          entryId: string;
+          startOrder: number;
+        },
+        { status: "pending" | "ready" | "replaced" }
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        {
+          entryId: string;
+          order: "desc" | "asc";
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            metadata?: Record<string, any>;
+            order: number;
+            state: "pending" | "ready" | "replaced";
+            text: string;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
+      >;
+      replaceChunksPage: FunctionReference<
+        "mutation",
+        "internal",
+        { entryId: string; startOrder: number },
+        { nextStartOrder: number; status: "pending" | "ready" | "replaced" }
+      >;
+    };
+    entries: {
+      add: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          allChunks?: Array<{
+            content: { metadata?: Record<string, any>; text: string };
+            embedding: Array<number>;
+            searchableText?: string;
+          }>;
+          entry: {
+            contentHash?: string;
+            filterValues: Array<{ name: string; value: any }>;
+            importance: number;
+            key?: string;
+            metadata?: Record<string, any>;
+            namespaceId: string;
+            title?: string;
+          };
+          onComplete?: string;
+        },
+        {
+          created: boolean;
+          entryId: string;
+          status: "pending" | "ready" | "replaced";
+        }
+      >;
+      addAsync: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          chunker: string;
+          entry: {
+            contentHash?: string;
+            filterValues: Array<{ name: string; value: any }>;
+            importance: number;
+            key?: string;
+            metadata?: Record<string, any>;
+            namespaceId: string;
+            title?: string;
+          };
+          onComplete?: string;
+        },
+        { created: boolean; entryId: string; status: "pending" | "ready" }
+      >;
+      deleteAsync: FunctionReference<
+        "mutation",
+        "internal",
+        { entryId: string; startOrder: number },
+        null
+      >;
+      deleteByKeyAsync: FunctionReference<
+        "mutation",
+        "internal",
+        { beforeVersion?: number; key: string; namespaceId: string },
+        null
+      >;
+      deleteByKeySync: FunctionReference<
+        "action",
+        "internal",
+        { key: string; namespaceId: string },
+        null
+      >;
+      deleteSync: FunctionReference<
+        "action",
+        "internal",
+        { entryId: string },
+        null
+      >;
+      findByContentHash: FunctionReference<
+        "query",
+        "internal",
+        {
+          contentHash: string;
+          dimension: number;
+          filterNames: Array<string>;
+          key: string;
+          modelId: string;
+          namespace: string;
+        },
+        {
+          contentHash?: string;
+          entryId: string;
+          filterValues: Array<{ name: string; value: any }>;
+          importance: number;
+          key?: string;
+          metadata?: Record<string, any>;
+          replacedAt?: number;
+          status: "pending" | "ready" | "replaced";
+          title?: string;
+        } | null
+      >;
+      get: FunctionReference<
+        "query",
+        "internal",
+        { entryId: string },
+        {
+          contentHash?: string;
+          entryId: string;
+          filterValues: Array<{ name: string; value: any }>;
+          importance: number;
+          key?: string;
+          metadata?: Record<string, any>;
+          replacedAt?: number;
+          status: "pending" | "ready" | "replaced";
+          title?: string;
+        } | null
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        {
+          namespaceId?: string;
+          order?: "desc" | "asc";
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+          status: "pending" | "ready" | "replaced";
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            contentHash?: string;
+            entryId: string;
+            filterValues: Array<{ name: string; value: any }>;
+            importance: number;
+            key?: string;
+            metadata?: Record<string, any>;
+            replacedAt?: number;
+            status: "pending" | "ready" | "replaced";
+            title?: string;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
+      >;
+      promoteToReady: FunctionReference<
+        "mutation",
+        "internal",
+        { entryId: string },
+        {
+          replacedEntry: {
+            contentHash?: string;
+            entryId: string;
+            filterValues: Array<{ name: string; value: any }>;
+            importance: number;
+            key?: string;
+            metadata?: Record<string, any>;
+            replacedAt?: number;
+            status: "pending" | "ready" | "replaced";
+            title?: string;
+          } | null;
+        }
+      >;
+    };
+    namespaces: {
+      deleteNamespace: FunctionReference<
+        "mutation",
+        "internal",
+        { namespaceId: string },
+        {
+          deletedNamespace: null | {
+            createdAt: number;
+            dimension: number;
+            filterNames: Array<string>;
+            modelId: string;
+            namespace: string;
+            namespaceId: string;
+            status: "pending" | "ready" | "replaced";
+            version: number;
+          };
+        }
+      >;
+      deleteNamespaceSync: FunctionReference<
+        "action",
+        "internal",
+        { namespaceId: string },
+        null
+      >;
+      get: FunctionReference<
+        "query",
+        "internal",
+        {
+          dimension: number;
+          filterNames: Array<string>;
+          modelId: string;
+          namespace: string;
+        },
+        null | {
+          createdAt: number;
+          dimension: number;
+          filterNames: Array<string>;
+          modelId: string;
+          namespace: string;
+          namespaceId: string;
+          status: "pending" | "ready" | "replaced";
+          version: number;
+        }
+      >;
+      getOrCreate: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          dimension: number;
+          filterNames: Array<string>;
+          modelId: string;
+          namespace: string;
+          onComplete?: string;
+          status: "pending" | "ready";
+        },
+        { namespaceId: string; status: "pending" | "ready" }
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        {
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+          status: "pending" | "ready" | "replaced";
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            createdAt: number;
+            dimension: number;
+            filterNames: Array<string>;
+            modelId: string;
+            namespace: string;
+            namespaceId: string;
+            status: "pending" | "ready" | "replaced";
+            version: number;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
+      >;
+      listNamespaceVersions: FunctionReference<
+        "query",
+        "internal",
+        {
+          namespace: string;
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            createdAt: number;
+            dimension: number;
+            filterNames: Array<string>;
+            modelId: string;
+            namespace: string;
+            namespaceId: string;
+            status: "pending" | "ready" | "replaced";
+            version: number;
+          }>;
+          pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+          splitCursor?: string | null;
+        }
+      >;
+      lookup: FunctionReference<
+        "query",
+        "internal",
+        {
+          dimension: number;
+          filterNames: Array<string>;
+          modelId: string;
+          namespace: string;
+        },
+        null | string
+      >;
+      promoteToReady: FunctionReference<
+        "mutation",
+        "internal",
+        { namespaceId: string },
+        {
+          replacedNamespace: null | {
+            createdAt: number;
+            dimension: number;
+            filterNames: Array<string>;
+            modelId: string;
+            namespace: string;
+            namespaceId: string;
+            status: "pending" | "ready" | "replaced";
+            version: number;
+          };
+        }
+      >;
+    };
+    search: {
+      search: FunctionReference<
+        "action",
+        "internal",
+        {
+          chunkContext?: { after: number; before: number };
+          dimension?: number;
+          embedding?: Array<number>;
+          filters: Array<{ name: string; value: any }>;
+          limit: number;
+          modelId: string;
+          namespace: string;
+          searchType?: "vector" | "text" | "hybrid";
+          textQuery?: string;
+          textWeight?: number;
+          vectorScoreThreshold?: number;
+          vectorWeight?: number;
+        },
+        {
+          entries: Array<{
+            contentHash?: string;
+            entryId: string;
+            filterValues: Array<{ name: string; value: any }>;
+            importance: number;
+            key?: string;
+            metadata?: Record<string, any>;
+            replacedAt?: number;
+            status: "pending" | "ready" | "replaced";
+            title?: string;
+          }>;
+          results: Array<{
+            content: Array<{ metadata?: Record<string, any>; text: string }>;
+            entryId: string;
+            order: number;
+            score: number;
+            startOrder: number;
+          }>;
+        }
       >;
     };
   };
