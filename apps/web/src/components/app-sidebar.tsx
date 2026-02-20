@@ -165,6 +165,11 @@ function buildNavSections({
       visible: true, // Profile settings are always visible to the user
     },
     {
+      title: "AI",
+      url: buildOrganizationPath(slug, "/settings/ai"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
+    {
       title: "Billing",
       url: buildOrganizationPath(slug, "/settings/billing"),
       visible:
