@@ -31,6 +31,12 @@ export const analyzeDocumentFields = createTool({
       processingTimeMs: result.processingTimeMs,
     });
 
-    return `Found ${result.fields.length} fields across the document.`;
+    const paymentCount = result.fields.filter((f) => f.fieldType === "payment").length;
+    const paymentNote =
+      paymentCount > 0
+        ? ` (includes ${paymentCount} payment field(s) — payment terms will be auto-extracted when applied)`
+        : "";
+
+    return `Found ${result.fields.length} fields across the document.${paymentNote}`;
   },
 });

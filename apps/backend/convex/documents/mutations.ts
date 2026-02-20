@@ -126,6 +126,13 @@ export const createDocument = permissionMutation("documents:create")({
       documentId,
     });
 
+    // 8. Schedule AI field analysis pipeline
+    await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
+      documentId,
+      organizationId: args.organizationId,
+    });
+    await ctx.db.patch(documentId, { aiProcessingStatus: "pending" });
+
     return documentId;
   },
 });
@@ -639,6 +646,13 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
       documentId: args.documentId,
     });
 
+    // 8. Schedule AI field analysis for new PDF
+    await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
+      documentId: args.documentId,
+      organizationId: document.organizationId,
+    });
+    await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
+
     return { success: true, versionNumber: newVersionNumber };
   },
 });
@@ -736,6 +750,13 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
     await ctx.scheduler.runAfter(0, internal.documents.extract_text_action.extractDocumentText, {
       documentId: args.documentId,
     });
+
+    // 8. Schedule AI field analysis for restored PDF
+    await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
+      documentId: args.documentId,
+      organizationId: document.organizationId,
+    });
+    await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
 
     return { success: true, versionNumber: newVersionNumber };
   },
