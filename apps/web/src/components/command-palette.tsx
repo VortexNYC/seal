@@ -5,10 +5,10 @@
  * Inline filter bar for status and date range filtering.
  */
 
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { useAction } from "convex/react";
 import { CalendarIcon, FileTextIcon, Loader2Icon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "@tanstack/react-router";
 import { useDebounce } from "use-debounce";
 
 import { Badge } from "@/components/ui/badge";
@@ -194,7 +194,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             variant="ghost"
             size="sm"
             onClick={clearFilters}
-            className="h-7 gap-1 text-xs text-muted-foreground"
+            className="text-muted-foreground h-7 gap-1 text-xs"
           >
             <XIcon className="h-3 w-3" />
             Clear
@@ -205,7 +205,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       <CommandList className="max-h-[400px]">
         {isSearching ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+            <Loader2Icon className="text-muted-foreground h-5 w-5 animate-spin" />
           </div>
         ) : query.length >= 2 && results.length === 0 ? (
           <CommandEmpty>No documents found.</CommandEmpty>
@@ -219,17 +219,17 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   onSelect={() => handleSelect(result.documentId)}
                   className="flex items-start gap-3 py-3"
                 >
-                  <FileTextIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <FileTextIcon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{result.documentName}</span>
                       {result.pageNumber > 0 && (
-                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                        <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-[10px]">
                           p.{result.pageNumber}
                         </span>
                       )}
                     </div>
-                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                    <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
                       {result.excerpt}
                     </p>
                   </div>
@@ -239,12 +239,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           )
         )}
       </CommandList>
-      <div className="border-t px-3 py-2 text-[10px] text-muted-foreground">
-        <kbd className="rounded border bg-muted px-1">&uarr;&darr;</kbd> navigate
+      <div className="text-muted-foreground border-t px-3 py-2 text-[10px]">
+        <kbd className="bg-muted rounded border px-1">&uarr;&darr;</kbd> navigate
         <span className="mx-2">&middot;</span>
-        <kbd className="rounded border bg-muted px-1">&crarr;</kbd> select
+        <kbd className="bg-muted rounded border px-1">&crarr;</kbd> select
         <span className="mx-2">&middot;</span>
-        <kbd className="rounded border bg-muted px-1">esc</kbd> close
+        <kbd className="bg-muted rounded border px-1">esc</kbd> close
       </div>
     </CommandDialog>
   );

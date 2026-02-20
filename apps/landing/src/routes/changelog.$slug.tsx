@@ -41,7 +41,7 @@ function ChangelogDetailPage() {
   const { entry } = Route.useLoaderData() as { entry: ChangelogEntryFull };
 
   return (
-    <div className="min-h-dvh bg-background py-24 sm:py-32">
+    <div className="bg-background min-h-dvh py-24 sm:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl">
           {/* Back link */}
@@ -72,11 +72,11 @@ function ChangelogDetailPage() {
               </span>
             </div>
 
-            <h1 className="mb-4 text-4xl font-bold tracking-tight text-white text-balance sm:text-5xl">
+            <h1 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl">
               {entry.title}
             </h1>
 
-            {entry.summary && <p className="text-xl text-white/60 text-pretty">{entry.summary}</p>}
+            {entry.summary && <p className="text-xl text-pretty text-white/60">{entry.summary}</p>}
           </header>
 
           {/* Cover image */}
@@ -107,7 +107,7 @@ function ChangelogDetailPage() {
                   >
                     <h3 className="mb-2 text-lg font-semibold text-white">{feature.title}</h3>
                     {feature.description && (
-                      <p className="text-white/60 text-pretty">{feature.description}</p>
+                      <p className="text-pretty text-white/60">{feature.description}</p>
                     )}
                     {feature.image?.asset && (
                       <div className="mt-4 overflow-hidden rounded-lg border border-white/10">

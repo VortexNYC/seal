@@ -21,9 +21,7 @@ export const searchDocuments = createTool({
     "Use this when the user asks about document contents, specific clauses, terms, dates, " +
     "or any information that might be in their uploaded documents.",
   args: z.object({
-    query: z
-      .string()
-      .describe("The search query — what to look for across documents"),
+    query: z.string().describe("The search query — what to look for across documents"),
   }),
   handler: async (ctx: SealAICtx, { query }): Promise<string> => {
     const results = await ctx.runAction(internal.ai.search.hybridSearchDocuments, {

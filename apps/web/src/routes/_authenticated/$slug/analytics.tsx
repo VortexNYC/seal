@@ -785,11 +785,11 @@ function MemberActivityTable() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-muted-foreground border-b text-left text-xs">
-                <th className="pb-2 pr-4 font-medium">Member</th>
-                <th className="pb-2 pr-4 text-right font-medium">Created</th>
-                <th className="pb-2 pr-4 text-right font-medium">Completed</th>
-                <th className="pb-2 pr-4 text-right font-medium">Pending</th>
-                <th className="pb-2 pr-4 text-right font-medium">Rate</th>
+                <th className="pr-4 pb-2 font-medium">Member</th>
+                <th className="pr-4 pb-2 text-right font-medium">Created</th>
+                <th className="pr-4 pb-2 text-right font-medium">Completed</th>
+                <th className="pr-4 pb-2 text-right font-medium">Pending</th>
+                <th className="pr-4 pb-2 text-right font-medium">Rate</th>
                 <th className="pb-2 text-right font-medium">Avg. Time</th>
               </tr>
             </thead>

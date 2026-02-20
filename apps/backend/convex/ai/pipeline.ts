@@ -22,10 +22,9 @@ export const processDocument = internalAction({
   },
   handler: async (ctx, args) => {
     // 0. Check if AI is enabled for this workspace
-    const aiSettings = await ctx.runQuery(
-      internal.organizations.queries.getAiSettingsInternal,
-      { organizationId: args.organizationId },
-    );
+    const aiSettings = await ctx.runQuery(internal.organizations.queries.getAiSettingsInternal, {
+      organizationId: args.organizationId,
+    });
     if (!aiSettings.aiEnabled) return;
 
     // 1. Mark processing

@@ -33,7 +33,7 @@ function DocsLayoutRoute() {
       <DocsLayout
         tree={source.pageTree}
         nav={{
-          title: <span className="font-semibold text-lg">Seal Docs</span>,
+          title: <span className="text-lg font-semibold">Seal Docs</span>,
           url: "/docs",
         }}
       >

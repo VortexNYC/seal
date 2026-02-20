@@ -11,17 +11,17 @@ export function HeroBlockComponent({ block }: { block: HeroBlock }) {
     <section className="relative flex min-h-[70dvh] flex-col items-center justify-center overflow-hidden py-24 sm:py-32">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-background" />
+        <div className="bg-background absolute inset-0" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_50%,oklch(0.6_0.13_175_/_0.06),transparent_70%)]" />
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 text-center sm:px-6 lg:px-8">
-        <h1 className="mb-6 text-5xl font-bold tracking-tight text-white text-balance sm:text-6xl lg:text-7xl">
+        <h1 className="mb-6 text-5xl font-bold tracking-tight text-balance text-white sm:text-6xl lg:text-7xl">
           {block.headline}
         </h1>
 
         {block.subheadline && (
-          <p className="mb-12 max-w-2xl text-xl text-white/60 text-pretty sm:text-2xl">
+          <p className="mb-12 max-w-2xl text-xl text-pretty text-white/60 sm:text-2xl">
             {block.subheadline}
           </p>
         )}
@@ -81,9 +81,9 @@ export function StaticHero() {
     <section className="grain-overlay relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-background" />
+        <div className="bg-background absolute inset-0" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_50%,oklch(0.6_0.13_175_/_0.08),transparent_70%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-background to-transparent" />
+        <div className="from-background absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t to-transparent" />
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-4 text-center sm:px-6 lg:px-8">
@@ -91,7 +91,7 @@ export function StaticHero() {
         <div className="mb-8">
           <div className="relative inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm">
             <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full rounded-full bg-teal-400 opacity-75 animate-ping" />
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-teal-400 opacity-75" />
               <span className="relative inline-flex size-2 rounded-full bg-teal-500" />
             </span>
             <span className="text-sm text-white/70">Now in Beta</span>
@@ -99,7 +99,7 @@ export function StaticHero() {
         </div>
 
         {/* Headline */}
-        <h1 className="mb-8 text-[clamp(3rem,12vw,9rem)] font-bold leading-[0.9] tracking-tighter text-balance">
+        <h1 className="mb-8 text-[clamp(3rem,12vw,9rem)] leading-[0.9] font-bold tracking-tighter text-balance">
           <span className="block text-white">Document</span>
           <span className="block bg-gradient-to-r from-teal-400 via-teal-300 to-teal-400 bg-clip-text text-transparent">
             Signatures
@@ -108,7 +108,7 @@ export function StaticHero() {
         </h1>
 
         {/* Tagline */}
-        <p className="mb-12 max-w-2xl text-xl text-white/60 text-pretty sm:text-2xl">
+        <p className="mb-12 max-w-2xl text-xl text-pretty text-white/60 sm:text-2xl">
           Sign, send, and manage documents securely.
           <br className="hidden sm:block" />
           ESIGN compliant. Legally binding. Free to start.
@@ -164,7 +164,7 @@ export function StaticHero() {
                 </div>
               </div>
               <div className="space-y-3">
-                <div className="text-xs font-medium uppercase tracking-wider text-white/40">
+                <div className="text-xs font-medium tracking-wider text-white/40 uppercase">
                   Recipients
                 </div>
                 {["Signer 1", "Signer 2", "CC: Legal"].map((name) => (

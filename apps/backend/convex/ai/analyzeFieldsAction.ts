@@ -87,10 +87,15 @@ export const DocumentAnalysisSchema = z.object({
       y: z.number().min(0).max(100).describe("Y position as percentage of page height"),
       width: z.number().min(1).max(100).describe("Width as percentage of page width"),
       height: z.number().min(0.5).max(30).describe("Height as percentage of page height"),
-      category: z.enum(["obligation", "payment", "risk", "dates", "terms"]).describe("Clause category"),
+      category: z
+        .enum(["obligation", "payment", "risk", "dates", "terms"])
+        .describe("Clause category"),
       severity: z.enum(["informational", "important", "critical"]).describe("Severity level"),
       text: z.string().describe("The exact clause text being annotated"),
-      summary: z.string().max(120).describe("One-sentence plain-English explanation of this clause"),
+      summary: z
+        .string()
+        .max(120)
+        .describe("One-sentence plain-English explanation of this clause"),
     }),
   ),
 });

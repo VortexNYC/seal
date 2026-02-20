@@ -10,12 +10,12 @@ export function TemplatePreviewBlockComponent({ block }: { block: TemplatePrevie
         {(block.headline || block.description) && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
             {block.headline && (
-              <h2 className="mb-4 text-3xl font-bold text-white text-balance sm:text-4xl">
+              <h2 className="mb-4 text-3xl font-bold text-balance text-white sm:text-4xl">
                 {block.headline}
               </h2>
             )}
             {block.description && (
-              <p className="text-lg text-white/60 text-pretty">{block.description}</p>
+              <p className="text-lg text-pretty text-white/60">{block.description}</p>
             )}
           </div>
         )}
@@ -42,13 +42,13 @@ export function TemplatePreviewBlockComponent({ block }: { block: TemplatePrevie
               )}
               <div className="p-5">
                 {template.category && (
-                  <span className="mb-2 inline-block text-xs font-medium uppercase tracking-wider text-teal-400">
+                  <span className="mb-2 inline-block text-xs font-medium tracking-wider text-teal-400 uppercase">
                     {template.category}
                   </span>
                 )}
                 <h3 className="mb-1 text-lg font-semibold text-white">{template.name}</h3>
                 {template.description && (
-                  <p className="text-sm text-white/50 text-pretty">{template.description}</p>
+                  <p className="text-sm text-pretty text-white/50">{template.description}</p>
                 )}
               </div>
             </div>

@@ -7,9 +7,9 @@ import {
   type AnnotationSeverity,
 } from "./schemas/ai_document_annotations";
 import { aiFieldSuggestionsTable } from "./schemas/ai_field_suggestions";
-import { aiUsageLogTable } from "./schemas/ai_usage_log";
 import { aiProgressTable } from "./schemas/ai_progress";
 import { aiThreadsTable } from "./schemas/ai_threads";
+import { aiUsageLogTable } from "./schemas/ai_usage_log";
 import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
 import { type AuditAction, type AuditResourceType, auditLogsTable } from "./schemas/audit_logs";
 import { dataExportsTable } from "./schemas/data_exports";

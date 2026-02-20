@@ -235,18 +235,14 @@ export const hybridSearchDocuments = internalAction({
 
     // Post-filter by workflow status and date range if specified
     const needsFilter =
-      (args.workflowStatus && args.workflowStatus !== "all") ||
-      args.dateFrom ||
-      args.dateTo;
+      (args.workflowStatus && args.workflowStatus !== "all") || args.dateFrom || args.dateTo;
 
     let filtered = entries;
     if (needsFilter) {
       // Extract unique document IDs from results
-      const docIdStrings = [...new Set(
-        entries
-          .map((e) => e.key?.split(":")[1])
-          .filter((id): id is string => !!id),
-      )];
+      const docIdStrings = [
+        ...new Set(entries.map((e) => e.key?.split(":")[1]).filter((id): id is string => !!id)),
+      ];
 
       const docIds = docIdStrings as unknown as Id<"documents">[];
       const docs = await ctx.runQuery(internal.ai.search.getDocumentsByIds, {
@@ -261,7 +257,12 @@ export const hybridSearchDocuments = internalAction({
         const doc = docMap.get(docId);
         if (!doc) return false;
 
-        if (args.workflowStatus && args.workflowStatus !== "all" && doc.workflowStatus !== args.workflowStatus) return false;
+        if (
+          args.workflowStatus &&
+          args.workflowStatus !== "all" &&
+          doc.workflowStatus !== args.workflowStatus
+        )
+          return false;
         if (args.dateFrom && doc.createdAt < args.dateFrom) return false;
         if (args.dateTo && doc.createdAt > args.dateTo) return false;
 

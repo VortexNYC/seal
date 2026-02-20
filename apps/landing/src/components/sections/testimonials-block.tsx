@@ -7,7 +7,7 @@ export function TestimonialsBlockComponent({ block }: { block: TestimonialsSecti
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {block.headline && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
-            <h2 className="mb-4 text-4xl font-bold tracking-tight text-white text-balance sm:text-5xl">
+            <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl">
               {block.headline}
             </h2>
           </div>

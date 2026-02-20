@@ -1334,7 +1334,7 @@ function SigningPage() {
 
           {/* Mobile Action Bar - Fixed at bottom on mobile */}
           {!isCompleted && !showSignatureCapture && (
-            <div className="dark:bg-background/95 border-border/50 pb-[env(safe-area-inset-bottom)] sticky bottom-0 z-40 border-t bg-white/95 p-4 backdrop-blur-xl lg:hidden">
+            <div className="dark:bg-background/95 border-border/50 sticky bottom-0 z-40 border-t bg-white/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
               <div className="flex gap-3">
                 <Button
                   variant="outline"
@@ -1372,7 +1372,7 @@ function SigningPage() {
 
           {/* Mobile Completed Footer */}
           {isCompleted && (
-            <div className="dark:bg-background/95 border-border/50 pb-[env(safe-area-inset-bottom)] sticky bottom-0 z-40 border-t bg-white/95 p-4 backdrop-blur-xl lg:hidden">
+            <div className="dark:bg-background/95 border-border/50 sticky bottom-0 z-40 border-t bg-white/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
               {recipient.status !== "declined" ? (
                 <Button
                   variant="outline"

@@ -48,7 +48,12 @@ function MessageBubble({
   text,
   status,
   slug,
-}: { role: string; text: string; status: string; slug: string }) {
+}: {
+  role: string;
+  text: string;
+  status: string;
+  slug: string;
+}) {
   const isUser = role === "user";
   const isStreaming = status === "streaming";
 
@@ -306,7 +311,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
               onKeyDown={handleKeyDown}
               placeholder="Ask about this document or search across all..."
               rows={1}
-              className="max-h-24 min-h-[36px] flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-sans text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-300 focus:outline-none focus:ring-1 focus:ring-violet-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-violet-600 dark:focus:ring-violet-600"
+              className="max-h-24 min-h-[36px] flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-sans text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-300 focus:ring-1 focus:ring-violet-300 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-violet-600 dark:focus:ring-violet-600"
             />
             <Button
               size="sm"

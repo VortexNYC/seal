@@ -7,13 +7,13 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
+import type { DatabaseReader } from "../_generated/server";
+import { enqueueAiPipeline } from "../ai/workpool";
 import { logDocumentAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { ensureDocumentLimit, ensureStorageLimit } from "../auth/subscription_guards";
-import { enqueueAiPipeline } from "../ai/workpool";
 import { validateFile } from "./upload_config";
 import { createVersionSnapshot } from "./version_helpers";
-import type { DatabaseReader } from "../_generated/server";
 import {
   canCancelDocument,
   canCompleteDocument,
@@ -655,7 +655,13 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
 
     // 8. Schedule AI field analysis for new PDF (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
-      await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId, ctx.auth.user._id);
+      await enqueueAiPipeline(
+        ctx,
+        ctx.db,
+        args.documentId,
+        document.organizationId,
+        ctx.auth.user._id,
+      );
       await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
     }
 
@@ -759,7 +765,13 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
 
     // 8. Schedule AI field analysis for restored PDF (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
-      await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId, ctx.auth.user._id);
+      await enqueueAiPipeline(
+        ctx,
+        ctx.db,
+        args.documentId,
+        document.organizationId,
+        ctx.auth.user._id,
+      );
       await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
     }
 

@@ -128,7 +128,7 @@ function RootComponent() {
       {isFullscreen ? (
         <Outlet />
       ) : (
-        <div className="relative flex min-h-dvh flex-col dark">
+        <div className="dark relative flex min-h-dvh flex-col">
           <Navbar />
           <main className="flex-1">
             <Outlet />

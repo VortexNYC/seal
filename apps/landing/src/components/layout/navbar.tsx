@@ -38,7 +38,7 @@ export function Navbar() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur transition-colors supports-[backdrop-filter]:bg-background/60",
+        "bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur transition-colors",
         isScrolled ? "border-border" : "border-transparent",
       )}
     >
@@ -56,7 +56,7 @@ export function Navbar() {
           {navItems.map((item) => (
             <Link
               className={cn(
-                "rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
+                "text-muted-foreground hover:text-foreground rounded-md px-4 py-2 text-sm font-medium transition-colors",
                 pathname === item.href && !item.hash && "text-foreground",
               )}
               hash={item.hash}
@@ -97,7 +97,7 @@ export function Navbar() {
               <nav className="mt-8 flex flex-col gap-4">
                 {navItems.map((item) => (
                   <Link
-                    className="py-2 text-lg font-medium transition-colors hover:text-primary"
+                    className="hover:text-primary py-2 text-lg font-medium transition-colors"
                     hash={item.hash}
                     key={item.label}
                     onClick={() => setIsOpen(false)}

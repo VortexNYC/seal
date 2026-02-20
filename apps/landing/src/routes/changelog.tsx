@@ -30,14 +30,14 @@ function ChangelogPage() {
   const { entries } = Route.useLoaderData();
 
   return (
-    <div className="min-h-dvh bg-background py-24 sm:py-32">
+    <div className="bg-background min-h-dvh py-24 sm:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mx-auto mb-16 max-w-3xl text-center">
-          <h1 className="mb-4 text-4xl font-bold tracking-tight text-white text-balance sm:text-5xl lg:text-6xl">
+          <h1 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
             Changelog
           </h1>
-          <p className="text-lg text-white/50 text-pretty sm:text-xl">
+          <p className="text-lg text-pretty text-white/50 sm:text-xl">
             See what&apos;s new in Seal. We ship fast and listen to feedback.
           </p>
         </div>
@@ -54,13 +54,13 @@ function ChangelogPage() {
                 <article className="group relative" key={entry._id}>
                   {/* Timeline line */}
                   {index < entries.length - 1 && (
-                    <div className="absolute left-[7px] top-8 h-full w-px bg-white/10" />
+                    <div className="absolute top-8 left-[7px] h-full w-px bg-white/10" />
                   )}
 
                   <div className="flex gap-6">
                     {/* Timeline dot */}
                     <div className="relative shrink-0">
-                      <div className="size-4 rounded-full border-2 border-teal-500 bg-background" />
+                      <div className="bg-background size-4 rounded-full border-2 border-teal-500" />
                     </div>
 
                     {/* Content */}
@@ -86,7 +86,7 @@ function ChangelogPage() {
 
                       {/* Summary */}
                       {entry.summary && (
-                        <p className="mb-4 text-white/60 text-pretty">{entry.summary}</p>
+                        <p className="mb-4 text-pretty text-white/60">{entry.summary}</p>
                       )}
 
                       {/* Cover image */}

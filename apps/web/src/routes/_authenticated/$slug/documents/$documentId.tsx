@@ -37,12 +37,12 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
-import { AIChatPanel } from "../../../../components/documents/ai-chat-panel";
 import {
   AIAnnotationOverlays,
   AIInsightsPanel,
   useDocumentAnnotations,
 } from "../../../../components/documents/ai-annotation-overlays";
+import { AIChatPanel } from "../../../../components/documents/ai-chat-panel";
 import {
   AIFieldOverlays,
   AIFieldReviewBar,
@@ -1009,29 +1009,30 @@ function DocumentDetailPage() {
   const sendDocumentValidation = getSendDocumentValidation();
 
   // Create conditional buttons
-  const aiSuggestionsToggle = canEdit && aiEnabled ? (
-    <div key="ai-toggle" className="flex items-center gap-1.5 sm:flex-none">
-      {documentData.aiProcessingStatus === "processing" && (
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Loader2Icon className="h-3 w-3 animate-spin" />
-          Analyzing...
-        </span>
-      )}
-      <Button
-        onClick={handleToggleAiSuggestions}
-        size="sm"
-        variant="ghost"
-        className="text-violet-700 dark:text-violet-400"
-      >
-        {showAiSuggestions ? (
-          <EyeIcon className="mr-1.5 h-3.5 w-3.5" />
-        ) : (
-          <EyeOffIcon className="mr-1.5 h-3.5 w-3.5" />
+  const aiSuggestionsToggle =
+    canEdit && aiEnabled ? (
+      <div key="ai-toggle" className="flex items-center gap-1.5 sm:flex-none">
+        {documentData.aiProcessingStatus === "processing" && (
+          <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            <Loader2Icon className="h-3 w-3 animate-spin" />
+            Analyzing...
+          </span>
         )}
-        <span className="truncate text-xs">AI Suggestions</span>
-      </Button>
-    </div>
-  ) : null;
+        <Button
+          onClick={handleToggleAiSuggestions}
+          size="sm"
+          variant="ghost"
+          className="text-violet-700 dark:text-violet-400"
+        >
+          {showAiSuggestions ? (
+            <EyeIcon className="mr-1.5 h-3.5 w-3.5" />
+          ) : (
+            <EyeOffIcon className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          <span className="truncate text-xs">AI Suggestions</span>
+        </Button>
+      </div>
+    ) : null;
 
   const saveAsTemplateButton =
     canEdit && signatureFields.length > 0 ? (

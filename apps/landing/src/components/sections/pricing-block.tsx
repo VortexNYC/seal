@@ -12,12 +12,12 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
         {(block.headline || block.description) && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
             {block.headline && (
-              <h2 className="mb-4 text-4xl font-bold tracking-tight text-white text-balance sm:text-5xl">
+              <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl">
                 {block.headline}
               </h2>
             )}
             {block.description && (
-              <p className="text-lg text-white/50 text-pretty">{block.description}</p>
+              <p className="text-lg text-pretty text-white/50">{block.description}</p>
             )}
           </div>
         )}
@@ -159,13 +159,13 @@ export function StaticPricing() {
     <section className="relative py-24 sm:py-32 lg:py-40" id="pricing">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-16 max-w-3xl text-center sm:mb-20">
-          <h2 className="mb-4 text-4xl font-bold tracking-tight text-white text-balance sm:text-5xl lg:text-6xl">
+          <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
             Simple, transparent{" "}
             <span className="bg-gradient-to-r from-teal-400 to-teal-300 bg-clip-text text-transparent">
               pricing
             </span>
           </h2>
-          <p className="text-lg text-white/50 text-pretty sm:text-xl">
+          <p className="text-lg text-pretty text-white/50 sm:text-xl">
             No hidden fees. No per-signature charges. Just straightforward plans.
           </p>
         </div>

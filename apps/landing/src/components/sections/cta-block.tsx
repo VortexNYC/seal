@@ -19,14 +19,14 @@ export function CtaBlockComponent({ block }: { block: CtaSectionBlock }) {
     <section className="relative overflow-hidden py-32 sm:py-40">
       <div className={`pointer-events-none absolute inset-0 -z-10 ${bgClass}`} />
 
-      <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
-          <h2 className="mb-6 text-5xl font-bold tracking-tight text-white text-balance sm:text-6xl">
+          <h2 className="mb-6 text-5xl font-bold tracking-tight text-balance text-white sm:text-6xl">
             {block.headline}
           </h2>
 
           {block.description && (
-            <p className="mx-auto mb-12 max-w-2xl text-xl text-white/60 text-pretty">
+            <p className="mx-auto mb-12 max-w-2xl text-xl text-pretty text-white/60">
               {block.description}
             </p>
           )}
@@ -71,12 +71,12 @@ export function StaticCta() {
     <section className="relative overflow-hidden py-32 sm:py-40">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_100%_80%_at_50%_100%,oklch(0.6_0.13_175_/_0.15)_0%,transparent_60%)]" />
 
-      <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
-          <h2 className="mb-6 text-5xl font-bold tracking-tight text-white text-balance sm:text-6xl">
+          <h2 className="mb-6 text-5xl font-bold tracking-tight text-balance text-white sm:text-6xl">
             Ready to sign smarter?
           </h2>
-          <p className="mx-auto mb-12 max-w-2xl text-xl text-white/60 text-pretty">
+          <p className="mx-auto mb-12 max-w-2xl text-xl text-pretty text-white/60">
             Join thousands of professionals who trust Seal for their document signatures. Free to
             start, no credit card required.
           </p>

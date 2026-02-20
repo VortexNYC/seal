@@ -249,7 +249,7 @@ function VirtualizedFieldList({
               key={field._id}
               ref={virtualizer.measureElement}
               data-index={virtualRow.index}
-              className="absolute left-0 top-0 w-full"
+              className="absolute top-0 left-0 w-full"
               style={{ transform: `translateY(${virtualRow.start}px)` }}
             >
               <FieldRow

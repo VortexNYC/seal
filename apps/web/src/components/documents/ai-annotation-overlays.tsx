@@ -167,10 +167,7 @@ function HighlightOverlay({
         <div className="mb-0.5 flex items-center gap-1.5">
           <config.icon className={cn("h-3 w-3", config.textColor)} />
           <span
-            className={cn(
-              "text-[10px] font-semibold uppercase tracking-wide",
-              config.textColor,
-            )}
+            className={cn("text-[10px] font-semibold tracking-wide uppercase", config.textColor)}
           >
             {config.label}
           </span>

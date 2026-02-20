@@ -10,7 +10,7 @@ export function LogoCloudBlockComponent({ block }: { block: LogoCloudBlock }) {
     <section className="relative overflow-hidden border-y border-white/5 bg-black/20 py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {block.headline && (
-          <p className="mb-8 text-center text-sm uppercase tracking-widest text-white/40">
+          <p className="mb-8 text-center text-sm tracking-widest text-white/40 uppercase">
             {block.headline}
           </p>
         )}

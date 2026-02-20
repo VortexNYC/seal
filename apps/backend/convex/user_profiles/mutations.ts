@@ -129,4 +129,3 @@ export const updateNotificationPreferences = mutation({
     return profileId;
   },
 });
-

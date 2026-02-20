@@ -19,7 +19,7 @@ export function LegalDisclaimerBlockComponent({ block }: { block: LegalDisclaime
             ) : (
               <Info className="mt-0.5 size-5 shrink-0 text-white/40" />
             )}
-            <p className="text-sm leading-relaxed text-white/60 text-pretty">{block.text}</p>
+            <p className="text-sm leading-relaxed text-pretty text-white/60">{block.text}</p>
           </div>
         </div>
       </div>

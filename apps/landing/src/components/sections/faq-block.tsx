@@ -13,7 +13,7 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {block.headline && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
-            <h2 className="mb-4 text-4xl font-bold tracking-tight text-white text-balance sm:text-5xl">
+            <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl">
               {block.headline}
             </h2>
           </div>
@@ -58,7 +58,7 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
                   }}
                 >
                   <div className="overflow-hidden">
-                    <p className="pb-6 pt-4 text-white/60 text-pretty">{faq.answer}</p>
+                    <p className="pt-4 pb-6 text-pretty text-white/60">{faq.answer}</p>
                   </div>
                 </div>
               </div>
@@ -114,13 +114,13 @@ export function StaticFaq() {
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-16 max-w-3xl text-center sm:mb-20">
-          <h2 className="mb-4 text-4xl font-bold tracking-tight text-white text-balance sm:text-5xl lg:text-6xl">
+          <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
             Questions?{" "}
             <span className="bg-gradient-to-r from-teal-400 to-teal-300 bg-clip-text text-transparent">
               Answers.
             </span>
           </h2>
-          <p className="text-lg text-white/50 text-pretty sm:text-xl">
+          <p className="text-lg text-pretty text-white/50 sm:text-xl">
             Everything you need to know about signing with Seal.
           </p>
         </div>
@@ -164,7 +164,7 @@ export function StaticFaq() {
                   }}
                 >
                   <div className="overflow-hidden">
-                    <p className="pb-6 pt-4 text-white/60 text-pretty">{faq.answer}</p>
+                    <p className="pt-4 pb-6 text-pretty text-white/60">{faq.answer}</p>
                   </div>
                 </div>
               </div>
