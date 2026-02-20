@@ -61,6 +61,48 @@ export const getOrCreateThread = authMutation({
 });
 
 /**
+ * Get or create a search thread (not tied to any document).
+ * Called from the dedicated search page.
+ */
+export const getOrCreateSearchThread = authMutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = ctx.auth.userId;
+    if (!userId) throw new ConvexError("Not authenticated");
+
+    const organizationId = ctx.auth.organizationId;
+
+    // Check for existing search thread for this user in this org
+    const existing = await ctx.db
+      .query("ai_threads")
+      .withIndex("by_organization_user", (q) =>
+        q.eq("organizationId", organizationId).eq("userId", userId.toString()),
+      )
+      .filter((q) => q.eq(q.field("threadType"), "search"))
+      .first();
+
+    if (existing) return { threadId: existing.threadId, isNew: false };
+
+    // Create agent thread
+    const { threadId } = await sealAgent.createThread(ctx, {
+      userId: userId.toString(),
+      title: "Document Search",
+    });
+
+    // Save our mapping (no documentId)
+    await ctx.db.insert("ai_threads", {
+      threadId,
+      organizationId,
+      userId: userId.toString(),
+      threadType: "search",
+      createdAt: Date.now(),
+    });
+
+    return { threadId, isNew: true };
+  },
+});
+
+/**
  * Get existing thread for a document (read-only).
  */
 export const getThreadForDocument = authQuery({
@@ -135,7 +177,7 @@ export const generateResponseAsync = internalAction({
     promptMessageId: v.string(),
     organizationId: v.id("organizations"),
     userId: v.string(),
-    documentId: v.id("documents"),
+    documentId: v.optional(v.id("documents")),
   },
   handler: async (ctx, args) => {
     // Start progress tracking
@@ -201,10 +243,8 @@ export const generateResponseAsync = internalAction({
       });
     } catch (error) {
       // Distinguish user abort from system failure (Plasma pattern)
-      const isAbort =
-        error instanceof Error && error.name === "AbortError";
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
+      const isAbort = error instanceof Error && error.name === "AbortError";
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
 
       if (isAbort) {
         await ctx.runMutation(internal.ai.progress.abort, {
