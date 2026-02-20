@@ -375,12 +375,20 @@ function DocumentDetailPage() {
   });
   const aiEnabled = aiSettings?.aiEnabled !== false;
   const [showAiSuggestions, setShowAiSuggestions] = useState(true);
-  const { threadId } = useDocumentThread(documentId as Id<"documents">);
+  const { threadId, isCreating: isCreatingThread, getOrCreateThread } = useDocumentThread(documentId as Id<"documents">);
   const [showAIChat, setShowAIChat] = useState(false);
 
   const handleToggleAiSuggestions = useCallback(() => {
     setShowAiSuggestions((prev) => !prev);
   }, []);
+
+  const handleToggleAIChat = useCallback(async () => {
+    const willOpen = !showAIChat;
+    setShowAIChat(willOpen);
+    if (willOpen && !threadId) {
+      await getOrCreateThread();
+    }
+  }, [showAIChat, threadId, getOrCreateThread]);
 
   // SEA-72: PDF document load handlers
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
@@ -1015,9 +1023,14 @@ function DocumentDetailPage() {
     canEdit && aiEnabled ? (
       <div key="ai-toggle" className="flex items-center gap-1.5 sm:flex-none">
         {documentData.aiProcessingStatus === "processing" && (
-          <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+          <span className="flex items-center gap-1.5 text-xs text-violet-600 dark:text-violet-400">
             <Loader2Icon className="h-3 w-3 animate-spin" />
             Analyzing...
+          </span>
+        )}
+        {documentData.aiProcessingStatus === "failed" && (
+          <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+            Analysis incomplete
           </span>
         )}
         <Button
@@ -1034,16 +1047,21 @@ function DocumentDetailPage() {
           <span className="truncate text-xs">AI Suggestions</span>
         </Button>
         <Button
-          onClick={() => setShowAIChat((prev) => !prev)}
+          onClick={handleToggleAIChat}
           size="sm"
           variant="ghost"
+          disabled={isCreatingThread}
           className={cn(
             "text-violet-700 dark:text-violet-400",
             showAIChat && "bg-violet-100 dark:bg-violet-900/40",
           )}
           aria-pressed={showAIChat}
         >
-          <MessageSquareIcon className="mr-1.5 h-3.5 w-3.5" />
+          {isCreatingThread ? (
+            <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <MessageSquareIcon className="mr-1.5 h-3.5 w-3.5" />
+          )}
           <span className="truncate text-xs">AI Chat</span>
         </Button>
       </div>
@@ -1225,6 +1243,16 @@ function DocumentDetailPage() {
                         handleApply={aiSuggestions.handleApply}
                         handleDismiss={aiSuggestions.handleDismiss}
                       />
+                    </div>
+                  )}
+
+                  {/* AI processing skeleton — show when analyzing but no suggestions yet */}
+                  {canEdit && aiEnabled && showAiSuggestions && !aiSuggestions.suggestions && documentData.aiProcessingStatus === "processing" && (
+                    <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-violet-300/50 bg-violet-50/50 px-4 py-3 dark:border-violet-700/50 dark:bg-violet-950/30">
+                      <Loader2Icon className="h-4 w-4 animate-spin text-violet-500" />
+                      <span className="font-sans text-xs text-violet-600 dark:text-violet-400">
+                        Detecting form fields...
+                      </span>
                     </div>
                   )}
                 </TransformWrapper>
@@ -1425,8 +1453,27 @@ function DocumentDetailPage() {
               </Collapsible>
 
               {/* AI Chat Panel - Shows when user opens AI assistant */}
-              {canEdit && aiEnabled && showAIChat && threadId && (
-                <AIChatPanel threadId={threadId} slug={slug} onClose={() => setShowAIChat(false)} />
+              {canEdit && aiEnabled && showAIChat && (
+                threadId ? (
+                  <AIChatPanel threadId={threadId} slug={slug} onClose={() => setShowAIChat(false)} />
+                ) : (
+                  <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900">
+                    <Loader2Icon className="h-5 w-5 animate-spin text-violet-500" />
+                    <p className="font-sans text-sm text-slate-500 dark:text-slate-400">
+                      Starting AI assistant...
+                    </p>
+                  </div>
+                )
+              )}
+
+              {/* AI Insights (Redlining) — loading state */}
+              {canEdit && aiEnabled && !documentAnnotations.annotations && documentData.aiProcessingStatus === "processing" && (
+                <div className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-5 py-4 sm:rounded-xl dark:border-slate-700 dark:bg-slate-800/30">
+                  <Loader2Icon className="h-4 w-4 animate-spin text-slate-400" />
+                  <span className="font-sans text-xs text-slate-500 dark:text-slate-400">
+                    Scanning for insights...
+                  </span>
+                </div>
               )}
 
               {/* AI Insights (Redlining) */}
