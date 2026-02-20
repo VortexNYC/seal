@@ -14,8 +14,8 @@ import type { Id } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
 import { fetchFieldAnalysisWithRetry } from "./analyzeFieldsAction";
 
-/** Max PDF size for AI analysis (10MB). Larger files skip analysis gracefully. */
-const MAX_AI_PDF_SIZE = 10 * 1024 * 1024;
+/** Max PDF size for AI analysis (100MB — Gemini inline limit). */
+const MAX_AI_PDF_SIZE = 100 * 1024 * 1024;
 
 export const processDocument = internalAction({
   args: {
