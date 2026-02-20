@@ -1,9 +1,9 @@
 /**
- * Payment term extraction action.
+ * Payment term extraction for the AI pipeline.
  *
- * Scheduled by `applyFieldSuggestions` when payment fields are applied.
- * Downloads the PDF, sends it to Gemini for payment-specific analysis,
- * and creates payment_field_configs records for each payment field.
+ * Called by the pipeline after field analysis detects payment-type fields.
+ * Extracts structured payment data from the PDF and stores it on the
+ * suggestion row so it's ready when the user applies the suggestion.
  */
 
 import { generateObject } from "ai";
@@ -43,11 +43,16 @@ const PAYMENT_EXTRACTION_PROMPT = `You are analyzing a PDF document for a docume
 
 Extract all payment terms from the document.`;
 
-export const extractPaymentTermsForFields = internalAction({
+/**
+ * Extract payment terms from a PDF and store on the suggestion row.
+ *
+ * Called by pipeline.processDocument when field analysis finds payment fields.
+ */
+export const extractPaymentTermsForSuggestion = internalAction({
   args: {
     documentId: v.id("documents"),
     organizationId: v.id("organizations"),
-    paymentFieldIds: v.array(v.id("signature_fields")),
+    suggestionId: v.id("ai_field_suggestions"),
   },
   handler: async (ctx, args) => {
     const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
@@ -81,25 +86,30 @@ export const extractPaymentTermsForFields = internalAction({
 
     const extracted = PaymentExtractionSchema.parse(result.object);
 
-    // Save payment config for each payment field
-    // (typically there's one payment field, but handle multiple)
-    for (const fieldId of args.paymentFieldIds) {
-      await ctx.runMutation(internal.ai.mutations.saveExtractedPaymentConfig, {
-        fieldId,
-        documentId: args.documentId,
-        organizationId: args.organizationId,
-        extraction: {
-          lineItems: extracted.lineItems,
-          currency: extracted.currency,
-          paymentType: extracted.paymentType,
-          dueDateTerms: extracted.dueDateTerms,
-          customDueDays: extracted.customDueDays,
-          lateFee: extracted.lateFee,
-          recurringConfig: extracted.recurringConfig,
-          installmentsConfig: extracted.installmentsConfig,
-          depositBalanceConfig: extracted.depositBalanceConfig,
-        },
-      });
-    }
+    // Store extracted payment data on the suggestion row
+    await ctx.runMutation(internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion, {
+      suggestionId: args.suggestionId,
+      paymentExtraction: {
+        lineItems: extracted.lineItems,
+        currency: extracted.currency,
+        paymentType: extracted.paymentType,
+        dueDateTerms: extracted.dueDateTerms,
+        customDueDays: extracted.customDueDays,
+        lateFee: extracted.lateFee,
+        recurringConfig: extracted.recurringConfig,
+        installmentsConfig: extracted.installmentsConfig,
+        depositBalanceConfig: extracted.depositBalanceConfig,
+      },
+    });
+
+    return {
+      lineItemCount: extracted.lineItems.length,
+      totalCents: extracted.lineItems.reduce(
+        (sum, item) => sum + item.quantity * item.unitPriceCents,
+        0,
+      ),
+      currency: extracted.currency,
+      paymentType: extracted.paymentType,
+    };
   },
 });

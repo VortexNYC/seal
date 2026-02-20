@@ -1,6 +1,5 @@
 import { ConvexError, v } from "convex/values";
 
-import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
 import { authMutation } from "../auth/wrappers";
@@ -174,14 +173,63 @@ export const applyFieldSuggestions = authMutation({
 
     await ctx.db.patch(args.suggestionId, { status: "applied" as const });
 
-    // Auto-extract payment terms for any payment fields
-    // Schedules an action so it doesn't block the mutation
-    if (paymentFieldIds.length > 0) {
-      await ctx.scheduler.runAfter(0, internal.ai.paymentExtraction.extractPaymentTermsForFields, {
-        documentId: suggestion.documentId,
-        organizationId: suggestion.organizationId,
-        paymentFieldIds: paymentFieldIds,
-      });
+    // Create payment_field_configs for payment fields using pre-extracted data
+    if (paymentFieldIds.length > 0 && suggestion.paymentExtraction) {
+      const ext = suggestion.paymentExtraction;
+      const items = ext.lineItems.map((item, i) => ({
+        id: `ai-${i}-${now}`,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPriceCents,
+      }));
+      const totalAmountCents = computeTotalAmountCents(items);
+
+      for (const fieldId of paymentFieldIds) {
+        await ctx.db.insert("payment_field_configs", {
+          fieldId,
+          documentId: suggestion.documentId,
+          organizationId: suggestion.organizationId,
+          paymentType: ext.paymentType,
+          items,
+          currency: ext.currency.toLowerCase(),
+          dueDateTerms: ext.dueDateTerms,
+          customDueDays: ext.customDueDays,
+          lateFees: ext.lateFee
+            ? {
+                enabled: true,
+                type: ext.lateFee.type,
+                amount: ext.lateFee.amount,
+                gracePeriodDays: ext.lateFee.gracePeriodDays,
+              }
+            : undefined,
+          recurringConfig: ext.recurringConfig
+            ? {
+                interval: ext.recurringConfig.interval,
+                intervalCount: ext.recurringConfig.intervalCount,
+                endCondition: "never" as const,
+              }
+            : undefined,
+          installmentsConfig: ext.installmentsConfig
+            ? {
+                count: ext.installmentsConfig.count,
+                interval: ext.installmentsConfig.interval,
+              }
+            : undefined,
+          depositBalanceConfig: ext.depositBalanceConfig
+            ? {
+                depositPercent: ext.depositBalanceConfig.depositPercent,
+                balanceDueDays: ext.depositBalanceConfig.balanceDueDays,
+              }
+            : undefined,
+          allowedPaymentMethods: ["card"],
+          feeHandling: "absorb",
+          taxEnabled: false,
+          totalAmountCents,
+          paymentStatus: "pending",
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
     }
 
     return { fieldIds, count: fieldIds.length };
@@ -204,10 +252,7 @@ export const dismissFieldSuggestions = authMutation({
 
 /**
  * Save AI-extracted payment terms as a payment_field_configs record.
- *
- * Maps the AI extraction output to the full config schema, filling in
- * sensible defaults for fields the AI can't infer (payment methods,
- * fee handling, tax settings).
+ * Used by the agent tool for conversational payment extraction.
  */
 export const saveExtractedPaymentConfig = internalMutation({
   args: {

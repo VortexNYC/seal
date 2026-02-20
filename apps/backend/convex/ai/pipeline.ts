@@ -46,7 +46,7 @@ export const processDocument = internalAction({
       })) as FieldAnalysisResult;
 
       // 4. Save field suggestions (dismisses existing pending ones internally)
-      await ctx.runMutation(internal.ai.mutations.saveFieldSuggestions, {
+      const suggestionId = await ctx.runMutation(internal.ai.mutations.saveFieldSuggestions, {
         documentId: args.documentId,
         organizationId: args.organizationId,
         fields: result.fields,
@@ -54,6 +54,27 @@ export const processDocument = internalAction({
         tokensUsed: result.tokensUsed,
         processingTimeMs: result.processingTimeMs,
       });
+
+      // 4a. If payment fields detected, extract payment terms and embed on suggestion
+      const hasPaymentFields = result.fields.some((f) => f.fieldType === "payment");
+      if (hasPaymentFields && suggestionId) {
+        try {
+          await ctx.runAction(
+            internal.ai.paymentExtraction.extractPaymentTermsForSuggestion,
+            {
+              documentId: args.documentId,
+              organizationId: args.organizationId,
+              suggestionId,
+            },
+          );
+        } catch (paymentError) {
+          // Payment extraction failure shouldn't block the rest of the pipeline
+          console.error(
+            `[Pipeline] Payment extraction failed for ${args.documentId}:`,
+            paymentError,
+          );
+        }
+      }
 
       // 4b. Log field analysis usage
       if (args.userId) {
