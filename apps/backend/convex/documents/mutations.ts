@@ -10,6 +10,7 @@ import { internalMutation } from "../_generated/server";
 import { logDocumentAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { ensureDocumentLimit, ensureStorageLimit } from "../auth/subscription_guards";
+import { enqueueAiPipeline } from "../ai/workpool";
 import { validateFile } from "./upload_config";
 import { createVersionSnapshot } from "./version_helpers";
 import type { DatabaseReader } from "../_generated/server";
@@ -135,10 +136,7 @@ export const createDocument = permissionMutation("documents:create")({
 
     // 8. Schedule AI field analysis pipeline (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, args.organizationId)) {
-      await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
-        documentId,
-        organizationId: args.organizationId,
-      });
+      await enqueueAiPipeline(ctx, ctx.db, documentId, args.organizationId);
       await ctx.db.patch(documentId, { aiProcessingStatus: "pending" });
     }
 
@@ -657,10 +655,7 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
 
     // 8. Schedule AI field analysis for new PDF (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
-      await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
-        documentId: args.documentId,
-        organizationId: document.organizationId,
-      });
+      await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId);
       await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
     }
 
@@ -764,10 +759,7 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
 
     // 8. Schedule AI field analysis for restored PDF (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
-      await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
-        documentId: args.documentId,
-        organizationId: document.organizationId,
-      });
+      await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId);
       await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
     }
 
