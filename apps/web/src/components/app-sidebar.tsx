@@ -136,11 +136,6 @@ function buildNavSections({
       visible: canView(permissionFlags?.canCreateDocuments),
     },
     {
-      title: "Search",
-      url: buildOrganizationPath(slug, "/search"),
-      visible: true,
-    },
-    {
       title: "Templates",
       url: buildOrganizationPath(slug, "/templates"),
       visible: canView(permissionFlags?.canCreateTemplates),

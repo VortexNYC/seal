@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 
 import { Button } from "../ui/button";
+import { parseTextWithCitations } from "./citation-chip";
 import { useAIProgress } from "./hooks/use-ai-progress";
 
 // ---------------------------------------------------------------------------
@@ -26,6 +27,7 @@ import { useAIProgress } from "./hooks/use-ai-progress";
 
 interface AIChatPanelProps {
   threadId: string;
+  slug: string;
   onClose: () => void;
 }
 
@@ -41,7 +43,12 @@ function StreamingText({ text, isStreaming }: { text: string; isStreaming: boole
   return <>{visibleText}</>;
 }
 
-function MessageBubble({ role, text, status }: { role: string; text: string; status: string }) {
+function MessageBubble({
+  role,
+  text,
+  status,
+  slug,
+}: { role: string; text: string; status: string; slug: string }) {
   const isUser = role === "user";
   const isStreaming = status === "streaming";
 
@@ -68,7 +75,7 @@ function MessageBubble({ role, text, status }: { role: string; text: string; sta
         {isStreaming ? (
           <StreamingText text={text} isStreaming />
         ) : (
-          <span className="whitespace-pre-wrap">{text}</span>
+          <span className="whitespace-pre-wrap">{parseTextWithCitations(text, slug)}</span>
         )}
         {isStreaming && (
           <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-violet-500/50" />
@@ -110,8 +117,9 @@ function ProgressIndicator({ threadId }: { threadId: string }) {
 
 const SUGGESTIONS = [
   "Analyze this document for form fields",
-  "Add signature fields on every page",
   "What fields does this document need?",
+  "Search across my documents for payment terms",
+  "Find all documents with a non-compete clause",
 ];
 
 function SuggestionChips({ onSelect }: { onSelect: (text: string) => void }) {
@@ -135,7 +143,7 @@ function SuggestionChips({ onSelect }: { onSelect: (text: string) => void }) {
 // Main chat panel
 // ---------------------------------------------------------------------------
 
-export function AIChatPanel({ threadId, onClose }: AIChatPanelProps) {
+export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -243,7 +251,7 @@ export function AIChatPanel({ threadId, onClose }: AIChatPanelProps) {
                 How can I help?
               </p>
               <p className="mt-1 font-sans text-xs text-slate-500 dark:text-slate-400">
-                I can analyze your document and suggest form fields
+                I can analyze documents, suggest fields, and search across your workspace
               </p>
             </div>
             <SuggestionChips onSelect={handleSend} />
@@ -265,6 +273,7 @@ export function AIChatPanel({ threadId, onClose }: AIChatPanelProps) {
                   role={message.role}
                   text={text}
                   status={message.status}
+                  slug={slug}
                 />
               );
             })}
@@ -295,7 +304,7 @@ export function AIChatPanel({ threadId, onClose }: AIChatPanelProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about this document..."
+              placeholder="Ask about this document or search across all..."
               rows={1}
               className="max-h-24 min-h-[36px] flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-sans text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-300 focus:outline-none focus:ring-1 focus:ring-violet-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-violet-600 dark:focus:ring-violet-600"
             />

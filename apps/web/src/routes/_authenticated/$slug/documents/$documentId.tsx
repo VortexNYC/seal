@@ -1410,7 +1410,7 @@ function DocumentDetailPage() {
 
               {/* AI Chat Panel - Shows when user opens AI assistant */}
               {canEdit && aiEnabled && showAIChat && threadId && (
-                <AIChatPanel threadId={threadId} onClose={() => setShowAIChat(false)} />
+                <AIChatPanel threadId={threadId} slug={slug} onClose={() => setShowAIChat(false)} />
               )}
 
               {/* AI Insights (Redlining) */}
