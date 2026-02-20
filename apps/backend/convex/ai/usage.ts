@@ -52,6 +52,7 @@ export const logAiUsage = internalMutation({
       v.literal("redlining"),
       v.literal("search"),
       v.literal("chat"),
+      v.literal("ocr_fallback"),
     ),
     tokensUsed: v.number(),
     durationMs: v.number(),

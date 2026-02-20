@@ -14,6 +14,7 @@ import type * as ai_analyzeFieldsAction from "../ai/analyzeFieldsAction.js";
 import type * as ai_cleanup from "../ai/cleanup.js";
 import type * as ai_model from "../ai/model.js";
 import type * as ai_mutations from "../ai/mutations.js";
+import type * as ai_ocrFallback from "../ai/ocrFallback.js";
 import type * as ai_paymentExtraction from "../ai/paymentExtraction.js";
 import type * as ai_pipeline from "../ai/pipeline.js";
 import type * as ai_pipeline_mutations from "../ai/pipeline_mutations.js";
@@ -217,6 +218,7 @@ declare const fullApi: ApiFromModules<{
   "ai/cleanup": typeof ai_cleanup;
   "ai/model": typeof ai_model;
   "ai/mutations": typeof ai_mutations;
+  "ai/ocrFallback": typeof ai_ocrFallback;
   "ai/paymentExtraction": typeof ai_paymentExtraction;
   "ai/pipeline": typeof ai_pipeline;
   "ai/pipeline_mutations": typeof ai_pipeline_mutations;

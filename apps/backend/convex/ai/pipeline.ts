@@ -156,7 +156,33 @@ export const processDocument = internalAction({
         });
       }
 
-      // 6. Index document for cross-document search (needs extractedText)
+      // 6. OCR fallback for scanned PDFs — if unpdf extracted no text, use Gemini
+      const docForText = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
+        documentId: args.documentId,
+      });
+      if (docForText && !docForText.extractedText?.trim()) {
+        try {
+          const ocrResult = await ctx.runAction(internal.ai.ocrFallback.ocrExtractText, {
+            documentId: args.documentId,
+          });
+          if (ocrResult.charCount > 0 && args.userId) {
+            await ctx.runMutation(internal.ai.usage.logAiUsage, {
+              organizationId: args.organizationId,
+              userId: args.userId,
+              action: "ocr_fallback" as const,
+              tokensUsed: ocrResult.tokensUsed,
+              durationMs: ocrResult.durationMs,
+              documentId: args.documentId,
+              modelUsed: "gemini-3-flash",
+            });
+          }
+        } catch (ocrError) {
+          // OCR failure shouldn't block the pipeline
+          console.error(`[Pipeline] OCR fallback failed for ${args.documentId}:`, ocrError);
+        }
+      }
+
+      // 7. Index document for cross-document search (needs extractedText)
       try {
         await ctx.runAction(internal.ai.search.indexDocumentForSearch, {
           documentId: args.documentId,
@@ -167,7 +193,7 @@ export const processDocument = internalAction({
         console.error(`[Pipeline] Search indexing failed for ${args.documentId}:`, searchError);
       }
 
-      // 7. Mark completed
+      // 8. Mark completed
       await ctx.runMutation(internal.ai.pipeline_mutations.setAiProcessingStatus, {
         documentId: args.documentId,
         status: "completed",
