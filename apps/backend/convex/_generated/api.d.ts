@@ -119,6 +119,7 @@ import type * as rls from "../rls.js";
 import type * as saved_signatures_index from "../saved_signatures/index.js";
 import type * as saved_signatures_mutations from "../saved_signatures/mutations.js";
 import type * as saved_signatures_queries from "../saved_signatures/queries.js";
+import type * as schemas_ai_document_annotations from "../schemas/ai_document_annotations.js";
 import type * as schemas_ai_field_suggestions from "../schemas/ai_field_suggestions.js";
 import type * as schemas_ai_progress from "../schemas/ai_progress.js";
 import type * as schemas_ai_threads from "../schemas/ai_threads.js";
@@ -317,6 +318,7 @@ declare const fullApi: ApiFromModules<{
   "saved_signatures/index": typeof saved_signatures_index;
   "saved_signatures/mutations": typeof saved_signatures_mutations;
   "saved_signatures/queries": typeof saved_signatures_queries;
+  "schemas/ai_document_annotations": typeof schemas_ai_document_annotations;
   "schemas/ai_field_suggestions": typeof schemas_ai_field_suggestions;
   "schemas/ai_progress": typeof schemas_ai_progress;
   "schemas/ai_threads": typeof schemas_ai_threads;
