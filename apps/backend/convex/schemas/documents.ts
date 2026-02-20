@@ -45,6 +45,19 @@ export const documentsTable = defineTable({
   // Extracted text content for search indexing
   extractedText: v.optional(v.string()), // Full text extracted from PDF pages
 
+  // AI processing pipeline status
+  aiProcessingStatus: v.optional(
+    v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed"),
+    ),
+  ),
+
+  // Search indexing
+  searchIndexedAt: v.optional(v.number()), // When document was last embedded for search
+
   // Sharing configuration
   sharingMode: documentSharingModeTuple,
 

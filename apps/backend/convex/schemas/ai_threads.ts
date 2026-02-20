@@ -3,9 +3,11 @@ import { v } from "convex/values";
 
 export const aiThreadsTable = defineTable({
   threadId: v.string(),
-  documentId: v.id("documents"),
+  documentId: v.optional(v.id("documents")),
   organizationId: v.id("organizations"),
   userId: v.string(),
+  /** Thread type: "document" for document-specific, "search" for cross-document search */
+  threadType: v.optional(v.union(v.literal("document"), v.literal("search"))),
   createdAt: v.number(),
 })
   .index("by_thread_id", ["threadId"])

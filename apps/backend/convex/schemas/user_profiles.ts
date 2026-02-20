@@ -59,6 +59,13 @@ export const userProfilesTable = defineTable({
     }),
   ),
 
+  // AI preferences
+  aiPreferences: v.optional(
+    v.object({
+      showFieldSuggestions: v.optional(v.boolean()), // default true
+    }),
+  ),
+
   // Timestamps
   updatedAt: v.number(), // Unix timestamp
 })
