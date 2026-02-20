@@ -7,6 +7,7 @@ import {
   type AnnotationSeverity,
 } from "./schemas/ai_document_annotations";
 import { aiFieldSuggestionsTable } from "./schemas/ai_field_suggestions";
+import { aiUsageLogTable } from "./schemas/ai_usage_log";
 import { aiProgressTable } from "./schemas/ai_progress";
 import { aiThreadsTable } from "./schemas/ai_threads";
 import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
@@ -213,6 +214,7 @@ export default defineSchema({
   ai_document_annotations: aiDocumentAnnotationsTable,
   ai_threads: aiThreadsTable,
   ai_progress: aiProgressTable,
+  ai_usage_log: aiUsageLogTable,
 
   // MCP OAuth
   mcp_oauth_clients: mcpOauthClientsTable,

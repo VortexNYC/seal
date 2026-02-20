@@ -123,6 +123,7 @@ import type * as schemas_ai_document_annotations from "../schemas/ai_document_an
 import type * as schemas_ai_field_suggestions from "../schemas/ai_field_suggestions.js";
 import type * as schemas_ai_progress from "../schemas/ai_progress.js";
 import type * as schemas_ai_threads from "../schemas/ai_threads.js";
+import type * as schemas_ai_usage_log from "../schemas/ai_usage_log.js";
 import type * as schemas_api_keys from "../schemas/api_keys.js";
 import type * as schemas_audit_logs from "../schemas/audit_logs.js";
 import type * as schemas_data_exports from "../schemas/data_exports.js";
@@ -322,6 +323,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/ai_field_suggestions": typeof schemas_ai_field_suggestions;
   "schemas/ai_progress": typeof schemas_ai_progress;
   "schemas/ai_threads": typeof schemas_ai_threads;
+  "schemas/ai_usage_log": typeof schemas_ai_usage_log;
   "schemas/api_keys": typeof schemas_api_keys;
   "schemas/audit_logs": typeof schemas_audit_logs;
   "schemas/data_exports": typeof schemas_data_exports;
