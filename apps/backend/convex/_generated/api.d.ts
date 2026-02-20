@@ -11,6 +11,7 @@
 import type * as ai_actions from "../ai/actions.js";
 import type * as ai_agent from "../ai/agent.js";
 import type * as ai_analyzeFieldsAction from "../ai/analyzeFieldsAction.js";
+import type * as ai_analyzeFieldsSchema from "../ai/analyzeFieldsSchema.js";
 import type * as ai_cleanup from "../ai/cleanup.js";
 import type * as ai_model from "../ai/model.js";
 import type * as ai_mutations from "../ai/mutations.js";
@@ -27,6 +28,7 @@ import type * as ai_threadQueries from "../ai/threadQueries.js";
 import type * as ai_threads from "../ai/threads.js";
 import type * as ai_tools_analyze_fields from "../ai/tools/analyze_fields.js";
 import type * as ai_tools_extract_payment_terms from "../ai/tools/extract_payment_terms.js";
+import type * as ai_tools_paymentExtractionSchema from "../ai/tools/paymentExtractionSchema.js";
 import type * as ai_tools_search_documents from "../ai/tools/search_documents.js";
 import type * as ai_types from "../ai/types.js";
 import type * as ai_usage from "../ai/usage.js";
@@ -215,6 +217,7 @@ declare const fullApi: ApiFromModules<{
   "ai/actions": typeof ai_actions;
   "ai/agent": typeof ai_agent;
   "ai/analyzeFieldsAction": typeof ai_analyzeFieldsAction;
+  "ai/analyzeFieldsSchema": typeof ai_analyzeFieldsSchema;
   "ai/cleanup": typeof ai_cleanup;
   "ai/model": typeof ai_model;
   "ai/mutations": typeof ai_mutations;
@@ -231,6 +234,7 @@ declare const fullApi: ApiFromModules<{
   "ai/threads": typeof ai_threads;
   "ai/tools/analyze_fields": typeof ai_tools_analyze_fields;
   "ai/tools/extract_payment_terms": typeof ai_tools_extract_payment_terms;
+  "ai/tools/paymentExtractionSchema": typeof ai_tools_paymentExtractionSchema;
   "ai/tools/search_documents": typeof ai_tools_search_documents;
   "ai/types": typeof ai_types;
   "ai/usage": typeof ai_usage;

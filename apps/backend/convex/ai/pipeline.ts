@@ -96,7 +96,7 @@ export const processDocument = internalAction({
       });
 
       // 4a. If payment fields detected, extract payment terms and embed on suggestion
-      const hasPaymentFields = result.fields.some((f) => f.fieldType === "payment");
+      const hasPaymentFields = result.fields.some((f: { fieldType: string }) => f.fieldType === "payment");
       if (hasPaymentFields && suggestionId) {
         try {
           await ctx.runAction(
