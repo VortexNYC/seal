@@ -378,6 +378,24 @@ function DocumentDetailPage() {
   const { threadId, isCreating: isCreatingThread, getOrCreateThread } = useDocumentThread(documentId as Id<"documents">);
   const [showAIChat, setShowAIChat] = useState(false);
 
+  // Toast when AI pipeline completes or fails
+  const prevAiStatus = useRef(documentData.aiProcessingStatus);
+  useEffect(() => {
+    const prev = prevAiStatus.current;
+    const current = documentData.aiProcessingStatus;
+    prevAiStatus.current = current;
+
+    if (prev === "processing" && current === "completed") {
+      toast.success("AI analysis complete", {
+        description: "Field suggestions and insights are ready to review.",
+      });
+    } else if (prev === "processing" && current === "failed") {
+      toast.error("AI analysis failed", {
+        description: "The document could not be analyzed. You can retry later.",
+      });
+    }
+  }, [documentData.aiProcessingStatus]);
+
   const handleToggleAiSuggestions = useCallback(() => {
     setShowAiSuggestions((prev) => !prev);
   }, []);
