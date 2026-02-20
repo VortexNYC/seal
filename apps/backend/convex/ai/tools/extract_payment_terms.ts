@@ -162,8 +162,8 @@ export const extractPaymentTerms = createTool({
         {
           role: "user",
           content: [
-            { type: "text", text: PAYMENT_EXTRACTION_PROMPT },
             { type: "file", data: pdfBase64, mediaType: "application/pdf" },
+            { type: "text", text: PAYMENT_EXTRACTION_PROMPT },
           ],
         },
       ],

@@ -182,8 +182,8 @@ export const analyzeFieldsInternal = internalAction({
         {
           role: "user",
           content: [
-            { type: "text", text: DOCUMENT_ANALYSIS_PROMPT },
             { type: "file", data: pdfBase64, mediaType: "application/pdf" },
+            { type: "text", text: DOCUMENT_ANALYSIS_PROMPT },
           ],
         },
       ],

@@ -14,8 +14,11 @@ import type { Id } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
 import { fetchFieldAnalysisWithRetry } from "./analyzeFieldsAction";
 
-/** Max PDF size for AI analysis (100MB — Gemini inline limit). */
-const MAX_AI_PDF_SIZE = 100 * 1024 * 1024;
+/** Max PDF size for AI analysis (50MB — Gemini inline PDF limit). */
+const MAX_AI_PDF_SIZE = 50 * 1024 * 1024;
+
+/** Max page count for Gemini PDF analysis. */
+const MAX_AI_PAGE_COUNT = 1000;
 
 export const processDocument = internalAction({
   args: {
@@ -56,6 +59,18 @@ export const processDocument = internalAction({
       if (document.fileSize > MAX_AI_PDF_SIZE) {
         console.warn(
           `[AI Pipeline] Skipping analysis for ${args.documentId}: file size ${document.fileSize} exceeds ${MAX_AI_PDF_SIZE} bytes`,
+        );
+        await ctx.runMutation(internal.ai.pipeline_mutations.setAiProcessingStatus, {
+          documentId: args.documentId,
+          status: "completed",
+        });
+        return;
+      }
+
+      // 2b. Skip AI analysis for very long PDFs (Gemini 1000-page limit)
+      if (document.pageCount && document.pageCount > MAX_AI_PAGE_COUNT) {
+        console.warn(
+          `[AI Pipeline] Skipping analysis for ${args.documentId}: ${document.pageCount} pages exceeds ${MAX_AI_PAGE_COUNT} limit`,
         );
         await ctx.runMutation(internal.ai.pipeline_mutations.setAiProcessingStatus, {
           documentId: args.documentId,
