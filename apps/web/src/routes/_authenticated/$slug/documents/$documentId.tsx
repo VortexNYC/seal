@@ -13,6 +13,7 @@ import {
   FileTextIcon,
   InfoIcon,
   Loader2Icon,
+  MessageSquareIcon,
   PlusIcon,
   SaveIcon,
   ScanSearchIcon,
@@ -32,6 +33,7 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDate, formatFileSize, formatRelativeTime, getInitials } from "@/lib/formatting";
 import { countSignatureFields } from "@/lib/signature-fields";
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -1030,6 +1032,19 @@ function DocumentDetailPage() {
             <EyeOffIcon className="mr-1.5 h-3.5 w-3.5" />
           )}
           <span className="truncate text-xs">AI Suggestions</span>
+        </Button>
+        <Button
+          onClick={() => setShowAIChat((prev) => !prev)}
+          size="sm"
+          variant="ghost"
+          className={cn(
+            "text-violet-700 dark:text-violet-400",
+            showAIChat && "bg-violet-100 dark:bg-violet-900/40",
+          )}
+          aria-pressed={showAIChat}
+        >
+          <MessageSquareIcon className="mr-1.5 h-3.5 w-3.5" />
+          <span className="truncate text-xs">AI Chat</span>
         </Button>
       </div>
     ) : null;

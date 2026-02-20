@@ -9,6 +9,17 @@ import {
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
@@ -252,6 +263,8 @@ export function AIInsightsPanel({
               key={category}
               type="button"
               onClick={() => toggleCategory(category)}
+              aria-pressed={isActive}
+              aria-label={`${config.label} annotations (${count})`}
               className={cn(
                 "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-all",
                 isActive
@@ -281,6 +294,7 @@ export function AIInsightsPanel({
               key={`insight-${annotation.page}-${i}`}
               type="button"
               onClick={() => onPageJump(annotation.page)}
+              aria-label={`${config.label} insight on page ${annotation.page}: ${annotation.summary}`}
               className="flex items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               <span
@@ -304,13 +318,29 @@ export function AIInsightsPanel({
       </div>
 
       {/* Dismiss button */}
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="text-[11px] text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
-      >
-        Dismiss all insights
-      </button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <button
+            type="button"
+            className="text-[11px] text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
+          >
+            Dismiss all insights
+          </button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dismiss all insights?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all {allAnnotations.length} document insights. They won&apos;t
+              reappear unless the document is re-analyzed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onDismiss}>Dismiss</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

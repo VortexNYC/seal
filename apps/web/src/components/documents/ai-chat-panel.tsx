@@ -100,7 +100,7 @@ function ProgressIndicator({ threadId }: { threadId: string }) {
   if (!progress.isTracking) return null;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2">
+    <div className="flex items-center gap-2 px-3 py-2" aria-live="polite" role="status">
       <LoaderIcon className="h-3.5 w-3.5 animate-spin text-violet-500" />
       <span className="font-sans text-xs text-slate-500 dark:text-slate-400">
         {progress.completedTools.length > 0
@@ -187,8 +187,12 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
       try {
         await sendMessageMutation({ threadId, prompt });
       } catch {
+        setInput(prompt); // Restore input on failure so user doesn't lose their message
         toast.error("Failed to send message");
       }
+
+      // Re-focus input for quick follow-ups
+      inputRef.current?.focus();
     },
     [input, sendMessageMutation, threadId],
   );
@@ -241,7 +245,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 overflow-y-auto px-4 py-3" role="log" aria-label="Chat messages">
         {paginationStatus === "LoadingFirstPage" ? (
           <div className="flex items-center justify-center py-8">
             <LoaderIcon className="h-5 w-5 animate-spin text-slate-400" />
@@ -291,7 +295,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
       {/* Input area */}
       <div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800">
         {progress.isTracking ? (
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center" aria-live="polite">
             <Button
               variant="ghost"
               size="sm"
@@ -310,6 +314,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about this document or search across all..."
+              aria-label="Message to AI assistant"
               rows={1}
               className="max-h-24 min-h-[36px] flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-sans text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-300 focus:ring-1 focus:ring-violet-300 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-violet-600 dark:focus:ring-violet-600"
             />
