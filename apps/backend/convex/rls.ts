@@ -933,6 +933,18 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
         return doc.organizationId === rlsCtx.orgId;
       },
     },
+    ai_usage_log: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+    },
   };
 
   return rules as Rules<QueryCtx, DataModel>;
