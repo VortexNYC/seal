@@ -41,15 +41,7 @@ function StreamingText({ text, isStreaming }: { text: string; isStreaming: boole
   return <>{visibleText}</>;
 }
 
-function MessageBubble({
-  role,
-  text,
-  status,
-}: {
-  role: string;
-  text: string;
-  status: string;
-}) {
+function MessageBubble({ role, text, status }: { role: string; text: string; status: string }) {
   const isUser = role === "user";
   const isStreaming = status === "streaming";
 
@@ -63,11 +55,7 @@ function MessageBubble({
             : "bg-gradient-to-br from-violet-500 to-blue-500 text-white",
         )}
       >
-        {isUser ? (
-          <UserIcon className="h-3.5 w-3.5" />
-        ) : (
-          <BotIcon className="h-3.5 w-3.5" />
-        )}
+        {isUser ? <UserIcon className="h-3.5 w-3.5" /> : <BotIcon className="h-3.5 w-3.5" />}
       </div>
       <div
         className={cn(
@@ -152,9 +140,7 @@ export function AIChatPanel({ threadId, onClose }: AIChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const sendMessageMutation = useMutation(
-    api.ai.threads.sendMessage,
-  ).withOptimisticUpdate(
+  const sendMessageMutation = useMutation(api.ai.threads.sendMessage).withOptimisticUpdate(
     optimisticallySendMessage(api.ai.threads.listMessages),
   );
 
@@ -267,9 +253,7 @@ export function AIChatPanel({ threadId, onClose }: AIChatPanelProps) {
             {messages.map((message) => {
               const text =
                 message.parts
-                  ?.filter(
-                    (p): p is { type: "text"; text: string } => p.type === "text",
-                  )
+                  ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
                   .map((p) => p.text)
                   .join("") ?? "";
 

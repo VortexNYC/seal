@@ -168,11 +168,8 @@ export const fieldAnalysisCache: ActionCache<AnalyzeAction> = new ActionCache(
 // Retrier — for when the cache misses and the Gemini call fails transiently
 // ---------------------------------------------------------------------------
 
-export const fieldAnalysisRetrier = new ActionRetrier(
-  components.actionRetrier,
-  {
-    initialBackoffMs: 1000, // 1s initial delay (Gemini rate limits)
-    base: 2, // exponential backoff: 1s, 2s, 4s, 8s
-    maxFailures: 3, // 3 retries before giving up
-  },
-);
+export const fieldAnalysisRetrier = new ActionRetrier(components.actionRetrier, {
+  initialBackoffMs: 1000, // 1s initial delay (Gemini rate limits)
+  base: 2, // exponential backoff: 1s, 2s, 4s, 8s
+  maxFailures: 3, // 3 retries before giving up
+});

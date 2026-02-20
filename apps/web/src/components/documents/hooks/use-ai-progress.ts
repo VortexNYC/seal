@@ -7,10 +7,7 @@ import { api } from "@seal/backend/convex/_generated/api";
  * Returns step/tool tracking info and status.
  */
 export function useAIProgress(threadId: string | null) {
-  const progress = useQuery(
-    api.ai.progress.get,
-    threadId ? { threadId } : "skip",
-  );
+  const progress = useQuery(api.ai.progress.get, threadId ? { threadId } : "skip");
 
   return {
     step: progress?.step ?? 0,
