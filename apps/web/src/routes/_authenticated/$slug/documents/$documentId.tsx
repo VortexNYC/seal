@@ -368,19 +368,17 @@ function DocumentDetailPage() {
   // AI field analysis, annotations, + chat
   const aiSuggestions = useAIFieldSuggestions(documentId as Id<"documents">);
   const documentAnnotations = useDocumentAnnotations(documentId as Id<"documents">);
-  const aiPreferences = useQuery(api.user_profiles.queries.getAiPreferences);
-  const updateAiPreferences = useMutation(api.user_profiles.mutations.updateAiPreferences);
-  const showAiSuggestions = aiPreferences?.showFieldSuggestions !== false;
+  const aiSettings = useQuery(api.organizations.queries.getAiSettings, {
+    organizationId: documentData.organizationId,
+  });
+  const aiEnabled = aiSettings?.aiEnabled !== false;
+  const [showAiSuggestions, setShowAiSuggestions] = useState(true);
   const { threadId } = useDocumentThread(documentId as Id<"documents">);
   const [showAIChat, setShowAIChat] = useState(false);
 
-  const handleToggleAiSuggestions = useCallback(async () => {
-    try {
-      await updateAiPreferences({ showFieldSuggestions: !showAiSuggestions });
-    } catch {
-      toast.error("Failed to update AI preferences");
-    }
-  }, [showAiSuggestions, updateAiPreferences]);
+  const handleToggleAiSuggestions = useCallback(() => {
+    setShowAiSuggestions((prev) => !prev);
+  }, []);
 
   // SEA-72: PDF document load handlers
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
@@ -1011,7 +1009,7 @@ function DocumentDetailPage() {
   const sendDocumentValidation = getSendDocumentValidation();
 
   // Create conditional buttons
-  const aiSuggestionsToggle = canEdit ? (
+  const aiSuggestionsToggle = canEdit && aiEnabled ? (
     <div key="ai-toggle" className="flex items-center gap-1.5 sm:flex-none">
       {documentData.aiProcessingStatus === "processing" && (
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -1175,7 +1173,7 @@ function DocumentDetailPage() {
                       </Document>
 
                       {/* AI field suggestion overlays — inside TransformComponent so they zoom with PDF */}
-                      {canEdit && showAiSuggestions && aiSuggestions.suggestions && (
+                      {canEdit && aiEnabled && showAiSuggestions && aiSuggestions.suggestions && (
                         <AIFieldOverlays
                           suggestions={aiSuggestions.suggestions}
                           selectedIndices={aiSuggestions.selectedIndices}
@@ -1187,7 +1185,7 @@ function DocumentDetailPage() {
                       )}
 
                       {/* AI annotation overlays (redlining) — inside TransformComponent */}
-                      {canEdit && documentAnnotations.annotations && (
+                      {canEdit && aiEnabled && documentAnnotations.annotations && (
                         <AIAnnotationOverlays
                           annotations={documentAnnotations.annotations}
                           enabledCategories={documentAnnotations.enabledCategories}
@@ -1200,7 +1198,7 @@ function DocumentDetailPage() {
                   </TransformComponent>
 
                   {/* AI review bar — outside TransformComponent so it stays at fixed size */}
-                  {canEdit && showAiSuggestions && aiSuggestions.suggestions && (
+                  {canEdit && aiEnabled && showAiSuggestions && aiSuggestions.suggestions && (
                     <div className="mt-3">
                       <AIFieldReviewBar
                         suggestions={aiSuggestions.suggestions}
@@ -1411,12 +1409,12 @@ function DocumentDetailPage() {
               </Collapsible>
 
               {/* AI Chat Panel - Shows when user opens AI assistant */}
-              {canEdit && showAIChat && threadId && (
+              {canEdit && aiEnabled && showAIChat && threadId && (
                 <AIChatPanel threadId={threadId} onClose={() => setShowAIChat(false)} />
               )}
 
               {/* AI Insights (Redlining) */}
-              {canEdit && documentAnnotations.annotations && (
+              {canEdit && aiEnabled && documentAnnotations.annotations && (
                 <Collapsible
                   open={openSections.has("insights")}
                   onOpenChange={() => toggleSection("insights")}
