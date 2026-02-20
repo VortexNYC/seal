@@ -406,3 +406,36 @@ export const getInvitationByClerkId = internalQuery({
     };
   },
 });
+
+// ---------------------------------------------------------------------------
+// AI workspace settings
+// ---------------------------------------------------------------------------
+
+const AI_SETTINGS_DEFAULTS = {
+  aiEnabled: true,
+  aiAutoAnalyze: true,
+  aiShowRedlinesToSigners: false,
+} as const;
+
+/**
+ * Get AI settings for the current organization.
+ * Returns sensible defaults when no settings have been saved.
+ */
+export const getAiSettings = authQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new ConvexError("Organization not found");
+    return org.aiSettings ?? AI_SETTINGS_DEFAULTS;
+  },
+});
+
+/** Internal variant for use in pipeline actions. */
+export const getAiSettingsInternal = internalQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) return AI_SETTINGS_DEFAULTS;
+    return org.aiSettings ?? AI_SETTINGS_DEFAULTS;
+  },
+});

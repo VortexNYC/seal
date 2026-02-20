@@ -55,27 +55,6 @@ export const getUserProfile = query({
 });
 
 /**
- * Get AI preferences for the current user.
- * Returns default preferences (showFieldSuggestions: true) if none are set.
- */
-export const getAiPreferences = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return { showFieldSuggestions: true };
-    }
-
-    const profile = await ctx.db
-      .query("user_profiles")
-      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
-      .first();
-
-    return profile?.aiPreferences ?? { showFieldSuggestions: true };
-  },
-});
-
-/**
  * Get usage statistics for the current user
  * Includes document counts by workflow status, storage usage, etc.
  */
