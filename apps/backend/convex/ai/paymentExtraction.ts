@@ -53,6 +53,7 @@ export const extractPaymentTermsForSuggestion = internalAction({
     documentId: v.id("documents"),
     organizationId: v.id("organizations"),
     suggestionId: v.id("ai_field_suggestions"),
+    userId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
     const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
@@ -70,6 +71,7 @@ export const extractPaymentTermsForSuggestion = internalAction({
     const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
 
     // Extract payment terms via Gemini
+    const startTime = Date.now();
     const result = await generateObject({
       model: getModel("google/gemini-3-flash"),
       schema: PaymentExtractionSchema,
@@ -83,8 +85,27 @@ export const extractPaymentTermsForSuggestion = internalAction({
         },
       ],
     });
+    const durationMs = Date.now() - startTime;
+    const tokensUsed = result.usage?.totalTokens ?? 0;
 
     const extracted = PaymentExtractionSchema.parse(result.object);
+
+    // Log payment extraction usage
+    if (args.userId && tokensUsed > 0) {
+      try {
+        await ctx.runMutation(internal.ai.usage.logAiUsage, {
+          organizationId: args.organizationId,
+          userId: args.userId,
+          action: "payment_extraction" as const,
+          tokensUsed,
+          durationMs,
+          documentId: args.documentId,
+          modelUsed: "gemini-3-flash",
+        });
+      } catch (usageError) {
+        console.error("[Payment Extraction] Failed to log usage:", usageError);
+      }
+    }
 
     // Store extracted payment data on the suggestion row
     await ctx.runMutation(internal.ai.pipeline_mutations.savePaymentExtractionOnSuggestion, {

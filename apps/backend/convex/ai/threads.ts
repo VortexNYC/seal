@@ -161,6 +161,7 @@ export const sendMessage = authMutation({
       organizationId: threadMapping.organizationId,
       userId: userId.toString(),
       documentId: threadMapping.documentId,
+      internalUserId: userId,
     });
 
     return { messageId, threadId: args.threadId };
@@ -178,6 +179,7 @@ export const generateResponseAsync = internalAction({
     organizationId: v.id("organizations"),
     userId: v.string(),
     documentId: v.optional(v.id("documents")),
+    internalUserId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
     // Start progress tracking
@@ -241,6 +243,23 @@ export const generateResponseAsync = internalAction({
         threadId: args.threadId,
         totalTokens,
       });
+
+      // Log chat usage for cost tracking
+      if (args.internalUserId && totalTokens > 0) {
+        try {
+          await ctx.runMutation(internal.ai.usage.logAiUsage, {
+            organizationId: args.organizationId,
+            userId: args.internalUserId,
+            action: "chat" as const,
+            tokensUsed: totalTokens,
+            durationMs: 0, // streaming — no single duration
+            documentId: args.documentId,
+            modelUsed: "gemini-3-flash",
+          });
+        } catch (usageError) {
+          console.error("[AI Chat] Failed to log usage:", usageError);
+        }
+      }
     } catch (error) {
       // Distinguish user abort from system failure (Plasma pattern)
       const isAbort = error instanceof Error && error.name === "AbortError";
@@ -378,6 +397,7 @@ export const retryMessage = authMutation({
       organizationId: threadMapping.organizationId,
       userId: userId.toString(),
       documentId: threadMapping.documentId,
+      internalUserId: userId,
     });
 
     return { success: true };

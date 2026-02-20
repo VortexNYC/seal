@@ -7,7 +7,6 @@
  */
 
 import { ActionCache, type ActionCacheConfig } from "@convex-dev/action-cache";
-import { ActionRetrier } from "@convex-dev/action-retrier";
 import { generateObject } from "ai";
 import type { FunctionReference } from "convex/server";
 import { v } from "convex/values";
@@ -223,11 +222,37 @@ export const fieldAnalysisCache: ActionCache<AnalyzeAction> = new ActionCache(
 );
 
 // ---------------------------------------------------------------------------
-// Retrier — for when the cache misses and the Gemini call fails transiently
+// Retry helper — retries the cache fetch with exponential backoff
 // ---------------------------------------------------------------------------
 
-export const fieldAnalysisRetrier = new ActionRetrier(components.actionRetrier, {
-  initialBackoffMs: 1000, // 1s initial delay (Gemini rate limits)
-  base: 2, // exponential backoff: 1s, 2s, 4s, 8s
-  maxFailures: 3, // 3 retries before giving up
-});
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  initialDelayMs: 1000,
+  backoffBase: 2,
+};
+
+export async function fetchFieldAnalysisWithRetry(
+  ctx: Parameters<typeof fieldAnalysisCache.fetch>[0],
+  storageId: Id<"_storage">,
+): Promise<FieldAnalysisResult> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+    try {
+      return (await fieldAnalysisCache.fetch(ctx, { storageId })) as FieldAnalysisResult;
+    } catch (error) {
+      lastError = error;
+      if (attempt < RETRY_CONFIG.maxRetries) {
+        const delayMs =
+          RETRY_CONFIG.initialDelayMs * RETRY_CONFIG.backoffBase ** attempt;
+        console.warn(
+          `[AI Pipeline] Field analysis attempt ${attempt + 1} failed, retrying in ${delayMs}ms`,
+          error,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+
+  throw lastError;
+}

@@ -12,7 +12,10 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalAction } from "../_generated/server";
-import { fieldAnalysisCache, type FieldAnalysisResult } from "./analyzeFieldsAction";
+import { fetchFieldAnalysisWithRetry } from "./analyzeFieldsAction";
+
+/** Max PDF size for AI analysis (10MB). Larger files skip analysis gracefully. */
+const MAX_AI_PDF_SIZE = 10 * 1024 * 1024;
 
 export const processDocument = internalAction({
   args: {
@@ -27,6 +30,15 @@ export const processDocument = internalAction({
     });
     if (!aiSettings.aiEnabled) return;
 
+    // 0a. Dedup: skip if already processing (prevents parallel runs on rapid PDF replace)
+    const currentDoc = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
+      documentId: args.documentId,
+    });
+    if (currentDoc?.aiProcessingStatus === "processing") {
+      console.warn(`[AI Pipeline] Skipping ${args.documentId}: already processing`);
+      return;
+    }
+
     // 1. Mark processing
     await ctx.runMutation(internal.ai.pipeline_mutations.setAiProcessingStatus, {
       documentId: args.documentId,
@@ -40,10 +52,23 @@ export const processDocument = internalAction({
       });
       if (!document) throw new Error("Document not found");
 
-      // 3. Run cached field analysis (same storageId = cached result)
-      const result = (await fieldAnalysisCache.fetch(ctx, {
-        storageId: document.storageId as Id<"_storage">,
-      })) as FieldAnalysisResult;
+      // 2a. Skip AI analysis for large PDFs
+      if (document.fileSize > MAX_AI_PDF_SIZE) {
+        console.warn(
+          `[AI Pipeline] Skipping analysis for ${args.documentId}: file size ${document.fileSize} exceeds ${MAX_AI_PDF_SIZE} bytes`,
+        );
+        await ctx.runMutation(internal.ai.pipeline_mutations.setAiProcessingStatus, {
+          documentId: args.documentId,
+          status: "completed",
+        });
+        return;
+      }
+
+      // 3. Run cached field analysis with retry (same storageId = cached result)
+      const result = await fetchFieldAnalysisWithRetry(
+        ctx,
+        document.storageId as Id<"_storage">,
+      );
 
       // 4. Save field suggestions (dismisses existing pending ones internally)
       const suggestionId = await ctx.runMutation(internal.ai.mutations.saveFieldSuggestions, {
@@ -65,6 +90,7 @@ export const processDocument = internalAction({
               documentId: args.documentId,
               organizationId: args.organizationId,
               suggestionId,
+              userId: args.userId,
             },
           );
         } catch (paymentError) {

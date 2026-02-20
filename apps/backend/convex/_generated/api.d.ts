@@ -11,6 +11,7 @@
 import type * as ai_actions from "../ai/actions.js";
 import type * as ai_agent from "../ai/agent.js";
 import type * as ai_analyzeFieldsAction from "../ai/analyzeFieldsAction.js";
+import type * as ai_cleanup from "../ai/cleanup.js";
 import type * as ai_model from "../ai/model.js";
 import type * as ai_mutations from "../ai/mutations.js";
 import type * as ai_paymentExtraction from "../ai/paymentExtraction.js";
@@ -213,6 +214,7 @@ declare const fullApi: ApiFromModules<{
   "ai/actions": typeof ai_actions;
   "ai/agent": typeof ai_agent;
   "ai/analyzeFieldsAction": typeof ai_analyzeFieldsAction;
+  "ai/cleanup": typeof ai_cleanup;
   "ai/model": typeof ai_model;
   "ai/mutations": typeof ai_mutations;
   "ai/paymentExtraction": typeof ai_paymentExtraction;
