@@ -898,6 +898,17 @@ function DocumentDetailPage() {
     });
   };
 
+  // Auto-open Insights section when annotations arrive
+  const hasAnnotations = documentAnnotations.annotations !== null;
+  useEffect(() => {
+    if (hasAnnotations) {
+      setOpenSections((prev) => {
+        if (prev.has("insights")) return prev;
+        return new Set([...prev, "insights"]);
+      });
+    }
+  }, [hasAnnotations]);
+
   // Get activity icon
   const getActivityIcon = (type: ActivityEventType) => {
     switch (type) {

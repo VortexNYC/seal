@@ -9,6 +9,7 @@ import {
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
@@ -151,12 +152,18 @@ function HighlightOverlay({
   const config = CATEGORY_CONFIG[annotation.category];
 
   return (
-    <div
-      className={cn("group/highlight absolute rounded-sm transition-opacity", config.bgColor)}
-      style={{ left, top, width, height }}
-    >
-      {/* Tooltip on hover */}
-      <div className="pointer-events-none absolute bottom-full left-0 z-50 mb-1 hidden max-w-xs rounded-md border border-slate-200 bg-white px-3 py-2 shadow-lg group-hover/highlight:block dark:border-slate-700 dark:bg-slate-800">
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className={cn("absolute cursor-default rounded-sm transition-opacity", config.bgColor)}
+          style={{ left, top, width, height }}
+        />
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={4}
+        className="max-w-xs border border-slate-200 bg-white px-3 py-2 shadow-lg dark:border-slate-700 dark:bg-slate-800"
+      >
         <div className="mb-0.5 flex items-center gap-1.5">
           <config.icon className={cn("h-3 w-3", config.textColor)} />
           <span
@@ -171,8 +178,8 @@ function HighlightOverlay({
         <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300">
           {annotation.summary}
         </p>
-      </div>
-    </div>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

@@ -57,6 +57,7 @@ export const processDocument = internalAction({
           modelUsed: "gemini-3-flash",
           tokensUsed: result.tokensUsed,
           processingTimeMs: result.processingTimeMs,
+          forceOverrideDismissal: true,
         });
       }
 

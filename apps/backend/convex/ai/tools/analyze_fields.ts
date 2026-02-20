@@ -31,12 +31,28 @@ export const analyzeDocumentFields = createTool({
       processingTimeMs: result.processingTimeMs,
     });
 
+    // Save document annotations (redlining) if present
+    if (result.annotations && result.annotations.length > 0) {
+      await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
+        documentId: args.documentId as Id<"documents">,
+        organizationId: ctx.organizationId,
+        annotations: result.annotations,
+        modelUsed: "gemini-3-flash",
+        tokensUsed: result.tokensUsed,
+        processingTimeMs: result.processingTimeMs,
+      });
+    }
+
     const paymentCount = result.fields.filter((f) => f.fieldType === "payment").length;
     const paymentNote =
       paymentCount > 0
         ? ` (includes ${paymentCount} payment field(s) — payment terms will be auto-extracted when applied)`
         : "";
+    const annotationNote =
+      result.annotations && result.annotations.length > 0
+        ? ` Also found ${result.annotations.length} key clauses for document insights.`
+        : "";
 
-    return `Found ${result.fields.length} fields across the document.${paymentNote}`;
+    return `Found ${result.fields.length} fields across the document.${paymentNote}${annotationNote}`;
   },
 });

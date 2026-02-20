@@ -212,7 +212,7 @@ export const fieldAnalysisCache: ActionCache<AnalyzeAction> = new ActionCache(
   components.actionCache,
   {
     action: internal.ai.analyzeFieldsAction.analyzeFieldsInternal,
-    name: "fieldAnalysis",
+    name: "documentAnalysis-v2",
     ttl: 24 * 60 * 60 * 1000, // 24 hours
   } as ActionCacheConfig<AnalyzeAction>,
 );

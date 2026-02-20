@@ -380,22 +380,28 @@ export const saveDocumentAnnotations = internalMutation({
     modelUsed: v.string(),
     tokensUsed: v.number(),
     processingTimeMs: v.number(),
+    // When true, overrides a previous user dismissal (used on PDF replace)
+    forceOverrideDismissal: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    // Dismiss any existing active annotations for this document
+    // Check all existing annotation records for this document
     const existing = await ctx.db
       .query("ai_document_annotations")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "pending"),
-          q.eq(q.field("status"), "active"),
-        ),
-      )
       .collect();
 
+    // If user previously dismissed annotations, respect their choice —
+    // unless this is a fresh analysis for a new PDF (forceOverrideDismissal)
+    if (!args.forceOverrideDismissal) {
+      const userDismissed = existing.some((a) => a.status === "dismissed");
+      if (userDismissed) return null;
+    }
+
+    // Dismiss any existing active/pending annotations
     for (const annotation of existing) {
-      await ctx.db.patch(annotation._id, { status: "dismissed" as const });
+      if (annotation.status === "active" || annotation.status === "pending") {
+        await ctx.db.patch(annotation._id, { status: "dismissed" as const });
+      }
     }
 
     // Skip if no annotations detected
