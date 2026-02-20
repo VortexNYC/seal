@@ -7,15 +7,16 @@ import {
   ActivityIcon,
   ArrowLeftIcon,
   ChevronDownIcon,
+  EyeIcon,
+  EyeOffIcon,
   FileSignatureIcon,
   FileTextIcon,
   InfoIcon,
-  LoaderIcon,
+  Loader2Icon,
   PlusIcon,
   SaveIcon,
   SendIcon,
   SettingsIcon,
-  SparklesIcon,
   UserIcon,
   UserPlusIcon,
   UsersIcon,
@@ -35,13 +36,12 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
+import { AIChatPanel } from "../../../../components/documents/ai-chat-panel";
 import {
   AIFieldOverlays,
   AIFieldReviewBar,
   useAIFieldSuggestions,
 } from "../../../../components/documents/ai-field-suggestions";
-import { AIChatPanel } from "../../../../components/documents/ai-chat-panel";
-import { useDocumentThread } from "../../../../components/documents/hooks/use-document-thread";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import { DocumentProgressRing } from "../../../../components/documents/document-progress-ring";
 import { DocumentStatusHero } from "../../../../components/documents/document-status-hero";
@@ -57,6 +57,7 @@ import {
 import { FieldPropertiesDialog } from "../../../../components/documents/field-properties-dialog";
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
+import { useDocumentThread } from "../../../../components/documents/hooks/use-document-thread";
 import { InAppSigningSection } from "../../../../components/documents/in-app-signing-section";
 import { PaymentConfigModal } from "../../../../components/documents/payment-config-modal";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
@@ -360,31 +361,19 @@ function DocumentDetailPage() {
 
   // AI field analysis + chat
   const aiSuggestions = useAIFieldSuggestions(documentId as Id<"documents">);
-  const { threadId, getOrCreateThread, isCreating: isAnalyzing } = useDocumentThread(
-    documentId as Id<"documents">,
-  );
+  const aiPreferences = useQuery(api.user_profiles.queries.getAiPreferences);
+  const updateAiPreferences = useMutation(api.user_profiles.mutations.updateAiPreferences);
+  const showAiSuggestions = aiPreferences?.showFieldSuggestions !== false;
+  const { threadId } = useDocumentThread(documentId as Id<"documents">);
   const [showAIChat, setShowAIChat] = useState(false);
-  const sendMessageMutation = useMutation(api.ai.threads.sendMessage);
 
-  const handleAnalyzeWithAI = useCallback(async () => {
-    // If thread already exists, just open the chat panel
-    if (threadId) {
-      setShowAIChat(true);
-      return;
-    }
-
+  const handleToggleAiSuggestions = useCallback(async () => {
     try {
-      const tid = await getOrCreateThread();
-      setShowAIChat(true);
-      // Send the initial analysis prompt for new threads
-      await sendMessageMutation({
-        threadId: tid,
-        prompt: `Analyze the document with ID "${documentId}" and detect all form fields that should be placed on it.`,
-      });
+      await updateAiPreferences({ showFieldSuggestions: !showAiSuggestions });
     } catch {
-      toast.error("AI analysis failed. Please try again.");
+      toast.error("Failed to update AI preferences");
     }
-  }, [threadId, getOrCreateThread, sendMessageMutation, documentId]);
+  }, [showAiSuggestions, updateAiPreferences]);
 
   // SEA-72: PDF document load handlers
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
@@ -1004,22 +993,28 @@ function DocumentDetailPage() {
   const sendDocumentValidation = getSendDocumentValidation();
 
   // Create conditional buttons
-  const analyzeWithAIButton = canEdit ? (
-    <Button
-      key="analyze-ai"
-      onClick={handleAnalyzeWithAI}
-      disabled={isAnalyzing}
-      size="sm"
-      variant="outline"
-      className="flex-1 border-violet-200 text-violet-700 hover:bg-violet-50 sm:flex-none dark:border-violet-800 dark:text-violet-400 dark:hover:bg-violet-950"
-    >
-      {isAnalyzing ? (
-        <LoaderIcon className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <SparklesIcon className="mr-2 h-4 w-4" />
+  const aiSuggestionsToggle = canEdit ? (
+    <div key="ai-toggle" className="flex items-center gap-1.5 sm:flex-none">
+      {documentData.aiProcessingStatus === "processing" && (
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Loader2Icon className="h-3 w-3 animate-spin" />
+          Analyzing...
+        </span>
       )}
-      <span className="truncate">{isAnalyzing ? "Analyzing..." : "Analyze with AI"}</span>
-    </Button>
+      <Button
+        onClick={handleToggleAiSuggestions}
+        size="sm"
+        variant="ghost"
+        className="text-violet-700 dark:text-violet-400"
+      >
+        {showAiSuggestions ? (
+          <EyeIcon className="mr-1.5 h-3.5 w-3.5" />
+        ) : (
+          <EyeOffIcon className="mr-1.5 h-3.5 w-3.5" />
+        )}
+        <span className="truncate text-xs">AI Suggestions</span>
+      </Button>
+    </div>
   ) : null;
 
   const saveAsTemplateButton =
@@ -1075,7 +1070,7 @@ function DocumentDetailPage() {
             <span className="truncate">Back</span>
           </Button>
           {sendDocumentButton}
-          {analyzeWithAIButton}
+          {aiSuggestionsToggle}
           {saveAsTemplateButton}
         </div>
       }
@@ -1162,7 +1157,7 @@ function DocumentDetailPage() {
                       </Document>
 
                       {/* AI field suggestion overlays — inside TransformComponent so they zoom with PDF */}
-                      {canEdit && aiSuggestions.suggestions && (
+                      {canEdit && showAiSuggestions && aiSuggestions.suggestions && (
                         <AIFieldOverlays
                           suggestions={aiSuggestions.suggestions}
                           selectedIndices={aiSuggestions.selectedIndices}
@@ -1176,7 +1171,7 @@ function DocumentDetailPage() {
                   </TransformComponent>
 
                   {/* AI review bar — outside TransformComponent so it stays at fixed size */}
-                  {canEdit && aiSuggestions.suggestions && (
+                  {canEdit && showAiSuggestions && aiSuggestions.suggestions && (
                     <div className="mt-3">
                       <AIFieldReviewBar
                         suggestions={aiSuggestions.suggestions}
@@ -1388,10 +1383,7 @@ function DocumentDetailPage() {
 
               {/* AI Chat Panel - Shows when user opens AI assistant */}
               {canEdit && showAIChat && threadId && (
-                <AIChatPanel
-                  threadId={threadId}
-                  onClose={() => setShowAIChat(false)}
-                />
+                <AIChatPanel threadId={threadId} onClose={() => setShowAIChat(false)} />
               )}
 
               {/* Signature Fields Section */}

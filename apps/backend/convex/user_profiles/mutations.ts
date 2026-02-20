@@ -129,3 +129,42 @@ export const updateNotificationPreferences = mutation({
     return profileId;
   },
 });
+
+/**
+ * Update AI preferences (field suggestions visibility toggle)
+ */
+export const updateAiPreferences = mutation({
+  args: {
+    showFieldSuggestions: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("User not authenticated");
+    }
+
+    const clerkUserId = identity.subject;
+
+    const profile = await ctx.db
+      .query("user_profiles")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+      .first();
+
+    if (!profile) {
+      throw new ConvexError("User profile not found");
+    }
+
+    const currentPrefs = profile.aiPreferences ?? {};
+    await ctx.db.patch(profile._id, {
+      aiPreferences: {
+        ...currentPrefs,
+        ...(args.showFieldSuggestions !== undefined && {
+          showFieldSuggestions: args.showFieldSuggestions,
+        }),
+      },
+      updatedAt: Date.now(),
+    });
+
+    return profile._id;
+  },
+});
