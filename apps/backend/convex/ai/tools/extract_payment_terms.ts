@@ -51,12 +51,15 @@ export const extractPaymentTerms = createTool({
   description:
     "Extract payment terms, line items, amounts, and billing structure from a document to auto-configure a payment field",
   args: z.object({
-    documentId: z.string().describe("The Convex document ID"),
+    documentId: z.string().optional().describe("The Convex document ID (uses current document if omitted)"),
     fieldId: z.string().describe("The payment field ID to configure"),
   }),
   handler: async (ctx: SealAICtx, args): Promise<string> => {
+    const docId = (args.documentId ?? ctx.documentId) as Id<"documents"> | undefined;
+    if (!docId) throw new Error("No document ID provided and no current document context");
+
     const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId as Id<"documents">,
+      documentId: docId,
     });
     if (!document) throw new Error("Document not found");
 
@@ -71,7 +74,13 @@ export const extractPaymentTerms = createTool({
     const response = await fetch(pdfUrl);
     if (!response.ok) throw new Error("Failed to download PDF");
     const pdfBuffer = await response.arrayBuffer();
-    const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
+    // Convex actions run in V8 isolate — Buffer is unavailable, use chunked btoa
+    const bytes = new Uint8Array(pdfBuffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 8192) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    }
+    const pdfBase64 = btoa(binary);
 
     const result = await generateObject({
       model: getModel("google/gemini-3-flash"),
@@ -92,7 +101,7 @@ export const extractPaymentTerms = createTool({
     // Save the extracted payment config
     await ctx.runMutation(internal.ai.mutations.saveExtractedPaymentConfig, {
       fieldId: args.fieldId as Id<"signature_fields">,
-      documentId: args.documentId as Id<"documents">,
+      documentId: docId,
       organizationId: ctx.organizationId,
       extraction: {
         lineItems: extracted.lineItems,

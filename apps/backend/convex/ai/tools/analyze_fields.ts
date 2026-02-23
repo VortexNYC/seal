@@ -9,11 +9,14 @@ import type { SealAICtx } from "../types";
 export const analyzeDocumentFields = createTool({
   description: "Analyze a PDF document and detect where form fields should be placed",
   args: z.object({
-    documentId: z.string().describe("The Convex document ID"),
+    documentId: z.string().optional().describe("The Convex document ID (uses current document if omitted)"),
   }),
   handler: async (ctx: SealAICtx, args): Promise<string> => {
+    const docId = (args.documentId ?? ctx.documentId) as Id<"documents"> | undefined;
+    if (!docId) throw new Error("No document ID provided and no current document context");
+
     const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: args.documentId as Id<"documents">,
+      documentId: docId,
     });
     if (!document) throw new Error("Document not found");
 
@@ -23,7 +26,7 @@ export const analyzeDocumentFields = createTool({
     })) as FieldAnalysisResult;
 
     await ctx.runMutation(internal.ai.mutations.saveFieldSuggestions, {
-      documentId: args.documentId as Id<"documents">,
+      documentId: docId,
       organizationId: ctx.organizationId,
       fields: result.fields,
       modelUsed: "gemini-3-flash",
@@ -34,7 +37,7 @@ export const analyzeDocumentFields = createTool({
     // Save document annotations (redlining) if present
     if (result.annotations && result.annotations.length > 0) {
       await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
-        documentId: args.documentId as Id<"documents">,
+        documentId: docId,
         organizationId: ctx.organizationId,
         annotations: result.annotations,
         modelUsed: "gemini-3-flash",

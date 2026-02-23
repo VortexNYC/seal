@@ -226,10 +226,6 @@ export const hybridSearchDocuments = internalAction({
       namespace,
       query: args.query,
       limit: limit * 2, // Over-fetch to allow for post-filtering
-      searchType: "hybrid",
-      vectorWeight: 1.2, // Slight preference for semantic matches
-      textWeight: 1.0,
-      vectorScoreThreshold: 0.3,
       filters: [{ name: "status", value: "active" }],
     });
 

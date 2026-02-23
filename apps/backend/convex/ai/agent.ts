@@ -7,7 +7,7 @@ import { extractPaymentTerms } from "./tools/extract_payment_terms";
 import { searchDocuments } from "./tools/search_documents";
 import type { SealAICtx } from "./types";
 
-const SYSTEM_INSTRUCTIONS = `You are Seal AI, a document intelligence assistant for the Seal document signing platform.
+export const SYSTEM_INSTRUCTIONS = `You are Seal AI, a document intelligence assistant for the Seal document signing platform.
 
 You analyze PDF documents to identify where signature fields, text fields, date fields, and other form fields should be placed. You provide precise coordinates and labels for each detected field.
 
@@ -24,7 +24,7 @@ If asked to find information across documents, use the searchDocuments tool. Alw
 export const sealAgent = new Agent<SealAICtx>(components.agent, {
   name: "Seal AI",
   languageModel: getModel("google/gemini-3-flash"),
-  textEmbeddingModel: getEmbeddingModel("google/text-embedding-004"),
+  textEmbeddingModel: getEmbeddingModel("google/text-embedding-005"),
   instructions: SYSTEM_INSTRUCTIONS,
   tools: { analyzeDocumentFields, extractPaymentTerms, searchDocuments },
   maxSteps: 5,

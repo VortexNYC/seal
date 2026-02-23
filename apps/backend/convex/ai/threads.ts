@@ -11,9 +11,23 @@ import { ConvexError, v } from "convex/values";
 import { components, internal } from "../_generated/api";
 import { internalAction, internalMutation } from "../_generated/server";
 import { authMutation, authQuery } from "../auth/wrappers";
-import { sealAgent } from "./agent";
+import { sealAgent, SYSTEM_INSTRUCTIONS } from "./agent";
 import { aiRateLimiter } from "./rateLimiting";
 import type { SealAICtx } from "./types";
+
+/**
+ * Build system prompt with optional document context so the LLM knows
+ * which document it's currently viewing and can pass the correct ID to tools.
+ */
+function buildSystemPrompt(documentId?: string, documentName?: string): string {
+  if (!documentId) return SYSTEM_INSTRUCTIONS;
+
+  return `${SYSTEM_INSTRUCTIONS}
+
+## Current Document Context
+You are currently viewing the document "${documentName ?? "Untitled"}" (ID: ${documentId}).
+When using tools that require a documentId parameter, use "${documentId}" unless the user explicitly asks about a different document.`;
+}
 
 // ---------------------------------------------------------------------------
 // Thread CRUD
@@ -188,6 +202,15 @@ export const generateResponseAsync = internalAction({
       totalSteps: 3,
     });
 
+    // Fetch document name for dynamic system prompt
+    let documentName: string | undefined;
+    if (args.documentId) {
+      const doc = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
+        documentId: args.documentId,
+      });
+      documentName = doc?.name;
+    }
+
     const sealCtx = {
       ...ctx,
       organizationId: args.organizationId,
@@ -207,6 +230,7 @@ export const generateResponseAsync = internalAction({
           userId: args.userId,
         },
         {
+          system: buildSystemPrompt(args.documentId, documentName),
           promptMessageId: args.promptMessageId,
           providerOptions: {
             google: { thinkingConfig: { thinkingLevel: "low" } },
