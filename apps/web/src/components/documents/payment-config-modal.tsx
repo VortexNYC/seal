@@ -119,7 +119,31 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
 
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- Load existing config ---
+  // --- Reset state to defaults ---
+  const resetToDefaults = useCallback(() => {
+    setItems([{ id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 }]);
+    setPaymentType("one_time");
+    setDueDateTerms("on_receipt");
+    setCustomDueDays(30);
+    setLateFeeEnabled(false);
+    setLateFeeType("percentage");
+    setLateFeeAmount(0);
+    setLateFeeGraceDays(3);
+    setRecurringInterval("month");
+    setRecurringIntervalCount(1);
+    setRecurringEndCondition("never");
+    setRecurringEndAfterCount(12);
+    setInstallmentsCount(3);
+    setInstallmentsInterval("month");
+    setDepositPercent(50);
+    setBalanceDueDays(30);
+    setPaymentMethods({ card: true, ach_debit: false, apple_pay: false, google_pay: false, link: false });
+    setFeeHandling("absorb");
+    setTaxEnabled(false);
+    setTaxBehavior("exclusive");
+  }, []);
+
+  // --- Load existing config or reset for new field ---
   useEffect(() => {
     if (existingConfig) {
       setItems(
@@ -175,8 +199,10 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
       setFeeHandling(existingConfig.feeHandling);
       setTaxEnabled(existingConfig.taxEnabled);
       if (existingConfig.taxBehavior) setTaxBehavior(existingConfig.taxBehavior);
+    } else if (existingConfig === null) {
+      resetToDefaults();
     }
-  }, [existingConfig]);
+  }, [existingConfig, resetToDefaults]);
 
   // --- Item handlers ---
   const addItem = useCallback(() => {
