@@ -171,6 +171,16 @@ export const removeRecipient = permissionMutation("documents:edit")({
       .collect();
 
     for (const field of fieldsToDelete) {
+      // Cascade-delete payment config if this is a payment field
+      if (field.fieldType === "payment") {
+        const paymentConfig = await ctx.db
+          .query("payment_field_configs")
+          .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+          .unique();
+        if (paymentConfig) {
+          await ctx.db.delete(paymentConfig._id);
+        }
+      }
       await ctx.db.delete(field._id);
     }
 
