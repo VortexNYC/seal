@@ -91,3 +91,6 @@ apps/backend/seal-auth
 # Ad-hoc screenshots and test documents
 apps/backend/*.png
 apps/backend/*.pdf
+
+# Generated reference docs
+docs/app-feature-map.md
