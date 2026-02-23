@@ -999,7 +999,39 @@ function SigningPage() {
                 </>
               )}
 
-            {/* Payment Section — shown when document is waiting for payment */}
+            {/* Payment Section — shown before signing when payment is required */}
+            {!isCompleted && hasUnpaidPayments && paymentConfigs.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                    <div className="flex items-start gap-3">
+                      <CreditCardIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                          Payment Required
+                        </p>
+                        <p className="mt-0.5 text-xs text-amber-700/70 dark:text-amber-300/70">
+                          Please complete payment below before signing.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {paymentConfigs
+                    .filter((c) => c.paymentStatus !== "paid" && c.paymentStatus !== "cancelled")
+                    .map((config) => (
+                      <PaymentFieldSummary
+                        key={config._id}
+                        fieldId={config.fieldId}
+                        token={token}
+                        showInlinePayment
+                      />
+                    ))}
+                </div>
+              </>
+            )}
+
+            {/* Payment Section — shown after signing when document is waiting for payment */}
             {isCompleted && isWaitingForPayment && paymentConfigs.length > 0 && (
               <>
                 <Separator />
