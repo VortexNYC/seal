@@ -65,7 +65,6 @@ export function PdfPageWithCanvas({
 
   const handleCanvasReady = (_stage: Konva.Stage) => {
     // Canvas is ready for interaction
-    // TODO: Add field placement logic here
   };
 
   // SEA-78: Ref callback for page scroll navigation

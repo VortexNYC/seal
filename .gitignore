@@ -83,3 +83,11 @@ localhost-*.log
 apps/web/.env.test
 sample-doc.pdf
 .playwright-cli/
+
+# Auth state files (local dev)
+apps/backend/auth-state.json
+apps/backend/seal-auth
+
+# Ad-hoc screenshots and test documents
+apps/backend/*.png
+apps/backend/*.pdf

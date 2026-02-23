@@ -356,11 +356,6 @@ export const sendDocument = permissionMutation("documents:edit")({
     // 4. Transition to sent status
     await transitionWorkflowStatus(ctx, args.documentId, "sent");
 
-    // TODO: When recipients are implemented (SEA-127):
-    // - Verify document has at least one recipient
-    // - Generate signing tokens for recipients
-    // - Send email notifications
-
     return { success: true };
   },
 });
@@ -396,10 +391,6 @@ export const cancelDocument = permissionMutation("documents:edit")({
     // 4. Transition to cancelled status
     await transitionWorkflowStatus(ctx, args.documentId, "cancelled");
 
-    // TODO: When recipients are implemented (SEA-127):
-    // - Notify all recipients about cancellation
-    // - Invalidate signing tokens
-
     return { success: true };
   },
 });
@@ -431,16 +422,8 @@ export const completeDocument = permissionMutation("documents:edit")({
       throw new ConvexError(`Cannot complete document with status: ${currentStatus}`);
     }
 
-    // TODO: When recipients are implemented (SEA-127):
-    // - Verify all required signers have signed
-    // - Cannot complete if any required signatures are missing
-
     // 4. Transition to completed status
     await transitionWorkflowStatus(ctx, args.documentId, "completed");
-
-    // TODO: When email is implemented:
-    // - Notify all participants about completion
-    // - Send final signed document copy
 
     return { success: true };
   },
