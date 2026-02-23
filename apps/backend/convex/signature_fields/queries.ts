@@ -293,11 +293,21 @@ export const getFieldsBySigningToken = query({
         // Decrypt signature image data for display
         const decryptedImageUrl = await decryptSignatureData(signature?.signatureImageUrl, encKey);
 
+        // For payment fields, check payment config status
+        let isPaymentPaid = false;
+        if (field.fieldType === "payment") {
+          const paymentConfig = await ctx.db
+            .query("payment_field_configs")
+            .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+            .first();
+          isPaymentPaid = paymentConfig?.paymentStatus === "paid";
+        }
+
         return {
           ...field,
           currentValue: signature?.value,
           currentSignatureImageUrl: decryptedImageUrl,
-          isFilled: !!signature,
+          isFilled: !!signature || isPaymentPaid,
           // Include signature details for display
           signatureDetails: signature
             ? {
@@ -391,11 +401,21 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
         // Decrypt signature image data for display
         const decryptedImageUrl = await decryptSignatureData(signature?.signatureImageUrl, encKey);
 
+        // For payment fields, check payment config status
+        let isPaymentPaid = false;
+        if (field.fieldType === "payment") {
+          const paymentConfig = await ctx.db
+            .query("payment_field_configs")
+            .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+            .first();
+          isPaymentPaid = paymentConfig?.paymentStatus === "paid";
+        }
+
         return {
           ...field,
           currentValue: signature?.value,
           currentSignatureImageUrl: decryptedImageUrl,
-          isFilled: !!signature,
+          isFilled: !!signature || isPaymentPaid,
           // Include signature details for display
           signatureDetails: signature
             ? {

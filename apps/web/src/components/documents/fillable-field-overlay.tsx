@@ -320,7 +320,11 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
             <div className="text-[9px] font-medium text-red-700">Required</div>
           )}
           {fieldType === "payment" && paymentInfo && absoluteHeight > 25 && (
-            <div className="text-[9px] font-semibold text-emerald-700">
+            <div className={cn(
+              "text-[9px] font-semibold",
+              paymentInfo.paymentStatus === "paid" ? "text-green-700" : "text-emerald-700",
+            )}>
+              {paymentInfo.paymentStatus === "paid" ? "✓ " : ""}
               {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
             </div>
           )}
@@ -336,8 +340,12 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
             {getFieldTypeLabel(fieldType)}
             {isRequired && " • Required"}
             {fieldType === "payment" && paymentInfo && (
-              <span className="ml-1 font-semibold text-emerald-700">
-                • {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
+              <span className={cn(
+                "ml-1 font-semibold",
+                paymentInfo.paymentStatus === "paid" ? "text-green-700" : "text-emerald-700",
+              )}>
+                • {paymentInfo.paymentStatus === "paid" ? "Paid " : ""}
+                {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
               </span>
             )}
           </div>
