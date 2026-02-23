@@ -160,17 +160,20 @@ async function createOneTimeInvoice(
 
   try {
     // Create invoice items for each line item.
-    // amount = total for the line (unitPrice × quantity, pre-computed).
-    // quantity is passed for display on the hosted invoice ("2 × $50.00").
+    // Uses `amount` (total in cents) — cannot combine with `quantity` per Stripe API.
+    // Quantity info is included in the description for display on the hosted invoice.
     for (const item of config.items) {
+      const description =
+        item.quantity > 1
+          ? `${item.description} (×${item.quantity})`
+          : item.description;
       await stripe.invoiceItems.create(
         {
           customer: customer.id,
           invoice: invoice.id,
           amount: item.unitPrice * item.quantity,
           currency: config.currency,
-          description: item.description,
-          quantity: item.quantity,
+          description,
         },
         { stripeAccount: stripeAccountId },
       );
