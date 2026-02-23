@@ -126,6 +126,7 @@ function DocumentDetailPage() {
   const [pdfWidth, setPdfWidth] = useState(700);
   const [pdfHeight, setPdfHeight] = useState(900); // Default height, updated on page load
   const containerRef = useRef<HTMLDivElement>(null);
+  const pdfWrapperRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // SEA-89: Field drag state
@@ -333,12 +334,12 @@ function DocumentDetailPage() {
   // SEA-84: Handle window resize to maintain canvas-PDF alignment
   useEffect(() => {
     const updatePdfWidth = () => {
-      if (containerRef.current) {
-        // Calculate optimal width based on container size
-        // Leave some padding for scrollbar and borders
-        const containerWidth = containerRef.current.clientWidth;
-        const optimalWidth = Math.min(containerWidth - 40, 900);
-        setPdfWidth(optimalWidth);
+      if (pdfWrapperRef.current) {
+        // Measure the outer wrapper that represents available viewport space
+        // Subtract padding (p-6 = 24px each side on mobile, p-3/p-4 on larger)
+        const wrapperWidth = pdfWrapperRef.current.clientWidth;
+        const optimalWidth = wrapperWidth - 40;
+        setPdfWidth(Math.max(optimalWidth, 300));
       }
     };
 
@@ -1148,7 +1149,7 @@ function DocumentDetailPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left column: PDF Preview */}
           <div className="lg:col-span-2">
-            <div className="relative min-h-[600px] rounded-2xl bg-stone-100 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-stone-900">
+            <div ref={pdfWrapperRef} className="relative min-h-[600px] rounded-2xl bg-stone-100 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-stone-900">
               {pdfUrl ? (
                 <TransformWrapper
                   initialScale={1}
