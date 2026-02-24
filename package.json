@@ -19,6 +19,7 @@
     "knip": "turbo run knip --continue",
     "knip:fix": "turbo run knip:fix --continue",
     "static-analysis": "turbo run lint format:check typecheck knip --continue",
+    "test": "turbo run test",
     "clean": "git clean -xdf .cache .tanstack .turbo dist node_modules",
     "clean:workspaces": "turbo run clean"
   },
