@@ -322,8 +322,25 @@ export const page = defineType({
                     defineField({
                       name: "features",
                       title: "Features",
-                      type: "object",
-                      fields: [],
+                      type: "array",
+                      of: [
+                        {
+                          type: "object",
+                          fields: [
+                            defineField({
+                              name: "label",
+                              title: "Label",
+                              type: "string",
+                            }),
+                            defineField({
+                              name: "supported",
+                              title: "Supported",
+                              type: "boolean",
+                              initialValue: false,
+                            }),
+                          ],
+                        },
+                      ],
                     }),
                   ],
                 },
@@ -332,8 +349,25 @@ export const page = defineType({
             defineField({
               name: "sealFeatures",
               title: "Seal Features",
-              type: "object",
-              fields: [],
+              type: "array",
+              of: [
+                {
+                  type: "object",
+                  fields: [
+                    defineField({
+                      name: "label",
+                      title: "Label",
+                      type: "string",
+                    }),
+                    defineField({
+                      name: "supported",
+                      title: "Supported",
+                      type: "boolean",
+                      initialValue: false,
+                    }),
+                  ],
+                },
+              ],
             }),
           ],
           preview: {

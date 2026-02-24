@@ -30,9 +30,9 @@ export function Footer() {
 
           {/* Links */}
           <div className="text-muted-foreground flex items-center space-x-6 text-sm">
-            <a className="hover:text-foreground transition-colors" href="https://seal.co/docs">
+            <Link className="hover:text-foreground transition-colors" to="/docs">
               Docs
-            </a>
+            </Link>
             <Link className="hover:text-foreground transition-colors" to="/changelog">
               Changelog
             </Link>
