@@ -5,6 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import mdx from "fumadocs-mdx/vite";
+import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 
@@ -13,7 +14,7 @@ import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
 
-export default defineConfig(async () => ({
+export default defineConfig(async ({ command }) => ({
   server: {
     port: 3001,
   },
@@ -27,6 +28,9 @@ export default defineConfig(async () => ({
     tanstackStart({
       srcDirectory: "src",
     }),
+    // Nitro handles Vercel deployment (serverless functions, Build Output API).
+    // Only included during build — breaks standalone Vite servers used by tools.
+    ...(command === "build" ? [nitro()] : []),
     viteReact(),
   ],
 
