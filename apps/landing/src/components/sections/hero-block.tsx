@@ -1,6 +1,8 @@
 import { ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
+import { FadeIn } from "~/components/ui/fade-in";
 import { urlFor } from "~/lib/sanity/image";
 import type { HeroBlock } from "~/lib/sanity/queries";
 
@@ -9,178 +11,235 @@ const APP_URL = "https://app.seal.co";
 export function HeroBlockComponent({ block }: { block: HeroBlock }) {
   return (
     <section className="relative flex min-h-[70dvh] flex-col items-center justify-center overflow-hidden py-24 sm:py-32">
-      {/* Background */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="bg-background absolute inset-0" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_50%,oklch(0.6_0.13_175_/_0.06),transparent_70%)]" />
-      </div>
-
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 text-center sm:px-6 lg:px-8">
-        <h1 className="mb-6 text-5xl font-bold tracking-tight text-balance text-white sm:text-6xl lg:text-7xl">
-          {block.headline}
-        </h1>
+        <FadeIn>
+          <h1 className="text-foreground mb-6 text-5xl font-bold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+            {block.headline}
+          </h1>
+        </FadeIn>
 
         {block.subheadline && (
-          <p className="mb-12 max-w-2xl text-xl text-pretty text-white/60 sm:text-2xl">
-            {block.subheadline}
-          </p>
+          <FadeIn delay={0.1}>
+            <p className="text-muted-foreground mb-12 max-w-2xl text-xl text-pretty sm:text-2xl">
+              {block.subheadline}
+            </p>
+          </FadeIn>
         )}
 
         {(block.primaryCta || block.secondaryCta) && (
-          <div className="flex flex-col gap-4 sm:flex-row">
-            {block.primaryCta && (
-              <Button
-                asChild
-                className="group h-14 bg-teal-600 px-10 text-base font-semibold text-white hover:bg-teal-500"
-                size="lg"
-              >
-                <a href={block.primaryCta.link}>
-                  {block.primaryCta.text}
-                  <ArrowRight
-                    aria-hidden="true"
-                    className="ml-2 size-4 transition-transform group-hover:translate-x-1"
-                  />
-                </a>
-              </Button>
-            )}
-            {block.secondaryCta && (
-              <Button
-                asChild
-                className="h-14 border-white/20 bg-white/5 px-10 text-base font-semibold text-white hover:bg-white/10"
-                size="lg"
-                variant="outline"
-              >
-                <a href={block.secondaryCta.link}>{block.secondaryCta.text}</a>
-              </Button>
-            )}
-          </div>
+          <FadeIn delay={0.2}>
+            <div className="flex flex-col gap-4 sm:flex-row">
+              {block.primaryCta && (
+                <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
+                  <a href={block.primaryCta.link}>
+                    {block.primaryCta.text}
+                    <ArrowRight
+                      aria-hidden="true"
+                      className="ml-2 size-4 transition-transform group-hover:translate-x-0.5"
+                    />
+                  </a>
+                </Button>
+              )}
+              {block.secondaryCta && (
+                <Button asChild className="h-12 px-8 text-base font-medium" size="lg" variant="outline">
+                  <a href={block.secondaryCta.link}>{block.secondaryCta.text}</a>
+                </Button>
+              )}
+            </div>
+          </FadeIn>
         )}
 
         {block.image?.asset && (
-          <div className="mt-16 w-full max-w-4xl overflow-hidden rounded-2xl border border-white/10">
-            <img
-              alt={block.image.alt || block.headline}
-              className="h-auto w-full"
-              height={600}
-              loading="eager"
-              src={urlFor(block.image).width(1200).height(600).url()}
-              width={1200}
-            />
-          </div>
+          <FadeIn delay={0.3}>
+            <div className="border-border mt-16 w-full max-w-4xl overflow-hidden rounded-2xl border shadow-lg">
+              <img
+                alt={block.image.alt || block.headline}
+                className="h-auto w-full"
+                height={600}
+                loading="eager"
+                src={urlFor(block.image).width(1200).height(600).url()}
+                width={1200}
+              />
+            </div>
+          </FadeIn>
         )}
       </div>
     </section>
   );
 }
 
-/**
- * Static hero for the homepage (used when Sanity has no "home" page)
- */
+type MediaState = "video" | "image" | "skeleton";
+
+function useMediaSlot(): MediaState {
+  const [state, setState] = useState<MediaState>("skeleton");
+
+  useEffect(() => {
+    const video = new Image();
+    video.src = "/videos/hero-demo.mp4";
+
+    // Check video first by trying to load it as a fetch HEAD request
+    fetch("/videos/hero-demo.mp4", { method: "HEAD" })
+      .then((res) => {
+        if (res.ok) {
+          setState("video");
+          return;
+        }
+        // Try image fallback
+        return fetch("/images/hero-screenshot.webp", { method: "HEAD" });
+      })
+      .then((res) => {
+        if (res && res.ok) setState("image");
+      })
+      .catch(() => {
+        // Stay on skeleton
+      });
+  }, []);
+
+  return state;
+}
+
+function HeroMedia() {
+  const mediaState = useMediaSlot();
+
+  if (mediaState === "video") {
+    return (
+      <video
+        autoPlay
+        className="h-auto w-full"
+        loop
+        muted
+        playsInline
+        poster="/images/hero-screenshot.webp"
+      >
+        <source src="/videos/hero-demo.mp4" type="video/mp4" />
+      </video>
+    );
+  }
+
+  if (mediaState === "image") {
+    return (
+      <img
+        alt="Seal document editor showing a contract with signature fields and recipient list"
+        className="h-auto w-full"
+        height={600}
+        loading="eager"
+        src="/images/hero-screenshot.webp"
+        width={1200}
+      />
+    );
+  }
+
+  // Skeleton fallback
+  return (
+    <div className="grid gap-6 p-6 md:grid-cols-3">
+      <div className="space-y-3 md:col-span-2">
+        <div className="bg-muted h-5 w-2/3 rounded" />
+        <div className="bg-muted/60 h-3.5 w-full rounded" />
+        <div className="bg-muted/60 h-3.5 w-5/6 rounded" />
+        <div className="bg-muted/40 mt-6 h-3.5 w-full rounded" />
+        <div className="bg-muted/40 h-3.5 w-4/5 rounded" />
+        <div className="mt-8 flex gap-3">
+          <div className="bg-primary/15 border-primary/30 h-10 w-28 rounded-lg border" />
+          <div className="bg-muted h-10 w-20 rounded-lg" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+          Recipients
+        </div>
+        {["Signer 1", "Signer 2", "CC: Legal"].map((name) => (
+          <div className="border-border bg-muted/50 rounded-lg border p-3" key={name}>
+            <div className="flex items-center justify-between">
+              <span className="text-foreground/70 text-sm">{name}</span>
+              <span className="bg-primary/15 text-primary rounded px-2 py-0.5 text-xs font-medium">
+                Pending
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function StaticHero() {
   return (
-    <section className="grain-overlay relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden">
-      {/* Background */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="bg-background absolute inset-0" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_50%,oklch(0.6_0.13_175_/_0.08),transparent_70%)]" />
-        <div className="from-background absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t to-transparent" />
+    <section className="relative flex min-h-[90dvh] flex-col items-center justify-center overflow-hidden px-6 pt-16">
+      {/* Floating decorative elements */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div
+          className="animate-float-slow absolute top-[18%] left-[8%] size-3 rounded-full opacity-20"
+          style={{ backgroundColor: "var(--primary)", animationDelay: "0s" }}
+        />
+        <div
+          className="animate-float absolute top-[25%] right-[12%] size-2 rounded-full opacity-15"
+          style={{ backgroundColor: "var(--primary)", animationDelay: "1s" }}
+        />
+        <div
+          className="animate-float-slow absolute bottom-[35%] left-[15%] size-2.5 rounded-full opacity-10"
+          style={{ backgroundColor: "var(--primary)", animationDelay: "2s" }}
+        />
+        <div
+          className="animate-float absolute top-[40%] right-[8%] size-1.5 rounded-full opacity-20"
+          style={{ backgroundColor: "var(--primary)", animationDelay: "0.5s" }}
+        />
+        <div
+          className="animate-float-slow absolute bottom-[25%] right-[20%] size-3.5 rounded-full opacity-10"
+          style={{ backgroundColor: "var(--primary)", animationDelay: "3s" }}
+        />
       </div>
 
-      <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-4 text-center sm:px-6 lg:px-8">
-        {/* Eyebrow */}
-        <div className="mb-8">
-          <div className="relative inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm">
-            <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-teal-400 opacity-75" />
-              <span className="relative inline-flex size-2 rounded-full bg-teal-500" />
-            </span>
-            <span className="text-sm text-white/70">Now in Beta</span>
-          </div>
-        </div>
-
+      <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
         {/* Headline */}
-        <h1 className="mb-8 text-[clamp(3rem,12vw,9rem)] leading-[0.9] font-bold tracking-tighter text-balance">
-          <span className="block text-white">Document</span>
-          <span className="block bg-gradient-to-r from-teal-400 via-teal-300 to-teal-400 bg-clip-text text-transparent">
-            Signatures
-          </span>
-          <span className="block text-white">Made Simple</span>
-        </h1>
+        <FadeIn>
+          <h1 className="text-foreground font-serif text-[clamp(2.75rem,8vw,5.5rem)] leading-[1.05] font-normal tracking-tight text-balance">
+            Sign documents.{" "}
+            <span className="text-primary">Collect payments.</span>{" "}
+            <span className="text-muted-foreground italic">Let AI handle the rest.</span>
+          </h1>
+        </FadeIn>
 
-        {/* Tagline */}
-        <p className="mb-12 max-w-2xl text-xl text-pretty text-white/60 sm:text-2xl">
-          Sign, send, and manage documents securely.
-          <br className="hidden sm:block" />
-          ESIGN compliant. Legally binding. Free to start.
-        </p>
+        {/* Subtitle */}
+        <FadeIn delay={0.15}>
+          <p className="text-muted-foreground mt-8 max-w-xl text-lg text-pretty sm:text-xl">
+            The intelligent document platform with built-in payments, AI field detection, and a full
+            REST API.
+          </p>
+        </FadeIn>
 
-        {/* CTAs */}
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <Button
-            asChild
-            className="group h-14 bg-teal-600 px-10 text-base font-semibold text-white hover:bg-teal-500"
-            size="lg"
-          >
-            <a href={`${APP_URL}/sign-up`}>
-              Start Free
-              <ArrowRight
-                aria-hidden="true"
-                className="ml-2 size-4 transition-transform group-hover:translate-x-1"
-              />
-            </a>
-          </Button>
-          <Button
-            asChild
-            className="h-14 border-white/20 bg-white/5 px-10 text-base font-semibold text-white hover:bg-white/10"
-            size="lg"
-            variant="outline"
-          >
-            <a href="/docs">View Docs</a>
-          </Button>
-        </div>
+        {/* Single CTA */}
+        <FadeIn delay={0.3}>
+          <div className="mt-10">
+            <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
+              <a href={`${APP_URL}/sign-up`}>
+                Start Free
+                <ArrowRight
+                  aria-hidden="true"
+                  className="ml-2 size-4 transition-transform group-hover:translate-x-0.5"
+                />
+              </a>
+            </Button>
+          </div>
+        </FadeIn>
 
-        {/* Mock document preview */}
-        <div className="relative mt-20 w-full max-w-4xl">
-          <div className="absolute -inset-4 -z-10 bg-[radial-gradient(ellipse_at_center,oklch(0.6_0.13_175_/_0.2),transparent_70%)] opacity-50 blur-3xl" />
-          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 shadow-2xl backdrop-blur-md">
-            <div className="flex items-center gap-2 border-b border-white/10 bg-white/5 px-4 py-3">
-              <div aria-hidden="true" className="flex gap-1.5">
-                <div className="size-3 rounded-full bg-red-500/80" />
-                <div className="size-3 rounded-full bg-yellow-500/80" />
-                <div className="size-3 rounded-full bg-green-500/80" />
-              </div>
-              <span className="ml-4 text-sm text-white/40">Seal - Document Editor</span>
-            </div>
-            <div className="grid gap-4 p-6 md:grid-cols-3">
-              <div className="space-y-3 md:col-span-2">
-                <div className="h-6 w-3/4 rounded bg-white/10" />
-                <div className="h-4 w-full rounded bg-white/5" />
-                <div className="h-4 w-5/6 rounded bg-white/5" />
-                <div className="mt-6 h-4 w-full rounded bg-white/5" />
-                <div className="h-4 w-4/5 rounded bg-white/5" />
-                <div className="mt-8 flex gap-3">
-                  <div className="h-10 w-32 rounded-lg border border-teal-500/30 bg-teal-500/10" />
-                  <div className="h-10 w-24 rounded-lg bg-white/5" />
+        {/* Product mockup with media slot */}
+        <FadeIn delay={0.4}>
+          <div className="relative mt-20 w-full max-w-3xl">
+            <div className="border-border bg-card overflow-hidden rounded-xl border shadow-xl">
+              {/* Browser chrome */}
+              <div className="border-border flex items-center gap-2 border-b px-4 py-3">
+                <div aria-hidden="true" className="flex gap-1.5">
+                  <div className="bg-border size-3 rounded-full" />
+                  <div className="bg-border size-3 rounded-full" />
+                  <div className="bg-border size-3 rounded-full" />
                 </div>
+                <div className="bg-muted ml-4 h-6 flex-1 rounded-md" />
               </div>
-              <div className="space-y-3">
-                <div className="text-xs font-medium tracking-wider text-white/40 uppercase">
-                  Recipients
-                </div>
-                {["Signer 1", "Signer 2", "CC: Legal"].map((name) => (
-                  <div className="rounded-lg border border-white/10 bg-white/5 p-3" key={name}>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-white/80">{name}</span>
-                      <span className="rounded bg-teal-500/20 px-2 py-0.5 text-xs text-teal-400">
-                        Pending
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {/* Media slot: video → image → skeleton fallback */}
+              <HeroMedia />
             </div>
           </div>
-        </div>
+        </FadeIn>
       </div>
     </section>
   );

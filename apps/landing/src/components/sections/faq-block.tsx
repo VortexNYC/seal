@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
+import { FadeIn } from "~/components/ui/fade-in";
 import type { FaqSectionBlock } from "~/lib/sanity/queries";
 
 export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
@@ -109,46 +110,48 @@ export function StaticFaq() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section className="relative overflow-hidden py-24 sm:py-32 lg:py-40" id="faq">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,transparent_0%,rgba(15,23,42,0.3)_50%,transparent_100%)]" />
+    <section className="bg-muted/50 px-6 py-24 sm:py-32 lg:py-40" id="faq">
+      <div className="mx-auto max-w-3xl">
+        <FadeIn>
+          <div className="mb-16 text-center sm:mb-20">
+            <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">
+              FAQ
+            </p>
+            <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
+              Questions? <span className="text-primary">Answers.</span>
+            </h2>
+            <p className="text-muted-foreground mt-6 text-lg text-pretty">
+              Everything you need to know about signing with Seal.
+            </p>
+          </div>
+        </FadeIn>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto mb-16 max-w-3xl text-center sm:mb-20">
-          <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
-            Questions?{" "}
-            <span className="bg-gradient-to-r from-teal-400 to-teal-300 bg-clip-text text-transparent">
-              Answers.
-            </span>
-          </h2>
-          <p className="text-lg text-pretty text-white/50 sm:text-xl">
-            Everything you need to know about signing with Seal.
-          </p>
-        </div>
+        {staticFaqs.map((faq, index) => {
+          const isOpen = openIndex === index;
+          const questionId = `sfaq-q-${index}`;
+          const answerId = `sfaq-a-${index}`;
 
-        <div className="mx-auto max-w-3xl">
-          {staticFaqs.map((faq, index) => {
-            const isOpen = openIndex === index;
-            const questionId = `sfaq-q-${index}`;
-            const answerId = `sfaq-a-${index}`;
-
-            return (
-              <div className="group" key={faq.question}>
+          return (
+            <FadeIn delay={0.05 * index} key={faq.question}>
+              <div className="group">
                 <button
                   aria-controls={answerId}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between gap-4 border-b border-white/10 py-6 text-left transition-colors hover:border-white/20"
+                  className="border-border hover:border-foreground/20 flex w-full items-center justify-between gap-4 border-b py-6 text-left transition-colors"
                   id={questionId}
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                   type="button"
                 >
-                  <span className="text-lg font-medium text-white sm:text-xl">{faq.question}</span>
+                  <span className="text-foreground text-lg font-medium sm:text-xl">
+                    {faq.question}
+                  </span>
                   <div
                     className="shrink-0 transition-transform duration-200"
                     style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
                   >
                     <ChevronDown
                       aria-hidden="true"
-                      className="size-5 text-white/50 transition-colors group-hover:text-teal-400"
+                      className="text-muted-foreground group-hover:text-primary size-5 transition-colors"
                     />
                   </div>
                 </button>
@@ -164,13 +167,13 @@ export function StaticFaq() {
                   }}
                 >
                   <div className="overflow-hidden">
-                    <p className="pt-4 pb-6 text-pretty text-white/60">{faq.answer}</p>
+                    <p className="text-muted-foreground pt-4 pb-6 text-pretty">{faq.answer}</p>
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </FadeIn>
+          );
+        })}
       </div>
     </section>
   );

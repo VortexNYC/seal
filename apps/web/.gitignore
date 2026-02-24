@@ -4,3 +4,4 @@
 public/api/search.json
 
 .env.local
+.env*.local

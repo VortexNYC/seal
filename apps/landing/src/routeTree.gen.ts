@@ -9,8 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
 import { Route as StudioRouteImport } from './routes/studio'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as IndexRouteImport } from './routes/index'
@@ -18,14 +19,19 @@ import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as ChangelogSlugRouteImport } from './routes/changelog.$slug'
 
+const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
+  id: '/terms-of-service',
+  path: '/terms-of-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
   path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsRoute = DocsRouteImport.update({
@@ -63,8 +69,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
-  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/studio': typeof StudioRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
   '/docs/$': typeof DocsSplatRoute
   '/pages/$slug': typeof PagesSlugRoute
@@ -73,8 +80,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
-  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/studio': typeof StudioRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
   '/docs/$': typeof DocsSplatRoute
   '/pages/$slug': typeof PagesSlugRoute
@@ -84,8 +92,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
-  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/studio': typeof StudioRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
   '/docs/$': typeof DocsSplatRoute
   '/pages/$slug': typeof PagesSlugRoute
@@ -96,8 +105,9 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/docs'
-    | '/sitemap.xml'
+    | '/privacy-policy'
     | '/studio'
+    | '/terms-of-service'
     | '/changelog/$slug'
     | '/docs/$'
     | '/pages/$slug'
@@ -106,8 +116,9 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/docs'
-    | '/sitemap.xml'
+    | '/privacy-policy'
     | '/studio'
+    | '/terms-of-service'
     | '/changelog/$slug'
     | '/docs/$'
     | '/pages/$slug'
@@ -116,8 +127,9 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/docs'
-    | '/sitemap.xml'
+    | '/privacy-policy'
     | '/studio'
+    | '/terms-of-service'
     | '/changelog/$slug'
     | '/docs/$'
     | '/pages/$slug'
@@ -127,13 +139,21 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChangelogRoute: typeof ChangelogRouteWithChildren
   DocsRoute: typeof DocsRouteWithChildren
-  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   StudioRoute: typeof StudioRoute
+  TermsOfServiceRoute: typeof TermsOfServiceRoute
   PagesSlugRoute: typeof PagesSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms-of-service': {
+      id: '/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/terms-of-service'
+      preLoaderRoute: typeof TermsOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/studio': {
       id: '/studio'
       path: '/studio'
@@ -141,11 +161,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs': {
@@ -219,8 +239,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChangelogRoute: ChangelogRouteWithChildren,
   DocsRoute: DocsRouteWithChildren,
-  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   StudioRoute: StudioRoute,
+  TermsOfServiceRoute: TermsOfServiceRoute,
   PagesSlugRoute: PagesSlugRoute,
 }
 export const routeTree = rootRouteImport

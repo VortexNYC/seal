@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -6,8 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, monospace;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -33,11 +35,24 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Brand Colors */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
 }
 
+/* Light mode (default) — matches web app system design */
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: oklch(0.988 0.002 90);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
@@ -60,37 +75,57 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+
+  /* Brand Colors - Blue scale built around #013575 */
+  --brand-50: oklch(0.97 0.015 250);
+  --brand-100: oklch(0.93 0.035 250);
+  --brand-200: oklch(0.85 0.055 250);
+  --brand-300: oklch(0.75 0.085 250);
+  --brand-400: oklch(0.62 0.115 250);
+  --brand-500: oklch(0.5 0.13 250);
+  --brand-600: oklch(0.42 0.125 250);
+  --brand-700: oklch(0.32 0.11 250);
+  --brand-800: oklch(0.26 0.095 250);
+  --brand-900: oklch(0.2 0.08 250);
 }
 
+/* Dark mode — matches web app system design */
 .dark {
-  /* Seal brand: deep slate base */
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.968 0.007 247.858);
-  --card: oklch(0.18 0.04 264.695);
-  --card-foreground: oklch(0.968 0.007 247.858);
-  --popover: oklch(0.18 0.04 264.695);
-  --popover-foreground: oklch(0.968 0.007 247.858);
-
-  /* Seal primary: teal #0d9488 */
-  --primary: oklch(0.6 0.13 175);
-  --primary-foreground: oklch(0.129 0.042 264.695);
-
-  /* Seal secondary */
-  --secondary: oklch(0.234 0.065 264.695);
-  --secondary-foreground: oklch(0.968 0.007 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.6 0.13 175);
-  --accent-foreground: oklch(0.129 0.042 264.695);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.6 0.13 175);
-  --chart-1: oklch(0.6 0.13 175);
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.141 0.005 285.823);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.141 0.005 285.823);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.55 0.14 250);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --border: oklch(0.274 0.006 286.033);
+  --input: oklch(0.274 0.006 286.033);
+  --ring: oklch(0.55 0.14 250);
+  --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
+
+  /* Brand Colors - Lighter shades for dark mode visibility */
+  --brand-50: oklch(0.2 0.03 250);
+  --brand-100: oklch(0.25 0.045 250);
+  --brand-200: oklch(0.3 0.06 250);
+  --brand-300: oklch(0.38 0.08 250);
+  --brand-400: oklch(0.5 0.11 250);
+  --brand-500: oklch(0.6 0.14 250);
+  --brand-600: oklch(0.68 0.13 250);
+  --brand-700: oklch(0.75 0.115 250);
+  --brand-800: oklch(0.85 0.09 250);
+  --brand-900: oklch(0.92 0.06 250);
 }
 
 @layer base {
@@ -103,20 +138,29 @@
   }
 }
 
-/* Grain texture overlay */
+/* Gentle floating animation for decorative elements */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float, .animate-float-slow {
+    animation: none;
+  }
+}
+
 @layer utilities {
-  .grain-overlay {
-    position: relative;
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
   }
 
-  .grain-overlay::before {
-    position: absolute;
-    z-index: 1;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    content: "";
-    inset: 0;
-    mix-blend-mode: overlay;
-    opacity: 0.03;
-    pointer-events: none;
+  .animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
   }
 }

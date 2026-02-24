@@ -1,15 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { ArrowRight, Calendar, Tag } from "lucide-react";
 
 import { Badge } from "~/components/ui/badge";
 import { urlFor } from "~/lib/sanity/image";
 import { type ChangelogEntry, getChangelogList } from "~/lib/sanity/queries";
-
-const getChangelogData = createServerFn({ method: "GET" }).handler(async () => {
-  const entries = await getChangelogList();
-  return { entries };
-});
 
 export const Route = createFileRoute("/changelog")({
   head: () => ({
@@ -22,7 +16,10 @@ export const Route = createFileRoute("/changelog")({
       },
     ],
   }),
-  loader: () => getChangelogData(),
+  loader: async () => {
+    const entries = await getChangelogList();
+    return { entries };
+  },
   component: ChangelogPage,
 });
 

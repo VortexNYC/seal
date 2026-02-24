@@ -6,7 +6,6 @@ import appCss from "~/app/globals.css?url";
 import { Footer } from "~/components/layout/footer";
 import { Navbar } from "~/components/layout/navbar";
 
-// Schema.org Organization structured data
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -14,7 +13,7 @@ const organizationSchema = {
   url: "https://seal.co",
   logo: "https://seal.co/favicon/og-image.png",
   description:
-    "Sign, send, and manage documents securely. A modern platform for digital signatures and workflow management.",
+    "Sign documents, collect payments, and automate workflows — all from one intelligent document platform.",
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer support",
@@ -22,7 +21,6 @@ const organizationSchema = {
   },
 };
 
-// Schema.org SoftwareApplication structured data
 const softwareSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -30,7 +28,7 @@ const softwareSchema = {
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   description:
-    "Modern document signature platform with digital signatures, workflow management, and compliance-ready audit trails.",
+    "Intelligent document platform with AI-powered field detection, built-in payment collection, and a full REST API.",
   offers: {
     "@type": "Offer",
     price: "0",
@@ -39,52 +37,54 @@ const softwareSchema = {
   },
 };
 
+// Static inline script to detect system dark mode preference before first paint.
+// This prevents a flash of wrong theme. The string is a hardcoded constant — no user input.
+const THEME_DETECTION_SCRIPT = `(function(){try{var d=document.documentElement;var m=window.matchMedia('(prefers-color-scheme:dark)');if(m.matches)d.classList.add('dark');m.addEventListener('change',function(e){e.matches?d.classList.add('dark'):d.classList.remove('dark');})}catch(e){}})()`;
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Seal - Document Signatures Made Simple" },
+      { title: "Seal — Documents that work for you" },
       {
         name: "description",
         content:
-          "Sign, send, and manage documents securely. A modern platform for digital signatures and workflow management. Free to start.",
+          "Sign documents, collect payments, and let AI handle the rest. An intelligent document platform with a full REST API. Free to start.",
       },
       {
         name: "keywords",
         content:
-          "document signatures, e-signatures, digital signatures, document management, workflow automation, ESIGN compliant, DocuSign alternative",
+          "document signatures, e-signatures, digital signatures, document intelligence, AI document platform, payment collection, API, DocuSign alternative",
       },
       { name: "author", content: "Seal" },
       { name: "robots", content: "index, follow" },
-      // Open Graph
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "en_US" },
       { property: "og:url", content: "https://seal.co" },
       { property: "og:site_name", content: "Seal" },
       {
         property: "og:title",
-        content: "Seal - Document Signatures Made Simple",
+        content: "Seal — Documents that work for you",
       },
       {
         property: "og:description",
         content:
-          "Sign, send, and manage documents securely. A modern platform for digital signatures and workflow management.",
+          "Sign documents, collect payments, and let AI handle the rest. An intelligent document platform with a full REST API.",
       },
       { property: "og:image", content: "https://seal.co/favicon/og-image.png" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
-      // Twitter
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@sealhq" },
       {
         name: "twitter:title",
-        content: "Seal - Document Signatures Made Simple",
+        content: "Seal — Documents that work for you",
       },
       {
         name: "twitter:description",
         content:
-          "Sign, send, and manage documents securely. A modern platform for digital signatures and workflow management.",
+          "Sign documents, collect payments, and let AI handle the rest. An intelligent document platform with a full REST API.",
       },
       { name: "twitter:image", content: "https://seal.co/favicon/og-image.png" },
     ],
@@ -93,7 +93,6 @@ export const Route = createRootRoute({
       { rel: "canonical", href: "https://seal.co" },
       { rel: "icon", href: "/favicon/favicon.png" },
       { rel: "apple-touch-icon", href: "/favicon/favicon-iphone.png" },
-      // DM Sans font from Google Fonts
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       {
         rel: "preconnect",
@@ -102,7 +101,7 @@ export const Route = createRootRoute({
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap",
       },
     ],
     scripts: [
@@ -128,7 +127,7 @@ function RootComponent() {
       {isFullscreen ? (
         <Outlet />
       ) : (
-        <div className="dark relative flex min-h-dvh flex-col">
+        <div className="relative flex min-h-dvh flex-col">
           <Navbar />
           <main className="flex-1">
             <Outlet />
@@ -142,11 +141,13 @@ function RootComponent() {
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html className="dark" lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        {/* Inline theme detection — static constant, no user input (safe from XSS) */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_DETECTION_SCRIPT }} />
       </head>
-      <body className="font-sans">
+      <body className="font-sans antialiased">
         {children}
         <Scripts />
       </body>

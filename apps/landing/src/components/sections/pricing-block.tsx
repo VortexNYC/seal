@@ -1,6 +1,7 @@
-import { ArrowRight, Check, Sparkles } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
+import { FadeIn } from "~/components/ui/fade-in";
 import type { PricingSectionBlock } from "~/lib/sanity/queries";
 
 const APP_URL = "https://app.seal.co";
@@ -12,63 +13,45 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
         {(block.headline || block.description) && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
             {block.headline && (
-              <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl">
+              <h2 className="text-foreground mb-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl">
                 {block.headline}
               </h2>
             )}
             {block.description && (
-              <p className="text-lg text-pretty text-white/50">{block.description}</p>
+              <p className="text-muted-foreground text-lg text-pretty">{block.description}</p>
             )}
           </div>
         )}
 
-        <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-3">
+        <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-3">
           {block.tiers.map((tier) => (
             <div className="group relative" key={tier._id}>
               <div
-                className={`relative h-full rounded-3xl p-8 transition-colors duration-300 lg:p-10 ${
-                  tier.highlighted
-                    ? "border-2 border-teal-500/50 bg-gradient-to-b from-teal-500/10 to-transparent"
-                    : "border border-white/10 bg-white/5 hover:bg-white/10"
+                className={`border-border relative h-full rounded-2xl border p-8 lg:p-10 ${
+                  tier.highlighted ? "bg-primary/5 border-primary/30" : "bg-card"
                 }`}
               >
-                {tier.highlighted && (
-                  <div className="absolute -top-4 left-8 inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-4 py-1.5">
-                    <Sparkles aria-hidden="true" className="size-3.5 text-white" />
-                    <span className="text-xs font-semibold text-white">Most Popular</span>
-                  </div>
-                )}
-
                 <div className="mb-8">
-                  <h3 className="mb-2 text-2xl font-bold text-white">{tier.name}</h3>
-                  {tier.description && <p className="text-white/50">{tier.description}</p>}
+                  <h3 className="text-foreground mb-2 text-2xl font-bold">{tier.name}</h3>
+                  {tier.description && (
+                    <p className="text-muted-foreground">{tier.description}</p>
+                  )}
                 </div>
 
                 <div className="mb-8">
-                  <span className="text-5xl font-bold tracking-tight text-white">
+                  <span className="text-foreground text-5xl font-bold tracking-tight">
                     ${tier.price}
                   </span>
-                  <span className="text-white/50">
+                  <span className="text-muted-foreground">
                     /{tier.billingPeriod === "yearly" ? "yr" : "mo"}
                   </span>
                 </div>
 
-                <ul className="mb-10 space-y-4">
+                <ul className="mb-10 space-y-3">
                   {tier.features.map((feature) => (
                     <li className="flex items-center gap-3" key={feature}>
-                      <div
-                        className={`flex size-5 shrink-0 items-center justify-center rounded-full ${
-                          tier.highlighted ? "bg-teal-500/20" : "bg-white/10"
-                        }`}
-                      >
-                        <Check
-                          aria-hidden="true"
-                          className={`size-3 ${
-                            tier.highlighted ? "text-teal-400" : "text-white/60"
-                          }`}
-                        />
-                      </div>
-                      <span className="text-white/70">{feature}</span>
+                      <Check aria-hidden="true" className="text-primary size-4 shrink-0" />
+                      <span className="text-muted-foreground text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -76,18 +59,15 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
                 {tier.ctaLink && (
                   <Button
                     asChild
-                    className={`group h-14 w-full rounded-2xl text-base font-semibold ${
-                      tier.highlighted
-                        ? "bg-teal-600 text-white hover:bg-teal-500"
-                        : "border border-white/20 bg-white/5 text-white hover:bg-white/10"
-                    }`}
+                    className="group h-11 w-full text-sm font-medium"
                     size="lg"
+                    variant={tier.highlighted ? "default" : "outline"}
                   >
                     <a href={tier.ctaLink}>
                       {tier.ctaText || "Get Started"}
                       <ArrowRight
                         aria-hidden="true"
-                        className="ml-2 size-4 transition-transform group-hover:translate-x-1"
+                        className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
                       />
                     </a>
                   </Button>
@@ -101,143 +81,122 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
   );
 }
 
-/**
- * Static pricing for when Sanity has no pricing tiers
- */
-const staticPlans = [
+const plans = [
   {
     name: "Free",
     price: "$0",
+    period: "forever",
     description: "For individuals getting started",
     features: [
       "5 documents per month",
       "Unlimited recipients",
       "Email notifications",
-      "Audit trail",
+      "Full audit trail",
       "PDF download",
     ],
     cta: "Start Free",
     ctaLink: `${APP_URL}/sign-up`,
-    highlight: false,
+    highlighted: false,
   },
   {
     name: "Pro",
     price: "$15",
-    description: "For growing teams",
+    period: "/mo",
+    description: "For teams that move fast",
     features: [
       "Unlimited documents",
       "Team workspaces",
       "Custom branding",
-      "Templates",
-      "API access",
+      "Reusable templates",
+      "Payment collection",
+      "REST API access",
       "Priority support",
     ],
     cta: "Start Pro Trial",
     ctaLink: `${APP_URL}/sign-up?plan=pro`,
-    highlight: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    description: "For large organizations",
-    features: [
-      "Everything in Pro",
-      "SSO / SAML",
-      "Advanced compliance",
-      "Custom integrations",
-      "Dedicated account manager",
-      "SLA guarantee",
-    ],
-    cta: "Contact Sales",
-    ctaLink: "mailto:sales@seal.co",
-    highlight: false,
+    highlighted: true,
   },
 ];
 
 export function StaticPricing() {
   return (
-    <section className="relative py-24 sm:py-32 lg:py-40" id="pricing">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto mb-16 max-w-3xl text-center sm:mb-20">
-          <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
-            Simple, transparent{" "}
-            <span className="bg-gradient-to-r from-teal-400 to-teal-300 bg-clip-text text-transparent">
-              pricing
-            </span>
-          </h2>
-          <p className="text-lg text-pretty text-white/50 sm:text-xl">
-            No hidden fees. No per-signature charges. Just straightforward plans.
-          </p>
-        </div>
+    <section className="px-6 py-32 sm:py-40" id="pricing">
+      <div className="mx-auto max-w-4xl">
+        {/* Header */}
+        <FadeIn>
+          <div className="mb-16 text-center">
+            <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
+              Simple pricing, no surprises
+            </h2>
+            <p className="text-muted-foreground mt-4 text-lg text-pretty">
+              No per-signature charges. No hidden fees.
+            </p>
+          </div>
+        </FadeIn>
 
-        <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-3">
-          {staticPlans.map((plan) => (
-            <div className="group relative" key={plan.name}>
+        {/* Two-tier grid */}
+        <div className="grid gap-6 sm:grid-cols-2">
+          {plans.map((plan, i) => (
+            <FadeIn delay={i * 0.1} key={plan.name}>
               <div
-                className={`relative h-full rounded-3xl p-8 transition-colors duration-300 lg:p-10 ${
-                  plan.highlight
-                    ? "border-2 border-teal-500/50 bg-gradient-to-b from-teal-500/10 to-transparent"
-                    : "border border-white/10 bg-white/5 hover:bg-white/10"
+                className={`border-border h-full rounded-2xl border p-8 sm:p-10 ${
+                  plan.highlighted ? "bg-primary/5 border-primary/20" : "bg-card"
                 }`}
               >
-                {plan.highlight && (
-                  <div className="absolute -top-4 left-8 inline-flex items-center gap-1.5 rounded-full bg-teal-600 px-4 py-1.5">
-                    <Sparkles aria-hidden="true" className="size-3.5 text-white" />
-                    <span className="text-xs font-semibold text-white">Most Popular</span>
-                  </div>
-                )}
-
                 <div className="mb-8">
-                  <h3 className="mb-2 text-2xl font-bold text-white">{plan.name}</h3>
-                  <p className="text-white/50">{plan.description}</p>
+                  <h3 className="text-foreground mb-1 text-xl font-semibold">{plan.name}</h3>
+                  <p className="text-muted-foreground text-sm">{plan.description}</p>
                 </div>
 
                 <div className="mb-8">
-                  <span className="text-5xl font-bold tracking-tight text-white lg:text-6xl">
+                  <span className="text-foreground text-5xl font-bold tracking-tight">
                     {plan.price}
                   </span>
-                  {plan.price !== "Custom" && <span className="text-white/50">/mo</span>}
+                  <span className="text-muted-foreground text-sm">{plan.period}</span>
                 </div>
 
-                <ul className="mb-10 space-y-4">
+                <ul className="mb-10 space-y-3">
                   {plan.features.map((feature) => (
                     <li className="flex items-center gap-3" key={feature}>
-                      <div
-                        className={`flex size-5 shrink-0 items-center justify-center rounded-full ${
-                          plan.highlight ? "bg-teal-500/20" : "bg-white/10"
-                        }`}
-                      >
-                        <Check
-                          aria-hidden="true"
-                          className={`size-3 ${plan.highlight ? "text-teal-400" : "text-white/60"}`}
-                        />
-                      </div>
-                      <span className="text-white/70">{feature}</span>
+                      <Check aria-hidden="true" className="text-primary size-4 shrink-0" />
+                      <span className="text-muted-foreground text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
 
                 <Button
                   asChild
-                  className={`group h-14 w-full rounded-2xl text-base font-semibold ${
-                    plan.highlight
-                      ? "bg-teal-600 text-white hover:bg-teal-500"
-                      : "border border-white/20 bg-white/5 text-white hover:bg-white/10"
-                  }`}
+                  className="group h-11 w-full text-sm font-medium"
                   size="lg"
+                  variant={plan.highlighted ? "default" : "outline"}
                 >
                   <a href={plan.ctaLink}>
                     {plan.cta}
                     <ArrowRight
                       aria-hidden="true"
-                      className="ml-2 size-4 transition-transform group-hover:translate-x-1"
+                      className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
                     />
                   </a>
                 </Button>
               </div>
-            </div>
+            </FadeIn>
           ))}
         </div>
+
+        {/* Enterprise line */}
+        <FadeIn delay={0.2}>
+          <div className="border-border mt-8 rounded-xl border p-6 text-center">
+            <p className="text-foreground text-sm font-medium">
+              Need SSO, advanced compliance, or custom integrations?{" "}
+              <a
+                className="text-primary hover:underline"
+                href="mailto:sales@seal.co"
+              >
+                Talk to us
+              </a>
+            </p>
+          </div>
+        </FadeIn>
       </div>
     </section>
   );

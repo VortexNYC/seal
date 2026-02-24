@@ -1,5 +1,7 @@
-import { Send, Shield, Users, Zap } from "lucide-react";
+import { CreditCard, FileSignature, Workflow } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
 
+import { FadeIn } from "~/components/ui/fade-in";
 import type { FeaturesSectionBlock } from "~/lib/sanity/queries";
 
 const GRID_LAYOUTS: Record<string, string> = {
@@ -16,17 +18,17 @@ export function FeaturesBlockComponent({ block }: { block: FeaturesSectionBlock 
         {(block.headline || block.description) && (
           <div className="mx-auto mb-16 max-w-3xl text-center">
             {block.eyebrow && (
-              <p className="mb-4 text-sm font-medium tracking-wider text-teal-400 uppercase">
+              <p className="text-primary mb-4 text-sm font-medium tracking-wider uppercase">
                 {block.eyebrow}
               </p>
             )}
             {block.headline && (
-              <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl">
+              <h2 className="text-foreground mb-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl">
                 {block.headline}
               </h2>
             )}
             {block.description && (
-              <p className="text-lg text-pretty text-white/50">{block.description}</p>
+              <p className="text-muted-foreground text-lg text-pretty">{block.description}</p>
             )}
           </div>
         )}
@@ -34,15 +36,15 @@ export function FeaturesBlockComponent({ block }: { block: FeaturesSectionBlock 
         <div className={`mx-auto grid max-w-6xl gap-6 lg:gap-8 ${gridCols}`}>
           {block.features.map((feature) => (
             <div className="group relative" key={feature.title}>
-              <div className="relative h-full rounded-3xl border border-white/10 bg-white/5 p-8 transition-all duration-300 group-hover:border-white/20 group-hover:bg-white/10">
+              <div className="border-border hover:border-border/80 relative h-full rounded-2xl border p-8 transition-colors duration-200">
                 {feature.icon && (
-                  <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-teal-500/20">
+                  <div className="bg-primary/10 mb-6 flex size-12 items-center justify-center rounded-xl">
                     <span className="text-2xl">{feature.icon}</span>
                   </div>
                 )}
-                <h3 className="mb-3 text-xl font-semibold text-white">{feature.title}</h3>
+                <h3 className="text-foreground mb-3 text-xl font-semibold">{feature.title}</h3>
                 {feature.description && (
-                  <p className="leading-relaxed text-white/60">{feature.description}</p>
+                  <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
                 )}
               </div>
             </div>
@@ -53,70 +55,74 @@ export function FeaturesBlockComponent({ block }: { block: FeaturesSectionBlock 
   );
 }
 
-const staticFeatures = [
+interface Pillar {
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  title: string;
+  headline: string;
+  description: string;
+}
+
+const pillars: Pillar[] = [
   {
-    icon: Send,
-    title: "Send for Signature",
+    icon: FileSignature,
+    title: "Sign",
+    headline: "Signatures that hold up",
     description:
-      "Upload any PDF, add signature fields, and send to recipients in seconds. Track status in real-time.",
-    bgClass: "bg-teal-500/20",
-    textClass: "text-teal-400",
+      "Upload any PDF, place fields with drag-and-drop, and send for legally binding signatures. Full audit trails, SHA-256 hashing, and ESIGN compliance built in.",
   },
   {
-    icon: Shield,
-    title: "ESIGN Compliant",
+    icon: CreditCard,
+    title: "Pay",
+    headline: "Collect payments at signing",
     description:
-      "Legally binding signatures with full audit trails. SHA-256 document hashing and tamper-evident seals.",
-    bgClass: "bg-blue-400/20",
-    textClass: "text-blue-400",
+      "Attach payment requests to any document. Recipients sign and pay in one step. Powered by Stripe Connect — funds go directly to your account.",
   },
   {
-    icon: Users,
-    title: "Team Workspaces",
+    icon: Workflow,
+    title: "Automate",
+    headline: "Workflows that run themselves",
     description:
-      "Collaborate with your team. Role-based permissions, shared templates, and organization-wide document management.",
-    bgClass: "bg-emerald-400/20",
-    textClass: "text-emerald-400",
-  },
-  {
-    icon: Zap,
-    title: "Templates & Automation",
-    description:
-      "Create reusable templates with pre-placed fields. Send documents faster with saved recipient lists.",
-    bgClass: "bg-amber-400/20",
-    textClass: "text-amber-400",
+      "Reusable templates with pre-placed fields. Webhook notifications for every event. A full REST API to build document workflows into your product.",
   },
 ];
 
 export function StaticFeatures() {
   return (
-    <section className="relative py-24 sm:py-32 lg:py-40" id="features">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto mb-16 max-w-3xl text-center sm:mb-20">
-          <h2 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
-            Everything you need to{" "}
-            <span className="bg-gradient-to-r from-teal-400 to-teal-300 bg-clip-text text-transparent">
-              sign with confidence.
-            </span>
-          </h2>
-          <p className="text-lg text-pretty text-white/50 sm:text-xl">
-            Built for modern teams that value security, simplicity, and speed.
-          </p>
-        </div>
+    <section className="px-6 py-32 sm:py-40" id="features">
+      <div className="mx-auto max-w-6xl">
+        {/* Section header */}
+        <FadeIn>
+          <div className="mb-20 max-w-2xl">
+            <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">
+              Capabilities
+            </p>
+            <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
+              Three things, done exceptionally well
+            </h2>
+          </div>
+        </FadeIn>
 
-        <div className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-2 lg:gap-8">
-          {staticFeatures.map((feature) => (
-            <div className="group relative" key={feature.title}>
-              <div className="relative h-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm transition-all duration-300 group-hover:border-white/20 group-hover:bg-white/10">
-                <div
-                  className={`mb-6 flex size-14 items-center justify-center rounded-2xl ${feature.bgClass}`}
-                >
-                  <feature.icon aria-hidden="true" className={`size-7 ${feature.textClass}`} />
+        {/* Pillars */}
+        <div className="grid gap-8 lg:grid-cols-3">
+          {pillars.map((pillar, i) => (
+            <FadeIn delay={i * 0.1} key={pillar.title}>
+              <div className="flex h-full flex-col">
+                <div className="border-border border-t pt-8">
+                  <div className="bg-primary/10 mb-6 flex size-12 items-center justify-center rounded-xl">
+                    <pillar.icon aria-hidden="true" className="text-primary size-6" />
+                  </div>
+                  <p className="text-primary mb-2 text-sm font-semibold uppercase tracking-wider">
+                    {pillar.title}
+                  </p>
+                  <h3 className="text-foreground font-serif mb-4 text-2xl sm:text-3xl">
+                    {pillar.headline}
+                  </h3>
+                  <p className="text-muted-foreground text-base leading-relaxed text-pretty">
+                    {pillar.description}
+                  </p>
                 </div>
-                <h3 className="mb-3 text-xl font-semibold text-white">{feature.title}</h3>
-                <p className="leading-relaxed text-white/60">{feature.description}</p>
               </div>
-            </div>
+            </FadeIn>
           ))}
         </div>
       </div>

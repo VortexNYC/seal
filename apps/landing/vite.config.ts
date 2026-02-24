@@ -19,6 +19,18 @@ export default defineConfig(async ({ command }) => ({
     port: 3001,
   },
   plugins: [
+    // Polyfill node:path → path-browserify in client builds only.
+    // fumadocs-core/source and fumadocs-mdx/runtime/server call path.join at
+    // module init, crashing the browser where node:path is externalized to undefined.
+    {
+      name: "polyfill-node-path-client",
+      enforce: "pre" as const,
+      resolveId(source: string, _importer: string | undefined, options: { ssr?: boolean }) {
+        if (source === "node:path" && !options.ssr) {
+          return require.resolve("path-browserify");
+        }
+      },
+    },
     await mdx(SourceConfig, { updateViteConfig: true }),
     searchIndexPlugin(),
     tsConfigPaths({
@@ -41,6 +53,7 @@ export default defineConfig(async ({ command }) => ({
       "fumadocs-mdx:collections/dynamic": path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
     },
   },
+
 
   // Prevent Fumadocs packages from being externalized during SSR.
   // This avoids React context errors and hydration mismatches.
