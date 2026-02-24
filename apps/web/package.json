@@ -10,7 +10,7 @@
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
     "typecheck": "bun run docs:generate && tsc --noEmit",
-    "docs:generate": "bunx fumadocs-mdx source.config.ts .source",
+    "docs:generate": "bun x fumadocs-mdx source.config.ts .source",
     "search:generate": "bun ./tools/generate-search-index.ts",
     "knip": "knip",
     "knip:fix": "knip --fix --allow-remove-files",
