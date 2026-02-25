@@ -65,6 +65,9 @@ import type * as auth_subscription_helpers from "../auth/subscription_helpers.js
 import type * as auth_wrappers from "../auth/wrappers.js";
 import type * as check_membership from "../check_membership.js";
 import type * as clerk_webhooks from "../clerk_webhooks.js";
+import type * as contacts_index from "../contacts/index.js";
+import type * as contacts_mutations from "../contacts/mutations.js";
+import type * as contacts_queries from "../contacts/queries.js";
 import type * as crons from "../crons.js";
 import type * as crypto_encryption from "../crypto/encryption.js";
 import type * as crypto_helpers from "../crypto/helpers.js";
@@ -132,6 +135,7 @@ import type * as schemas_ai_threads from "../schemas/ai_threads.js";
 import type * as schemas_ai_usage_log from "../schemas/ai_usage_log.js";
 import type * as schemas_api_keys from "../schemas/api_keys.js";
 import type * as schemas_audit_logs from "../schemas/audit_logs.js";
+import type * as schemas_contacts from "../schemas/contacts.js";
 import type * as schemas_data_exports from "../schemas/data_exports.js";
 import type * as schemas_document_access from "../schemas/document_access.js";
 import type * as schemas_document_invoices from "../schemas/document_invoices.js";
@@ -274,6 +278,9 @@ declare const fullApi: ApiFromModules<{
   "auth/wrappers": typeof auth_wrappers;
   check_membership: typeof check_membership;
   clerk_webhooks: typeof clerk_webhooks;
+  "contacts/index": typeof contacts_index;
+  "contacts/mutations": typeof contacts_mutations;
+  "contacts/queries": typeof contacts_queries;
   crons: typeof crons;
   "crypto/encryption": typeof crypto_encryption;
   "crypto/helpers": typeof crypto_helpers;
@@ -341,6 +348,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/ai_usage_log": typeof schemas_ai_usage_log;
   "schemas/api_keys": typeof schemas_api_keys;
   "schemas/audit_logs": typeof schemas_audit_logs;
+  "schemas/contacts": typeof schemas_contacts;
   "schemas/data_exports": typeof schemas_data_exports;
   "schemas/document_access": typeof schemas_document_access;
   "schemas/document_invoices": typeof schemas_document_invoices;
