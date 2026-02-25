@@ -89,6 +89,16 @@ export const documentsTable = defineTable({
   // Signing mode: parallel (all at once) or sequential (enforce order groups)
   signingMode: v.optional(signingModeTuple),
 
+  // Embedded signing configuration (iFrame SDK)
+  embeddingConfig: v.optional(
+    v.object({
+      enabled: v.boolean(),
+      allowedOrigins: v.optional(v.array(v.string())),
+      hideDeclineButton: v.optional(v.boolean()),
+      redirectUrl: v.optional(v.string()),
+    }),
+  ),
+
   // Version tracking
   currentVersion: v.optional(v.number()), // Current version number (1-based), optional for migration
 

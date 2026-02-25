@@ -62,6 +62,57 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
+// ─── Embedded Signing (iFrame SDK) ──────────────────────────────────
+type SealEventType =
+  | "seal:ready"
+  | "seal:viewed"
+  | "seal:signed"
+  | "seal:declined"
+  | "seal:error";
+
+function postSealEvent(type: SealEventType, payload: Record<string, unknown>) {
+  if (typeof window === "undefined" || window.parent === window) return;
+  window.parent.postMessage({ type, ...payload }, "*");
+}
+
+function useEmbeddedSigning(token: string) {
+  const isEmbedded = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("embed") === "true";
+  }, []);
+
+  // Parse optional embed params
+  const embedParams = useMemo(() => {
+    if (!isEmbedded) return { hideDecline: false };
+    const params = new URLSearchParams(window.location.search);
+    return {
+      hideDecline: params.get("hideDecline") === "true",
+    };
+  }, [isEmbedded]);
+
+  // Emit ready event on mount
+  useEffect(() => {
+    if (isEmbedded) {
+      postSealEvent("seal:ready", { token });
+    }
+  }, [isEmbedded, token]);
+
+  // Listen for incoming messages from host
+  useEffect(() => {
+    if (!isEmbedded) return;
+    const handler = (event: MessageEvent) => {
+      if (!event.data?.type) return;
+      if (event.data.type === "seal:close") {
+        // Host requested close — nothing to clean up on our side
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [isEmbedded]);
+
+  return { isEmbedded, embedParams, postSealEvent };
+}
+
 export const Route = createFileRoute("/sign/$token")({
   component: SigningPage,
   head: () => ({
@@ -90,6 +141,7 @@ function SigningPage() {
   const { token } = Route.useParams();
   const { convexClient } = useRouteContext({ from: "__root__" });
   const { track } = useAnalytics();
+  const { isEmbedded, embedParams } = useEmbeddedSigning(token);
 
   // Fetch recipient and document data using the signing token
   const { data } = useSuspenseQuery(
@@ -194,13 +246,16 @@ function SigningPage() {
         consentVersion: "1.0",
       });
       setHasConsented(true);
+      if (isEmbedded) {
+        postSealEvent("seal:viewed", { token });
+      }
     } catch (error) {
       toast.error("Failed to record consent. Please try again.");
       console.error("ESIGN consent error:", error);
     } finally {
       setIsConsentSubmitting(false);
     }
-  }, [convexClient, token, clientIp]);
+  }, [convexClient, token, clientIp, isEmbedded]);
 
   const handleConsentDecline = useCallback(() => {
     // The decline state is handled inside the consent dialog component.
@@ -339,13 +394,20 @@ function SigningPage() {
         documentId: doc._id,
         recipientId: recipient._id,
       });
-      toast.success("Document signed successfully!");
       setShowSignatureCapture(false);
-      // Reload the page to show updated status
-      window.location.reload();
+      if (isEmbedded) {
+        postSealEvent("seal:signed", { token, recipientId: recipient._id });
+      } else {
+        toast.success("Document signed successfully!");
+        window.location.reload();
+      }
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to save signature");
+      const message = error instanceof Error ? error.message : "Failed to save signature";
+      if (isEmbedded) {
+        postSealEvent("seal:error", { token, code: "SIGN_FAILED", message });
+      }
+      toast.error(message);
       console.error(error);
     },
   });
@@ -406,13 +468,20 @@ function SigningPage() {
         documentId: doc._id,
         recipientId: recipient._id,
       });
-      toast.success("Document declined");
       setShowDeclineDialog(false);
-      // Reload the page to show updated status
-      window.location.reload();
+      if (isEmbedded) {
+        postSealEvent("seal:declined", { token, reason: declineReason });
+      } else {
+        toast.success("Document declined");
+        window.location.reload();
+      }
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to decline document");
+      const message = error instanceof Error ? error.message : "Failed to decline document";
+      if (isEmbedded) {
+        postSealEvent("seal:error", { token, code: "DECLINE_FAILED", message });
+      }
+      toast.error(message);
       console.error(error);
     },
   });
@@ -696,6 +765,7 @@ function SigningPage() {
     <div
       className="dark:bg-background flex h-screen flex-col overflow-hidden bg-[#FAFAF9]"
       style={brandStyle}
+      data-embedded={isEmbedded ? "true" : undefined}
     >
       {/* Offline Banner - Global */}
       {!isOnline && (
@@ -709,8 +779,8 @@ function SigningPage() {
         </div>
       )}
 
-      {/* Desktop Header - Full width top bar */}
-      <header className="border-border/50 dark:bg-card hidden shrink-0 border-b bg-white lg:block">
+      {/* Desktop Header - Full width top bar (hidden in embedded mode) */}
+      <header className={`border-border/50 dark:bg-card hidden shrink-0 border-b bg-white lg:block ${isEmbedded ? "!hidden" : ""}`}>
         <div className="flex h-14 items-center justify-between px-6">
           {/* Left: Logo + Document context */}
           <div className="flex items-center gap-4">
@@ -779,8 +849,8 @@ function SigningPage() {
         </div>
       </header>
 
-      {/* Mobile Header - Only visible on small screens */}
-      <header className="dark:bg-background/80 border-border/50 sticky top-0 z-40 border-b bg-white/80 backdrop-blur-xl lg:hidden">
+      {/* Mobile Header - Only visible on small screens (hidden in embedded mode) */}
+      <header className={`dark:bg-background/80 border-border/50 sticky top-0 z-40 border-b bg-white/80 backdrop-blur-xl lg:hidden ${isEmbedded ? "!hidden" : ""}`}>
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <a href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
@@ -1158,15 +1228,17 @@ function SigningPage() {
                     </>
                   )}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground w-full"
-                  onClick={handleDeclineClick}
-                  disabled={declineMutation.isPending}
-                >
-                  Decline to sign
-                </Button>
+                {!(isEmbedded && embedParams.hideDecline) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground w-full"
+                    onClick={handleDeclineClick}
+                    disabled={declineMutation.isPending}
+                  >
+                    Decline to sign
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -1431,17 +1503,19 @@ function SigningPage() {
 
           {/* Mobile Action Bar - Fixed at bottom on mobile */}
           {!isCompleted && !showSignatureCapture && (
-            <div className="dark:bg-background/95 border-border/50 sticky bottom-0 z-40 border-t bg-white/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+            <div className={`dark:bg-background/95 border-border/50 sticky bottom-0 z-40 border-t bg-white/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden ${isEmbedded ? "!block" : ""}`}>
               <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-12 flex-1"
-                  onClick={handleDeclineClick}
-                  disabled={declineMutation.isPending}
-                >
-                  Decline
-                </Button>
+                {!(isEmbedded && embedParams.hideDecline) && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-12 flex-1"
+                    onClick={handleDeclineClick}
+                    disabled={declineMutation.isPending}
+                  >
+                    Decline
+                  </Button>
+                )}
                 <Button
                   size="lg"
                   className="h-12 flex-1 font-medium"
@@ -1568,8 +1642,8 @@ function SigningPage() {
         />
       )}
 
-      {/* Branding footer */}
-      {!branding?.hideSealBranding && (
+      {/* Branding footer (hidden in embedded mode) */}
+      {!isEmbedded && !branding?.hideSealBranding && (
         <div className="border-border/50 text-muted-foreground hidden shrink-0 border-t py-2 text-center text-xs lg:block">
           {branding?.customFooterText || (
             <a href="https://seal.nyc" className="hover:text-foreground transition-colors">
@@ -1578,7 +1652,7 @@ function SigningPage() {
           )}
         </div>
       )}
-      {branding?.hideSealBranding && branding?.customFooterText && (
+      {!isEmbedded && branding?.hideSealBranding && branding?.customFooterText && (
         <div className="border-border/50 text-muted-foreground hidden shrink-0 border-t py-2 text-center text-xs lg:block">
           {branding.customFooterText}
         </div>
