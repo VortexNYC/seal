@@ -5,7 +5,7 @@
  * Checks for duplicate emails and shows a warning toast if one exists.
  */
 
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -59,6 +59,14 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailToCheck, setEmailToCheck] = useState("");
+
+  const existingContact = useQuery(
+    api.contacts.queries.getByEmail,
+    emailToCheck ? { email: emailToCheck } : "skip",
+  );
+
+  const duplicateWarning = emailToCheck && existingContact;
 
   const resetForm = () => {
     setFirstName("");
@@ -70,6 +78,7 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
     setStatus("active");
     setNotes("");
     setErrors({});
+    setEmailToCheck("");
   };
 
   const validate = (): boolean => {
@@ -197,10 +206,23 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
                 setEmail(e.target.value);
                 if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
               }}
+              onBlur={() => {
+                const trimmed = email.trim();
+                if (trimmed && validateEmail(trimmed)) {
+                  setEmailToCheck(trimmed);
+                } else {
+                  setEmailToCheck("");
+                }
+              }}
               placeholder="john@example.com"
             />
             {errors.email && (
               <p className="text-destructive text-sm">{errors.email}</p>
+            )}
+            {duplicateWarning && (
+              <p className="text-amber-600 dark:text-amber-400 text-xs">
+                A contact with this email already exists.
+              </p>
             )}
           </div>
 

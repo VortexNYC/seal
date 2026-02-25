@@ -123,6 +123,55 @@ export const getByEmail = permissionQuery("contacts:view")({
 });
 
 /**
+ * Suggest contacts for recipient auto-fill.
+ * Searches by name (full-text) and email prefix.
+ * Returns up to 5 matches with basic info.
+ * Requires contacts:view permission.
+ */
+export const suggestForRecipient = permissionQuery("contacts:view")({
+  args: { searchTerm: v.string() },
+  handler: async (ctx, args) => {
+    const orgId = ctx.auth.organization._id;
+
+    if (!args.searchTerm || args.searchTerm.trim().length < 2) {
+      return [];
+    }
+
+    const term = args.searchTerm.trim();
+
+    // Search by name using search index
+    const results = await ctx.db
+      .query("contacts")
+      .withSearchIndex("search_contacts", (q) =>
+        q.search("fullName", term).eq("organizationId", orgId),
+      )
+      .take(5);
+
+    // Also check email prefix match
+    const allOrgContacts = await ctx.db
+      .query("contacts")
+      .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+      .collect();
+
+    const termLower = term.toLowerCase();
+    const emailMatches = allOrgContacts
+      .filter(
+        (c) =>
+          c.email.toLowerCase().startsWith(termLower) &&
+          !results.some((r) => r._id === c._id),
+      )
+      .slice(0, 5);
+
+    return [...results, ...emailMatches].slice(0, 5).map((c) => ({
+      _id: c._id,
+      fullName: c.fullName,
+      email: c.email,
+      company: c.company,
+    }));
+  },
+});
+
+/**
  * Get documents related to a contact by email.
  * Finds document_recipients matching the email, then fetches each document.
  * Only returns documents belonging to the current organization.

@@ -60,10 +60,23 @@ export function AddRecipientDialog({
   const [name, setName] = useState("");
   const [role, setRole] = useState<"signer" | "viewer" | "approver">("signer");
   const [loading, setLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const members = useQuery(
     api.organizations.queries.getOrganizationMembers,
     open ? { organizationId } : "skip",
+  );
+
+  const contactSuggestions = useQuery(
+    api.contacts.queries.suggestForRecipient,
+    activeTab === "outsider" && email.length >= 2
+      ? { searchTerm: email }
+      : "skip",
+  );
+
+  // Filter out contacts whose emails are already added as recipients
+  const filteredSuggestions = contactSuggestions?.filter(
+    (c) => !existingRecipientEmails.some((e) => e.toLowerCase() === c.email.toLowerCase()),
   );
 
   const addRecipients = useMutation(api.documents.recipients_mutations.addRecipients);
@@ -228,13 +241,50 @@ export function AddRecipientDialog({
             <TabsContent value="outsider" className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="recipient@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <div className="relative">
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="recipient@example.com"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => {
+                      // Delay to allow click on suggestion
+                      setTimeout(() => setShowSuggestions(false), 200);
+                    }}
+                  />
+                  {showSuggestions && filteredSuggestions && filteredSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 z-50 mt-1 w-full rounded-md border bg-popover p-1 shadow-md">
+                      {filteredSuggestions.map((contact) => (
+                        <div
+                          key={contact._id}
+                          role="button"
+                          tabIndex={0}
+                          className="flex cursor-pointer flex-col rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                          onClick={() => {
+                            setEmail(contact.email);
+                            setName(contact.fullName);
+                            setShowSuggestions(false);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              setEmail(contact.email);
+                              setName(contact.fullName);
+                              setShowSuggestions(false);
+                            }
+                          }}
+                        >
+                          <span className="font-medium">{contact.fullName}</span>
+                          <span className="text-muted-foreground text-xs">{contact.email}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
