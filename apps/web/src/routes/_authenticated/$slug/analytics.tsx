@@ -61,6 +61,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 
@@ -149,6 +150,9 @@ function AnalyticsContent() {
           <TabsTrigger value="activity">Document Activity</TabsTrigger>
           <TabsTrigger value="status">Status Breakdown</TabsTrigger>
           <TabsTrigger value="timeline">Recent Activity</TabsTrigger>
+          <TabsTrigger value="emails">Email Engagement</TabsTrigger>
+          <TabsTrigger value="timing">Recipient Timing</TabsTrigger>
+          <TabsTrigger value="templates">Template Performance</TabsTrigger>
           <TabsTrigger value="export">Export</TabsTrigger>
           {isAdmin && <TabsTrigger value="members">Team Members</TabsTrigger>}
         </TabsList>
@@ -172,6 +176,24 @@ function AnalyticsContent() {
 
         <TabsContent value="timeline" className="space-y-4">
           <RecentActivityFeed />
+        </TabsContent>
+
+        <TabsContent value="emails" className="space-y-4">
+          <Suspense fallback={<DashboardSkeleton />}>
+            <EmailEngagementTab />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="timing" className="space-y-4">
+          <Suspense fallback={<DashboardSkeleton />}>
+            <RecipientTimingTab />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-4">
+          <Suspense fallback={<DashboardSkeleton />}>
+            <TemplatePerformanceTab />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="export" className="space-y-4">
@@ -1062,5 +1084,310 @@ function ExportPanel() {
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+// ─── Email Engagement Tab ─────────────────────
+
+const EMAIL_FUNNEL_COLORS = {
+  sent: "#6366f1",
+  delivered: "#3b82f6",
+  opened: "#10b981",
+  clicked: "#f59e0b",
+};
+
+function EmailEngagementTab() {
+  const { data: engagement } = useSuspenseQuery(
+    convexQuery(api.dashboard.analytics_queries.getEmailEngagementStats, { days: 30 }),
+  );
+
+  if (engagement.total === 0) {
+    return (
+      <Card>
+        <CardContent className="flex h-[200px] items-center justify-center">
+          <p className="text-muted-foreground text-sm">No email data available yet</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const funnelData = [
+    { name: "Sent", value: engagement.total, fill: EMAIL_FUNNEL_COLORS.sent },
+    {
+      name: "Delivered",
+      value: Math.round((engagement.deliveryRate / 100) * engagement.total),
+      fill: EMAIL_FUNNEL_COLORS.delivered,
+    },
+    {
+      name: "Opened",
+      value: Math.round(
+        (engagement.openRate / 100) * (engagement.deliveryRate / 100) * engagement.total,
+      ),
+      fill: EMAIL_FUNNEL_COLORS.opened,
+    },
+    {
+      name: "Clicked",
+      value: Math.round(
+        (engagement.clickRate / 100) *
+          (engagement.openRate / 100) *
+          (engagement.deliveryRate / 100) *
+          engagement.total,
+      ),
+      fill: EMAIL_FUNNEL_COLORS.clicked,
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <StatCard
+          title="Emails Sent"
+          value={engagement.total}
+          icon={<BarChart3Icon className="h-4 w-4" />}
+          description="Last 30 days"
+        />
+        <StatCard
+          title="Delivery Rate"
+          value={`${engagement.deliveryRate}%`}
+          icon={<CheckCircle2Icon className="h-4 w-4" />}
+          progress={engagement.deliveryRate}
+        />
+        <StatCard
+          title="Open Rate"
+          value={`${engagement.openRate}%`}
+          icon={<TrendingUpIcon className="h-4 w-4" />}
+          progress={engagement.openRate}
+        />
+        <StatCard
+          title="Click Rate"
+          value={`${engagement.clickRate}%`}
+          icon={<TrendingUpIcon className="h-4 w-4" />}
+          progress={engagement.clickRate}
+        />
+        <StatCard
+          title="Avg Time to Open"
+          value={engagement.avgTimeToOpen ?? "—"}
+          icon={<ClockIcon className="h-4 w-4" />}
+          description={engagement.bounceRate > 0 ? `${engagement.bounceRate}% bounce rate` : undefined}
+        />
+      </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Email Funnel</CardTitle>
+          <CardDescription>Email engagement progression (last 30 days)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={funnelData} margin={{ left: 0, right: 8 }}>
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+                width={40}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                }}
+              />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                {funnelData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Recipient Timing Tab ─────────────────────
+
+const TIMING_BUCKET_COLORS: Record<string, string> = {
+  "<1h": "#10b981",
+  "1-6h": "#3b82f6",
+  "6-24h": "#6366f1",
+  "1-3d": "#f59e0b",
+  "3-7d": "#ef4444",
+  "7d+": "#991b1b",
+};
+
+function RecipientTimingTab() {
+  const { data: timing } = useSuspenseQuery(
+    convexQuery(api.dashboard.analytics_queries.getRecipientTimingStats, { days: 30 }),
+  );
+
+  if (timing.sampleSize === 0) {
+    return (
+      <Card>
+        <CardContent className="flex h-[200px] items-center justify-center">
+          <p className="text-muted-foreground text-sm">No signed documents in the last 30 days</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const distributionData = timing.distribution.map((d) => ({
+    name: d.bucket,
+    value: d.count,
+    fill: TIMING_BUCKET_COLORS[d.bucket] ?? "#6b7280",
+  }));
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Avg Time to View"
+          value={timing.avgTimeToView ?? "—"}
+          icon={<ClockIcon className="h-4 w-4" />}
+          description="From sent to first viewed"
+        />
+        <StatCard
+          title="Avg Time to Sign"
+          value={timing.avgTimeToSign ?? "—"}
+          icon={<ClockIcon className="h-4 w-4" />}
+          description="From viewed to signed"
+        />
+        <StatCard
+          title="Avg Total Turnaround"
+          value={timing.avgTotalTurnaround ?? "—"}
+          icon={<ClockIcon className="h-4 w-4" />}
+          description="End-to-end signing time"
+        />
+        <StatCard
+          title="Sample Size"
+          value={timing.sampleSize}
+          icon={<UsersIcon className="h-4 w-4" />}
+          description="Recipients in last 30 days"
+        />
+      </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Signing Time Distribution</CardTitle>
+          <CardDescription>How long recipients take to complete signing</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={distributionData} margin={{ left: 0, right: 8 }}>
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+                width={30}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                }}
+              />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                {distributionData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="mt-2 flex flex-wrap justify-center gap-3">
+            {distributionData.map((entry) => (
+              <div key={entry.name} className="flex items-center gap-1.5 text-xs">
+                <div className="size-2.5 rounded-full" style={{ backgroundColor: entry.fill }} />
+                <span className="text-muted-foreground">
+                  {entry.name} ({entry.value})
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Template Performance Tab ─────────────────
+
+function TemplatePerformanceTab() {
+  const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
+  const { data: templates } = useSuspenseQuery(
+    convexQuery(api.dashboard.analytics_queries.getTemplatePerformance, { days: 90 }),
+  );
+
+  if (!isLoadingPlan && !isPro) {
+    return (
+      <Card>
+        <CardContent className="flex h-[200px] flex-col items-center justify-center gap-2">
+          <TrendingUpIcon className="text-muted-foreground h-8 w-8" />
+          <p className="text-muted-foreground text-sm">
+            Template Performance is available on the Pro plan
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (templates.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex h-[200px] items-center justify-center">
+          <p className="text-muted-foreground text-sm">
+            No template-based documents in the last 90 days
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Template Comparison</CardTitle>
+          <CardDescription>Performance of templates over the last 90 days</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {templates.map((t) => (
+              <div
+                key={t.templateId}
+                className="flex items-center justify-between rounded-lg border p-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{t.templateName}</p>
+                  <p className="text-muted-foreground text-xs">{t.docsSent} documents sent</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-sm font-medium tabular-nums">{t.completionRate}%</p>
+                    <p className="text-muted-foreground text-xs">Completed</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium tabular-nums">{t.avgTurnaround ?? "—"}</p>
+                    <p className="text-muted-foreground text-xs">Avg time</p>
+                  </div>
+                  {t.declineRate > 0 && (
+                    <Badge variant="destructive" className="text-xs">
+                      {t.declineRate}% declined
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

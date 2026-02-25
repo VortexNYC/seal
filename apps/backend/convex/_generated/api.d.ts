@@ -73,6 +73,7 @@ import type * as crypto_encryption from "../crypto/encryption.js";
 import type * as crypto_helpers from "../crypto/helpers.js";
 import type * as crypto_index from "../crypto/index.js";
 import type * as crypto_node_helpers from "../crypto/node_helpers.js";
+import type * as dashboard_analytics_queries from "../dashboard/analytics_queries.js";
 import type * as dashboard_index from "../dashboard/index.js";
 import type * as dashboard_queries from "../dashboard/queries.js";
 import type * as documents_activity_queries from "../documents/activity_queries.js";
@@ -286,6 +287,7 @@ declare const fullApi: ApiFromModules<{
   "crypto/helpers": typeof crypto_helpers;
   "crypto/index": typeof crypto_index;
   "crypto/node_helpers": typeof crypto_node_helpers;
+  "dashboard/analytics_queries": typeof dashboard_analytics_queries;
   "dashboard/index": typeof dashboard_index;
   "dashboard/queries": typeof dashboard_queries;
   "documents/activity_queries": typeof documents_activity_queries;

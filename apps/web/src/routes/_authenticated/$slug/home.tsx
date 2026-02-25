@@ -9,10 +9,11 @@
 
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import {
   ActivityIcon,
+  AlertTriangleIcon,
   ArrowRightIcon,
   BarChart3Icon,
   CheckCircle2Icon,
@@ -21,6 +22,7 @@ import {
   FilePlusIcon,
   FileTextIcon,
   MailIcon,
+  MailXIcon,
   PenToolIcon,
   TrendingUpIcon,
   UploadIcon,
@@ -624,6 +626,11 @@ function WorkspaceHome() {
         {/* Recent Activity */}
         <RecentActivity />
 
+        {/* Needs Attention */}
+        <Suspense fallback={null}>
+          <NeedsAttention />
+        </Suspense>
+
         {/* Team Info Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -643,5 +650,88 @@ function WorkspaceHome() {
         </Card>
       </div>
     </PageWrapper>
+  );
+}
+
+// ─── Needs Attention Section ──────────────────
+
+function NeedsAttention() {
+  const { slug } = Route.useParams();
+  const attention = useQuery(api.dashboard.analytics_queries.getDocumentsNeedingAttention);
+
+  if (!attention || attention.totalIssues === 0) return null;
+
+  return (
+    <Card className="border-amber-200 dark:border-amber-900">
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <AlertTriangleIcon className="h-4 w-4 text-amber-500" />
+          <CardTitle className="text-base">Needs Attention</CardTitle>
+          <span className="text-muted-foreground text-xs">
+            {attention.totalIssues} issue{attention.totalIssues !== 1 ? "s" : ""}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {attention.staleRecipients.map((item) => (
+            <Link
+              key={`stale-${item.documentId}-${item.recipientEmail}`}
+              to="/$slug/documents/$documentId"
+              params={{ slug, documentId: item.documentId }}
+              className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted"
+            >
+              <ClockIcon className="h-4 w-4 shrink-0 text-amber-500" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm">
+                  <span className="font-medium">{item.recipientName}</span> hasn&apos;t viewed{" "}
+                  <span className="font-medium">{item.documentName}</span>
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Pending for {item.daysPending} day{item.daysPending !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </Link>
+          ))}
+
+          {attention.approachingDeadline.map((item) => (
+            <Link
+              key={`deadline-${item.documentId}`}
+              to="/$slug/documents/$documentId"
+              params={{ slug, documentId: item.documentId }}
+              className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted"
+            >
+              <AlertTriangleIcon className="h-4 w-4 shrink-0 text-red-500" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm">
+                  <span className="font-medium">{item.documentName}</span> deadline in{" "}
+                  {item.daysRemaining} day{item.daysRemaining !== 1 ? "s" : ""}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  {item.unsignedCount} unsigned recipient{item.unsignedCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </Link>
+          ))}
+
+          {attention.bouncedEmails.map((item) => (
+            <Link
+              key={`bounce-${item.documentId}-${item.recipientEmail}`}
+              to="/$slug/documents/$documentId"
+              params={{ slug, documentId: item.documentId }}
+              className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted"
+            >
+              <MailXIcon className="h-4 w-4 shrink-0 text-red-500" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm">
+                  Email bounced for <span className="font-medium">{item.recipientEmail}</span>
+                </p>
+                <p className="text-muted-foreground text-xs">{item.documentName}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

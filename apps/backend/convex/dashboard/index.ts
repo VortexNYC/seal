@@ -5,3 +5,4 @@
  */
 
 export * from "./queries";
+export * from "./analytics_queries";
