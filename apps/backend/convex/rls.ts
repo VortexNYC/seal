@@ -558,6 +558,30 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
     },
 
     // ====================
+    // Contacts
+    // ====================
+    contacts: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (rlsCtx.orgId !== doc.organizationId) return false;
+
+        return rlsCtx.hasPermission("contacts:view");
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (rlsCtx.orgId !== doc.organizationId) return false;
+
+        // Creator can always edit their contacts
+        if (doc.createdBy === rlsCtx.userId) return true;
+
+        // Otherwise need edit permission
+        return rlsCtx.hasPermission("contacts:edit");
+      },
+    },
+
+    // ====================
     // Audit and Compliance
     // ====================
     audit_logs: {

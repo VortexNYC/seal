@@ -232,6 +232,11 @@ export const getUserPermissions = authQuery({
 
         // Audit
         canViewAudit: hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.AUDIT_READ),
+
+        // Contacts
+        canViewContacts: hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.CONTACTS_VIEW),
+        canCreateContacts: hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.CONTACTS_CREATE),
+        canDeleteContacts: hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.CONTACTS_DELETE),
       },
     };
   },

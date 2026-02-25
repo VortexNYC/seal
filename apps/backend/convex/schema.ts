@@ -3,6 +3,7 @@ import type { Infer } from "convex/values";
 
 import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
 import { type AuditAction, type AuditResourceType, auditLogsTable } from "./schemas/audit_logs";
+import { type ContactStatus, contactsTable } from "./schemas/contacts";
 import { type DocumentPermissionLevel, documentAccessTable } from "./schemas/document_access";
 import { documentInvoicesTable } from "./schemas/document_invoices";
 import {
@@ -100,6 +101,9 @@ export type { AuthenticationMethod, FieldType, SignatureType, WorkflowRecipientS
 // Re-export template types
 export type { TemplateStatus };
 
+// Re-export contact types
+export type { ContactStatus };
+
 // Re-export email types
 export type { EmailStatus, EmailType };
 
@@ -165,6 +169,9 @@ export default defineSchema({
   // Templates
   templates: templatesTable,
   template_fields: templateFieldsTable,
+
+  // Contacts
+  contacts: contactsTable,
 
   // Webhooks
   webhook_endpoints: webhookEndpoints,

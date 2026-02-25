@@ -43,6 +43,13 @@ export const PERMISSIONS = {
   "users:delete": "Delete users",
   "users:roles": "Manage user roles",
 
+  // Contacts
+  "contacts:view": "View contacts",
+  "contacts:create": "Create contacts",
+  "contacts:edit": "Edit contacts",
+  "contacts:delete": "Delete contacts",
+  "contacts:export": "Export contacts",
+
   // Audit
   "audit:view": "View audit logs",
   "audit:export": "Export audit logs",
@@ -78,6 +85,7 @@ export const ROLE_TEMPLATES = {
       "organization:invitations",
       "documents:*",
       "templates:*",
+      "contacts:*",
       "settings:*",
       "users:*",
       "audit:view",
@@ -97,6 +105,10 @@ export const ROLE_TEMPLATES = {
       "templates:read",
       "templates:use",
       "templates:create",
+      "contacts:view",
+      "contacts:create",
+      "contacts:edit",
+      "contacts:export",
       "settings:view",
       "users:view",
     ] as const,
@@ -109,6 +121,7 @@ export const ROLE_TEMPLATES = {
       "documents:view",
       "templates:view",
       "templates:read",
+      "contacts:view",
       "settings:view",
       "users:view",
     ] as const,

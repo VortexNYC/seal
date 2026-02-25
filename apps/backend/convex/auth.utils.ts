@@ -82,6 +82,12 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
     "users:edit",
     "users:delete",
     "users:roles",
+    // Contacts (full access)
+    "contacts:view",
+    "contacts:create",
+    "contacts:edit",
+    "contacts:delete",
+    "contacts:export",
   ],
 
   admin: [
@@ -138,6 +144,12 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
     "users:edit",
     "users:delete",
     "users:roles",
+    // Contacts (full access)
+    "contacts:view",
+    "contacts:create",
+    "contacts:edit",
+    "contacts:delete",
+    "contacts:export",
   ],
 
   member: [
@@ -167,6 +179,11 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
     "data:export",
     // Users (view only)
     "users:view",
+    // Contacts (create and manage, no delete)
+    "contacts:view",
+    "contacts:create",
+    "contacts:edit",
+    "contacts:export",
   ],
 
   viewer: [
@@ -180,6 +197,8 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
     "analytics:read",
     "reports:read",
     "users:view",
+    // Contacts (view only)
+    "contacts:view",
   ],
 };
 
@@ -314,6 +333,13 @@ export const DOCUMENT_SIGNING_PERMISSIONS = {
   // Data management permissions
   DATA_EXPORT: "data:export",
   DATA_BACKUP: "data:backup",
+
+  // Contacts permissions
+  CONTACTS_VIEW: "contacts:view",
+  CONTACTS_CREATE: "contacts:create",
+  CONTACTS_EDIT: "contacts:edit",
+  CONTACTS_DELETE: "contacts:delete",
+  CONTACTS_EXPORT: "contacts:export",
 } as const;
 
 /**
