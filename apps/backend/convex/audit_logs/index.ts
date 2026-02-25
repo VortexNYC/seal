@@ -15,6 +15,7 @@ export {
   logAction,
   logDocumentAction,
   logFieldAction,
+  logRecipientAction,
   logSignatureAction,
 } from "./helpers";
 

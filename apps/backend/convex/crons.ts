@@ -25,11 +25,46 @@ crons.interval(
   internal.api.rate_limit_mutations.cleanupExpiredBuckets,
 );
 
+// Process pending webhook deliveries every minute
+crons.interval(
+  "process-webhook-deliveries",
+  { minutes: 1 },
+  internal.webhooks.delivery.processWebhookDeliveries,
+);
+
 // Clean up old webhook events daily (idempotency records older than 7 days)
 crons.daily(
   "cleanup-stripe-webhook-events",
   { hourUTC: 2, minuteUTC: 0 },
   internal.stripe.webhook_idempotency.cleanupOldEvents,
+);
+
+// Clean up expired download tokens weekly
+crons.weekly(
+  "cleanup-expired-download-tokens",
+  { dayOfWeek: "sunday", hourUTC: 3, minuteUTC: 0 },
+  internal.documents.download_tokens.cleanupExpiredTokens,
+);
+
+// Clean up old AI usage logs weekly (entries older than 90 days)
+crons.weekly(
+  "cleanup-ai-usage-logs",
+  { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 0 },
+  internal.ai.cleanup.cleanupOldUsageLogs,
+);
+
+// Clean up dismissed AI suggestions weekly (dismissed >30 days ago)
+crons.weekly(
+  "cleanup-ai-dismissed-suggestions",
+  { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 15 },
+  internal.ai.cleanup.cleanupDismissedSuggestions,
+);
+
+// Clean up dismissed AI annotations weekly (dismissed >30 days ago)
+crons.weekly(
+  "cleanup-ai-dismissed-annotations",
+  { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 30 },
+  internal.ai.cleanup.cleanupDismissedAnnotations,
 );
 
 export default crons;

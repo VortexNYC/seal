@@ -1,4 +1,15 @@
-import { CalendarIcon, GripVerticalIcon, PenToolIcon, TypeIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  CheckSquareIcon,
+  ChevronDownSquareIcon,
+  CircleDotIcon,
+  CreditCardIcon,
+  GripVerticalIcon,
+  HashIcon,
+  PaperclipIcon,
+  PenToolIcon,
+  TypeIcon,
+} from "lucide-react";
 import { useState } from "react";
 
 import { FIELD_DIMENSIONS } from "./draggable-field";
@@ -6,16 +17,19 @@ import { FIELD_DIMENSIONS } from "./draggable-field";
 export type FieldType =
   | "signature"
   | "text"
+  | "number"
   | "date"
   | "checkbox"
   | "dropdown"
   | "radio"
-  | "attachment";
+  | "attachment"
+  | "payment";
 
 interface FieldToolbarProps {
   onFieldDragStart?: (fieldType: FieldType) => void;
   onFieldDragEnd?: () => void;
   disabled?: boolean;
+  stripeConnected?: boolean;
 }
 
 interface FieldButtonProps {
@@ -45,6 +59,10 @@ const FIELD_CONFIG: Record<
     label: "Text",
     accentColor: "#22c55e",
   },
+  number: {
+    label: "Number",
+    accentColor: "#f59e0b",
+  },
   date: {
     label: "Date",
     accentColor: "#8b5cf6",
@@ -64,6 +82,10 @@ const FIELD_CONFIG: Record<
   attachment: {
     label: "File",
     accentColor: "#84cc16",
+  },
+  payment: {
+    label: "Payment",
+    accentColor: "#10b981",
   },
 };
 
@@ -158,7 +180,12 @@ function FieldButton({ type, icon, label, onDragStart, onDragEnd, disabled }: Fi
 /**
  * Field toolbar - Provides draggable field types for document annotation
  */
-export function FieldToolbar({ onFieldDragStart, onFieldDragEnd, disabled }: FieldToolbarProps) {
+export function FieldToolbar({
+  onFieldDragStart,
+  onFieldDragEnd,
+  disabled,
+  stripeConnected = false,
+}: FieldToolbarProps) {
   const handleDragStart = (fieldType: FieldType) => {
     onFieldDragStart?.(fieldType);
   };
@@ -198,6 +225,15 @@ export function FieldToolbar({ onFieldDragStart, onFieldDragEnd, disabled }: Fie
         />
 
         <FieldButton
+          type="number"
+          icon={<HashIcon className="h-4 w-4" />}
+          label="Number"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled}
+        />
+
+        <FieldButton
           type="date"
           icon={<CalendarIcon className="h-4 w-4" />}
           label="Date"
@@ -206,16 +242,50 @@ export function FieldToolbar({ onFieldDragStart, onFieldDragEnd, disabled }: Fie
           disabled={disabled}
         />
 
-        {/* TODO: Re-enable checkbox field once multi-option rendering is complete
-				<FieldButton
-					type="checkbox"
-					icon={<CheckSquareIcon className="w-4 h-4" />}
-					label="Checkbox"
-					onDragStart={handleDragStart}
-					onDragEnd={handleDragEnd}
-					disabled={disabled}
-				/>
-				*/}
+        <FieldButton
+          type="payment"
+          icon={<CreditCardIcon className="h-4 w-4" />}
+          label="Payment"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled || !stripeConnected}
+        />
+
+        <FieldButton
+          type="checkbox"
+          icon={<CheckSquareIcon className="h-4 w-4" />}
+          label="Checkbox"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled}
+        />
+
+        <FieldButton
+          type="dropdown"
+          icon={<ChevronDownSquareIcon className="h-4 w-4" />}
+          label="Select"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled}
+        />
+
+        <FieldButton
+          type="radio"
+          icon={<CircleDotIcon className="h-4 w-4" />}
+          label="Choice"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled}
+        />
+
+        <FieldButton
+          type="attachment"
+          icon={<PaperclipIcon className="h-4 w-4" />}
+          label="File"
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          disabled={disabled}
+        />
       </div>
     </div>
   );

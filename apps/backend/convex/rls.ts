@@ -416,6 +416,56 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       },
     },
 
+    document_versions: {
+      read: async (ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        // Access follows the parent document's access rules
+        const document = await ctx.db.get(doc.documentId);
+        if (!document) return false;
+        if (document.ownerId === rlsCtx.userId) return true;
+        if (document.sharingMode === "workspace" && document.organizationId === rlsCtx.orgId)
+          return true;
+        return false;
+      },
+      modify: async (ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        // Only the document owner can create/modify versions
+        const document = await ctx.db.get(doc.documentId);
+        if (!document) return false;
+        return document.ownerId === rlsCtx.userId;
+      },
+    },
+
+    payment_field_configs: {
+      read: async (ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+
+        // Org members can read payment configs for their org's documents
+        if (doc.organizationId === rlsCtx.orgId) return true;
+
+        // Recipients can read payment configs for documents they're signing
+        if (rlsCtx.recipientContext) {
+          return doc.documentId === rlsCtx.recipientContext.documentId;
+        }
+
+        return false;
+      },
+      modify: async (ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (doc.organizationId !== rlsCtx.orgId) return false;
+
+        // Document owner can modify payment configs
+        const document = await ctx.db.get(doc.documentId);
+        if (!document) return false;
+        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        return access === "owner";
+      },
+    },
+
     // ====================
     // Signature Workflow (legacy recipients table)
     // ====================
@@ -771,6 +821,14 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
     },
 
     // ====================
+    // Download Tokens (Internal Use Only)
+    // ====================
+    download_tokens: {
+      read: async () => false,
+      modify: async () => false,
+    },
+
+    // ====================
     // MCP OAuth (Internal Use Only)
     // ====================
     mcp_oauth_clients: {
@@ -828,6 +886,87 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       modify: async () => {
         // Promo codes are only modified by internal webhook handlers
         return false;
+      },
+    },
+
+    // ====================
+    // Data Exports (GDPR/CCPA)
+    // ====================
+    data_exports: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        // Users can only read their own export records
+        return doc.userId === rlsCtx.userId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        // Users can only create exports for themselves
+        return doc.userId === rlsCtx.userId;
+      },
+    },
+
+    // ====================
+    // AI
+    // ====================
+    ai_threads: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+    },
+
+    ai_progress: {
+      read: async () => {
+        // Progress is keyed by threadId which is already org-scoped via ai_threads.
+        // Allow any authenticated user to read progress (they need the threadId).
+        return rlsCtx !== null;
+      },
+      modify: async () => {
+        // Progress is only modified by internal mutations
+        return false;
+      },
+    },
+
+    ai_field_suggestions: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+    },
+    ai_document_annotations: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+    },
+    ai_usage_log: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
       },
     },
   };

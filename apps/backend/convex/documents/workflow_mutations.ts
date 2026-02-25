@@ -6,7 +6,9 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
+import { internalMutation } from "../_generated/server";
 import { permissionMutation } from "../auth";
+import { publishWebhookEvent } from "../webhooks/publish";
 import { verifyDocumentOwnership } from "./recipient_helpers";
 
 /**
@@ -219,6 +221,17 @@ export const completeDocument = permissionMutation("documents:edit")({
       });
     }
 
+    // Publish webhook event
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "document.completed",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        completed_at: new Date().toISOString(),
+      },
+    });
+
     return { success: true, remindersCancelled: allPendingReminders.length };
   },
 });
@@ -275,6 +288,18 @@ export const cancelDocument = permissionMutation("documents:edit")({
       });
     }
 
+    // Publish webhook event
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "document.voided",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        reason: args.reason,
+        voided_at: new Date().toISOString(),
+      },
+    });
+
     return { success: true, remindersCancelled: activeReminders.length };
   },
 });
@@ -300,8 +325,12 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
       throw new ConvexError("Document not found");
     }
 
-    // 3. Skip if already completed or cancelled
-    if (document.workflowStatus === "completed" || document.workflowStatus === "cancelled") {
+    // 3. Skip if already in a final or payment-pending state
+    if (
+      document.workflowStatus === "completed" ||
+      document.workflowStatus === "cancelled" ||
+      document.workflowStatus === "waiting_for_payment"
+    ) {
       return { success: true, completed: false, reason: "already_final" };
     }
 
@@ -323,14 +352,57 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
       return { success: true, completed: false, reason: "pending_recipients" };
     }
 
-    // 5. All recipients completed - mark document as completed
+    // 5. Check for unpaid payment fields
+    const paymentConfigs = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
+
+    const hasUnpaidPayments = paymentConfigs.some(
+      (config) => config.paymentStatus !== "paid" && config.paymentStatus !== "cancelled",
+    );
+
+    if (hasUnpaidPayments) {
+      // Route to waiting_for_payment instead of completed
+      await ctx.db.patch(args.documentId, {
+        workflowStatus: "waiting_for_payment",
+        updatedAt: Date.now(),
+      });
+
+      // Cancel pending reminders even in waiting_for_payment
+      const pendingRemindersWfp = await ctx.db
+        .query("document_reminders")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+        .collect();
+
+      const activeRemindersWfp = pendingRemindersWfp.filter(
+        (r) => r.status === "scheduled" || r.status === "pending",
+      );
+
+      for (const reminder of activeRemindersWfp) {
+        await ctx.db.patch(reminder._id, {
+          status: "cancelled",
+          cancelledAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      }
+
+      return {
+        success: true,
+        completed: false,
+        reason: "waiting_for_payment",
+        remindersCancelled: activeRemindersWfp.length,
+      };
+    }
+
+    // 6. No payment fields (or all paid) — mark document as completed
     await ctx.db.patch(args.documentId, {
       workflowStatus: "completed",
       completedAt: Date.now(),
       updatedAt: Date.now(),
     });
 
-    // 6. Cancel pending reminders
+    // 7. Cancel pending reminders
     const pendingReminders = await ctx.db
       .query("document_reminders")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
@@ -348,10 +420,76 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
       });
     }
 
+    // Publish webhook event
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "document.completed",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        completed_at: new Date().toISOString(),
+      },
+    });
+
     return {
       success: true,
       completed: true,
       remindersCancelled: activeReminders.length,
     };
+  },
+});
+
+/**
+ * Check if all payment fields for a document are paid,
+ * and if the document is in waiting_for_payment, transition to completed.
+ *
+ * Called from invoice.paid webhook handler after a payment config is updated.
+ */
+export const checkPaymentCompletionAndFinalize = internalMutation({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args) => {
+    const document = await ctx.db.get(args.documentId);
+    if (!document) return { completed: false, reason: "document_not_found" };
+
+    // Only act on documents in waiting_for_payment
+    if (document.workflowStatus !== "waiting_for_payment") {
+      return { completed: false, reason: "not_waiting_for_payment" };
+    }
+
+    // Check all payment configs for this document
+    const paymentConfigs = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .collect();
+
+    const allPaid = paymentConfigs.every(
+      (config) => config.paymentStatus === "paid" || config.paymentStatus === "cancelled",
+    );
+
+    if (!allPaid) {
+      return { completed: false, reason: "payments_pending" };
+    }
+
+    // All payments collected — complete the document
+    await ctx.db.patch(args.documentId, {
+      workflowStatus: "completed",
+      completedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // Publish webhook event
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "document.completed",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        completed_at: new Date().toISOString(),
+      },
+    });
+
+    return { completed: true };
   },
 });

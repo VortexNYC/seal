@@ -7,9 +7,13 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
+import type { DatabaseReader } from "../_generated/server";
+import { enqueueAiPipeline } from "../ai/workpool";
+import { logDocumentAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { ensureDocumentLimit, ensureStorageLimit } from "../auth/subscription_guards";
 import { validateFile } from "./upload_config";
+import { createVersionSnapshot } from "./version_helpers";
 import {
   canCancelDocument,
   canCompleteDocument,
@@ -17,6 +21,12 @@ import {
   transitionWorkflowStatus,
   verifyDocumentOwnership,
 } from "./workflow_helpers";
+
+/** Check if the org has AI auto-analyze enabled (defaults to true). */
+async function shouldAutoAnalyze(db: DatabaseReader, organizationId: Id<"organizations">) {
+  const org = await db.get(organizationId);
+  return org?.aiSettings?.aiAutoAnalyze !== false;
+}
 
 /**
  * Generate an upload URL for document storage
@@ -89,9 +99,46 @@ export const createDocument = permissionMutation("documents:create")({
       sharingMode: "private", // Default to private
       status: "active",
       workflowStatus: "draft", // Default to draft workflow status
+      currentVersion: 1,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
+
+    // 5. Insert initial version snapshot
+    await createVersionSnapshot(ctx, {
+      documentId,
+      createdBy: userId,
+      changeType: "created",
+      changeDescription: "Initial document upload",
+    });
+
+    // Audit trail
+    await logDocumentAction(ctx, {
+      organizationId: args.organizationId,
+      userId: ctx.auth.user.clerkId,
+      action: "document.created",
+      documentId,
+      newValues: { name: args.name, fileType: args.fileType },
+      description: "Document created",
+      ipAddress: "web-authenticated",
+    });
+
+    // 6. Schedule SHA-256 hash computation for document integrity baseline
+    // Runs as an action since it needs to download the PDF from storage
+    await ctx.scheduler.runAfter(0, internal.documents.hash_document_action.hashDocument, {
+      documentId,
+    });
+
+    // 7. Schedule PDF text extraction for search indexing
+    await ctx.scheduler.runAfter(0, internal.documents.extract_text_action.extractDocumentText, {
+      documentId,
+    });
+
+    // 8. Schedule AI field analysis pipeline (if auto-analyze is on)
+    if (await shouldAutoAnalyze(ctx.db, args.organizationId)) {
+      await enqueueAiPipeline(ctx, ctx.db, documentId, args.organizationId, ctx.auth.user._id);
+      await ctx.db.patch(documentId, { aiProcessingStatus: "pending" });
+    }
 
     return documentId;
   },
@@ -117,6 +164,15 @@ export const deleteDocument = permissionMutation("documents:delete")({
     // 2. Verify user is the owner (only owners can delete)
     if (document.ownerId !== userId) {
       throw new ConvexError("Only the document owner can delete this document");
+    }
+
+    // 2b. Enforce retention policy — completed documents cannot be deleted within retention period
+    if (document.retainUntil && document.retainUntil > Date.now()) {
+      const retainDate = new Date(document.retainUntil).toLocaleDateString("en-US");
+      throw new ConvexError({
+        code: "RETENTION_POLICY",
+        message: `This document is under a legal retention policy and cannot be deleted until ${retainDate}. Completed documents must be retained for 7 years per ESIGN Act compliance.`,
+      });
     }
 
     // 3. Mark as deleted (soft delete)
@@ -167,7 +223,15 @@ export const updateDocument = permissionMutation("documents:edit")({
       throw new ConvexError("Document not found");
     }
 
-    // 2. Check if user has edit access (owner or has "edit"/"manage" permission)
+    // 2. Block modifications to completed documents (immutable after signing)
+    if (document.workflowStatus === "completed") {
+      throw new ConvexError({
+        code: "DOCUMENT_IMMUTABLE",
+        message: "Completed documents cannot be modified. They are immutable for legal compliance.",
+      });
+    }
+
+    // 3. Check if user has edit access (owner or has "edit"/"manage" permission)
     let hasEditAccess = false;
     if (document.ownerId !== userId) {
       const access = await ctx.db
@@ -226,7 +290,15 @@ export const updateThumbnail = authMutation({
       throw new ConvexError("Document not found");
     }
 
-    // 2. Verify user has access (owner or org member)
+    // 2. Block modifications to completed documents (immutable after signing)
+    if (document.workflowStatus === "completed") {
+      throw new ConvexError({
+        code: "DOCUMENT_IMMUTABLE",
+        message: "Completed documents cannot be modified. They are immutable for legal compliance.",
+      });
+    }
+
+    // 3. Verify user has access (owner or org member)
     let hasAccess = document.ownerId === userId;
 
     if (!hasAccess) {
@@ -284,11 +356,6 @@ export const sendDocument = permissionMutation("documents:edit")({
     // 4. Transition to sent status
     await transitionWorkflowStatus(ctx, args.documentId, "sent");
 
-    // TODO: When recipients are implemented (SEA-127):
-    // - Verify document has at least one recipient
-    // - Generate signing tokens for recipients
-    // - Send email notifications
-
     return { success: true };
   },
 });
@@ -324,10 +391,6 @@ export const cancelDocument = permissionMutation("documents:edit")({
     // 4. Transition to cancelled status
     await transitionWorkflowStatus(ctx, args.documentId, "cancelled");
 
-    // TODO: When recipients are implemented (SEA-127):
-    // - Notify all recipients about cancellation
-    // - Invalidate signing tokens
-
     return { success: true };
   },
 });
@@ -359,16 +422,8 @@ export const completeDocument = permissionMutation("documents:edit")({
       throw new ConvexError(`Cannot complete document with status: ${currentStatus}`);
     }
 
-    // TODO: When recipients are implemented (SEA-127):
-    // - Verify all required signers have signed
-    // - Cannot complete if any required signatures are missing
-
     // 4. Transition to completed status
     await transitionWorkflowStatus(ctx, args.documentId, "completed");
-
-    // TODO: When email is implemented:
-    // - Notify all participants about completion
-    // - Send final signed document copy
 
     return { success: true };
   },
@@ -393,6 +448,30 @@ export const updateDocumentHash = internalMutation({
 
     await ctx.db.patch(args.documentId, {
       documentHash: args.documentHash,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Internal mutation to store extracted text from PDF
+ * Called by extractText action
+ */
+export const updateExtractedText = internalMutation({
+  args: {
+    documentId: v.id("documents"),
+    extractedText: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const document = await ctx.db.get(args.documentId);
+    if (!document) {
+      throw new ConvexError("Document not found");
+    }
+
+    await ctx.db.patch(args.documentId, {
+      extractedText: args.extractedText,
       updatedAt: Date.now(),
     });
 
@@ -468,5 +547,217 @@ export const updateFillableStorageId = internalMutation({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Replace a document's PDF file
+ * Snapshots the current state into document_versions before replacing.
+ * Only works on draft documents — sent/completed documents are immutable.
+ * Requires documents:edit permission
+ */
+export const replaceDocumentPdf = permissionMutation("documents:edit")({
+  args: {
+    documentId: v.id("documents"),
+    storageId: v.string(),
+    fileSize: v.number(),
+    fileType: v.string(),
+    pageCount: v.optional(v.number()),
+    changeDescription: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+
+    // 1. Get the document and verify ownership
+    const document = await ctx.db.get(args.documentId);
+    if (!document || document.status === "deleted") {
+      throw new ConvexError("Document not found");
+    }
+
+    if (document.ownerId !== userId) {
+      throw new ConvexError("Only the document owner can replace the PDF");
+    }
+
+    // 2. Only draft documents can have their PDF replaced
+    const workflowStatus = document.workflowStatus ?? "draft";
+    if (workflowStatus !== "draft") {
+      throw new ConvexError({
+        code: "DOCUMENT_IMMUTABLE",
+        message: `Cannot replace PDF of a document with status: ${workflowStatus}. Only draft documents can be modified.`,
+      });
+    }
+
+    // 3. Validate the new file
+    const validation = validateFile(document.name, args.fileType, args.fileSize);
+    if (!validation.valid) {
+      throw new ConvexError(`File validation failed: ${validation.errors.join(", ")}`);
+    }
+
+    // 4. Snapshot current state before replacing
+    const newVersionNumber = await createVersionSnapshot(ctx, {
+      documentId: args.documentId,
+      createdBy: userId,
+      changeType: "replaced",
+      changeDescription: args.changeDescription ?? "PDF replaced",
+    });
+
+    // 5. Update document with new PDF
+    await ctx.db.patch(args.documentId, {
+      storageId: args.storageId,
+      fileSize: args.fileSize,
+      fileType: args.fileType,
+      pageCount: args.pageCount,
+      currentVersion: newVersionNumber,
+      // Clear derived fields — they'll be recomputed
+      documentHash: undefined,
+      extractedText: undefined,
+      fillableStorageId: undefined,
+      thumbnailDataUrl: undefined,
+      updatedAt: Date.now(),
+    });
+
+    // 6. Audit trail
+    await logDocumentAction(ctx, {
+      organizationId: document.organizationId,
+      userId: ctx.auth.user.clerkId,
+      action: "document.updated",
+      documentId: args.documentId,
+      newValues: { currentVersion: newVersionNumber, storageId: args.storageId },
+      description: `PDF replaced (v${newVersionNumber})`,
+      ipAddress: "web-authenticated",
+    });
+
+    // 7. Schedule hash computation + text extraction for new PDF
+    await ctx.scheduler.runAfter(0, internal.documents.hash_document_action.hashDocument, {
+      documentId: args.documentId,
+    });
+
+    await ctx.scheduler.runAfter(0, internal.documents.extract_text_action.extractDocumentText, {
+      documentId: args.documentId,
+    });
+
+    // 8. Schedule AI field analysis for new PDF (if auto-analyze is on)
+    if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
+      await enqueueAiPipeline(
+        ctx,
+        ctx.db,
+        args.documentId,
+        document.organizationId,
+        ctx.auth.user._id,
+      );
+      await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
+    }
+
+    return { success: true, versionNumber: newVersionNumber };
+  },
+});
+
+/**
+ * Restore a document to a previous version
+ * Creates a new version entry (never overwrites) with changeType "restored".
+ * Only works on draft documents.
+ * Requires documents:edit permission
+ */
+export const restoreDocumentVersion = permissionMutation("documents:edit")({
+  args: {
+    documentId: v.id("documents"),
+    targetVersionNumber: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+
+    // 1. Get the document and verify ownership
+    const document = await ctx.db.get(args.documentId);
+    if (!document || document.status === "deleted") {
+      throw new ConvexError("Document not found");
+    }
+
+    if (document.ownerId !== userId) {
+      throw new ConvexError("Only the document owner can restore versions");
+    }
+
+    // 2. Only draft documents can be restored
+    const workflowStatus = document.workflowStatus ?? "draft";
+    if (workflowStatus !== "draft") {
+      throw new ConvexError({
+        code: "DOCUMENT_IMMUTABLE",
+        message: `Cannot restore a document with status: ${workflowStatus}. Only draft documents can be modified.`,
+      });
+    }
+
+    // 3. Find the target version
+    const targetVersion = await ctx.db
+      .query("document_versions")
+      .withIndex("by_document", (q) =>
+        q.eq("documentId", args.documentId).eq("versionNumber", args.targetVersionNumber),
+      )
+      .first();
+
+    if (!targetVersion) {
+      throw new ConvexError(`Version ${args.targetVersionNumber} not found for this document`);
+    }
+
+    // 4. Snapshot current state before restoring (creates the "before restore" version)
+    const newVersionNumber = await createVersionSnapshot(ctx, {
+      documentId: args.documentId,
+      createdBy: userId,
+      changeType: "restored",
+      changeDescription: `Restored from version ${args.targetVersionNumber}`,
+      restoredFromVersion: args.targetVersionNumber,
+    });
+
+    // 5. Restore the snapshot data to the document
+    await ctx.db.patch(args.documentId, {
+      name: targetVersion.snapshot.name,
+      description: targetVersion.snapshot.description,
+      storageId: targetVersion.snapshot.storageId,
+      fileSize: targetVersion.snapshot.fileSize,
+      fileType: targetVersion.snapshot.fileType,
+      pageCount: targetVersion.snapshot.pageCount,
+      currentVersion: newVersionNumber,
+      // Clear derived fields — they'll be recomputed from the restored PDF
+      documentHash: undefined,
+      extractedText: undefined,
+      fillableStorageId: undefined,
+      thumbnailDataUrl: undefined,
+      updatedAt: Date.now(),
+    });
+
+    // 6. Audit trail
+    await logDocumentAction(ctx, {
+      organizationId: document.organizationId,
+      userId: ctx.auth.user.clerkId,
+      action: "document.updated",
+      documentId: args.documentId,
+      newValues: {
+        currentVersion: newVersionNumber,
+        storageId: targetVersion.snapshot.storageId,
+      },
+      description: `Restored to v${args.targetVersionNumber} (now v${newVersionNumber})`,
+      ipAddress: "web-authenticated",
+    });
+
+    // 7. Schedule hash computation + text extraction for restored PDF
+    await ctx.scheduler.runAfter(0, internal.documents.hash_document_action.hashDocument, {
+      documentId: args.documentId,
+    });
+
+    await ctx.scheduler.runAfter(0, internal.documents.extract_text_action.extractDocumentText, {
+      documentId: args.documentId,
+    });
+
+    // 8. Schedule AI field analysis for restored PDF (if auto-analyze is on)
+    if (await shouldAutoAnalyze(ctx.db, document.organizationId)) {
+      await enqueueAiPipeline(
+        ctx,
+        ctx.db,
+        args.documentId,
+        document.organizationId,
+        ctx.auth.user._id,
+      );
+      await ctx.db.patch(args.documentId, { aiProcessingStatus: "pending" });
+    }
+
+    return { success: true, versionNumber: newVersionNumber };
   },
 });

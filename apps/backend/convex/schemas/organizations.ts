@@ -30,6 +30,15 @@ export const organizationsTable = defineTable({
   // Organization status for permission checks
   status: v.optional(organizationStatus), // Optional for backward compatibility
 
+  // AI workspace settings — all users in the org follow these
+  aiSettings: v.optional(
+    v.object({
+      aiEnabled: v.boolean(), // Master switch for all AI features
+      aiAutoAnalyze: v.boolean(), // Auto-run AI pipeline on document upload
+      aiShowRedlinesToSigners: v.boolean(), // Show annotations to recipients on signing page
+    }),
+  ),
+
   updatedAt: v.number(),
 })
   .index("by_slug", ["slug"])

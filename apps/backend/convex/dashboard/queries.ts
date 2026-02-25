@@ -8,23 +8,33 @@
 
 import { v } from "convex/values";
 
-import { permissionQuery } from "../auth";
+import { adminQuery, permissionQuery } from "../auth";
+import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
 
 /**
  * Get document statistics for the dashboard
  * Returns counts by workflow status
  */
 export const getDocumentStats = permissionQuery("documents:view")({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    scope: v.optional(v.union(v.literal("personal"), v.literal("team"))),
+  },
+  handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
+    const isAdmin = ctx.auth.isAdmin();
+    // Non-admins are forced to personal scope regardless of what they request
+    const scope = isAdmin ? (args.scope ?? "team") : "personal";
 
     // Get all documents for the organization
-    const documents = await ctx.db
+    let documents = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
       .filter((q) => q.neq(q.field("status"), "deleted"))
       .collect();
+
+    if (scope === "personal") {
+      documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
+    }
 
     // Calculate stats
     const stats = {
@@ -69,10 +79,25 @@ export const getDocumentStats = permissionQuery("documents:view")({
     const completionRate =
       finishedDocs > 0 ? Math.round((stats.completed / finishedDocs) * 100) : 0;
 
+    // Calculate average signing time (sentAt → completedAt) in milliseconds
+    const completedWithTimes = documents.filter(
+      (d) => d.workflowStatus === "completed" && d.sentAt && d.completedAt,
+    );
+    let avgSigningTimeMs: number | null = null;
+    if (completedWithTimes.length > 0) {
+      const totalMs = completedWithTimes.reduce(
+        (sum, d) => sum + ((d.completedAt as number) - (d.sentAt as number)),
+        0,
+      );
+      avgSigningTimeMs = Math.round(totalMs / completedWithTimes.length);
+    }
+
     return {
       ...stats,
       pending,
       completionRate,
+      avgSigningTimeMs,
+      isAdmin,
     };
   },
 });
@@ -130,35 +155,49 @@ export const getRecentDocuments = permissionQuery("documents:view")({
 export const getDocumentTrends = permissionQuery("documents:view")({
   args: {
     days: v.optional(v.number()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+    scope: v.optional(v.union(v.literal("personal"), v.literal("team"))),
   },
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
-    const days = args.days ?? 30;
+    const scope = ctx.auth.isAdmin() ? (args.scope ?? "team") : "personal";
 
-    // Calculate the start date
+    // Determine date range: explicit startDate/endDate takes precedence over days
     const now = Date.now();
-    const startDate = now - days * 24 * 60 * 60 * 1000;
+    const endDate = args.endDate ?? now;
+    const days = args.days ?? 30;
+    const startDate = args.startDate ?? endDate - days * 24 * 60 * 60 * 1000;
 
     // Get documents created in the time range
-    const documents = await ctx.db
+    let documents = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
       .filter((q) =>
-        q.and(q.neq(q.field("status"), "deleted"), q.gte(q.field("createdAt"), startDate)),
+        q.and(
+          q.neq(q.field("status"), "deleted"),
+          q.gte(q.field("createdAt"), startDate),
+          q.lte(q.field("createdAt"), endDate),
+        ),
       )
       .collect();
+
+    if (scope === "personal") {
+      documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
+    }
 
     // Get completed documents in the time range (by updatedAt)
     const completedDocs = documents.filter(
       (d) => d.workflowStatus === "completed" && d.updatedAt && d.updatedAt >= startDate,
     );
 
-    // Group by day
+    // Group by day — calculate actual number of days in range
     const dailyStats = new Map<string, { created: number; completed: number }>();
+    const rangeDays = Math.ceil((endDate - startDate) / (24 * 60 * 60 * 1000));
 
     // Initialize all days with 0
-    for (let i = 0; i < days; i++) {
-      const date = new Date(now - i * 24 * 60 * 60 * 1000);
+    for (let i = 0; i <= rangeDays; i++) {
+      const date = new Date(startDate + i * 24 * 60 * 60 * 1000);
       const dateKey = date.toISOString().split("T")[0] ?? "";
       if (dateKey) {
         dailyStats.set(dateKey, { created: 0, completed: 0 });
@@ -264,10 +303,12 @@ export const getRecentActivity = permissionQuery("audit:view")({
 export const getPeriodStats = permissionQuery("documents:view")({
   args: {
     period: v.union(v.literal("today"), v.literal("week"), v.literal("month"), v.literal("year")),
+    scope: v.optional(v.union(v.literal("personal"), v.literal("team"))),
   },
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
     const now = Date.now();
+    const scope = ctx.auth.isAdmin() ? (args.scope ?? "team") : "personal";
 
     // Calculate start date based on period
     let startDate: number;
@@ -287,7 +328,7 @@ export const getPeriodStats = permissionQuery("documents:view")({
     }
 
     // Get documents created in period
-    const documents = await ctx.db
+    let documents = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
       .filter((q) =>
@@ -295,12 +336,20 @@ export const getPeriodStats = permissionQuery("documents:view")({
       )
       .collect();
 
+    if (scope === "personal") {
+      documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
+    }
+
     // Get documents completed in period
-    const allDocs = await ctx.db
+    let allDocs = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
       .filter((q) => q.neq(q.field("status"), "deleted"))
       .collect();
+
+    if (scope === "personal") {
+      allDocs = allDocs.filter((d) => d.ownerId === ctx.auth.user._id);
+    }
 
     const completed = allDocs.filter(
       (d) => d.workflowStatus === "completed" && d.updatedAt && d.updatedAt >= startDate,
@@ -320,16 +369,7 @@ export const getPeriodStats = permissionQuery("documents:view")({
  */
 export const getDocumentsForExport = permissionQuery("documents:view")({
   args: {
-    workflowStatus: v.optional(
-      v.union(
-        v.literal("draft"),
-        v.literal("sent"),
-        v.literal("in_progress"),
-        v.literal("completed"),
-        v.literal("cancelled"),
-        v.literal("declined"),
-      ),
-    ),
+    workflowStatus: v.optional(documentWorkflowStatusTuple),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
   },
@@ -397,5 +437,75 @@ export const getDocumentsForExport = permissionQuery("documents:view")({
     enrichedDocs.sort((a, b) => b.createdAt - a.createdAt);
 
     return enrichedDocs;
+  },
+});
+
+/**
+ * Get per-member document activity breakdown (admin only)
+ * Returns document created/completed counts per workspace member
+ */
+export const getMemberActivity = adminQuery({
+  args: {},
+  handler: async (ctx) => {
+    const organizationId = ctx.auth.organization._id;
+
+    // Get all active members
+    const members = await ctx.db
+      .query("organization_members")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .collect();
+
+    // Get all non-deleted documents
+    const documents = await ctx.db
+      .query("documents")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .filter((q) => q.neq(q.field("status"), "deleted"))
+      .collect();
+
+    // Build per-member stats
+    const memberStats = await Promise.all(
+      members.map(async (member) => {
+        const user = await ctx.db.get(member.userId);
+        const memberDocs = documents.filter((d) => d.ownerId === member.userId);
+
+        const created = memberDocs.length;
+        const completed = memberDocs.filter((d) => d.workflowStatus === "completed").length;
+        const pending = memberDocs.filter(
+          (d) => d.workflowStatus === "sent" || d.workflowStatus === "in_progress",
+        ).length;
+
+        // Average signing time for this member's completed docs
+        const completedWithTimes = memberDocs.filter(
+          (d) => d.workflowStatus === "completed" && d.sentAt && d.completedAt,
+        );
+        let avgSigningTimeMs: number | null = null;
+        if (completedWithTimes.length > 0) {
+          const totalMs = completedWithTimes.reduce(
+            (sum, d) => sum + ((d.completedAt as number) - (d.sentAt as number)),
+            0,
+          );
+          avgSigningTimeMs = Math.round(totalMs / completedWithTimes.length);
+        }
+
+        return {
+          userId: member.userId,
+          name: user?.name ?? user?.email?.split("@")[0] ?? "Unknown",
+          email: user?.email ?? "",
+          avatar: user?.avatar ?? null,
+          role: member.role,
+          created,
+          completed,
+          pending,
+          completionRate: created > 0 ? Math.round((completed / created) * 100) : 0,
+          avgSigningTimeMs,
+        };
+      }),
+    );
+
+    // Sort by created count descending
+    memberStats.sort((a, b) => b.created - a.created);
+
+    return memberStats;
   },
 });

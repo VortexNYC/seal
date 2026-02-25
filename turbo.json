@@ -56,7 +56,9 @@
     "VITE_CONVEX_URL",
     "VITE_CLERK_PUBLISHABLE_KEY",
     "VITE_CLERK_SIGN_IN_URL",
-    "VITE_CLERK_SIGN_UP_URL"
+    "VITE_CLERK_SIGN_UP_URL",
+    "SANITY_PROJECT_ID",
+    "SANITY_DATASET"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",

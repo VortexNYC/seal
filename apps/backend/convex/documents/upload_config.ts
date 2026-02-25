@@ -3,10 +3,9 @@
  */
 
 /**
- * Maximum file size in bytes (50MB)
- * SEA-62: Maximum 50MB enforced
+ * Maximum file size in bytes (100MB)
  */
-export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+export const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 /**
  * Allowed MIME types organized by category
@@ -70,7 +69,7 @@ export function validateFileSize(fileSize: number): {
   if (fileSize > MAX_FILE_SIZE) {
     return {
       valid: false,
-      error: "File size must be under 50MB",
+      error: "File size must be under 100MB",
     };
   }
 

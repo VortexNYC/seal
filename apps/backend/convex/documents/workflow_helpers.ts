@@ -92,7 +92,7 @@ export function canCancelDocument(status: DocumentWorkflowStatus): boolean {
  * Check if a document can be completed
  */
 export function canCompleteDocument(status: DocumentWorkflowStatus): boolean {
-  return status === "in_progress";
+  return status === "in_progress" || status === "waiting_for_payment";
 }
 
 /**

@@ -124,7 +124,7 @@ export const createFromTemplate = permissionMutation("documents:create")({
       .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
       .collect();
 
-    // 3. Create new document
+    // 3. Create new document with template reference
     const documentName = args.documentName || `${template.name} - Copy`;
     const documentId = await ctx.db.insert("documents", {
       organizationId,
@@ -135,7 +135,8 @@ export const createFromTemplate = permissionMutation("documents:create")({
       fileType: template.fileType,
       pageCount: template.pageCount,
       thumbnailDataUrl: template.thumbnailDataUrl,
-      storageId: template.storageId, // Share the same PDF storage
+      storageId: template.storageId,
+      sourceTemplateId: args.templateId,
       sharingMode: "private",
       status: "active",
       workflowStatus: "draft",
@@ -143,30 +144,44 @@ export const createFromTemplate = permissionMutation("documents:create")({
       updatedAt: now,
     });
 
-    // 4. Increment template use count
+    // 4. Create unassigned signature fields from template fields
+    for (const tf of templateFields) {
+      await ctx.db.insert("signature_fields", {
+        documentId,
+        recipientId: undefined,
+        templateFieldId: tf._id,
+        fieldType: tf.fieldType as
+          | "signature"
+          | "text"
+          | "number"
+          | "date"
+          | "checkbox"
+          | "dropdown"
+          | "radio"
+          | "attachment"
+          | "payment",
+        label: tf.label ?? "",
+        isRequired: tf.isRequired,
+        x: tf.x,
+        y: tf.y,
+        width: tf.width,
+        height: tf.height,
+        page: tf.page,
+        properties: tf.properties,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // 5. Increment template use count
     await ctx.db.patch(args.templateId, {
       useCount: template.useCount + 1,
       updatedAt: now,
     });
 
-    // Note: Signature fields will need to be assigned to recipients after
-    // the document is created and recipients are added
-    // Return the template fields so the UI can pre-populate the field setup
-
     return {
       documentId,
-      templateFields: templateFields.map((f) => ({
-        fieldType: f.fieldType,
-        label: f.label,
-        isRequired: f.isRequired,
-        x: f.x,
-        y: f.y,
-        width: f.width,
-        height: f.height,
-        page: f.page,
-        properties: f.properties,
-        order: f.order,
-      })),
+      fieldCount: templateFields.length,
     };
   },
 });
@@ -296,6 +311,187 @@ export const restoreTemplate = permissionMutation("templates:edit")({
       status: "active",
       updatedAt: Date.now(),
     });
+
+    return { success: true };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Template Field CRUD
+// ─────────────────────────────────────────────────────────────────────────────
+
+const templateFieldPropertiesValidator = v.optional(
+  v.object({
+    options: v.optional(v.array(v.string())),
+    placeholder: v.optional(v.string()),
+    defaultValue: v.optional(v.string()),
+  }),
+);
+
+/**
+ * Add a new field to a template
+ * Requires templates:edit permission
+ */
+export const addTemplateField = permissionMutation("templates:edit")({
+  args: {
+    templateId: v.id("templates"),
+    fieldType: v.string(),
+    label: v.optional(v.string()),
+    isRequired: v.boolean(),
+    x: v.number(),
+    y: v.number(),
+    width: v.number(),
+    height: v.number(),
+    page: v.number(),
+    properties: templateFieldPropertiesValidator,
+  },
+  handler: async (ctx, args) => {
+    const organizationId = ctx.auth.organization._id;
+    const now = Date.now();
+
+    const template = await ctx.db.get(args.templateId);
+    if (!template || template.status === "deleted") {
+      throw new ConvexError("Template not found");
+    }
+    if (template.organizationId !== organizationId) {
+      throw new ConvexError("Template not found");
+    }
+
+    // Determine next order value
+    const existingFields = await ctx.db
+      .query("template_fields")
+      .withIndex("by_template_order", (q) => q.eq("templateId", args.templateId))
+      .collect();
+    const nextOrder =
+      existingFields.length > 0 ? Math.max(...existingFields.map((f) => f.order)) + 1 : 0;
+
+    const fieldId = await ctx.db.insert("template_fields", {
+      templateId: args.templateId,
+      fieldType: args.fieldType,
+      label: args.label,
+      isRequired: args.isRequired,
+      x: args.x,
+      y: args.y,
+      width: args.width,
+      height: args.height,
+      page: args.page,
+      properties: args.properties,
+      order: nextOrder,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Touch template timestamp
+    await ctx.db.patch(args.templateId, { updatedAt: now });
+
+    return fieldId;
+  },
+});
+
+/**
+ * Update a template field's properties
+ * Requires templates:edit permission
+ */
+export const updateTemplateField = permissionMutation("templates:edit")({
+  args: {
+    fieldId: v.id("template_fields"),
+    label: v.optional(v.string()),
+    isRequired: v.optional(v.boolean()),
+    properties: templateFieldPropertiesValidator,
+  },
+  handler: async (ctx, args) => {
+    const organizationId = ctx.auth.organization._id;
+    const now = Date.now();
+
+    const field = await ctx.db.get(args.fieldId);
+    if (!field) {
+      throw new ConvexError("Template field not found");
+    }
+
+    const template = await ctx.db.get(field.templateId);
+    if (!template || template.status === "deleted" || template.organizationId !== organizationId) {
+      throw new ConvexError("Template not found");
+    }
+
+    await ctx.db.patch(args.fieldId, {
+      ...(args.label !== undefined && { label: args.label }),
+      ...(args.isRequired !== undefined && { isRequired: args.isRequired }),
+      ...(args.properties !== undefined && { properties: args.properties }),
+      updatedAt: now,
+    });
+
+    await ctx.db.patch(field.templateId, { updatedAt: now });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Reposition a template field (move or resize)
+ * Requires templates:edit permission
+ */
+export const repositionTemplateField = permissionMutation("templates:edit")({
+  args: {
+    fieldId: v.id("template_fields"),
+    x: v.optional(v.number()),
+    y: v.optional(v.number()),
+    width: v.optional(v.number()),
+    height: v.optional(v.number()),
+    page: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const organizationId = ctx.auth.organization._id;
+    const now = Date.now();
+
+    const field = await ctx.db.get(args.fieldId);
+    if (!field) {
+      throw new ConvexError("Template field not found");
+    }
+
+    const template = await ctx.db.get(field.templateId);
+    if (!template || template.status === "deleted" || template.organizationId !== organizationId) {
+      throw new ConvexError("Template not found");
+    }
+
+    await ctx.db.patch(args.fieldId, {
+      ...(args.x !== undefined && { x: args.x }),
+      ...(args.y !== undefined && { y: args.y }),
+      ...(args.width !== undefined && { width: args.width }),
+      ...(args.height !== undefined && { height: args.height }),
+      ...(args.page !== undefined && { page: args.page }),
+      updatedAt: now,
+    });
+
+    await ctx.db.patch(field.templateId, { updatedAt: now });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Delete a template field
+ * Requires templates:edit permission
+ */
+export const deleteTemplateField = permissionMutation("templates:edit")({
+  args: {
+    fieldId: v.id("template_fields"),
+  },
+  handler: async (ctx, args) => {
+    const organizationId = ctx.auth.organization._id;
+    const now = Date.now();
+
+    const field = await ctx.db.get(args.fieldId);
+    if (!field) {
+      throw new ConvexError("Template field not found");
+    }
+
+    const template = await ctx.db.get(field.templateId);
+    if (!template || template.status === "deleted" || template.organizationId !== organizationId) {
+      throw new ConvexError("Template not found");
+    }
+
+    await ctx.db.delete(args.fieldId);
+    await ctx.db.patch(field.templateId, { updatedAt: now });
 
     return { success: true };
   },

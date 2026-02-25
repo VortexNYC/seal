@@ -1,11 +1,15 @@
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   CalendarIcon,
   CheckSquareIcon,
+  CreditCardIcon,
+  HashIcon,
   PenToolIcon,
   SettingsIcon,
   TrashIcon,
   TypeIcon,
 } from "lucide-react";
+import { useRef } from "react";
 
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -18,11 +22,17 @@ interface FieldListItem {
   fieldType: FieldType;
   label: string;
   page: number;
-  recipientId: Id<"document_recipients">;
+  recipientId?: Id<"document_recipients">;
   recipientName?: string;
   recipientEmail?: string;
   x: number;
   y: number;
+  paymentConfig?: {
+    totalAmountCents: number;
+    currency: string;
+    paymentType: string;
+    paymentStatus?: string;
+  };
 }
 
 interface Recipient {
@@ -44,32 +54,220 @@ interface FieldListProps {
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   signature: <PenToolIcon className="h-4 w-4" />,
   text: <TypeIcon className="h-4 w-4" />,
+  number: <HashIcon className="h-4 w-4" />,
   date: <CalendarIcon className="h-4 w-4" />,
   checkbox: <CheckSquareIcon className="h-4 w-4" />,
   dropdown: <TypeIcon className="h-4 w-4" />,
   radio: <CheckSquareIcon className="h-4 w-4" />,
   attachment: <TypeIcon className="h-4 w-4" />,
+  payment: <CreditCardIcon className="h-4 w-4" />,
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
   signature: "bg-blue-100 text-blue-700 border-blue-200",
   text: "bg-green-100 text-green-700 border-green-200",
+  number: "bg-amber-100 text-amber-700 border-amber-200",
   date: "bg-purple-100 text-purple-700 border-purple-200",
   checkbox: "bg-orange-100 text-orange-700 border-orange-200",
   dropdown: "bg-cyan-100 text-cyan-700 border-cyan-200",
   radio: "bg-pink-100 text-pink-700 border-pink-200",
   attachment: "bg-lime-100 text-lime-700 border-lime-200",
+  payment: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
 const FIELD_LABELS: Record<FieldType, string> = {
   signature: "Signature",
   text: "Text",
+  number: "Number",
   date: "Date",
   checkbox: "Checkbox",
   dropdown: "Dropdown",
   radio: "Radio",
   attachment: "Attachment",
+  payment: "Payment",
 };
+
+const PAYMENT_TYPE_LABELS: Record<string, string> = {
+  one_time: "One-time",
+  recurring: "Recurring",
+  installments: "Installments",
+  deposit_balance: "Deposit + Balance",
+};
+
+function formatCents(cents: number, currency = "usd"): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
+const VIRTUALIZE_THRESHOLD = 20;
+const ESTIMATED_ROW_HEIGHT = 80;
+
+function FieldRow({
+  field,
+  recipient,
+  isSelected,
+  canEdit,
+  onFieldSelect,
+  onFieldDelete,
+  onFieldProperties,
+}: {
+  field: FieldListItem;
+  recipient: { name?: string; email: string } | undefined;
+  isSelected: boolean;
+  canEdit: boolean;
+  onFieldSelect?: (fieldId: string | null) => void;
+  onFieldDelete?: (fieldId: string) => void;
+  onFieldProperties?: (fieldId: string) => void;
+}) {
+  return (
+    <div
+      onClick={() => onFieldSelect?.(isSelected ? null : field._id)}
+      className={`w-full cursor-pointer rounded-lg border-2 p-3 transition-all ${
+        isSelected
+          ? "border-primary bg-primary/5"
+          : "border-border bg-background hover:border-primary/50 hover:bg-muted/50"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          <div className={`mt-0.5 rounded-md border p-1.5 ${FIELD_COLORS[field.fieldType]}`}>
+            {FIELD_ICONS[field.fieldType]}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium">
+                {field.label || FIELD_LABELS[field.fieldType]}
+              </span>
+              <Badge variant="outline" className="text-xs">
+                Page {field.page}
+              </Badge>
+            </div>
+            {recipient ? (
+              <div className="text-muted-foreground mt-1 text-xs">
+                {recipient.name && (
+                  <p className="text-foreground/80 truncate font-medium">{recipient.name}</p>
+                )}
+                <p className="truncate">{recipient.email}</p>
+              </div>
+            ) : (
+              <p className="text-muted-foreground mt-1 text-xs italic">Unassigned</p>
+            )}
+            {field.fieldType === "payment" && field.paymentConfig && (
+              <div className="mt-1 flex items-center gap-1.5 text-xs">
+                <span className="font-semibold text-emerald-700">
+                  {formatCents(field.paymentConfig.totalAmountCents, field.paymentConfig.currency)}
+                </span>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-muted-foreground">
+                  {PAYMENT_TYPE_LABELS[field.paymentConfig.paymentType] ??
+                    field.paymentConfig.paymentType}
+                </span>
+              </div>
+            )}
+            {field.fieldType === "payment" && !field.paymentConfig && (
+              <p className="text-muted-foreground mt-1 text-xs italic">Not configured</p>
+            )}
+          </div>
+        </div>
+        {canEdit && (
+          <div className="flex shrink-0 items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title="Field properties"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFieldProperties?.(field._id);
+              }}
+            >
+              <SettingsIcon className="text-muted-foreground h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title="Delete field"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFieldSelect?.(field._id);
+                setTimeout(() => {
+                  onFieldDelete?.(field._id);
+                }, 0);
+              }}
+            >
+              <TrashIcon className="text-destructive h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function VirtualizedFieldList({
+  fields,
+  recipientMap,
+  selectedFieldId,
+  canEdit,
+  onFieldSelect,
+  onFieldDelete,
+  onFieldProperties,
+}: {
+  fields: FieldListItem[];
+  recipientMap: Map<Id<"document_recipients">, { name?: string; email: string }>;
+  selectedFieldId: string | null;
+  canEdit: boolean;
+  onFieldSelect?: (fieldId: string | null) => void;
+  onFieldDelete?: (fieldId: string) => void;
+  onFieldProperties?: (fieldId: string) => void;
+}) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: fields.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    overscan: 5,
+    gap: 8,
+  });
+
+  return (
+    <div ref={parentRef} className="max-h-[60vh] overflow-y-auto">
+      <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const field = fields[virtualRow.index];
+          const recipient = field.recipientId ? recipientMap.get(field.recipientId) : undefined;
+          const isSelected = selectedFieldId === field._id;
+
+          return (
+            <div
+              key={field._id}
+              ref={virtualizer.measureElement}
+              data-index={virtualRow.index}
+              className="absolute top-0 left-0 w-full"
+              style={{ transform: `translateY(${virtualRow.start}px)` }}
+            >
+              <FieldRow
+                field={field}
+                recipient={recipient}
+                isSelected={isSelected}
+                canEdit={canEdit}
+                onFieldSelect={onFieldSelect}
+                onFieldDelete={onFieldDelete}
+                onFieldProperties={onFieldProperties}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function FieldList({
   fields,
@@ -80,7 +278,6 @@ export function FieldList({
   onFieldDelete,
   onFieldProperties,
 }: FieldListProps) {
-  // Create a map of recipient IDs to recipient info for quick lookup
   const recipientMap = new Map(recipients.map((r) => [r._id, { name: r.name, email: r.email }]));
 
   if (fields.length === 0) {
@@ -92,81 +289,37 @@ export function FieldList({
     );
   }
 
+  if (fields.length > VIRTUALIZE_THRESHOLD) {
+    return (
+      <VirtualizedFieldList
+        fields={fields}
+        recipientMap={recipientMap}
+        selectedFieldId={selectedFieldId}
+        canEdit={canEdit}
+        onFieldSelect={onFieldSelect}
+        onFieldDelete={onFieldDelete}
+        onFieldProperties={onFieldProperties}
+      />
+    );
+  }
+
   return (
     <div className="space-y-2">
       {fields.map((field) => {
-        const recipient = recipientMap.get(field.recipientId);
+        const recipient = field.recipientId ? recipientMap.get(field.recipientId) : undefined;
         const isSelected = selectedFieldId === field._id;
 
         return (
-          <div
+          <FieldRow
             key={field._id}
-            onClick={() => onFieldSelect?.(isSelected ? null : field._id)}
-            className={`w-full cursor-pointer rounded-lg border-2 p-3 transition-all ${
-              isSelected
-                ? "border-primary bg-primary/5"
-                : "border-border bg-background hover:border-primary/50 hover:bg-muted/50"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex min-w-0 flex-1 items-start gap-2">
-                <div className={`mt-0.5 rounded-md border p-1.5 ${FIELD_COLORS[field.fieldType]}`}>
-                  {FIELD_ICONS[field.fieldType]}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium">
-                      {field.label || FIELD_LABELS[field.fieldType]}
-                    </span>
-                    <Badge variant="outline" className="text-xs">
-                      Page {field.page}
-                    </Badge>
-                  </div>
-                  {recipient && (
-                    <div className="text-muted-foreground mt-1 text-xs">
-                      {recipient.name && (
-                        <p className="text-foreground/80 truncate font-medium">{recipient.name}</p>
-                      )}
-                      <p className="truncate">{recipient.email}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              {canEdit && (
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    title="Field properties"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onFieldProperties?.(field._id);
-                    }}
-                  >
-                    <SettingsIcon className="text-muted-foreground h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    title="Delete field"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // First select the field, then trigger delete
-                      onFieldSelect?.(field._id);
-                      // Use setTimeout to ensure selection happens first
-                      setTimeout(() => {
-                        onFieldDelete?.(field._id);
-                      }, 0);
-                    }}
-                  >
-                    <TrashIcon className="text-destructive h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
+            field={field}
+            recipient={recipient}
+            isSelected={isSelected}
+            canEdit={canEdit}
+            onFieldSelect={onFieldSelect}
+            onFieldDelete={onFieldDelete}
+            onFieldProperties={onFieldProperties}
+          />
         );
       })}
     </div>

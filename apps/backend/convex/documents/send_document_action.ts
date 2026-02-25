@@ -7,7 +7,9 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { type ActionCtx, action, internalMutation } from "../_generated/server";
+import { type ActionCtx, action, internalAction, internalMutation } from "../_generated/server";
+import { logDocumentAction } from "../audit_logs/helpers";
+import { publishWebhookEvent } from "../webhooks/publish";
 import { sendDocumentInvitation } from "./email";
 
 async function authorizeDocumentOwner(
@@ -63,6 +65,7 @@ export const markDocumentAsSent = internalMutation({
   args: {
     documentId: v.id("documents"),
     deadline: v.optional(v.number()), // SEA-119: Signing deadline
+    userId: v.optional(v.string()), // Clerk ID for audit trail
   },
   handler: async (ctx, args) => {
     const document = await ctx.db.get(args.documentId);
@@ -154,6 +157,31 @@ export const markDocumentAsSent = internalMutation({
       ...(args.deadline && { deadline: args.deadline }), // SEA-119: Save deadline if provided
     });
 
+    // Audit trail
+    if (args.userId) {
+      await logDocumentAction(ctx, {
+        organizationId: document.organizationId,
+        userId: args.userId,
+        action: "document.sent",
+        documentId: args.documentId,
+        newValues: { workflowStatus: "sent" },
+        description: "Document sent to recipients",
+        ipAddress: "web-authenticated",
+      });
+    }
+
+    // Publish webhook event
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "document.sent",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        recipient_count: recipients.length,
+        sent_at: new Date().toISOString(),
+      },
+    });
+
     return { success: true };
   },
 });
@@ -167,7 +195,6 @@ export const sendDocumentEmails = action({
   args: {
     documentId: v.id("documents"),
     customMessage: v.optional(v.string()), // Default message for all recipients
-    stripeInvoiceId: v.optional(v.string()),
     recipientMessages: v.optional(
       v.array(
         v.object({
@@ -193,7 +220,7 @@ export const sendDocumentEmails = action({
     }>;
   }> => {
     // 1. Authenticate and authorize
-    const { document } = await authorizeDocumentOwner(ctx, args.documentId);
+    const { document, userId } = await authorizeDocumentOwner(ctx, args.documentId);
 
     // 2. Get all recipients
     const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
@@ -225,38 +252,48 @@ export const sendDocumentEmails = action({
       );
     }
 
-    // 4. Optional Stripe invoice finalize (if requested)
-    // Draft invoices have no hosted link; finalize before emailing recipients.
-    let invoicePayload:
-      | {
-          hostedInvoiceUrl?: string;
-          amountDue?: number;
-          currency?: string;
-          customerEmail?: string;
-        }
-      | undefined;
+    // 3b. Validate payment fields have configs
+    const paymentFields = signatureFields.filter((f) => f.fieldType === "payment");
+    if (paymentFields.length > 0) {
+      const paymentConfigs = await ctx.runQuery(
+        internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
+        { documentId: args.documentId },
+      );
+      const configuredFieldIds = new Set(paymentConfigs.map((c) => c.fieldId.toString()));
+      const unconfigured = paymentFields.filter((f) => !configuredFieldIds.has(f._id.toString()));
+      if (unconfigured.length > 0) {
+        throw new ConvexError(
+          "All payment fields must be configured before sending. Please configure payment details for each payment field.",
+        );
+      }
+    }
 
-    if (args.stripeInvoiceId) {
-      const invoiceResult = await ctx.runAction(
-        internal.stripe.invoice_actions.finalizeInvoiceForDocumentInternal,
+    // 4. Create Stripe invoices for payment field configs
+    let paymentInvoiceLinks: Array<{
+      recipientEmail: string;
+      hostedInvoiceUrl: string | null;
+      stripeInvoiceId: string;
+      totalAmountCents: number;
+      currency: string;
+    }> = [];
+
+    if (paymentFields.length > 0) {
+      const paymentResult = await ctx.runAction(
+        internal.stripe.payment_field_actions.createStripeObjectsForPaymentFields,
         {
           documentId: args.documentId,
-          stripeInvoiceId: args.stripeInvoiceId,
+          organizationId: document.organizationId,
+          userId,
         },
       );
-
-      invoicePayload = {
-        hostedInvoiceUrl: invoiceResult.hostedInvoiceUrl ?? undefined,
-        amountDue: invoiceResult.amountDue ?? undefined,
-        currency: invoiceResult.currency ?? undefined,
-        customerEmail: invoiceResult.customerEmail ?? undefined,
-      };
+      paymentInvoiceLinks = paymentResult.invoiceLinks;
     }
 
     // 5. Get sender information from document owner
-    // For now, we'll get it from the document query
-    // TODO: Add user query or get from context
-    const senderName = "Seal User";
+    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+      userId,
+    });
+    const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
 
     // 6. Build a map of per-recipient messages (SEA-119)
     const recipientMessageMap = new Map<Id<"document_recipients">, string>();
@@ -294,6 +331,14 @@ export const sendDocumentEmails = action({
       // SEA-119: Use deadline if provided, otherwise use token expiration
       const expiresAt = args.deadline || recipient.tokenExpiresAt;
 
+      // Resolve invoice link from payment field system
+      const paymentLink = paymentInvoiceLinks.find(
+        (link) => link.recipientEmail === recipient.email,
+      );
+      const resolvedInvoiceUrl = paymentLink?.hostedInvoiceUrl ?? undefined;
+      const resolvedInvoiceAmount = paymentLink?.totalAmountCents;
+      const resolvedInvoiceCurrency = paymentLink?.currency;
+
       // Send email
       const emailResult = await sendDocumentInvitation({
         to: recipient.email,
@@ -303,20 +348,9 @@ export const sendDocumentEmails = action({
         signingUrl,
         customMessage: messageForRecipient,
         expiresAt,
-        invoiceUrl:
-          invoicePayload?.hostedInvoiceUrl &&
-          invoicePayload?.customerEmail &&
-          invoicePayload.customerEmail === recipient.email
-            ? invoicePayload.hostedInvoiceUrl
-            : undefined,
-        invoiceAmount:
-          invoicePayload?.customerEmail && invoicePayload.customerEmail === recipient.email
-            ? invoicePayload.amountDue
-            : undefined,
-        invoiceCurrency:
-          invoicePayload?.customerEmail && invoicePayload.customerEmail === recipient.email
-            ? invoicePayload.currency
-            : undefined,
+        invoiceUrl: resolvedInvoiceUrl ?? undefined,
+        invoiceAmount: resolvedInvoiceAmount,
+        invoiceCurrency: resolvedInvoiceCurrency,
       });
 
       emailResults.push({
@@ -335,6 +369,7 @@ export const sendDocumentEmails = action({
       await ctx.runMutation(internal.documents.send_document_action.markDocumentAsSent, {
         documentId: args.documentId,
         deadline: args.deadline, // SEA-119: Pass deadline to be saved
+        userId: senderUser?.clerkId,
       });
     }
 
@@ -366,7 +401,7 @@ export const resendRecipientEmail = action({
     error?: string;
   }> => {
     // 1. Authenticate and authorize
-    const { document } = await authorizeDocumentOwner(ctx, args.documentId);
+    const { document, userId } = await authorizeDocumentOwner(ctx, args.documentId);
 
     // 2. Verify document has been sent (not in draft)
     const workflowStatus = document.workflowStatus ?? "draft";
@@ -407,8 +442,10 @@ export const resendRecipientEmail = action({
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
 
     // 6. Get sender information
-    // TODO: Get actual sender name from user
-    const senderName = "Seal User";
+    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+      userId,
+    });
+    const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
 
     // 7. Send email
     const emailResult = await sendDocumentInvitation({
@@ -425,5 +462,64 @@ export const resendRecipientEmail = action({
       success: emailResult.success,
       error: emailResult.error,
     };
+  },
+});
+
+/**
+ * Internal action to send document invitation emails without auth checks.
+ * Used by the REST API after the mutation has already verified permissions.
+ */
+export const sendDocumentEmailsInternal = internalAction({
+  args: {
+    documentId: v.id("documents"),
+    customMessage: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    // Get document
+    const document: Doc<"documents"> | null = await ctx.runQuery(
+      internal.documents.queries.getDocumentInternal,
+      { documentId: args.documentId },
+    );
+
+    if (!document) return;
+
+    // Get recipients
+    const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
+      internal.documents.recipients_queries.getDocumentRecipientsInternal,
+      { documentId: args.documentId },
+    );
+
+    if (recipients.length === 0) return;
+
+    // Get sender information
+    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+      userId: document.ownerId,
+    });
+    const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+
+    // Send emails to all pending recipients
+    for (const recipient of recipients) {
+      if (
+        recipient.status === "signed" ||
+        recipient.status === "approved" ||
+        recipient.status === "declined"
+      ) {
+        continue;
+      }
+
+      const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
+
+      await sendDocumentInvitation({
+        to: recipient.email,
+        recipientName: recipient.name || recipient.email,
+        documentName: document.name,
+        senderName,
+        signingUrl,
+        customMessage: args.customMessage,
+        expiresAt: recipient.tokenExpiresAt,
+      });
+    }
   },
 });

@@ -1,3 +1,5 @@
+import { ConvexError } from "convex/values";
+
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 
@@ -214,4 +216,43 @@ export async function checkRecipientComplete(
     completedFields: completedCount,
     incompleteFields,
   };
+}
+
+/**
+ * Verify document integrity before allowing a signature.
+ *
+ * Checks:
+ * 1. Document has a hash (computed at upload time)
+ * 2. If prior signatures exist, their `documentHashAtSigning` matches the current hash
+ *    (ensures the document wasn't modified between signatures)
+ *
+ * Throws ConvexError if verification fails, blocking the signature.
+ */
+export async function verifyDocumentIntegrityForSigning(
+  ctx: Pick<QueryCtx, "db">,
+  document: Doc<"documents">,
+): Promise<void> {
+  // If document has no hash yet, we can't verify integrity.
+  // This shouldn't happen for documents created after the hash-on-upload feature,
+  // but we allow it for backwards compatibility with older documents.
+  if (!document.documentHash) {
+    return;
+  }
+
+  // Check if any existing signatures were made against a different document hash.
+  // This detects tampering: if the document was modified after someone signed it.
+  const existingSignatures = await ctx.db
+    .query("signatures")
+    .withIndex("by_document", (q) => q.eq("documentId", document._id))
+    .collect();
+
+  for (const sig of existingSignatures) {
+    if (sig.documentHashAtSigning && sig.documentHashAtSigning !== document.documentHash) {
+      throw new ConvexError({
+        code: "INTEGRITY_ERROR",
+        message:
+          "Document integrity check failed: the document has been modified since a previous signature was applied. Signing is blocked to protect all parties.",
+      });
+    }
+  }
 }

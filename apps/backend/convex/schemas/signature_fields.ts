@@ -15,20 +15,21 @@ import { type Infer, v } from "convex/values";
 export const fieldTypeTuple = v.union(
   v.literal("signature"), // Signature capture field
   v.literal("text"), // Text input field
+  v.literal("number"), // Number input field
   v.literal("date"), // Date picker field
   v.literal("checkbox"), // Checkbox field
   v.literal("dropdown"), // Dropdown select field
   v.literal("radio"), // Radio button group
   v.literal("attachment"), // File attachment field
+  v.literal("payment"), // Payment/invoice field (config stored in payment_field_configs)
 );
 export type FieldType = Infer<typeof fieldTypeTuple>;
 
 export const signatureFieldsTable = defineTable({
   // References
   documentId: v.id("documents"), // Document this field belongs to
-  recipientId: v.id("document_recipients"), // Recipient who must fill this field
-  // TODO: Add templateFieldId when template_fields table is implemented
-  // templateFieldId: v.optional(v.id("template_fields")), // If created from template
+  recipientId: v.optional(v.id("document_recipients")), // Recipient who must fill this field (undefined = unassigned, e.g. from template)
+  templateFieldId: v.optional(v.id("template_fields")), // If created from a template
 
   // Field Configuration
   fieldType: fieldTypeTuple, // Type of field

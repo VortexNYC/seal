@@ -3,7 +3,7 @@
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { Code2, LayoutTemplate, type LucideIcon, Moon, Settings, Sun } from "lucide-react";
+import { Code2, CreditCard, LayoutTemplate, type LucideIcon, Moon, Settings, Sun } from "lucide-react";
 import * as React from "react";
 
 import { NavMain } from "@/components/nav-main";
@@ -115,10 +115,12 @@ function buildNavSections({
   slug,
   currentPath,
   permissions,
+  hasStripeConnect,
 }: {
   slug: string;
   currentPath: string;
   permissions: PermissionSet | undefined;
+  hasStripeConnect: boolean;
 }): NavMainItem[] {
   const permissionFlags = permissions?.permissions;
   const canView = (flag?: boolean) => (flag === undefined ? true : Boolean(flag));
@@ -151,6 +153,45 @@ function buildNavSections({
     },
   ].filter((item) => item.visible);
 
+  const paymentsItems = [
+    {
+      title: "Overview",
+      url: buildOrganizationPath(slug, "/payments"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+      exactMatch: true,
+    },
+    {
+      title: "Subscriptions",
+      url: buildOrganizationPath(slug, "/payments/subscriptions"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "History",
+      url: buildOrganizationPath(slug, "/payments/history"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Payouts",
+      url: buildOrganizationPath(slug, "/payments/payouts"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Balances",
+      url: buildOrganizationPath(slug, "/payments/balances"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Disputes",
+      url: buildOrganizationPath(slug, "/payments/disputes"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Tax Documents",
+      url: buildOrganizationPath(slug, "/payments/tax"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+  ].filter((item) => item.visible);
+
   const settingsItems = [
     {
       title: "General",
@@ -169,13 +210,18 @@ function buildNavSections({
       visible: true, // Profile settings are always visible to the user
     },
     {
+      title: "AI",
+      url: buildOrganizationPath(slug, "/settings/ai"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
+    {
       title: "Billing",
       url: buildOrganizationPath(slug, "/settings/billing"),
       visible:
         canView(permissionFlags?.canViewBilling) || canView(permissionFlags?.canManageBilling),
     },
     {
-      title: "Payments",
+      title: "Stripe Connect",
       url: buildOrganizationPath(slug, "/settings/payments"),
       visible: canView(permissionFlags?.canViewSettings),
     },
@@ -205,6 +251,11 @@ function buildNavSections({
       title: "Workspace",
       icon: LayoutTemplate,
       items: workspaceItems,
+    },
+    {
+      title: "Payments",
+      icon: CreditCard,
+      items: paymentsItems,
     },
     {
       title: "Settings",
@@ -292,6 +343,8 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
   const { signOut } = useClerk();
   const { reset: resetAnalytics } = useAnalytics();
   const organizations = useQuery(api.check_membership.listUserOrganizations);
+  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const hasStripeConnect = connectedAccount?.status === "connected";
 
   // Wrapper to reset PostHog identity before signing out
   const handleSignOut = React.useCallback(async () => {
@@ -310,8 +363,9 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
         slug,
         currentPath: location.pathname,
         permissions,
+        hasStripeConnect,
       }),
-    [slug, location.pathname, permissions],
+    [slug, location.pathname, permissions, hasStripeConnect],
   );
 
   const activeTeamSlug = slug;

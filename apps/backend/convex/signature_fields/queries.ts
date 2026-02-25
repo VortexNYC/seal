@@ -3,6 +3,8 @@ import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { query } from "../_generated/server";
 import { authQuery } from "../auth";
+import { decryptSignatureData } from "../crypto/encryption";
+import { findRecipientByToken } from "../documents/recipient_helpers";
 
 /**
  * Signature Field Queries
@@ -118,7 +120,7 @@ export const getFieldWithRecipient = query({
       return null;
     }
 
-    const recipient = await ctx.db.get(field.recipientId);
+    const recipient = field.recipientId ? await ctx.db.get(field.recipientId) : null;
 
     return {
       field,
@@ -242,11 +244,8 @@ export const getFieldsBySigningToken = query({
     signingToken: v.string(),
   },
   handler: async (ctx, args) => {
-    // 1. Find recipient by token
-    const recipient = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
-      .first();
+    // 1. Find recipient by token (hash-based lookup with plaintext fallback)
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
 
     if (!recipient) {
       throw new Error("Invalid signing token");
@@ -261,6 +260,7 @@ export const getFieldsBySigningToken = query({
       .collect();
 
     // 3. Get existing signatures for these fields with full details
+    const encKey = process.env.SIGNATURE_ENCRYPTION_KEY;
     const fieldsWithValues = await Promise.all(
       fields.map(async (field) => {
         const signature = await ctx.db
@@ -290,11 +290,24 @@ export const getFieldsBySigningToken = query({
           }
         }
 
+        // Decrypt signature image data for display
+        const decryptedImageUrl = await decryptSignatureData(signature?.signatureImageUrl, encKey);
+
+        // For payment fields, check payment config status
+        let isPaymentPaid = false;
+        if (field.fieldType === "payment") {
+          const paymentConfig = await ctx.db
+            .query("payment_field_configs")
+            .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+            .first();
+          isPaymentPaid = paymentConfig?.paymentStatus === "paid";
+        }
+
         return {
           ...field,
           currentValue: signature?.value,
-          currentSignatureImageUrl: signature?.signatureImageUrl,
-          isFilled: !!signature,
+          currentSignatureImageUrl: decryptedImageUrl,
+          isFilled: !!signature || isPaymentPaid,
           // Include signature details for display
           signatureDetails: signature
             ? {
@@ -355,6 +368,7 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
       .collect();
 
     // 4. Get existing signatures for these fields with full details
+    const encKey = process.env.SIGNATURE_ENCRYPTION_KEY;
     const fieldsWithValues = await Promise.all(
       fields.map(async (field) => {
         const signature = await ctx.db
@@ -384,11 +398,24 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
           }
         }
 
+        // Decrypt signature image data for display
+        const decryptedImageUrl = await decryptSignatureData(signature?.signatureImageUrl, encKey);
+
+        // For payment fields, check payment config status
+        let isPaymentPaid = false;
+        if (field.fieldType === "payment") {
+          const paymentConfig = await ctx.db
+            .query("payment_field_configs")
+            .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+            .first();
+          isPaymentPaid = paymentConfig?.paymentStatus === "paid";
+        }
+
         return {
           ...field,
           currentValue: signature?.value,
-          currentSignatureImageUrl: signature?.signatureImageUrl,
-          isFilled: !!signature,
+          currentSignatureImageUrl: decryptedImageUrl,
+          isFilled: !!signature || isPaymentPaid,
           // Include signature details for display
           signatureDetails: signature
             ? {

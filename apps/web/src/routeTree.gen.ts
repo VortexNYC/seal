@@ -10,31 +10,38 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LogoTestRouteImport } from './routes/logo-test'
-import { Route as DocsRouteImport } from './routes/docs'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignTokenRouteImport } from './routes/sign.$token'
-import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
 import { Route as AuthAcceptInviteRouteImport } from './routes/_auth/accept-invite'
 import { Route as AuthenticatedSlugIndexRouteImport } from './routes/_authenticated/$slug/index'
 import { Route as AuthenticatedSlugTemplatesRouteImport } from './routes/_authenticated/$slug/templates'
+import { Route as AuthenticatedSlugPaymentsRouteImport } from './routes/_authenticated/$slug/payments'
 import { Route as AuthenticatedSlugHomeRouteImport } from './routes/_authenticated/$slug/home'
 import { Route as AuthenticatedSlugDocumentsRouteImport } from './routes/_authenticated/$slug/documents'
 import { Route as AuthenticatedSlugContactsRouteImport } from './routes/_authenticated/$slug/contacts'
 import { Route as AuthenticatedSlugAnalyticsRouteImport } from './routes/_authenticated/$slug/analytics'
 import { Route as AuthenticatedOnboardingChooseOrganizationIndexRouteImport } from './routes/_authenticated/onboarding/choose-organization/index'
 import { Route as AuthenticatedSlugSettingsIndexRouteImport } from './routes/_authenticated/$slug/settings/index'
+import { Route as AuthenticatedSlugPaymentsIndexRouteImport } from './routes/_authenticated/$slug/payments/index'
 import { Route as AuthenticatedSlugDocumentsIndexRouteImport } from './routes/_authenticated/$slug/documents/index'
 import { Route as AuthenticatedSlugContactsIndexRouteImport } from './routes/_authenticated/$slug/contacts/index'
 import { Route as AuthenticatedSlugSettingsTeamRouteImport } from './routes/_authenticated/$slug/settings/team'
 import { Route as AuthenticatedSlugSettingsProfileRouteImport } from './routes/_authenticated/$slug/settings/profile'
 import { Route as AuthenticatedSlugSettingsPaymentsRouteImport } from './routes/_authenticated/$slug/settings/payments'
 import { Route as AuthenticatedSlugSettingsBillingRouteImport } from './routes/_authenticated/$slug/settings/billing'
+import { Route as AuthenticatedSlugSettingsAiRouteImport } from './routes/_authenticated/$slug/settings/ai'
+import { Route as AuthenticatedSlugPaymentsTaxRouteImport } from './routes/_authenticated/$slug/payments/tax'
+import { Route as AuthenticatedSlugPaymentsSubscriptionsRouteImport } from './routes/_authenticated/$slug/payments/subscriptions'
+import { Route as AuthenticatedSlugPaymentsPayoutsRouteImport } from './routes/_authenticated/$slug/payments/payouts'
+import { Route as AuthenticatedSlugPaymentsHistoryRouteImport } from './routes/_authenticated/$slug/payments/history'
+import { Route as AuthenticatedSlugPaymentsDisputesRouteImport } from './routes/_authenticated/$slug/payments/disputes'
+import { Route as AuthenticatedSlugPaymentsBalancesRouteImport } from './routes/_authenticated/$slug/payments/balances'
 import { Route as AuthenticatedSlugDocumentsDocumentIdRouteImport } from './routes/_authenticated/$slug/documents/$documentId'
 import { Route as AuthenticatedSlugContactsContactIdRouteImport } from './routes/_authenticated/$slug/contacts/$contactId'
 import { Route as AuthenticatedSlugSettingsTeamIndexRouteImport } from './routes/_authenticated/$slug/settings/team/index'
@@ -51,11 +58,6 @@ import { Route as AuthenticatedSlugSettingsDeveloperApiKeysRouteImport } from '.
 const LogoTestRoute = LogoTestRouteImport.update({
   id: '/logo-test',
   path: '/logo-test',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsRoute = DocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -80,11 +82,6 @@ const SignTokenRoute = SignTokenRouteImport.update({
   id: '/sign/$token',
   path: '/sign/$token',
   getParentRoute: () => rootRouteImport,
-} as any)
-const DocsSplatRoute = DocsSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
-  getParentRoute: () => DocsRoute,
 } as any)
 const AuthenticatedSlugRoute = AuthenticatedSlugRouteImport.update({
   id: '/$slug',
@@ -115,6 +112,12 @@ const AuthenticatedSlugTemplatesRoute =
   AuthenticatedSlugTemplatesRouteImport.update({
     id: '/templates',
     path: '/templates',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugPaymentsRoute =
+  AuthenticatedSlugPaymentsRouteImport.update({
+    id: '/payments',
+    path: '/payments',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
 const AuthenticatedSlugHomeRoute = AuthenticatedSlugHomeRouteImport.update({
@@ -152,6 +155,12 @@ const AuthenticatedSlugSettingsIndexRoute =
     path: '/settings/',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
+const AuthenticatedSlugPaymentsIndexRoute =
+  AuthenticatedSlugPaymentsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+  } as any)
 const AuthenticatedSlugDocumentsIndexRoute =
   AuthenticatedSlugDocumentsIndexRouteImport.update({
     id: '/',
@@ -187,6 +196,48 @@ const AuthenticatedSlugSettingsBillingRoute =
     id: '/settings/billing',
     path: '/settings/billing',
     getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugSettingsAiRoute =
+  AuthenticatedSlugSettingsAiRouteImport.update({
+    id: '/settings/ai',
+    path: '/settings/ai',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
+const AuthenticatedSlugPaymentsTaxRoute =
+  AuthenticatedSlugPaymentsTaxRouteImport.update({
+    id: '/tax',
+    path: '/tax',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+  } as any)
+const AuthenticatedSlugPaymentsSubscriptionsRoute =
+  AuthenticatedSlugPaymentsSubscriptionsRouteImport.update({
+    id: '/subscriptions',
+    path: '/subscriptions',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+  } as any)
+const AuthenticatedSlugPaymentsPayoutsRoute =
+  AuthenticatedSlugPaymentsPayoutsRouteImport.update({
+    id: '/payouts',
+    path: '/payouts',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+  } as any)
+const AuthenticatedSlugPaymentsHistoryRoute =
+  AuthenticatedSlugPaymentsHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+  } as any)
+const AuthenticatedSlugPaymentsDisputesRoute =
+  AuthenticatedSlugPaymentsDisputesRouteImport.update({
+    id: '/disputes',
+    path: '/disputes',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+  } as any)
+const AuthenticatedSlugPaymentsBalancesRoute =
+  AuthenticatedSlugPaymentsBalancesRouteImport.update({
+    id: '/balances',
+    path: '/balances',
+    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
   } as any)
 const AuthenticatedSlugDocumentsDocumentIdRoute =
   AuthenticatedSlugDocumentsDocumentIdRouteImport.update({
@@ -264,28 +315,35 @@ const AuthenticatedSlugSettingsDeveloperApiKeysRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
-  '/docs': typeof DocsRouteWithChildren
   '/logo-test': typeof LogoTestRoute
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/$slug': typeof AuthenticatedSlugRouteWithChildren
-  '/docs/$': typeof DocsSplatRoute
   '/sign/$token': typeof SignTokenRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
   '/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
+  '/$slug/payments': typeof AuthenticatedSlugPaymentsRouteWithChildren
   '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
   '/$slug/': typeof AuthenticatedSlugIndexRoute
   '/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
+  '/$slug/payments/balances': typeof AuthenticatedSlugPaymentsBalancesRoute
+  '/$slug/payments/disputes': typeof AuthenticatedSlugPaymentsDisputesRoute
+  '/$slug/payments/history': typeof AuthenticatedSlugPaymentsHistoryRoute
+  '/$slug/payments/payouts': typeof AuthenticatedSlugPaymentsPayoutsRoute
+  '/$slug/payments/subscriptions': typeof AuthenticatedSlugPaymentsSubscriptionsRoute
+  '/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
+  '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
   '/$slug/contacts/': typeof AuthenticatedSlugContactsIndexRoute
   '/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
+  '/$slug/payments/': typeof AuthenticatedSlugPaymentsIndexRoute
   '/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
   '/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
   '/$slug/settings/developer/api-keys': typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
@@ -302,12 +360,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
-  '/docs': typeof DocsRouteWithChildren
   '/logo-test': typeof LogoTestRoute
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
-  '/docs/$': typeof DocsSplatRoute
   '/sign/$token': typeof SignTokenRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
@@ -315,10 +371,18 @@ export interface FileRoutesByTo {
   '/$slug': typeof AuthenticatedSlugIndexRoute
   '/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
+  '/$slug/payments/balances': typeof AuthenticatedSlugPaymentsBalancesRoute
+  '/$slug/payments/disputes': typeof AuthenticatedSlugPaymentsDisputesRoute
+  '/$slug/payments/history': typeof AuthenticatedSlugPaymentsHistoryRoute
+  '/$slug/payments/payouts': typeof AuthenticatedSlugPaymentsPayoutsRoute
+  '/$slug/payments/subscriptions': typeof AuthenticatedSlugPaymentsSubscriptionsRoute
+  '/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
+  '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/$slug/contacts': typeof AuthenticatedSlugContactsIndexRoute
   '/$slug/documents': typeof AuthenticatedSlugDocumentsIndexRoute
+  '/$slug/payments': typeof AuthenticatedSlugPaymentsIndexRoute
   '/$slug/settings': typeof AuthenticatedSlugSettingsIndexRoute
   '/onboarding/choose-organization': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
   '/$slug/settings/developer/api-keys': typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
@@ -338,28 +402,35 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/app': typeof AppRoute
-  '/docs': typeof DocsRouteWithChildren
   '/logo-test': typeof LogoTestRoute
   '/_auth/accept-invite': typeof AuthAcceptInviteRoute
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_authenticated/$slug': typeof AuthenticatedSlugRouteWithChildren
-  '/docs/$': typeof DocsSplatRoute
   '/sign/$token': typeof SignTokenRoute
   '/_authenticated/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/_authenticated/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
   '/_authenticated/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
   '/_authenticated/$slug/home': typeof AuthenticatedSlugHomeRoute
+  '/_authenticated/$slug/payments': typeof AuthenticatedSlugPaymentsRouteWithChildren
   '/_authenticated/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
   '/_authenticated/$slug/': typeof AuthenticatedSlugIndexRoute
   '/_authenticated/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/_authenticated/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
+  '/_authenticated/$slug/payments/balances': typeof AuthenticatedSlugPaymentsBalancesRoute
+  '/_authenticated/$slug/payments/disputes': typeof AuthenticatedSlugPaymentsDisputesRoute
+  '/_authenticated/$slug/payments/history': typeof AuthenticatedSlugPaymentsHistoryRoute
+  '/_authenticated/$slug/payments/payouts': typeof AuthenticatedSlugPaymentsPayoutsRoute
+  '/_authenticated/$slug/payments/subscriptions': typeof AuthenticatedSlugPaymentsSubscriptionsRoute
+  '/_authenticated/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
+  '/_authenticated/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/_authenticated/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/_authenticated/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/_authenticated/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/_authenticated/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
   '/_authenticated/$slug/contacts/': typeof AuthenticatedSlugContactsIndexRoute
   '/_authenticated/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
+  '/_authenticated/$slug/payments/': typeof AuthenticatedSlugPaymentsIndexRoute
   '/_authenticated/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
   '/_authenticated/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
   '/_authenticated/$slug/settings/developer/api-keys': typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
@@ -378,28 +449,35 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
-    | '/docs'
     | '/logo-test'
     | '/accept-invite'
     | '/sign-in'
     | '/sign-up'
     | '/$slug'
-    | '/docs/$'
     | '/sign/$token'
     | '/$slug/analytics'
     | '/$slug/contacts'
     | '/$slug/documents'
     | '/$slug/home'
+    | '/$slug/payments'
     | '/$slug/templates'
     | '/$slug/'
     | '/$slug/contacts/$contactId'
     | '/$slug/documents/$documentId'
+    | '/$slug/payments/balances'
+    | '/$slug/payments/disputes'
+    | '/$slug/payments/history'
+    | '/$slug/payments/payouts'
+    | '/$slug/payments/subscriptions'
+    | '/$slug/payments/tax'
+    | '/$slug/settings/ai'
     | '/$slug/settings/billing'
     | '/$slug/settings/payments'
     | '/$slug/settings/profile'
     | '/$slug/settings/team'
     | '/$slug/contacts/'
     | '/$slug/documents/'
+    | '/$slug/payments/'
     | '/$slug/settings/'
     | '/onboarding/choose-organization/'
     | '/$slug/settings/developer/api-keys'
@@ -416,12 +494,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
-    | '/docs'
     | '/logo-test'
     | '/accept-invite'
     | '/sign-in'
     | '/sign-up'
-    | '/docs/$'
     | '/sign/$token'
     | '/$slug/analytics'
     | '/$slug/home'
@@ -429,10 +505,18 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/$slug/contacts/$contactId'
     | '/$slug/documents/$documentId'
+    | '/$slug/payments/balances'
+    | '/$slug/payments/disputes'
+    | '/$slug/payments/history'
+    | '/$slug/payments/payouts'
+    | '/$slug/payments/subscriptions'
+    | '/$slug/payments/tax'
+    | '/$slug/settings/ai'
     | '/$slug/settings/billing'
     | '/$slug/settings/payments'
     | '/$slug/contacts'
     | '/$slug/documents'
+    | '/$slug/payments'
     | '/$slug/settings'
     | '/onboarding/choose-organization'
     | '/$slug/settings/developer/api-keys'
@@ -451,28 +535,35 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/_authenticated'
     | '/app'
-    | '/docs'
     | '/logo-test'
     | '/_auth/accept-invite'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
     | '/_authenticated/$slug'
-    | '/docs/$'
     | '/sign/$token'
     | '/_authenticated/$slug/analytics'
     | '/_authenticated/$slug/contacts'
     | '/_authenticated/$slug/documents'
     | '/_authenticated/$slug/home'
+    | '/_authenticated/$slug/payments'
     | '/_authenticated/$slug/templates'
     | '/_authenticated/$slug/'
     | '/_authenticated/$slug/contacts/$contactId'
     | '/_authenticated/$slug/documents/$documentId'
+    | '/_authenticated/$slug/payments/balances'
+    | '/_authenticated/$slug/payments/disputes'
+    | '/_authenticated/$slug/payments/history'
+    | '/_authenticated/$slug/payments/payouts'
+    | '/_authenticated/$slug/payments/subscriptions'
+    | '/_authenticated/$slug/payments/tax'
+    | '/_authenticated/$slug/settings/ai'
     | '/_authenticated/$slug/settings/billing'
     | '/_authenticated/$slug/settings/payments'
     | '/_authenticated/$slug/settings/profile'
     | '/_authenticated/$slug/settings/team'
     | '/_authenticated/$slug/contacts/'
     | '/_authenticated/$slug/documents/'
+    | '/_authenticated/$slug/payments/'
     | '/_authenticated/$slug/settings/'
     | '/_authenticated/onboarding/choose-organization/'
     | '/_authenticated/$slug/settings/developer/api-keys'
@@ -492,7 +583,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AppRoute: typeof AppRoute
-  DocsRoute: typeof DocsRouteWithChildren
   LogoTestRoute: typeof LogoTestRoute
   SignTokenRoute: typeof SignTokenRoute
 }
@@ -504,13 +594,6 @@ declare module '@tanstack/react-router' {
       path: '/logo-test'
       fullPath: '/logo-test'
       preLoaderRoute: typeof LogoTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs': {
-      id: '/docs'
-      path: '/docs'
-      fullPath: '/docs'
-      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -547,13 +630,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/sign/$token'
       preLoaderRoute: typeof SignTokenRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/docs/$': {
-      id: '/docs/$'
-      path: '/$'
-      fullPath: '/docs/$'
-      preLoaderRoute: typeof DocsSplatRouteImport
-      parentRoute: typeof DocsRoute
     }
     '/_authenticated/$slug': {
       id: '/_authenticated/$slug'
@@ -595,6 +671,13 @@ declare module '@tanstack/react-router' {
       path: '/templates'
       fullPath: '/$slug/templates'
       preLoaderRoute: typeof AuthenticatedSlugTemplatesRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/payments': {
+      id: '/_authenticated/$slug/payments'
+      path: '/payments'
+      fullPath: '/$slug/payments'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
     '/_authenticated/$slug/home': {
@@ -639,6 +722,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
+    '/_authenticated/$slug/payments/': {
+      id: '/_authenticated/$slug/payments/'
+      path: '/'
+      fullPath: '/$slug/payments/'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
+    }
     '/_authenticated/$slug/documents/': {
       id: '/_authenticated/$slug/documents/'
       path: '/'
@@ -680,6 +770,55 @@ declare module '@tanstack/react-router' {
       fullPath: '/$slug/settings/billing'
       preLoaderRoute: typeof AuthenticatedSlugSettingsBillingRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/ai': {
+      id: '/_authenticated/$slug/settings/ai'
+      path: '/settings/ai'
+      fullPath: '/$slug/settings/ai'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsAiRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/payments/tax': {
+      id: '/_authenticated/$slug/payments/tax'
+      path: '/tax'
+      fullPath: '/$slug/payments/tax'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsTaxRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
+    }
+    '/_authenticated/$slug/payments/subscriptions': {
+      id: '/_authenticated/$slug/payments/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/$slug/payments/subscriptions'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsSubscriptionsRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
+    }
+    '/_authenticated/$slug/payments/payouts': {
+      id: '/_authenticated/$slug/payments/payouts'
+      path: '/payouts'
+      fullPath: '/$slug/payments/payouts'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsPayoutsRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
+    }
+    '/_authenticated/$slug/payments/history': {
+      id: '/_authenticated/$slug/payments/history'
+      path: '/history'
+      fullPath: '/$slug/payments/history'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsHistoryRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
+    }
+    '/_authenticated/$slug/payments/disputes': {
+      id: '/_authenticated/$slug/payments/disputes'
+      path: '/disputes'
+      fullPath: '/$slug/payments/disputes'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsDisputesRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
+    }
+    '/_authenticated/$slug/payments/balances': {
+      id: '/_authenticated/$slug/payments/balances'
+      path: '/balances'
+      fullPath: '/$slug/payments/balances'
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsBalancesRouteImport
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute
     }
     '/_authenticated/$slug/documents/$documentId': {
       id: '/_authenticated/$slug/documents/$documentId'
@@ -816,6 +955,37 @@ const AuthenticatedSlugDocumentsRouteWithChildren =
     AuthenticatedSlugDocumentsRouteChildren,
   )
 
+interface AuthenticatedSlugPaymentsRouteChildren {
+  AuthenticatedSlugPaymentsBalancesRoute: typeof AuthenticatedSlugPaymentsBalancesRoute
+  AuthenticatedSlugPaymentsDisputesRoute: typeof AuthenticatedSlugPaymentsDisputesRoute
+  AuthenticatedSlugPaymentsHistoryRoute: typeof AuthenticatedSlugPaymentsHistoryRoute
+  AuthenticatedSlugPaymentsPayoutsRoute: typeof AuthenticatedSlugPaymentsPayoutsRoute
+  AuthenticatedSlugPaymentsSubscriptionsRoute: typeof AuthenticatedSlugPaymentsSubscriptionsRoute
+  AuthenticatedSlugPaymentsTaxRoute: typeof AuthenticatedSlugPaymentsTaxRoute
+  AuthenticatedSlugPaymentsIndexRoute: typeof AuthenticatedSlugPaymentsIndexRoute
+}
+
+const AuthenticatedSlugPaymentsRouteChildren: AuthenticatedSlugPaymentsRouteChildren =
+  {
+    AuthenticatedSlugPaymentsBalancesRoute:
+      AuthenticatedSlugPaymentsBalancesRoute,
+    AuthenticatedSlugPaymentsDisputesRoute:
+      AuthenticatedSlugPaymentsDisputesRoute,
+    AuthenticatedSlugPaymentsHistoryRoute:
+      AuthenticatedSlugPaymentsHistoryRoute,
+    AuthenticatedSlugPaymentsPayoutsRoute:
+      AuthenticatedSlugPaymentsPayoutsRoute,
+    AuthenticatedSlugPaymentsSubscriptionsRoute:
+      AuthenticatedSlugPaymentsSubscriptionsRoute,
+    AuthenticatedSlugPaymentsTaxRoute: AuthenticatedSlugPaymentsTaxRoute,
+    AuthenticatedSlugPaymentsIndexRoute: AuthenticatedSlugPaymentsIndexRoute,
+  }
+
+const AuthenticatedSlugPaymentsRouteWithChildren =
+  AuthenticatedSlugPaymentsRoute._addFileChildren(
+    AuthenticatedSlugPaymentsRouteChildren,
+  )
+
 interface AuthenticatedSlugSettingsProfileRouteChildren {
   AuthenticatedSlugSettingsProfileIntegrationsRoute: typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
   AuthenticatedSlugSettingsProfileNotificationsRoute: typeof AuthenticatedSlugSettingsProfileNotificationsRoute
@@ -866,8 +1036,10 @@ interface AuthenticatedSlugRouteChildren {
   AuthenticatedSlugContactsRoute: typeof AuthenticatedSlugContactsRouteWithChildren
   AuthenticatedSlugDocumentsRoute: typeof AuthenticatedSlugDocumentsRouteWithChildren
   AuthenticatedSlugHomeRoute: typeof AuthenticatedSlugHomeRoute
+  AuthenticatedSlugPaymentsRoute: typeof AuthenticatedSlugPaymentsRouteWithChildren
   AuthenticatedSlugTemplatesRoute: typeof AuthenticatedSlugTemplatesRoute
   AuthenticatedSlugIndexRoute: typeof AuthenticatedSlugIndexRoute
+  AuthenticatedSlugSettingsAiRoute: typeof AuthenticatedSlugSettingsAiRoute
   AuthenticatedSlugSettingsBillingRoute: typeof AuthenticatedSlugSettingsBillingRoute
   AuthenticatedSlugSettingsPaymentsRoute: typeof AuthenticatedSlugSettingsPaymentsRoute
   AuthenticatedSlugSettingsProfileRoute: typeof AuthenticatedSlugSettingsProfileRouteWithChildren
@@ -883,8 +1055,10 @@ const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
   AuthenticatedSlugContactsRoute: AuthenticatedSlugContactsRouteWithChildren,
   AuthenticatedSlugDocumentsRoute: AuthenticatedSlugDocumentsRouteWithChildren,
   AuthenticatedSlugHomeRoute: AuthenticatedSlugHomeRoute,
+  AuthenticatedSlugPaymentsRoute: AuthenticatedSlugPaymentsRouteWithChildren,
   AuthenticatedSlugTemplatesRoute: AuthenticatedSlugTemplatesRoute,
   AuthenticatedSlugIndexRoute: AuthenticatedSlugIndexRoute,
+  AuthenticatedSlugSettingsAiRoute: AuthenticatedSlugSettingsAiRoute,
   AuthenticatedSlugSettingsBillingRoute: AuthenticatedSlugSettingsBillingRoute,
   AuthenticatedSlugSettingsPaymentsRoute:
     AuthenticatedSlugSettingsPaymentsRoute,
@@ -919,22 +1093,11 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
-interface DocsRouteChildren {
-  DocsSplatRoute: typeof DocsSplatRoute
-}
-
-const DocsRouteChildren: DocsRouteChildren = {
-  DocsSplatRoute: DocsSplatRoute,
-}
-
-const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AppRoute: AppRoute,
-  DocsRoute: DocsRouteWithChildren,
   LogoTestRoute: LogoTestRoute,
   SignTokenRoute: SignTokenRoute,
 }

@@ -34,6 +34,7 @@
 /dist/
 dist/
 dist
+.output/
 
 # misc
 .DS_Store
@@ -82,3 +83,15 @@ localhost-*.log
 .playwright-mcp/
 apps/web/.env.test
 sample-doc.pdf
+.playwright-cli/
+
+# Auth state files (local dev)
+apps/backend/auth-state.json
+apps/backend/seal-auth
+
+# Ad-hoc screenshots and test documents
+apps/backend/*.png
+apps/backend/*.pdf
+
+# Generated reference docs
+docs/app-feature-map.md

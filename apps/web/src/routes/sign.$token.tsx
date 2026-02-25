@@ -17,6 +17,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   ClockIcon,
+  CreditCardIcon,
   DownloadIcon,
   FileTextIcon,
   Loader2Icon,
@@ -27,11 +28,13 @@ import {
   WifiOffIcon,
   XCircleIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { toast } from "sonner";
 
+import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog";
 import { FieldInputManager } from "@/components/documents/field-input-manager";
+import { PaymentFieldSummary } from "@/components/documents/field-inputs";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { SignatureCapture } from "@/components/documents/signature-capture";
 
@@ -97,12 +100,43 @@ function SigningPage() {
 
   const { recipient, document: doc } = data;
 
+  // ESIGN consent state — skip modal if already consented
+  const [hasConsented, setHasConsented] = useState(!!recipient.esignConsentAt);
+  const [isConsentSubmitting, setIsConsentSubmitting] = useState(false);
+
   // Fetch fields assigned to this recipient
   const { data: fields = [], refetch: refetchFields } = useSuspenseQuery(
     convexQuery(api.signature_fields.queries.getFieldsBySigningToken, {
       signingToken: token,
     }),
   );
+
+  // Load payment configs for payment field overlays
+  const { data: paymentConfigs = [] } = useSuspenseQuery(
+    convexQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
+      documentId: doc._id,
+    }),
+  );
+
+  const paymentInfoByFieldId = useMemo(() => {
+    const map = new Map<
+      string,
+      { totalAmountCents: number; currency: string; paymentStatus?: string }
+    >();
+    for (const config of paymentConfigs) {
+      map.set(config.fieldId, {
+        totalAmountCents: config.totalAmountCents,
+        currency: config.currency,
+        paymentStatus: config.paymentStatus,
+      });
+    }
+    return map;
+  }, [paymentConfigs]);
+
+  // Check if all payment fields are paid (blocks signing if not)
+  const hasUnpaidPayments = useMemo(() => {
+    return paymentConfigs.some((config) => config.paymentStatus !== "paid");
+  }, [paymentConfigs]);
 
   // PDF viewer state
   const [numPages, setNumPages] = useState<number | null>(null);
@@ -135,6 +169,59 @@ function SigningPage() {
 
   // Download state
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Client IP for audit trail (fetched from Convex HTTP endpoint)
+  const [clientIp, setClientIp] = useState("unknown");
+  useEffect(() => {
+    const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
+    if (!convexUrl) return;
+    const siteUrl = convexUrl.replace(".convex.cloud", ".convex.site");
+    fetch(`${siteUrl}/api/v1/ip`)
+      .then((res) => res.json())
+      .then((data: { ip: string }) => setClientIp(data.ip))
+      .catch(() => {
+        // Silently fall back to "unknown" — IP is best-effort
+      });
+  }, []);
+
+  // ESIGN consent handlers
+  const handleConsentAccept = useCallback(async () => {
+    setIsConsentSubmitting(true);
+    try {
+      await convexClient.mutation(api.documents.recipients_mutations.recordEsignConsent, {
+        signingToken: token,
+        ipAddress: clientIp,
+        consentVersion: "1.0",
+      });
+      setHasConsented(true);
+    } catch (error) {
+      toast.error("Failed to record consent. Please try again.");
+      console.error("ESIGN consent error:", error);
+    } finally {
+      setIsConsentSubmitting(false);
+    }
+  }, [convexClient, token, clientIp]);
+
+  const handleConsentDecline = useCallback(() => {
+    // The decline state is handled inside the consent dialog component.
+    // If the user truly wants to leave, they navigate away themselves.
+  }, []);
+
+  const handleOptOut = useCallback(
+    async (method: string) => {
+      try {
+        await convexClient.mutation(api.documents.recipients_mutations.recordEsignOptOut, {
+          signingToken: token,
+          ipAddress: clientIp,
+          method,
+        });
+      } catch (error) {
+        // Opt-out logging is best-effort — don't block the user's action
+        console.error("Failed to log opt-out:", error);
+      }
+    },
+    [convexClient, token, clientIp],
+  );
 
   // Track online/offline status
   useEffect(() => {
@@ -204,6 +291,7 @@ function SigningPage() {
           await convexClient.mutation(api.documents.recipients_mutations.submitRecipientSignature, {
             signingToken: token,
             status: "viewed",
+            ipAddress: clientIp,
           });
         } catch (error) {
           // Silent failure - viewing tracking is not critical
@@ -212,7 +300,7 @@ function SigningPage() {
       }
     };
     markAsViewed();
-  }, [convexClient, token, recipient.status]);
+  }, [convexClient, token, recipient.status, clientIp]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -242,6 +330,7 @@ function SigningPage() {
           status,
           signatureData: status === "signed" ? signatureData : undefined,
           signatureType: status === "signed" ? signatureType : undefined,
+          ipAddress: clientIp,
         },
       );
     },
@@ -308,6 +397,7 @@ function SigningPage() {
           signingToken: token,
           status: "declined",
           declineReason: reason,
+          ipAddress: clientIp,
         },
       );
     },
@@ -381,7 +471,7 @@ function SigningPage() {
       fieldId: activeFieldId,
       value,
       signatureImageUrl,
-      ipAddress: "0.0.0.0", // TODO: Get actual IP
+      ipAddress: clientIp,
       userAgent: navigator.userAgent,
     });
 
@@ -408,6 +498,9 @@ function SigningPage() {
     recipient.status === "signed" ||
     recipient.status === "approved" ||
     recipient.status === "declined";
+
+  // Check if document is waiting for payment (all signed, payment pending)
+  const isWaitingForPayment = doc.workflowStatus === "waiting_for_payment";
 
   // Sort fields by page and position for navigation
   const sortedFields = [...fields].sort((a, b) => {
@@ -538,6 +631,21 @@ function SigningPage() {
   };
 
   const statusBadge = getStatusBadge(recipient.status);
+
+  // Show ESIGN consent modal before allowing document access
+  // Skip for recipients who already consented or are in a terminal state
+  if (!hasConsented && !isCompleted) {
+    return (
+      <EsignConsentDialog
+        recipientEmail={recipient.email}
+        onAccept={handleConsentAccept}
+        onDecline={handleConsentDecline}
+        onDownloadPdf={handleDownload}
+        onOptOut={handleOptOut}
+        isSubmitting={isConsentSubmitting}
+      />
+    );
+  }
 
   return (
     <div className="dark:bg-background flex h-screen flex-col overflow-hidden bg-[#FAFAF9]">
@@ -890,6 +998,70 @@ function SigningPage() {
                   </div>
                 </>
               )}
+
+            {/* Payment Section — shown before signing when payment is required */}
+            {!isCompleted && hasUnpaidPayments && paymentConfigs.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                    <div className="flex items-start gap-3">
+                      <CreditCardIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                          Payment Required
+                        </p>
+                        <p className="mt-0.5 text-xs text-amber-700/70 dark:text-amber-300/70">
+                          Please complete payment below before signing.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {paymentConfigs
+                    .filter((c) => c.paymentStatus !== "paid" && c.paymentStatus !== "cancelled")
+                    .map((config) => (
+                      <PaymentFieldSummary
+                        key={config._id}
+                        fieldId={config.fieldId}
+                        token={token}
+                        showInlinePayment
+                      />
+                    ))}
+                </div>
+              </>
+            )}
+
+            {/* Payment Section — shown after signing when document is waiting for payment */}
+            {isCompleted && isWaitingForPayment && paymentConfigs.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                    <div className="flex items-start gap-3">
+                      <CreditCardIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                          Payment Required
+                        </p>
+                        <p className="mt-0.5 text-xs text-amber-700/70 dark:text-amber-300/70">
+                          All signatures collected. Please complete payment below.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {paymentConfigs
+                    .filter((c) => c.paymentStatus !== "paid" && c.paymentStatus !== "cancelled")
+                    .map((config) => (
+                      <PaymentFieldSummary
+                        key={config._id}
+                        fieldId={config.fieldId}
+                        token={token}
+                        showInlinePayment
+                      />
+                    ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Sidebar Footer - Actions */}
@@ -900,7 +1072,7 @@ function SigningPage() {
                   size="lg"
                   className="h-12 w-full text-base font-medium shadow-sm transition-shadow hover:shadow"
                   onClick={handleSignButtonClick}
-                  disabled={submitSignatureMutation.isPending}
+                  disabled={submitSignatureMutation.isPending || hasUnpaidPayments}
                 >
                   {submitSignatureMutation.isPending ? (
                     "Submitting..."
@@ -1118,6 +1290,7 @@ function SigningPage() {
                                   isFilled={field.isFilled}
                                   isActive={!isCompleted && activeFieldId === field._id}
                                   signatureDetails={field.signatureDetails}
+                                  paymentInfo={paymentInfoByFieldId.get(field._id)}
                                   onClick={isCompleted ? () => {} : handleFieldClick}
                                 />
                               );
@@ -1193,7 +1366,7 @@ function SigningPage() {
 
           {/* Mobile Action Bar - Fixed at bottom on mobile */}
           {!isCompleted && !showSignatureCapture && (
-            <div className="dark:bg-background/95 border-border/50 safe-area-inset-bottom sticky bottom-0 z-40 border-t bg-white/95 p-4 backdrop-blur-xl lg:hidden">
+            <div className="dark:bg-background/95 border-border/50 sticky bottom-0 z-40 border-t bg-white/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
               <div className="flex gap-3">
                 <Button
                   variant="outline"
@@ -1231,7 +1404,7 @@ function SigningPage() {
 
           {/* Mobile Completed Footer */}
           {isCompleted && (
-            <div className="dark:bg-background/95 border-border/50 safe-area-inset-bottom sticky bottom-0 z-40 border-t bg-white/95 p-4 backdrop-blur-xl lg:hidden">
+            <div className="dark:bg-background/95 border-border/50 sticky bottom-0 z-40 border-t bg-white/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
               {recipient.status !== "declined" ? (
                 <Button
                   variant="outline"
@@ -1326,6 +1499,7 @@ function SigningPage() {
           properties={fields.find((f) => f._id === activeFieldId)?.properties}
           onSave={handleFieldSave}
           recipientName={recipient.name}
+          signingToken={token}
         />
       )}
     </div>

@@ -16,6 +16,7 @@ import { ConvexError } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
+import { findRecipientByToken } from "../documents/recipient_helpers";
 import type { RecipientRole } from "../schemas/document_recipients";
 
 /**
@@ -53,11 +54,8 @@ export const recipientQuery = customQuery(
   customCtx(async (ctx) => {
     // Helper to validate token and get recipient context
     const validateRecipientToken = async (signingToken: string): Promise<RecipientContext> => {
-      // Use document_recipients table with by_token index
-      const recipient = await ctx.db
-        .query("document_recipients")
-        .withIndex("by_token", (q) => q.eq("signingToken", signingToken))
-        .first();
+      // Hash-based lookup with plaintext fallback for pre-migration records
+      const recipient = await findRecipientByToken(ctx, signingToken);
 
       if (!recipient) {
         throw new ConvexError({
@@ -127,11 +125,8 @@ export const recipientMutation = customMutation(
   customCtx(async (ctx) => {
     // Helper to validate token and get recipient context
     const validateRecipientToken = async (signingToken: string): Promise<RecipientContext> => {
-      // Use document_recipients table with by_token index
-      const recipient = await ctx.db
-        .query("document_recipients")
-        .withIndex("by_token", (q) => q.eq("signingToken", signingToken))
-        .first();
+      // Hash-based lookup with plaintext fallback for pre-migration records
+      const recipient = await findRecipientByToken(ctx, signingToken);
 
       if (!recipient) {
         throw new ConvexError({

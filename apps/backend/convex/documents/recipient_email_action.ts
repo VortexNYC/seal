@@ -28,10 +28,13 @@ export const markDocumentAsCompleted = internalMutation({
 
     // Only update if not already completed
     if (document.workflowStatus !== "completed") {
+      const now = Date.now();
+      const SEVEN_YEARS_MS = 7 * 365.25 * 24 * 60 * 60 * 1000;
       await ctx.db.patch(args.documentId, {
         workflowStatus: "completed",
-        completedAt: Date.now(),
-        updatedAt: Date.now(),
+        completedAt: now,
+        updatedAt: now,
+        retainUntil: now + SEVEN_YEARS_MS,
       });
     }
 
@@ -138,6 +141,13 @@ export const sendPostSignatureEmails = internalAction({
         documentId: args.documentId,
       });
 
+      // 5b. Schedule certificate of completion generation (async, non-blocking)
+      await ctx.scheduler.runAfter(
+        0,
+        internal.documents.certificate_of_completion.generateCertificate,
+        { documentId: args.documentId },
+      );
+
       // 6. Get document owner info
       const owner: Doc<"users"> | null = await ctx.runQuery(
         internal.organizations.helpers.getUserById,
@@ -155,15 +165,24 @@ export const sendPostSignatureEmails = internalAction({
             completedAt: r.signedAt || r.approvedAt || r.viewedAt || Date.now(),
           }));
 
-        // Build document URL
+        // Generate time-limited download token for the owner
+        const downloadToken = await ctx.runMutation(
+          internal.documents.download_tokens.generateTokenInternal,
+          { documentId: document._id, issuedTo: owner.email },
+        );
+
+        // Build document URL with secure download link
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+        const convexSiteUrl = process.env.CONVEX_SITE_URL || baseUrl;
         const documentUrl = `${baseUrl}/documents/${document._id}`;
+        const downloadUrl = `${convexSiteUrl}/download?token=${downloadToken}`;
 
         const completionResult = await sendDocumentCompleted({
           to: owner.email,
           senderName: owner.name || owner.email,
           documentName: document.name,
           documentUrl,
+          downloadUrl,
           completedAt: Date.now(),
           recipientsSummary,
         });

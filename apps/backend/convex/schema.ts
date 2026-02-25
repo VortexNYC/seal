@@ -1,9 +1,19 @@
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
 
+import {
+  aiDocumentAnnotationsTable,
+  type AnnotationCategory,
+  type AnnotationSeverity,
+} from "./schemas/ai_document_annotations";
+import { aiFieldSuggestionsTable } from "./schemas/ai_field_suggestions";
+import { aiProgressTable } from "./schemas/ai_progress";
+import { aiThreadsTable } from "./schemas/ai_threads";
+import { aiUsageLogTable } from "./schemas/ai_usage_log";
 import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
 import { type AuditAction, type AuditResourceType, auditLogsTable } from "./schemas/audit_logs";
 import { type ContactStatus, contactsTable } from "./schemas/contacts";
+import { dataExportsTable } from "./schemas/data_exports";
 import { type DocumentPermissionLevel, documentAccessTable } from "./schemas/document_access";
 import { documentInvoicesTable } from "./schemas/document_invoices";
 import {
@@ -16,7 +26,9 @@ import {
   type ReminderStatus,
   type ReminderType,
 } from "./schemas/document_reminders";
+import { type DocumentVersionChangeType, documentVersionsTable } from "./schemas/document_versions";
 import { type DocumentSharingMode, type DocumentStatus, documentsTable } from "./schemas/documents";
+import { downloadTokensTable } from "./schemas/download_tokens";
 import { type EmailStatus, type EmailType, emailLogsTable } from "./schemas/email_logs";
 import {
   mcpOauthClientsTable,
@@ -36,6 +48,13 @@ import {
   organizationsTable,
   type organizationTypeTuple,
 } from "./schemas/organizations";
+import {
+  type DueDateTerms,
+  type PaymentMethod,
+  type PaymentStatus,
+  type PaymentType,
+  paymentFieldConfigsTable,
+} from "./schemas/payment_field_configs";
 import { rateLimitBucketsTable, type WindowType } from "./schemas/rate_limits";
 import {
   type AuthenticationMethod,
@@ -90,7 +109,12 @@ export type {
 };
 
 // Re-export document types
-export type { DocumentPermissionLevel, DocumentSharingMode, DocumentStatus };
+export type {
+  DocumentPermissionLevel,
+  DocumentSharingMode,
+  DocumentStatus,
+  DocumentVersionChangeType,
+};
 export type { RecipientRole, DocumentRecipientStatus };
 export type { ReminderStatus, ReminderType };
 export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";
@@ -125,6 +149,12 @@ export type { StripeAccountType, StripeFeeHandling };
 // Re-export subscription coupon/promo types
 export type { SubscriptionCouponDuration, SubscriptionCouponType, SubscriptionPromoCodeStatus };
 
+// Re-export payment field config types
+export type { DueDateTerms, PaymentMethod, PaymentStatus, PaymentType };
+
+// Re-export AI annotation types
+export type { AnnotationCategory, AnnotationSeverity };
+
 export default defineSchema({
   users: usersTable,
   user_profiles: userProfilesTable,
@@ -134,6 +164,7 @@ export default defineSchema({
   organization_roles: organizationRolesTable,
 
   documents: documentsTable,
+  document_versions: documentVersionsTable,
   document_invoices: documentInvoicesTable,
   document_access: documentAccessTable,
   document_recipients: documentRecipientsTable,
@@ -144,9 +175,11 @@ export default defineSchema({
   signature_fields: signatureFieldsTable,
   signatures: signaturesTable,
   saved_signatures: savedSignaturesTable,
+  payment_field_configs: paymentFieldConfigsTable,
 
   // Audit and compliance
   audit_logs: auditLogsTable,
+  download_tokens: downloadTokensTable,
 
   // Email tracking
   email_logs: emailLogsTable,
@@ -179,6 +212,16 @@ export default defineSchema({
 
   // Rate limiting
   rate_limit_buckets: rateLimitBucketsTable,
+
+  // Data exports (GDPR/CCPA compliance)
+  data_exports: dataExportsTable,
+
+  // AI
+  ai_field_suggestions: aiFieldSuggestionsTable,
+  ai_document_annotations: aiDocumentAnnotationsTable,
+  ai_threads: aiThreadsTable,
+  ai_progress: aiProgressTable,
+  ai_usage_log: aiUsageLogTable,
 
   // MCP OAuth
   mcp_oauth_clients: mcpOauthClientsTable,

@@ -12,6 +12,7 @@ import {
   requireActiveMembership,
 } from "../auth/access_control";
 import { documentWorkflowStatusTuple } from "../schemas/document_workflow_status";
+import { findRecipientByToken } from "./recipient_helpers";
 
 /**
  * Get storage URL by storage ID
@@ -339,17 +340,91 @@ export const getDocumentComplete = authQuery({
 });
 
 /**
+ * Get all versions for a document, ordered by version number descending (newest first)
+ * Enriched with creator user info (name, email, avatar)
+ */
+export const getDocumentVersions = authQuery({
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+
+    // Access check — ensures user can view this document
+    await getDocumentWithAccessCheck(ctx, userId, args.documentId);
+
+    const versions = await ctx.db
+      .query("document_versions")
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .order("desc")
+      .collect();
+
+    // Enrich with creator user info
+    const enrichedVersions = await Promise.all(
+      versions.map(async (version) => {
+        const creator = await ctx.db.get(version.createdBy);
+        return {
+          ...version,
+          creator: creator
+            ? { _id: creator._id, name: creator.name, email: creator.email, avatar: creator.avatar }
+            : null,
+        };
+      }),
+    );
+
+    return enrichedVersions;
+  },
+});
+
+/**
+ * Get a single version by document + version number
+ * Includes a storage URL for the snapshot's PDF
+ */
+export const getDocumentVersion = authQuery({
+  args: {
+    documentId: v.id("documents"),
+    versionNumber: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+
+    // Access check
+    await getDocumentWithAccessCheck(ctx, userId, args.documentId);
+
+    const version = await ctx.db
+      .query("document_versions")
+      .withIndex("by_document", (q) =>
+        q.eq("documentId", args.documentId).eq("versionNumber", args.versionNumber),
+      )
+      .first();
+
+    if (!version) {
+      throw new ConvexError(`Version ${args.versionNumber} not found`);
+    }
+
+    // Get storage URL and creator info in parallel
+    const [storageUrl, creator] = await Promise.all([
+      ctx.storage.getUrl(version.snapshot.storageId),
+      ctx.db.get(version.createdBy),
+    ]);
+
+    return {
+      ...version,
+      storageUrl,
+      creator: creator
+        ? { _id: creator._id, name: creator.name, email: creator.email, avatar: creator.avatar }
+        : null,
+    };
+  },
+});
+
+/**
  * Get document URL for public signing page (no auth required)
  * Validates access via signing token
  */
 export const getDocumentUrlByToken = query({
   args: { signingToken: v.string() },
   handler: async (ctx, args) => {
-    // 1. Find recipient by signing token
-    const recipient = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
-      .first();
+    // 1. Find recipient by signing token (hash-based lookup with plaintext fallback)
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
 
     if (!recipient) {
       throw new ConvexError("Invalid signing token");
@@ -373,6 +448,40 @@ export const getDocumentUrlByToken = query({
     }
 
     return url;
+  },
+});
+
+/**
+ * Full-text search across document content
+ * Uses Convex search index on extractedText
+ */
+export const searchDocuments = authQuery({
+  args: {
+    query: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const organizationId = ctx.auth.organization._id;
+    const maxResults = args.limit ?? 20;
+
+    const results = await ctx.db
+      .query("documents")
+      .withSearchIndex("search_text", (q) =>
+        q
+          .search("extractedText", args.query)
+          .eq("organizationId", organizationId)
+          .eq("status", "active"),
+      )
+      .take(maxResults);
+
+    return results.map((doc) => ({
+      _id: doc._id,
+      name: doc.name,
+      description: doc.description,
+      workflowStatus: doc.workflowStatus,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    }));
   },
 });
 

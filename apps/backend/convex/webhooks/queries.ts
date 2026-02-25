@@ -37,8 +37,11 @@ export const listEndpoints = permissionQuery("settings:integrations")({
           (d) => d.status === "failed" || d.status === "abandoned",
         ).length;
 
+        // Strip secret fields — never send raw secret or hash to client
+        const { secret: _secret, secretHash: _secretHash, ...safeEndpoint } = endpoint;
+
         return {
-          ...endpoint,
+          ...safeEndpoint,
           stats: {
             recentDeliveries: recentDeliveries.length,
             delivered,
@@ -79,7 +82,9 @@ export const getEndpoint = permissionQuery("settings:integrations")({
       return null;
     }
 
-    return endpoint;
+    // Strip secret fields — never send raw secret or hash to client
+    const { secret: _secret, secretHash: _secretHash, ...safeEndpoint } = endpoint;
+    return safeEndpoint;
   },
 });
 

@@ -9,6 +9,7 @@
 
 import { v } from "convex/values";
 
+import { internal } from "../../_generated/api";
 import { internalMutation, internalQuery } from "../../_generated/server";
 
 /**
@@ -390,7 +391,16 @@ export const sendReminder = internalMutation({
       };
     }
 
-    // TODO: Trigger reminder email via action
+    // Schedule reminder email as a background action
+    await ctx.scheduler.runAfter(
+      0,
+      internal.documents.reminder_email_action.sendReminderEmailDirect,
+      {
+        documentId: args.documentId,
+        recipientId: args.recipientId,
+        customMessage: args.message,
+      },
+    );
 
     return { success: true };
   },

@@ -157,7 +157,7 @@ export const grantAccess = permissionMutation("documents:share")({
         recipientUserId: args.userId,
         sharedByUserId: currentUserId,
         permissionLevel: args.permissionLevel,
-        notificationId,
+        notificationId: notificationId ?? undefined,
       },
     );
 
@@ -276,7 +276,7 @@ export const grantAccessBulk = permissionMutation("documents:share")({
           recipientUserId: userId,
           sharedByUserId: currentUserId,
           permissionLevel,
-          notificationId,
+          notificationId: notificationId ?? undefined,
         },
       );
 

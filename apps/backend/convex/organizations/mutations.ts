@@ -840,3 +840,34 @@ export const cleanupExpiredInvitations = internalMutation({
     return { expiredCount };
   },
 });
+
+// ---------------------------------------------------------------------------
+// AI workspace settings (admin-only)
+// ---------------------------------------------------------------------------
+
+export const updateAiSettings = adminMutation({
+  args: {
+    aiEnabled: v.optional(v.boolean()),
+    aiAutoAnalyze: v.optional(v.boolean()),
+    aiShowRedlinesToSigners: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(ctx.auth.organization._id);
+    if (!org) throw new ConvexError("Organization not found");
+
+    const current = org.aiSettings ?? {
+      aiEnabled: true,
+      aiAutoAnalyze: true,
+      aiShowRedlinesToSigners: false,
+    };
+
+    await ctx.db.patch(org._id, {
+      aiSettings: {
+        aiEnabled: args.aiEnabled ?? current.aiEnabled,
+        aiAutoAnalyze: args.aiAutoAnalyze ?? current.aiAutoAnalyze,
+        aiShowRedlinesToSigners: args.aiShowRedlinesToSigners ?? current.aiShowRedlinesToSigners,
+      },
+      updatedAt: Date.now(),
+    });
+  },
+});

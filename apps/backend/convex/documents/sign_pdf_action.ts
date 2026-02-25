@@ -39,9 +39,9 @@ export const signPdfDocument = action({
       throw new ConvexError("Document not found");
     }
 
-    // 2. Get all signatures for this document
+    // 2. Get all signatures for this document (decrypted for PDF embedding)
     const signatures: Doc<"signatures">[] = await ctx.runQuery(
-      internal.signatures.queries.getSignaturesByDocumentInternal,
+      internal.signatures.queries.getDecryptedSignaturesByDocumentInternal,
       { documentId: args.documentId },
     );
 
@@ -772,9 +772,9 @@ export const generateAndGetSignedPdfByToken = action({
       }
     }
 
-    // 5. Get all signatures for this document
+    // 5. Get all signatures for this document (decrypted for PDF embedding)
     const signatures = await ctx.runQuery(
-      internal.signatures.queries.getSignaturesByDocumentInternal,
+      internal.signatures.queries.getDecryptedSignaturesByDocumentInternal,
       {
         documentId: document._id,
       },

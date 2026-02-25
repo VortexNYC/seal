@@ -1,0 +1,16 @@
+export { HeroBlockComponent, StaticHero } from "./hero-block";
+export { FeaturesBlockComponent, StaticFeatures } from "./features-block";
+export { PricingBlockComponent, StaticPricing } from "./pricing-block";
+export { FaqBlockComponent, StaticFaq, staticFaqs } from "./faq-block";
+export { CtaBlockComponent, StaticCta } from "./cta-block";
+export { StaticAi } from "./ai-block";
+export { StaticDevelopers } from "./developers-block";
+export { StaticProductShowcase } from "./product-showcase-block";
+export { StaticComparison } from "./comparison-block";
+export { StaticStatement } from "./statement-block";
+export { StaticTrust } from "./trust-block";
+export { TestimonialsBlockComponent } from "./testimonials-block";
+export { LogoCloudBlockComponent } from "./logo-cloud-block";
+export { ComparisonTableBlockComponent } from "./comparison-table-block";
+export { TemplatePreviewBlockComponent } from "./template-preview-block";
+export { LegalDisclaimerBlockComponent } from "./legal-disclaimer-block";

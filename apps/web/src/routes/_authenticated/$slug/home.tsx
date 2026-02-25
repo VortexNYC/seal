@@ -12,13 +12,21 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import {
+  ActivityIcon,
   ArrowRightIcon,
+  BarChart3Icon,
   CheckCircle2Icon,
   ClockIcon,
+  FileEditIcon,
+  FilePlusIcon,
   FileTextIcon,
+  MailIcon,
+  PenToolIcon,
   TrendingUpIcon,
   UploadIcon,
+  UserPlusIcon,
   UsersIcon,
+  XCircleIcon,
 } from "lucide-react";
 import { Suspense, useMemo } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -328,16 +336,121 @@ function QuickActions() {
         <Button
           variant="outline"
           className="min-h-[44px] w-full justify-start"
-          onClick={() =>
-            router.navigate({
-              to: "/$slug/settings/team",
-              params: { slug },
-            })
-          }
+          onClick={() => router.navigate({ to: "/$slug/documents", params: { slug } })}
         >
-          <UsersIcon className="mr-2 h-4 w-4" />
-          Invite Team Member
+          <FileTextIcon className="mr-2 h-4 w-4" />
+          View All Documents
         </Button>
+        <Button
+          variant="outline"
+          className="min-h-[44px] w-full justify-start"
+          onClick={() => router.navigate({ to: "/$slug/analytics", params: { slug } })}
+        >
+          <BarChart3Icon className="mr-2 h-4 w-4" />
+          View Analytics
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+const ACTION_LABELS: Record<string, { label: string; icon: typeof ActivityIcon }> = {
+  "document.created": { label: "created a document", icon: FilePlusIcon },
+  "document.updated": { label: "updated a document", icon: FileEditIcon },
+  "document.deleted": { label: "deleted a document", icon: XCircleIcon },
+  "document.sent": { label: "sent a document for signing", icon: MailIcon },
+  "document.viewed": { label: "viewed a document", icon: FileTextIcon },
+  "document.completed": { label: "completed a document", icon: CheckCircle2Icon },
+  "document.cancelled": { label: "cancelled a document", icon: XCircleIcon },
+  "recipient.added": { label: "added a recipient", icon: UserPlusIcon },
+  "recipient.signed": { label: "signed a document", icon: PenToolIcon },
+  "recipient.declined": { label: "declined to sign", icon: XCircleIcon },
+  "recipient.viewed": { label: "viewed a document", icon: FileTextIcon },
+  "member.invited": { label: "invited a team member", icon: UserPlusIcon },
+  "member.joined": { label: "joined the team", icon: UsersIcon },
+  "member.removed": { label: "removed a team member", icon: XCircleIcon },
+};
+
+function getActionLabel(action: string): { label: string; icon: typeof ActivityIcon } {
+  return ACTION_LABELS[action] ?? { label: action.replace(".", " "), icon: ActivityIcon };
+}
+
+function RecentActivity() {
+  const activities = useQuery(api.dashboard.queries.getRecentActivity, { limit: 10 });
+
+  const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMinutes < 1) return "Just now";
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  if (activities === undefined) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>Latest actions in your workspace</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex animate-pulse items-center gap-3">
+                <div className="bg-muted h-8 w-8 rounded-full" />
+                <div className="flex-1">
+                  <div className="bg-muted mb-1 h-4 w-3/4 rounded" />
+                  <div className="bg-muted h-3 w-1/4 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent Activity</CardTitle>
+        <CardDescription>Latest actions in your workspace</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {activities.length === 0 ? (
+          <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
+            No recent activity
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {activities.map((activity) => {
+              const { label, icon: Icon } = getActionLabel(activity.action);
+              return (
+                <div key={activity._id} className="flex items-start gap-3">
+                  <div className="bg-muted flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                    <Icon className="text-muted-foreground h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm">
+                      <span className="font-medium">{activity.actorName}</span>{" "}
+                      <span className="text-muted-foreground">{label}</span>
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {formatTimestamp(activity.timestamp)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -507,6 +620,9 @@ function WorkspaceHome() {
 
           <QuickActions />
         </div>
+
+        {/* Recent Activity */}
+        <RecentActivity />
 
         {/* Team Info Card */}
         <Card>

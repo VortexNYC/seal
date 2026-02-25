@@ -2,16 +2,21 @@ import { useUser } from "@clerk/clerk-react";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouteContext, useRouter } from "@tanstack/react-router";
-import { useAction, useMutation } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import {
   ActivityIcon,
   ArrowLeftIcon,
   ChevronDownIcon,
+  EyeIcon,
+  EyeOffIcon,
   FileSignatureIcon,
   FileTextIcon,
   InfoIcon,
+  Loader2Icon,
+  MessageSquareIcon,
   PlusIcon,
   SaveIcon,
+  ScanSearchIcon,
   SendIcon,
   SettingsIcon,
   UserIcon,
@@ -28,11 +33,23 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDate, formatFileSize, formatRelativeTime, getInitials } from "@/lib/formatting";
 import { countSignatureFields } from "@/lib/signature-fields";
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";
+import {
+  AIAnnotationOverlays,
+  AIInsightsPanel,
+  useDocumentAnnotations,
+} from "../../../../components/documents/ai-annotation-overlays";
+import { AIChatPanel } from "../../../../components/documents/ai-chat-panel";
+import {
+  AIFieldOverlays,
+  AIFieldReviewBar,
+  useAIFieldSuggestions,
+} from "../../../../components/documents/ai-field-suggestions";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
 import { DocumentProgressRing } from "../../../../components/documents/document-progress-ring";
 import { DocumentStatusHero } from "../../../../components/documents/document-status-hero";
@@ -48,8 +65,9 @@ import {
 import { FieldPropertiesDialog } from "../../../../components/documents/field-properties-dialog";
 import type { FieldType } from "../../../../components/documents/field-toolbar";
 import { FieldToolbar } from "../../../../components/documents/field-toolbar";
+import { useDocumentThread } from "../../../../components/documents/hooks/use-document-thread";
 import { InAppSigningSection } from "../../../../components/documents/in-app-signing-section";
-import { InvoiceSidebarSection } from "../../../../components/documents/invoice-sidebar-section";
+import { PaymentConfigModal } from "../../../../components/documents/payment-config-modal";
 import { PdfPageWithCanvas } from "../../../../components/documents/pdf-page-with-canvas";
 import { PdfViewerControls } from "../../../../components/documents/pdf-viewer-controls";
 import { RecipientOptionsDialog } from "../../../../components/documents/recipient-options-dialog";
@@ -108,6 +126,7 @@ function DocumentDetailPage() {
   const [pdfWidth, setPdfWidth] = useState(700);
   const [pdfHeight, setPdfHeight] = useState(900); // Default height, updated on page load
   const containerRef = useRef<HTMLDivElement>(null);
+  const pdfWrapperRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // SEA-89: Field drag state
@@ -146,6 +165,12 @@ function DocumentDetailPage() {
   const [showFieldProperties, setShowFieldProperties] = useState(false);
   const [fieldPropertiesId, setFieldPropertiesId] = useState<string | null>(null);
 
+  // Payment config modal
+  const [showPaymentConfigModal, setShowPaymentConfigModal] = useState(false);
+  const [paymentConfigFieldId, setPaymentConfigFieldId] = useState<Id<"signature_fields"> | null>(
+    null,
+  );
+
   const { data: documentData, refetch: refetchDocument } = useSuspenseQuery(
     convexQuery(api.documents.queries.getDocument, {
       documentId: documentId as Id<"documents">,
@@ -179,6 +204,29 @@ function DocumentDetailPage() {
     }),
   );
 
+  // Load payment configs for canvas display (shows total amount on payment fields)
+  const { data: paymentConfigs = [] } = useSuspenseQuery(
+    convexQuery(api.payment_fields.queries.getPaymentConfigsByDocument, {
+      documentId: documentId as Id<"documents">,
+    }),
+  );
+
+  const paymentConfigByFieldId = useMemo(() => {
+    const map = new Map<
+      string,
+      { totalAmountCents: number; currency: string; paymentType: string; paymentStatus?: string }
+    >();
+    for (const config of paymentConfigs) {
+      map.set(config.fieldId, {
+        totalAmountCents: config.totalAmountCents,
+        currency: config.currency,
+        paymentType: config.paymentType,
+        paymentStatus: config.paymentStatus,
+      });
+    }
+    return map;
+  }, [paymentConfigs]);
+
   const recipientsById = useMemo(() => {
     return new Map(recipients.map((recipient) => [recipient._id, recipient]));
   }, [recipients]);
@@ -196,6 +244,14 @@ function DocumentDetailPage() {
       documentId: documentId as Id<"documents">,
     }),
   );
+
+  // Stripe connected account status for payment fields
+  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, {
+    slug,
+  }) as { status: string; account: { chargesEnabled: boolean } | null } | undefined;
+  const stripeConnected =
+    connectedAccount?.status === "connected" &&
+    (connectedAccount?.account?.chargesEnabled ?? false);
 
   // Create a map of fieldId to signature data for easy lookup (memoized to prevent infinite loops)
   const signaturesByFieldId = useMemo(
@@ -223,8 +279,10 @@ function DocumentDetailPage() {
   // Compute field counts per recipient for the send dialog
   const fieldCountsByRecipient = new Map<string, number>();
   for (const field of signatureFields) {
-    const count = fieldCountsByRecipient.get(field.recipientId) ?? 0;
-    fieldCountsByRecipient.set(field.recipientId, count + 1);
+    if (field.recipientId) {
+      const count = fieldCountsByRecipient.get(field.recipientId) ?? 0;
+      fieldCountsByRecipient.set(field.recipientId, count + 1);
+    }
   }
 
   const removeRecipient = useMutation(api.documents.recipients_mutations.removeRecipient);
@@ -267,20 +325,21 @@ function DocumentDetailPage() {
       recipientId: field.recipientId,
       label: field.label,
       properties: field.properties,
+      paymentTotalCents: paymentConfigByFieldId.get(field._id)?.totalAmountCents,
       signatureData: signaturesByFieldId.get(field._id),
     }));
     setPlacedFields(fields);
-  }, [signatureFields, signaturesByFieldId]);
+  }, [signatureFields, signaturesByFieldId, paymentConfigByFieldId]);
 
   // SEA-84: Handle window resize to maintain canvas-PDF alignment
   useEffect(() => {
     const updatePdfWidth = () => {
-      if (containerRef.current) {
-        // Calculate optimal width based on container size
-        // Leave some padding for scrollbar and borders
-        const containerWidth = containerRef.current.clientWidth;
-        const optimalWidth = Math.min(containerWidth - 40, 900);
-        setPdfWidth(optimalWidth);
+      if (pdfWrapperRef.current) {
+        // Measure the outer wrapper that represents available viewport space
+        // Subtract padding (p-6 = 24px each side on mobile, p-3/p-4 on larger)
+        const wrapperWidth = pdfWrapperRef.current.clientWidth;
+        const optimalWidth = wrapperWidth - 40;
+        setPdfWidth(Math.max(optimalWidth, 300));
       }
     };
 
@@ -308,6 +367,47 @@ function DocumentDetailPage() {
 
   // Resend email action
   const resendRecipientEmail = useAction(api.documents.send_document_action.resendRecipientEmail);
+
+  // AI field analysis, annotations, + chat
+  const aiSuggestions = useAIFieldSuggestions(documentId as Id<"documents">);
+  const documentAnnotations = useDocumentAnnotations(documentId as Id<"documents">);
+  const aiSettings = useQuery(api.organizations.queries.getAiSettings, {
+    organizationId: documentData.organizationId,
+  });
+  const aiEnabled = aiSettings?.aiEnabled !== false;
+  const [showAiSuggestions, setShowAiSuggestions] = useState(true);
+  const { threadId, isCreating: isCreatingThread, getOrCreateThread } = useDocumentThread(documentId as Id<"documents">);
+  const [showAIChat, setShowAIChat] = useState(false);
+
+  // Toast when AI pipeline completes or fails
+  const prevAiStatus = useRef(documentData.aiProcessingStatus);
+  useEffect(() => {
+    const prev = prevAiStatus.current;
+    const current = documentData.aiProcessingStatus;
+    prevAiStatus.current = current;
+
+    if (prev === "processing" && current === "completed") {
+      toast.success("AI analysis complete", {
+        description: "Field suggestions and insights are ready to review.",
+      });
+    } else if (prev === "processing" && current === "failed") {
+      toast.error("AI analysis failed", {
+        description: "The document could not be analyzed. You can retry later.",
+      });
+    }
+  }, [documentData.aiProcessingStatus]);
+
+  const handleToggleAiSuggestions = useCallback(() => {
+    setShowAiSuggestions((prev) => !prev);
+  }, []);
+
+  const handleToggleAIChat = useCallback(async () => {
+    const willOpen = !showAIChat;
+    setShowAIChat(willOpen);
+    if (willOpen && !threadId) {
+      await getOrCreateThread();
+    }
+  }, [showAIChat, threadId, getOrCreateThread]);
 
   // SEA-72: PDF document load handlers
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
@@ -416,11 +516,13 @@ function DocumentDetailPage() {
     const typeLabels: Record<FieldType, string> = {
       signature: "Signature",
       text: "Text",
+      number: "Number",
       date: "Date",
       checkbox: "Checkbox",
       dropdown: "Dropdown",
       radio: "Radio",
       attachment: "Attachment",
+      payment: "Payment",
     };
     return `${typeLabels[fieldType]} Field`;
   };
@@ -523,6 +625,12 @@ function DocumentDetailPage() {
       // Select the newly created field
       setSelectedFieldId(fieldId);
       setDraggingFieldType(null);
+
+      // Auto-open payment config modal for newly created payment fields
+      if (pendingFieldData.fieldType === "payment") {
+        setPaymentConfigFieldId(fieldId);
+        setShowPaymentConfigModal(true);
+      }
 
       // Refetch fields to sync with database
       await refetchFields();
@@ -817,6 +925,17 @@ function DocumentDetailPage() {
     });
   };
 
+  // Auto-open Insights section when annotations arrive
+  const hasAnnotations = documentAnnotations.annotations !== null;
+  useEffect(() => {
+    if (hasAnnotations) {
+      setOpenSections((prev) => {
+        if (prev.has("insights")) return prev;
+        return new Set([...prev, "insights"]);
+      });
+    }
+  }, [hasAnnotations]);
+
   // Get activity icon
   const getActivityIcon = (type: ActivityEventType) => {
     switch (type) {
@@ -890,6 +1009,15 @@ function DocumentDetailPage() {
       };
     }
 
+    // Check for unassigned fields (e.g. from templates)
+    const unassignedFields = signatureFields.filter((f) => !f.recipientId);
+    if (unassignedFields.length > 0) {
+      return {
+        canSend: false,
+        tooltip: `${unassignedFields.length} field(s) are not assigned to a recipient. Assign all fields before sending.`,
+      };
+    }
+
     // Check that all signers have at least one signature field
     const signers = recipients.filter((r) => r.role === "signer");
     const signersWithoutFields = signers.filter(
@@ -910,6 +1038,54 @@ function DocumentDetailPage() {
   const sendDocumentValidation = getSendDocumentValidation();
 
   // Create conditional buttons
+  const aiSuggestionsToggle =
+    canEdit && aiEnabled ? (
+      <div key="ai-toggle" className="flex items-center gap-1.5 sm:flex-none">
+        {documentData.aiProcessingStatus === "processing" && (
+          <span className="flex items-center gap-1.5 text-xs text-violet-600 dark:text-violet-400">
+            <Loader2Icon className="h-3 w-3 animate-spin" />
+            Analyzing...
+          </span>
+        )}
+        {documentData.aiProcessingStatus === "failed" && (
+          <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+            Analysis incomplete
+          </span>
+        )}
+        <Button
+          onClick={handleToggleAiSuggestions}
+          size="sm"
+          variant="ghost"
+          className="text-violet-700 dark:text-violet-400"
+        >
+          {showAiSuggestions ? (
+            <EyeIcon className="mr-1.5 h-3.5 w-3.5" />
+          ) : (
+            <EyeOffIcon className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          <span className="truncate text-xs">AI Suggestions</span>
+        </Button>
+        <Button
+          onClick={handleToggleAIChat}
+          size="sm"
+          variant="ghost"
+          disabled={isCreatingThread}
+          className={cn(
+            "text-violet-700 dark:text-violet-400",
+            showAIChat && "bg-violet-100 dark:bg-violet-900/40",
+          )}
+          aria-pressed={showAIChat}
+        >
+          {isCreatingThread ? (
+            <Loader2Icon className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <MessageSquareIcon className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          <span className="truncate text-xs">AI Chat</span>
+        </Button>
+      </div>
+    ) : null;
+
   const saveAsTemplateButton =
     canEdit && signatureFields.length > 0 ? (
       <Button
@@ -963,6 +1139,7 @@ function DocumentDetailPage() {
             <span className="truncate">Back</span>
           </Button>
           {sendDocumentButton}
+          {aiSuggestionsToggle}
           {saveAsTemplateButton}
         </div>
       }
@@ -972,7 +1149,7 @@ function DocumentDetailPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left column: PDF Preview */}
           <div className="lg:col-span-2">
-            <div className="relative min-h-[600px] rounded-2xl bg-stone-100 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-stone-900">
+            <div ref={pdfWrapperRef} className="relative min-h-[600px] rounded-2xl bg-stone-100 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-stone-900">
               {pdfUrl ? (
                 <TransformWrapper
                   initialScale={1}
@@ -1047,8 +1224,56 @@ function DocumentDetailPage() {
                           }}
                         />
                       </Document>
+
+                      {/* AI field suggestion overlays — inside TransformComponent so they zoom with PDF */}
+                      {canEdit && aiEnabled && showAiSuggestions && aiSuggestions.suggestions && (
+                        <AIFieldOverlays
+                          suggestions={aiSuggestions.suggestions}
+                          selectedIndices={aiSuggestions.selectedIndices}
+                          toggleField={aiSuggestions.toggleField}
+                          currentPage={currentPage}
+                          pdfPageWidth={pdfWidth}
+                          pdfPageHeight={pdfHeight}
+                        />
+                      )}
+
+                      {/* AI annotation overlays (redlining) — inside TransformComponent */}
+                      {canEdit && aiEnabled && documentAnnotations.annotations && (
+                        <AIAnnotationOverlays
+                          annotations={documentAnnotations.annotations}
+                          enabledCategories={documentAnnotations.enabledCategories}
+                          currentPage={currentPage}
+                          pdfPageWidth={pdfWidth}
+                          pdfPageHeight={pdfHeight}
+                        />
+                      )}
                     </div>
                   </TransformComponent>
+
+                  {/* AI review bar — outside TransformComponent so it stays at fixed size */}
+                  {canEdit && aiEnabled && showAiSuggestions && aiSuggestions.suggestions && (
+                    <div className="mt-3">
+                      <AIFieldReviewBar
+                        suggestions={aiSuggestions.suggestions}
+                        selectedIndices={aiSuggestions.selectedIndices}
+                        isApplying={aiSuggestions.isApplying}
+                        selectAll={aiSuggestions.selectAll}
+                        selectHighConfidence={aiSuggestions.selectHighConfidence}
+                        handleApply={aiSuggestions.handleApply}
+                        handleDismiss={aiSuggestions.handleDismiss}
+                      />
+                    </div>
+                  )}
+
+                  {/* AI processing skeleton — show when analyzing but no suggestions yet */}
+                  {canEdit && aiEnabled && showAiSuggestions && !aiSuggestions.suggestions && documentData.aiProcessingStatus === "processing" && (
+                    <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-violet-300/50 bg-violet-50/50 px-4 py-3 dark:border-violet-700/50 dark:bg-violet-950/30">
+                      <Loader2Icon className="h-4 w-4 animate-spin text-violet-500" />
+                      <span className="font-sans text-xs text-violet-600 dark:text-violet-400">
+                        Detecting form fields...
+                      </span>
+                    </div>
+                  )}
                 </TransformWrapper>
               ) : (
                 <>
@@ -1093,7 +1318,10 @@ function DocumentDetailPage() {
                   <InAppSigningSection
                     documentId={documentId as Id<"documents">}
                     recipient={currentUserRecipient}
-                    fields={currentUserFields}
+                    fields={currentUserFields.filter(
+                      (f): f is typeof f & { recipientId: Id<"document_recipients"> } =>
+                        !!f.recipientId,
+                    )}
                     isOpen={openSections.has("your-signature")}
                     onOpenChange={() => toggleSection("your-signature")}
                     onFieldsRefetch={() => {
@@ -1243,6 +1471,72 @@ function DocumentDetailPage() {
                 </CollapsibleContent>
               </Collapsible>
 
+              {/* AI Chat Panel - Shows when user opens AI assistant */}
+              {canEdit && aiEnabled && showAIChat && (
+                threadId ? (
+                  <AIChatPanel threadId={threadId} slug={slug} onClose={() => setShowAIChat(false)} />
+                ) : (
+                  <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900">
+                    <Loader2Icon className="h-5 w-5 animate-spin text-violet-500" />
+                    <p className="font-sans text-sm text-slate-500 dark:text-slate-400">
+                      Starting AI assistant...
+                    </p>
+                  </div>
+                )
+              )}
+
+              {/* AI Insights (Redlining) — loading state */}
+              {canEdit && aiEnabled && !documentAnnotations.annotations && documentData.aiProcessingStatus === "processing" && (
+                <div className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-5 py-4 sm:rounded-xl dark:border-slate-700 dark:bg-slate-800/30">
+                  <Loader2Icon className="h-4 w-4 animate-spin text-slate-400" />
+                  <span className="font-sans text-xs text-slate-500 dark:text-slate-400">
+                    Scanning for insights...
+                  </span>
+                </div>
+              )}
+
+              {/* AI Insights (Redlining) */}
+              {canEdit && aiEnabled && documentAnnotations.annotations && (
+                <Collapsible
+                  open={openSections.has("insights")}
+                  onOpenChange={() => toggleSection("insights")}
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-rose-100 text-rose-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-rose-900 dark:text-rose-400">
+                          <ScanSearchIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+                        </div>
+                        <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                          Insights
+                        </span>
+                        <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                          {documentAnnotations.annotations.annotations.length}
+                        </span>
+                      </div>
+                      <ChevronDownIcon
+                        className={`h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400 ${openSections.has("insights") ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+                    <div className="mt-3">
+                      <AIInsightsPanel
+                        annotations={documentAnnotations.annotations}
+                        enabledCategories={documentAnnotations.enabledCategories}
+                        toggleCategory={documentAnnotations.toggleCategory}
+                        onDismiss={documentAnnotations.handleDismiss}
+                        onPageJump={(page) => setCurrentPage(page)}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
               {/* Signature Fields Section */}
               {(signatureFields.length > 0 || canEdit) && (
                 <Collapsible
@@ -1280,12 +1574,16 @@ function DocumentDetailPage() {
                           onFieldDragStart={(fieldType) => setDraggingFieldType(fieldType)}
                           onFieldDragEnd={() => setDraggingFieldType(null)}
                           disabled={recipients.filter((r) => r.role === "signer").length === 0}
+                          stripeConnected={stripeConnected}
                         />
                       </div>
                     )}
                     {signatureFields.length > 0 ? (
                       <FieldList
-                        fields={signatureFields}
+                        fields={signatureFields.map((f) => ({
+                          ...f,
+                          paymentConfig: paymentConfigByFieldId.get(f._id),
+                        }))}
                         recipients={recipients}
                         selectedFieldId={canEdit ? selectedFieldId : null}
                         canEdit={canEdit}
@@ -1317,16 +1615,6 @@ function DocumentDetailPage() {
                   </CollapsibleContent>
                 </Collapsible>
               )}
-
-              {/* Invoice Section - Always show, but only allow editing in draft mode */}
-              <InvoiceSidebarSection
-                documentId={documentId as Id<"documents">}
-                slug={slug}
-                recipients={recipients}
-                isOpen={openSections.has("invoice")}
-                onOpenChange={() => toggleSection("invoice")}
-                canEdit={documentData.workflowStatus === "draft" && canEdit}
-              />
 
               {/* Document Details Section */}
               <Collapsible
@@ -1558,6 +1846,21 @@ function DocumentDetailPage() {
           onSave={() => {
             refetchFields();
           }}
+          onConfigurePayment={(fieldId) => {
+            setShowFieldProperties(false);
+            setPaymentConfigFieldId(fieldId);
+            setShowPaymentConfigModal(true);
+          }}
+        />
+
+        {/* Payment config modal */}
+        <PaymentConfigModal
+          open={showPaymentConfigModal}
+          onOpenChange={(open) => {
+            setShowPaymentConfigModal(open);
+            if (!open) setPaymentConfigFieldId(null);
+          }}
+          fieldId={paymentConfigFieldId}
         />
 
         {/* Send document dialog */}

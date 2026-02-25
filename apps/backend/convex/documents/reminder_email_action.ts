@@ -221,3 +221,61 @@ export const sendReminderEmail = internalAction({
     return result;
   },
 });
+
+/**
+ * Internal action to send a reminder email directly to a recipient.
+ * Used by the REST API where we don't need a document_reminders record.
+ * Looks up document/recipient/owner data and sends the email.
+ */
+export const sendReminderEmailDirect = internalAction({
+  args: {
+    documentId: v.id("documents"),
+    recipientId: v.id("document_recipients"),
+    customMessage: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    // Get document
+    const document: Doc<"documents"> | null = await ctx.runQuery(
+      internal.documents.reminder_email_action.getDocumentById,
+      { documentId: args.documentId },
+    );
+
+    if (!document || document.status === "deleted") return;
+
+    // Get recipient
+    const recipient: Doc<"document_recipients"> | null = await ctx.runQuery(
+      internal.documents.reminder_email_action.getRecipientById,
+      { recipientId: args.recipientId },
+    );
+
+    if (!recipient) return;
+
+    // Skip if recipient already completed
+    if (
+      recipient.status === "signed" ||
+      recipient.status === "approved" ||
+      recipient.status === "declined"
+    ) {
+      return;
+    }
+
+    // Get sender information
+    const owner: Doc<"users"> | null = await ctx.runQuery(
+      internal.documents.reminder_email_action.getDocumentOwner,
+      { ownerId: document.ownerId },
+    );
+
+    const senderName = owner?.name || owner?.email || "Document Owner";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+    const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
+
+    await sendReminder({
+      to: recipient.email,
+      recipientName: recipient.name || recipient.email,
+      documentName: document.name,
+      senderName,
+      signingUrl,
+      customMessage: args.customMessage,
+    });
+  },
+});

@@ -1,14 +1,18 @@
+import { useConvexMutation } from "@convex-dev/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { FileIcon, UploadIcon, XIcon } from "lucide-react";
 import { type ChangeEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { api } from "@seal/backend/convex/_generated/api";
 
 interface AttachmentFieldInputProps {
   label: string;
-  value?: string; // URL to uploaded file
+  value?: string; // storageId from Convex Storage
   isRequired: boolean;
   helpText?: string;
+  signingToken?: string;
   onChange: (value: string) => void;
   onValidationChange: (isValid: boolean, error?: string) => void;
 }
@@ -18,19 +22,23 @@ export function AttachmentFieldInput({
   value,
   isRequired,
   helpText,
+  signingToken,
   onChange,
   onValidationChange,
 }: AttachmentFieldInputProps) {
-  const [fileUrl, setFileUrl] = useState(value);
+  const [storageId, setStorageId] = useState(value);
   const [fileName, setFileName] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [isUploading, setIsUploading] = useState(false);
+
+  const generateUploadUrl = useMutation({
+    mutationFn: useConvexMutation(api.signature_fields.mutations.generateAttachmentUploadUrl),
+  });
 
   const validateValue = (val?: string): { isValid: boolean; error?: string } => {
     if (isRequired && !val) {
       return { isValid: false, error: "This field is required" };
     }
-
     return { isValid: true };
   };
 
@@ -45,38 +53,51 @@ export function AttachmentFieldInput({
       return;
     }
 
+    if (!signingToken) {
+      setError("Missing signing token for upload");
+      onValidationChange(false, "Missing signing token");
+      return;
+    }
+
     setIsUploading(true);
     setFileName(file.name);
 
     try {
-      // TODO: Implement actual file upload to Convex Storage
-      // For now, convert to base64 as a placeholder
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        setFileUrl(base64);
-        onChange(base64);
+      // Step 1: Get a presigned upload URL from Convex
+      const uploadUrl = await generateUploadUrl.mutateAsync({
+        signingToken,
+      });
 
-        const validation = validateValue(base64);
-        setError(validation.error);
-        onValidationChange(validation.isValid, validation.error);
-        setIsUploading(false);
-      };
-      reader.onerror = () => {
-        setError("Failed to read file");
-        onValidationChange(false, "Failed to read file");
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
+      // Step 2: Upload the file to Convex Storage
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!result.ok) {
+        throw new Error(`Upload failed: ${result.statusText}`);
+      }
+
+      const { storageId: newStorageId } = await result.json();
+
+      // Step 3: Store the storageId as the field value
+      setStorageId(newStorageId);
+      onChange(newStorageId);
+
+      const validation = validateValue(newStorageId);
+      setError(validation.error);
+      onValidationChange(validation.isValid, validation.error);
     } catch (_err) {
       setError("Failed to upload file");
       onValidationChange(false, "Failed to upload file");
+    } finally {
       setIsUploading(false);
     }
   };
 
   const handleRemove = () => {
-    setFileUrl(undefined);
+    setStorageId(undefined);
     setFileName(undefined);
     onChange("");
 
@@ -92,7 +113,7 @@ export function AttachmentFieldInput({
         {isRequired && <span className="text-destructive ml-1">*</span>}
       </Label>
 
-      {!fileUrl ? (
+      {!storageId ? (
         <div className="rounded-lg border-2 border-dashed p-6 text-center">
           <input
             type="file"

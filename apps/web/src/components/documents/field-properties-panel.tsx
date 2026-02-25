@@ -11,6 +11,8 @@ import {
   AlertCircleIcon,
   CalendarIcon,
   CheckSquareIcon,
+  CreditCardIcon,
+  HashIcon,
   HelpCircleIcon,
   PenToolIcon,
   TypeIcon,
@@ -52,7 +54,7 @@ interface FieldData {
   fieldType: FieldType;
   label: string;
   isRequired: boolean;
-  recipientId: Id<"document_recipients">;
+  recipientId?: Id<"document_recipients">;
   properties?: {
     placeholder?: string;
     defaultValue?: string;
@@ -82,36 +84,43 @@ interface FieldPropertiesPanelProps {
   recipients: Recipient[];
   onClose: () => void;
   onSave?: () => void;
+  onConfigurePayment?: (fieldId: Id<"signature_fields">) => void;
 }
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   signature: <PenToolIcon className="h-4 w-4" />,
   text: <TypeIcon className="h-4 w-4" />,
+  number: <HashIcon className="h-4 w-4" />,
   date: <CalendarIcon className="h-4 w-4" />,
   checkbox: <CheckSquareIcon className="h-4 w-4" />,
   dropdown: <TypeIcon className="h-4 w-4" />,
   radio: <CheckSquareIcon className="h-4 w-4" />,
   attachment: <TypeIcon className="h-4 w-4" />,
+  payment: <CreditCardIcon className="h-4 w-4" />,
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
   signature: "bg-blue-100 text-blue-700 border-blue-200",
   text: "bg-green-100 text-green-700 border-green-200",
+  number: "bg-amber-100 text-amber-700 border-amber-200",
   date: "bg-purple-100 text-purple-700 border-purple-200",
   checkbox: "bg-orange-100 text-orange-700 border-orange-200",
   dropdown: "bg-cyan-100 text-cyan-700 border-cyan-200",
   radio: "bg-pink-100 text-pink-700 border-pink-200",
   attachment: "bg-lime-100 text-lime-700 border-lime-200",
+  payment: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
 const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   signature: "Signature",
   text: "Text",
+  number: "Number",
   date: "Date",
   checkbox: "Checkbox",
   dropdown: "Dropdown",
   radio: "Radio",
   attachment: "Attachment",
+  payment: "Payment",
 };
 
 export function FieldPropertiesPanel({
@@ -119,6 +128,7 @@ export function FieldPropertiesPanel({
   recipients,
   onClose,
   onSave,
+  onConfigurePayment,
 }: FieldPropertiesPanelProps) {
   // Local state for form fields
   const [label, setLabel] = useState(field.label);
@@ -135,6 +145,8 @@ export function FieldPropertiesPanel({
   });
   const [customPattern, setCustomPattern] = useState(field.properties?.pattern ?? "");
   const [customMessage, setCustomMessage] = useState(field.validationRules?.customMessage ?? "");
+  const [minValue, setMinValue] = useState<number | undefined>(field.validationRules?.min);
+  const [maxValue, setMaxValue] = useState<number | undefined>(field.validationRules?.max);
 
   // Track saving state
   const [isSaving, setIsSaving] = useState(false);
@@ -148,6 +160,8 @@ export function FieldPropertiesPanel({
     setMaxLength(field.properties?.maxLength);
     setMinLength(field.properties?.minLength);
     setCustomMessage(field.validationRules?.customMessage ?? "");
+    setMinValue(field.validationRules?.min);
+    setMaxValue(field.validationRules?.max);
 
     const pattern = field.properties?.pattern;
     if (!pattern) {
@@ -203,9 +217,8 @@ export function FieldPropertiesPanel({
           required: isRequired,
           pattern: patternToSave,
           customMessage: customMessage || undefined,
-          // Preserve existing min/max
-          min: field.validationRules?.min,
-          max: field.validationRules?.max,
+          min: minValue,
+          max: maxValue,
         },
       });
 
@@ -224,9 +237,11 @@ export function FieldPropertiesPanel({
   const recipient = recipients.find((r) => r._id === field.recipientId);
 
   // Determine which fields to show based on field type
-  const showPlaceholder = field.fieldType === "text" || field.fieldType === "date";
+  const showPlaceholder =
+    field.fieldType === "text" || field.fieldType === "number" || field.fieldType === "date";
   const showValidation = field.fieldType === "text";
   const showLengthLimits = field.fieldType === "text";
+  const showValueRange = field.fieldType === "number";
 
   return (
     <div className="field-properties-panel bg-background flex h-full flex-col">
@@ -269,6 +284,23 @@ export function FieldPropertiesPanel({
                 </span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Configure Payment button for payment fields */}
+        {field.fieldType === "payment" && onConfigurePayment && (
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              onClick={() => onConfigurePayment(field._id)}
+            >
+              <CreditCardIcon className="mr-2 h-4 w-4" />
+              Configure Payment
+            </Button>
+            <p className="text-muted-foreground text-xs">
+              Set up line items, payment terms, and methods
+            </p>
           </div>
         )}
 
@@ -418,6 +450,40 @@ export function FieldPropertiesPanel({
                     setMaxLength(e.target.value ? Number.parseInt(e.target.value, 10) : undefined)
                   }
                   placeholder="No limit"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Value Range (for number fields) */}
+        {showValueRange && (
+          <div className="space-y-4 border-t pt-2">
+            <span className="text-sm font-medium">Value Range</span>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="field-min-value">Min Value</Label>
+                <Input
+                  id="field-min-value"
+                  type="number"
+                  value={minValue ?? ""}
+                  onChange={(e) =>
+                    setMinValue(e.target.value ? Number.parseFloat(e.target.value) : undefined)
+                  }
+                  placeholder="No min"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="field-max-value">Max Value</Label>
+                <Input
+                  id="field-max-value"
+                  type="number"
+                  value={maxValue ?? ""}
+                  onChange={(e) =>
+                    setMaxValue(e.target.value ? Number.parseFloat(e.target.value) : undefined)
+                  }
+                  placeholder="No max"
                 />
               </div>
             </div>

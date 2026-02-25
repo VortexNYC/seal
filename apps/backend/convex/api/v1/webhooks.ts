@@ -258,6 +258,7 @@ export const createEndpoint = internalMutation({
       name: args.name.trim(),
       url: args.url,
       secretHash,
+      secret,
       secretPrefix,
       events: args.events,
       status: "active",
@@ -428,6 +429,7 @@ export const rotateSecret = internalMutation({
 
     await ctx.db.patch(args.endpointId, {
       secretHash,
+      secret,
       secretPrefix,
       updatedAt: Date.now(),
     });

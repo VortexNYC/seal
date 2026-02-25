@@ -8,6 +8,7 @@ import { query } from "../_generated/server";
 import { authQuery } from "../auth";
 import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
 import { isRecipientComplete } from "../schemas/document_recipients";
+import { findRecipientByToken } from "./recipient_helpers";
 
 /**
  * Get all recipients for a document
@@ -99,11 +100,8 @@ export const getRecipientByToken = query({
     signingToken: v.string(),
   },
   handler: async (ctx, args) => {
-    // 1. Find recipient by token
-    const recipient = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
-      .first();
+    // 1. Find recipient by token (hash-based lookup with plaintext fallback)
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
 
     if (!recipient) {
       throw new ConvexError("Invalid signing token");
@@ -135,6 +133,7 @@ export const getRecipientByToken = query({
         declinedAt: recipient.declinedAt,
         signatureData: recipient.signatureData,
         signatureType: recipient.signatureType,
+        esignConsentAt: recipient.esignConsentAt,
       },
       document: {
         _id: document._id,
@@ -142,6 +141,7 @@ export const getRecipientByToken = query({
         description: document.description,
         fileType: document.fileType,
         storageId: document.storageId,
+        workflowStatus: document.workflowStatus,
       },
     };
   },
@@ -346,5 +346,16 @@ export const getDocumentRecipientsInternal = internalQuery({
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
+  },
+});
+
+/**
+ * Internal query to find a recipient by signing token.
+ * Used by actions that authenticate via signing token instead of Clerk.
+ */
+export const findRecipientByTokenInternal = internalQuery({
+  args: { signingToken: v.string() },
+  handler: async (ctx, args) => {
+    return await findRecipientByToken(ctx, args.signingToken);
   },
 });

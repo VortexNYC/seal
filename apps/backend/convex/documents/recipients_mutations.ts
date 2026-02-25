@@ -6,22 +6,31 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import { mutation } from "../_generated/server";
+import { logRecipientAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
+import { generateStringHash } from "../crypto/helpers";
 import {
   isRecipientComplete,
   recipientRoleTuple,
   recipientStatusTuple,
 } from "../schemas/document_recipients";
-import { verifyDocumentOwnership } from "./recipient_helpers";
+import { publishWebhookEvent } from "../webhooks/publish";
+import { findRecipientByToken, verifyDocumentOwnership } from "./recipient_helpers";
 
 /**
- * Generate a unique signing token
+ * Generate a unique signing token and its SHA-256 hash.
+ * The plaintext token is sent to the recipient via email URL.
+ * Only the hash is used for secure database lookups.
  */
-function generateSigningToken(): string {
-  // Generate a cryptographically secure random token
+async function generateSigningToken(): Promise<{
+  token: string;
+  tokenHash: string;
+}> {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const token = Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const tokenHash = await generateStringHash(token);
+  return { token, tokenHash };
 }
 
 /**
@@ -70,12 +79,16 @@ export const addRecipients = permissionMutation("documents:edit")({
       throw new ConvexError("Duplicate recipient emails are not allowed");
     }
 
-    // 5. Create recipient records
+    // 5. Get user for audit logging
+    const user = await ctx.db.get(userId);
+
+    // 6. Create recipient records
     const recipientIds = [];
     const now = Date.now();
     const tokenExpiration = now + 30 * 24 * 60 * 60 * 1000; // 30 days from now
 
     for (const recipient of args.recipients) {
+      const { token, tokenHash } = await generateSigningToken();
       const recipientId = await ctx.db.insert("document_recipients", {
         documentId: args.documentId,
         email: recipient.email.toLowerCase(),
@@ -83,12 +96,32 @@ export const addRecipients = permissionMutation("documents:edit")({
         role: recipient.role,
         status: "pending",
         order: recipient.order,
-        signingToken: generateSigningToken(),
+        signingToken: token,
+        tokenHash,
         tokenExpiresAt: tokenExpiration,
         createdAt: now,
         updatedAt: now,
       });
       recipientIds.push(recipientId);
+
+      // Audit log
+      if (user) {
+        await logRecipientAction(ctx, {
+          organizationId: document.organizationId,
+          actorType: "user",
+          actorId: user.clerkId,
+          userId: user.clerkId,
+          action: "recipient.added",
+          documentId: args.documentId,
+          recipientId,
+          newValues: {
+            email: recipient.email.toLowerCase(),
+            name: recipient.name,
+            role: recipient.role,
+          },
+          ipAddress: "web-authenticated",
+        });
+      }
     }
 
     return { recipientIds, count: recipientIds.length };
@@ -128,17 +161,50 @@ export const removeRecipient = permissionMutation("documents:edit")({
       throw new ConvexError("Cannot remove recipients from deleted document");
     }
 
-    // 5. Find and delete all signature fields assigned to this recipient
+    // 5. Get user for audit logging
+    const user = await ctx.db.get(userId);
+
+    // 6. Find and delete all signature fields assigned to this recipient
     const fieldsToDelete = await ctx.db
       .query("signature_fields")
       .withIndex("by_recipient", (q) => q.eq("recipientId", args.recipientId))
       .collect();
 
     for (const field of fieldsToDelete) {
+      // Cascade-delete payment config if this is a payment field
+      if (field.fieldType === "payment") {
+        const paymentConfig = await ctx.db
+          .query("payment_field_configs")
+          .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+          .unique();
+        if (paymentConfig) {
+          await ctx.db.delete(paymentConfig._id);
+        }
+      }
       await ctx.db.delete(field._id);
     }
 
-    // 6. Delete the recipient
+    // 7. Audit log before deletion (capture recipient info)
+    if (user) {
+      await logRecipientAction(ctx, {
+        organizationId: document.organizationId,
+        actorType: "user",
+        actorId: user.clerkId,
+        userId: user.clerkId,
+        action: "recipient.removed",
+        documentId: recipient.documentId,
+        recipientId: args.recipientId,
+        newValues: {
+          email: recipient.email,
+          name: recipient.name,
+          role: recipient.role,
+          deletedFieldsCount: fieldsToDelete.length,
+        },
+        ipAddress: "web-authenticated",
+      });
+    }
+
+    // 8. Delete the recipient
     await ctx.db.delete(args.recipientId);
 
     return { success: true, deletedFieldsCount: fieldsToDelete.length };
@@ -161,11 +227,8 @@ export const updateRecipientStatus = authMutation({
     ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // 1. Find recipient by signing token
-    const recipient = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
-      .first();
+    // 1. Find recipient by signing token (hash-based lookup with plaintext fallback)
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
 
     if (!recipient) {
       throw new ConvexError("Invalid signing token");
@@ -267,11 +330,8 @@ export const submitRecipientSignature = mutation({
     ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // 1. Find recipient by signing token
-    const recipient = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
-      .first();
+    // 1. Find recipient by signing token (hash-based lookup with plaintext fallback)
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
 
     if (!recipient) {
       throw new ConvexError("Invalid signing token");
@@ -308,6 +368,29 @@ export const submitRecipientSignature = mutation({
     }
     if (args.status === "declined" && !args.declineReason) {
       throw new ConvexError("Decline reason is required");
+    }
+
+    // 5b. Enforce payment completion before signing/approving
+    if (args.status === "signed" || args.status === "approved") {
+      const paymentFields = await ctx.db
+        .query("signature_fields")
+        .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))
+        .filter((q) => q.eq(q.field("fieldType"), "payment"))
+        .collect();
+
+      for (const pf of paymentFields) {
+        const config = await ctx.db
+          .query("payment_field_configs")
+          .withIndex("by_field", (q) => q.eq("fieldId", pf._id))
+          .unique();
+
+        if (config && config.paymentStatus !== "paid") {
+          throw new ConvexError({
+            code: "PAYMENT_REQUIRED",
+            message: "All payment fields must be completed before signing",
+          });
+        }
+      }
     }
 
     // 6. Update the recipient
@@ -353,7 +436,32 @@ export const submitRecipientSignature = mutation({
 
     await ctx.db.patch(recipient._id, updateData);
 
-    // 7. Schedule post-signature emails if recipient completed their action
+    // 7. Audit trail
+    const document = await ctx.db.get(recipient.documentId);
+    if (document) {
+      const auditAction =
+        args.status === "signed" || args.status === "approved"
+          ? ("recipient.signed" as const)
+          : args.status === "declined"
+            ? ("recipient.declined" as const)
+            : args.status === "viewed"
+              ? ("recipient.viewed" as const)
+              : null;
+      if (auditAction) {
+        await logRecipientAction(ctx, {
+          organizationId: document.organizationId,
+          actorType: "recipient",
+          actorId: recipient._id,
+          action: auditAction,
+          documentId: recipient.documentId,
+          recipientId: recipient._id,
+          newValues: { status: args.status },
+          ipAddress: args.ipAddress ?? "0.0.0.0",
+        });
+      }
+    }
+
+    // 8. Schedule post-signature emails if recipient completed their action
     // (signed, approved, or declined - but not just viewed)
     if (isRecipientComplete(recipient.role, args.status)) {
       await ctx.scheduler.runAfter(
@@ -364,6 +472,33 @@ export const submitRecipientSignature = mutation({
           documentId: recipient.documentId,
         },
       );
+    }
+
+    // 9. Publish webhook event for recipient status changes
+    if (document && (args.status === "signed" || args.status === "approved")) {
+      await publishWebhookEvent(ctx, {
+        organizationId: document.organizationId,
+        eventType: "recipient.signed",
+        data: {
+          document_id: recipient.documentId,
+          recipient_id: recipient._id,
+          recipient_email: recipient.email,
+          status: args.status,
+          signed_at: new Date().toISOString(),
+        },
+      });
+    } else if (document && args.status === "declined") {
+      await publishWebhookEvent(ctx, {
+        organizationId: document.organizationId,
+        eventType: "recipient.declined",
+        data: {
+          document_id: recipient.documentId,
+          recipient_id: recipient._id,
+          recipient_email: recipient.email,
+          decline_reason: args.declineReason,
+          declined_at: new Date().toISOString(),
+        },
+      });
     }
 
     return { success: true, recipientId: recipient._id };
@@ -453,6 +588,29 @@ export const submitSignatureAuthenticated = authMutation({
       throw new ConvexError("Decline reason is required");
     }
 
+    // 6b. Enforce payment completion before signing/approving
+    if (args.status === "signed" || args.status === "approved") {
+      const paymentFields = await ctx.db
+        .query("signature_fields")
+        .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))
+        .filter((q) => q.eq(q.field("fieldType"), "payment"))
+        .collect();
+
+      for (const pf of paymentFields) {
+        const config = await ctx.db
+          .query("payment_field_configs")
+          .withIndex("by_field", (q) => q.eq("fieldId", pf._id))
+          .unique();
+
+        if (config && config.paymentStatus !== "paid") {
+          throw new ConvexError({
+            code: "PAYMENT_REQUIRED",
+            message: "All payment fields must be completed before signing",
+          });
+        }
+      }
+    }
+
     // 7. Update the recipient
     const now = Date.now();
     const updateData: Record<string, unknown> = {
@@ -495,7 +653,32 @@ export const submitSignatureAuthenticated = authMutation({
 
     await ctx.db.patch(recipient._id, updateData);
 
-    // 8. Schedule post-signature emails if recipient completed their action
+    // 8. Audit trail
+    {
+      const auditAction =
+        args.status === "signed" || args.status === "approved"
+          ? ("recipient.signed" as const)
+          : args.status === "declined"
+            ? ("recipient.declined" as const)
+            : args.status === "viewed"
+              ? ("recipient.viewed" as const)
+              : null;
+      if (auditAction) {
+        await logRecipientAction(ctx, {
+          organizationId: document.organizationId,
+          actorType: "user",
+          actorId: user.clerkId,
+          userId: user.clerkId,
+          action: auditAction,
+          documentId: args.documentId,
+          recipientId: recipient._id,
+          newValues: { status: args.status },
+          ipAddress: "web-authenticated",
+        });
+      }
+    }
+
+    // 9. Schedule post-signature emails if recipient completed their action
     if (isRecipientComplete(recipient.role, args.status)) {
       await ctx.scheduler.runAfter(
         0,
@@ -573,7 +756,10 @@ export const updateRecipient = permissionMutation("documents:edit")({
       }
     }
 
-    // 7. Build update object
+    // 7. Get user for audit logging
+    const user = await ctx.db.get(userId);
+
+    // 8. Build update object
     const updates: Record<string, unknown> = {
       updatedAt: Date.now(),
     };
@@ -591,8 +777,24 @@ export const updateRecipient = permissionMutation("documents:edit")({
       updates.order = args.order;
     }
 
-    // 8. Update the recipient
+    // 9. Update the recipient
     await ctx.db.patch(args.recipientId, updates);
+
+    // 10. Audit log
+    if (user) {
+      const { updatedAt: _, ...changedFields } = updates;
+      await logRecipientAction(ctx, {
+        organizationId: document.organizationId,
+        actorType: "user",
+        actorId: user.clerkId,
+        userId: user.clerkId,
+        action: "recipient.updated",
+        documentId: recipient.documentId,
+        recipientId: args.recipientId,
+        newValues: changedFields,
+        ipAddress: "web-authenticated",
+      });
+    }
 
     return { success: true };
   },
@@ -632,15 +834,114 @@ export const regenerateSigningToken = permissionMutation("documents:edit")({
 
     // 4. Generate new token with extended expiration
     const now = Date.now();
-    const newToken = generateSigningToken();
+    const { token: newToken, tokenHash: newTokenHash } = await generateSigningToken();
     const newExpiration = now + 30 * 24 * 60 * 60 * 1000; // 30 days from now
 
     await ctx.db.patch(args.recipientId, {
       signingToken: newToken,
+      tokenHash: newTokenHash,
       tokenExpiresAt: newExpiration,
       updatedAt: now,
     });
 
     return { success: true, newToken };
+  },
+});
+
+/**
+ * Record ESIGN Act consent for a recipient.
+ * Must be called before the recipient can sign any fields.
+ * This is a public mutation (no auth required) since recipients
+ * access via signing token from email links.
+ */
+export const recordEsignConsent = mutation({
+  args: {
+    signingToken: v.string(),
+    ipAddress: v.optional(v.string()),
+    consentVersion: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
+
+    if (!recipient) {
+      throw new ConvexError("Invalid signing token");
+    }
+
+    if (recipient.tokenExpiresAt < Date.now()) {
+      throw new ConvexError("Signing token has expired");
+    }
+
+    // Record consent
+    const now = Date.now();
+    await ctx.db.patch(recipient._id, {
+      esignConsentAt: now,
+      esignConsentIp: args.ipAddress ?? "unknown",
+      esignConsentVersion: args.consentVersion ?? "1.0",
+      updatedAt: now,
+    });
+
+    // Log to audit trail
+    const document = await ctx.db.get(recipient.documentId);
+    if (document) {
+      await logRecipientAction(ctx, {
+        organizationId: document.organizationId,
+        actorType: "recipient",
+        actorId: recipient._id,
+        action: "recipient.esign_consent",
+        documentId: recipient.documentId,
+        recipientId: recipient._id,
+        newValues: {
+          consentVersion: args.consentVersion ?? "1.0",
+          consentAt: now,
+        },
+        ipAddress: args.ipAddress ?? "unknown",
+        userAgent: "signing-page",
+      });
+    }
+
+    return { success: true, consentAt: now };
+  },
+});
+
+/**
+ * Log when a recipient opts out of electronic signing (ESIGN Act compliance).
+ * Records the opt-out in the audit trail for legal records.
+ */
+export const recordEsignOptOut = mutation({
+  args: {
+    signingToken: v.string(),
+    ipAddress: v.optional(v.string()),
+    method: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
+
+    if (!recipient) {
+      throw new ConvexError("Invalid signing token");
+    }
+
+    if (recipient.tokenExpiresAt < Date.now()) {
+      throw new ConvexError("Signing token has expired");
+    }
+
+    // Log opt-out to audit trail
+    const document = await ctx.db.get(recipient.documentId);
+    if (document) {
+      await logRecipientAction(ctx, {
+        organizationId: document.organizationId,
+        actorType: "recipient",
+        actorId: recipient._id,
+        action: "recipient.esign_opt_out",
+        documentId: recipient.documentId,
+        recipientId: recipient._id,
+        newValues: {
+          method: args.method ?? "paper_copy_request",
+        },
+        ipAddress: args.ipAddress ?? "unknown",
+        userAgent: "signing-page",
+      });
+    }
+
+    return { success: true };
   },
 });

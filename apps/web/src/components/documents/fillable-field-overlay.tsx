@@ -3,7 +3,9 @@ import {
   CheckSquareIcon,
   ChevronDownIcon,
   CircleDotIcon,
+  CreditCardIcon,
   FileIcon,
+  HashIcon,
   PenToolIcon,
   StarIcon,
   TypeIcon,
@@ -19,6 +21,12 @@ interface SignatureDetails {
   signerName?: string;
   signerEmail?: string;
   signatureMethod?: string;
+}
+
+interface PaymentInfo {
+  totalAmountCents: number;
+  currency: string;
+  paymentStatus?: string;
 }
 
 interface FillableFieldOverlayProps {
@@ -39,6 +47,7 @@ interface FillableFieldOverlayProps {
   isActive?: boolean;
   validationError?: string;
   signatureDetails?: SignatureDetails;
+  paymentInfo?: PaymentInfo;
   onClick: (fieldId: Id<"signature_fields">) => void;
 }
 
@@ -48,6 +57,8 @@ function getFieldIcon(fieldType: FieldType) {
       return <PenToolIcon className="h-3 w-3" />;
     case "text":
       return <TypeIcon className="h-3 w-3" />;
+    case "number":
+      return <HashIcon className="h-3 w-3" />;
     case "date":
       return <CalendarIcon className="h-3 w-3" />;
     case "checkbox":
@@ -58,6 +69,8 @@ function getFieldIcon(fieldType: FieldType) {
       return <CircleDotIcon className="h-3 w-3" />;
     case "attachment":
       return <FileIcon className="h-3 w-3" />;
+    case "payment":
+      return <CreditCardIcon className="h-3 w-3" />;
     default:
       return <TypeIcon className="h-3 w-3" />;
   }
@@ -69,6 +82,8 @@ function getFieldTypeLabel(fieldType: FieldType): string {
       return "Signature";
     case "text":
       return "Text";
+    case "number":
+      return "Number";
     case "date":
       return "Date";
     case "checkbox":
@@ -79,6 +94,8 @@ function getFieldTypeLabel(fieldType: FieldType): string {
       return "Radio";
     case "attachment":
       return "Attachment";
+    case "payment":
+      return "Payment";
     default:
       return fieldType;
   }
@@ -102,6 +119,15 @@ function formatSignatureDate(timestamp: number): {
       hour12: true,
     }),
   };
+}
+
+function formatCurrency(amountCents: number, currency: string): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amountCents / 100);
 }
 
 function getSealIconSize(height: number, width: number): number {
@@ -152,6 +178,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
       isActive = false,
       validationError,
       signatureDetails,
+      paymentInfo,
       onClick,
     },
     ref,
@@ -283,10 +310,23 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
             )}
           </div>
           {isFilled && absoluteHeight > 25 && (
-            <div className="text-[9px] font-medium text-green-700">✓ Filled</div>
+            <div className="text-[9px] font-medium text-green-700">
+              {fieldType === "payment" && paymentInfo
+                ? `✓ ${paymentInfo.paymentStatus === "paid" ? "Paid" : "Pending"}`
+                : "✓ Filled"}
+            </div>
           )}
           {!isFilled && isRequired && absoluteHeight > 25 && (
             <div className="text-[9px] font-medium text-red-700">Required</div>
+          )}
+          {fieldType === "payment" && paymentInfo && absoluteHeight > 25 && (
+            <div className={cn(
+              "text-[9px] font-semibold",
+              paymentInfo.paymentStatus === "paid" ? "text-green-700" : "text-emerald-700",
+            )}>
+              {paymentInfo.paymentStatus === "paid" ? "✓ " : ""}
+              {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
+            </div>
           )}
           {isMainSignature && absoluteHeight > 30 && (
             <div className="text-[8px] font-medium text-yellow-700">Document Signature</div>
@@ -299,6 +339,15 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
           <div className="text-muted-foreground text-[10px]">
             {getFieldTypeLabel(fieldType)}
             {isRequired && " • Required"}
+            {fieldType === "payment" && paymentInfo && (
+              <span className={cn(
+                "ml-1 font-semibold",
+                paymentInfo.paymentStatus === "paid" ? "text-green-700" : "text-emerald-700",
+              )}>
+                • {paymentInfo.paymentStatus === "paid" ? "Paid " : ""}
+                {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
+              </span>
+            )}
           </div>
 
           {validationError && (

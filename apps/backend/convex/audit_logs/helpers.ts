@@ -1,6 +1,18 @@
+import { ConvexError } from "convex/values";
+
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { AuditAction, AuditResourceType } from "../schemas/audit_logs";
+
+/**
+ * Accepts both raw MutationCtx and custom-wrapped mutation contexts.
+ *
+ * convex-helpers' customCtx/Overwrite produces a ctx type that replaces
+ * ctx.auth (dropping getUserIdentity), making it incompatible with raw
+ * MutationCtx. Since audit helpers only use ctx.db, we narrow the
+ * requirement to just the db property.
+ */
+type AuditMutationCtx = Pick<MutationCtx, "db">;
 
 /**
  * Audit Log Helper Functions
@@ -37,7 +49,7 @@ interface AuditLogParams {
  * This is the main function for creating audit logs
  */
 export async function logAction(
-  ctx: MutationCtx,
+  ctx: AuditMutationCtx,
   params: AuditLogParams,
 ): Promise<Id<"audit_logs">> {
   const auditLogId = await ctx.db.insert("audit_logs", {
@@ -61,25 +73,67 @@ export async function logAction(
   return auditLogId;
 }
 
+const MAX_AUDIT_RETRIES = 3;
+
+/**
+ * Log an action to the audit trail with retry and failure handling.
+ *
+ * ESIGN Act compliance requirement: audit logging must succeed or the
+ * action that triggered it must be blocked. This function retries up to
+ * 3 times and throws a ConvexError if all attempts fail, which will
+ * roll back the entire mutation transaction.
+ *
+ * Note: In Convex, mutations are atomic — if ctx.db.insert throws, the
+ * mutation is retried via OCC. This wrapper provides an additional
+ * safety net for unexpected errors (e.g., validation failures) and
+ * ensures the calling code is aware that audit logging is mandatory.
+ */
+export async function logActionRequired(
+  ctx: AuditMutationCtx,
+  params: AuditLogParams,
+): Promise<Id<"audit_logs">> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= MAX_AUDIT_RETRIES; attempt++) {
+    try {
+      return await logAction(ctx, params);
+    } catch (error) {
+      lastError = error;
+      console.error(
+        `[Audit] Failed attempt ${attempt}/${MAX_AUDIT_RETRIES} for ${params.action}:`,
+        error,
+      );
+    }
+  }
+
+  // All retries exhausted — block the action
+  throw new ConvexError({
+    code: "AUDIT_LOG_FAILURE",
+    message: `Audit logging failed after ${MAX_AUDIT_RETRIES} attempts. Action blocked for compliance.`,
+    action: params.action,
+    error: lastError instanceof Error ? lastError.message : String(lastError),
+  });
+}
+
 /**
  * Log a signature field action (create, update, delete)
  */
 export async function logFieldAction(
-  ctx: MutationCtx,
+  ctx: AuditMutationCtx,
   params: {
     organizationId: Id<"organizations">;
     userId: string;
     action: "field.created" | "field.updated" | "field.deleted";
     fieldId: Id<"signature_fields">;
     documentId: Id<"documents">;
-    recipientId: Id<"document_recipients">;
+    recipientId?: Id<"document_recipients">;
     oldValues?: Partial<Doc<"signature_fields">>;
     newValues?: Partial<Doc<"signature_fields">>;
     ipAddress: string;
     userAgent?: string;
   },
 ): Promise<Id<"audit_logs">> {
-  return logAction(ctx, {
+  return logActionRequired(ctx, {
     organizationId: params.organizationId,
     userId: params.userId,
     actorType: "user",
@@ -104,7 +158,7 @@ export async function logFieldAction(
  * Log a signature action (create, update)
  */
 export async function logSignatureAction(
-  ctx: MutationCtx,
+  ctx: AuditMutationCtx,
   params: {
     organizationId: Id<"organizations">;
     recipientId: Id<"document_recipients">;
@@ -118,7 +172,7 @@ export async function logSignatureAction(
     userAgent?: string;
   },
 ): Promise<Id<"audit_logs">> {
-  return logAction(ctx, {
+  return logActionRequired(ctx, {
     organizationId: params.organizationId,
     actorType: "recipient",
     actorId: params.recipientId,
@@ -142,7 +196,7 @@ export async function logSignatureAction(
  * Log a document action (created, updated, sent, completed, etc.)
  */
 export async function logDocumentAction(
-  ctx: MutationCtx,
+  ctx: AuditMutationCtx,
   params: {
     organizationId: Id<"organizations">;
     userId: string;
@@ -155,7 +209,7 @@ export async function logDocumentAction(
     userAgent?: string;
   },
 ): Promise<Id<"audit_logs">> {
-  return logAction(ctx, {
+  return logActionRequired(ctx, {
     organizationId: params.organizationId,
     userId: params.userId,
     actorType: "user",
@@ -168,6 +222,53 @@ export async function logDocumentAction(
     newValues: params.newValues,
     metadata: {
       description: params.description,
+      source: "web",
+    },
+    ipAddress: params.ipAddress,
+    userAgent: params.userAgent,
+  });
+}
+
+/**
+ * Log a recipient action (viewed, signed, declined)
+ * Supports both token-based (actorType: "recipient") and authenticated (actorType: "user") flows
+ */
+export async function logRecipientAction(
+  ctx: AuditMutationCtx,
+  params: {
+    organizationId: Id<"organizations">;
+    actorType: "user" | "recipient";
+    actorId: string;
+    userId?: string;
+    action:
+      | "recipient.added"
+      | "recipient.updated"
+      | "recipient.removed"
+      | "recipient.viewed"
+      | "recipient.signed"
+      | "recipient.declined"
+      | "recipient.esign_consent"
+      | "recipient.esign_opt_out";
+    documentId: Id<"documents">;
+    recipientId: Id<"document_recipients">;
+    newValues?: Record<string, unknown>;
+    ipAddress: string;
+    userAgent?: string;
+  },
+): Promise<Id<"audit_logs">> {
+  return logActionRequired(ctx, {
+    organizationId: params.organizationId,
+    userId: params.userId,
+    actorType: params.actorType,
+    actorId: params.actorId,
+    action: params.action,
+    resourceType: "recipient",
+    resourceId: params.recipientId,
+    documentId: params.documentId,
+    recipientId: params.recipientId,
+    newValues: params.newValues,
+    metadata: {
+      description: `Recipient ${params.action.split(".")[1]}`,
       source: "web",
     },
     ipAddress: params.ipAddress,

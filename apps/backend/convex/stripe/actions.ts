@@ -175,6 +175,77 @@ export const createCheckoutSession = action({
 });
 
 /**
+ * Create an embedded Stripe Checkout session for inline subscription upgrades.
+ *
+ * Same logic as createCheckoutSession, but uses `ui_mode: "embedded"` so the
+ * frontend renders the checkout inline via `<EmbeddedCheckout />` instead of
+ * redirecting to a Stripe-hosted page.
+ */
+export const createEmbeddedCheckoutSession = action({
+  args: {
+    lookupKey: v.string(),
+    returnUrl: v.string(),
+  },
+  handler: async (ctx, { lookupKey, returnUrl }): Promise<{ clientSecret: string }> => {
+    const stripe = initializeStripe();
+    const user = await resolveAuthenticatedUser(ctx);
+
+    // Resolve or create Stripe customer
+    let stripeCustomerId: string | undefined = user.stripeCustomerId;
+    if (!stripeCustomerId) {
+      stripeCustomerId = await getOrCreateStripeCustomer(
+        stripe,
+        user._id,
+        user.email,
+        user.name || user.email,
+        undefined,
+      );
+
+      await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
+        userId: user._id,
+        stripeCustomerId,
+      });
+    }
+
+    // Look up the price by lookup key
+    const priceData = await ctx.runMutation(
+      internal.stripe.subscription_actions.getPriceByLookupKey,
+      { lookupKey },
+    );
+
+    if (!priceData?.price) {
+      throw new ConvexError(`Price not found for lookup key: ${lookupKey}`);
+    }
+
+    // Create embedded Checkout session
+    const session = await stripe.checkout.sessions.create({
+      ui_mode: "embedded",
+      customer: stripeCustomerId,
+      mode: "subscription",
+      line_items: [
+        {
+          price: priceData.price.externalPriceId,
+          quantity: 1,
+        },
+      ],
+      return_url: returnUrl,
+      subscription_data: {
+        metadata: {
+          userId: user._id,
+          lookupKey,
+        },
+      },
+    });
+
+    if (!session.client_secret) {
+      throw new ConvexError("Failed to create embedded checkout session");
+    }
+
+    return { clientSecret: session.client_secret };
+  },
+});
+
+/**
  * Create a Stripe Customer Portal session for managing billing.
  *
  * Allows users to update payment methods, view invoices, and cancel subscriptions.

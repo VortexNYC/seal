@@ -9,10 +9,11 @@
 
 import { ConvexError, v } from "convex/values";
 
-import { query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 import { authQuery } from "../auth";
 import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
 import { generateSignatureCertificate } from "../crypto/helpers";
+import { findRecipientByToken } from "../documents/recipient_helpers";
 
 /**
  * Get audit trail for a document (authenticated)
@@ -243,17 +244,29 @@ export const exportDocumentAuditTrail = authQuery({
 });
 
 /**
+ * Get audit trail for a document (internal, no auth)
+ * Used by certificate generation and other internal processes
+ */
+export const getDocumentAuditTrailInternal = internalQuery({
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("audit_logs")
+      .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
+      .order("desc")
+      .collect();
+  },
+});
+
+/**
  * Get audit trail for a signing session (public, token-based)
  * Used on the signing page to show activity to the signer
  */
 export const getSigningSessionAuditTrail = query({
   args: { signingToken: v.string() },
   handler: async (ctx, args) => {
-    // 1. Find recipient by signing token
-    const recipient = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_token", (q) => q.eq("signingToken", args.signingToken))
-      .first();
+    // 1. Find recipient by signing token (hash-based lookup with plaintext fallback)
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
 
     if (!recipient) {
       throw new ConvexError("Invalid signing token");

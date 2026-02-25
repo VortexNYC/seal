@@ -1,0 +1,187 @@
+/**
+ * Cacheable internal action for PDF field analysis via Gemini.
+ *
+ * Separated from the agent tool so that @convex-dev/action-cache can
+ * wrap it — the cache keys on (storageId) so the same PDF analyzed
+ * twice returns the cached result instantly.
+ */
+
+import { ActionCache, type ActionCacheConfig } from "@convex-dev/action-cache";
+import { generateObject } from "ai";
+import type { FunctionReference } from "convex/server";
+import { v } from "convex/values";
+
+import { components, internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import { internalAction } from "../_generated/server";
+import { getModel } from "./model";
+
+// Re-export types and schema from the standalone module (keeps imports stable
+// for consumers while letting tests import without side effects).
+export type { AnnotationResult, FieldAnalysisResult } from "./analyzeFieldsSchema";
+export { DocumentAnalysisSchema } from "./analyzeFieldsSchema";
+
+import { DocumentAnalysisSchema, type FieldAnalysisResult } from "./analyzeFieldsSchema";
+
+const DOCUMENT_ANALYSIS_PROMPT = `You are analyzing a PDF document for a document signing platform. You have two jobs:
+
+## JOB 1: FIELD DETECTION
+Identify all locations where form fields should be placed for recipients to fill in.
+
+### Field Types
+- **signature**: Signature lines, "Sign here" labels, signature blocks
+- **text**: Name fields, address fields, title fields, any free-text input areas
+- **number**: Numeric fields like amounts, quantities, phone numbers
+- **date**: Date fields, "Date:" labels, any date entry areas
+- **checkbox**: Checkboxes, agreement confirmations, yes/no selections
+- **dropdown**: Select fields with predefined options (rare in PDFs)
+- **radio**: Radio button groups for mutually exclusive choices
+- **attachment**: Areas indicating file upload or attachment requirements
+- **payment**: Payment amount fields, invoice totals, amounts due
+
+### Field Guidelines
+1. Look for blank lines, underscores, boxes, or labeled areas meant for input
+2. Signature blocks are typically at the bottom of documents
+3. Date fields often appear near signature lines
+4. Look for labels like "Name:", "Address:", "Date:", "Signature:", "Sign:", etc.
+5. Consider the document context — contracts have signature/date blocks, invoices have payment fields
+6. Set confidence higher (0.8-1.0) when you see clear visual indicators (underlines, boxes, labels)
+7. Set confidence lower (0.5-0.7) when inferring from context or document structure
+8. Mark fields as required when they have asterisks, "required" labels, or are core to the document
+9. Size fields appropriately — signatures need more space (~20-30% width, ~5-8% height), text fields less
+
+## JOB 2: DOCUMENT REDLINING
+Identify key clauses in the document that a reader should pay attention to. Annotate them with precise bounding boxes.
+
+### Annotation Categories
+- **obligation**: Duties, commitments — "shall", "must", "agrees to", deliverables, deadlines
+- **payment**: Amounts, due dates, payment schedules, penalties, fees, pricing
+- **risk**: Indemnification, limitation of liability, termination, warranties, disclaimers
+- **dates**: Effective dates, expiration dates, renewal periods, notice periods
+- **terms**: Key defined terms that affect interpretation of the document
+
+### Annotation Severity
+- **informational**: Standard clause, good to be aware of
+- **important**: Clause with significant implications — financial commitments, deadlines, restrictions
+- **critical**: High-risk clause — large liability exposure, unusual terms, penalty clauses
+
+### Annotation Guidelines
+1. The bounding box should tightly cover the clause text being annotated
+2. Summary must be one sentence, plain English, max 120 characters — explain what this means for the reader
+3. Focus on substantive clauses, not boilerplate headers or formatting
+4. For multi-line clauses, the bounding box should cover the full clause
+5. Prefer fewer high-quality annotations over many low-value ones — aim for 5-20 per document
+6. Every annotation must have real substance — don't annotate obvious things like "This is a contract"
+
+## Coordinate System
+- All positions are **percentages of page dimensions** (0-100)
+- x=0 is left edge, x=100 is right edge
+- y=0 is top edge, y=100 is bottom edge
+- Width and height are also percentages
+
+Analyze the document and return both detected fields AND clause annotations.`;
+
+// ---------------------------------------------------------------------------
+// Internal action (the expensive Gemini call)
+// ---------------------------------------------------------------------------
+
+export const analyzeFieldsInternal = internalAction({
+  args: {
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args): Promise<FieldAnalysisResult> => {
+    const pdfUrl = await ctx.storage.getUrl(args.storageId);
+    if (!pdfUrl) throw new Error("PDF not found in storage");
+
+    const response = await fetch(pdfUrl);
+    if (!response.ok) throw new Error("Failed to download PDF");
+    const pdfBuffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(pdfBuffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 8192) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    }
+    const pdfBase64 = btoa(binary);
+
+    const startTime = Date.now();
+    const result = await generateObject({
+      model: getModel("google/gemini-3-flash"),
+      schema: DocumentAnalysisSchema,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "file", data: pdfBase64, mediaType: "application/pdf" },
+            { type: "text", text: DOCUMENT_ANALYSIS_PROMPT },
+          ],
+        },
+      ],
+    });
+    const processingTimeMs = Date.now() - startTime;
+
+    const validated = DocumentAnalysisSchema.parse(result.object);
+
+    return {
+      fields: validated.fields,
+      annotations: validated.annotations,
+      tokensUsed: result.usage?.totalTokens ?? 0,
+      processingTimeMs,
+    };
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Cache wrapper — keyed on storageId, expires after 24 hours
+// ---------------------------------------------------------------------------
+
+type AnalyzeAction = FunctionReference<
+  "action",
+  "internal",
+  { storageId: Id<"_storage"> },
+  FieldAnalysisResult
+>;
+
+export const fieldAnalysisCache: ActionCache<AnalyzeAction> = new ActionCache(
+  components.actionCache,
+  {
+    action: internal.ai.analyzeFieldsAction.analyzeFieldsInternal,
+    name: "documentAnalysis-v2",
+    ttl: 24 * 60 * 60 * 1000, // 24 hours
+  } as ActionCacheConfig<AnalyzeAction>,
+);
+
+// ---------------------------------------------------------------------------
+// Retry helper — retries the cache fetch with exponential backoff
+// ---------------------------------------------------------------------------
+
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  initialDelayMs: 1000,
+  backoffBase: 2,
+};
+
+export async function fetchFieldAnalysisWithRetry(
+  ctx: Parameters<typeof fieldAnalysisCache.fetch>[0],
+  storageId: Id<"_storage">,
+): Promise<FieldAnalysisResult> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+    try {
+      return (await fieldAnalysisCache.fetch(ctx, { storageId })) as FieldAnalysisResult;
+    } catch (error) {
+      lastError = error;
+      if (attempt < RETRY_CONFIG.maxRetries) {
+        const delayMs =
+          RETRY_CONFIG.initialDelayMs * RETRY_CONFIG.backoffBase ** attempt;
+        console.warn(
+          `[AI Pipeline] Field analysis attempt ${attempt + 1} failed, retrying in ${delayMs}ms`,
+          error,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+
+  throw lastError;
+}

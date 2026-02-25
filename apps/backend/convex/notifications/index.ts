@@ -146,6 +146,29 @@ export const clearAll = authMutation({
   },
 });
 
+/**
+ * Maps notification types to user preference categories.
+ * Returns null if the notification type should always be delivered.
+ */
+function getPreferenceCategory(type: NotificationType): "documentEvents" | "reminders" | null {
+  switch (type) {
+    case "document_signed":
+    case "document_completed":
+    case "document_shared":
+    case "signature_requested":
+    case "access_revoked":
+    case "access_updated":
+    case "ownership_transferred":
+    case "sharing_disabled":
+    case "bulk_access_revoked":
+      return "documentEvents";
+    case "reminder":
+      return "reminders";
+    default:
+      return null;
+  }
+}
+
 export async function createNotification(
   ctx: { db: DatabaseWriter },
   params: {
@@ -155,7 +178,42 @@ export async function createNotification(
     data: NotificationData;
     emailStatus?: EmailStatus;
   },
-): Promise<Id<"notifications">> {
+): Promise<Id<"notifications"> | null> {
+  // Check user notification preferences before creating
+  const category = getPreferenceCategory(params.type);
+  if (category) {
+    const user = await ctx.db.get(params.userId);
+    if (user) {
+      const profile = await ctx.db
+        .query("user_profiles")
+        .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", user.clerkId))
+        .unique();
+
+      if (profile?.notificationPreferences) {
+        const prefs = profile.notificationPreferences;
+
+        // Check in-app master toggle
+        if (prefs.inApp === false) {
+          return null;
+        }
+
+        // Check email-specific preferences to suppress email
+        if (prefs.email?.enabled === false || prefs.email?.[category] === false) {
+          // Still create in-app notification, but skip email
+          return await ctx.db.insert("notifications", {
+            userId: params.userId,
+            organizationId: params.organizationId,
+            type: params.type,
+            data: params.data,
+            read: false,
+            createdAt: Date.now(),
+            emailStatus: "not_applicable",
+          });
+        }
+      }
+    }
+  }
+
   return await ctx.db.insert("notifications", {
     userId: params.userId,
     organizationId: params.organizationId,

@@ -9,6 +9,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import { CommandPalette, useCommandPalette } from "@/components/command-palette";
 import { PostHogIdentify } from "@/components/posthog-identify";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
 import { DotPattern } from "@/components/ui/patterns";
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/$slug")({
 
 function WorkspaceLayout() {
   const { slug } = Route.useParams();
+  const { open: cmdKOpen, setOpen: setCmdKOpen } = useCommandPalette();
 
   const organization = useQuery(api.organizations.queries.getOrganization, {
     slug,
@@ -56,6 +58,7 @@ function WorkspaceLayout() {
           <Outlet />
         </main>
       </div>
+      <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
     </SidebarProvider>
   );
 }

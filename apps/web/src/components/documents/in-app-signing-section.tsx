@@ -51,6 +51,10 @@ interface FieldWithValue {
     pattern?: string;
     helpText?: string;
   };
+  validationRules?: {
+    min?: number;
+    max?: number;
+  };
 }
 
 interface RecipientData {
@@ -401,6 +405,7 @@ export function InAppSigningSection({
           currentValue={activeField.currentValue}
           currentSignatureImageUrl={activeField.currentSignatureImageUrl}
           properties={activeField.properties}
+          validationRules={activeField.validationRules}
           recipientName={recipient.name || recipient.email}
           onSave={handleFieldSave}
         />
@@ -431,6 +436,7 @@ function getFieldTypeLabel(fieldType: string): string {
   const labels: Record<string, string> = {
     signature: "Signature",
     text: "Text",
+    number: "Number",
     date: "Date",
     checkbox: "Checkbox",
     dropdown: "Dropdown",

@@ -4,10 +4,6 @@ const config: KnipConfig = {
   entry: [
     "src/main.tsx",
     "src/routes/**/*.{ts,tsx}",
-    // Vite plugins loaded by vite.config.ts
-    "src/plugins/**/*.ts",
-    // Source loaded at runtime via ssrLoadModule in search-index plugin
-    "src/lib/source.ts",
   ],
   project: ["src/**/*.{ts,tsx}"],
   ignore: [
@@ -34,10 +30,8 @@ const config: KnipConfig = {
     "tw-animate-css",
     // Radix UI (used by shadcn/ui components)
     "@radix-ui/*",
-    // Used in vite.config.ts esbuild plugin to polyfill node:path for browser
-    "path-browserify",
   ],
-  ignoreBinaries: ["oxlint", "oxfmt", "knip", "vite", "tsc", "playwright"],
+  ignoreBinaries: ["oxlint", "oxfmt", "knip", "vite", "vitest", "tsc", "playwright"],
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };

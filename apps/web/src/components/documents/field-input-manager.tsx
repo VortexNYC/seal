@@ -19,6 +19,8 @@ import {
   CheckboxFieldInput,
   DateFieldInput,
   DropdownFieldInput,
+  NumberFieldInput,
+  PaymentFieldSummary,
   RadioFieldInput,
   TextFieldInput,
 } from "./field-inputs";
@@ -42,22 +44,29 @@ interface FieldInputManagerProps {
     pattern?: string;
     helpText?: string;
   };
+  validationRules?: {
+    min?: number;
+    max?: number;
+  };
   onSave: (value?: string, signatureImageUrl?: string) => Promise<void>;
   recipientName?: string;
+  signingToken?: string;
 }
 
 export function FieldInputManager({
   open,
   onOpenChange,
-  fieldId: _fieldId,
+  fieldId,
   fieldType,
   label,
   isRequired,
   currentValue,
   currentSignatureImageUrl,
   properties,
+  validationRules,
   onSave,
   recipientName,
+  signingToken,
 }: FieldInputManagerProps) {
   const [value, setValue] = useState(currentValue || properties?.defaultValue || "");
   const [signatureImageUrl, setSignatureImageUrl] = useState(currentSignatureImageUrl);
@@ -150,11 +159,21 @@ export function FieldInputManager({
           />
         );
 
+      case "number":
+        return (
+          <NumberFieldInput
+            {...commonProps}
+            placeholder={properties?.placeholder}
+            min={validationRules?.min}
+            max={validationRules?.max}
+          />
+        );
+
       case "date":
         return <DateFieldInput {...commonProps} />;
 
       case "checkbox":
-        return <CheckboxFieldInput {...commonProps} />;
+        return <CheckboxFieldInput {...commonProps} options={properties?.options || []} />;
 
       case "dropdown":
         return <DropdownFieldInput {...commonProps} options={properties?.options || []} />;
@@ -163,7 +182,16 @@ export function FieldInputManager({
         return <RadioFieldInput {...commonProps} options={properties?.options || []} />;
 
       case "attachment":
-        return <AttachmentFieldInput {...commonProps} />;
+        return <AttachmentFieldInput {...commonProps} signingToken={signingToken} />;
+
+      case "payment":
+        return (
+          <PaymentFieldSummary
+            fieldId={fieldId}
+            token={signingToken}
+            showInlinePayment={!!signingToken}
+          />
+        );
 
       case "signature":
         return (
@@ -185,28 +213,51 @@ export function FieldInputManager({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={fieldType === "signature" ? "max-w-2xl" : "max-w-md"}>
+      <DialogContent
+        className={
+          fieldType === "signature"
+            ? "max-w-2xl"
+            : fieldType === "payment"
+              ? "max-w-lg"
+              : "max-w-md"
+        }
+      >
         <DialogHeader>
-          <DialogTitle>{fieldType === "signature" ? "Sign Here" : "Fill Field"}</DialogTitle>
+          <DialogTitle>
+            {fieldType === "signature"
+              ? "Sign Here"
+              : fieldType === "payment"
+                ? "Payment Details"
+                : "Fill Field"}
+          </DialogTitle>
           <DialogDescription>
             {fieldType === "signature"
               ? "Draw, type, or upload your signature below."
-              : isRequired
-                ? "This field is required. Please provide a value."
-                : "Fill in the field value below."}
+              : fieldType === "payment"
+                ? "Review the payment details below."
+                : isRequired
+                  ? "This field is required. Please provide a value."
+                  : "Fill in the field value below."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">{renderFieldInput()}</div>
 
-        {/* Only show footer for non-signature fields (signature has its own buttons) */}
-        {fieldType !== "signature" && (
+        {/* Only show footer for non-signature, non-payment fields (signature has its own buttons, payment is read-only) */}
+        {fieldType !== "signature" && fieldType !== "payment" && (
           <DialogFooter>
             <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={isSaving || (!isValid && isRequired)}>
               {isSaving ? "Saving..." : "Save Field"}
+            </Button>
+          </DialogFooter>
+        )}
+        {fieldType === "payment" && (
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
             </Button>
           </DialogFooter>
         )}
