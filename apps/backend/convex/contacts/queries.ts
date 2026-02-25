@@ -121,3 +121,43 @@ export const getByEmail = permissionQuery("contacts:view")({
     return contact;
   },
 });
+
+/**
+ * Get documents related to a contact by email.
+ * Finds document_recipients matching the email, then fetches each document.
+ * Only returns documents belonging to the current organization.
+ * Requires contacts:view permission.
+ */
+export const getRelatedDocuments = permissionQuery("contacts:view")({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const orgId = ctx.auth.organization._id;
+
+    // Find recipients with this email
+    const recipients = await ctx.db
+      .query("document_recipients")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .collect();
+
+    // Get unique document IDs and fetch documents
+    const documentIds = [...new Set(recipients.map((r) => r.documentId))];
+    const documents = await Promise.all(
+      documentIds.map(async (docId) => {
+        const doc = await ctx.db.get(docId);
+        if (!doc || doc.organizationId !== orgId) return null;
+        const recipient = recipients.find((r) => r.documentId === docId);
+        return {
+          _id: doc._id,
+          name: doc.name,
+          workflowStatus: doc.workflowStatus ?? ("draft" as const),
+          role: recipient?.role ?? ("signer" as const),
+          createdAt: doc.createdAt,
+        };
+      }),
+    );
+
+    return documents.filter(
+      (d): d is NonNullable<typeof d> => d !== null,
+    );
+  },
+});

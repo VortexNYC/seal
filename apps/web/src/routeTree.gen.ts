@@ -36,6 +36,7 @@ import { Route as AuthenticatedSlugSettingsProfileRouteImport } from './routes/_
 import { Route as AuthenticatedSlugSettingsPaymentsRouteImport } from './routes/_authenticated/$slug/settings/payments'
 import { Route as AuthenticatedSlugSettingsBillingRouteImport } from './routes/_authenticated/$slug/settings/billing'
 import { Route as AuthenticatedSlugDocumentsDocumentIdRouteImport } from './routes/_authenticated/$slug/documents/$documentId'
+import { Route as AuthenticatedSlugContactsContactIdRouteImport } from './routes/_authenticated/$slug/contacts/$contactId'
 import { Route as AuthenticatedSlugSettingsTeamIndexRouteImport } from './routes/_authenticated/$slug/settings/team/index'
 import { Route as AuthenticatedSlugSettingsProfileIndexRouteImport } from './routes/_authenticated/$slug/settings/profile/index'
 import { Route as AuthenticatedSlugSettingsDeveloperIndexRouteImport } from './routes/_authenticated/$slug/settings/developer/index'
@@ -193,6 +194,12 @@ const AuthenticatedSlugDocumentsDocumentIdRoute =
     path: '/$documentId',
     getParentRoute: () => AuthenticatedSlugDocumentsRoute,
   } as any)
+const AuthenticatedSlugContactsContactIdRoute =
+  AuthenticatedSlugContactsContactIdRouteImport.update({
+    id: '/$contactId',
+    path: '/$contactId',
+    getParentRoute: () => AuthenticatedSlugContactsRoute,
+  } as any)
 const AuthenticatedSlugSettingsTeamIndexRoute =
   AuthenticatedSlugSettingsTeamIndexRouteImport.update({
     id: '/',
@@ -271,6 +278,7 @@ export interface FileRoutesByFullPath {
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
   '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
   '/$slug/': typeof AuthenticatedSlugIndexRoute
+  '/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
@@ -305,6 +313,7 @@ export interface FileRoutesByTo {
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
   '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
   '/$slug': typeof AuthenticatedSlugIndexRoute
+  '/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
@@ -343,6 +352,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/home': typeof AuthenticatedSlugHomeRoute
   '/_authenticated/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
   '/_authenticated/$slug/': typeof AuthenticatedSlugIndexRoute
+  '/_authenticated/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
   '/_authenticated/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
   '/_authenticated/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/_authenticated/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
@@ -382,6 +392,7 @@ export interface FileRouteTypes {
     | '/$slug/home'
     | '/$slug/templates'
     | '/$slug/'
+    | '/$slug/contacts/$contactId'
     | '/$slug/documents/$documentId'
     | '/$slug/settings/billing'
     | '/$slug/settings/payments'
@@ -416,6 +427,7 @@ export interface FileRouteTypes {
     | '/$slug/home'
     | '/$slug/templates'
     | '/$slug'
+    | '/$slug/contacts/$contactId'
     | '/$slug/documents/$documentId'
     | '/$slug/settings/billing'
     | '/$slug/settings/payments'
@@ -453,6 +465,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/home'
     | '/_authenticated/$slug/templates'
     | '/_authenticated/$slug/'
+    | '/_authenticated/$slug/contacts/$contactId'
     | '/_authenticated/$slug/documents/$documentId'
     | '/_authenticated/$slug/settings/billing'
     | '/_authenticated/$slug/settings/payments'
@@ -675,6 +688,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugDocumentsDocumentIdRouteImport
       parentRoute: typeof AuthenticatedSlugDocumentsRoute
     }
+    '/_authenticated/$slug/contacts/$contactId': {
+      id: '/_authenticated/$slug/contacts/$contactId'
+      path: '/$contactId'
+      fullPath: '/$slug/contacts/$contactId'
+      preLoaderRoute: typeof AuthenticatedSlugContactsContactIdRouteImport
+      parentRoute: typeof AuthenticatedSlugContactsRoute
+    }
     '/_authenticated/$slug/settings/team/': {
       id: '/_authenticated/$slug/settings/team/'
       path: '/'
@@ -763,11 +783,14 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface AuthenticatedSlugContactsRouteChildren {
+  AuthenticatedSlugContactsContactIdRoute: typeof AuthenticatedSlugContactsContactIdRoute
   AuthenticatedSlugContactsIndexRoute: typeof AuthenticatedSlugContactsIndexRoute
 }
 
 const AuthenticatedSlugContactsRouteChildren: AuthenticatedSlugContactsRouteChildren =
   {
+    AuthenticatedSlugContactsContactIdRoute:
+      AuthenticatedSlugContactsContactIdRoute,
     AuthenticatedSlugContactsIndexRoute: AuthenticatedSlugContactsIndexRoute,
   }
 
