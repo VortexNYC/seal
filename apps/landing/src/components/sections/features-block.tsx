@@ -75,7 +75,7 @@ const pillars: Pillar[] = [
     title: "Pay",
     headline: "Collect payments at signing",
     description:
-      "Attach payment requests to any document. Recipients sign and pay in one step. Powered by Stripe Connect — funds go directly to your account.",
+      "Attach one-time, recurring, or installment payment requests to any document. Recipients sign and pay in one step — cards, ACH, Apple Pay, and Google Pay. Powered by Stripe Connect with auto-generated invoices.",
   },
   {
     icon: Workflow,

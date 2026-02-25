@@ -202,8 +202,8 @@ export function StaticHero() {
         {/* Subtitle */}
         <FadeIn delay={0.15}>
           <p className="text-muted-foreground mt-8 max-w-xl text-lg text-pretty sm:text-xl">
-            The intelligent document platform with built-in payments, AI field detection, and a full
-            REST API.
+            The intelligent document platform with built-in payments and recurring billing, AI field
+            detection, and a full REST API.
           </p>
         </FadeIn>
 

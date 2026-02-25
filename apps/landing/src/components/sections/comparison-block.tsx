@@ -8,16 +8,18 @@ interface ComparisonItem {
 
 const painPoints: ComparisonItem[] = [
   { text: "Per-signature fees that add up fast" },
-  { text: "Separate tools for payments" },
+  { text: "Separate tools for payments and invoicing" },
   { text: "No API or limited access" },
   { text: "AI features locked behind enterprise" },
+  { text: "No recurring billing without third-party tools" },
 ];
 
 const benefits: ComparisonItem[] = [
   { text: "Flat monthly pricing, unlimited signatures on Pro" },
-  { text: "Built-in payment collection via Stripe" },
+  { text: "Built-in payments with auto-generated Stripe invoices" },
   { text: "Full REST API from day one" },
   { text: "AI field detection on every plan" },
+  { text: "Recurring billing and installments built in" },
 ];
 
 export function StaticComparison() {
