@@ -10,8 +10,9 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { internalAction, internalMutation } from "../_generated/server";
-import { isRecipientComplete } from "../schemas/document_recipients";
-import { sendDocumentCompleted, sendSigningComplete } from "./email";
+import { isRecipientComplete, isRecipientTerminal } from "../schemas/document_recipients";
+import { sendDocumentCompleted, sendDocumentInvitation, sendSigningComplete } from "./email";
+import { groupRecipientsByOrder } from "./recipient_helpers";
 
 /**
  * Internal mutation to mark document as completed
@@ -132,6 +133,47 @@ export const sendPostSignatureEmails = internalAction({
     );
 
     const allComplete = allRecipients.every((r) => isRecipientComplete(r.role, r.status));
+
+    // 4b. If document uses sequential mode, check if the completed recipient's group
+    // is now fully done and notify the next group
+    if (document.signingMode === "sequential" && !allComplete && recipient) {
+      const myOrder = recipient.order ?? 0;
+      const groups = groupRecipientsByOrder(allRecipients);
+      const myGroup = groups.get(myOrder);
+
+      // Check if my entire group is now terminal
+      if (myGroup && myGroup.every((r) => isRecipientTerminal(r.status))) {
+        // Find the next group with pending recipients
+        const sortedOrders = [...groups.keys()];
+        for (const order of sortedOrders) {
+          if (order > myOrder) {
+            const nextGroup = groups.get(order)!;
+            const pendingInNextGroup = nextGroup.filter((r) => r.status === "pending");
+            if (pendingInNextGroup.length > 0) {
+              // Send invitation emails to the next group
+              const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+                userId: document.ownerId,
+              });
+              const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
+              const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+
+              for (const nextRecipient of pendingInNextGroup) {
+                const signingUrl = `${baseUrl}/sign/${nextRecipient.signingToken}`;
+                await sendDocumentInvitation({
+                  to: nextRecipient.email,
+                  recipientName: nextRecipient.name || nextRecipient.email,
+                  documentName: document.name,
+                  senderName,
+                  signingUrl,
+                  expiresAt: nextRecipient.tokenExpiresAt,
+                });
+              }
+              break; // Only notify one group at a time
+            }
+          }
+        }
+      }
+    }
 
     let completionEmailSent = false;
 

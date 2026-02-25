@@ -27,7 +27,12 @@ import {
   type ReminderType,
 } from "./schemas/document_reminders";
 import { type DocumentVersionChangeType, documentVersionsTable } from "./schemas/document_versions";
-import { type DocumentSharingMode, type DocumentStatus, documentsTable } from "./schemas/documents";
+import {
+  type DocumentSharingMode,
+  type DocumentStatus,
+  type SigningMode,
+  documentsTable,
+} from "./schemas/documents";
 import { downloadTokensTable } from "./schemas/download_tokens";
 import { type EmailStatus, type EmailType, emailLogsTable } from "./schemas/email_logs";
 import {
@@ -115,7 +120,7 @@ export type {
   DocumentStatus,
   DocumentVersionChangeType,
 };
-export type { RecipientRole, DocumentRecipientStatus };
+export type { RecipientRole, DocumentRecipientStatus, SigningMode };
 export type { ReminderStatus, ReminderType };
 export type { DocumentWorkflowStatus } from "./schemas/document_workflow_status";
 

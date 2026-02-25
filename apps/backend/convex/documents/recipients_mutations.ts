@@ -15,7 +15,11 @@ import {
   recipientStatusTuple,
 } from "../schemas/document_recipients";
 import { publishWebhookEvent } from "../webhooks/publish";
-import { findRecipientByToken, verifyDocumentOwnership } from "./recipient_helpers";
+import {
+  findRecipientByToken,
+  isRecipientGroupActive,
+  verifyDocumentOwnership,
+} from "./recipient_helpers";
 
 /**
  * Generate a unique signing token and its SHA-256 hash.
@@ -393,6 +397,19 @@ export const submitRecipientSignature = mutation({
       }
     }
 
+    // 5c. Enforce sequential signing order if document uses sequential mode
+    const document = await ctx.db.get(recipient.documentId);
+    if (document?.signingMode === "sequential" && args.status !== "viewed") {
+      const allRecipients = await ctx.db
+        .query("document_recipients")
+        .withIndex("by_document", (q) => q.eq("documentId", recipient.documentId))
+        .collect();
+
+      if (!isRecipientGroupActive(recipient, allRecipients)) {
+        throw new ConvexError("Previous recipients must complete their action first");
+      }
+    }
+
     // 6. Update the recipient
     const now = Date.now();
     const updateData: Record<string, unknown> = {
@@ -437,7 +454,6 @@ export const submitRecipientSignature = mutation({
     await ctx.db.patch(recipient._id, updateData);
 
     // 7. Audit trail
-    const document = await ctx.db.get(recipient.documentId);
     if (document) {
       const auditAction =
         args.status === "signed" || args.status === "approved"
@@ -608,6 +624,18 @@ export const submitSignatureAuthenticated = authMutation({
             message: "All payment fields must be completed before signing",
           });
         }
+      }
+    }
+
+    // 6c. Enforce sequential signing order
+    if (document.signingMode === "sequential" && args.status !== "viewed") {
+      const allRecipients = await ctx.db
+        .query("document_recipients")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+        .collect();
+
+      if (!isRecipientGroupActive(recipient, allRecipients)) {
+        throw new ConvexError("Previous recipients must complete their action first");
       }
     }
 

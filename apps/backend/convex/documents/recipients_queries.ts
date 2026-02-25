@@ -7,8 +7,8 @@ import { ConvexError, v } from "convex/values";
 import { query } from "../_generated/server";
 import { authQuery } from "../auth";
 import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
-import { isRecipientComplete } from "../schemas/document_recipients";
-import { findRecipientByToken } from "./recipient_helpers";
+import { isRecipientComplete, isRecipientTerminal } from "../schemas/document_recipients";
+import { findRecipientByToken, groupRecipientsByOrder, isRecipientGroupActive } from "./recipient_helpers";
 
 /**
  * Get all recipients for a document
@@ -118,7 +118,41 @@ export const getRecipientByToken = query({
       throw new ConvexError("Document not found");
     }
 
-    // 4. Return sanitized recipient and document info
+    // 4. Check sequential signing state
+    let waitingForPreviousGroup = false;
+    let sequentialProgress: { currentGroup: number; totalGroups: number } | undefined;
+
+    if (document.signingMode === "sequential") {
+      const allRecipients = await ctx.db
+        .query("document_recipients")
+        .withIndex("by_document", (q) => q.eq("documentId", recipient.documentId))
+        .collect();
+
+      waitingForPreviousGroup = !isRecipientGroupActive(recipient, allRecipients);
+
+      // Calculate progress info for the waiting UI
+      const groups = groupRecipientsByOrder(allRecipients);
+      const sortedOrders = [...groups.keys()];
+      let currentGroup = 0;
+      for (let i = 0; i < sortedOrders.length; i++) {
+        const group = groups.get(sortedOrders[i])!;
+        if (!group.every((r) => isRecipientTerminal(r.status))) {
+          currentGroup = i;
+          break;
+        }
+        // If all groups are complete, current is the last one
+        if (i === sortedOrders.length - 1) {
+          currentGroup = i;
+        }
+      }
+
+      sequentialProgress = {
+        currentGroup: currentGroup + 1, // 1-indexed for display
+        totalGroups: sortedOrders.length,
+      };
+    }
+
+    // 5. Return sanitized recipient and document info
     return {
       recipient: {
         _id: recipient._id,
@@ -142,7 +176,11 @@ export const getRecipientByToken = query({
         fileType: document.fileType,
         storageId: document.storageId,
         workflowStatus: document.workflowStatus,
+        signingMode: document.signingMode,
       },
+      // Sequential signing state
+      waitingForPreviousGroup,
+      sequentialProgress,
     };
   },
 });

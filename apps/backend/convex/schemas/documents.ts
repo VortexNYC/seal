@@ -10,6 +10,12 @@ export const documentSharingModeTuple = v.union(
 );
 export type DocumentSharingMode = Infer<typeof documentSharingModeTuple>;
 
+export const signingModeTuple = v.union(
+  v.literal("parallel"), // All recipients at once (default)
+  v.literal("sequential"), // Enforce recipient order groups
+);
+export type SigningMode = Infer<typeof signingModeTuple>;
+
 export const documentStatusTuple = v.union(
   v.literal("active"),
   v.literal("archived"),
@@ -79,6 +85,9 @@ export const documentsTable = defineTable({
 
   // Retention policy: completed documents must be retained for 7 years (ESIGN Act)
   retainUntil: v.optional(v.number()), // Timestamp after which the document can be deleted
+
+  // Signing mode: parallel (all at once) or sequential (enforce order groups)
+  signingMode: v.optional(signingModeTuple),
 
   // Version tracking
   currentVersion: v.optional(v.number()), // Current version number (1-based), optional for migration

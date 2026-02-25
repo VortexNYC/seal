@@ -7,6 +7,7 @@ import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { generateStringHash } from "../crypto/helpers";
+import { isRecipientTerminal } from "../schemas/document_recipients";
 
 // Generic context type that works with both standard and custom auth contexts
 type GenericCtx = Pick<MutationCtx | QueryCtx, "db">;
@@ -103,6 +104,76 @@ export async function hasAnyRecipientDeclined(
     .first();
 
   return declinedRecipient !== null;
+}
+
+/**
+ * Group recipients by their order value, sorted ascending.
+ * Recipients with undefined/null order are treated as order 0.
+ */
+export function groupRecipientsByOrder(
+  recipients: Doc<"document_recipients">[],
+): Map<number, Doc<"document_recipients">[]> {
+  const groups = new Map<number, Doc<"document_recipients">[]>();
+  for (const r of recipients) {
+    const order = r.order ?? 0;
+    if (!groups.has(order)) groups.set(order, []);
+    groups.get(order)!.push(r);
+  }
+  return new Map([...groups].sort(([a], [b]) => a - b));
+}
+
+/**
+ * Find the first order group where not all recipients are in a terminal state.
+ */
+export function findFirstIncompleteGroup(
+  recipients: Doc<"document_recipients">[],
+): Doc<"document_recipients">[] {
+  const groups = groupRecipientsByOrder(recipients);
+  for (const [_order, group] of groups) {
+    if (!group.every((r) => isRecipientTerminal(r.status))) {
+      return group;
+    }
+  }
+  return [];
+}
+
+/**
+ * Check whether a specific recipient's order group is active
+ * (all recipients in previous groups have reached terminal state).
+ */
+export function isRecipientGroupActive(
+  recipient: Doc<"document_recipients">,
+  allRecipients: Doc<"document_recipients">[],
+): boolean {
+  const myOrder = recipient.order ?? 0;
+  return allRecipients
+    .filter((r) => (r.order ?? 0) < myOrder)
+    .every((r) => isRecipientTerminal(r.status));
+}
+
+/**
+ * Get the next pending order group after a completed group.
+ * Returns recipients that are pending and whose group just became active.
+ */
+export function getNextPendingGroup(
+  allRecipients: Doc<"document_recipients">[],
+  completedOrder: number,
+): Doc<"document_recipients">[] {
+  const groups = groupRecipientsByOrder(allRecipients);
+  const sortedOrders = [...groups.keys()];
+
+  // Find the next order after completedOrder
+  for (const order of sortedOrders) {
+    if (order > completedOrder) {
+      const group = groups.get(order)!;
+      // Only return if the group has pending recipients
+      const pendingInGroup = group.filter((r) => r.status === "pending");
+      if (pendingInGroup.length > 0) {
+        return pendingInGroup;
+      }
+    }
+  }
+  return [];
 }
 
 /**

@@ -98,7 +98,7 @@ function SigningPage() {
     }),
   );
 
-  const { recipient, document: doc } = data;
+  const { recipient, document: doc, waitingForPreviousGroup, sequentialProgress } = data;
 
   // ESIGN consent state — skip modal if already consented
   const [hasConsented, setHasConsented] = useState(!!recipient.esignConsentAt);
@@ -631,6 +631,46 @@ function SigningPage() {
   };
 
   const statusBadge = getStatusBadge(recipient.status);
+
+  // Show waiting state for sequential signing when it's not this recipient's turn
+  if (waitingForPreviousGroup && !isCompleted) {
+    return (
+      <div className="dark:bg-background flex h-dvh flex-col items-center justify-center bg-[#FAFAF9] px-4">
+        <div className="w-full max-w-md space-y-6 text-center">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+            <ClockIcon className="size-8 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-balance text-xl font-semibold tracking-tight">
+              Waiting for Previous Signers
+            </h1>
+            <p className="text-pretty text-muted-foreground text-sm">
+              This document uses sequential signing.{" "}
+              {sequentialProgress
+                ? `Group ${sequentialProgress.currentGroup} of ${sequentialProgress.totalGroups} is currently signing.`
+                : "Previous recipients must complete their actions before you can proceed."}{" "}
+              You'll be notified by email when it's your turn.
+            </p>
+          </div>
+          <div className="bg-card rounded-lg border p-4">
+            <div className="flex items-center gap-3">
+              <FileTextIcon className="text-muted-foreground size-5 shrink-0" />
+              <div className="min-w-0 text-left">
+                <p className="truncate text-sm font-medium">{doc.name}</p>
+                <p className="text-muted-foreground text-xs">
+                  You're listed as a {recipient.role} on this document
+                </p>
+              </div>
+            </div>
+          </div>
+          <p className="text-muted-foreground text-xs">
+            This page updates automatically. You can also close it and return via the link in your
+            email.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Show ESIGN consent modal before allowing document access
   // Skip for recipients who already consented or are in a terminal state

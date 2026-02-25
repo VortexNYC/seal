@@ -11,8 +11,10 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CreditCardIcon,
+  ListOrderedIcon,
   Loader2Icon,
   SendIcon,
+  UsersIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -45,6 +47,7 @@ interface SendDocumentDialogProps {
     email: string;
     role: "signer" | "viewer" | "approver";
     status: "pending" | "viewed" | "signed" | "approved" | "declined";
+    order?: number;
   }>;
   signatureFieldCount: number;
   /** Map of recipientId to field count */
@@ -73,6 +76,12 @@ export function SendDocumentDialog({
 
   // SEA-119: Deadline picker state
   const [deadline, setDeadline] = useState<Date | undefined>(undefined);
+
+  // Signing mode: parallel (all at once) or sequential (by order groups)
+  const [signingMode, setSigningMode] = useState<"parallel" | "sequential">("parallel");
+
+  // Check if any recipients have order values set (enables sequential option)
+  const hasOrderValues = recipients.some((r) => r.order !== undefined && r.order !== 0);
 
   const sendDocumentEmails = useAction(api.documents.send_document_action.sendDocumentEmails);
 
@@ -130,6 +139,7 @@ export function SendDocumentDialog({
         customMessage: customMessage.trim() || undefined,
         recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
         deadline: deadline?.getTime(),
+        signingMode: signingMode === "sequential" ? "sequential" : undefined,
       });
 
       if (result.success) {
@@ -142,6 +152,7 @@ export function SendDocumentDialog({
         setCustomMessage("");
         setRecipientMessages({});
         setDeadline(undefined);
+        setSigningMode("parallel");
       } else {
         toast.error(
           `Failed to send to ${result.emailsFailed} recipient${result.emailsFailed !== 1 ? "s" : ""}`,
@@ -298,6 +309,58 @@ export function SendDocumentDialog({
               {customMessage.length}/500 characters
             </p>
           </div>
+
+          {/* Signing Mode Toggle */}
+          {recipients.length > 1 && (
+            <div>
+              <Label className="text-sm font-medium">Signing Order</Label>
+              <p className="text-muted-foreground mb-2 text-xs">
+                {hasOrderValues
+                  ? "Recipients have order values assigned"
+                  : "Choose how recipients sign the document"}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSigningMode("parallel")}
+                  className={`flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors ${
+                    signingMode === "parallel"
+                      ? "border-primary bg-primary/5 ring-primary/20 ring-1"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  <UsersIcon className="text-muted-foreground size-4 shrink-0" />
+                  <div>
+                    <p className="font-medium">All at once</p>
+                    <p className="text-muted-foreground text-xs">Everyone signs simultaneously</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSigningMode("sequential")}
+                  className={`flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors ${
+                    signingMode === "sequential"
+                      ? "border-primary bg-primary/5 ring-primary/20 ring-1"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  <ListOrderedIcon className="text-muted-foreground size-4 shrink-0" />
+                  <div>
+                    <p className="font-medium">In order</p>
+                    <p className="text-muted-foreground text-xs">
+                      Sign one {hasOrderValues ? "group" : "person"} at a time
+                    </p>
+                  </div>
+                </button>
+              </div>
+              {signingMode === "sequential" && !hasOrderValues && (
+                <p className="text-muted-foreground mt-2 text-xs">
+                  Recipients will sign in the order listed above. To customize the order, set order
+                  values on recipients before sending.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* SEA-119: Deadline picker */}
           <div>

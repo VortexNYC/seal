@@ -11,6 +11,7 @@ import { type ActionCtx, action, internalAction, internalMutation } from "../_ge
 import { logDocumentAction } from "../audit_logs/helpers";
 import { publishWebhookEvent } from "../webhooks/publish";
 import { sendDocumentInvitation } from "./email";
+import { findFirstIncompleteGroup } from "./recipient_helpers";
 
 async function authorizeDocumentOwner(
   ctx: ActionCtx,
@@ -66,6 +67,7 @@ export const markDocumentAsSent = internalMutation({
     documentId: v.id("documents"),
     deadline: v.optional(v.number()), // SEA-119: Signing deadline
     userId: v.optional(v.string()), // Clerk ID for audit trail
+    signingMode: v.optional(v.union(v.literal("parallel"), v.literal("sequential"))),
   },
   handler: async (ctx, args) => {
     const document = await ctx.db.get(args.documentId);
@@ -155,6 +157,7 @@ export const markDocumentAsSent = internalMutation({
       sentAt: Date.now(),
       updatedAt: Date.now(),
       ...(args.deadline && { deadline: args.deadline }), // SEA-119: Save deadline if provided
+      ...(args.signingMode && { signingMode: args.signingMode }),
     });
 
     // Audit trail
@@ -204,6 +207,7 @@ export const sendDocumentEmails = action({
       ),
     ), // SEA-119: Per-recipient custom messages
     deadline: v.optional(v.number()), // SEA-119: Signing deadline timestamp
+    signingMode: v.optional(v.union(v.literal("parallel"), v.literal("sequential"))),
   },
   handler: async (
     ctx,
@@ -303,7 +307,8 @@ export const sendDocumentEmails = action({
       }
     }
 
-    // 7. Send emails to all recipients
+    // 7. Send emails to recipients
+    // In sequential mode, only send to the first incomplete order group.
     // Invoice link is only sent to the recipient matching the invoice customer email.
     const emailResults: Array<{
       recipientId: Id<"document_recipients">;
@@ -311,8 +316,18 @@ export const sendDocumentEmails = action({
       error?: string;
     }> = [];
 
-    for (const recipient of recipients) {
-      // Only send to recipients who haven't completed their action
+    // Determine which recipients should receive emails now
+    let recipientsToEmail: Doc<"document_recipients">[];
+    if (document.signingMode === "sequential") {
+      recipientsToEmail = findFirstIncompleteGroup(recipients);
+    } else {
+      recipientsToEmail = recipients.filter(
+        (r) => r.status !== "signed" && r.status !== "approved" && r.status !== "declined",
+      );
+    }
+
+    for (const recipient of recipientsToEmail) {
+      // Skip recipients who have already completed their action
       if (
         recipient.status === "signed" ||
         recipient.status === "approved" ||
@@ -370,6 +385,7 @@ export const sendDocumentEmails = action({
         documentId: args.documentId,
         deadline: args.deadline, // SEA-119: Pass deadline to be saved
         userId: senderUser?.clerkId,
+        signingMode: args.signingMode,
       });
     }
 
@@ -499,8 +515,17 @@ export const sendDocumentEmailsInternal = internalAction({
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
 
-    // Send emails to all pending recipients
-    for (const recipient of recipients) {
+    // In sequential mode, only send to the first incomplete order group
+    let recipientsToEmail: Doc<"document_recipients">[];
+    if (document.signingMode === "sequential") {
+      recipientsToEmail = findFirstIncompleteGroup(recipients);
+    } else {
+      recipientsToEmail = recipients.filter(
+        (r) => r.status !== "signed" && r.status !== "approved" && r.status !== "declined",
+      );
+    }
+
+    for (const recipient of recipientsToEmail) {
       if (
         recipient.status === "signed" ||
         recipient.status === "approved" ||
