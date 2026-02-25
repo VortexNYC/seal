@@ -10,6 +10,7 @@ import { StaticHero } from "~/components/sections/hero-block";
 import { StaticPricing } from "~/components/sections/pricing-block";
 import { StaticProductShowcase } from "~/components/sections/product-showcase-block";
 import { StaticStatement } from "~/components/sections/statement-block";
+import { StaticTrust } from "~/components/sections/trust-block";
 
 const faqJsonLd = JSON.stringify({
   "@context": "https://schema.org",
@@ -76,6 +77,7 @@ function Home() {
       <StaticAi />
       <StaticProductShowcase />
       <StaticComparison />
+      <StaticTrust />
       <StaticDevelopers />
       <StaticPricing />
       <StaticFaq />

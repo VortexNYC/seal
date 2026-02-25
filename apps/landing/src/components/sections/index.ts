@@ -8,6 +8,7 @@ export { StaticDevelopers } from "./developers-block";
 export { StaticProductShowcase } from "./product-showcase-block";
 export { StaticComparison } from "./comparison-block";
 export { StaticStatement } from "./statement-block";
+export { StaticTrust } from "./trust-block";
 export { TestimonialsBlockComponent } from "./testimonials-block";
 export { LogoCloudBlockComponent } from "./logo-cloud-block";
 export { ComparisonTableBlockComponent } from "./comparison-table-block";

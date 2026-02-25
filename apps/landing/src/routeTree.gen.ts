@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
 import { Route as StudioRouteImport } from './routes/studio'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as IntegrationsRouteImport } from './routes/integrations'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as IndexRouteImport } from './routes/index'
@@ -32,6 +33,11 @@ const StudioRoute = StudioRouteImport.update({
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IntegrationsRoute = IntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsRoute = DocsRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
+  '/integrations': typeof IntegrationsRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/studio': typeof StudioRoute
   '/terms-of-service': typeof TermsOfServiceRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
+  '/integrations': typeof IntegrationsRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/studio': typeof StudioRoute
   '/terms-of-service': typeof TermsOfServiceRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
+  '/integrations': typeof IntegrationsRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/studio': typeof StudioRoute
   '/terms-of-service': typeof TermsOfServiceRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/docs'
+    | '/integrations'
     | '/privacy-policy'
     | '/studio'
     | '/terms-of-service'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/docs'
+    | '/integrations'
     | '/privacy-policy'
     | '/studio'
     | '/terms-of-service'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/docs'
+    | '/integrations'
     | '/privacy-policy'
     | '/studio'
     | '/terms-of-service'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChangelogRoute: typeof ChangelogRouteWithChildren
   DocsRoute: typeof DocsRouteWithChildren
+  IntegrationsRoute: typeof IntegrationsRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   StudioRoute: typeof StudioRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
@@ -166,6 +179,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/privacy-policy'
       preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/integrations': {
+      id: '/integrations'
+      path: '/integrations'
+      fullPath: '/integrations'
+      preLoaderRoute: typeof IntegrationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs': {
@@ -239,6 +259,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChangelogRoute: ChangelogRouteWithChildren,
   DocsRoute: DocsRouteWithChildren,
+  IntegrationsRoute: IntegrationsRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   StudioRoute: StudioRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
