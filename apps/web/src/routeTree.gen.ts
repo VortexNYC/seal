@@ -25,10 +25,12 @@ import { Route as AuthenticatedSlugIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedSlugTemplatesRouteImport } from './routes/_authenticated/$slug/templates'
 import { Route as AuthenticatedSlugHomeRouteImport } from './routes/_authenticated/$slug/home'
 import { Route as AuthenticatedSlugDocumentsRouteImport } from './routes/_authenticated/$slug/documents'
+import { Route as AuthenticatedSlugContactsRouteImport } from './routes/_authenticated/$slug/contacts'
 import { Route as AuthenticatedSlugAnalyticsRouteImport } from './routes/_authenticated/$slug/analytics'
 import { Route as AuthenticatedOnboardingChooseOrganizationIndexRouteImport } from './routes/_authenticated/onboarding/choose-organization/index'
 import { Route as AuthenticatedSlugSettingsIndexRouteImport } from './routes/_authenticated/$slug/settings/index'
 import { Route as AuthenticatedSlugDocumentsIndexRouteImport } from './routes/_authenticated/$slug/documents/index'
+import { Route as AuthenticatedSlugContactsIndexRouteImport } from './routes/_authenticated/$slug/contacts/index'
 import { Route as AuthenticatedSlugSettingsTeamRouteImport } from './routes/_authenticated/$slug/settings/team'
 import { Route as AuthenticatedSlugSettingsProfileRouteImport } from './routes/_authenticated/$slug/settings/profile'
 import { Route as AuthenticatedSlugSettingsPaymentsRouteImport } from './routes/_authenticated/$slug/settings/payments'
@@ -125,6 +127,12 @@ const AuthenticatedSlugDocumentsRoute =
     path: '/documents',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
+const AuthenticatedSlugContactsRoute =
+  AuthenticatedSlugContactsRouteImport.update({
+    id: '/contacts',
+    path: '/contacts',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
 const AuthenticatedSlugAnalyticsRoute =
   AuthenticatedSlugAnalyticsRouteImport.update({
     id: '/analytics',
@@ -148,6 +156,12 @@ const AuthenticatedSlugDocumentsIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedSlugDocumentsRoute,
+  } as any)
+const AuthenticatedSlugContactsIndexRoute =
+  AuthenticatedSlugContactsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSlugContactsRoute,
   } as any)
 const AuthenticatedSlugSettingsTeamRoute =
   AuthenticatedSlugSettingsTeamRouteImport.update({
@@ -252,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/docs/$': typeof DocsSplatRoute
   '/sign/$token': typeof SignTokenRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
+  '/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
   '/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
   '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
@@ -261,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
+  '/$slug/contacts/': typeof AuthenticatedSlugContactsIndexRoute
   '/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
   '/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
   '/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
@@ -292,6 +308,7 @@ export interface FileRoutesByTo {
   '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
+  '/$slug/contacts': typeof AuthenticatedSlugContactsIndexRoute
   '/$slug/documents': typeof AuthenticatedSlugDocumentsIndexRoute
   '/$slug/settings': typeof AuthenticatedSlugSettingsIndexRoute
   '/onboarding/choose-organization': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
@@ -321,6 +338,7 @@ export interface FileRoutesById {
   '/docs/$': typeof DocsSplatRoute
   '/sign/$token': typeof SignTokenRoute
   '/_authenticated/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
+  '/_authenticated/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
   '/_authenticated/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
   '/_authenticated/$slug/home': typeof AuthenticatedSlugHomeRoute
   '/_authenticated/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
@@ -330,6 +348,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/_authenticated/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/_authenticated/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
+  '/_authenticated/$slug/contacts/': typeof AuthenticatedSlugContactsIndexRoute
   '/_authenticated/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
   '/_authenticated/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
   '/_authenticated/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
@@ -358,6 +377,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/sign/$token'
     | '/$slug/analytics'
+    | '/$slug/contacts'
     | '/$slug/documents'
     | '/$slug/home'
     | '/$slug/templates'
@@ -367,6 +387,7 @@ export interface FileRouteTypes {
     | '/$slug/settings/payments'
     | '/$slug/settings/profile'
     | '/$slug/settings/team'
+    | '/$slug/contacts/'
     | '/$slug/documents/'
     | '/$slug/settings/'
     | '/onboarding/choose-organization/'
@@ -398,6 +419,7 @@ export interface FileRouteTypes {
     | '/$slug/documents/$documentId'
     | '/$slug/settings/billing'
     | '/$slug/settings/payments'
+    | '/$slug/contacts'
     | '/$slug/documents'
     | '/$slug/settings'
     | '/onboarding/choose-organization'
@@ -426,6 +448,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/sign/$token'
     | '/_authenticated/$slug/analytics'
+    | '/_authenticated/$slug/contacts'
     | '/_authenticated/$slug/documents'
     | '/_authenticated/$slug/home'
     | '/_authenticated/$slug/templates'
@@ -435,6 +458,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/settings/payments'
     | '/_authenticated/$slug/settings/profile'
     | '/_authenticated/$slug/settings/team'
+    | '/_authenticated/$slug/contacts/'
     | '/_authenticated/$slug/documents/'
     | '/_authenticated/$slug/settings/'
     | '/_authenticated/onboarding/choose-organization/'
@@ -574,6 +598,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugDocumentsRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
+    '/_authenticated/$slug/contacts': {
+      id: '/_authenticated/$slug/contacts'
+      path: '/contacts'
+      fullPath: '/$slug/contacts'
+      preLoaderRoute: typeof AuthenticatedSlugContactsRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
     '/_authenticated/$slug/analytics': {
       id: '/_authenticated/$slug/analytics'
       path: '/analytics'
@@ -601,6 +632,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$slug/documents/'
       preLoaderRoute: typeof AuthenticatedSlugDocumentsIndexRouteImport
       parentRoute: typeof AuthenticatedSlugDocumentsRoute
+    }
+    '/_authenticated/$slug/contacts/': {
+      id: '/_authenticated/$slug/contacts/'
+      path: '/'
+      fullPath: '/$slug/contacts/'
+      preLoaderRoute: typeof AuthenticatedSlugContactsIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugContactsRoute
     }
     '/_authenticated/$slug/settings/team': {
       id: '/_authenticated/$slug/settings/team'
@@ -724,6 +762,20 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface AuthenticatedSlugContactsRouteChildren {
+  AuthenticatedSlugContactsIndexRoute: typeof AuthenticatedSlugContactsIndexRoute
+}
+
+const AuthenticatedSlugContactsRouteChildren: AuthenticatedSlugContactsRouteChildren =
+  {
+    AuthenticatedSlugContactsIndexRoute: AuthenticatedSlugContactsIndexRoute,
+  }
+
+const AuthenticatedSlugContactsRouteWithChildren =
+  AuthenticatedSlugContactsRoute._addFileChildren(
+    AuthenticatedSlugContactsRouteChildren,
+  )
+
 interface AuthenticatedSlugDocumentsRouteChildren {
   AuthenticatedSlugDocumentsDocumentIdRoute: typeof AuthenticatedSlugDocumentsDocumentIdRoute
   AuthenticatedSlugDocumentsIndexRoute: typeof AuthenticatedSlugDocumentsIndexRoute
@@ -788,6 +840,7 @@ const AuthenticatedSlugSettingsTeamRouteWithChildren =
 
 interface AuthenticatedSlugRouteChildren {
   AuthenticatedSlugAnalyticsRoute: typeof AuthenticatedSlugAnalyticsRoute
+  AuthenticatedSlugContactsRoute: typeof AuthenticatedSlugContactsRouteWithChildren
   AuthenticatedSlugDocumentsRoute: typeof AuthenticatedSlugDocumentsRouteWithChildren
   AuthenticatedSlugHomeRoute: typeof AuthenticatedSlugHomeRoute
   AuthenticatedSlugTemplatesRoute: typeof AuthenticatedSlugTemplatesRoute
@@ -804,6 +857,7 @@ interface AuthenticatedSlugRouteChildren {
 
 const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
   AuthenticatedSlugAnalyticsRoute: AuthenticatedSlugAnalyticsRoute,
+  AuthenticatedSlugContactsRoute: AuthenticatedSlugContactsRouteWithChildren,
   AuthenticatedSlugDocumentsRoute: AuthenticatedSlugDocumentsRouteWithChildren,
   AuthenticatedSlugHomeRoute: AuthenticatedSlugHomeRoute,
   AuthenticatedSlugTemplatesRoute: AuthenticatedSlugTemplatesRoute,
