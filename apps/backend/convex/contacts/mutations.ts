@@ -32,12 +32,13 @@ export const create = permissionMutation("contacts:create")({
     const now = Date.now();
 
     const fullName = `${args.firstName} ${args.lastName}`.trim();
+    const normalizedEmail = args.email.toLowerCase().trim();
 
     // Check for duplicate email within org
     const existing = await ctx.db
       .query("contacts")
       .withIndex("by_org_email", (q) =>
-        q.eq("organizationId", organizationId).eq("email", args.email),
+        q.eq("organizationId", organizationId).eq("email", normalizedEmail),
       )
       .first();
 
@@ -48,7 +49,7 @@ export const create = permissionMutation("contacts:create")({
       firstName: args.firstName,
       lastName: args.lastName,
       fullName,
-      email: args.email,
+      email: normalizedEmail,
       phone: args.phone,
       company: args.company,
       title: args.title,
@@ -102,7 +103,8 @@ export const update = permissionMutation("contacts:edit")({
 
     if (args.firstName !== undefined) updates.firstName = args.firstName;
     if (args.lastName !== undefined) updates.lastName = args.lastName;
-    if (args.email !== undefined) updates.email = args.email;
+    if (args.email !== undefined)
+      updates.email = args.email.toLowerCase().trim();
     if (args.phone !== undefined) updates.phone = args.phone;
     if (args.company !== undefined) updates.company = args.company;
     if (args.title !== undefined) updates.title = args.title;

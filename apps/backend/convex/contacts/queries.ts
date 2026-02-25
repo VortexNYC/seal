@@ -139,7 +139,7 @@ export const suggestForRecipient = permissionQuery("contacts:view")({
 
     const term = args.searchTerm.trim();
 
-    // Search by name using search index
+    // Search by name using full-text search index (scoped to org)
     const results = await ctx.db
       .query("contacts")
       .withSearchIndex("search_contacts", (q) =>
@@ -147,22 +147,7 @@ export const suggestForRecipient = permissionQuery("contacts:view")({
       )
       .take(5);
 
-    // Also check email prefix match
-    const allOrgContacts = await ctx.db
-      .query("contacts")
-      .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
-      .collect();
-
-    const termLower = term.toLowerCase();
-    const emailMatches = allOrgContacts
-      .filter(
-        (c) =>
-          c.email.toLowerCase().startsWith(termLower) &&
-          !results.some((r) => r._id === c._id),
-      )
-      .slice(0, 5);
-
-    return [...results, ...emailMatches].slice(0, 5).map((c) => ({
+    return results.map((c) => ({
       _id: c._id,
       fullName: c.fullName,
       email: c.email,

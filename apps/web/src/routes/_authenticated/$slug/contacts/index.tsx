@@ -19,7 +19,7 @@ import {
   UsersIcon,
   XIcon,
 } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CreateContactDialog } from "@/components/contacts/create-contact-dialog";
@@ -522,9 +522,9 @@ function ContactsPage() {
 
   const handleCreateOpen = () => setCreateOpen(true);
 
-  const handleContactsLoaded = (contacts: Doc<"contacts">[]) => {
+  const handleContactsLoaded = useCallback((contacts: Doc<"contacts">[]) => {
     setLoadedContacts(contacts);
-  };
+  }, []);
 
   return (
     <PageWrapper
