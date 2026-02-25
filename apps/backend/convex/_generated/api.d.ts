@@ -178,6 +178,7 @@ import type * as stripe_connect_helpers from "../stripe/connect_helpers.js";
 import type * as stripe_connect_mutations from "../stripe/connect_mutations.js";
 import type * as stripe_connect_public_mutations from "../stripe/connect_public_mutations.js";
 import type * as stripe_connect_queries from "../stripe/connect_queries.js";
+import type * as stripe_connect_subscription_actions from "../stripe/connect_subscription_actions.js";
 import type * as stripe_connect_webhook_handlers from "../stripe/connect_webhook_handlers.js";
 import type * as stripe_coupon from "../stripe/coupon.js";
 import type * as stripe_handlers from "../stripe/handlers.js";
@@ -186,7 +187,9 @@ import type * as stripe_payment_field_actions from "../stripe/payment_field_acti
 import type * as stripe_pricing from "../stripe/pricing.js";
 import type * as stripe_promo_code from "../stripe/promo_code.js";
 import type * as stripe_queries from "../stripe/queries.js";
+import type * as stripe_revenue_queries from "../stripe/revenue_queries.js";
 import type * as stripe_subscription_actions from "../stripe/subscription_actions.js";
+import type * as stripe_subscription_queries from "../stripe/subscription_queries.js";
 import type * as stripe_sync from "../stripe/sync.js";
 import type * as stripe_sync_helpers from "../stripe/sync_helpers.js";
 import type * as stripe_sync_subscriptions from "../stripe/sync_subscriptions.js";
@@ -384,6 +387,7 @@ declare const fullApi: ApiFromModules<{
   "stripe/connect_mutations": typeof stripe_connect_mutations;
   "stripe/connect_public_mutations": typeof stripe_connect_public_mutations;
   "stripe/connect_queries": typeof stripe_connect_queries;
+  "stripe/connect_subscription_actions": typeof stripe_connect_subscription_actions;
   "stripe/connect_webhook_handlers": typeof stripe_connect_webhook_handlers;
   "stripe/coupon": typeof stripe_coupon;
   "stripe/handlers": typeof stripe_handlers;
@@ -392,7 +396,9 @@ declare const fullApi: ApiFromModules<{
   "stripe/pricing": typeof stripe_pricing;
   "stripe/promo_code": typeof stripe_promo_code;
   "stripe/queries": typeof stripe_queries;
+  "stripe/revenue_queries": typeof stripe_revenue_queries;
   "stripe/subscription_actions": typeof stripe_subscription_actions;
+  "stripe/subscription_queries": typeof stripe_subscription_queries;
   "stripe/sync": typeof stripe_sync;
   "stripe/sync_helpers": typeof stripe_sync_helpers;
   "stripe/sync_subscriptions": typeof stripe_sync_subscriptions;

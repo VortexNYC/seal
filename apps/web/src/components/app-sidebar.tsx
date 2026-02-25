@@ -3,7 +3,7 @@
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { Code2, LayoutTemplate, type LucideIcon, Moon, Settings, Sun } from "lucide-react";
+import { Code2, CreditCard, LayoutTemplate, type LucideIcon, Moon, Settings, Sun } from "lucide-react";
 import * as React from "react";
 
 import { NavMain } from "@/components/nav-main";
@@ -147,6 +147,45 @@ function buildNavSections({
     },
   ].filter((item) => item.visible);
 
+  const paymentsItems = [
+    {
+      title: "Overview",
+      url: buildOrganizationPath(slug, "/payments"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+      exactMatch: true,
+    },
+    {
+      title: "Subscriptions",
+      url: buildOrganizationPath(slug, "/payments/subscriptions"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "History",
+      url: buildOrganizationPath(slug, "/payments/history"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Payouts",
+      url: buildOrganizationPath(slug, "/payments/payouts"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Balances",
+      url: buildOrganizationPath(slug, "/payments/balances"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Disputes",
+      url: buildOrganizationPath(slug, "/payments/disputes"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Tax Documents",
+      url: buildOrganizationPath(slug, "/payments/tax"),
+      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    },
+  ].filter((item) => item.visible);
+
   const settingsItems = [
     {
       title: "General",
@@ -176,34 +215,9 @@ function buildNavSections({
         canView(permissionFlags?.canViewBilling) || canView(permissionFlags?.canManageBilling),
     },
     {
-      title: "Payments",
+      title: "Stripe Connect",
       url: buildOrganizationPath(slug, "/settings/payments"),
       visible: canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Payment History",
-      url: buildOrganizationPath(slug, "/settings/payment-history"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Payouts",
-      url: buildOrganizationPath(slug, "/settings/payouts"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Balances",
-      url: buildOrganizationPath(slug, "/settings/balances"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Disputes",
-      url: buildOrganizationPath(slug, "/settings/disputes"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Tax Documents",
-      url: buildOrganizationPath(slug, "/settings/tax-documents"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
     },
   ].filter((item) => item.visible);
 
@@ -231,6 +245,11 @@ function buildNavSections({
       title: "Workspace",
       icon: LayoutTemplate,
       items: workspaceItems,
+    },
+    {
+      title: "Payments",
+      icon: CreditCard,
+      items: paymentsItems,
     },
     {
       title: "Settings",

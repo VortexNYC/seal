@@ -1,4 +1,4 @@
-import { ConnectNotificationBanner, ConnectPayments } from "@stripe/react-connect-js";
+import { ConnectDisputesList, ConnectNotificationBanner } from "@stripe/react-connect-js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 
@@ -8,11 +8,11 @@ import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/payment-history")({
-  component: PaymentHistoryPage,
+export const Route = createFileRoute("/_authenticated/$slug/payments/disputes")({
+  component: DisputesPage,
 });
 
-function PaymentHistoryPage() {
+function DisputesPage() {
   const { slug } = Route.useParams();
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
   const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
@@ -23,18 +23,15 @@ function PaymentHistoryPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Payment History" />;
+    return <NoStripeConnectState slug={slug} title="Disputes" />;
   }
 
   return (
-    <PageWrapper
-      title="Payment History"
-      description="View all payments received through your documents."
-    >
+    <PageWrapper title="Disputes" description="Manage and respond to payment disputes.">
       <StripeConnectProvider organizationId={orgId}>
         <ConnectNotificationBanner />
         <div className="mt-6">
-          <ConnectPayments />
+          <ConnectDisputesList />
         </div>
       </StripeConnectProvider>
     </PageWrapper>

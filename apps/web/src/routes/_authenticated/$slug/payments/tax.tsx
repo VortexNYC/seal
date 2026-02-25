@@ -8,7 +8,7 @@ import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/tax-documents")({
+export const Route = createFileRoute("/_authenticated/$slug/payments/tax")({
   component: TaxDocumentsPage,
 });
 

@@ -1,8 +1,4 @@
-import {
-  ConnectBalances,
-  ConnectInstantPayoutsPromotion,
-  ConnectNotificationBanner,
-} from "@stripe/react-connect-js";
+import { ConnectNotificationBanner, ConnectPayments } from "@stripe/react-connect-js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 
@@ -12,11 +8,11 @@ import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
-export const Route = createFileRoute("/_authenticated/$slug/settings/balances")({
-  component: BalancesPage,
+export const Route = createFileRoute("/_authenticated/$slug/payments/history")({
+  component: PaymentHistoryPage,
 });
 
-function BalancesPage() {
+function PaymentHistoryPage() {
   const { slug } = Route.useParams();
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
   const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
@@ -27,16 +23,18 @@ function BalancesPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Balances" />;
+    return <NoStripeConnectState slug={slug} title="Payment History" />;
   }
 
   return (
-    <PageWrapper title="Balances" description="View your current Stripe balance and pending funds.">
+    <PageWrapper
+      title="Payment History"
+      description="View all payments received through your documents."
+    >
       <StripeConnectProvider organizationId={orgId}>
         <ConnectNotificationBanner />
-        <div className="mt-6 space-y-6">
-          <ConnectBalances />
-          <ConnectInstantPayoutsPromotion />
+        <div className="mt-6">
+          <ConnectPayments />
         </div>
       </StripeConnectProvider>
     </PageWrapper>
