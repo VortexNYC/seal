@@ -25,6 +25,7 @@ import {
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
 
+import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { PageWrapper } from "@/components/page-wrapper";
@@ -50,22 +51,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/formatting";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc } from "@seal/backend/convex/_generated/dataModel";
-import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
+
 
 export const Route = createFileRoute("/_authenticated/$slug/contacts/$contactId")({
   component: ContactDetailPage,
 });
-
-function StatusBadge({ status }: { status: ContactStatus }) {
-  switch (status) {
-    case "active":
-      return <Badge variant="default">Active</Badge>;
-    case "inactive":
-      return <Badge variant="secondary">Inactive</Badge>;
-    case "lead":
-      return <Badge variant="outline">Lead</Badge>;
-  }
-}
 
 function InfoRow({
   icon: Icon,
@@ -193,7 +183,7 @@ function ContactDetailContent() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-3">
                 <CardTitle>{contact.fullName}</CardTitle>
-                <StatusBadge status={contact.status} />
+                <ContactStatusBadge status={contact.status} />
               </div>
               <Button
                 variant="outline"

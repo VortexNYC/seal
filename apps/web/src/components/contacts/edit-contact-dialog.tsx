@@ -45,7 +45,7 @@ interface FormErrors {
 }
 
 function validateEmail(email: string): boolean {
-  return email.includes("@") && email.includes(".");
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export function EditContactDialog({ open, onOpenChange, contact }: EditContactDialogProps) {

@@ -22,6 +22,7 @@ import {
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { ContactStatusBadge } from "@/components/contacts/contact-status-badge";
 import { CreateContactDialog } from "@/components/contacts/create-contact-dialog";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
 import { ExportContacts } from "@/components/contacts/export-contacts";
@@ -36,7 +37,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -119,17 +119,6 @@ function ContactsTableSkeleton() {
       </Table>
     </div>
   );
-}
-
-function StatusBadge({ status }: { status: ContactStatus }) {
-  switch (status) {
-    case "active":
-      return <Badge variant="default">Active</Badge>;
-    case "inactive":
-      return <Badge variant="secondary">Inactive</Badge>;
-    case "lead":
-      return <Badge variant="outline">Lead</Badge>;
-  }
 }
 
 // --- Contact table rendering (shared between search and list) ---
@@ -333,7 +322,7 @@ function ContactsTableContent({
                   <p className="text-sm">{contact.title ?? "-"}</p>
                 </TableCell>
                 <TableCell>
-                  <StatusBadge status={contact.status} />
+                  <ContactStatusBadge status={contact.status} />
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
