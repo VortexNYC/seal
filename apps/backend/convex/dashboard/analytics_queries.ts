@@ -12,7 +12,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 
 // ─── Helpers ────────────────────────────────────
 
-function msToHumanReadable(ms: number): string {
+export function msToHumanReadable(ms: number): string {
   if (ms < 0) return "—";
   const hours = ms / (1000 * 60 * 60);
   if (hours < 1) return `${Math.round(ms / (1000 * 60))}m`;
@@ -21,9 +21,9 @@ function msToHumanReadable(ms: number): string {
   return `${days.toFixed(1)}d`;
 }
 
-type TimingBucket = "<1h" | "1-6h" | "6-24h" | "1-3d" | "3-7d" | "7d+";
+export type TimingBucket = "<1h" | "1-6h" | "6-24h" | "1-3d" | "3-7d" | "7d+";
 
-function getBucket(ms: number): TimingBucket {
+export function getBucket(ms: number): TimingBucket {
   const hours = ms / (1000 * 60 * 60);
   if (hours < 1) return "<1h";
   if (hours < 6) return "1-6h";

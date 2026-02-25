@@ -25,8 +25,8 @@ import {
 import {
   type Dispatch,
   type SetStateAction,
-  Suspense,
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -71,13 +71,48 @@ export const Route = createFileRoute("/_authenticated/$slug/analytics")({
 });
 
 function AnalyticsPage() {
+  const [activeTab, setActiveTab] = useState("activity");
+  const [scope, setScope] = useState<AnalyticsScope>("personal");
+  const [trendPreset, setTrendPreset] = useState<TrendPreset>("30");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+
+  // Use useQuery (not useSuspenseQuery) so real-time updates don't trigger Suspense remounts
+  const stats = useQuery(api.dashboard.queries.getDocumentStats, { scope });
+  const isAdmin = stats?.isAdmin ?? false;
+
+  // Auto-switch admins to team scope on first data load
+  useEffect(() => {
+    if (isAdmin && scope === "personal") {
+      setScope("team");
+    }
+  }, [isAdmin, scope]);
+
+  // Non-admins are forced to personal scope
+  const effectiveScope = isAdmin ? scope : "personal";
+
+  if (!stats) {
+    return (
+      <PageWrapper title="Analytics">
+        <DashboardSkeleton />
+      </PageWrapper>
+    );
+  }
+
   return (
     <PageWrapper title="Analytics">
-      <div className="space-y-6">
-        <Suspense fallback={<DashboardSkeleton />}>
-          <AnalyticsContent />
-        </Suspense>
-      </div>
+      <AnalyticsContent
+        stats={stats}
+        isAdmin={isAdmin}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        scope={scope}
+        effectiveScope={effectiveScope}
+        onScopeChange={setScope}
+        trendPreset={trendPreset}
+        onTrendPresetChange={setTrendPreset}
+        customRange={customRange}
+        onCustomRangeChange={setCustomRange}
+      />
     </PageWrapper>
   );
 }
@@ -86,29 +121,43 @@ type AnalyticsScope = "personal" | "team";
 
 type TrendPreset = "7" | "30" | "90" | "custom";
 
-function AnalyticsContent() {
-  const [trendPreset, setTrendPreset] = useState<TrendPreset>("30");
-  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
-  // Default to personal — backend enforces this for non-admins anyway
-  const [scope, setScope] = useState<AnalyticsScope>("personal");
-  const [hasInitialized, setHasInitialized] = useState(false);
-
-  // Fetch stats at this level so we can use isAdmin for gating
-  const { data: stats } = useSuspenseQuery(
-    convexQuery(api.dashboard.queries.getDocumentStats, { scope }),
-  );
-  const isAdmin = stats.isAdmin;
-
-  // Auto-switch admins to team scope on first load
-  if (isAdmin && !hasInitialized) {
-    setScope("team");
-    setHasInitialized(true);
-  } else if (!isAdmin && !hasInitialized) {
-    setHasInitialized(true);
-  }
-
-  // Non-admins are forced to personal scope
-  const effectiveScope = isAdmin ? scope : "personal";
+function AnalyticsContent({
+  stats,
+  isAdmin,
+  activeTab,
+  onTabChange,
+  scope,
+  effectiveScope,
+  onScopeChange,
+  trendPreset,
+  onTrendPresetChange,
+  customRange,
+  onCustomRangeChange,
+}: {
+  stats: {
+    total: number;
+    draft: number;
+    sent: number;
+    inProgress: number;
+    completed: number;
+    cancelled: number;
+    declined: number;
+    pending: number;
+    completionRate: number;
+    avgSigningTimeMs: number | null;
+    isAdmin: boolean;
+  };
+  isAdmin: boolean;
+  activeTab: string;
+  onTabChange: Dispatch<SetStateAction<string>>;
+  scope: AnalyticsScope;
+  effectiveScope: AnalyticsScope;
+  onScopeChange: Dispatch<SetStateAction<AnalyticsScope>>;
+  trendPreset: TrendPreset;
+  onTrendPresetChange: Dispatch<SetStateAction<TrendPreset>>;
+  customRange: DateRange | undefined;
+  onCustomRangeChange: Dispatch<SetStateAction<DateRange | undefined>>;
+}) {
 
   return (
     <div className="space-y-6">
@@ -117,7 +166,7 @@ function AnalyticsContent() {
           <div className="flex items-center gap-2 rounded-lg border p-1">
             <button
               type="button"
-              onClick={() => setScope("team")}
+              onClick={() => onScopeChange("team")}
               className={cn(
                 "rounded-md px-3 py-1 text-sm transition-colors",
                 scope === "team"
@@ -129,7 +178,7 @@ function AnalyticsContent() {
             </button>
             <button
               type="button"
-              onClick={() => setScope("personal")}
+              onClick={() => onScopeChange("personal")}
               className={cn(
                 "rounded-md px-3 py-1 text-sm transition-colors",
                 scope === "personal"
@@ -145,7 +194,7 @@ function AnalyticsContent() {
 
       <OverviewStats stats={stats} scope={effectiveScope} />
 
-      <Tabs defaultValue="activity" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-4">
         <TabsList>
           <TabsTrigger value="activity">Document Activity</TabsTrigger>
           <TabsTrigger value="status">Status Breakdown</TabsTrigger>
@@ -160,9 +209,9 @@ function AnalyticsContent() {
         <TabsContent value="activity" className="space-y-4">
           <TrendControls
             preset={trendPreset}
-            onPresetChange={setTrendPreset}
+            onPresetChange={onTrendPresetChange}
             customRange={customRange}
-            onCustomRangeChange={setCustomRange}
+            onCustomRangeChange={onCustomRangeChange}
           />
           <TrendChart preset={trendPreset} customRange={customRange} scope={effectiveScope} />
         </TabsContent>
@@ -179,21 +228,15 @@ function AnalyticsContent() {
         </TabsContent>
 
         <TabsContent value="emails" className="space-y-4">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <EmailEngagementTab />
-          </Suspense>
+          <EmailEngagementTab />
         </TabsContent>
 
         <TabsContent value="timing" className="space-y-4">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <RecipientTimingTab />
-          </Suspense>
+          <RecipientTimingTab />
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-4">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <TemplatePerformanceTab />
-          </Suspense>
+          <TemplatePerformanceTab />
         </TabsContent>
 
         <TabsContent value="export" className="space-y-4">
@@ -1097,9 +1140,11 @@ const EMAIL_FUNNEL_COLORS = {
 };
 
 function EmailEngagementTab() {
-  const { data: engagement } = useSuspenseQuery(
-    convexQuery(api.dashboard.analytics_queries.getEmailEngagementStats, { days: 30 }),
-  );
+  const engagement = useQuery(api.dashboard.analytics_queries.getEmailEngagementStats, { days: 30 });
+
+  if (!engagement) {
+    return <DashboardSkeleton />;
+  }
 
   if (engagement.total === 0) {
     return (
@@ -1221,9 +1266,11 @@ const TIMING_BUCKET_COLORS: Record<string, string> = {
 };
 
 function RecipientTimingTab() {
-  const { data: timing } = useSuspenseQuery(
-    convexQuery(api.dashboard.analytics_queries.getRecipientTimingStats, { days: 30 }),
-  );
+  const timing = useQuery(api.dashboard.analytics_queries.getRecipientTimingStats, { days: 30 });
+
+  if (!timing) {
+    return <DashboardSkeleton />;
+  }
 
   if (timing.sampleSize === 0) {
     return (
@@ -1321,11 +1368,13 @@ function RecipientTimingTab() {
 
 function TemplatePerformanceTab() {
   const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
-  const { data: templates } = useSuspenseQuery(
-    convexQuery(api.dashboard.analytics_queries.getTemplatePerformance, { days: 90 }),
-  );
+  const templates = useQuery(api.dashboard.analytics_queries.getTemplatePerformance, { days: 90 });
 
-  if (!isLoadingPlan && !isPro) {
+  if (!templates || isLoadingPlan) {
+    return <DashboardSkeleton />;
+  }
+
+  if (!isPro) {
     return (
       <Card>
         <CardContent className="flex h-[200px] flex-col items-center justify-center gap-2">
