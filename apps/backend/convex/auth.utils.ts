@@ -88,6 +88,8 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
     "contacts:edit",
     "contacts:delete",
     "contacts:export",
+    // Branding
+    "branding:manage",
   ],
 
   admin: [
@@ -150,6 +152,8 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
     "contacts:edit",
     "contacts:delete",
     "contacts:export",
+    // Branding
+    "branding:manage",
   ],
 
   member: [
@@ -333,6 +337,9 @@ export const DOCUMENT_SIGNING_PERMISSIONS = {
   // Data management permissions
   DATA_EXPORT: "data:export",
   DATA_BACKUP: "data:backup",
+
+  // Branding permissions
+  BRANDING_MANAGE: "branding:manage",
 
   // Contacts permissions
   CONTACTS_VIEW: "contacts:view",

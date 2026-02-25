@@ -49,6 +49,7 @@ import {
 } from "./schemas/organization_members";
 import { type OrganizationRoleType, organizationRolesTable } from "./schemas/organization_roles";
 import {
+  type BrandingSettings,
   type OrganizationStatus,
   organizationsTable,
   type organizationTypeTuple,
@@ -159,6 +160,9 @@ export type { DueDateTerms, PaymentMethod, PaymentStatus, PaymentType };
 
 // Re-export AI annotation types
 export type { AnnotationCategory, AnnotationSeverity };
+
+// Re-export branding types
+export type { BrandingSettings };
 
 export default defineSchema({
   users: usersTable,

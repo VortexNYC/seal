@@ -118,6 +118,14 @@ export const getRecipientByToken = query({
       throw new ConvexError("Document not found");
     }
 
+    // 3b. Get organization branding settings
+    const organization = document.organizationId
+      ? await ctx.db.get(document.organizationId)
+      : null;
+    const branding = organization?.brandingSettings?.enabled
+      ? organization.brandingSettings
+      : undefined;
+
     // 4. Check sequential signing state
     let waitingForPreviousGroup = false;
     let sequentialProgress: { currentGroup: number; totalGroups: number } | undefined;
@@ -181,6 +189,16 @@ export const getRecipientByToken = query({
       // Sequential signing state
       waitingForPreviousGroup,
       sequentialProgress,
+      // Organization branding (only if enabled)
+      branding: branding
+        ? {
+            logoUrl: branding.logoUrl,
+            brandColor: branding.brandColor,
+            accentColor: branding.accentColor,
+            hideSealBranding: branding.hideSealBranding,
+            customFooterText: branding.customFooterText,
+          }
+        : undefined,
     };
   },
 });

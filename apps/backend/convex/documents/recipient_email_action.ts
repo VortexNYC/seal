@@ -157,6 +157,19 @@ export const sendPostSignatureEmails = internalAction({
               const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
               const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
 
+              // Get organization branding settings for email customization
+              const brandingSettings = await ctx.runQuery(
+                internal.organizations.queries.getBrandingSettingsInternal,
+                { organizationId: document.organizationId },
+              );
+              const emailBranding =
+                brandingSettings.enabled
+                  ? {
+                      emailFromName: brandingSettings.emailFromName,
+                      emailReplyTo: brandingSettings.emailReplyTo,
+                    }
+                  : undefined;
+
               for (const nextRecipient of pendingInNextGroup) {
                 const signingUrl = `${baseUrl}/sign/${nextRecipient.signingToken}`;
                 await sendDocumentInvitation({
@@ -166,6 +179,7 @@ export const sendPostSignatureEmails = internalAction({
                   senderName,
                   signingUrl,
                   expiresAt: nextRecipient.tokenExpiresAt,
+                  branding: emailBranding,
                 });
               }
               break; // Only notify one group at a time

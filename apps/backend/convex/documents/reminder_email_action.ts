@@ -184,7 +184,20 @@ export const sendReminderEmail = internalAction({
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
 
-    // 8. Send the email
+    // 8. Get organization branding settings
+    const brandingSettings = await ctx.runQuery(
+      internal.organizations.queries.getBrandingSettingsInternal,
+      { organizationId: document.organizationId },
+    );
+    const emailBranding =
+      brandingSettings.enabled
+        ? {
+            emailFromName: brandingSettings.emailFromName,
+            emailReplyTo: brandingSettings.emailReplyTo,
+          }
+        : undefined;
+
+    // 9. Send the email
     const result = await sendReminder({
       to: recipient.email,
       recipientName: recipient.name || recipient.email,
@@ -193,6 +206,7 @@ export const sendReminderEmail = internalAction({
       signingUrl,
       customMessage: reminder.customMessage,
       reminderCount: (reminder.attemptCount || 0) + 1,
+      branding: emailBranding,
     });
 
     // 9. Update reminder status based on result
@@ -269,6 +283,19 @@ export const sendReminderEmailDirect = internalAction({
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
 
+    // Get organization branding settings
+    const brandingSettings = await ctx.runQuery(
+      internal.organizations.queries.getBrandingSettingsInternal,
+      { organizationId: document.organizationId },
+    );
+    const emailBranding =
+      brandingSettings.enabled
+        ? {
+            emailFromName: brandingSettings.emailFromName,
+            emailReplyTo: brandingSettings.emailReplyTo,
+          }
+        : undefined;
+
     await sendReminder({
       to: recipient.email,
       recipientName: recipient.name || recipient.email,
@@ -276,6 +303,7 @@ export const sendReminderEmailDirect = internalAction({
       senderName,
       signingUrl,
       customMessage: args.customMessage,
+      branding: emailBranding,
     });
   },
 });

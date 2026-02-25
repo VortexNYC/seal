@@ -871,3 +871,74 @@ export const updateAiSettings = adminMutation({
     });
   },
 });
+
+// ---------------------------------------------------------------------------
+// Branding settings (admin-only)
+// ---------------------------------------------------------------------------
+
+export const generateLogoUploadUrl = adminMutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const updateBrandingSettings = adminMutation({
+  args: {
+    logoStorageId: v.optional(v.id("_storage")),
+    removeLogo: v.optional(v.boolean()),
+    brandColor: v.optional(v.string()),
+    accentColor: v.optional(v.string()),
+    emailFromName: v.optional(v.string()),
+    emailReplyTo: v.optional(v.string()),
+    hideSealBranding: v.optional(v.boolean()),
+    customFooterText: v.optional(v.string()),
+    enabled: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(ctx.auth.organization._id);
+    if (!org) throw new ConvexError("Organization not found");
+
+    const current = org.brandingSettings ?? {
+      enabled: false,
+    };
+
+    // If a new logo was uploaded, generate its serving URL
+    let logoUrl = current.logoUrl;
+    let logoStorageId = current.logoStorageId;
+
+    if (args.removeLogo) {
+      // Delete old file from storage if it exists
+      if (current.logoStorageId) {
+        await ctx.storage.delete(current.logoStorageId);
+      }
+      logoUrl = undefined;
+      logoStorageId = undefined;
+    } else if (args.logoStorageId) {
+      // Delete old file from storage if replacing
+      if (current.logoStorageId && current.logoStorageId !== args.logoStorageId) {
+        await ctx.storage.delete(current.logoStorageId);
+      }
+      logoStorageId = args.logoStorageId;
+      const url = await ctx.storage.getUrl(args.logoStorageId);
+      logoUrl = url ?? undefined;
+    }
+
+    await ctx.db.patch(org._id, {
+      brandingSettings: {
+        logoStorageId,
+        logoUrl,
+        brandColor: args.brandColor ?? current.brandColor,
+        accentColor: args.accentColor ?? current.accentColor,
+        emailFromName: args.emailFromName ?? current.emailFromName,
+        emailReplyTo: args.emailReplyTo ?? current.emailReplyTo,
+        hideSealBranding: args.hideSealBranding ?? current.hideSealBranding,
+        customFooterText: args.customFooterText ?? current.customFooterText,
+        enabled: args.enabled ?? current.enabled,
+      },
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});

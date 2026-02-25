@@ -19,6 +19,11 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
 
+export interface EmailBrandingParams {
+  emailFromName?: string;
+  emailReplyTo?: string;
+}
+
 export interface SendDocumentInvitationParams {
   to: string;
   recipientName: string;
@@ -31,6 +36,8 @@ export interface SendDocumentInvitationParams {
   invoiceUrl?: string;
   invoiceAmount?: number;
   invoiceCurrency?: string;
+  // Branding overrides
+  branding?: EmailBrandingParams;
 }
 
 /**
@@ -51,6 +58,7 @@ export async function sendDocumentInvitation(
       invoiceUrl,
       invoiceAmount,
       invoiceCurrency,
+      branding,
     } = params;
 
     const html = await renderDocumentInvitation({
@@ -65,11 +73,17 @@ export async function sendDocumentInvitation(
       invoiceCurrency,
     });
 
+    // Use branded from name if configured
+    const fromEmail = branding?.emailFromName
+      ? `${branding.emailFromName} <no-reply@seal.nyc>`
+      : FROM_EMAIL;
+
     const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: fromEmail,
       to: [to],
       subject: `${senderName} sent you a document to sign: ${documentName}`,
       html,
+      ...(branding?.emailReplyTo ? { replyTo: branding.emailReplyTo } : {}),
     });
 
     if (error) {
@@ -200,6 +214,8 @@ export interface SendReminderParams {
   customMessage?: string;
   expiresAt?: number;
   reminderCount?: number;
+  // Branding overrides
+  branding?: EmailBrandingParams;
 }
 
 /**
@@ -218,6 +234,7 @@ export async function sendReminder(
       customMessage,
       expiresAt,
       reminderCount,
+      branding,
     } = params;
 
     const html = await renderDocumentReminder({
@@ -230,11 +247,17 @@ export async function sendReminder(
       reminderCount,
     });
 
+    // Use branded from name if configured
+    const fromEmail = branding?.emailFromName
+      ? `${branding.emailFromName} <no-reply@seal.nyc>`
+      : FROM_EMAIL;
+
     const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: fromEmail,
       to: [to],
       subject: `Reminder: "${documentName}" is waiting for your signature`,
       html,
+      ...(branding?.emailReplyTo ? { replyTo: branding.emailReplyTo } : {}),
     });
 
     if (error) {

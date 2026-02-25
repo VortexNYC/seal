@@ -15,6 +15,19 @@ export const organizationStatus = v.union(
 );
 export type OrganizationStatus = Infer<typeof organizationStatus>;
 
+export const brandingSettingsValidator = v.object({
+  logoStorageId: v.optional(v.id("_storage")),
+  logoUrl: v.optional(v.string()),
+  brandColor: v.optional(v.string()),
+  accentColor: v.optional(v.string()),
+  emailFromName: v.optional(v.string()),
+  emailReplyTo: v.optional(v.string()),
+  hideSealBranding: v.optional(v.boolean()),
+  customFooterText: v.optional(v.string()),
+  enabled: v.boolean(),
+});
+export type BrandingSettings = Infer<typeof brandingSettingsValidator>;
+
 export const organizationsTable = defineTable({
   name: v.string(),
   slug: v.string(),
@@ -38,6 +51,9 @@ export const organizationsTable = defineTable({
       aiShowRedlinesToSigners: v.boolean(), // Show annotations to recipients on signing page
     }),
   ),
+
+  // Branding settings for signing pages and emails
+  brandingSettings: v.optional(brandingSettingsValidator),
 
   updatedAt: v.number(),
 })

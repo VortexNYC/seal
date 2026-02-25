@@ -98,7 +98,7 @@ function SigningPage() {
     }),
   );
 
-  const { recipient, document: doc, waitingForPreviousGroup, sequentialProgress } = data;
+  const { recipient, document: doc, waitingForPreviousGroup, sequentialProgress, branding } = data;
 
   // ESIGN consent state — skip modal if already consented
   const [hasConsented, setHasConsented] = useState(!!recipient.esignConsentAt);
@@ -687,8 +687,16 @@ function SigningPage() {
     );
   }
 
+  // Build brand color CSS custom properties
+  const brandStyle: React.CSSProperties = branding?.brandColor
+    ? ({ "--brand-primary": branding.brandColor } as React.CSSProperties)
+    : {};
+
   return (
-    <div className="dark:bg-background flex h-screen flex-col overflow-hidden bg-[#FAFAF9]">
+    <div
+      className="dark:bg-background flex h-screen flex-col overflow-hidden bg-[#FAFAF9]"
+      style={brandStyle}
+    >
       {/* Offline Banner - Global */}
       {!isOnline && (
         <div className="fixed top-0 right-0 left-0 z-50 border-b border-amber-200 bg-amber-50 px-4 py-2">
@@ -707,8 +715,14 @@ function SigningPage() {
           {/* Left: Logo + Document context */}
           <div className="flex items-center gap-4">
             <a href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-              <SealLogo size={32} variant="color" />
-              <span className="font-semibold tracking-tight">Seal</span>
+              {branding?.logoUrl ? (
+                <img src={branding.logoUrl} alt="Logo" className="h-8 max-w-[160px] object-contain" />
+              ) : (
+                <>
+                  <SealLogo size={32} variant="color" />
+                  <span className="font-semibold tracking-tight">Seal</span>
+                </>
+              )}
             </a>
             <div className="bg-border/60 h-5 w-px" />
             <div className="flex items-center gap-2">
@@ -770,8 +784,14 @@ function SigningPage() {
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <a href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-              <SealLogo size={32} variant="color" />
-              <span className="text-sm font-semibold tracking-tight">Seal</span>
+              {branding?.logoUrl ? (
+                <img src={branding.logoUrl} alt="Logo" className="h-8 max-w-[120px] object-contain" />
+              ) : (
+                <>
+                  <SealLogo size={32} variant="color" />
+                  <span className="text-sm font-semibold tracking-tight">Seal</span>
+                </>
+              )}
             </a>
             {!isCompleted && fields.length > 0 && (
               <div className="flex items-center gap-2">
@@ -1111,6 +1131,11 @@ function SigningPage() {
                 <Button
                   size="lg"
                   className="h-12 w-full text-base font-medium shadow-sm transition-shadow hover:shadow"
+                  style={
+                    branding?.brandColor
+                      ? { backgroundColor: branding.brandColor, borderColor: branding.brandColor }
+                      : undefined
+                  }
                   onClick={handleSignButtonClick}
                   disabled={submitSignatureMutation.isPending || hasUnpaidPayments}
                 >
@@ -1541,6 +1566,22 @@ function SigningPage() {
           recipientName={recipient.name}
           signingToken={token}
         />
+      )}
+
+      {/* Branding footer */}
+      {!branding?.hideSealBranding && (
+        <div className="border-border/50 text-muted-foreground hidden shrink-0 border-t py-2 text-center text-xs lg:block">
+          {branding?.customFooterText || (
+            <a href="https://seal.nyc" className="hover:text-foreground transition-colors">
+              Powered by Seal
+            </a>
+          )}
+        </div>
+      )}
+      {branding?.hideSealBranding && branding?.customFooterText && (
+        <div className="border-border/50 text-muted-foreground hidden shrink-0 border-t py-2 text-center text-xs lg:block">
+          {branding.customFooterText}
+        </div>
       )}
     </div>
   );

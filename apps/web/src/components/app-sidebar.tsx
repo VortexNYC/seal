@@ -215,6 +215,11 @@ function buildNavSections({
       visible: canView(permissionFlags?.canViewSettings),
     },
     {
+      title: "Branding",
+      url: buildOrganizationPath(slug, "/settings/branding"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
+    {
       title: "Billing",
       url: buildOrganizationPath(slug, "/settings/billing"),
       visible:

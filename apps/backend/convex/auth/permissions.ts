@@ -50,6 +50,9 @@ export const PERMISSIONS = {
   "contacts:delete": "Delete contacts",
   "contacts:export": "Export contacts",
 
+  // Branding
+  "branding:manage": "Manage organization branding settings",
+
   // Audit
   "audit:view": "View audit logs",
   "audit:export": "Export audit logs",
@@ -88,6 +91,7 @@ export const ROLE_TEMPLATES = {
       "contacts:*",
       "settings:*",
       "users:*",
+      "branding:manage",
       "audit:view",
     ] as const,
   },

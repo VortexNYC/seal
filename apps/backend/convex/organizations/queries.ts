@@ -444,3 +444,38 @@ export const getAiSettingsInternal = internalQuery({
     return org.aiSettings ?? AI_SETTINGS_DEFAULTS;
   },
 });
+
+// ---------------------------------------------------------------------------
+// Branding settings
+// ---------------------------------------------------------------------------
+
+const BRANDING_DEFAULTS = {
+  enabled: false,
+  logoStorageId: undefined,
+  logoUrl: undefined,
+  brandColor: undefined,
+  accentColor: undefined,
+  emailFromName: undefined,
+  emailReplyTo: undefined,
+  hideSealBranding: false,
+  customFooterText: undefined,
+} as const;
+
+export const getBrandingSettings = authQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new ConvexError("Organization not found");
+    return org.brandingSettings ?? BRANDING_DEFAULTS;
+  },
+});
+
+/** Internal variant for use in email-sending actions. */
+export const getBrandingSettingsInternal = internalQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) return BRANDING_DEFAULTS;
+    return org.brandingSettings ?? BRANDING_DEFAULTS;
+  },
+});

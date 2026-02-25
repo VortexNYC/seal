@@ -299,6 +299,19 @@ export const sendDocumentEmails = action({
     });
     const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
 
+    // 5b. Get organization branding settings for email customization
+    const brandingSettings = await ctx.runQuery(
+      internal.organizations.queries.getBrandingSettingsInternal,
+      { organizationId: document.organizationId },
+    );
+    const emailBranding =
+      brandingSettings.enabled
+        ? {
+            emailFromName: brandingSettings.emailFromName,
+            emailReplyTo: brandingSettings.emailReplyTo,
+          }
+        : undefined;
+
     // 6. Build a map of per-recipient messages (SEA-119)
     const recipientMessageMap = new Map<Id<"document_recipients">, string>();
     if (args.recipientMessages) {
@@ -366,6 +379,7 @@ export const sendDocumentEmails = action({
         invoiceUrl: resolvedInvoiceUrl ?? undefined,
         invoiceAmount: resolvedInvoiceAmount,
         invoiceCurrency: resolvedInvoiceCurrency,
+        branding: emailBranding,
       });
 
       emailResults.push({
@@ -463,6 +477,19 @@ export const resendRecipientEmail = action({
     });
     const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
 
+    // 6b. Get organization branding settings
+    const brandingSettings = await ctx.runQuery(
+      internal.organizations.queries.getBrandingSettingsInternal,
+      { organizationId: document.organizationId },
+    );
+    const emailBranding =
+      brandingSettings.enabled
+        ? {
+            emailFromName: brandingSettings.emailFromName,
+            emailReplyTo: brandingSettings.emailReplyTo,
+          }
+        : undefined;
+
     // 7. Send email
     const emailResult = await sendDocumentInvitation({
       to: recipient.email,
@@ -472,6 +499,7 @@ export const resendRecipientEmail = action({
       signingUrl,
       customMessage: args.customMessage,
       expiresAt: recipient.tokenExpiresAt,
+      branding: emailBranding,
     });
 
     return {
@@ -513,6 +541,19 @@ export const sendDocumentEmailsInternal = internalAction({
     });
     const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
 
+    // Get organization branding settings
+    const brandingSettings = await ctx.runQuery(
+      internal.organizations.queries.getBrandingSettingsInternal,
+      { organizationId: document.organizationId },
+    );
+    const emailBranding =
+      brandingSettings.enabled
+        ? {
+            emailFromName: brandingSettings.emailFromName,
+            emailReplyTo: brandingSettings.emailReplyTo,
+          }
+        : undefined;
+
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
 
     // In sequential mode, only send to the first incomplete order group
@@ -544,6 +585,7 @@ export const sendDocumentEmailsInternal = internalAction({
         signingUrl,
         customMessage: args.customMessage,
         expiresAt: recipient.tokenExpiresAt,
+        branding: emailBranding,
       });
     }
   },

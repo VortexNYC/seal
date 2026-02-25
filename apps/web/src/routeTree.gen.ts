@@ -34,6 +34,7 @@ import { Route as AuthenticatedSlugContactsIndexRouteImport } from './routes/_au
 import { Route as AuthenticatedSlugSettingsTeamRouteImport } from './routes/_authenticated/$slug/settings/team'
 import { Route as AuthenticatedSlugSettingsProfileRouteImport } from './routes/_authenticated/$slug/settings/profile'
 import { Route as AuthenticatedSlugSettingsPaymentsRouteImport } from './routes/_authenticated/$slug/settings/payments'
+import { Route as AuthenticatedSlugSettingsBrandingRouteImport } from './routes/_authenticated/$slug/settings/branding'
 import { Route as AuthenticatedSlugSettingsBillingRouteImport } from './routes/_authenticated/$slug/settings/billing'
 import { Route as AuthenticatedSlugSettingsAiRouteImport } from './routes/_authenticated/$slug/settings/ai'
 import { Route as AuthenticatedSlugPaymentsTaxRouteImport } from './routes/_authenticated/$slug/payments/tax'
@@ -191,6 +192,12 @@ const AuthenticatedSlugSettingsPaymentsRoute =
     path: '/settings/payments',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
+const AuthenticatedSlugSettingsBrandingRoute =
+  AuthenticatedSlugSettingsBrandingRouteImport.update({
+    id: '/settings/branding',
+    path: '/settings/branding',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
 const AuthenticatedSlugSettingsBillingRoute =
   AuthenticatedSlugSettingsBillingRouteImport.update({
     id: '/settings/billing',
@@ -338,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
   '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
+  '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
   '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
@@ -379,6 +387,7 @@ export interface FileRoutesByTo {
   '/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
   '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
+  '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
   '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/$slug/contacts': typeof AuthenticatedSlugContactsIndexRoute
   '/$slug/documents': typeof AuthenticatedSlugDocumentsIndexRoute
@@ -425,6 +434,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
   '/_authenticated/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
   '/_authenticated/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
+  '/_authenticated/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
   '/_authenticated/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
   '/_authenticated/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   '/_authenticated/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
@@ -472,6 +482,7 @@ export interface FileRouteTypes {
     | '/$slug/payments/tax'
     | '/$slug/settings/ai'
     | '/$slug/settings/billing'
+    | '/$slug/settings/branding'
     | '/$slug/settings/payments'
     | '/$slug/settings/profile'
     | '/$slug/settings/team'
@@ -513,6 +524,7 @@ export interface FileRouteTypes {
     | '/$slug/payments/tax'
     | '/$slug/settings/ai'
     | '/$slug/settings/billing'
+    | '/$slug/settings/branding'
     | '/$slug/settings/payments'
     | '/$slug/contacts'
     | '/$slug/documents'
@@ -558,6 +570,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/payments/tax'
     | '/_authenticated/$slug/settings/ai'
     | '/_authenticated/$slug/settings/billing'
+    | '/_authenticated/$slug/settings/branding'
     | '/_authenticated/$slug/settings/payments'
     | '/_authenticated/$slug/settings/profile'
     | '/_authenticated/$slug/settings/team'
@@ -762,6 +775,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/payments'
       fullPath: '/$slug/settings/payments'
       preLoaderRoute: typeof AuthenticatedSlugSettingsPaymentsRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/branding': {
+      id: '/_authenticated/$slug/settings/branding'
+      path: '/settings/branding'
+      fullPath: '/$slug/settings/branding'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsBrandingRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
     '/_authenticated/$slug/settings/billing': {
@@ -1041,6 +1061,7 @@ interface AuthenticatedSlugRouteChildren {
   AuthenticatedSlugIndexRoute: typeof AuthenticatedSlugIndexRoute
   AuthenticatedSlugSettingsAiRoute: typeof AuthenticatedSlugSettingsAiRoute
   AuthenticatedSlugSettingsBillingRoute: typeof AuthenticatedSlugSettingsBillingRoute
+  AuthenticatedSlugSettingsBrandingRoute: typeof AuthenticatedSlugSettingsBrandingRoute
   AuthenticatedSlugSettingsPaymentsRoute: typeof AuthenticatedSlugSettingsPaymentsRoute
   AuthenticatedSlugSettingsProfileRoute: typeof AuthenticatedSlugSettingsProfileRouteWithChildren
   AuthenticatedSlugSettingsTeamRoute: typeof AuthenticatedSlugSettingsTeamRouteWithChildren
@@ -1060,6 +1081,8 @@ const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
   AuthenticatedSlugIndexRoute: AuthenticatedSlugIndexRoute,
   AuthenticatedSlugSettingsAiRoute: AuthenticatedSlugSettingsAiRoute,
   AuthenticatedSlugSettingsBillingRoute: AuthenticatedSlugSettingsBillingRoute,
+  AuthenticatedSlugSettingsBrandingRoute:
+    AuthenticatedSlugSettingsBrandingRoute,
   AuthenticatedSlugSettingsPaymentsRoute:
     AuthenticatedSlugSettingsPaymentsRoute,
   AuthenticatedSlugSettingsProfileRoute:
