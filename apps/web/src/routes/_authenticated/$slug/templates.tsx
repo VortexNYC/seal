@@ -215,6 +215,7 @@ function TemplatesList({
                 router.navigate({
                   to: "/$slug/documents",
                   params: { slug },
+                  search: { folderId: undefined },
                 });
               },
               icon: FolderOpenIcon,

@@ -248,7 +248,7 @@ function RecentDocuments() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.navigate({ to: "/$slug/documents", params: { slug } })}
+          onClick={() => router.navigate({ to: "/$slug/documents", params: { slug }, search: { folderId: undefined } })}
         >
           View all
           <ArrowRightIcon className="ml-2 h-4 w-4" />
@@ -322,7 +322,7 @@ function QuickActions() {
       <CardContent className="space-y-2">
         <Button
           className="min-h-[44px] w-full justify-start"
-          onClick={() => router.navigate({ to: "/$slug/documents", params: { slug } })}
+          onClick={() => router.navigate({ to: "/$slug/documents", params: { slug }, search: { folderId: undefined } })}
         >
           <UploadIcon className="mr-2 h-4 w-4" />
           Upload Document
@@ -338,7 +338,7 @@ function QuickActions() {
         <Button
           variant="outline"
           className="min-h-[44px] w-full justify-start"
-          onClick={() => router.navigate({ to: "/$slug/documents", params: { slug } })}
+          onClick={() => router.navigate({ to: "/$slug/documents", params: { slug }, search: { folderId: undefined } })}
         >
           <FileTextIcon className="mr-2 h-4 w-4" />
           View All Documents

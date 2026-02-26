@@ -1,6 +1,6 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useRouteContext, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouteContext, useRouter } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import Fuse, { type FuseResultMatch } from "fuse.js";
 import {
@@ -16,6 +16,7 @@ import {
   LayoutGridIcon,
   LayoutListIcon,
   Loader2Icon,
+  FolderInputIcon,
   MoreVerticalIcon,
   SearchIcon,
   SendIcon,
@@ -33,6 +34,9 @@ import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
 import { UploadDialog } from "@/components/documents/upload-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
+import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
+import { FolderSidebar } from "@/components/folders/folder-sidebar";
+import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { PageWrapper } from "@/components/page-wrapper";
 import { CardSkeleton } from "@/components/skeletons/card-skeleton";
 import {
@@ -58,6 +62,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import {
   Table,
   TableBody,
@@ -74,6 +79,9 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
   component: DocumentsPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    folderId: (search.folderId as string) || undefined,
+  }),
   head: () => ({
     meta: [
       { title: pageSEO.documents.title },
@@ -153,10 +161,14 @@ interface DocumentsListProps {
   searchQuery: string;
   /** SEA-74: Date range filter */
   dateRange: DateRange | undefined;
+  /** Folder filter */
+  folderId: Id<"folders"> | undefined;
   onShareClick: (documentId: Id<"documents">, documentName: string) => void;
   onSortChange: (field: SortField) => void;
   /** SEA-140: Callback to open upload dialog from empty state */
   onUploadClick: () => void;
+  /** Open move-to-folder dialog for a document */
+  onMoveToFolder: (documentId: Id<"documents">) => void;
 }
 
 function DocumentsList({
@@ -168,9 +180,11 @@ function DocumentsList({
   sortDirection,
   searchQuery,
   dateRange,
+  folderId,
   onShareClick,
   onSortChange,
   onUploadClick,
+  onMoveToFolder,
 }: DocumentsListProps) {
   const { slug } = Route.useParams();
   const router = useRouter();
@@ -185,6 +199,7 @@ function DocumentsList({
     convexQuery(api.documents.queries.listDocuments, {
       organizationId,
       filter,
+      folderId,
     }),
   );
 
@@ -576,6 +591,10 @@ function DocumentsList({
                               <Share2Icon className="mr-2 h-4 w-4" />
                               Share
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onMoveToFolder(doc._id)}>
+                              <FolderInputIcon className="mr-2 h-4 w-4" />
+                              Move to Folder
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleDelete(doc._id)}
                               className="text-destructive"
@@ -661,6 +680,10 @@ function DocumentsList({
                           <DropdownMenuItem onClick={() => onShareClick(doc._id, doc.name)}>
                             <Share2Icon className="mr-2 h-4 w-4" />
                             Share
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onMoveToFolder(doc._id)}>
+                            <FolderInputIcon className="mr-2 h-4 w-4" />
+                            Move to Folder
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(doc._id)}
@@ -800,6 +823,8 @@ function DocumentsList({
 
 function DocumentsPage() {
   const { slug } = Route.useParams();
+  const { folderId: folderIdParam } = Route.useSearch();
+  const navigate = useNavigate();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<Id<"documents"> | null>(null);
@@ -818,6 +843,46 @@ function DocumentsPage() {
 
   // SEA-74: Date range filter state
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
+  // Folder: move-to-folder dialog state
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [moveDocumentId, setMoveDocumentId] = useState<Id<"documents"> | null>(null);
+  const moveItemsToFolder = useMutation(api.folders.mutations.moveItemsToFolder);
+
+  // Cast folderId string from URL to Id<"folders"> if present
+  const folderId = folderIdParam ? (folderIdParam as Id<"folders">) : undefined;
+
+  const handleFolderSelect = (selectedFolderId?: Id<"folders">) => {
+    navigate({
+      to: "/$slug/documents",
+      params: { slug },
+      search: { folderId: selectedFolderId },
+    });
+  };
+
+  const handleMoveToFolder = (documentId: Id<"documents">) => {
+    setMoveDocumentId(documentId);
+    setMoveDialogOpen(true);
+  };
+
+  const handleMoveConfirm = async (targetFolderId?: Id<"folders">) => {
+    if (!moveDocumentId) return;
+    try {
+      await moveItemsToFolder({
+        itemIds: [moveDocumentId],
+        itemType: "document",
+        targetFolderId,
+      });
+      toast.success("Document moved successfully");
+      setRefreshKey((prev) => prev + 1);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to move document";
+      toast.error(msg);
+    } finally {
+      setMoveDialogOpen(false);
+      setMoveDocumentId(null);
+    }
+  };
 
   const handleSortChange = (field: SortField) => {
     if (sortField === field) {
@@ -854,320 +919,348 @@ function DocumentsPage() {
         variant: "default",
       }}
     >
-      <div className="space-y-6">
-        {/* SEA-73: Search Input */}
-        <div className="relative">
-          <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <Input
-            type="text"
-            placeholder="Search documents by name or description..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-9 pl-9"
+      <ResizablePanelGroup orientation="horizontal" className="min-h-[600px]">
+        <ResizablePanel defaultSize={20} minSize={15} maxSize={35} collapsible>
+          <FolderSidebar
+            organizationId={organization._id}
+            type="document"
+            activeFolderId={folderId}
+            onFolderSelect={handleFolderSelect}
           />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2"
-              onClick={() => setSearchQuery("")}
-            >
-              <XIcon className="h-4 w-4" />
-              <span className="sr-only">Clear search</span>
-            </Button>
-          )}
-        </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={80}>
+          <div className="space-y-6 pl-4">
+            {/* Folder breadcrumbs when inside a folder */}
+            {folderId && (
+              <FolderBreadcrumbs folderId={folderId} type="document" onNavigate={handleFolderSelect} />
+            )}
 
-        {/* Filter Tabs */}
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={filter === "all" ? "default" : "outline"}
-                onClick={() => setFilter("all")}
-              >
-                All Documents
-              </Button>
-              <Button
-                variant={filter === "owned" ? "default" : "outline"}
-                onClick={() => setFilter("owned")}
-              >
-                My Documents
-              </Button>
-              <Button
-                variant={filter === "shared" ? "default" : "outline"}
-                onClick={() => setFilter("shared")}
-              >
-                Shared with Me
-              </Button>
+            {/* SEA-73: Search Input */}
+            <div className="relative">
+              <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Input
+                type="text"
+                placeholder="Search documents by name or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pr-9 pl-9"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <XIcon className="h-4 w-4" />
+                  <span className="sr-only">Clear search</span>
+                </Button>
+              )}
             </div>
-            {/* SEA-68: View mode toggle */}
-            <div className="bg-background flex items-center gap-1 rounded-md border">
-              <Button
-                variant={viewMode === "table" ? "default" : "ghost"}
-                size="icon"
-                className="h-9 w-9"
-                onClick={() => setViewMode("table")}
-              >
-                <LayoutListIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="icon"
-                className="h-9 w-9"
-                onClick={() => setViewMode("grid")}
-              >
-                <LayoutGridIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
 
-          {/* Workflow Status Filters */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-muted-foreground self-center text-sm">Status:</span>
-            <Button
-              size="sm"
-              variant={workflowStatusFilter === "all" ? "default" : "outline"}
-              onClick={() => setWorkflowStatusFilter("all")}
-            >
-              All
-            </Button>
-            <Button
-              size="sm"
-              variant={workflowStatusFilter === "draft" ? "default" : "outline"}
-              onClick={() => setWorkflowStatusFilter("draft")}
-            >
-              Drafts
-            </Button>
-            <Button
-              size="sm"
-              variant={workflowStatusFilter === "sent" ? "default" : "outline"}
-              onClick={() => setWorkflowStatusFilter("sent")}
-            >
-              Sent
-            </Button>
-            <Button
-              size="sm"
-              variant={workflowStatusFilter === "in_progress" ? "default" : "outline"}
-              onClick={() => setWorkflowStatusFilter("in_progress")}
-            >
-              In Progress
-            </Button>
-            <Button
-              size="sm"
-              variant={workflowStatusFilter === "completed" ? "default" : "outline"}
-              onClick={() => setWorkflowStatusFilter("completed")}
-            >
-              Completed
-            </Button>
-            <Button
-              size="sm"
-              variant={workflowStatusFilter === "cancelled" ? "default" : "outline"}
-              onClick={() => setWorkflowStatusFilter("cancelled")}
-            >
-              Cancelled
-            </Button>
-
-            {/* SEA-74: Date Range Filter */}
-            <div className="w-full sm:ml-2 sm:w-auto sm:border-l sm:pl-2">
-              <Popover>
-                <PopoverTrigger asChild>
+            {/* Filter Tabs */}
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
-                    variant={dateRange?.from ? "default" : "outline"}
-                    size="sm"
-                    className="min-h-[44px] w-full gap-2 sm:min-h-0 sm:w-auto"
+                    variant={filter === "all" ? "default" : "outline"}
+                    onClick={() => setFilter("all")}
                   >
-                    <CalendarIcon className="h-4 w-4" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {dateRange.from.toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}{" "}
-                          -{" "}
-                          {dateRange.to.toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </>
-                      ) : (
-                        dateRange.from.toLocaleDateString("en-US", {
+                    All Documents
+                  </Button>
+                  <Button
+                    variant={filter === "owned" ? "default" : "outline"}
+                    onClick={() => setFilter("owned")}
+                  >
+                    My Documents
+                  </Button>
+                  <Button
+                    variant={filter === "shared" ? "default" : "outline"}
+                    onClick={() => setFilter("shared")}
+                  >
+                    Shared with Me
+                  </Button>
+                </div>
+                {/* SEA-68: View mode toggle */}
+                <div className="bg-background flex items-center gap-1 rounded-md border">
+                  <Button
+                    variant={viewMode === "table" ? "default" : "ghost"}
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => setViewMode("table")}
+                  >
+                    <LayoutListIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "ghost"}
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => setViewMode("grid")}
+                  >
+                    <LayoutGridIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Workflow Status Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-muted-foreground self-center text-sm">Status:</span>
+                <Button
+                  size="sm"
+                  variant={workflowStatusFilter === "all" ? "default" : "outline"}
+                  onClick={() => setWorkflowStatusFilter("all")}
+                >
+                  All
+                </Button>
+                <Button
+                  size="sm"
+                  variant={workflowStatusFilter === "draft" ? "default" : "outline"}
+                  onClick={() => setWorkflowStatusFilter("draft")}
+                >
+                  Drafts
+                </Button>
+                <Button
+                  size="sm"
+                  variant={workflowStatusFilter === "sent" ? "default" : "outline"}
+                  onClick={() => setWorkflowStatusFilter("sent")}
+                >
+                  Sent
+                </Button>
+                <Button
+                  size="sm"
+                  variant={workflowStatusFilter === "in_progress" ? "default" : "outline"}
+                  onClick={() => setWorkflowStatusFilter("in_progress")}
+                >
+                  In Progress
+                </Button>
+                <Button
+                  size="sm"
+                  variant={workflowStatusFilter === "completed" ? "default" : "outline"}
+                  onClick={() => setWorkflowStatusFilter("completed")}
+                >
+                  Completed
+                </Button>
+                <Button
+                  size="sm"
+                  variant={workflowStatusFilter === "cancelled" ? "default" : "outline"}
+                  onClick={() => setWorkflowStatusFilter("cancelled")}
+                >
+                  Cancelled
+                </Button>
+
+                {/* SEA-74: Date Range Filter */}
+                <div className="w-full sm:ml-2 sm:w-auto sm:border-l sm:pl-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={dateRange?.from ? "default" : "outline"}
+                        size="sm"
+                        className="min-h-[44px] w-full gap-2 sm:min-h-0 sm:w-auto"
+                      >
+                        <CalendarIcon className="h-4 w-4" />
+                        {dateRange?.from ? (
+                          dateRange.to ? (
+                            <>
+                              {dateRange.from.toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}{" "}
+                              -{" "}
+                              {dateRange.to.toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </>
+                          ) : (
+                            dateRange.from.toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          )
+                        ) : (
+                          "Date Range"
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="range"
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={1}
+                        className="sm:hidden"
+                      />
+                      <Calendar
+                        mode="range"
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
+                        className="hidden sm:block"
+                      />
+                      {dateRange?.from && (
+                        <div className="border-t p-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => setDateRange(undefined)}
+                          >
+                            Clear Date Range
+                          </Button>
+                        </div>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              {/* SEA-75: Active Filter Chips */}
+              {(searchQuery.trim() ||
+                filter !== "all" ||
+                workflowStatusFilter !== "all" ||
+                dateRange?.from) && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-muted-foreground text-sm">Active filters:</span>
+                  {searchQuery.trim() && (
+                    <Badge variant="secondary" className="gap-1 pl-2">
+                      Search: "{searchQuery}"
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="hover:bg-muted ml-1 rounded-full p-0.5"
+                      >
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
+                  {filter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 pl-2 capitalize">
+                      {filter === "owned" ? "My Documents" : "Shared with Me"}
+                      <button
+                        type="button"
+                        onClick={() => setFilter("all")}
+                        className="hover:bg-muted ml-1 rounded-full p-0.5"
+                      >
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
+                  {workflowStatusFilter !== "all" && (
+                    <Badge variant="secondary" className="gap-1 pl-2 capitalize">
+                      Status:{" "}
+                      {workflowStatusFilter === "in_progress" ? "In Progress" : workflowStatusFilter}
+                      <button
+                        type="button"
+                        onClick={() => setWorkflowStatusFilter("all")}
+                        className="hover:bg-muted ml-1 rounded-full p-0.5"
+                      >
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
+                  {dateRange?.from && (
+                    <Badge variant="secondary" className="gap-1 pl-2">
+                      Date:{" "}
+                      {dateRange.from.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                      {dateRange.to &&
+                        ` - ${dateRange.to.toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
-                          year: "numeric",
-                        })
-                      )
-                    ) : (
-                      "Date Range"
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    numberOfMonths={1}
-                    className="sm:hidden"
-                  />
-                  <Calendar
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    numberOfMonths={2}
-                    className="hidden sm:block"
-                  />
-                  {dateRange?.from && (
-                    <div className="border-t p-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
+                        })}`}
+                      <button
+                        type="button"
                         onClick={() => setDateRange(undefined)}
+                        className="hover:bg-muted ml-1 rounded-full p-0.5"
                       >
-                        Clear Date Range
-                      </Button>
-                    </div>
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </Badge>
                   )}
-                </PopoverContent>
-              </Popover>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground h-6 px-2"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setFilter("all");
+                      setWorkflowStatusFilter("all");
+                      setDateRange(undefined);
+                    }}
+                  >
+                    Clear all
+                  </Button>
+                </div>
+              )}
             </div>
+
+            {/* Documents List with Suspense */}
+            <Suspense
+              key={`${filter}-${workflowStatusFilter}-${refreshKey}-${folderId ?? "root"}`}
+              fallback={
+                viewMode === "table" ? (
+                  <div className="flex items-center justify-center rounded-lg border p-12">
+                    <p className="text-muted-foreground">Loading documents...</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <CardSkeleton showDescription showFooter={false} />
+                    <CardSkeleton showDescription showFooter={false} />
+                    <CardSkeleton showDescription showFooter={false} />
+                    <CardSkeleton showDescription showFooter={false} />
+                    <CardSkeleton showDescription showFooter={false} />
+                    <CardSkeleton showDescription showFooter={false} />
+                  </div>
+                )
+              }
+            >
+              <DocumentsList
+                organizationId={organization._id}
+                filter={filter}
+                workflowStatusFilter={workflowStatusFilter}
+                viewMode={viewMode}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                searchQuery={searchQuery}
+                dateRange={dateRange}
+                folderId={folderId}
+                onShareClick={handleShareClick}
+                onSortChange={handleSortChange}
+                onUploadClick={() => setUploadOpen(true)}
+                onMoveToFolder={handleMoveToFolder}
+              />
+            </Suspense>
           </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
-          {/* SEA-75: Active Filter Chips */}
-          {(searchQuery.trim() ||
-            filter !== "all" ||
-            workflowStatusFilter !== "all" ||
-            dateRange?.from) && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-muted-foreground text-sm">Active filters:</span>
-              {searchQuery.trim() && (
-                <Badge variant="secondary" className="gap-1 pl-2">
-                  Search: "{searchQuery}"
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )}
-              {filter !== "all" && (
-                <Badge variant="secondary" className="gap-1 pl-2 capitalize">
-                  {filter === "owned" ? "My Documents" : "Shared with Me"}
-                  <button
-                    type="button"
-                    onClick={() => setFilter("all")}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )}
-              {workflowStatusFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1 pl-2 capitalize">
-                  Status:{" "}
-                  {workflowStatusFilter === "in_progress" ? "In Progress" : workflowStatusFilter}
-                  <button
-                    type="button"
-                    onClick={() => setWorkflowStatusFilter("all")}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )}
-              {dateRange?.from && (
-                <Badge variant="secondary" className="gap-1 pl-2">
-                  Date:{" "}
-                  {dateRange.from.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                  {dateRange.to &&
-                    ` - ${dateRange.to.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}`}
-                  <button
-                    type="button"
-                    onClick={() => setDateRange(undefined)}
-                    className="hover:bg-muted ml-1 rounded-full p-0.5"
-                  >
-                    <XIcon className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground h-6 px-2"
-                onClick={() => {
-                  setSearchQuery("");
-                  setFilter("all");
-                  setWorkflowStatusFilter("all");
-                  setDateRange(undefined);
-                }}
-              >
-                Clear all
-              </Button>
-            </div>
-          )}
-        </div>
+      <UploadDialog
+        organizationId={organization._id}
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onSuccess={handleRefetch}
+      />
 
-        {/* Documents List with Suspense */}
-        <Suspense
-          key={`${filter}-${workflowStatusFilter}-${refreshKey}`}
-          fallback={
-            viewMode === "table" ? (
-              <div className="flex items-center justify-center rounded-lg border p-12">
-                <p className="text-muted-foreground">Loading documents...</p>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <CardSkeleton showDescription showFooter={false} />
-                <CardSkeleton showDescription showFooter={false} />
-                <CardSkeleton showDescription showFooter={false} />
-                <CardSkeleton showDescription showFooter={false} />
-                <CardSkeleton showDescription showFooter={false} />
-                <CardSkeleton showDescription showFooter={false} />
-              </div>
-            )
-          }
-        >
-          <DocumentsList
-            organizationId={organization._id}
-            filter={filter}
-            workflowStatusFilter={workflowStatusFilter}
-            viewMode={viewMode}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            searchQuery={searchQuery}
-            dateRange={dateRange}
-            onShareClick={handleShareClick}
-            onSortChange={handleSortChange}
-            onUploadClick={() => setUploadOpen(true)}
-          />
-        </Suspense>
-
-        <UploadDialog
-          organizationId={organization._id}
-          open={uploadOpen}
-          onOpenChange={setUploadOpen}
-          onSuccess={handleRefetch}
+      {selectedDocumentId && (
+        <ShareDocumentDialog
+          documentId={selectedDocumentId}
+          documentName={selectedDocumentName}
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
         />
+      )}
 
-        {selectedDocumentId && (
-          <ShareDocumentDialog
-            documentId={selectedDocumentId}
-            documentName={selectedDocumentName}
-            open={shareDialogOpen}
-            onOpenChange={setShareDialogOpen}
-          />
-        )}
-      </div>
+      <MoveToFolderDialog
+        open={moveDialogOpen}
+        onOpenChange={setMoveDialogOpen}
+        organizationId={organization._id}
+        type="document"
+        onMove={handleMoveConfirm}
+      />
     </PageWrapper>
   );
 }
