@@ -111,6 +111,7 @@ import type * as emails_email_logs from "../emails/email_logs.js";
 import type * as emails_email_retry from "../emails/email_retry.js";
 import type * as emails_user_email_actions from "../emails/user_email_actions.js";
 import type * as fix_user_org from "../fix_user_org.js";
+import type * as folders_mutations from "../folders/mutations.js";
 import type * as http from "../http.js";
 import type * as mcp_oauth_http from "../mcp_oauth/http.js";
 import type * as mcp_oauth_mutations from "../mcp_oauth/mutations.js";
@@ -150,6 +151,7 @@ import type * as schemas_document_workflow_status from "../schemas/document_work
 import type * as schemas_documents from "../schemas/documents.js";
 import type * as schemas_download_tokens from "../schemas/download_tokens.js";
 import type * as schemas_email_logs from "../schemas/email_logs.js";
+import type * as schemas_folders from "../schemas/folders.js";
 import type * as schemas_mcp_oauth from "../schemas/mcp_oauth.js";
 import type * as schemas_notifications from "../schemas/notifications.js";
 import type * as schemas_organization_invitations from "../schemas/organization_invitations.js";
@@ -328,6 +330,7 @@ declare const fullApi: ApiFromModules<{
   "emails/email_retry": typeof emails_email_retry;
   "emails/user_email_actions": typeof emails_user_email_actions;
   fix_user_org: typeof fix_user_org;
+  "folders/mutations": typeof folders_mutations;
   http: typeof http;
   "mcp_oauth/http": typeof mcp_oauth_http;
   "mcp_oauth/mutations": typeof mcp_oauth_mutations;
@@ -367,6 +370,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/documents": typeof schemas_documents;
   "schemas/download_tokens": typeof schemas_download_tokens;
   "schemas/email_logs": typeof schemas_email_logs;
+  "schemas/folders": typeof schemas_folders;
   "schemas/mcp_oauth": typeof schemas_mcp_oauth;
   "schemas/notifications": typeof schemas_notifications;
   "schemas/organization_invitations": typeof schemas_organization_invitations;
