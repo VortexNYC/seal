@@ -9,7 +9,7 @@
 
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import {
   ArrowDownIcon,
@@ -18,6 +18,7 @@ import {
   ChevronRightIcon,
   CopyIcon,
   FileTextIcon,
+  FolderInputIcon,
   FolderOpenIcon,
   LayoutGridIcon,
   LayoutListIcon,
@@ -29,6 +30,9 @@ import {
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
+import { FolderSidebar } from "@/components/folders/folder-sidebar";
+import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { PageWrapper } from "@/components/page-wrapper";
 import { TemplatesSkeleton } from "@/components/skeletons";
 import {
@@ -60,6 +64,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import {
   Table,
   TableBody,
@@ -72,11 +77,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { pageSEO } from "@/lib/seo";
 import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
+import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/templates")({
   component: TemplatesPage,
   pendingComponent: TemplatesSkeleton,
+  validateSearch: (search: Record<string, unknown>) => ({
+    folderId: (search.folderId as string) || undefined,
+  }),
   head: () => ({
     meta: [
       { title: pageSEO.templates.title },
@@ -95,10 +103,12 @@ interface TemplatesListProps {
   sortField: SortField;
   sortDirection: SortDirection;
   searchQuery: string;
+  folderId: Id<"folders"> | undefined;
   onSortChange: (field: SortField) => void;
   onUseTemplate: (template: Doc<"templates">) => void;
   onEditTemplate: (template: Doc<"templates">) => void;
   onDeleteTemplate: (template: Doc<"templates">) => void;
+  onMoveToFolder: (templateId: Id<"templates">) => void;
 }
 
 function TemplatesList({
@@ -106,10 +116,12 @@ function TemplatesList({
   sortField,
   sortDirection,
   searchQuery,
+  folderId,
   onSortChange,
   onUseTemplate,
   onEditTemplate,
   onDeleteTemplate,
+  onMoveToFolder,
 }: TemplatesListProps) {
   const { slug } = Route.useParams();
   const router = useRouter();
@@ -119,7 +131,10 @@ function TemplatesList({
   const ITEMS_PER_PAGE = 20;
 
   const { data: templates } = useSuspenseQuery(
-    convexQuery(api.templates.queries.getOrganizationTemplates, {}),
+    convexQuery(api.templates.queries.getOrganizationTemplates, {
+      folderId,
+      rootOnly: !folderId,
+    }),
   );
 
   // Filter by search query
@@ -299,6 +314,10 @@ function TemplatesList({
                               <PencilIcon className="mr-2 h-4 w-4" />
                               Edit Details
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onMoveToFolder(template._id)}>
+                              <FolderInputIcon className="mr-2 h-4 w-4" />
+                              Move to Folder
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => onDeleteTemplate(template)}
                               className="text-destructive"
@@ -348,6 +367,10 @@ function TemplatesList({
                           <DropdownMenuItem onClick={() => onEditTemplate(template)}>
                             <PencilIcon className="mr-2 h-4 w-4" />
                             Edit Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onMoveToFolder(template._id)}>
+                            <FolderInputIcon className="mr-2 h-4 w-4" />
+                            Move to Folder
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => onDeleteTemplate(template)}
@@ -441,7 +464,9 @@ function TemplatesList({
 
 function TemplatesPage() {
   const { slug } = Route.useParams();
+  const { folderId: folderIdParam } = Route.useSearch();
   const router = useRouter();
+  const navigate = useNavigate();
   const { track } = useAnalytics();
 
   // State
@@ -450,6 +475,14 @@ function TemplatesPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Folder: move-to-folder dialog state
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [moveTemplateId, setMoveTemplateId] = useState<Id<"templates"> | null>(null);
+  const moveItemsToFolder = useMutation(api.folders.mutations.moveItemsToFolder);
+
+  // Cast folderId string from URL to Id<"folders"> if present
+  const folderId = folderIdParam ? (folderIdParam as Id<"folders">) : undefined;
 
   // Dialog states
   const [useTemplateDialog, setUseTemplateDialog] = useState<{
@@ -485,6 +518,38 @@ function TemplatesPage() {
     } else {
       setSortField(field);
       setSortDirection("desc");
+    }
+  };
+
+  const handleFolderSelect = (selectedFolderId?: Id<"folders">) => {
+    navigate({
+      to: "/$slug/templates",
+      params: { slug },
+      search: { folderId: selectedFolderId },
+    });
+  };
+
+  const handleMoveToFolder = (templateId: Id<"templates">) => {
+    setMoveTemplateId(templateId);
+    setMoveDialogOpen(true);
+  };
+
+  const handleMoveConfirm = async (targetFolderId?: Id<"folders">) => {
+    if (!moveTemplateId) return;
+    try {
+      await moveItemsToFolder({
+        itemIds: [moveTemplateId],
+        itemType: "template",
+        targetFolderId,
+      });
+      toast.success("Template moved successfully");
+      setRefreshKey((prev) => prev + 1);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to move template";
+      toast.error(msg);
+    } finally {
+      setMoveDialogOpen(false);
+      setMoveTemplateId(null);
     }
   };
 
@@ -581,204 +646,237 @@ function TemplatesPage() {
     }
   };
 
+  const { data: organization } = useSuspenseQuery(
+    convexQuery(api.organizations.queries.getOrganization, { slug }),
+  );
+
   return (
     <PageWrapper title="Templates">
-      <div className="space-y-6">
-        {/* Search and View Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Search */}
-          <div className="relative max-w-sm flex-1">
-            <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-            <Input
-              placeholder="Search templates..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          {/* View mode toggle */}
-          <div className="bg-background flex items-center gap-1 rounded-md border">
-            <Button
-              variant={viewMode === "table" ? "default" : "ghost"}
-              size="icon"
-              className="h-9 w-9"
-              onClick={() => setViewMode("table")}
-            >
-              <LayoutListIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === "grid" ? "default" : "ghost"}
-              size="icon"
-              className="h-9 w-9"
-              onClick={() => setViewMode("grid")}
-            >
-              <LayoutGridIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Info card */}
-        <Card className="bg-muted/50">
-          <CardContent className="py-4">
-            <div className="flex items-start gap-3">
-              <FileTextIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
-              <div>
-                <p className="text-sm font-medium">Templates save time on recurring documents</p>
-                <p className="text-muted-foreground text-sm">
-                  To create a template, prepare a document with signature fields, then click "Save
-                  as Template" from the document actions menu.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Templates List */}
-        <Suspense
-          key={refreshKey}
-          fallback={
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <div className="bg-muted h-32" />
-                  <CardHeader>
-                    <div className="bg-muted h-4 w-3/4 rounded" />
-                    <div className="bg-muted mt-2 h-3 w-1/2 rounded" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="bg-muted h-3 rounded" />
-                      <div className="bg-muted h-3 rounded" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          }
-        >
-          <TemplatesList
-            viewMode={viewMode}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            searchQuery={searchQuery}
-            onSortChange={handleSortChange}
-            onUseTemplate={handleUseTemplate}
-            onEditTemplate={handleEditTemplate}
-            onDeleteTemplate={handleDeleteTemplate}
+      <ResizablePanelGroup orientation="horizontal" className="min-h-[600px]">
+        <ResizablePanel defaultSize={20} minSize={15} maxSize={35} collapsible>
+          <FolderSidebar
+            organizationId={organization._id}
+            type="template"
+            activeFolderId={folderId}
+            onFolderSelect={handleFolderSelect}
           />
-        </Suspense>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={80}>
+          <div className="space-y-6 pl-4">
+            {/* Folder breadcrumbs when inside a folder */}
+            {folderId && (
+              <FolderBreadcrumbs folderId={folderId} type="template" onNavigate={handleFolderSelect} />
+            )}
 
-        {/* Use Template Dialog */}
-        <Dialog
-          open={useTemplateDialog.open}
-          onOpenChange={(open) => setUseTemplateDialog({ open, template: null })}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Document from Template</DialogTitle>
-              <DialogDescription>
-                Create a new document using "{useTemplateDialog.template?.name}
-                ". The new document will have all the signature fields from the template.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="documentName">Document Name</Label>
+            {/* Search and View Controls */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Search */}
+              <div className="relative max-w-sm flex-1">
+                <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
-                  id="documentName"
-                  value={newDocumentName}
-                  onChange={(e) => setNewDocumentName(e.target.value)}
-                  placeholder="Enter document name..."
+                  placeholder="Search templates..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
                 />
+              </div>
+
+              {/* View mode toggle */}
+              <div className="bg-background flex items-center gap-1 rounded-md border">
+                <Button
+                  variant={viewMode === "table" ? "default" : "ghost"}
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setViewMode("table")}
+                >
+                  <LayoutListIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setViewMode("grid")}
+                >
+                  <LayoutGridIcon className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setUseTemplateDialog({ open: false, template: null })}
-                disabled={isCreating}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleConfirmUseTemplate} disabled={isCreating}>
-                {isCreating ? "Creating..." : "Create Document"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
-        {/* Edit Template Dialog */}
-        <Dialog
-          open={editTemplateDialog.open}
-          onOpenChange={(open) => setEditTemplateDialog({ open, template: null })}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Template</DialogTitle>
-              <DialogDescription>Update the template name and description.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="editName">Name</Label>
-                <Input
-                  id="editName"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Template name..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editDescription">Description (optional)</Label>
-                <Textarea
-                  id="editDescription"
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Describe this template..."
-                  rows={3}
-                />
-              </div>
+            {/* Info card */}
+            <Card className="bg-muted/50">
+              <CardContent className="py-4">
+                <div className="flex items-start gap-3">
+                  <FileTextIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
+                  <div>
+                    <p className="text-sm font-medium">Templates save time on recurring documents</p>
+                    <p className="text-muted-foreground text-sm">
+                      To create a template, prepare a document with signature fields, then click "Save
+                      as Template" from the document actions menu.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Templates List */}
+            <Suspense
+              key={`${refreshKey}-${folderId ?? "root"}`}
+              fallback={
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Card key={i} className="animate-pulse">
+                      <div className="bg-muted h-32" />
+                      <CardHeader>
+                        <div className="bg-muted h-4 w-3/4 rounded" />
+                        <div className="bg-muted mt-2 h-3 w-1/2 rounded" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="bg-muted h-3 rounded" />
+                          <div className="bg-muted h-3 rounded" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              }
+            >
+              <TemplatesList
+                viewMode={viewMode}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                searchQuery={searchQuery}
+                folderId={folderId}
+                onSortChange={handleSortChange}
+                onUseTemplate={handleUseTemplate}
+                onEditTemplate={handleEditTemplate}
+                onDeleteTemplate={handleDeleteTemplate}
+                onMoveToFolder={handleMoveToFolder}
+              />
+            </Suspense>
+
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+
+      {/* Use Template Dialog */}
+      <Dialog
+        open={useTemplateDialog.open}
+        onOpenChange={(open) => setUseTemplateDialog({ open, template: null })}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Document from Template</DialogTitle>
+            <DialogDescription>
+              Create a new document using "{useTemplateDialog.template?.name}
+              ". The new document will have all the signature fields from the template.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="documentName">Document Name</Label>
+              <Input
+                id="documentName"
+                value={newDocumentName}
+                onChange={(e) => setNewDocumentName(e.target.value)}
+                placeholder="Enter document name..."
+              />
             </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setEditTemplateDialog({ open: false, template: null })}
-                disabled={isEditing}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleConfirmEditTemplate} disabled={isEditing || !editName.trim()}>
-                {isEditing ? "Saving..." : "Save Changes"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setUseTemplateDialog({ open: false, template: null })}
+              disabled={isCreating}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmUseTemplate} disabled={isCreating}>
+              {isCreating ? "Creating..." : "Create Document"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog
-          open={deleteConfirmDialog.open}
-          onOpenChange={(open) => setDeleteConfirmDialog({ open, template: null })}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Template</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete "{deleteConfirmDialog.template?.name}"? This action
-                cannot be undone. Documents created from this template will not be affected.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleConfirmDeleteTemplate}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      {/* Edit Template Dialog */}
+      <Dialog
+        open={editTemplateDialog.open}
+        onOpenChange={(open) => setEditTemplateDialog({ open, template: null })}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Template</DialogTitle>
+            <DialogDescription>Update the template name and description.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editName">Name</Label>
+              <Input
+                id="editName"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Template name..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editDescription">Description (optional)</Label>
+              <Textarea
+                id="editDescription"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Describe this template..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditTemplateDialog({ open: false, template: null })}
+              disabled={isEditing}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmEditTemplate} disabled={isEditing || !editName.trim()}>
+              {isEditing ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={deleteConfirmDialog.open}
+        onOpenChange={(open) => setDeleteConfirmDialog({ open, template: null })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteConfirmDialog.template?.name}"? This action
+              cannot be undone. Documents created from this template will not be affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteTemplate}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <MoveToFolderDialog
+        open={moveDialogOpen}
+        onOpenChange={setMoveDialogOpen}
+        organizationId={organization._id}
+        type="template"
+        onMove={handleMoveConfirm}
+      />
     </PageWrapper>
   );
 }

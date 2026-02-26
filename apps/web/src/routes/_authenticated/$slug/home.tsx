@@ -330,7 +330,7 @@ function QuickActions() {
         <Button
           variant="outline"
           className="min-h-[44px] w-full justify-start"
-          onClick={() => router.navigate({ to: "/$slug/templates", params: { slug } })}
+          onClick={() => router.navigate({ to: "/$slug/templates", params: { slug }, search: { folderId: undefined } })}
         >
           <FileTextIcon className="mr-2 h-4 w-4" />
           Use Template
