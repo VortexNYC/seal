@@ -216,7 +216,14 @@ export function apiHttpAction(handler: ApiHandler, options: ApiEndpointOptions =
 
       if (!options.public) {
         const authHeader = request.headers.get("Authorization");
-        auth = await resolveAuthContext(ctx, authHeader);
+        // Extract client IP for IP allowlist enforcement
+        const forwarded = request.headers.get("x-forwarded-for");
+        const clientIp = forwarded
+          ? forwarded.split(",")[0]?.trim()
+          : request.headers.get("cf-connecting-ip") ??
+            request.headers.get("x-real-ip") ??
+            undefined;
+        auth = await resolveAuthContext(ctx, authHeader, clientIp);
 
         // Check required scopes
         if (options.scope) {

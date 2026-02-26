@@ -314,6 +314,19 @@ export const updateRecipientStatus = authMutation({
 
     await ctx.db.patch(recipient._id, updateData);
 
+    // Schedule viewed notification if this is the first view
+    if (!recipient.viewedAt && updateData.viewedAt) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.documents.viewed_notification_action.sendViewedNotification,
+        {
+          recipientId: recipient._id,
+          documentId: recipient.documentId,
+          viewedAt: updateData.viewedAt as number,
+        },
+      );
+    }
+
     return { success: true, recipientId: recipient._id };
   },
 });
@@ -477,7 +490,20 @@ export const submitRecipientSignature = mutation({
       }
     }
 
-    // 8. Schedule post-signature emails if recipient completed their action
+    // 8. Schedule viewed notification if this is the first view
+    if (!recipient.viewedAt && updateData.viewedAt) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.documents.viewed_notification_action.sendViewedNotification,
+        {
+          recipientId: recipient._id,
+          documentId: recipient.documentId,
+          viewedAt: updateData.viewedAt as number,
+        },
+      );
+    }
+
+    // 9. Schedule post-signature emails if recipient completed their action
     // (signed, approved, or declined - but not just viewed)
     if (isRecipientComplete(recipient.role, args.status)) {
       await ctx.scheduler.runAfter(
@@ -490,7 +516,7 @@ export const submitRecipientSignature = mutation({
       );
     }
 
-    // 9. Publish webhook event for recipient status changes
+    // 10. Publish webhook event for recipient status changes
     if (document && (args.status === "signed" || args.status === "approved")) {
       await publishWebhookEvent(ctx, {
         organizationId: document.organizationId,
@@ -706,7 +732,20 @@ export const submitSignatureAuthenticated = authMutation({
       }
     }
 
-    // 9. Schedule post-signature emails if recipient completed their action
+    // 9. Schedule viewed notification if this is the first view
+    if (!recipient.viewedAt && updateData.viewedAt) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.documents.viewed_notification_action.sendViewedNotification,
+        {
+          recipientId: recipient._id,
+          documentId: args.documentId,
+          viewedAt: updateData.viewedAt as number,
+        },
+      );
+    }
+
+    // 10. Schedule post-signature emails if recipient completed their action
     if (isRecipientComplete(recipient.role, args.status)) {
       await ctx.scheduler.runAfter(
         0,

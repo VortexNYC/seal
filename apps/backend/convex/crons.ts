@@ -67,4 +67,18 @@ crons.weekly(
   internal.ai.cleanup.cleanupDismissedAnnotations,
 );
 
+// Process automated reminders daily at 9am UTC (based on org reminderSchedule)
+crons.daily(
+  "process-automated-reminders",
+  { hourUTC: 9, minuteUTC: 0 },
+  internal.documents.automated_reminders.processAutomatedReminders,
+);
+
+// Send expiration alerts daily at 10am UTC (based on org expirationAlertDays)
+crons.daily(
+  "process-expiration-alerts",
+  { hourUTC: 10, minuteUTC: 0 },
+  internal.documents.expiration_alerts.processExpirationAlerts,
+);
+
 export default crons;

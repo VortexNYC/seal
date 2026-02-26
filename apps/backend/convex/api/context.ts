@@ -18,6 +18,56 @@ import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { ApiError } from "./errors";
 
+// ---------------------------------------------------------------------------
+// CIDR / IP allowlist utilities
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse an IPv4 address into a 32-bit number.
+ * Returns null if the address is not valid IPv4.
+ */
+function parseIpv4(ip: string): number | null {
+  const parts = ip.split(".");
+  if (parts.length !== 4) return null;
+
+  let result = 0;
+  for (const part of parts) {
+    const num = Number(part);
+    if (!Number.isInteger(num) || num < 0 || num > 255) return null;
+    result = (result << 8) | num;
+  }
+  return result >>> 0; // Unsigned 32-bit
+}
+
+/**
+ * Check if an IP address matches a CIDR range or exact IP.
+ * Supports: "192.168.1.0/24", "10.0.0.1" (treated as /32).
+ */
+function ipMatchesCidr(ip: string, cidr: string): boolean {
+  const trimmedCidr = cidr.trim();
+  const [network, prefixStr] = trimmedCidr.split("/");
+  const prefix = prefixStr ? Number(prefixStr) : 32;
+
+  if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) return false;
+
+  const ipNum = parseIpv4(ip);
+  const networkNum = parseIpv4(network);
+  if (ipNum === null || networkNum === null) return false;
+
+  if (prefix === 0) return true; // /0 matches everything
+  const mask = (~0 << (32 - prefix)) >>> 0;
+  return (ipNum & mask) === (networkNum & mask);
+}
+
+/**
+ * Check if an IP address is allowed by an allowlist of CIDR ranges.
+ * Empty allowlist means all IPs are allowed.
+ */
+export function isIpAllowed(ip: string, allowlist: string[]): boolean {
+  if (allowlist.length === 0) return true;
+  return allowlist.some((cidr) => ipMatchesCidr(ip, cidr));
+}
+
 /**
  * Clerk client instance for API key operations.
  * Created lazily on first use.
@@ -243,6 +293,7 @@ async function buildAuthContext(
     organizationId: Id<"organizations">;
     clerkUserId: string;
     subjectType: "user" | "organization";
+    clientIp?: string;
   },
 ): Promise<ApiAuthContext> {
   // Step 4: Validate user has active membership in the organization
@@ -271,6 +322,18 @@ async function buildAuthContext(
       "API access is disabled for this organization. An organization owner can enable it in Settings > Security.",
       "API_ACCESS_DISABLED",
     );
+  }
+
+  // Check IP allowlist
+  const ipAllowlist = securitySettings.ipAllowlist;
+  if (params.clientIp && Array.isArray(ipAllowlist) && ipAllowlist.length > 0) {
+    if (!isIpAllowed(params.clientIp, ipAllowlist)) {
+      throw new ApiError(
+        403,
+        "Your IP address is not in the organization's allowlist.",
+        "IP_NOT_ALLOWED",
+      );
+    }
   }
 
   // Get user permissions
@@ -305,6 +368,7 @@ async function buildAuthContext(
 export async function resolveApiAuth(
   ctx: ActionCtx,
   authHeader: string | null,
+  clientIp?: string,
 ): Promise<ApiAuthContext> {
   // Step 1: Extract Bearer token
   const token = parseBearerToken(authHeader);
@@ -427,6 +491,7 @@ export async function resolveApiAuth(
     organizationId,
     clerkUserId,
     subjectType: isOrgKey ? "organization" : "user",
+    clientIp,
   });
 }
 
@@ -480,6 +545,7 @@ async function verifyOAuthAccessToken(token: string): Promise<{
 export async function resolveJwtAuth(
   ctx: ActionCtx,
   authHeader: string | null,
+  clientIp?: string,
 ): Promise<ApiAuthContext> {
   const token = parseBearerToken(authHeader);
 
@@ -547,6 +613,7 @@ export async function resolveJwtAuth(
         organizationId,
         clerkUserId: oauthResult.sub,
         subjectType: "user",
+        clientIp,
       });
     }
 
@@ -611,22 +678,24 @@ export async function resolveJwtAuth(
     organizationId,
     clerkUserId,
     subjectType: "user",
+    clientIp,
   });
 }
 
 export async function resolveAuthContext(
   ctx: ActionCtx,
   authHeader: string | null,
+  clientIp?: string,
 ): Promise<ApiAuthContext> {
   const token = parseBearerToken(authHeader);
 
   // Route JWTs and OAuth access tokens (oat_) to JWT/OAuth auth handler
   if (isJwtToken(token) || isOAuthAccessToken(token)) {
-    return resolveJwtAuth(ctx, token);
+    return resolveJwtAuth(ctx, token, clientIp);
   }
 
   // API keys go through API key verification
-  return resolveApiAuth(ctx, token);
+  return resolveApiAuth(ctx, token, clientIp);
 }
 
 /**

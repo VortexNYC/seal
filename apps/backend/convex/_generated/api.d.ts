@@ -77,12 +77,14 @@ import type * as dashboard_analytics_queries from "../dashboard/analytics_querie
 import type * as dashboard_index from "../dashboard/index.js";
 import type * as dashboard_queries from "../dashboard/queries.js";
 import type * as documents_activity_queries from "../documents/activity_queries.js";
+import type * as documents_automated_reminders from "../documents/automated_reminders.js";
 import type * as documents_cancellation_email_action from "../documents/cancellation_email_action.js";
 import type * as documents_certificate_of_completion from "../documents/certificate_of_completion.js";
 import type * as documents_cleanup from "../documents/cleanup.js";
 import type * as documents_document_shared_action from "../documents/document_shared_action.js";
 import type * as documents_download_tokens from "../documents/download_tokens.js";
 import type * as documents_email from "../documents/email.js";
+import type * as documents_expiration_alerts from "../documents/expiration_alerts.js";
 import type * as documents_extract_text_action from "../documents/extract_text_action.js";
 import type * as documents_generate_fillable_pdf from "../documents/generate_fillable_pdf.js";
 import type * as documents_hash_document_action from "../documents/hash_document_action.js";
@@ -102,6 +104,7 @@ import type * as documents_sharing_cleanup from "../documents/sharing_cleanup.js
 import type * as documents_sign_pdf_action from "../documents/sign_pdf_action.js";
 import type * as documents_upload_config from "../documents/upload_config.js";
 import type * as documents_version_helpers from "../documents/version_helpers.js";
+import type * as documents_viewed_notification_action from "../documents/viewed_notification_action.js";
 import type * as documents_workflow_helpers from "../documents/workflow_helpers.js";
 import type * as documents_workflow_mutations from "../documents/workflow_mutations.js";
 import type * as emails_email_logs from "../emails/email_logs.js";
@@ -291,12 +294,14 @@ declare const fullApi: ApiFromModules<{
   "dashboard/index": typeof dashboard_index;
   "dashboard/queries": typeof dashboard_queries;
   "documents/activity_queries": typeof documents_activity_queries;
+  "documents/automated_reminders": typeof documents_automated_reminders;
   "documents/cancellation_email_action": typeof documents_cancellation_email_action;
   "documents/certificate_of_completion": typeof documents_certificate_of_completion;
   "documents/cleanup": typeof documents_cleanup;
   "documents/document_shared_action": typeof documents_document_shared_action;
   "documents/download_tokens": typeof documents_download_tokens;
   "documents/email": typeof documents_email;
+  "documents/expiration_alerts": typeof documents_expiration_alerts;
   "documents/extract_text_action": typeof documents_extract_text_action;
   "documents/generate_fillable_pdf": typeof documents_generate_fillable_pdf;
   "documents/hash_document_action": typeof documents_hash_document_action;
@@ -316,6 +321,7 @@ declare const fullApi: ApiFromModules<{
   "documents/sign_pdf_action": typeof documents_sign_pdf_action;
   "documents/upload_config": typeof documents_upload_config;
   "documents/version_helpers": typeof documents_version_helpers;
+  "documents/viewed_notification_action": typeof documents_viewed_notification_action;
   "documents/workflow_helpers": typeof documents_workflow_helpers;
   "documents/workflow_mutations": typeof documents_workflow_mutations;
   "emails/email_logs": typeof emails_email_logs;

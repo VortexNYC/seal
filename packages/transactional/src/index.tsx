@@ -1,9 +1,14 @@
 import { render } from "@react-email/render";
 
 import { DocumentCompleted, type DocumentCompletedProps } from "./emails/document-completed.js";
+import {
+  DocumentExpirationAlert,
+  type DocumentExpirationAlertProps,
+} from "./emails/document-expiration-alert.js";
 import { DocumentInvitation, type DocumentInvitationProps } from "./emails/document-invitation.js";
 import { DocumentReminder, type DocumentReminderProps } from "./emails/document-reminder.js";
 import { DocumentShared, type DocumentSharedProps } from "./emails/document-shared.js";
+import { DocumentViewed, type DocumentViewedProps } from "./emails/document-viewed.js";
 import { SigningComplete, type SigningCompleteProps } from "./emails/signing-complete.js";
 import { TeamInvitation, type TeamInvitationProps } from "./emails/team-invitation.js";
 import { Welcome, type WelcomeProps } from "./emails/welcome.js";
@@ -12,8 +17,10 @@ import { Welcome, type WelcomeProps } from "./emails/welcome.js";
 export {
   DocumentInvitation,
   DocumentCompleted,
+  DocumentExpirationAlert,
   DocumentReminder,
   DocumentShared,
+  DocumentViewed,
   SigningComplete,
   TeamInvitation,
   Welcome,
@@ -24,8 +31,10 @@ export type {
   DocumentInvitationProps,
   SigningCompleteProps,
   DocumentCompletedProps,
+  DocumentExpirationAlertProps,
   DocumentReminderProps,
   DocumentSharedProps,
+  DocumentViewedProps,
   TeamInvitationProps,
   WelcomeProps,
 };
@@ -77,4 +86,20 @@ export async function renderTeamInvitation(props: TeamInvitationProps): Promise<
  */
 export async function renderDocumentShared(props: DocumentSharedProps): Promise<string> {
   return render(<DocumentShared {...props} />);
+}
+
+/**
+ * Render DocumentExpirationAlert email to HTML string
+ */
+export async function renderDocumentExpirationAlert(
+  props: DocumentExpirationAlertProps,
+): Promise<string> {
+  return render(<DocumentExpirationAlert {...props} />);
+}
+
+/**
+ * Render DocumentViewed email to HTML string
+ */
+export async function renderDocumentViewed(props: DocumentViewedProps): Promise<string> {
+  return render(<DocumentViewed {...props} />);
 }

@@ -6,9 +6,11 @@ import { Resend } from "resend";
 
 import {
   renderDocumentCompleted,
+  renderDocumentExpirationAlert,
   renderDocumentInvitation,
   renderDocumentReminder,
   renderDocumentShared,
+  renderDocumentViewed,
   renderSigningComplete,
   renderTeamInvitation,
   renderWelcome,
@@ -409,6 +411,108 @@ export async function sendCancellationNotification(
     return { success: true, messageId: data?.id };
   } catch (error) {
     console.error("Unexpected error sending cancellation email:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export interface SendExpirationAlertParams {
+  to: string;
+  ownerName: string;
+  documentName: string;
+  documentUrl: string;
+  expiresAt: number;
+  daysRemaining: number;
+  pendingRecipients: Array<{ name: string; email: string }>;
+}
+
+/**
+ * Send expiration alert email to document owner
+ */
+export async function sendExpirationAlert(
+  params: SendExpirationAlertParams,
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const { to, ownerName, documentName, documentUrl, expiresAt, daysRemaining, pendingRecipients } =
+      params;
+
+    const html = await renderDocumentExpirationAlert({
+      ownerName,
+      documentName,
+      documentUrl,
+      expiresAt,
+      daysRemaining,
+      pendingRecipients,
+    });
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
+      subject: `⏰ "${documentName}" expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`,
+      html,
+    });
+
+    if (error) {
+      console.error("Error sending expiration alert email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, messageId: data?.id };
+  } catch (error) {
+    console.error("Unexpected error sending expiration alert email:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export interface SendDocumentViewedParams {
+  to: string;
+  ownerName: string;
+  documentName: string;
+  documentUrl: string;
+  recipientName: string;
+  recipientEmail: string;
+  viewedAt: number;
+}
+
+/**
+ * Send viewed notification email to document owner
+ */
+export async function sendDocumentViewed(
+  params: SendDocumentViewedParams,
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const { to, ownerName, documentName, documentUrl, recipientName, recipientEmail, viewedAt } =
+      params;
+
+    const html = await renderDocumentViewed({
+      ownerName,
+      documentName,
+      documentUrl,
+      recipientName,
+      recipientEmail,
+      viewedAt,
+    });
+
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
+      subject: `${recipientName} viewed "${documentName}"`,
+      html,
+    });
+
+    if (error) {
+      console.error("Error sending document viewed email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, messageId: data?.id };
+  } catch (error) {
+    console.error("Unexpected error sending document viewed email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

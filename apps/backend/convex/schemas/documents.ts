@@ -82,6 +82,7 @@ export const documentsTable = defineTable({
 
   // SEA-119: Signing deadline for recipients
   deadline: v.optional(v.number()), // Timestamp when signing must be completed by
+  expirationAlertsSent: v.optional(v.array(v.number())), // Days-remaining values already alerted
 
   // Retention policy: completed documents must be retained for 7 years (ESIGN Act)
   retainUntil: v.optional(v.number()), // Timestamp after which the document can be deleted
