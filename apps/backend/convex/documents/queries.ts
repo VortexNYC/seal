@@ -64,6 +64,8 @@ export const listDocuments = authQuery({
     organizationId: v.id("organizations"),
     filter: v.optional(v.union(v.literal("all"), v.literal("owned"), v.literal("shared"))),
     workflowStatus: v.optional(documentWorkflowStatusTuple),
+    folderId: v.optional(v.id("folders")),
+    rootOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
@@ -99,7 +101,15 @@ export const listDocuments = authQuery({
       }
     }
 
-    return accessibleDocuments;
+    // Filter by folder
+    const folderFiltered =
+      args.folderId !== undefined
+        ? accessibleDocuments.filter((doc) => doc.folderId === args.folderId)
+        : args.rootOnly
+          ? accessibleDocuments.filter((doc) => doc.folderId === undefined)
+          : accessibleDocuments;
+
+    return folderFiltered;
   },
 });
 

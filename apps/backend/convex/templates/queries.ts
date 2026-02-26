@@ -15,8 +15,11 @@ import { permissionQuery } from "../auth";
  * Requires templates:read permission
  */
 export const getOrganizationTemplates = permissionQuery("templates:read")({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    folderId: v.optional(v.id("folders")),
+    rootOnly: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
     const templates = await ctx.db
@@ -27,7 +30,15 @@ export const getOrganizationTemplates = permissionQuery("templates:read")({
       .order("desc")
       .collect();
 
-    return templates;
+    // Filter by folder
+    const folderFiltered =
+      args.folderId !== undefined
+        ? templates.filter((t) => t.folderId === args.folderId)
+        : args.rootOnly
+          ? templates.filter((t) => t.folderId === undefined)
+          : templates;
+
+    return folderFiltered;
   },
 });
 
