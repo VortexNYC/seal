@@ -72,6 +72,67 @@ describe("Organization settings", () => {
   });
 
   // =========================================================================
+  // Branding settings
+  // =========================================================================
+
+  describe("getBrandingSettings", () => {
+    test("returns defaults including companyName and companyWebsite", async () => {
+      const result = await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .query(api.organizations.queries.getBrandingSettings, {
+          organizationId,
+        });
+
+      expect(result.enabled).toBe(false);
+      expect(result.companyName).toBeUndefined();
+      expect(result.companyWebsite).toBeUndefined();
+    });
+  });
+
+  describe("updateBrandingSettings", () => {
+    test("updates companyName and companyWebsite", async () => {
+      await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .mutation(api.organizations.mutations.updateBrandingSettings, {
+          companyName: "Acme Corp",
+          companyWebsite: "https://acme.com",
+        });
+
+      const result = await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .query(api.organizations.queries.getBrandingSettings, {
+          organizationId,
+        });
+
+      expect(result.companyName).toBe("Acme Corp");
+      expect(result.companyWebsite).toBe("https://acme.com");
+    });
+
+    test("preserves companyName on partial update", async () => {
+      await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .mutation(api.organizations.mutations.updateBrandingSettings, {
+          companyName: "Acme Corp",
+        });
+
+      await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .mutation(api.organizations.mutations.updateBrandingSettings, {
+          brandColor: "#ff0000",
+        });
+
+      const result = await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .query(api.organizations.queries.getBrandingSettings, {
+          organizationId,
+        });
+
+      expect(result.companyName).toBe("Acme Corp");
+      expect(result.brandColor).toBe("#ff0000");
+    });
+  });
+
+  // =========================================================================
   // Signing settings
   // =========================================================================
 
@@ -347,6 +408,8 @@ describe("Organization settings", () => {
 
       expect(result.ipAllowlist).toBeUndefined();
       expect(result.allowApiAccess).toBe(true);
+      expect(result.requireMfa).toBe(false);
+      expect(result.sessionTimeoutMinutes).toBeUndefined();
     });
 
     test("returns saved settings", async () => {
@@ -422,6 +485,81 @@ describe("Organization settings", () => {
           }),
       ).rejects.toThrow("Invalid CIDR format");
     });
+
+    test("owner can enable requireMfa", async () => {
+      await t
+        .withIdentity({ subject: "clerk_settings_owner" })
+        .mutation(api.organizations.mutations.updateSecuritySettings, {
+          requireMfa: true,
+        });
+
+      const result = await t
+        .withIdentity({ subject: "clerk_settings_owner" })
+        .query(api.organizations.queries.getSecuritySettings, {
+          organizationId,
+        });
+
+      expect(result.requireMfa).toBe(true);
+    });
+
+    test("owner can set sessionTimeoutMinutes", async () => {
+      await t
+        .withIdentity({ subject: "clerk_settings_owner" })
+        .mutation(api.organizations.mutations.updateSecuritySettings, {
+          sessionTimeoutMinutes: 60,
+        });
+
+      const result = await t
+        .withIdentity({ subject: "clerk_settings_owner" })
+        .query(api.organizations.queries.getSecuritySettings, {
+          organizationId,
+        });
+
+      expect(result.sessionTimeoutMinutes).toBe(60);
+    });
+
+    test("rejects session timeout < 15", async () => {
+      await expect(
+        t
+          .withIdentity({ subject: "clerk_settings_owner" })
+          .mutation(api.organizations.mutations.updateSecuritySettings, {
+            sessionTimeoutMinutes: 14,
+          }),
+      ).rejects.toThrow("Session timeout must be between 15 and 10080 minutes");
+    });
+
+    test("rejects session timeout > 10080", async () => {
+      await expect(
+        t
+          .withIdentity({ subject: "clerk_settings_owner" })
+          .mutation(api.organizations.mutations.updateSecuritySettings, {
+            sessionTimeoutMinutes: 10081,
+          }),
+      ).rejects.toThrow("Session timeout must be between 15 and 10080 minutes");
+    });
+
+    test("preserves requireMfa on partial update", async () => {
+      await t
+        .withIdentity({ subject: "clerk_settings_owner" })
+        .mutation(api.organizations.mutations.updateSecuritySettings, {
+          requireMfa: true,
+        });
+
+      await t
+        .withIdentity({ subject: "clerk_settings_owner" })
+        .mutation(api.organizations.mutations.updateSecuritySettings, {
+          allowApiAccess: false,
+        });
+
+      const result = await t
+        .withIdentity({ subject: "clerk_settings_owner" })
+        .query(api.organizations.queries.getSecuritySettings, {
+          organizationId,
+        });
+
+      expect(result.requireMfa).toBe(true);
+      expect(result.allowApiAccess).toBe(false);
+    });
   });
 
   // =========================================================================
@@ -446,12 +584,128 @@ describe("Organization settings", () => {
 
       // Security defaults
       expect(result.security.allowApiAccess).toBe(true);
+      expect(result.security.requireMfa).toBe(false);
+      expect(result.security.sessionTimeoutMinutes).toBeUndefined();
 
       // AI defaults
       expect(result.ai.aiEnabled).toBe(true);
 
       // Branding defaults
       expect(result.branding.enabled).toBe(false);
+      expect(result.branding.companyName).toBeUndefined();
+      expect(result.branding.companyWebsite).toBeUndefined();
+    });
+  });
+
+  // =========================================================================
+  // resetOrgSettings
+  // =========================================================================
+
+  describe("resetOrgSettings", () => {
+    test("resets branding settings to defaults", async () => {
+      // Set some branding first
+      await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .mutation(api.organizations.mutations.updateBrandingSettings, {
+          companyName: "Acme Corp",
+          brandColor: "#ff0000",
+          enabled: true,
+        });
+
+      // Reset
+      await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .mutation(api.organizations.mutations.resetOrgSettings, {
+          category: "branding",
+        });
+
+      const result = await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .query(api.organizations.queries.getBrandingSettings, {
+          organizationId,
+        });
+
+      expect(result.enabled).toBe(false);
+      expect(result.companyName).toBeUndefined();
+      expect(result.brandColor).toBeUndefined();
+    });
+
+    test("resets signing settings to defaults", async () => {
+      await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .mutation(api.organizations.mutations.updateSigningSettings, {
+          defaultDeadlineDays: 7,
+        });
+
+      await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .mutation(api.organizations.mutations.resetOrgSettings, {
+          category: "signing",
+        });
+
+      const result = await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .query(api.organizations.queries.getSigningSettings, {
+          organizationId,
+        });
+
+      expect(result.defaultDeadlineDays).toBe(30);
+    });
+
+    test("resets notification settings to defaults", async () => {
+      await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .mutation(api.organizations.mutations.updateNotificationSettings, {
+          sendCompletionEmail: false,
+        });
+
+      await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .mutation(api.organizations.mutations.resetOrgSettings, {
+          category: "notifications",
+        });
+
+      const result = await t
+        .withIdentity({ subject: "clerk_settings_admin" })
+        .query(api.organizations.queries.getNotificationSettings, {
+          organizationId,
+        });
+
+      expect(result.sendCompletionEmail).toBe(true);
+    });
+
+    test("owner can reset security settings", async () => {
+      await t
+        .withIdentity({ subject: "clerk_settings_owner" })
+        .mutation(api.organizations.mutations.updateSecuritySettings, {
+          requireMfa: true,
+          allowApiAccess: false,
+        });
+
+      await t
+        .withIdentity({ subject: "clerk_settings_owner" })
+        .mutation(api.organizations.mutations.resetOrgSettings, {
+          category: "security",
+        });
+
+      const result = await t
+        .withIdentity({ subject: "clerk_settings_owner" })
+        .query(api.organizations.queries.getSecuritySettings, {
+          organizationId,
+        });
+
+      expect(result.allowApiAccess).toBe(true);
+      expect(result.requireMfa).toBe(false);
+    });
+
+    test("admin (non-owner) cannot reset security settings", async () => {
+      await expect(
+        t
+          .withIdentity({ subject: "clerk_settings_admin" })
+          .mutation(api.organizations.mutations.resetOrgSettings, {
+            category: "security",
+          }),
+      ).rejects.toThrow("Only organization owners can reset security settings");
     });
   });
 });

@@ -24,6 +24,8 @@ export const brandingSettingsValidator = v.object({
   emailReplyTo: v.optional(v.string()),
   hideSealBranding: v.optional(v.boolean()),
   customFooterText: v.optional(v.string()),
+  companyName: v.optional(v.string()),
+  companyWebsite: v.optional(v.string()),
   enabled: v.boolean(),
 });
 export type BrandingSettings = Infer<typeof brandingSettingsValidator>;
@@ -49,6 +51,8 @@ export type NotificationSettings = Infer<typeof notificationSettingsValidator>;
 export const securitySettingsValidator = v.object({
   ipAllowlist: v.optional(v.array(v.string())), // CIDR ranges, null = no restriction
   allowApiAccess: v.boolean(), // Default true
+  requireMfa: v.optional(v.boolean()), // Default false
+  sessionTimeoutMinutes: v.optional(v.number()), // 15–10080 min, undefined = no timeout
 });
 export type SecuritySettings = Infer<typeof securitySettingsValidator>;
 

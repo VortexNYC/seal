@@ -16,7 +16,7 @@ These unblock everything else. Build first.
 
 | # | Feature | Design Doc | Status |
 |---|---------|-----------|--------|
-| 1 | Org Settings Inheritance | `2026-02-25-org-settings-inheritance-design.md` | NOT STARTED |
+| 1 | Org Settings Inheritance | `2026-02-25-org-settings-inheritance-design.md` | DONE |
 | 2 | Folders | `2026-02-25-folders-design.md` | NOT STARTED |
 
 **Why first:** Org Settings provides the settings infrastructure consumed by 6+ other features. Folders touches documents/templates schemas early so later features build on top.

@@ -7,7 +7,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { Save, Shield } from "lucide-react";
+import { KeyRound, Save, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -15,6 +15,7 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +42,8 @@ function SecuritySettings() {
   const [formData, setFormData] = useState({
     ipAllowlistText: "",
     allowApiAccess: true,
+    requireMfa: false,
+    sessionTimeoutMinutes: "",
   });
 
   useEffect(() => {
@@ -48,6 +51,8 @@ function SecuritySettings() {
       setFormData({
         ipAllowlistText: securitySettings.ipAllowlist?.join("\n") ?? "",
         allowApiAccess: securitySettings.allowApiAccess,
+        requireMfa: securitySettings.requireMfa ?? false,
+        sessionTimeoutMinutes: securitySettings.sessionTimeoutMinutes?.toString() ?? "",
       });
     }
   }, [securitySettings]);
@@ -64,9 +69,21 @@ function SecuritySettings() {
         .map((line) => line.trim())
         .filter(Boolean);
 
+      const timeoutValue = formData.sessionTimeoutMinutes
+        ? Number.parseInt(formData.sessionTimeoutMinutes, 10)
+        : undefined;
+
+      if (timeoutValue !== undefined && (timeoutValue < 15 || timeoutValue > 10080)) {
+        toast.error("Session timeout must be between 15 and 10080 minutes");
+        setIsSubmitting(false);
+        return;
+      }
+
       await updateSecuritySettings({
         ipAllowlist: ipAllowlist.length > 0 ? ipAllowlist : undefined,
         allowApiAccess: formData.allowApiAccess,
+        requireMfa: formData.requireMfa,
+        sessionTimeoutMinutes: timeoutValue,
       });
       toast.success("Security settings updated");
     } catch (error) {
@@ -121,6 +138,57 @@ function SecuritySettings() {
                 disabled={!isOwner}
                 onCheckedChange={(checked) => setFormData({ ...formData, allowApiAccess: checked })}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <KeyRound className="size-5" />
+              <CardTitle>Session Security</CardTitle>
+            </div>
+            <CardDescription>
+              Enforce multi-factor authentication and session timeout policies for all members.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="require-mfa" className="text-sm font-medium">
+                  Require MFA
+                </Label>
+                <p className="text-muted-foreground text-xs">
+                  Require all organization members to use multi-factor authentication.
+                </p>
+              </div>
+              <Switch
+                id="require-mfa"
+                checked={formData.requireMfa}
+                disabled={!isOwner}
+                onCheckedChange={(checked) => setFormData({ ...formData, requireMfa: checked })}
+              />
+            </div>
+            <div className="space-y-2 border-t pt-4">
+              <Label htmlFor="session-timeout" className="text-sm font-medium">
+                Session timeout (minutes)
+              </Label>
+              <Input
+                id="session-timeout"
+                type="number"
+                min={15}
+                max={10080}
+                placeholder="No timeout"
+                disabled={!isOwner}
+                value={formData.sessionTimeoutMinutes}
+                onChange={(e) =>
+                  setFormData({ ...formData, sessionTimeoutMinutes: e.target.value })
+                }
+              />
+              <p className="text-muted-foreground text-xs">
+                Automatically sign out inactive users. Leave empty for no timeout. Range: 15–10,080
+                minutes (7 days).
+              </p>
             </div>
           </CardContent>
         </Card>

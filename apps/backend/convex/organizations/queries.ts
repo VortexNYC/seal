@@ -459,6 +459,8 @@ const BRANDING_DEFAULTS = {
   emailReplyTo: undefined,
   hideSealBranding: false,
   customFooterText: undefined,
+  companyName: undefined,
+  companyWebsite: undefined,
 } as const;
 
 export const getBrandingSettings = authQuery({
@@ -545,6 +547,8 @@ export const getNotificationSettingsInternal = internalQuery({
 const SECURITY_SETTINGS_DEFAULTS = {
   ipAllowlist: undefined,
   allowApiAccess: true,
+  requireMfa: false,
+  sessionTimeoutMinutes: undefined,
 } as const;
 
 export const getSecuritySettings = authQuery({

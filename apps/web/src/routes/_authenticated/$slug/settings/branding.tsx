@@ -7,7 +7,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { ImageIcon, PaletteIcon, Save, Trash2Icon, UploadIcon } from "lucide-react";
+import { Building2Icon, ImageIcon, PaletteIcon, Save, Trash2Icon, UploadIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -54,6 +54,8 @@ function BrandingSettings() {
     emailReplyTo: "",
     hideSealBranding: false,
     customFooterText: "",
+    companyName: "",
+    companyWebsite: "",
   });
 
   // Track logo state separately (it's uploaded directly, not part of form submit)
@@ -69,6 +71,8 @@ function BrandingSettings() {
         emailReplyTo: brandingSettings.emailReplyTo ?? "",
         hideSealBranding: brandingSettings.hideSealBranding ?? false,
         customFooterText: brandingSettings.customFooterText ?? "",
+        companyName: brandingSettings.companyName ?? "",
+        companyWebsite: brandingSettings.companyWebsite ?? "",
       });
       setLogoUrl(brandingSettings.logoUrl ?? undefined);
     }
@@ -161,6 +165,8 @@ function BrandingSettings() {
         emailReplyTo: formData.emailReplyTo || undefined,
         hideSealBranding: formData.hideSealBranding,
         customFooterText: formData.customFooterText || undefined,
+        companyName: formData.companyName || undefined,
+        companyWebsite: formData.companyWebsite || undefined,
       });
       toast.success("Branding settings updated");
     } catch (error) {
@@ -203,6 +209,44 @@ function BrandingSettings() {
                 id="branding-enabled"
                 checked={formData.enabled}
                 onCheckedChange={(checked) => setFormData({ ...formData, enabled: checked })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Company Information */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Building2Icon className="h-5 w-5" />
+              <CardTitle className="text-base">Company Information</CardTitle>
+            </div>
+            <CardDescription>
+              Your company details shown on signing pages and documents.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="company-name" className="text-sm">
+                Company name
+              </Label>
+              <Input
+                id="company-name"
+                placeholder="e.g. Acme Corp"
+                value={formData.companyName}
+                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="company-website" className="text-sm">
+                Company website
+              </Label>
+              <Input
+                id="company-website"
+                type="url"
+                placeholder="https://acme.com"
+                value={formData.companyWebsite}
+                onChange={(e) => setFormData({ ...formData, companyWebsite: e.target.value })}
               />
             </div>
           </CardContent>

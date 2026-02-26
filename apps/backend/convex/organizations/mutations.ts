@@ -893,6 +893,8 @@ export const updateBrandingSettings = adminMutation({
     emailReplyTo: v.optional(v.string()),
     hideSealBranding: v.optional(v.boolean()),
     customFooterText: v.optional(v.string()),
+    companyName: v.optional(v.string()),
+    companyWebsite: v.optional(v.string()),
     enabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -934,6 +936,8 @@ export const updateBrandingSettings = adminMutation({
         emailReplyTo: args.emailReplyTo ?? current.emailReplyTo,
         hideSealBranding: args.hideSealBranding ?? current.hideSealBranding,
         customFooterText: args.customFooterText ?? current.customFooterText,
+        companyName: args.companyName ?? current.companyName,
+        companyWebsite: args.companyWebsite ?? current.companyWebsite,
         enabled: args.enabled ?? current.enabled,
       },
       updatedAt: Date.now(),
@@ -1051,6 +1055,8 @@ export const updateSecuritySettings = adminMutation({
   args: {
     ipAllowlist: v.optional(v.array(v.string())),
     allowApiAccess: v.optional(v.boolean()),
+    requireMfa: v.optional(v.boolean()),
+    sessionTimeoutMinutes: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Security settings require owner role — stricter than admin
@@ -1071,6 +1077,8 @@ export const updateSecuritySettings = adminMutation({
     const current = org.securitySettings ?? {
       ipAllowlist: undefined,
       allowApiAccess: true,
+      requireMfa: false,
+      sessionTimeoutMinutes: undefined,
     };
 
     if (args.ipAllowlist !== undefined) {
@@ -1081,12 +1089,68 @@ export const updateSecuritySettings = adminMutation({
       }
     }
 
+    if (args.sessionTimeoutMinutes !== undefined) {
+      if (args.sessionTimeoutMinutes < 15 || args.sessionTimeoutMinutes > 10080) {
+        throw new ConvexError("Session timeout must be between 15 and 10080 minutes");
+      }
+    }
+
     await ctx.db.patch(org._id, {
       securitySettings: {
         ipAllowlist: args.ipAllowlist ?? current.ipAllowlist,
         allowApiAccess: args.allowApiAccess ?? current.allowApiAccess,
+        requireMfa: args.requireMfa ?? current.requireMfa,
+        sessionTimeoutMinutes: args.sessionTimeoutMinutes ?? current.sessionTimeoutMinutes,
       },
       updatedAt: Date.now(),
     });
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Reset settings to defaults (admin, owner for security)
+// ---------------------------------------------------------------------------
+
+const settingsCategoryField = {
+  branding: "brandingSettings",
+  signing: "signingSettings",
+  notifications: "notificationSettings",
+  security: "securitySettings",
+} as const;
+
+type SettingsCategory = keyof typeof settingsCategoryField;
+
+export const resetOrgSettings = adminMutation({
+  args: {
+    category: v.union(
+      v.literal("branding"),
+      v.literal("signing"),
+      v.literal("notifications"),
+      v.literal("security"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    // Security category requires owner role
+    if (args.category === "security") {
+      const member = await ctx.db
+        .query("organization_members")
+        .withIndex("by_user_organization", (q) =>
+          q.eq("userId", ctx.auth.user._id).eq("organizationId", ctx.auth.organization._id),
+        )
+        .first();
+
+      if (!member || member.role !== "owner") {
+        throw new ConvexError("Only organization owners can reset security settings");
+      }
+    }
+
+    const field = settingsCategoryField[args.category as SettingsCategory];
+
+    await ctx.db.patch(ctx.auth.organization._id, {
+      [field]: undefined,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
   },
 });
