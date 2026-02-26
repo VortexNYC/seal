@@ -123,8 +123,8 @@ function NotificationSettings() {
               <CardTitle>Reminder Schedule</CardTitle>
             </div>
             <CardDescription>
-              Send automatic reminders to recipients who haven't signed. Specify the number
-              of days after the document is sent.
+              Send automatic reminders to recipients who haven't signed. Specify the number of days
+              after the document is sent.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

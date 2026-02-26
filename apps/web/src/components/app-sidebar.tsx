@@ -3,7 +3,15 @@
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { Code2, CreditCard, LayoutTemplate, type LucideIcon, Moon, Settings, Sun } from "lucide-react";
+import {
+  Code2,
+  CreditCard,
+  LayoutTemplate,
+  type LucideIcon,
+  Moon,
+  Settings,
+  Sun,
+} from "lucide-react";
 import * as React from "react";
 
 import { NavMain } from "@/components/nav-main";

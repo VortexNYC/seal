@@ -51,9 +51,7 @@ function SecuritySettings() {
     organization ? { organizationId: organization._id } : "skip",
   );
 
-  const updateSecuritySettings = useMutation(
-    api.organizations.mutations.updateSecuritySettings,
-  );
+  const updateSecuritySettings = useMutation(api.organizations.mutations.updateSecuritySettings);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -94,9 +92,7 @@ function SecuritySettings() {
       });
       toast.success("Security settings updated");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update security settings",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update security settings");
     } finally {
       setIsSubmitting(false);
     }
@@ -144,9 +140,7 @@ function SecuritySettings() {
                 id="require-mfa"
                 checked={formData.requireMfa}
                 disabled={!isOwner}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, requireMfa: checked })
-                }
+                onCheckedChange={(checked) => setFormData({ ...formData, requireMfa: checked })}
               />
             </div>
 
@@ -157,8 +151,8 @@ function SecuritySettings() {
                     Allow API access
                   </Label>
                   <p className="text-muted-foreground text-xs">
-                    Enable programmatic access via API keys. Disabling revokes all existing
-                    API key access.
+                    Enable programmatic access via API keys. Disabling revokes all existing API key
+                    access.
                   </p>
                 </div>
                 <Switch
@@ -207,17 +201,15 @@ function SecuritySettings() {
           <CardHeader>
             <CardTitle>IP Allowlist</CardTitle>
             <CardDescription>
-              Restrict workspace access to specific IP addresses or CIDR ranges. Leave empty
-              for no restriction.
+              Restrict workspace access to specific IP addresses or CIDR ranges. Leave empty for no
+              restriction.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Textarea
               value={formData.ipAllowlistText}
               disabled={!isOwner}
-              onChange={(e) =>
-                setFormData({ ...formData, ipAllowlistText: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, ipAllowlistText: e.target.value })}
               placeholder={"192.168.1.0/24\n10.0.0.0/8"}
               rows={4}
             />

@@ -81,17 +81,13 @@ function SigningSettings() {
 
     try {
       await updateSigningSettings({
-        allowedSignatureTypes: formData.allowedSignatureTypes as Array<
-          "draw" | "type" | "upload"
-        >,
+        allowedSignatureTypes: formData.allowedSignatureTypes as Array<"draw" | "type" | "upload">,
         esignConsentText: formData.esignConsentText || undefined,
         defaultDeadlineDays: formData.defaultDeadlineDays,
       });
       toast.success("Signing settings updated");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update signing settings",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update signing settings");
     } finally {
       setIsSubmitting(false);
     }
@@ -120,9 +116,7 @@ function SigningSettings() {
                 <Checkbox
                   id={`sig-${type}`}
                   checked={formData.allowedSignatureTypes.includes(type)}
-                  onCheckedChange={(checked) =>
-                    handleSignatureTypeToggle(type, checked === true)
-                  }
+                  onCheckedChange={(checked) => handleSignatureTypeToggle(type, checked === true)}
                 />
                 <Label htmlFor={`sig-${type}`} className="text-sm font-medium">
                   {type === "draw"
@@ -164,16 +158,13 @@ function SigningSettings() {
           <CardHeader>
             <CardTitle>E-Sign Consent Text</CardTitle>
             <CardDescription>
-              Custom text shown in the e-sign consent dialog. Leave blank to use the Seal
-              default.
+              Custom text shown in the e-sign consent dialog. Leave blank to use the Seal default.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Textarea
               value={formData.esignConsentText}
-              onChange={(e) =>
-                setFormData({ ...formData, esignConsentText: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, esignConsentText: e.target.value })}
               placeholder="By signing this document electronically..."
               rows={4}
             />
