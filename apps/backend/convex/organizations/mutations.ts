@@ -1049,9 +1049,7 @@ export const updateNotificationSettings = adminMutation({
 
 export const updateSecuritySettings = adminMutation({
   args: {
-    requireMfa: v.optional(v.boolean()),
     ipAllowlist: v.optional(v.array(v.string())),
-    sessionTimeoutMinutes: v.optional(v.number()),
     allowApiAccess: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -1071,9 +1069,7 @@ export const updateSecuritySettings = adminMutation({
     if (!org) throw new ConvexError("Organization not found");
 
     const current = org.securitySettings ?? {
-      requireMfa: false,
       ipAllowlist: undefined,
-      sessionTimeoutMinutes: 480,
       allowApiAccess: true,
     };
 
@@ -1085,17 +1081,9 @@ export const updateSecuritySettings = adminMutation({
       }
     }
 
-    if (args.sessionTimeoutMinutes !== undefined) {
-      if (args.sessionTimeoutMinutes < 15 || args.sessionTimeoutMinutes > 1440) {
-        throw new ConvexError("Session timeout must be between 15 minutes and 24 hours");
-      }
-    }
-
     await ctx.db.patch(org._id, {
       securitySettings: {
-        requireMfa: args.requireMfa ?? current.requireMfa,
         ipAllowlist: args.ipAllowlist ?? current.ipAllowlist,
-        sessionTimeoutMinutes: args.sessionTimeoutMinutes ?? current.sessionTimeoutMinutes,
         allowApiAccess: args.allowApiAccess ?? current.allowApiAccess,
       },
       updatedAt: Date.now(),

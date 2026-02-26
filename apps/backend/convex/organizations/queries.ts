@@ -543,9 +543,7 @@ export const getNotificationSettingsInternal = internalQuery({
 // ---------------------------------------------------------------------------
 
 const SECURITY_SETTINGS_DEFAULTS = {
-  requireMfa: false,
   ipAllowlist: undefined,
-  sessionTimeoutMinutes: 480,
   allowApiAccess: true,
 } as const;
 

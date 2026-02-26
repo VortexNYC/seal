@@ -47,9 +47,7 @@ export const notificationSettingsValidator = v.object({
 export type NotificationSettings = Infer<typeof notificationSettingsValidator>;
 
 export const securitySettingsValidator = v.object({
-  requireMfa: v.boolean(), // Default false
   ipAllowlist: v.optional(v.array(v.string())), // CIDR ranges, null = no restriction
-  sessionTimeoutMinutes: v.number(), // Default 480 (8 hours)
   allowApiAccess: v.boolean(), // Default true
 });
 export type SecuritySettings = Infer<typeof securitySettingsValidator>;

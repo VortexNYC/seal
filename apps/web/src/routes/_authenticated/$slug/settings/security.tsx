@@ -16,13 +16,6 @@ import { FormSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@seal/backend/convex/_generated/api";
@@ -31,15 +24,6 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/security")(
   component: SecuritySettings,
   pendingComponent: FormSkeleton,
 });
-
-const SESSION_TIMEOUT_OPTIONS = [
-  { value: "15", label: "15 minutes" },
-  { value: "30", label: "30 minutes" },
-  { value: "60", label: "1 hour" },
-  { value: "240", label: "4 hours" },
-  { value: "480", label: "8 hours" },
-  { value: "1440", label: "24 hours" },
-];
 
 function SecuritySettings() {
   const { slug } = Route.useParams();
@@ -55,18 +39,14 @@ function SecuritySettings() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    requireMfa: false,
     ipAllowlistText: "",
-    sessionTimeoutMinutes: 480,
     allowApiAccess: true,
   });
 
   useEffect(() => {
     if (securitySettings) {
       setFormData({
-        requireMfa: securitySettings.requireMfa,
         ipAllowlistText: securitySettings.ipAllowlist?.join("\n") ?? "",
-        sessionTimeoutMinutes: securitySettings.sessionTimeoutMinutes,
         allowApiAccess: securitySettings.allowApiAccess,
       });
     }
@@ -85,9 +65,7 @@ function SecuritySettings() {
         .filter(Boolean);
 
       await updateSecuritySettings({
-        requireMfa: formData.requireMfa,
         ipAllowlist: ipAllowlist.length > 0 ? ipAllowlist : undefined,
-        sessionTimeoutMinutes: formData.sessionTimeoutMinutes,
         allowApiAccess: formData.allowApiAccess,
       });
       toast.success("Security settings updated");
@@ -120,88 +98,38 @@ function SecuritySettings() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Shield className="size-5" />
-              <CardTitle>Access Controls</CardTitle>
+              <CardTitle>API Access</CardTitle>
             </div>
             <CardDescription>
-              Configure authentication and access policies for your workspace.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="require-mfa" className="text-sm font-medium">
-                  Require multi-factor authentication
-                </Label>
-                <p className="text-muted-foreground text-xs">
-                  All organization members must have MFA enabled to access the workspace.
-                </p>
-              </div>
-              <Switch
-                id="require-mfa"
-                checked={formData.requireMfa}
-                disabled={!isOwner}
-                onCheckedChange={(checked) => setFormData({ ...formData, requireMfa: checked })}
-              />
-            </div>
-
-            <div className="border-t pt-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="allow-api" className="text-sm font-medium">
-                    Allow API access
-                  </Label>
-                  <p className="text-muted-foreground text-xs">
-                    Enable programmatic access via API keys. Disabling revokes all existing API key
-                    access.
-                  </p>
-                </div>
-                <Switch
-                  id="allow-api"
-                  checked={formData.allowApiAccess}
-                  disabled={!isOwner}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, allowApiAccess: checked })
-                  }
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Session Timeout</CardTitle>
-            <CardDescription>
-              Automatically sign out inactive users after this period.
+              Control programmatic access to your workspace via the REST API.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Select
-              value={String(formData.sessionTimeoutMinutes)}
-              disabled={!isOwner}
-              onValueChange={(value) =>
-                setFormData({ ...formData, sessionTimeoutMinutes: Number(value) })
-              }
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SESSION_TIMEOUT_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="allow-api" className="text-sm font-medium">
+                  Allow API access
+                </Label>
+                <p className="text-muted-foreground text-xs">
+                  Enable programmatic access via API keys. Disabling revokes all existing API key
+                  access.
+                </p>
+              </div>
+              <Switch
+                id="allow-api"
+                checked={formData.allowApiAccess}
+                disabled={!isOwner}
+                onCheckedChange={(checked) => setFormData({ ...formData, allowApiAccess: checked })}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>IP Allowlist</CardTitle>
             <CardDescription>
-              Restrict workspace access to specific IP addresses or CIDR ranges. Leave empty for no
+              Restrict API access to specific IP addresses or CIDR ranges. Leave empty for no
               restriction.
             </CardDescription>
           </CardHeader>
