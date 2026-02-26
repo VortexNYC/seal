@@ -1,5 +1,7 @@
 # Embedded Signing (iFrame SDK) — Design Document
 
+> **Status:** IMPLEMENTED — iFrame SDK and React component merged to staging (`dc5751b`).
+
 ## Goal
 
 Allow SaaS companies and developers to embed Seal's signing experience directly within their own applications via iFrame, so recipients never leave the host app. This is table-stakes for platforms like DocuSign (embedded signing is their most-used integration pattern) and critical for Seal's developer-first positioning.

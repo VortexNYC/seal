@@ -1,5 +1,7 @@
 # Document Analytics Enhancements — Design Document
 
+> **Status:** IMPLEMENTED — Email engagement, recipient timing, template performance, and analytics tabs all merged to staging (`337718c`, `3726a04`).
+
 ## Goal
 
 Extend Seal's existing analytics with deeper document-level insights: per-document funnel metrics, email engagement tracking, recipient timing analysis, and template performance comparison. These are the metrics that help users optimize their signing workflows and identify bottlenecks.

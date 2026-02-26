@@ -1,5 +1,7 @@
 # Custom Branding / White-Label — Design Document
 
+> **Status:** IMPLEMENTED — Branding settings page, signing page theming, and email branding all merged to staging (`68b2d71`).
+
 ## Goal
 
 Allow organizations to customize the signing experience with their own branding — logo, colors, email sender name — so recipients see the sender's brand, not Seal's. Critical for agencies and consultants who embed document signing into their client workflows.

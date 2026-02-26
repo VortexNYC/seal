@@ -1,5 +1,7 @@
 # Approval Workflows — Design Document
 
+> **Status:** IMPLEMENTED — Schema (`approver` role, `approved` status, `approvedAt`), backend helpers (`isRecipientComplete`), and frontend (add-recipient dialog, signing page, send dialog) all merged to staging.
+
 ## Goal
 
 Enable multi-step document workflows where approvers must review and approve a document before signers are asked to sign. This closes a critical gap for enterprise use cases: legal review before signing, manager approval of contracts, compliance sign-off before execution.

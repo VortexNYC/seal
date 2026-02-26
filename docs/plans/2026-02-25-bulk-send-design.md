@@ -1,5 +1,7 @@
 # Bulk Send — Design Document
 
+> **Status:** NOT STARTED
+
 ## Goal
 
 Allow users to send the same document (template) to many recipients at once — tens to thousands — each as an independent envelope. Primary use cases: HR onboarding packets, mass NDAs, policy acknowledgments, client agreements.

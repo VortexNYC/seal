@@ -1,5 +1,7 @@
 # SMS / ID Recipient Authentication — Design Document
 
+> **Status:** SCHEMA STUB ONLY — `v.literal("sms")` exists in recipients schema, no backend/frontend implementation yet.
+
 ## Goal
 
 Add stronger recipient authentication methods beyond the current email-token-only approach. Senders should be able to require recipients to verify their identity via SMS code or government ID before accessing a document. This builds trust for high-value contracts and satisfies compliance requirements.

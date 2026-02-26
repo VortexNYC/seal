@@ -1,5 +1,7 @@
 # Signing Order Enforcement — Design Document
 
+> **Status:** IMPLEMENTED — Sequential signing enforcement with backend tests merged to staging (`21b8d47`, `da474c4`).
+
 ## Goal
 
 Enforce the recipient signing order that already exists in the schema but is currently ignored. When a sender sets recipients to sign in a specific order, earlier recipients must complete their action before later recipients can access the document. This is a prerequisite for compliance-grade sequential signing (e.g., "employee signs first, then manager countersigns").
