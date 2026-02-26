@@ -220,6 +220,21 @@ function buildNavSections({
       visible: canView(permissionFlags?.canViewSettings),
     },
     {
+      title: "Signing",
+      url: buildOrganizationPath(slug, "/settings/signing"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Notifications",
+      url: buildOrganizationPath(slug, "/settings/notifications"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
+    {
+      title: "Security",
+      url: buildOrganizationPath(slug, "/settings/security"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
+    {
       title: "Billing",
       url: buildOrganizationPath(slug, "/settings/billing"),
       visible:
