@@ -1,6 +1,7 @@
 .env.sentry-build-plugin
 .vercel
 .source/
+.tanstack/
 public/api/search.json
 
 .env.local
