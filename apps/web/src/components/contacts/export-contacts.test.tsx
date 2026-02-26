@@ -50,8 +50,8 @@ describe("ExportContacts", () => {
 
     beforeEach(() => {
       capturedBlob = undefined;
-      createObjectURLSpy = vi.spyOn(URL, "createObjectURL").mockImplementation((blob: Blob) => {
-        capturedBlob = blob;
+      createObjectURLSpy = vi.spyOn(URL, "createObjectURL").mockImplementation((blob: Blob | MediaSource) => {
+        capturedBlob = blob instanceof Blob ? blob : undefined;
         return "blob:test";
       });
       revokeObjectURLSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
