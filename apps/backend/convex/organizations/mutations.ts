@@ -942,3 +942,163 @@ export const updateBrandingSettings = adminMutation({
     return { success: true };
   },
 });
+
+// ---------------------------------------------------------------------------
+// Signing settings (admin-only)
+// ---------------------------------------------------------------------------
+
+export const updateSigningSettings = adminMutation({
+  args: {
+    allowedSignatureTypes: v.optional(
+      v.array(v.union(v.literal("draw"), v.literal("type"), v.literal("upload"))),
+    ),
+    esignConsentText: v.optional(v.string()),
+    defaultDeadlineDays: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(ctx.auth.organization._id);
+    if (!org) throw new ConvexError("Organization not found");
+
+    const current = org.signingSettings ?? {
+      defaultAuthMethod: "email" as const,
+      allowedSignatureTypes: ["draw" as const, "type" as const, "upload" as const],
+      esignConsentText: undefined,
+      defaultDeadlineDays: 30,
+    };
+
+    if (args.defaultDeadlineDays !== undefined) {
+      if (args.defaultDeadlineDays < 1 || args.defaultDeadlineDays > 365) {
+        throw new ConvexError("Deadline days must be between 1 and 365");
+      }
+    }
+
+    if (args.allowedSignatureTypes !== undefined && args.allowedSignatureTypes.length === 0) {
+      throw new ConvexError("At least one signature type must be allowed");
+    }
+
+    await ctx.db.patch(org._id, {
+      signingSettings: {
+        defaultAuthMethod: "email",
+        allowedSignatureTypes: args.allowedSignatureTypes ?? current.allowedSignatureTypes,
+        esignConsentText: args.esignConsentText ?? current.esignConsentText,
+        defaultDeadlineDays: args.defaultDeadlineDays ?? current.defaultDeadlineDays,
+      },
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Notification settings (admin-only)
+// ---------------------------------------------------------------------------
+
+export const updateNotificationSettings = adminMutation({
+  args: {
+    reminderSchedule: v.optional(v.array(v.number())),
+    expirationAlertDays: v.optional(v.number()),
+    sendCompletionEmail: v.optional(v.boolean()),
+    sendViewedNotification: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(ctx.auth.organization._id);
+    if (!org) throw new ConvexError("Organization not found");
+
+    const current = org.notificationSettings ?? {
+      reminderSchedule: [3, 7, 14],
+      expirationAlertDays: 3,
+      sendCompletionEmail: true,
+      sendViewedNotification: true,
+    };
+
+    if (args.reminderSchedule !== undefined) {
+      if (args.reminderSchedule.length > 10) {
+        throw new ConvexError("Reminder schedule cannot have more than 10 entries");
+      }
+      for (const day of args.reminderSchedule) {
+        if (!Number.isInteger(day) || day < 1) {
+          throw new ConvexError("Reminder days must be positive integers");
+        }
+      }
+      const sorted = [...args.reminderSchedule].sort((a, b) => a - b);
+      if (JSON.stringify(sorted) !== JSON.stringify(args.reminderSchedule)) {
+        throw new ConvexError("Reminder schedule must be in ascending order");
+      }
+    }
+
+    if (args.expirationAlertDays !== undefined) {
+      if (args.expirationAlertDays < 1 || args.expirationAlertDays > 30) {
+        throw new ConvexError("Expiration alert days must be between 1 and 30");
+      }
+    }
+
+    await ctx.db.patch(org._id, {
+      notificationSettings: {
+        reminderSchedule: args.reminderSchedule ?? current.reminderSchedule,
+        expirationAlertDays: args.expirationAlertDays ?? current.expirationAlertDays,
+        sendCompletionEmail: args.sendCompletionEmail ?? current.sendCompletionEmail,
+        sendViewedNotification: args.sendViewedNotification ?? current.sendViewedNotification,
+      },
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Security settings (owner-only — higher impact)
+// ---------------------------------------------------------------------------
+
+export const updateSecuritySettings = adminMutation({
+  args: {
+    requireMfa: v.optional(v.boolean()),
+    ipAllowlist: v.optional(v.array(v.string())),
+    sessionTimeoutMinutes: v.optional(v.number()),
+    allowApiAccess: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    // Security settings require owner role — stricter than admin
+    const member = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user_organization", (q) =>
+        q.eq("userId", ctx.auth.user._id).eq("organizationId", ctx.auth.organization._id),
+      )
+      .first();
+
+    if (!member || member.role !== "owner") {
+      throw new ConvexError("Only organization owners can modify security settings");
+    }
+
+    const org = await ctx.db.get(ctx.auth.organization._id);
+    if (!org) throw new ConvexError("Organization not found");
+
+    const current = org.securitySettings ?? {
+      requireMfa: false,
+      ipAllowlist: undefined,
+      sessionTimeoutMinutes: 480,
+      allowApiAccess: true,
+    };
+
+    if (args.ipAllowlist !== undefined) {
+      for (const cidr of args.ipAllowlist) {
+        if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})?$/.test(cidr)) {
+          throw new ConvexError(`Invalid CIDR format: ${cidr}`);
+        }
+      }
+    }
+
+    if (args.sessionTimeoutMinutes !== undefined) {
+      if (args.sessionTimeoutMinutes < 15 || args.sessionTimeoutMinutes > 1440) {
+        throw new ConvexError("Session timeout must be between 15 minutes and 24 hours");
+      }
+    }
+
+    await ctx.db.patch(org._id, {
+      securitySettings: {
+        requireMfa: args.requireMfa ?? current.requireMfa,
+        ipAllowlist: args.ipAllowlist ?? current.ipAllowlist,
+        sessionTimeoutMinutes: args.sessionTimeoutMinutes ?? current.sessionTimeoutMinutes,
+        allowApiAccess: args.allowApiAccess ?? current.allowApiAccess,
+      },
+      updatedAt: Date.now(),
+    });
+  },
+});
