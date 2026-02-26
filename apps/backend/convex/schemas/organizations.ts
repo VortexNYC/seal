@@ -28,6 +28,32 @@ export const brandingSettingsValidator = v.object({
 });
 export type BrandingSettings = Infer<typeof brandingSettingsValidator>;
 
+export const signingSettingsValidator = v.object({
+  defaultAuthMethod: v.literal("email"), // Only "email" for v1
+  allowedSignatureTypes: v.array(
+    v.union(v.literal("draw"), v.literal("type"), v.literal("upload")),
+  ),
+  esignConsentText: v.optional(v.string()), // null = use Seal default
+  defaultDeadlineDays: v.number(), // Default 30
+});
+export type SigningSettings = Infer<typeof signingSettingsValidator>;
+
+export const notificationSettingsValidator = v.object({
+  reminderSchedule: v.array(v.number()), // Days after send, e.g., [3, 7, 14]
+  expirationAlertDays: v.number(), // Days before expiry to alert, default 3
+  sendCompletionEmail: v.boolean(), // Default true
+  sendViewedNotification: v.boolean(), // Default true
+});
+export type NotificationSettings = Infer<typeof notificationSettingsValidator>;
+
+export const securitySettingsValidator = v.object({
+  requireMfa: v.boolean(), // Default false
+  ipAllowlist: v.optional(v.array(v.string())), // CIDR ranges, null = no restriction
+  sessionTimeoutMinutes: v.number(), // Default 480 (8 hours)
+  allowApiAccess: v.boolean(), // Default true
+});
+export type SecuritySettings = Infer<typeof securitySettingsValidator>;
+
 export const organizationsTable = defineTable({
   name: v.string(),
   slug: v.string(),
@@ -54,6 +80,15 @@ export const organizationsTable = defineTable({
 
   // Branding settings for signing pages and emails
   brandingSettings: v.optional(brandingSettingsValidator),
+
+  // Signing defaults for documents
+  signingSettings: v.optional(signingSettingsValidator),
+
+  // Notification preferences
+  notificationSettings: v.optional(notificationSettingsValidator),
+
+  // Security policies
+  securitySettings: v.optional(securitySettingsValidator),
 
   updatedAt: v.number(),
 })
