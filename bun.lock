@@ -197,6 +197,13 @@
         "vitest": "catalog:",
       },
     },
+    "packages/react-sdk": {
+      "name": "@seal/react",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "react": ">=18.0.0",
+      },
+    },
     "packages/transactional": {
       "name": "@seal/transactional",
       "dependencies": {
@@ -1335,6 +1342,8 @@
     "@seal/landing": ["@seal/landing@workspace:apps/landing"],
 
     "@seal/mcp-server": ["@seal/mcp-server@workspace:apps/mcp-server"],
+
+    "@seal/react": ["@seal/react@workspace:packages/react-sdk"],
 
     "@seal/transactional": ["@seal/transactional@workspace:packages/transactional"],
 
