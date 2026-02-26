@@ -115,7 +115,7 @@ export function FolderSidebar({
     }
 
     try {
-      await createFolder({ name, type });
+      await createFolder({ name, type, parentId: activeFolderId });
       toast.success(`Folder "${name}" created`);
       setNewFolderName("");
       setIsCreating(false);
@@ -124,7 +124,7 @@ export function FolderSidebar({
         error instanceof Error ? error.message : "Failed to create folder";
       toast.error(message);
     }
-  }, [newFolderName, createFolder, type]);
+  }, [newFolderName, createFolder, type, activeFolderId]);
 
   const handleCreateKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -353,14 +353,16 @@ function FolderTreeNode({
 
   const handleClick = useCallback(() => {
     onFolderSelect(folderId);
+    setIsExpanded(true);
   }, [onFolderSelect, folderId]);
 
   const handleToggleExpand = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
+      onFolderSelect(folderId);
       setIsExpanded((prev) => !prev);
     },
-    [],
+    [onFolderSelect, folderId],
   );
 
   const paddingLeft = 8 + depth * 16;

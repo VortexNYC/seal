@@ -112,6 +112,7 @@ import type * as emails_email_retry from "../emails/email_retry.js";
 import type * as emails_user_email_actions from "../emails/user_email_actions.js";
 import type * as fix_user_org from "../fix_user_org.js";
 import type * as folders_mutations from "../folders/mutations.js";
+import type * as folders_queries from "../folders/queries.js";
 import type * as http from "../http.js";
 import type * as mcp_oauth_http from "../mcp_oauth/http.js";
 import type * as mcp_oauth_mutations from "../mcp_oauth/mutations.js";
@@ -331,6 +332,7 @@ declare const fullApi: ApiFromModules<{
   "emails/user_email_actions": typeof emails_user_email_actions;
   fix_user_org: typeof fix_user_org;
   "folders/mutations": typeof folders_mutations;
+  "folders/queries": typeof folders_queries;
   http: typeof http;
   "mcp_oauth/http": typeof mcp_oauth_http;
   "mcp_oauth/mutations": typeof mcp_oauth_mutations;

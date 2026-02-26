@@ -1,0 +1,199 @@
+{
+  "project": "seal",
+  "app": "web",
+  "type": "exploratory-testing",
+  "branch": "staging",
+  "lastUpdated": "2026-02-26",
+  "browser": {
+    "tool": "playwright-cli",
+    "url": "http://localhost:5173"
+  },
+  "credentials": {
+    "notes": "Uses Clerk auth - must be logged in via existing session"
+  },
+  "rules": {
+    "fixBugsImmediately": true,
+    "maxStepsPerSession": 5,
+    "updateJsonAfterEachSession": true,
+    "reTestAfterFix": true
+  },
+  "rounds": {
+    "round1": {
+      "sessions": [
+        {
+          "id": "A1",
+          "block": "A",
+          "title": "Folder sidebar renders on documents page",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to documents page",
+            "Verify folder sidebar panel is visible on the left",
+            "Verify 'All Documents' root item is shown and active",
+            "Verify 'New Folder' button is present",
+            "Verify resizable handle is present between sidebar and content"
+          ],
+          "bugs": [],
+          "notes": "All elements present: All Documents button (e188), New Folder button (e191), resizable separator with grip icon (e192/e194)"
+        },
+        {
+          "id": "A2",
+          "block": "A",
+          "title": "Create folder on documents page",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Click 'New Folder' button",
+            "Type a folder name and press Enter",
+            "Verify folder appears in sidebar",
+            "Create a second folder to verify multiple folders work",
+            "Verify folders are sorted alphabetically"
+          ],
+          "bugs": [],
+          "notes": "Created 'Contracts' and 'Agreements'. Toast shown. Alphabetical sort confirmed (Agreements before Contracts)."
+        },
+        {
+          "id": "A3",
+          "block": "A",
+          "title": "Create nested folder",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Click on an existing folder to select it",
+            "Click 'New Folder' button (should create inside selected folder)",
+            "Verify child folder appears nested under parent",
+            "Verify expand/collapse chevron appears on parent",
+            "Click chevron to collapse/expand"
+          ],
+          "bugs": [
+            { "id": "BUG-1", "description": "New Folder button always creates at root level — createFolder mutation never passed parentId (activeFolderId). Fixed: pass activeFolderId as parentId.", "fixed": true },
+            { "id": "BUG-2", "description": "Clicking folder chevron expands but doesn't select (navigate) because stopPropagation prevents outer button onClick. Fixed: chevron handler now also calls onFolderSelect, and handleClick also expands.", "fixed": true }
+          ],
+          "notes": "2 bugs found and fixed. Re-tested after fix — nested folder creation and expand/collapse all working."
+        },
+        {
+          "id": "A4",
+          "block": "A",
+          "title": "Folder navigation and filtering",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Click on a folder - verify URL updates with folderId param",
+            "Verify document list filters to show only docs in that folder",
+            "Verify breadcrumbs appear showing folder path",
+            "Click breadcrumb to navigate back to parent/root",
+            "Click 'All Documents' to return to root view"
+          ],
+          "bugs": [],
+          "notes": "URL updates with ?folderId=xxx. Empty folder shows 'No documents yet'. Breadcrumbs show path. Both breadcrumb and sidebar All Documents navigate back to root."
+        },
+        {
+          "id": "B1",
+          "block": "B",
+          "title": "Folder context menu - rename and pin",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Right-click a folder to open context menu",
+            "Click 'Rename' - verify inline edit appears",
+            "Type new name and press Enter - verify name updates",
+            "Right-click again, click 'Pin' - verify pin indicator appears",
+            "Verify pinned folder sorts to top of list"
+          ],
+          "bugs": [],
+          "notes": "Renamed 'Agreements' to 'Legal Agreements'. Pinned it — pin icon appears, sorts to top above 'Contracts'."
+        },
+        {
+          "id": "B2",
+          "block": "B",
+          "title": "Folder context menu - visibility and delete",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Right-click a folder, change visibility to 'Admin Only'",
+            "Verify visibility change persists (reload page)",
+            "Right-click a folder (one with no docs), click 'Delete'",
+            "Verify AlertDialog confirmation appears",
+            "Confirm delete - verify folder removed from sidebar"
+          ],
+          "bugs": [],
+          "notes": "Visibility changed to Admin Only, persisted after reload (menu shows 'Set Visible to Everyone'). Delete with AlertDialog confirmed. Folder removed."
+        },
+        {
+          "id": "B3",
+          "block": "B",
+          "title": "Move document to folder",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Find a document in the list with action menu",
+            "Click 'Move to folder' option in document actions",
+            "Verify MoveToFolderDialog opens with folder tree",
+            "Select a folder and click 'Move'",
+            "Verify document disappears from current view and appears in target folder"
+          ],
+          "bugs": [
+            { "id": "BUG-3", "description": "MoveToFolderDialog has nested <button> inside <button> (chevron inside folder row) causing React warning. Fixed: changed inner <button> to <span role='button' tabIndex={-1}>.", "fixed": true }
+          ],
+          "notes": "Move dialog works. Document moved from root to Contracts folder. Appears in Contracts view. Minor HTML nesting warning (button in button)."
+        },
+        {
+          "id": "C1",
+          "block": "C",
+          "title": "Templates page folder sidebar",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Navigate to templates page",
+            "Verify folder sidebar is present (type='template')",
+            "Create a template folder",
+            "Verify it appears in sidebar",
+            "Verify 'All Templates' root item works"
+          ],
+          "bugs": [],
+          "notes": "Templates page has folder sidebar with All Templates + New Folder. Created 'NDA Templates' folder — appeared in sidebar. URL updates with folderId when folder selected. All Templates returns to root."
+        },
+        {
+          "id": "C2",
+          "block": "C",
+          "title": "Delete folder with contents",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Move a document into a folder (if not already done)",
+            "Delete the folder via context menu",
+            "Verify confirmation dialog warns about contents",
+            "Confirm deletion",
+            "Verify document is orphaned back to root (appears in All Documents)"
+          ],
+          "bugs": [],
+          "notes": "Document was already in Contracts folder (from B3). Deleted Contracts — AlertDialog warned 'All subfolders will also be deleted. Documents and templates inside will be moved to root level.' Confirmed. Folder + NDAs subfolder removed. test-agreement.pdf back in root document list."
+        },
+        {
+          "id": "D1",
+          "block": "D",
+          "title": "Resizable panel behavior",
+          "priority": 3,
+          "status": "passed",
+          "steps": [
+            "Drag resize handle to make sidebar narrower",
+            "Drag to make wider",
+            "Try to collapse sidebar completely",
+            "Verify main content area adjusts properly",
+            "Reload page and verify layout is reasonable"
+          ],
+          "bugs": [],
+          "notes": "Sidebar panel config: defaultSize=20%, minSize=15%, maxSize=35%, collapsible. Dragged narrower — sidebar collapsed to icon-only state. Content area adjusts properly to fill space. Grip handle visible. After reload, layout returns to reasonable default. Panel supports full collapse due to collapsible prop."
+        }
+      ],
+      "executionOrder": ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "C1", "C2", "D1"],
+      "blocks": {
+        "A": { "name": "Core folder sidebar + navigation", "priority": 1, "sessions": 4 },
+        "B": { "name": "Context menu actions + move", "priority": 2, "sessions": 3 },
+        "C": { "name": "Templates + edge cases", "priority": 2, "sessions": 2 },
+        "D": { "name": "Layout + UX polish", "priority": 3, "sessions": 1 }
+      },
+      "stats": { "total": 10, "pending": 0, "passed": 10, "failed": 0, "bugsFound": 3, "bugsFixed": 3 }
+    }
+  }
+}

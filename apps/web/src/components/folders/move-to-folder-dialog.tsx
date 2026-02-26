@@ -248,8 +248,9 @@ function TreeNodeItem({
       >
         {/* Expand/collapse chevron */}
         {hasChildren ? (
-          <button
-            type="button"
+          <span
+            role="button"
+            tabIndex={-1}
             className="hover:bg-accent shrink-0 rounded-sm p-0.5"
             onClick={(e) => {
               e.stopPropagation();
@@ -259,7 +260,7 @@ function TreeNodeItem({
             <ChevronRight
               className={cn("size-3.5 transition-transform", isExpanded && "rotate-90")}
             />
-          </button>
+          </span>
         ) : (
           <span className="size-4.5 shrink-0" />
         )}
