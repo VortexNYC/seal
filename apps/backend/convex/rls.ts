@@ -402,6 +402,25 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       },
     },
 
+    folders: {
+      read: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        // Members can see folders in their org
+        if (doc.organizationId !== rlsCtx.orgId) return false;
+        // Admin-visibility folders require admin role
+        if (doc.visibility === "admin") return rlsCtx.isAdmin;
+        return true;
+      },
+      modify: async (_ctx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (doc.organizationId !== rlsCtx.orgId) return false;
+        // Only admins and folder creators can modify
+        return rlsCtx.isAdmin || doc.createdBy === rlsCtx.userId;
+      },
+    },
+
     document_invoices: {
       read: async (_ctx, doc) => {
         if (!rlsCtx) return false;

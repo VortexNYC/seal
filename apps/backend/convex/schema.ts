@@ -34,6 +34,7 @@ import {
   documentsTable,
 } from "./schemas/documents";
 import { downloadTokensTable } from "./schemas/download_tokens";
+import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
 import { type EmailStatus, type EmailType, emailLogsTable } from "./schemas/email_logs";
 import {
   mcpOauthClientsTable,
@@ -131,6 +132,9 @@ export type { AuthenticationMethod, FieldType, SignatureType, WorkflowRecipientS
 // Re-export template types
 export type { TemplateStatus };
 
+// Re-export folder types
+export type { FolderType, FolderVisibility };
+
 // Re-export contact types
 export type { ContactStatus };
 
@@ -178,6 +182,7 @@ export default defineSchema({
   document_access: documentAccessTable,
   document_recipients: documentRecipientsTable,
   document_reminders: documentRemindersTable,
+  folders: foldersTable,
 
   // Signature workflow tables
   recipients: recipientsTable,

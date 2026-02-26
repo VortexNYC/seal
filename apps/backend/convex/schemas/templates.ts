@@ -29,6 +29,9 @@ export const templatesTable = defineTable({
   // Source document info (optional - template may be created from a document)
   sourceDocumentId: v.optional(v.id("documents")),
 
+  // Folder organization
+  folderId: v.optional(v.id("folders")),
+
   // PDF storage - templates store a copy of the PDF
   storageId: v.string(), // ID returned from storage.store()
   fileSize: v.number(),
@@ -52,7 +55,8 @@ export const templatesTable = defineTable({
   .index("by_creator", ["createdBy"])
   .index("by_status", ["status"])
   .index("by_organization_status", ["organizationId", "status"])
-  .index("by_use_count", ["useCount"]);
+  .index("by_use_count", ["useCount"])
+  .index("by_folder", ["folderId"]);
 
 /**
  * Template fields - stores the signature/form fields defined in the template

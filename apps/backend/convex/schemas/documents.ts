@@ -39,6 +39,9 @@ export const documentsTable = defineTable({
   // Template reference (if created from a template)
   sourceTemplateId: v.optional(v.id("templates")),
 
+  // Folder organization
+  folderId: v.optional(v.id("folders")),
+
   // Convex Storage reference
   storageId: v.string(), // ID returned from storage.store() - Original uploaded PDF
   fillableStorageId: v.optional(v.string()), // ID of the fillable PDF with embedded form fields (SEA-100)
@@ -118,4 +121,6 @@ export const documentsTable = defineTable({
   .searchIndex("search_text", {
     searchField: "extractedText",
     filterFields: ["organizationId", "status"],
-  });
+  })
+  .index("by_folder", ["folderId"])
+  .index("by_org_folder", ["organizationId", "folderId"]);
