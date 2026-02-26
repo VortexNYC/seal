@@ -479,3 +479,109 @@ export const getBrandingSettingsInternal = internalQuery({
     return org.brandingSettings ?? BRANDING_DEFAULTS;
   },
 });
+
+// ---------------------------------------------------------------------------
+// Signing settings
+// ---------------------------------------------------------------------------
+
+const SIGNING_SETTINGS_DEFAULTS = {
+  defaultAuthMethod: "email" as const,
+  allowedSignatureTypes: ["draw", "type", "upload"] as const,
+  esignConsentText: undefined,
+  defaultDeadlineDays: 30,
+} as const;
+
+export const getSigningSettings = authQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new ConvexError("Organization not found");
+    return org.signingSettings ?? SIGNING_SETTINGS_DEFAULTS;
+  },
+});
+
+export const getSigningSettingsInternal = internalQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) return SIGNING_SETTINGS_DEFAULTS;
+    return org.signingSettings ?? SIGNING_SETTINGS_DEFAULTS;
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Notification settings
+// ---------------------------------------------------------------------------
+
+const NOTIFICATION_SETTINGS_DEFAULTS = {
+  reminderSchedule: [3, 7, 14],
+  expirationAlertDays: 3,
+  sendCompletionEmail: true,
+  sendViewedNotification: true,
+} as const;
+
+export const getNotificationSettings = authQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new ConvexError("Organization not found");
+    return org.notificationSettings ?? NOTIFICATION_SETTINGS_DEFAULTS;
+  },
+});
+
+export const getNotificationSettingsInternal = internalQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) return NOTIFICATION_SETTINGS_DEFAULTS;
+    return org.notificationSettings ?? NOTIFICATION_SETTINGS_DEFAULTS;
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Security settings
+// ---------------------------------------------------------------------------
+
+const SECURITY_SETTINGS_DEFAULTS = {
+  requireMfa: false,
+  ipAllowlist: undefined,
+  sessionTimeoutMinutes: 480,
+  allowApiAccess: true,
+} as const;
+
+export const getSecuritySettings = authQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new ConvexError("Organization not found");
+    return org.securitySettings ?? SECURITY_SETTINGS_DEFAULTS;
+  },
+});
+
+export const getSecuritySettingsInternal = internalQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) return SECURITY_SETTINGS_DEFAULTS;
+    return org.securitySettings ?? SECURITY_SETTINGS_DEFAULTS;
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Unified settings query — aggregates all categories with defaults
+// ---------------------------------------------------------------------------
+
+export const getOrgSettings = authQuery({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new ConvexError("Organization not found");
+    return {
+      ai: org.aiSettings ?? AI_SETTINGS_DEFAULTS,
+      branding: org.brandingSettings ?? BRANDING_DEFAULTS,
+      signing: org.signingSettings ?? SIGNING_SETTINGS_DEFAULTS,
+      notifications: org.notificationSettings ?? NOTIFICATION_SETTINGS_DEFAULTS,
+      security: org.securitySettings ?? SECURITY_SETTINGS_DEFAULTS,
+    };
+  },
+});
