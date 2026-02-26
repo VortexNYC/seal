@@ -63,12 +63,7 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 // ─── Embedded Signing (iFrame SDK) ──────────────────────────────────
-type SealEventType =
-  | "seal:ready"
-  | "seal:viewed"
-  | "seal:signed"
-  | "seal:declined"
-  | "seal:error";
+type SealEventType = "seal:ready" | "seal:viewed" | "seal:signed" | "seal:declined" | "seal:error";
 
 function postSealEvent(type: SealEventType, payload: Record<string, unknown>) {
   if (typeof window === "undefined" || window.parent === window) return;
@@ -150,7 +145,14 @@ function SigningPage() {
     }),
   );
 
-  const { recipient, document: doc, waitingForPreviousGroup, sequentialProgress, branding } = data;
+  const {
+    recipient,
+    document: doc,
+    waitingForPreviousGroup,
+    sequentialProgress,
+    branding,
+    signingSettings,
+  } = data;
 
   // ESIGN consent state — skip modal if already consented
   const [hasConsented, setHasConsented] = useState(!!recipient.esignConsentAt);
@@ -752,6 +754,7 @@ function SigningPage() {
         onDownloadPdf={handleDownload}
         onOptOut={handleOptOut}
         isSubmitting={isConsentSubmitting}
+        customConsentText={signingSettings?.esignConsentText}
       />
     );
   }
@@ -780,13 +783,19 @@ function SigningPage() {
       )}
 
       {/* Desktop Header - Full width top bar (hidden in embedded mode) */}
-      <header className={`border-border/50 dark:bg-card hidden shrink-0 border-b bg-white lg:block ${isEmbedded ? "!hidden" : ""}`}>
+      <header
+        className={`border-border/50 dark:bg-card hidden shrink-0 border-b bg-white lg:block ${isEmbedded ? "!hidden" : ""}`}
+      >
         <div className="flex h-14 items-center justify-between px-6">
           {/* Left: Logo + Document context */}
           <div className="flex items-center gap-4">
             <a href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
               {branding?.logoUrl ? (
-                <img src={branding.logoUrl} alt="Logo" className="h-8 max-w-[160px] object-contain" />
+                <img
+                  src={branding.logoUrl}
+                  alt="Logo"
+                  className="h-8 max-w-[160px] object-contain"
+                />
               ) : (
                 <>
                   <SealLogo size={32} variant="color" />
@@ -850,12 +859,18 @@ function SigningPage() {
       </header>
 
       {/* Mobile Header - Only visible on small screens (hidden in embedded mode) */}
-      <header className={`dark:bg-background/80 border-border/50 sticky top-0 z-40 border-b bg-white/80 backdrop-blur-xl lg:hidden ${isEmbedded ? "!hidden" : ""}`}>
+      <header
+        className={`dark:bg-background/80 border-border/50 sticky top-0 z-40 border-b bg-white/80 backdrop-blur-xl lg:hidden ${isEmbedded ? "!hidden" : ""}`}
+      >
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <a href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
               {branding?.logoUrl ? (
-                <img src={branding.logoUrl} alt="Logo" className="h-8 max-w-[120px] object-contain" />
+                <img
+                  src={branding.logoUrl}
+                  alt="Logo"
+                  className="h-8 max-w-[120px] object-contain"
+                />
               ) : (
                 <>
                   <SealLogo size={32} variant="color" />
@@ -1503,7 +1518,9 @@ function SigningPage() {
 
           {/* Mobile Action Bar - Fixed at bottom on mobile */}
           {!isCompleted && !showSignatureCapture && (
-            <div className={`dark:bg-background/95 border-border/50 sticky bottom-0 z-40 border-t bg-white/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden ${isEmbedded ? "!block" : ""}`}>
+            <div
+              className={`dark:bg-background/95 border-border/50 sticky bottom-0 z-40 border-t bg-white/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden ${isEmbedded ? "!block" : ""}`}
+            >
               <div className="flex gap-3">
                 {!(isEmbedded && embedParams.hideDecline) && (
                   <Button
@@ -1579,6 +1596,7 @@ function SigningPage() {
             recipientName={recipient.name}
             onSignatureCapture={handleSignatureCapture}
             onCancel={handleCancelSignature}
+            allowedSignatureTypes={signingSettings?.allowedSignatureTypes}
           />
         </DialogContent>
       </Dialog>

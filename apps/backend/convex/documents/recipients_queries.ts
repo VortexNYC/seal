@@ -8,7 +8,11 @@ import { query } from "../_generated/server";
 import { authQuery } from "../auth";
 import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
 import { isRecipientComplete, isRecipientTerminal } from "../schemas/document_recipients";
-import { findRecipientByToken, groupRecipientsByOrder, isRecipientGroupActive } from "./recipient_helpers";
+import {
+  findRecipientByToken,
+  groupRecipientsByOrder,
+  isRecipientGroupActive,
+} from "./recipient_helpers";
 
 /**
  * Get all recipients for a document
@@ -119,9 +123,7 @@ export const getRecipientByToken = query({
     }
 
     // 3b. Get organization branding settings
-    const organization = document.organizationId
-      ? await ctx.db.get(document.organizationId)
-      : null;
+    const organization = document.organizationId ? await ctx.db.get(document.organizationId) : null;
     const branding = organization?.brandingSettings?.enabled
       ? organization.brandingSettings
       : undefined;
@@ -197,6 +199,13 @@ export const getRecipientByToken = query({
             accentColor: branding.accentColor,
             hideSealBranding: branding.hideSealBranding,
             customFooterText: branding.customFooterText,
+          }
+        : undefined,
+      // Organization signing settings (for signature type filtering, consent text)
+      signingSettings: organization?.signingSettings
+        ? {
+            allowedSignatureTypes: organization.signingSettings.allowedSignatureTypes,
+            esignConsentText: organization.signingSettings.esignConsentText,
           }
         : undefined,
     };

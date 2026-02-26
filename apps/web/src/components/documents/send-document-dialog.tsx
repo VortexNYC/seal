@@ -55,6 +55,8 @@ interface SendDocumentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  /** Org default deadline in days. When set, pre-populates the deadline picker. */
+  defaultDeadlineDays?: number;
 }
 
 export function SendDocumentDialog({
@@ -66,6 +68,7 @@ export function SendDocumentDialog({
   open,
   onOpenChange,
   onSuccess,
+  defaultDeadlineDays,
 }: SendDocumentDialogProps) {
   const [customMessage, setCustomMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -74,8 +77,10 @@ export function SendDocumentDialog({
   const [recipientMessages, setRecipientMessages] = useState<Record<string, string>>({});
   const [expandedRecipient, setExpandedRecipient] = useState<string | null>(null);
 
-  // SEA-119: Deadline picker state
-  const [deadline, setDeadline] = useState<Date | undefined>(undefined);
+  // SEA-119: Deadline picker state — pre-populate from org default if set
+  const [deadline, setDeadline] = useState<Date | undefined>(
+    defaultDeadlineDays ? addDays(new Date(), defaultDeadlineDays) : undefined,
+  );
 
   // Signing mode: parallel (all at once) or sequential (by order groups)
   const [signingMode, setSigningMode] = useState<"parallel" | "sequential">("parallel");

@@ -375,8 +375,16 @@ function DocumentDetailPage() {
     organizationId: documentData.organizationId,
   });
   const aiEnabled = aiSettings?.aiEnabled !== false;
+
+  const signingSettings = useQuery(api.organizations.queries.getSigningSettings, {
+    organizationId: documentData.organizationId,
+  });
   const [showAiSuggestions, setShowAiSuggestions] = useState(true);
-  const { threadId, isCreating: isCreatingThread, getOrCreateThread } = useDocumentThread(documentId as Id<"documents">);
+  const {
+    threadId,
+    isCreating: isCreatingThread,
+    getOrCreateThread,
+  } = useDocumentThread(documentId as Id<"documents">);
   const [showAIChat, setShowAIChat] = useState(false);
 
   // Toast when AI pipeline completes or fails
@@ -1149,7 +1157,10 @@ function DocumentDetailPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left column: PDF Preview */}
           <div className="lg:col-span-2">
-            <div ref={pdfWrapperRef} className="relative min-h-[600px] rounded-2xl bg-stone-100 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-stone-900">
+            <div
+              ref={pdfWrapperRef}
+              className="relative min-h-[600px] rounded-2xl bg-stone-100 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-stone-900"
+            >
               {pdfUrl ? (
                 <TransformWrapper
                   initialScale={1}
@@ -1266,14 +1277,18 @@ function DocumentDetailPage() {
                   )}
 
                   {/* AI processing skeleton — show when analyzing but no suggestions yet */}
-                  {canEdit && aiEnabled && showAiSuggestions && !aiSuggestions.suggestions && documentData.aiProcessingStatus === "processing" && (
-                    <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-violet-300/50 bg-violet-50/50 px-4 py-3 dark:border-violet-700/50 dark:bg-violet-950/30">
-                      <Loader2Icon className="h-4 w-4 animate-spin text-violet-500" />
-                      <span className="font-sans text-xs text-violet-600 dark:text-violet-400">
-                        Detecting form fields...
-                      </span>
-                    </div>
-                  )}
+                  {canEdit &&
+                    aiEnabled &&
+                    showAiSuggestions &&
+                    !aiSuggestions.suggestions &&
+                    documentData.aiProcessingStatus === "processing" && (
+                      <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-violet-300/50 bg-violet-50/50 px-4 py-3 dark:border-violet-700/50 dark:bg-violet-950/30">
+                        <Loader2Icon className="h-4 w-4 animate-spin text-violet-500" />
+                        <span className="font-sans text-xs text-violet-600 dark:text-violet-400">
+                          Detecting form fields...
+                        </span>
+                      </div>
+                    )}
                 </TransformWrapper>
               ) : (
                 <>
@@ -1472,9 +1487,15 @@ function DocumentDetailPage() {
               </Collapsible>
 
               {/* AI Chat Panel - Shows when user opens AI assistant */}
-              {canEdit && aiEnabled && showAIChat && (
-                threadId ? (
-                  <AIChatPanel threadId={threadId} slug={slug} onClose={() => setShowAIChat(false)} />
+              {canEdit &&
+                aiEnabled &&
+                showAIChat &&
+                (threadId ? (
+                  <AIChatPanel
+                    threadId={threadId}
+                    slug={slug}
+                    onClose={() => setShowAIChat(false)}
+                  />
                 ) : (
                   <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900">
                     <Loader2Icon className="h-5 w-5 animate-spin text-violet-500" />
@@ -1482,18 +1503,20 @@ function DocumentDetailPage() {
                       Starting AI assistant...
                     </p>
                   </div>
-                )
-              )}
+                ))}
 
               {/* AI Insights (Redlining) — loading state */}
-              {canEdit && aiEnabled && !documentAnnotations.annotations && documentData.aiProcessingStatus === "processing" && (
-                <div className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-5 py-4 sm:rounded-xl dark:border-slate-700 dark:bg-slate-800/30">
-                  <Loader2Icon className="h-4 w-4 animate-spin text-slate-400" />
-                  <span className="font-sans text-xs text-slate-500 dark:text-slate-400">
-                    Scanning for insights...
-                  </span>
-                </div>
-              )}
+              {canEdit &&
+                aiEnabled &&
+                !documentAnnotations.annotations &&
+                documentData.aiProcessingStatus === "processing" && (
+                  <div className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-5 py-4 sm:rounded-xl dark:border-slate-700 dark:bg-slate-800/30">
+                    <Loader2Icon className="h-4 w-4 animate-spin text-slate-400" />
+                    <span className="font-sans text-xs text-slate-500 dark:text-slate-400">
+                      Scanning for insights...
+                    </span>
+                  </div>
+                )}
 
               {/* AI Insights (Redlining) */}
               {canEdit && aiEnabled && documentAnnotations.annotations && (
@@ -1872,6 +1895,7 @@ function DocumentDetailPage() {
           fieldCountsByRecipient={fieldCountsByRecipient}
           open={sendDocumentOpen}
           onOpenChange={setSendDocumentOpen}
+          defaultDeadlineDays={signingSettings?.defaultDeadlineDays}
           onSuccess={() => {
             refetchDocument();
             refetchRecipients();

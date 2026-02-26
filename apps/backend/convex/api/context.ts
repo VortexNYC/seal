@@ -259,6 +259,20 @@ async function buildAuthContext(
     );
   }
 
+  // Check if organization allows API access
+  const securitySettings = await ctx.runQuery(
+    internal.organizations.queries.getSecuritySettingsInternal,
+    { organizationId: params.organizationId },
+  );
+
+  if (securitySettings.allowApiAccess === false) {
+    throw new ApiError(
+      403,
+      "API access is disabled for this organization. An organization owner can enable it in Settings > Security.",
+      "API_ACCESS_DISABLED",
+    );
+  }
+
   // Get user permissions
   const permissionInfo = await ctx.runQuery(internal.api.helpers.getUserPermissions, {
     userId: params.userId,

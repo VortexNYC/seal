@@ -85,6 +85,8 @@ interface SignatureCaptureProps {
   onCancel: () => void;
   /** Whether to show the signature library (requires authentication) */
   showLibrary?: boolean;
+  /** Organization-level allowed signature types. Defaults to all types. */
+  allowedSignatureTypes?: readonly ("draw" | "type" | "upload")[];
 }
 
 export function SignatureCapture({
@@ -92,8 +94,16 @@ export function SignatureCapture({
   onSignatureCapture,
   onCancel,
   showLibrary = false,
+  allowedSignatureTypes,
 }: SignatureCaptureProps) {
-  const [activeTab, setActiveTab] = useState<TabType>(showLibrary ? "saved" : "drawn");
+  // Map org-level types ("draw"/"type"/"upload") to internal tab types ("drawn"/"typed"/"uploaded")
+  const ORG_TO_TAB: Record<string, SignatureType> = { draw: "drawn", type: "typed", upload: "uploaded" };
+  const allowedTabs: SignatureType[] = allowedSignatureTypes
+    ? (allowedSignatureTypes.map((t) => ORG_TO_TAB[t]).filter(Boolean) as SignatureType[])
+    : ["drawn", "typed", "uploaded"];
+
+  const defaultTab: TabType = showLibrary ? "saved" : allowedTabs[0] ?? "drawn";
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
   const [typedName, setTypedName] = useState(recipientName || "");
   const [selectedFont, setSelectedFont] = useState<SignatureFont>("dancing-script");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -381,7 +391,10 @@ export function SignatureCapture({
       <CardContent>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
           {/* SEA-116: Mobile-optimized tabs with icon-only on small screens */}
-          <TabsList className={`grid w-full ${showLibrary ? "grid-cols-4" : "grid-cols-3"} h-auto`}>
+          <TabsList
+            className={`grid w-full h-auto`}
+            style={{ gridTemplateColumns: `repeat(${allowedTabs.length + (showLibrary ? 1 : 0)}, minmax(0, 1fr))` }}
+          >
             {showLibrary && (
               <TabsTrigger
                 value="saved"
@@ -391,27 +404,33 @@ export function SignatureCapture({
                 <span className="hidden sm:inline">Saved</span>
               </TabsTrigger>
             )}
-            <TabsTrigger
-              value="drawn"
-              className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3"
-            >
-              <PencilIcon className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Draw</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="typed"
-              className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3"
-            >
-              <TypeIcon className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Type</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="uploaded"
-              className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3"
-            >
-              <ImageIcon className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Upload</span>
-            </TabsTrigger>
+            {allowedTabs.includes("drawn") && (
+              <TabsTrigger
+                value="drawn"
+                className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3"
+              >
+                <PencilIcon className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Draw</span>
+              </TabsTrigger>
+            )}
+            {allowedTabs.includes("typed") && (
+              <TabsTrigger
+                value="typed"
+                className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3"
+              >
+                <TypeIcon className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Type</span>
+              </TabsTrigger>
+            )}
+            {allowedTabs.includes("uploaded") && (
+              <TabsTrigger
+                value="uploaded"
+                className="flex min-h-[44px] items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3"
+              >
+                <ImageIcon className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Upload</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Saved Tab (only shown if showLibrary is true) */}
@@ -494,7 +513,7 @@ export function SignatureCapture({
           )}
 
           {/* Draw Tab */}
-          <TabsContent value="drawn" className="space-y-4">
+          {allowedTabs.includes("drawn") && <TabsContent value="drawn" className="space-y-4">
             <div className="space-y-2">
               <Label>Draw your signature</Label>
               {/* SEA-116: Responsive container for signature canvas */}
@@ -540,10 +559,10 @@ export function SignatureCapture({
                 Use your mouse or finger to draw your signature above
               </p>
             </div>
-          </TabsContent>
+          </TabsContent>}
 
           {/* Type Tab */}
-          <TabsContent value="typed" className="space-y-4">
+          {allowedTabs.includes("typed") && <TabsContent value="typed" className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="typed-name">Type your full name</Label>
               {/* SEA-116: Larger input for mobile with proper virtual keyboard handling */}
@@ -590,10 +609,10 @@ export function SignatureCapture({
             <p className="text-muted-foreground text-sm">
               Your typed name will be converted to a signature style using the selected font
             </p>
-          </TabsContent>
+          </TabsContent>}
 
           {/* Upload Tab */}
-          <TabsContent value="uploaded" className="space-y-4">
+          {allowedTabs.includes("uploaded") && <TabsContent value="uploaded" className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="signature-upload">Upload your signature image</Label>
               <Input
@@ -615,7 +634,7 @@ export function SignatureCapture({
             <p className="text-muted-foreground text-sm">
               Upload a PNG or JPG image file (max 5MB)
             </p>
-          </TabsContent>
+          </TabsContent>}
         </Tabs>
 
         {/* SEA-116: Mobile-optimized action buttons with proper touch targets */}

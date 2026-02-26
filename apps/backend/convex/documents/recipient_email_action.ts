@@ -162,13 +162,12 @@ export const sendPostSignatureEmails = internalAction({
                 internal.organizations.queries.getBrandingSettingsInternal,
                 { organizationId: document.organizationId },
               );
-              const emailBranding =
-                brandingSettings.enabled
-                  ? {
-                      emailFromName: brandingSettings.emailFromName,
-                      emailReplyTo: brandingSettings.emailReplyTo,
-                    }
-                  : undefined;
+              const emailBranding = brandingSettings.enabled
+                ? {
+                    emailFromName: brandingSettings.emailFromName,
+                    emailReplyTo: brandingSettings.emailReplyTo,
+                  }
+                : undefined;
 
               for (const nextRecipient of pendingInNextGroup) {
                 const signingUrl = `${baseUrl}/sign/${nextRecipient.signingToken}`;
@@ -204,13 +203,20 @@ export const sendPostSignatureEmails = internalAction({
         { documentId: args.documentId },
       );
 
-      // 6. Get document owner info
+      // 6. Check org notification settings for completion email preference
+      const notificationSettings = document.organizationId
+        ? await ctx.runQuery(internal.organizations.queries.getNotificationSettingsInternal, {
+            organizationId: document.organizationId,
+          })
+        : null;
+
+      // 6b. Get document owner info
       const owner: Doc<"users"> | null = await ctx.runQuery(
         internal.organizations.helpers.getUserById,
         { userId: document.ownerId },
       );
 
-      if (owner?.email) {
+      if (owner?.email && notificationSettings?.sendCompletionEmail !== false) {
         // Build recipients summary
         const recipientsSummary = allRecipients
           .filter((r) => isRecipientComplete(r.role, r.status))

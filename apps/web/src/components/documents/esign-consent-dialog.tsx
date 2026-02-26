@@ -29,6 +29,8 @@ interface EsignConsentDialogProps {
   onDownloadPdf?: () => void;
   onOptOut?: (method: string) => void;
   isSubmitting?: boolean;
+  /** Custom consent text from org settings. Falls back to Seal default when absent. */
+  customConsentText?: string;
 }
 
 export function EsignConsentDialog({
@@ -38,6 +40,7 @@ export function EsignConsentDialog({
   onDownloadPdf,
   onOptOut,
   isSubmitting = false,
+  customConsentText,
 }: EsignConsentDialogProps) {
   const [consentState, setConsentState] = useState<ConsentState>("pending");
   const [isChecked, setIsChecked] = useState(false);
@@ -198,8 +201,8 @@ export function EsignConsentDialog({
           <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
             <CardContent className="space-y-4 p-5">
               <p className="text-muted-foreground text-sm leading-relaxed">
-                By checking the box below, you consent to use electronic signatures for this
-                document and future documents.
+                {customConsentText ??
+                  "By checking the box below, you consent to use electronic signatures for this document and future documents."}
               </p>
 
               <div>
