@@ -82,9 +82,7 @@ describe("SendDocumentDialog", () => {
 
   test("shows error when signatureFieldCount is 0", () => {
     render(<SendDocumentDialog {...buildProps({ signatureFieldCount: 0 })} />);
-    expect(
-      screen.getByText("Cannot send document without signature fields."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Cannot send document without signature fields.")).toBeInTheDocument();
   });
 
   test("does not show signature field error when signatureFieldCount > 0", () => {
@@ -300,9 +298,9 @@ describe("SendDocumentDialog", () => {
     expect(screen.getByText(/1 recipient/i)).toBeInTheDocument();
   });
 
-  test("shows 'No deadline set' placeholder in deadline button", () => {
+  test("shows 'No expiration' default in expiration dropdown", () => {
     render(<SendDocumentDialog {...buildProps()} />);
-    expect(screen.getByText("No deadline set")).toBeInTheDocument();
+    expect(screen.getByText("No expiration")).toBeInTheDocument();
   });
 
   test("shows Cancel button in footer", () => {

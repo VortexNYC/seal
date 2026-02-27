@@ -14,12 +14,13 @@ const ALL_STATUSES: DocumentWorkflowStatus[] = [
   "completed",
   "cancelled",
   "declined",
+  "expired",
 ];
 
 describe("WORKFLOW_TRANSITIONS", () => {
-  test("covers all 7 statuses as keys", () => {
+  test("covers all 8 statuses as keys", () => {
     const keys = Object.keys(WORKFLOW_TRANSITIONS);
-    expect(keys).toHaveLength(7);
+    expect(keys).toHaveLength(8);
     for (const status of ALL_STATUSES) {
       expect(WORKFLOW_TRANSITIONS).toHaveProperty(status);
     }
@@ -40,6 +41,9 @@ describe("isValidWorkflowTransition", () => {
       ["in_progress", "declined"],
       ["waiting_for_payment", "completed"],
       ["waiting_for_payment", "cancelled"],
+      ["sent", "expired"],
+      ["in_progress", "expired"],
+      ["expired", "sent"],
     ];
 
     test.each(validCases)("%s -> %s is valid", (from, to) => {
@@ -70,6 +74,9 @@ describe("isValidWorkflowTransition", () => {
       ["declined", "sent"],
       ["declined", "draft"],
       ["declined", "completed"],
+      ["expired", "draft"],
+      ["expired", "completed"],
+      ["expired", "cancelled"],
     ];
 
     test.each(invalidCases)("%s -> %s is invalid", (from, to) => {
@@ -105,6 +112,7 @@ describe("getWorkflowStatusLabel", () => {
     ["completed", "Completed"],
     ["cancelled", "Cancelled"],
     ["declined", "Declined"],
+    ["expired", "Expired"],
   ];
 
   test.each(labelCases)(

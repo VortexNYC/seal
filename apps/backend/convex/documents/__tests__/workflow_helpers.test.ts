@@ -34,6 +34,10 @@ describe("canSendDocument", () => {
     expect(canSendDocument("draft")).toBe(true);
   });
 
+  test("returns true for expired (re-send flow)", () => {
+    expect(canSendDocument("expired")).toBe(true);
+  });
+
   test.each<DocumentWorkflowStatus>([
     "sent",
     "in_progress",
@@ -41,7 +45,6 @@ describe("canSendDocument", () => {
     "completed",
     "cancelled",
     "declined",
-    "expired",
   ])("returns false for '%s'", (status) => {
     expect(canSendDocument(status)).toBe(false);
   });
@@ -71,12 +74,16 @@ describe("canCompleteDocument", () => {
     },
   );
 
-  test.each<DocumentWorkflowStatus>(["draft", "sent", "completed", "cancelled", "declined", "expired"])(
-    "returns false for '%s'",
-    (status) => {
-      expect(canCompleteDocument(status)).toBe(false);
-    },
-  );
+  test.each<DocumentWorkflowStatus>([
+    "draft",
+    "sent",
+    "completed",
+    "cancelled",
+    "declined",
+    "expired",
+  ])("returns false for '%s'", (status) => {
+    expect(canCompleteDocument(status)).toBe(false);
+  });
 });
 
 // ─── DB-dependent tests ─────────────────────────────────────────────

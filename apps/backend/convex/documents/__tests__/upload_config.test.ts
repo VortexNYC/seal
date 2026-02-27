@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+
 import {
   MAX_FILE_SIZE,
   getAllowedExtensions,
@@ -20,7 +21,7 @@ describe("upload_config", () => {
   });
 
   describe("getAllowedExtensions", () => {
-    test("returns [\".pdf\"]", () => {
+    test('returns [".pdf"]', () => {
       expect(getAllowedExtensions()).toEqual([".pdf"]);
     });
   });
@@ -107,9 +108,7 @@ describe("upload_config", () => {
     test("rejects doc.txt with application/pdf (extension mismatch)", () => {
       const result = validateFileExtension("doc.txt", "application/pdf");
       expect(result.valid).toBe(false);
-      expect(result.error).toBe(
-        "File extension '.txt' does not match file type 'application/pdf'",
-      );
+      expect(result.error).toBe("File extension '.txt' does not match file type 'application/pdf'");
     });
   });
 
@@ -121,11 +120,7 @@ describe("upload_config", () => {
     });
 
     test("collects multiple errors for invalid file", () => {
-      const result = validateFile(
-        "document.txt",
-        "image/png",
-        MAX_FILE_SIZE + 1,
-      );
+      const result = validateFile("document.txt", "image/png", MAX_FILE_SIZE + 1);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain("File size must be under 100MB");
       expect(result.errors).toContain("Only PDF files are supported");
