@@ -95,7 +95,9 @@ describe("ErrorBoundary", () => {
 
     expect(Sentry.captureException).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ extra: expect.objectContaining({ componentStack: expect.anything() }) }),
+      expect.objectContaining({
+        extra: expect.objectContaining({ componentStack: expect.anything() }),
+      }),
     );
     consoleSpy.mockRestore();
   });

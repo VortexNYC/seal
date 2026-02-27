@@ -158,7 +158,6 @@ function AnalyticsContent({
   customRange: DateRange | undefined;
   onCustomRangeChange: Dispatch<SetStateAction<DateRange | undefined>>;
 }) {
-
   return (
     <div className="space-y-6">
       {isAdmin && (
@@ -1140,7 +1139,9 @@ const EMAIL_FUNNEL_COLORS = {
 };
 
 function EmailEngagementTab() {
-  const engagement = useQuery(api.dashboard.analytics_queries.getEmailEngagementStats, { days: 30 });
+  const engagement = useQuery(api.dashboard.analytics_queries.getEmailEngagementStats, {
+    days: 30,
+  });
 
   if (!engagement) {
     return <DashboardSkeleton />;
@@ -1213,7 +1214,9 @@ function EmailEngagementTab() {
           title="Avg Time to Open"
           value={engagement.avgTimeToOpen ?? "—"}
           icon={<ClockIcon className="h-4 w-4" />}
-          description={engagement.bounceRate > 0 ? `${engagement.bounceRate}% bounce rate` : undefined}
+          description={
+            engagement.bounceRate > 0 ? `${engagement.bounceRate}% bounce rate` : undefined
+          }
         />
       </div>
 

@@ -130,8 +130,7 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
       resetForm();
       onOpenChange(false);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create contact";
+      const errorMessage = error instanceof Error ? error.message : "Failed to create contact";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -150,9 +149,7 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Contact</DialogTitle>
-          <DialogDescription>
-            Create a new contact for your organization.
-          </DialogDescription>
+          <DialogDescription>Create a new contact for your organization.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -170,9 +167,7 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
                 }}
                 placeholder="John"
               />
-              {errors.firstName && (
-                <p className="text-destructive text-sm">{errors.firstName}</p>
-              )}
+              {errors.firstName && <p className="text-destructive text-sm">{errors.firstName}</p>}
             </div>
 
             <div className="space-y-2">
@@ -188,9 +183,7 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
                 }}
                 placeholder="Doe"
               />
-              {errors.lastName && (
-                <p className="text-destructive text-sm">{errors.lastName}</p>
-              )}
+              {errors.lastName && <p className="text-destructive text-sm">{errors.lastName}</p>}
             </div>
           </div>
 
@@ -216,9 +209,7 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
               }}
               placeholder="john@example.com"
             />
-            {errors.email && (
-              <p className="text-destructive text-sm">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
             {duplicateWarning && (
               <p className="text-amber-600 dark:text-amber-400 text-xs">
                 A contact with this email already exists.

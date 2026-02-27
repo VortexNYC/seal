@@ -38,9 +38,7 @@ function BrandingSettings() {
   );
 
   const updateBranding = useMutation(api.organizations.mutations.updateBrandingSettings);
-  const generateLogoUploadUrl = useMutation(
-    api.organizations.mutations.generateLogoUploadUrl,
-  );
+  const generateLogoUploadUrl = useMutation(api.organizations.mutations.generateLogoUploadUrl);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -366,9 +364,7 @@ function BrandingSettings() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Email Customization</CardTitle>
-            <CardDescription>
-              Customize how your emails appear to recipients.
-            </CardDescription>
+            <CardDescription>Customize how your emails appear to recipients.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">

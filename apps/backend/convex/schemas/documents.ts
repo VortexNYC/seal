@@ -88,10 +88,12 @@ export const documentsTable = defineTable({
   expirationAlertsSent: v.optional(v.array(v.number())), // Days-remaining values already alerted
 
   // Document expiration configuration
-  expirationPeriod: v.optional(v.object({
-    amount: v.number(),
-    unit: v.union(v.literal("day"), v.literal("week"), v.literal("month")),
-  })),
+  expirationPeriod: v.optional(
+    v.object({
+      amount: v.number(),
+      unit: v.union(v.literal("day"), v.literal("week"), v.literal("month")),
+    }),
+  ),
   expiredAt: v.optional(v.number()),
 
   // Retention policy: completed documents must be retained for 7 years (ESIGN Act)

@@ -119,8 +119,7 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
       toast.success("Contact updated");
       onOpenChange(false);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to update contact";
+      const errorMessage = error instanceof Error ? error.message : "Failed to update contact";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -132,9 +131,7 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit Contact</DialogTitle>
-          <DialogDescription>
-            Update this contact&apos;s information.
-          </DialogDescription>
+          <DialogDescription>Update this contact&apos;s information.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -152,9 +149,7 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
                 }}
                 placeholder="John"
               />
-              {errors.firstName && (
-                <p className="text-destructive text-sm">{errors.firstName}</p>
-              )}
+              {errors.firstName && <p className="text-destructive text-sm">{errors.firstName}</p>}
             </div>
 
             <div className="space-y-2">
@@ -170,9 +165,7 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
                 }}
                 placeholder="Doe"
               />
-              {errors.lastName && (
-                <p className="text-destructive text-sm">{errors.lastName}</p>
-              )}
+              {errors.lastName && <p className="text-destructive text-sm">{errors.lastName}</p>}
             </div>
           </div>
 
@@ -190,9 +183,7 @@ export function EditContactDialog({ open, onOpenChange, contact }: EditContactDi
               }}
               placeholder="john@example.com"
             />
-            {errors.email && (
-              <p className="text-destructive text-sm">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
           </div>
 
           <div className="space-y-2">

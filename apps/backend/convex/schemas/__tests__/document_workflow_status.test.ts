@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+
 import {
   isValidWorkflowTransition,
   getWorkflowStatusLabel,
@@ -85,21 +86,14 @@ describe("isValidWorkflowTransition", () => {
   });
 
   describe("terminal states have no valid transitions", () => {
-    const terminalStatuses: DocumentWorkflowStatus[] = [
-      "completed",
-      "cancelled",
-      "declined",
-    ];
+    const terminalStatuses: DocumentWorkflowStatus[] = ["completed", "cancelled", "declined"];
 
-    test.each(terminalStatuses)(
-      "%s has no valid outgoing transitions",
-      (terminal) => {
-        expect(WORKFLOW_TRANSITIONS[terminal]).toEqual([]);
-        for (const target of ALL_STATUSES) {
-          expect(isValidWorkflowTransition(terminal, target)).toBe(false);
-        }
-      },
-    );
+    test.each(terminalStatuses)("%s has no valid outgoing transitions", (terminal) => {
+      expect(WORKFLOW_TRANSITIONS[terminal]).toEqual([]);
+      for (const target of ALL_STATUSES) {
+        expect(isValidWorkflowTransition(terminal, target)).toBe(false);
+      }
+    });
   });
 });
 
@@ -115,12 +109,9 @@ describe("getWorkflowStatusLabel", () => {
     ["expired", "Expired"],
   ];
 
-  test.each(labelCases)(
-    'returns "%s" for status "%s"',
-    (status, expectedLabel) => {
-      expect(getWorkflowStatusLabel(status)).toBe(expectedLabel);
-    },
-  );
+  test.each(labelCases)('returns "%s" for status "%s"', (status, expectedLabel) => {
+    expect(getWorkflowStatusLabel(status)).toBe(expectedLabel);
+  });
 
   test("returns a non-empty string for every status", () => {
     for (const status of ALL_STATUSES) {

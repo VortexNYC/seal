@@ -41,17 +41,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/formatting";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc } from "@seal/backend/convex/_generated/dataModel";
-
 
 export const Route = createFileRoute("/_authenticated/$slug/contacts/$contactId")({
   component: ContactDetailPage,
@@ -98,11 +92,7 @@ function RelatedDocumentsContent({ email, slug }: { email: string; slug: string 
   );
 
   if (documents.length === 0) {
-    return (
-      <p className="text-muted-foreground py-4 text-center text-sm">
-        No documents found
-      </p>
-    );
+    return <p className="text-muted-foreground py-4 text-center text-sm">No documents found</p>;
   }
 
   return (
@@ -152,8 +142,7 @@ function ContactDetailContent() {
       toast.success("Contact deleted");
       router.navigate({ to: "/$slug/contacts", params: { slug } });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to delete contact";
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete contact";
       toast.error(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -185,11 +174,7 @@ function ContactDetailContent() {
                 <CardTitle>{contact.fullName}</CardTitle>
                 <ContactStatusBadge status={contact.status} />
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditOpen(true)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
                 <PencilIcon className="mr-2 h-4 w-4" />
                 Edit
               </Button>
@@ -258,11 +243,7 @@ function ContactDetailContent() {
 
               {/* Delete button */}
               <div className="mt-6 border-t pt-4">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setDeleteOpen(true)}
-                >
+                <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
                   <TrashIcon className="mr-2 h-4 w-4" />
                   Delete Contact
                 </Button>
@@ -290,11 +271,7 @@ function ContactDetailContent() {
       </div>
 
       {/* Edit dialog */}
-      <EditContactDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        contact={contact}
-      />
+      <EditContactDialog open={editOpen} onOpenChange={setEditOpen} contact={contact} />
 
       {/* Delete confirmation */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -302,17 +279,13 @@ function ContactDetailContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Contact</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{contact.fullName}&rdquo;? This action
-              cannot be undone.
+              Are you sure you want to delete &ldquo;{contact.fullName}&rdquo;? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              variant="destructive"
-              disabled={isDeleting}
-            >
+            <AlertDialogAction onClick={handleDelete} variant="destructive" disabled={isDeleting}>
               {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>

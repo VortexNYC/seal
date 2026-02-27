@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+
 import { computeTotalAmountCents, validatePaymentConfig } from "../helpers";
 
 // ─── Helper to build a valid base config ─────────────────────────────────────
@@ -213,9 +214,7 @@ describe("validatePaymentConfig", () => {
   // ── Payment methods ───────────────────────────────────────────────────────
 
   test("rejects empty allowed payment methods", () => {
-    const result = validatePaymentConfig(
-      validOneTimeConfig({ allowedPaymentMethods: [] }),
-    );
+    const result = validatePaymentConfig(validOneTimeConfig({ allowedPaymentMethods: [] }));
     expect(result).toBe("At least one payment method must be selected");
   });
 

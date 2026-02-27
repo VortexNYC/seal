@@ -16,7 +16,14 @@ describe("getDocumentsApproachingDeadline", () => {
 
   function makeDocument(
     overrides: Partial<{
-      workflowStatus: "draft" | "sent" | "in_progress" | "completed" | "cancelled" | "declined" | "expired";
+      workflowStatus:
+        | "draft"
+        | "sent"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "declined"
+        | "expired";
       deadline: number;
       expirationAlertsSent: number[];
       status: "active" | "deleted";
@@ -77,9 +84,12 @@ describe("getDocumentsApproachingDeadline", () => {
   test("returns documents with deadline within alert window", async () => {
     // Document with deadline 2 days from now, default alert window is 3 days
     await t.run(async (ctx) => {
-      await ctx.db.insert("documents", makeDocument({
-        deadline: Date.now() + 2 * ONE_DAY,
-      }));
+      await ctx.db.insert(
+        "documents",
+        makeDocument({
+          deadline: Date.now() + 2 * ONE_DAY,
+        }),
+      );
     });
 
     const candidates = await t.query(
@@ -93,9 +103,12 @@ describe("getDocumentsApproachingDeadline", () => {
   test("does NOT return documents with deadline beyond alert window", async () => {
     // Document with deadline 10 days from now, default alert window is 3 days
     await t.run(async (ctx) => {
-      await ctx.db.insert("documents", makeDocument({
-        deadline: Date.now() + 10 * ONE_DAY,
-      }));
+      await ctx.db.insert(
+        "documents",
+        makeDocument({
+          deadline: Date.now() + 10 * ONE_DAY,
+        }),
+      );
     });
 
     const candidates = await t.query(
@@ -107,9 +120,12 @@ describe("getDocumentsApproachingDeadline", () => {
 
   test("does NOT return documents with past deadline", async () => {
     await t.run(async (ctx) => {
-      await ctx.db.insert("documents", makeDocument({
-        deadline: Date.now() - ONE_DAY,
-      }));
+      await ctx.db.insert(
+        "documents",
+        makeDocument({
+          deadline: Date.now() - ONE_DAY,
+        }),
+      );
     });
 
     const candidates = await t.query(
@@ -121,10 +137,13 @@ describe("getDocumentsApproachingDeadline", () => {
 
   test("does NOT return documents already alerted for this day count", async () => {
     await t.run(async (ctx) => {
-      await ctx.db.insert("documents", makeDocument({
-        deadline: Date.now() + 2 * ONE_DAY,
-        expirationAlertsSent: [2], // Already alerted at 2 days
-      }));
+      await ctx.db.insert(
+        "documents",
+        makeDocument({
+          deadline: Date.now() + 2 * ONE_DAY,
+          expirationAlertsSent: [2], // Already alerted at 2 days
+        }),
+      );
     });
 
     const candidates = await t.query(
@@ -137,10 +156,13 @@ describe("getDocumentsApproachingDeadline", () => {
   test("returns documents alerted at different day count", async () => {
     // Alerted at 3 days, now at 2 days — should alert again
     await t.run(async (ctx) => {
-      await ctx.db.insert("documents", makeDocument({
-        deadline: Date.now() + 2 * ONE_DAY,
-        expirationAlertsSent: [3],
-      }));
+      await ctx.db.insert(
+        "documents",
+        makeDocument({
+          deadline: Date.now() + 2 * ONE_DAY,
+          expirationAlertsSent: [3],
+        }),
+      );
     });
 
     const candidates = await t.query(
@@ -153,14 +175,20 @@ describe("getDocumentsApproachingDeadline", () => {
 
   test("does NOT return draft or expired documents", async () => {
     await t.run(async (ctx) => {
-      await ctx.db.insert("documents", makeDocument({
-        workflowStatus: "draft",
-        deadline: Date.now() + 2 * ONE_DAY,
-      }));
-      await ctx.db.insert("documents", makeDocument({
-        workflowStatus: "expired",
-        deadline: Date.now() + 2 * ONE_DAY,
-      }));
+      await ctx.db.insert(
+        "documents",
+        makeDocument({
+          workflowStatus: "draft",
+          deadline: Date.now() + 2 * ONE_DAY,
+        }),
+      );
+      await ctx.db.insert(
+        "documents",
+        makeDocument({
+          workflowStatus: "expired",
+          deadline: Date.now() + 2 * ONE_DAY,
+        }),
+      );
     });
 
     const candidates = await t.query(
@@ -172,10 +200,13 @@ describe("getDocumentsApproachingDeadline", () => {
 
   test("returns in_progress documents approaching deadline", async () => {
     await t.run(async (ctx) => {
-      await ctx.db.insert("documents", makeDocument({
-        workflowStatus: "in_progress",
-        deadline: Date.now() + 1 * ONE_DAY,
-      }));
+      await ctx.db.insert(
+        "documents",
+        makeDocument({
+          workflowStatus: "in_progress",
+          deadline: Date.now() + 1 * ONE_DAY,
+        }),
+      );
     });
 
     const candidates = await t.query(
@@ -187,10 +218,13 @@ describe("getDocumentsApproachingDeadline", () => {
 
   test("does NOT return deleted documents", async () => {
     await t.run(async (ctx) => {
-      await ctx.db.insert("documents", makeDocument({
-        status: "deleted",
-        deadline: Date.now() + 2 * ONE_DAY,
-      }));
+      await ctx.db.insert(
+        "documents",
+        makeDocument({
+          status: "deleted",
+          deadline: Date.now() + 2 * ONE_DAY,
+        }),
+      );
     });
 
     const candidates = await t.query(
@@ -215,9 +249,12 @@ describe("getDocumentsApproachingDeadline", () => {
 
     // Document 5 days out — beyond default 3 but within custom 7
     await t.run(async (ctx) => {
-      await ctx.db.insert("documents", makeDocument({
-        deadline: Date.now() + 5 * ONE_DAY,
-      }));
+      await ctx.db.insert(
+        "documents",
+        makeDocument({
+          deadline: Date.now() + 5 * ONE_DAY,
+        }),
+      );
     });
 
     const candidates = await t.query(

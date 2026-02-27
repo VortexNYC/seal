@@ -55,10 +55,7 @@ export function ExportContacts({ contacts }: ExportContactsProps) {
       formatCSVDate(contact.createdAt),
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.join(",")),
-    ].join("\n");
+    const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -73,12 +70,7 @@ export function ExportContacts({ contacts }: ExportContactsProps) {
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleExport}
-      disabled={contacts.length === 0}
-    >
+    <Button variant="outline" size="sm" onClick={handleExport} disabled={contacts.length === 0}>
       <DownloadIcon className="mr-2 h-4 w-4" />
       Export CSV
     </Button>

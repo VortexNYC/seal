@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
+
 import { ContactStatusBadge } from "./contact-status-badge";
 
 describe("ContactStatusBadge", () => {

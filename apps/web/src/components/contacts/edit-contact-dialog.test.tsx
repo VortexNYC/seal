@@ -109,7 +109,12 @@ describe("EditContactDialog", () => {
 
     test("shows empty string for missing optional fields", () => {
       renderDialog({
-        contact: makeContact({ phone: undefined, company: undefined, title: undefined, notes: undefined }),
+        contact: makeContact({
+          phone: undefined,
+          company: undefined,
+          title: undefined,
+          notes: undefined,
+        }),
       });
       const phone = screen.getByLabelText(/phone/i) as HTMLInputElement;
       const company = screen.getByLabelText(/company/i) as HTMLInputElement;

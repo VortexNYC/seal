@@ -99,7 +99,9 @@ export function RecipientOptionsDialog({
 
   const canResend =
     documentStatus !== "draft" &&
-    (recipient.status === "pending" || recipient.status === "viewed" || recipient.status === "expired");
+    (recipient.status === "pending" ||
+      recipient.status === "viewed" ||
+      recipient.status === "expired");
 
   const hasSigningLink = !!recipient.signingToken;
 

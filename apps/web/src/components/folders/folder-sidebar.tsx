@@ -120,8 +120,7 @@ export function FolderSidebar({
       setNewFolderName("");
       setIsCreating(false);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to create folder";
+      const message = error instanceof Error ? error.message : "Failed to create folder";
       toast.error(message);
     }
   }, [newFolderName, createFolder, type, activeFolderId]);
@@ -149,20 +148,16 @@ export function FolderSidebar({
         onFolderSelect(undefined);
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to delete folder";
+      const message = error instanceof Error ? error.message : "Failed to delete folder";
       toast.error(message);
     } finally {
       setDeleteTarget(null);
     }
   }, [deleteTarget, deleteFolderMutation, activeFolderId, onFolderSelect]);
 
-  const handleRequestDelete = useCallback(
-    (folderId: Id<"folders">, folderName: string) => {
-      setDeleteTarget({ folderId, folderName });
-    },
-    [],
-  );
+  const handleRequestDelete = useCallback((folderId: Id<"folders">, folderName: string) => {
+    setDeleteTarget({ folderId, folderName });
+  }, []);
 
   return (
     <div className="flex flex-col gap-1">
@@ -173,8 +168,7 @@ export function FolderSidebar({
         className={cn(
           "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium",
           "hover:bg-accent hover:text-accent-foreground",
-          !activeFolderId &&
-            "bg-accent text-accent-foreground",
+          !activeFolderId && "bg-accent text-accent-foreground",
         )}
       >
         <FolderIcon className="size-4 shrink-0" />
@@ -296,8 +290,7 @@ function FolderTreeNode({
       toast.success(`Folder renamed to "${trimmed}"`);
       setIsRenaming(false);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to rename folder";
+      const message = error instanceof Error ? error.message : "Failed to rename folder";
       toast.error(message);
       setRenameValue(name);
       setIsRenaming(false);
@@ -322,8 +315,7 @@ function FolderTreeNode({
       const result = await togglePin({ folderId });
       toast.success(result.pinned ? "Folder pinned" : "Folder unpinned");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to toggle pin";
+      const message = error instanceof Error ? error.message : "Failed to toggle pin";
       toast.error(message);
     }
   }, [togglePin, folderId]);
@@ -338,10 +330,7 @@ function FolderTreeNode({
           : "Folder visible to admins only",
       );
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to update visibility";
+      const message = error instanceof Error ? error.message : "Failed to update visibility";
       toast.error(message);
     }
   }, [visibility, updateFolder, folderId]);
@@ -425,9 +414,7 @@ function FolderTreeNode({
             )}
 
             {/* Pin indicator */}
-            {pinned && (
-              <Pin className="text-muted-foreground ml-auto size-3 shrink-0" />
-            )}
+            {pinned && <Pin className="text-muted-foreground ml-auto size-3 shrink-0" />}
           </button>
         </ContextMenuTrigger>
 
@@ -463,10 +450,7 @@ function FolderTreeNode({
             Move
           </ContextMenuItem>
           <ContextMenuSeparator />
-          <ContextMenuItem
-            variant="destructive"
-            onClick={() => onRequestDelete(folderId, name)}
-          >
+          <ContextMenuItem variant="destructive" onClick={() => onRequestDelete(folderId, name)}>
             <Trash2 className="mr-2 size-4" />
             Delete
           </ContextMenuItem>
@@ -526,9 +510,8 @@ function DeleteFolderDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete folder</AlertDialogTitle>
           <AlertDialogDescription className="text-pretty">
-            Are you sure you want to delete &ldquo;{folderName}&rdquo;? All
-            subfolders will also be deleted. Documents and templates inside will
-            be moved to the root level.
+            Are you sure you want to delete &ldquo;{folderName}&rdquo;? All subfolders will also be
+            deleted. Documents and templates inside will be moved to the root level.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

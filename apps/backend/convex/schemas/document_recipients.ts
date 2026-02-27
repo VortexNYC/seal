@@ -142,5 +142,7 @@ export function isRecipientComplete(role: RecipientRole, status: RecipientStatus
  * Check if recipient is in a terminal state
  */
 export function isRecipientTerminal(status: RecipientStatus): boolean {
-  return status === "signed" || status === "approved" || status === "declined" || status === "expired";
+  return (
+    status === "signed" || status === "approved" || status === "declined" || status === "expired"
+  );
 }

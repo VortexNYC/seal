@@ -21,7 +21,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -117,7 +116,8 @@ export function MoveToFolderDialog({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const excludedSet = useMemo(
-    () => (folders && excludeFolderIds ? getExcludedSet(folders, excludeFolderIds) : new Set<string>()),
+    () =>
+      folders && excludeFolderIds ? getExcludedSet(folders, excludeFolderIds) : new Set<string>(),
     [folders, excludeFolderIds],
   );
 

@@ -175,8 +175,7 @@ function ContactsTableContent({
         onSelectionChange(next);
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to delete contact";
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete contact";
       toast.error(errorMessage);
     } finally {
       setDeleteDialog({ open: false, contactId: null, contactName: "" });
@@ -198,8 +197,7 @@ function ContactsTableContent({
       }
       onSelectionChange(new Set());
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to delete contacts";
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete contacts";
       toast.error(errorMessage);
     } finally {
       setIsBulkDeleting(false);
@@ -258,14 +256,8 @@ function ContactsTableContent({
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="bg-muted/50 flex items-center gap-2 rounded-lg border p-2">
-          <span className="text-muted-foreground text-sm">
-            {selectedIds.size} selected
-          </span>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setBulkDeleteOpen(true)}
-          >
+          <span className="text-muted-foreground text-sm">{selectedIds.size} selected</span>
+          <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)}>
             Delete ({selectedIds.size})
           </Button>
         </div>
@@ -385,8 +377,8 @@ function ContactsTableContent({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedIds.size} Contacts</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedIds.size} contacts? This action
-              cannot be undone.
+              Are you sure you want to delete {selectedIds.size} contacts? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -666,7 +666,11 @@ function TemplatesPage() {
           <div className="space-y-6 pl-4">
             {/* Folder breadcrumbs when inside a folder */}
             {folderId && (
-              <FolderBreadcrumbs folderId={folderId} type="template" onNavigate={handleFolderSelect} />
+              <FolderBreadcrumbs
+                folderId={folderId}
+                type="template"
+                onNavigate={handleFolderSelect}
+              />
             )}
 
             {/* Search and View Controls */}
@@ -709,10 +713,12 @@ function TemplatesPage() {
                 <div className="flex items-start gap-3">
                   <FileTextIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
                   <div>
-                    <p className="text-sm font-medium">Templates save time on recurring documents</p>
+                    <p className="text-sm font-medium">
+                      Templates save time on recurring documents
+                    </p>
                     <p className="text-muted-foreground text-sm">
-                      To create a template, prepare a document with signature fields, then click "Save
-                      as Template" from the document actions menu.
+                      To create a template, prepare a document with signature fields, then click
+                      "Save as Template" from the document actions menu.
                     </p>
                   </div>
                 </div>
@@ -755,7 +761,6 @@ function TemplatesPage() {
                 onMoveToFolder={handleMoveToFolder}
               />
             </Suspense>
-
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

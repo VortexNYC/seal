@@ -4,6 +4,7 @@ import { BadgeDollarSign, CircleDollarSign, Clock, Receipt } from "lucide-react"
 import { useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,7 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/payments/")({
@@ -80,10 +80,7 @@ function PaymentsOverviewPage() {
   }
 
   return (
-    <PageWrapper
-      title="Payments Overview"
-      description="Revenue summary and recent transactions."
-    >
+    <PageWrapper title="Payments Overview" description="Revenue summary and recent transactions.">
       {/* Revenue Cards */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -202,9 +199,7 @@ function PaymentsOverviewPage() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        {tx.customerName && (
-                          <span className="text-sm">{tx.customerName}</span>
-                        )}
+                        {tx.customerName && <span className="text-sm">{tx.customerName}</span>}
                         <span className="text-muted-foreground block text-xs">
                           {tx.customerEmail}
                         </span>
@@ -214,9 +209,7 @@ function PaymentsOverviewPage() {
                       {formatCurrency(tx.amountDue, tx.currency)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANTS[tx.status] ?? "outline"}>
-                        {tx.status}
-                      </Badge>
+                      <Badge variant={STATUS_VARIANTS[tx.status] ?? "outline"}>{tx.status}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {tx.paidAt ? formatDate(tx.paidAt) : formatDate(tx.createdAt)}

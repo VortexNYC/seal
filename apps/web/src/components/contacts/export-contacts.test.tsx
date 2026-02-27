@@ -50,10 +50,12 @@ describe("ExportContacts", () => {
 
     beforeEach(() => {
       capturedBlob = undefined;
-      createObjectURLSpy = vi.spyOn(URL, "createObjectURL").mockImplementation((blob: Blob | MediaSource) => {
-        capturedBlob = blob instanceof Blob ? blob : undefined;
-        return "blob:test";
-      });
+      createObjectURLSpy = vi
+        .spyOn(URL, "createObjectURL")
+        .mockImplementation((blob: Blob | MediaSource) => {
+          capturedBlob = blob instanceof Blob ? blob : undefined;
+          return "blob:test";
+        });
       revokeObjectURLSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
     });
 
@@ -90,7 +92,9 @@ describe("ExportContacts", () => {
 
       const csvText = await capturedBlob!.text();
 
-      expect(csvText).toContain("First Name,Last Name,Email,Phone,Company,Title,Status,Notes,Created");
+      expect(csvText).toContain(
+        "First Name,Last Name,Email,Phone,Company,Title,Status,Notes,Created",
+      );
       expect(csvText).toContain("Jane");
       expect(csvText).toContain("Smith");
       expect(csvText).toContain("jane@example.com");
@@ -145,7 +149,11 @@ describe("ExportContacts", () => {
       const user = userEvent.setup();
       const contacts = [
         makeContact({ firstName: "Alice", email: "alice@test.com" }),
-        makeContact({ _id: "contact_2" as Id<"contacts">, firstName: "Bob", email: "bob@test.com" }),
+        makeContact({
+          _id: "contact_2" as Id<"contacts">,
+          firstName: "Bob",
+          email: "bob@test.com",
+        }),
       ];
 
       render(<ExportContacts contacts={contacts} />);

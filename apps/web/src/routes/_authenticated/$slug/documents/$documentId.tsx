@@ -1141,7 +1141,13 @@ function DocumentDetailPage() {
       headerActions={
         <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
           <Button
-            onClick={() => router.navigate({ to: "/$slug/documents", params: { slug }, search: { folderId: undefined } })}
+            onClick={() =>
+              router.navigate({
+                to: "/$slug/documents",
+                params: { slug },
+                search: { folderId: undefined },
+              })
+            }
             variant="ghost"
             size="sm"
             className="flex-1 sm:flex-none"

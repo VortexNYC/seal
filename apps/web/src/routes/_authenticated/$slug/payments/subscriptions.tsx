@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,13 +28,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
-export const Route = createFileRoute(
-  "/_authenticated/$slug/payments/subscriptions",
-)({
+export const Route = createFileRoute("/_authenticated/$slug/payments/subscriptions")({
   component: SubscriptionsPage,
 });
 
@@ -51,14 +49,8 @@ function formatInterval(interval: string, count: number) {
 
 function SubscriptionsPage() {
   const { slug } = Route.useParams();
-  const organization = useQuery(
-    api.organizations.queries.getOrganization,
-    { slug },
-  );
-  const connectedAccount = useQuery(
-    api.stripe.connect_queries.getConnectedAccount,
-    { slug },
-  );
+  const organization = useQuery(api.organizations.queries.getOrganization, { slug });
+  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
   const subscriptions = useQuery(
@@ -66,15 +58,9 @@ function SubscriptionsPage() {
     connectedAccount?.status === "connected" ? { slug } : "skip",
   );
 
-  const pauseSubscription = useAction(
-    api.stripe.connect_subscription_actions.pauseSubscription,
-  );
-  const resumeSubscription = useAction(
-    api.stripe.connect_subscription_actions.resumeSubscription,
-  );
-  const cancelSubscription = useAction(
-    api.stripe.connect_subscription_actions.cancelSubscription,
-  );
+  const pauseSubscription = useAction(api.stripe.connect_subscription_actions.pauseSubscription);
+  const resumeSubscription = useAction(api.stripe.connect_subscription_actions.resumeSubscription);
+  const cancelSubscription = useAction(api.stripe.connect_subscription_actions.cancelSubscription);
 
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -128,18 +114,12 @@ function SubscriptionsPage() {
   };
 
   return (
-    <PageWrapper
-      title="Subscriptions"
-      description="Manage recurring payments from your documents."
-    >
+    <PageWrapper title="Subscriptions" description="Manage recurring payments from your documents.">
       <div className="mt-6">
         {subscriptions === undefined ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton
-                className="h-12 w-full"
-                key={`skeleton-${i.toString()}`}
-              />
+              <Skeleton className="h-12 w-full" key={`skeleton-${i.toString()}`} />
             ))}
           </div>
         ) : subscriptions.length === 0 ? (
@@ -147,8 +127,7 @@ function SubscriptionsPage() {
             <RefreshCw className="mx-auto mb-3 size-8 opacity-50" />
             <p className="text-sm">No active subscriptions</p>
             <p className="mt-1 text-xs">
-              Recurring payments will appear here when you send documents with
-              recurring billing.
+              Recurring payments will appear here when you send documents with recurring billing.
             </p>
           </div>
         ) : (
@@ -174,9 +153,7 @@ function SubscriptionsPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          {sub.customerName && (
-                            <span className="text-sm">{sub.customerName}</span>
-                          )}
+                          {sub.customerName && <span className="text-sm">{sub.customerName}</span>}
                           <span className="text-muted-foreground block text-xs">
                             {sub.customerEmail}
                           </span>
@@ -189,13 +166,7 @@ function SubscriptionsPage() {
                         {formatInterval(sub.interval, sub.intervalCount)}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            sub.paymentStatus === "paid"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
+                        <Badge variant={sub.paymentStatus === "paid" ? "default" : "secondary"}>
                           {sub.paymentStatus}
                         </Badge>
                       </TableCell>
@@ -210,9 +181,7 @@ function SubscriptionsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="size-8"
-                                  onClick={() =>
-                                    handlePause(sub.stripeSubscriptionId)
-                                  }
+                                  onClick={() => handlePause(sub.stripeSubscriptionId)}
                                   aria-label="Pause subscription"
                                 >
                                   <Pause className="size-3.5" />
@@ -222,9 +191,7 @@ function SubscriptionsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="size-8"
-                                  onClick={() =>
-                                    handleResume(sub.stripeSubscriptionId)
-                                  }
+                                  onClick={() => handleResume(sub.stripeSubscriptionId)}
                                   aria-label="Resume subscription"
                                 >
                                   <Play className="size-3.5" />
@@ -243,24 +210,17 @@ function SubscriptionsPage() {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Cancel subscription?
-                                    </AlertDialogTitle>
+                                    <AlertDialogTitle>Cancel subscription?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This will cancel the recurring payment for
-                                      &ldquo;{sub.documentTitle}&rdquo; at the
-                                      end of the current billing period. This
-                                      action cannot be undone.
+                                      This will cancel the recurring payment for &ldquo;
+                                      {sub.documentTitle}&rdquo; at the end of the current billing
+                                      period. This action cannot be undone.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Keep active
-                                    </AlertDialogCancel>
+                                    <AlertDialogCancel>Keep active</AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() =>
-                                        handleCancel(sub.stripeSubscriptionId)
-                                      }
+                                      onClick={() => handleCancel(sub.stripeSubscriptionId)}
                                     >
                                       Cancel subscription
                                     </AlertDialogAction>
