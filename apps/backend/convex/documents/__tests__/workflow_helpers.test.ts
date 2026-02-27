@@ -19,6 +19,7 @@ describe("isTerminalWorkflowStatus", () => {
     ["completed", true],
     ["cancelled", true],
     ["declined", true],
+    ["expired", true],
     ["draft", false],
     ["sent", false],
     ["in_progress", false],
@@ -40,6 +41,7 @@ describe("canSendDocument", () => {
     "completed",
     "cancelled",
     "declined",
+    "expired",
   ])("returns false for '%s'", (status) => {
     expect(canSendDocument(status)).toBe(false);
   });
@@ -53,7 +55,7 @@ describe("canCancelDocument", () => {
     },
   );
 
-  test.each<DocumentWorkflowStatus>(["completed", "cancelled", "declined"])(
+  test.each<DocumentWorkflowStatus>(["completed", "cancelled", "declined", "expired"])(
     "returns false for terminal status '%s'",
     (status) => {
       expect(canCancelDocument(status)).toBe(false);
@@ -69,7 +71,7 @@ describe("canCompleteDocument", () => {
     },
   );
 
-  test.each<DocumentWorkflowStatus>(["draft", "sent", "completed", "cancelled", "declined"])(
+  test.each<DocumentWorkflowStatus>(["draft", "sent", "completed", "cancelled", "declined", "expired"])(
     "returns false for '%s'",
     (status) => {
       expect(canCompleteDocument(status)).toBe(false);
@@ -169,6 +171,46 @@ describe("transitionWorkflowStatus", () => {
         await transitionWorkflowStatus(ctx, documentId, "completed");
       }),
     ).rejects.toThrow("Invalid workflow transition from draft to completed");
+  });
+
+  test("sent -> expired sets expiredAt timestamp", async () => {
+    await t.run(async (ctx) => {
+      await transitionWorkflowStatus(ctx, documentId, "sent");
+    });
+    await t.run(async (ctx) => {
+      await transitionWorkflowStatus(ctx, documentId, "expired");
+    });
+
+    const doc = await t.run(async (ctx) => {
+      return await ctx.db.get(documentId);
+    });
+
+    expect(doc).not.toBeNull();
+    expect(doc!.workflowStatus).toBe("expired");
+    expect(doc!.expiredAt).toBeTypeOf("number");
+  });
+
+  test("expired -> sent re-enables document (re-send flow)", async () => {
+    // Transition draft -> sent -> expired
+    await t.run(async (ctx) => {
+      await transitionWorkflowStatus(ctx, documentId, "sent");
+    });
+    await t.run(async (ctx) => {
+      await transitionWorkflowStatus(ctx, documentId, "expired");
+    });
+
+    // Re-send: expired -> sent
+    await t.run(async (ctx) => {
+      await transitionWorkflowStatus(ctx, documentId, "sent");
+    });
+
+    const doc = await t.run(async (ctx) => {
+      return await ctx.db.get(documentId);
+    });
+
+    expect(doc).not.toBeNull();
+    expect(doc!.workflowStatus).toBe("sent");
+    expect(doc!.sentAt).toBeTypeOf("number");
   });
 
   test("non-existent document throws 'Document not found'", async () => {
