@@ -25,6 +25,7 @@ export const recipientStatusTuple = v.union(
   v.literal("viewed"), // Document accessed but not signed
   v.literal("signed"), // All required fields completed
   v.literal("declined"), // Recipient declined to sign
+  v.literal("expired"), // Signing period expired
 );
 export type RecipientStatus = Infer<typeof recipientStatusTuple>;
 
@@ -60,6 +61,10 @@ export const recipientsTable = defineTable({
   // Communication
   lastReminderSentAt: v.optional(v.number()), // When last reminder was sent
   reminderCount: v.optional(v.number()), // Number of reminders sent
+
+  // Expiration enforcement
+  expiresAt: v.optional(v.number()),
+  expirationNotifiedAt: v.optional(v.number()),
 
   // Timestamps
   createdAt: v.number(),
