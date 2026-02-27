@@ -32,15 +32,13 @@ function TermsOfService() {
 
         <article className="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none">
           <h1>Terms of Service</h1>
-          <p className="lead">
-            Last updated: February 24, 2026
-          </p>
+          <p className="lead">Last updated: February 24, 2026</p>
 
           <h2>1. Acceptance of Terms</h2>
           <p>
-            By accessing or using Seal (&quot;Service&quot;), operated by Seal (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;),
-            you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms,
-            you may not use the Service.
+            By accessing or using Seal (&quot;Service&quot;), operated by Seal (&quot;we,&quot;
+            &quot;us,&quot; or &quot;our&quot;), you agree to be bound by these Terms of Service
+            (&quot;Terms&quot;). If you do not agree to these Terms, you may not use the Service.
           </p>
           <p>
             These Terms apply to all users of the Service, including document senders, recipients,
@@ -49,14 +47,13 @@ function TermsOfService() {
 
           <h2>2. Eligibility</h2>
           <p>
-            You must be at least 18 years old and have the legal capacity to enter into binding agreements
-            to use the Service. By using Seal, you represent that you meet these requirements.
+            You must be at least 18 years old and have the legal capacity to enter into binding
+            agreements to use the Service. By using Seal, you represent that you meet these
+            requirements.
           </p>
 
           <h2>3. Account Registration &amp; Security</h2>
-          <p>
-            To use certain features of the Service, you must create an account. You agree to:
-          </p>
+          <p>To use certain features of the Service, you must create an account. You agree to:</p>
           <ul>
             <li>Provide accurate, current, and complete information during registration</li>
             <li>Maintain the security of your account credentials</li>
@@ -69,53 +66,52 @@ function TermsOfService() {
           </p>
 
           <h2>4. Service Description</h2>
-          <p>
-            Seal is an intelligent document platform that provides:
-          </p>
+          <p>Seal is an intelligent document platform that provides:</p>
           <ul>
             <li>
-              <strong>Document signing</strong> — Create, send, and collect legally binding electronic
-              signatures on documents
+              <strong>Document signing</strong> — Create, send, and collect legally binding
+              electronic signatures on documents
             </li>
             <li>
-              <strong>Payment collection</strong> — Collect payments from document recipients through
-              integrated Stripe payment processing
+              <strong>Payment collection</strong> — Collect payments from document recipients
+              through integrated Stripe payment processing
             </li>
             <li>
-              <strong>REST API</strong> — Programmatic access to create documents, manage recipients,
-              and receive webhook notifications
+              <strong>REST API</strong> — Programmatic access to create documents, manage
+              recipients, and receive webhook notifications
             </li>
             <li>
-              <strong>AI-powered features</strong> — Automated field detection and document intelligence
+              <strong>AI-powered features</strong> — Automated field detection and document
+              intelligence
             </li>
             <li>
-              <strong>Workspace management</strong> — Organization-based access control with role-based
-              permissions
+              <strong>Workspace management</strong> — Organization-based access control with
+              role-based permissions
             </li>
           </ul>
 
           <h2>5. Electronic Signatures &amp; Legal Compliance</h2>
-          <p>
-            Seal facilitates electronic signatures in compliance with:
-          </p>
+          <p>Seal facilitates electronic signatures in compliance with:</p>
           <ul>
             <li>
-              The <strong>Electronic Signatures in Global and National Commerce Act</strong> (ESIGN Act,
-              15 U.S.C. &sect; 7001 et seq.)
+              The <strong>Electronic Signatures in Global and National Commerce Act</strong> (ESIGN
+              Act, 15 U.S.C. &sect; 7001 et seq.)
             </li>
             <li>
-              The <strong>Uniform Electronic Transactions Act</strong> (UETA) as adopted by applicable states
+              The <strong>Uniform Electronic Transactions Act</strong> (UETA) as adopted by
+              applicable states
             </li>
           </ul>
           <p>
             Electronic signatures executed through Seal are intended to be legally binding. However,
             Seal does not provide legal advice. You are responsible for ensuring that electronic
-            signatures are appropriate and legally sufficient for your specific use case and jurisdiction.
+            signatures are appropriate and legally sufficient for your specific use case and
+            jurisdiction.
           </p>
           <p>
             We maintain audit trails for all document signing activity, including timestamps, IP
-            addresses, and consent records, to support the enforceability of documents signed through
-            the Service.
+            addresses, and consent records, to support the enforceability of documents signed
+            through the Service.
           </p>
 
           <h2>6. Acceptable Use</h2>
@@ -132,9 +128,7 @@ function TermsOfService() {
           </ul>
 
           <h2>7. Payment Terms</h2>
-          <p>
-            Seal offers multiple subscription tiers:
-          </p>
+          <p>Seal offers multiple subscription tiers:</p>
           <ul>
             <li>
               <strong>Free</strong> — Limited document sends per month at no cost
@@ -144,7 +138,8 @@ function TermsOfService() {
               monthly or annual subscription fee
             </li>
             <li>
-              <strong>Enterprise</strong> — Custom pricing with dedicated support and advanced features
+              <strong>Enterprise</strong> — Custom pricing with dedicated support and advanced
+              features
             </li>
           </ul>
           <p>
@@ -153,15 +148,15 @@ function TermsOfService() {
             cancellation takes effect at the end of the current billing period.
           </p>
           <p>
-            We reserve the right to modify pricing with 30 days&apos; notice. Price changes do not apply
-            to the current billing period.
+            We reserve the right to modify pricing with 30 days&apos; notice. Price changes do not
+            apply to the current billing period.
           </p>
 
           <h2>8. Intellectual Property</h2>
           <p>
-            The Service, including its design, code, features, and documentation, is owned by Seal and
-            protected by intellectual property laws. You retain ownership of all documents, content,
-            and data you upload to the Service.
+            The Service, including its design, code, features, and documentation, is owned by Seal
+            and protected by intellectual property laws. You retain ownership of all documents,
+            content, and data you upload to the Service.
           </p>
           <p>
             By uploading content to Seal, you grant us a limited license to store, process, and
@@ -181,20 +176,20 @@ function TermsOfService() {
           <h2>10. Limitation of Liability</h2>
           <p>
             To the maximum extent permitted by law, Seal shall not be liable for any indirect,
-            incidental, special, consequential, or punitive damages, including but not limited to loss
-            of profits, data, or business opportunities, arising from your use of or inability to use
-            the Service.
+            incidental, special, consequential, or punitive damages, including but not limited to
+            loss of profits, data, or business opportunities, arising from your use of or inability
+            to use the Service.
           </p>
           <p>
-            Our total liability for any claim arising from or related to the Service shall not exceed
-            the amount you paid us in the twelve (12) months preceding the claim.
+            Our total liability for any claim arising from or related to the Service shall not
+            exceed the amount you paid us in the twelve (12) months preceding the claim.
           </p>
 
           <h2>11. Disclaimer of Warranties</h2>
           <p>
-            The Service is provided &quot;as is&quot; and &quot;as available&quot; without warranties of any kind,
-            whether express or implied, including but not limited to implied warranties of
-            merchantability, fitness for a particular purpose, and non-infringement.
+            The Service is provided &quot;as is&quot; and &quot;as available&quot; without
+            warranties of any kind, whether express or implied, including but not limited to implied
+            warranties of merchantability, fitness for a particular purpose, and non-infringement.
           </p>
           <p>
             We do not warrant that the Service will be uninterrupted, error-free, or secure, or that
@@ -203,8 +198,9 @@ function TermsOfService() {
 
           <h2>12. Termination</h2>
           <p>
-            We may suspend or terminate your access to the Service at any time for violation of these
-            Terms, with or without notice. You may terminate your account at any time by contacting us.
+            We may suspend or terminate your access to the Service at any time for violation of
+            these Terms, with or without notice. You may terminate your account at any time by
+            contacting us.
           </p>
           <p>
             Upon termination, your right to use the Service ceases immediately. We will retain your
@@ -215,8 +211,8 @@ function TermsOfService() {
           <h2>13. Changes to Terms</h2>
           <p>
             We may update these Terms from time to time. We will notify you of material changes by
-            posting the updated Terms on this page and updating the &quot;Last updated&quot; date. Your
-            continued use of the Service after changes are posted constitutes acceptance of the
+            posting the updated Terms on this page and updating the &quot;Last updated&quot; date.
+            Your continued use of the Service after changes are posted constitutes acceptance of the
             revised Terms.
           </p>
 

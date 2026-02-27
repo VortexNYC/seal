@@ -177,9 +177,7 @@ describe("pipeline_mutations", () => {
       const { internal } = await import("../_generated/api");
 
       const paymentExtraction = {
-        lineItems: [
-          { description: "Consulting fee", quantity: 1, unitPriceCents: 500000 },
-        ],
+        lineItems: [{ description: "Consulting fee", quantity: 1, unitPriceCents: 500000 }],
         currency: "usd",
         paymentType: "one_time" as const,
         dueDateTerms: "net_30" as const,
@@ -245,9 +243,7 @@ describe("pipeline_mutations", () => {
       const { internal } = await import("../_generated/api");
 
       const paymentExtraction = {
-        lineItems: [
-          { description: "Monthly retainer", quantity: 1, unitPriceCents: 300000 },
-        ],
+        lineItems: [{ description: "Monthly retainer", quantity: 1, unitPriceCents: 300000 }],
         currency: "usd",
         paymentType: "recurring" as const,
         dueDateTerms: "on_receipt" as const,

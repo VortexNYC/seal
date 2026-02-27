@@ -71,9 +71,7 @@ export function PaymentFieldSummary({
     );
   }
 
-  const isPayable =
-    config.paymentStatus !== "paid" &&
-    config.paymentStatus !== "cancelled";
+  const isPayable = config.paymentStatus !== "paid" && config.paymentStatus !== "cancelled";
 
   return (
     <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">

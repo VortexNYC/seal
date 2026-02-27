@@ -54,7 +54,6 @@ export default defineConfig(async ({ command }) => ({
     },
   },
 
-
   // Prevent Fumadocs packages from being externalized during SSR.
   // This avoids React context errors and hydration mismatches.
   ssr: {

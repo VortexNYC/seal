@@ -75,9 +75,7 @@ function IntegrationsPage() {
             <FadeIn delay={i * 0.1} key={integration.title}>
               <div className="border-border bg-card flex h-full flex-col rounded-2xl border p-8 sm:p-10">
                 <integration.icon aria-hidden="true" className="text-primary mb-6 size-8" />
-                <h2 className="text-foreground mb-3 text-xl font-semibold">
-                  {integration.title}
-                </h2>
+                <h2 className="text-foreground mb-3 text-xl font-semibold">{integration.title}</h2>
                 <p className="text-muted-foreground mb-8 flex-1 text-sm leading-relaxed text-pretty">
                   {integration.description}
                 </p>
@@ -111,8 +109,8 @@ function IntegrationsPage() {
                   Payments powered by Stripe
                 </h2>
                 <p className="text-muted-foreground text-sm leading-relaxed text-pretty">
-                  Collect payments alongside signatures. Attach a payment request to any document and
-                  recipients pay with Stripe&apos;s secure checkout before or after signing. No
+                  Collect payments alongside signatures. Attach a payment request to any document
+                  and recipients pay with Stripe&apos;s secure checkout before or after signing. No
                   separate invoicing tool needed.
                 </p>
               </div>

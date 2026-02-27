@@ -51,7 +51,10 @@ export const extractPaymentTerms = createTool({
   description:
     "Extract payment terms, line items, amounts, and billing structure from a document to auto-configure a payment field",
   args: z.object({
-    documentId: z.string().optional().describe("The Convex document ID (uses current document if omitted)"),
+    documentId: z
+      .string()
+      .optional()
+      .describe("The Convex document ID (uses current document if omitted)"),
     fieldId: z.string().describe("The payment field ID to configure"),
   }),
   handler: async (ctx: SealAICtx, args): Promise<string> => {

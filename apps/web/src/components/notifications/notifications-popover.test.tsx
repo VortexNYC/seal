@@ -58,7 +58,10 @@ function makeNotificationList(items: NotificationItem[] = [], hasMore = false) {
 
 /** Render the component and set up useQuery to return the given state. */
 function renderPopover(
-  queryReturn: { notifications: ReturnType<typeof makeNotificationList> | undefined; unreadCount: number | undefined } = {
+  queryReturn: {
+    notifications: ReturnType<typeof makeNotificationList> | undefined;
+    unreadCount: number | undefined;
+  } = {
     notifications: makeNotificationList(),
     unreadCount: 0,
   },
@@ -335,9 +338,7 @@ describe("NotificationsPopover", () => {
       });
       renderPopover({ notifications: makeNotificationList([notif]), unreadCount: 0 });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      expect(
-        screen.getByText("Eve's access to \"All Docs\" was revoked"),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Eve\'s access to "All Docs" was revoked')).toBeInTheDocument();
     });
 
     test("renders access_updated notification message", async () => {

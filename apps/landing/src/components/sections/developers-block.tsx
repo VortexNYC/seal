@@ -1,5 +1,5 @@
-import { ArrowRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
@@ -40,7 +40,8 @@ export function StaticDevelopers() {
               </h2>
               <p className="text-muted-foreground mt-6 text-lg text-pretty">
                 Build document signing into your product with a few API calls. Create documents, add
-                recipients, collect signatures, and get webhook notifications — all programmatically.
+                recipients, collect signatures, and get webhook notifications — all
+                programmatically.
               </p>
 
               <ul className="mt-8 space-y-3">

@@ -103,16 +103,14 @@ export const update = permissionMutation("contacts:edit")({
 
     if (args.firstName !== undefined) updates.firstName = args.firstName;
     if (args.lastName !== undefined) updates.lastName = args.lastName;
-    if (args.email !== undefined)
-      updates.email = args.email.toLowerCase().trim();
+    if (args.email !== undefined) updates.email = args.email.toLowerCase().trim();
     if (args.phone !== undefined) updates.phone = args.phone;
     if (args.company !== undefined) updates.company = args.company;
     if (args.title !== undefined) updates.title = args.title;
     if (args.status !== undefined) updates.status = args.status;
     if (args.notes !== undefined) updates.notes = args.notes;
     if (args.tags !== undefined) updates.tags = args.tags;
-    if (args.lastContactedAt !== undefined)
-      updates.lastContactedAt = args.lastContactedAt;
+    if (args.lastContactedAt !== undefined) updates.lastContactedAt = args.lastContactedAt;
 
     // Recompute fullName if either name part changed
     if (args.firstName !== undefined || args.lastName !== undefined) {

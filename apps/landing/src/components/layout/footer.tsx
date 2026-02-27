@@ -24,9 +24,7 @@ export function Footer() {
             src="/logo/seal-logo-color-no-background.svg"
             width={24}
           />
-          <span className="text-muted-foreground text-sm">
-            {currentYear} Seal
-          </span>
+          <span className="text-muted-foreground text-sm">{currentYear} Seal</span>
         </div>
 
         {/* Links */}

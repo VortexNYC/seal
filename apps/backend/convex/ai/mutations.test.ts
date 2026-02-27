@@ -176,11 +176,7 @@ describe("AI mutations", () => {
 
       const suggestion = await t.run(async (ctx) => ctx.db.get(id));
       expect(suggestion?.fields).toHaveLength(3);
-      expect(suggestion?.fields.map((f) => f.fieldType)).toEqual([
-        "signature",
-        "date",
-        "payment",
-      ]);
+      expect(suggestion?.fields.map((f) => f.fieldType)).toEqual(["signature", "date", "payment"]);
     });
   });
 
@@ -647,9 +643,7 @@ describe("AI mutations", () => {
         return await ctx.db.insert("ai_field_suggestions", {
           documentId,
           organizationId,
-          fields: [
-            { ...validField, fieldType: "payment" as const, label: "Amount Due" },
-          ],
+          fields: [{ ...validField, fieldType: "payment" as const, label: "Amount Due" }],
           modelUsed: "gemini-3-flash",
           tokensUsed: 500,
           processingTimeMs: 1200,

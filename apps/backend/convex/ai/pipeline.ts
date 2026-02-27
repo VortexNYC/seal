@@ -80,10 +80,7 @@ export const processDocument = internalAction({
       }
 
       // 3. Run cached field analysis with retry (same storageId = cached result)
-      const result = await fetchFieldAnalysisWithRetry(
-        ctx,
-        document.storageId as Id<"_storage">,
-      );
+      const result = await fetchFieldAnalysisWithRetry(ctx, document.storageId as Id<"_storage">);
 
       // 4. Save field suggestions (dismisses existing pending ones internally)
       const suggestionId = await ctx.runMutation(internal.ai.mutations.saveFieldSuggestions, {
@@ -96,18 +93,17 @@ export const processDocument = internalAction({
       });
 
       // 4a. If payment fields detected, extract payment terms and embed on suggestion
-      const hasPaymentFields = result.fields.some((f: { fieldType: string }) => f.fieldType === "payment");
+      const hasPaymentFields = result.fields.some(
+        (f: { fieldType: string }) => f.fieldType === "payment",
+      );
       if (hasPaymentFields && suggestionId) {
         try {
-          await ctx.runAction(
-            internal.ai.paymentExtraction.extractPaymentTermsForSuggestion,
-            {
-              documentId: args.documentId,
-              organizationId: args.organizationId,
-              suggestionId,
-              userId: args.userId,
-            },
-          );
+          await ctx.runAction(internal.ai.paymentExtraction.extractPaymentTermsForSuggestion, {
+            documentId: args.documentId,
+            organizationId: args.organizationId,
+            suggestionId,
+            userId: args.userId,
+          });
         } catch (paymentError) {
           // Payment extraction failure shouldn't block the rest of the pipeline
           console.error(

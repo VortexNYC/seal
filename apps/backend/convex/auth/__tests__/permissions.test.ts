@@ -11,7 +11,6 @@ import {
   PERMISSIONS,
   ROLE_TEMPLATES,
 } from "../permissions";
-
 import type { PermissionKey } from "../permissions";
 
 const allPermissionKeys = Object.keys(PERMISSIONS) as PermissionKey[];
@@ -50,9 +49,9 @@ describe("hasAnyPermission", () => {
   });
 
   test("returns false if none match", () => {
-    expect(
-      hasAnyPermission(["documents:view"], ["documents:edit", "templates:create"]),
-    ).toBe(false);
+    expect(hasAnyPermission(["documents:view"], ["documents:edit", "templates:create"])).toBe(
+      false,
+    );
   });
 });
 

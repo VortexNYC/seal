@@ -97,12 +97,16 @@ export function SignatureCapture({
   allowedSignatureTypes,
 }: SignatureCaptureProps) {
   // Map org-level types ("draw"/"type"/"upload") to internal tab types ("drawn"/"typed"/"uploaded")
-  const ORG_TO_TAB: Record<string, SignatureType> = { draw: "drawn", type: "typed", upload: "uploaded" };
+  const ORG_TO_TAB: Record<string, SignatureType> = {
+    draw: "drawn",
+    type: "typed",
+    upload: "uploaded",
+  };
   const allowedTabs: SignatureType[] = allowedSignatureTypes
     ? (allowedSignatureTypes.map((t) => ORG_TO_TAB[t]).filter(Boolean) as SignatureType[])
     : ["drawn", "typed", "uploaded"];
 
-  const defaultTab: TabType = showLibrary ? "saved" : allowedTabs[0] ?? "drawn";
+  const defaultTab: TabType = showLibrary ? "saved" : (allowedTabs[0] ?? "drawn");
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
   const [typedName, setTypedName] = useState(recipientName || "");
   const [selectedFont, setSelectedFont] = useState<SignatureFont>("dancing-script");
@@ -392,8 +396,10 @@ export function SignatureCapture({
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
           {/* SEA-116: Mobile-optimized tabs with icon-only on small screens */}
           <TabsList
-            className={`grid w-full h-auto`}
-            style={{ gridTemplateColumns: `repeat(${allowedTabs.length + (showLibrary ? 1 : 0)}, minmax(0, 1fr))` }}
+            className={`grid h-auto w-full`}
+            style={{
+              gridTemplateColumns: `repeat(${allowedTabs.length + (showLibrary ? 1 : 0)}, minmax(0, 1fr))`,
+            }}
           >
             {showLibrary && (
               <TabsTrigger
@@ -513,128 +519,134 @@ export function SignatureCapture({
           )}
 
           {/* Draw Tab */}
-          {allowedTabs.includes("drawn") && <TabsContent value="drawn" className="space-y-4">
-            <div className="space-y-2">
-              <Label>Draw your signature</Label>
-              {/* SEA-116: Responsive container for signature canvas */}
-              <div
-                ref={canvasContainerRef}
-                className="overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white"
-              >
-                <SignatureCanvas
-                  ref={signaturePadRef}
-                  canvasProps={{
-                    width: canvasWidth,
-                    height: 200,
-                    className: "w-full h-[200px] cursor-crosshair touch-none select-none",
-                    style: { touchAction: "none" },
-                  }}
-                  backgroundColor="rgb(255, 255, 255)"
-                  penColor="rgb(0, 0, 0)"
-                />
-              </div>
-              {/* SEA-116: Larger touch targets for mobile */}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="default"
-                  onClick={handleUndoDrawn}
-                  className="h-11 min-h-[44px] flex-1"
-                  disabled={signatureHistory.length === 0}
+          {allowedTabs.includes("drawn") && (
+            <TabsContent value="drawn" className="space-y-4">
+              <div className="space-y-2">
+                <Label>Draw your signature</Label>
+                {/* SEA-116: Responsive container for signature canvas */}
+                <div
+                  ref={canvasContainerRef}
+                  className="overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white"
                 >
-                  <RotateCcwIcon className="mr-2 h-4 w-4" />
-                  Undo
-                </Button>
-                <Button
-                  variant="outline"
-                  size="default"
-                  onClick={handleClearDrawn}
-                  className="h-11 min-h-[44px] flex-1"
-                >
-                  <XIcon className="mr-2 h-4 w-4" />
-                  Clear
-                </Button>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                Use your mouse or finger to draw your signature above
-              </p>
-            </div>
-          </TabsContent>}
-
-          {/* Type Tab */}
-          {allowedTabs.includes("typed") && <TabsContent value="typed" className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="typed-name">Type your full name</Label>
-              {/* SEA-116: Larger input for mobile with proper virtual keyboard handling */}
-              <Input
-                id="typed-name"
-                value={typedName}
-                onChange={(e) => setTypedName(e.target.value)}
-                placeholder="John Doe"
-                className="h-12 text-lg sm:h-10"
-                autoComplete="name"
-                autoCapitalize="words"
-                enterKeyHint="done"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="font-select">Select signature style</Label>
-              <Select
-                value={selectedFont}
-                onValueChange={(v) => setSelectedFont(v as SignatureFont)}
-              >
-                <SelectTrigger id="font-select" className="h-11 sm:h-10">
-                  <SelectValue placeholder="Select a font" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SIGNATURE_FONTS.map((font) => (
-                    <SelectItem key={font.value} value={font.value}>
-                      <span style={{ fontFamily: font.cssFamily }}>{font.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {typedName && (
-              <div className="overflow-hidden rounded-lg border-2 border-gray-300 bg-white p-4 sm:p-8">
-                {/* SEA-116: Responsive font size for mobile */}
-                <p
-                  className="truncate text-center text-3xl sm:text-5xl"
-                  style={{ fontFamily: currentFontFamily }}
-                >
-                  {typedName}
+                  <SignatureCanvas
+                    ref={signaturePadRef}
+                    canvasProps={{
+                      width: canvasWidth,
+                      height: 200,
+                      className: "w-full h-[200px] cursor-crosshair touch-none select-none",
+                      style: { touchAction: "none" },
+                    }}
+                    backgroundColor="rgb(255, 255, 255)"
+                    penColor="rgb(0, 0, 0)"
+                  />
+                </div>
+                {/* SEA-116: Larger touch targets for mobile */}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={handleUndoDrawn}
+                    className="h-11 min-h-[44px] flex-1"
+                    disabled={signatureHistory.length === 0}
+                  >
+                    <RotateCcwIcon className="mr-2 h-4 w-4" />
+                    Undo
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={handleClearDrawn}
+                    className="h-11 min-h-[44px] flex-1"
+                  >
+                    <XIcon className="mr-2 h-4 w-4" />
+                    Clear
+                  </Button>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Use your mouse or finger to draw your signature above
                 </p>
               </div>
-            )}
-            <p className="text-muted-foreground text-sm">
-              Your typed name will be converted to a signature style using the selected font
-            </p>
-          </TabsContent>}
+            </TabsContent>
+          )}
 
-          {/* Upload Tab */}
-          {allowedTabs.includes("uploaded") && <TabsContent value="uploaded" className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="signature-upload">Upload your signature image</Label>
-              <Input
-                id="signature-upload"
-                type="file"
-                accept=".png,.jpg,.jpeg"
-                onChange={handleFileUpload}
-              />
-            </div>
-            {uploadedImage && (
-              <div className="rounded-lg border-2 border-gray-300 bg-white p-4">
-                <img
-                  src={uploadedImage}
-                  alt="Uploaded signature"
-                  className="mx-auto max-h-[200px]"
+          {/* Type Tab */}
+          {allowedTabs.includes("typed") && (
+            <TabsContent value="typed" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="typed-name">Type your full name</Label>
+                {/* SEA-116: Larger input for mobile with proper virtual keyboard handling */}
+                <Input
+                  id="typed-name"
+                  value={typedName}
+                  onChange={(e) => setTypedName(e.target.value)}
+                  placeholder="John Doe"
+                  className="h-12 text-lg sm:h-10"
+                  autoComplete="name"
+                  autoCapitalize="words"
+                  enterKeyHint="done"
                 />
               </div>
-            )}
-            <p className="text-muted-foreground text-sm">
-              Upload a PNG or JPG image file (max 5MB)
-            </p>
-          </TabsContent>}
+              <div className="space-y-2">
+                <Label htmlFor="font-select">Select signature style</Label>
+                <Select
+                  value={selectedFont}
+                  onValueChange={(v) => setSelectedFont(v as SignatureFont)}
+                >
+                  <SelectTrigger id="font-select" className="h-11 sm:h-10">
+                    <SelectValue placeholder="Select a font" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SIGNATURE_FONTS.map((font) => (
+                      <SelectItem key={font.value} value={font.value}>
+                        <span style={{ fontFamily: font.cssFamily }}>{font.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {typedName && (
+                <div className="overflow-hidden rounded-lg border-2 border-gray-300 bg-white p-4 sm:p-8">
+                  {/* SEA-116: Responsive font size for mobile */}
+                  <p
+                    className="truncate text-center text-3xl sm:text-5xl"
+                    style={{ fontFamily: currentFontFamily }}
+                  >
+                    {typedName}
+                  </p>
+                </div>
+              )}
+              <p className="text-muted-foreground text-sm">
+                Your typed name will be converted to a signature style using the selected font
+              </p>
+            </TabsContent>
+          )}
+
+          {/* Upload Tab */}
+          {allowedTabs.includes("uploaded") && (
+            <TabsContent value="uploaded" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signature-upload">Upload your signature image</Label>
+                <Input
+                  id="signature-upload"
+                  type="file"
+                  accept=".png,.jpg,.jpeg"
+                  onChange={handleFileUpload}
+                />
+              </div>
+              {uploadedImage && (
+                <div className="rounded-lg border-2 border-gray-300 bg-white p-4">
+                  <img
+                    src={uploadedImage}
+                    alt="Uploaded signature"
+                    className="mx-auto max-h-[200px]"
+                  />
+                </div>
+              )}
+              <p className="text-muted-foreground text-sm">
+                Upload a PNG or JPG image file (max 5MB)
+              </p>
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* SEA-116: Mobile-optimized action buttons with proper touch targets */}

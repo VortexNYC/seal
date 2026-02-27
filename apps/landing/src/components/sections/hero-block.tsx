@@ -41,7 +41,12 @@ export function HeroBlockComponent({ block }: { block: HeroBlock }) {
                 </Button>
               )}
               {block.secondaryCta && (
-                <Button asChild className="h-12 px-8 text-base font-medium" size="lg" variant="outline">
+                <Button
+                  asChild
+                  className="h-12 px-8 text-base font-medium"
+                  size="lg"
+                  variant="outline"
+                >
                   <a href={block.secondaryCta.link}>{block.secondaryCta.text}</a>
                 </Button>
               )}
@@ -193,8 +198,7 @@ export function StaticHero() {
         {/* Headline */}
         <FadeIn>
           <h1 className="text-foreground font-serif text-[clamp(2.75rem,8vw,5.5rem)] leading-[1.05] font-normal tracking-tight text-balance">
-            Sign documents.{" "}
-            <span className="text-primary">Collect payments.</span>{" "}
+            Sign documents. <span className="text-primary">Collect payments.</span>{" "}
             <span className="text-muted-foreground italic">Let AI handle the rest.</span>
           </h1>
         </FadeIn>

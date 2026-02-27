@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { createTestContext } from "../../test.setup";
 import type { Id } from "../../_generated/dataModel";
+import { createTestContext } from "../../test.setup";
 import { publishWebhookEvent } from "../publish";
 
 describe("publishWebhookEvent", () => {
@@ -180,8 +180,16 @@ describe("publishWebhookEvent", () => {
   // ---------------------------------------------------------------------------
   test("creates multiple deliveries for multiple matching endpoints", async () => {
     await createEndpoint({ name: "Endpoint A", events: [], url: "https://a.example.com/webhook" });
-    await createEndpoint({ name: "Endpoint B", events: ["document.sent"], url: "https://b.example.com/webhook" });
-    await createEndpoint({ name: "Endpoint C", events: ["recipient.signed"], url: "https://c.example.com/webhook" });
+    await createEndpoint({
+      name: "Endpoint B",
+      events: ["document.sent"],
+      url: "https://b.example.com/webhook",
+    });
+    await createEndpoint({
+      name: "Endpoint C",
+      events: ["recipient.signed"],
+      url: "https://c.example.com/webhook",
+    });
 
     const count = await t.run(async (ctx) => {
       return await publishWebhookEvent(ctx, {

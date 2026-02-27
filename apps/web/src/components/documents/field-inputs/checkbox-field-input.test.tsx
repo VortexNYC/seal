@@ -63,7 +63,11 @@ describe("CheckboxFieldInput — single mode", () => {
   });
 
   test("hides help text when error is shown", () => {
-    renderCheckboxField({ helpText: "You must agree to continue", isRequired: true, value: "false" });
+    renderCheckboxField({
+      helpText: "You must agree to continue",
+      isRequired: true,
+      value: "false",
+    });
     expect(screen.queryByText("You must agree to continue")).not.toBeInTheDocument();
     expect(screen.getByText("This field must be checked")).toBeInTheDocument();
   });

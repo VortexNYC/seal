@@ -50,7 +50,9 @@ describe("seedSystemRoles", () => {
     const adminRole = await t.run(async (ctx) => {
       return await ctx.db
         .query("organization_roles")
-        .withIndex("by_name", (q) => q.eq("organizationId", organizationId).eq("name", "Administrator"))
+        .withIndex("by_name", (q) =>
+          q.eq("organizationId", organizationId).eq("name", "Administrator"),
+        )
         .first();
     });
 

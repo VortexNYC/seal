@@ -1,10 +1,7 @@
 import type { KnipConfig } from "knip";
 
 const config: KnipConfig = {
-  entry: [
-    "src/main.tsx",
-    "src/routes/**/*.{ts,tsx}",
-  ],
+  entry: ["src/main.tsx", "src/routes/**/*.{ts,tsx}"],
   project: ["src/**/*.{ts,tsx}"],
   ignore: [
     // TanStack Router generated file

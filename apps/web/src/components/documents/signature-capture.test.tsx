@@ -81,7 +81,9 @@ describe("SignatureCapture", () => {
   test("shows legal text about signature agreement", () => {
     renderSignatureCapture();
     expect(
-      screen.getByText(/By clicking "Accept & Sign", you agree that this is a legal representation of your signature\./i),
+      screen.getByText(
+        /By clicking "Accept & Sign", you agree that this is a legal representation of your signature\./i,
+      ),
     ).toBeInTheDocument();
   });
 
@@ -98,8 +100,6 @@ describe("SignatureCapture", () => {
     const user = userEvent.setup();
     renderSignatureCapture();
     await user.click(screen.getByRole("tab", { name: /Upload/i }));
-    expect(
-      screen.getByText("Upload a PNG or JPG image file (max 5MB)"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Upload a PNG or JPG image file (max 5MB)")).toBeInTheDocument();
   });
 });

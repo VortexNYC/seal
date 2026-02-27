@@ -50,8 +50,8 @@ export function StaticAi() {
               Documents that understand themselves
             </h2>
             <p className="text-muted-foreground mt-6 text-lg text-pretty">
-              Seal uses AI to read your documents, detect fields, extract terms, and make your entire
-              workspace searchable by meaning.
+              Seal uses AI to read your documents, detect fields, extract terms, and make your
+              entire workspace searchable by meaning.
             </p>
           </div>
         </FadeIn>

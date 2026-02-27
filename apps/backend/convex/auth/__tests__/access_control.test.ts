@@ -558,7 +558,9 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain(ACCESS_ERRORS.MANAGE_REQUIRED);
+        expect(String((error as ConvexError<string>).data)).toContain(
+          ACCESS_ERRORS.MANAGE_REQUIRED,
+        );
       }
     });
 
@@ -662,12 +664,7 @@ describe("access_control", () => {
     test("throws with custom error message when provided", async () => {
       try {
         await t.run(async (ctx) => {
-          return await requireActiveMembership(
-            ctx,
-            nonMemberUserId,
-            organizationId,
-            "Not allowed",
-          );
+          return await requireActiveMembership(ctx, nonMemberUserId, organizationId, "Not allowed");
         });
         expect.fail("Should have thrown");
       } catch (error) {
@@ -721,7 +718,9 @@ describe("access_control", () => {
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(ConvexError);
-        expect(String((error as ConvexError<string>).data)).toContain(ACCESS_ERRORS.DOCUMENT_NOT_FOUND);
+        expect(String((error as ConvexError<string>).data)).toContain(
+          ACCESS_ERRORS.DOCUMENT_NOT_FOUND,
+        );
       }
     });
 

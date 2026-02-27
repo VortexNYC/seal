@@ -45,7 +45,14 @@ describe("subscription_guards", () => {
 
   /** Helper: seed a full pro subscription chain (product -> price -> subscription) */
   async function seedProSubscription(overrides?: {
-    subscriptionStatus?: "active" | "canceled" | "past_due" | "trialing" | "incomplete" | "incomplete_expired" | "unpaid";
+    subscriptionStatus?:
+      | "active"
+      | "canceled"
+      | "past_due"
+      | "trialing"
+      | "incomplete"
+      | "incomplete_expired"
+      | "unpaid";
     tier?: string;
   }) {
     const now = Date.now();
@@ -281,9 +288,9 @@ describe("subscription_guards", () => {
 
     test("throws ConvexError with Pro plan keyword for free user", async () => {
       await t.run(async (ctx) => {
-        await expect(
-          ensureProFeature(ctx.db, userId, "Workspace sharing"),
-        ).rejects.toThrow(ConvexError);
+        await expect(ensureProFeature(ctx.db, userId, "Workspace sharing")).rejects.toThrow(
+          ConvexError,
+        );
       });
     });
 
@@ -429,9 +436,7 @@ describe("subscription_guards", () => {
 
       await t.run(async (ctx) => {
         // Adding 10 MB should be fine (60 MB total, under 100 MB)
-        await expect(
-          ensureStorageLimit(ctx.db, userId, 10 * 1024 * 1024),
-        ).resolves.toBeUndefined();
+        await expect(ensureStorageLimit(ctx.db, userId, 10 * 1024 * 1024)).resolves.toBeUndefined();
       });
     });
 
@@ -441,9 +446,9 @@ describe("subscription_guards", () => {
 
       await t.run(async (ctx) => {
         // Adding 20 MB would exceed the 100 MB limit
-        await expect(
-          ensureStorageLimit(ctx.db, userId, 20 * 1024 * 1024),
-        ).rejects.toThrow(ConvexError);
+        await expect(ensureStorageLimit(ctx.db, userId, 20 * 1024 * 1024)).rejects.toThrow(
+          ConvexError,
+        );
       });
     });
 
@@ -453,9 +458,7 @@ describe("subscription_guards", () => {
 
       await t.run(async (ctx) => {
         // Adding 20 MB should be fine since deleted docs are excluded
-        await expect(
-          ensureStorageLimit(ctx.db, userId, 20 * 1024 * 1024),
-        ).resolves.toBeUndefined();
+        await expect(ensureStorageLimit(ctx.db, userId, 20 * 1024 * 1024)).resolves.toBeUndefined();
       });
     });
 
@@ -481,9 +484,9 @@ describe("subscription_guards", () => {
 
       await t.run(async (ctx) => {
         // Adding 1 GB would exceed the 10 GB limit
-        await expect(
-          ensureStorageLimit(ctx.db, userId, 1 * 1024 * 1024 * 1024),
-        ).rejects.toThrow(ConvexError);
+        await expect(ensureStorageLimit(ctx.db, userId, 1 * 1024 * 1024 * 1024)).rejects.toThrow(
+          ConvexError,
+        );
       });
     });
 
@@ -493,9 +496,7 @@ describe("subscription_guards", () => {
 
       await t.run(async (ctx) => {
         // Adding exactly 50 MB hits 100 MB but does NOT exceed it
-        await expect(
-          ensureStorageLimit(ctx.db, userId, 50 * 1024 * 1024),
-        ).resolves.toBeUndefined();
+        await expect(ensureStorageLimit(ctx.db, userId, 50 * 1024 * 1024)).resolves.toBeUndefined();
       });
     });
 
@@ -517,9 +518,9 @@ describe("subscription_guards", () => {
 
       await t.run(async (ctx) => {
         // Adding 10 MB would be 105 MB, exceeding the 100 MB limit
-        await expect(
-          ensureStorageLimit(ctx.db, userId, 10 * 1024 * 1024),
-        ).rejects.toThrow(ConvexError);
+        await expect(ensureStorageLimit(ctx.db, userId, 10 * 1024 * 1024)).rejects.toThrow(
+          ConvexError,
+        );
       });
     });
 

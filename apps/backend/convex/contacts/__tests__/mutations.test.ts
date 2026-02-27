@@ -317,10 +317,9 @@ describe("Contact mutations", () => {
         email: "bulk2@example.com",
       });
 
-      const results = await asAdmin().mutation(
-        api.contacts.mutations.bulkDelete,
-        { ids: [c1._id, c2._id] },
-      );
+      const results = await asAdmin().mutation(api.contacts.mutations.bulkDelete, {
+        ids: [c1._id, c2._id],
+      });
 
       expect(results).toHaveLength(2);
       expect(results[0].success).toBe(true);
@@ -337,18 +336,18 @@ describe("Contact mutations", () => {
 
     test("reports errors for already-deleted contacts", async () => {
       // Create and delete a contact to get a valid-format ID that no longer exists
-      const { _id: deletedId } = await asAdmin().mutation(
-        api.contacts.mutations.create,
-        { firstName: "Ghost", lastName: "Contact", email: "ghost@example.com" },
-      );
+      const { _id: deletedId } = await asAdmin().mutation(api.contacts.mutations.create, {
+        firstName: "Ghost",
+        lastName: "Contact",
+        email: "ghost@example.com",
+      });
       await asAdmin().mutation(api.contacts.mutations.remove, {
         id: deletedId,
       });
 
-      const results = await asAdmin().mutation(
-        api.contacts.mutations.bulkDelete,
-        { ids: [deletedId] },
-      );
+      const results = await asAdmin().mutation(api.contacts.mutations.bulkDelete, {
+        ids: [deletedId],
+      });
 
       expect(results).toHaveLength(1);
       expect(results[0].success).toBe(false);
@@ -363,18 +362,18 @@ describe("Contact mutations", () => {
       });
 
       // Create and delete to get a valid-format but non-existent ID
-      const { _id: deletedId } = await asAdmin().mutation(
-        api.contacts.mutations.create,
-        { firstName: "Temp", lastName: "Contact", email: "temp@example.com" },
-      );
+      const { _id: deletedId } = await asAdmin().mutation(api.contacts.mutations.create, {
+        firstName: "Temp",
+        lastName: "Contact",
+        email: "temp@example.com",
+      });
       await asAdmin().mutation(api.contacts.mutations.remove, {
         id: deletedId,
       });
 
-      const results = await asAdmin().mutation(
-        api.contacts.mutations.bulkDelete,
-        { ids: [c1._id, deletedId] },
-      );
+      const results = await asAdmin().mutation(api.contacts.mutations.bulkDelete, {
+        ids: [c1._id, deletedId],
+      });
 
       expect(results).toHaveLength(2);
       expect(results[0].success).toBe(true);
@@ -382,10 +381,7 @@ describe("Contact mutations", () => {
     });
 
     test("handles empty array", async () => {
-      const results = await asAdmin().mutation(
-        api.contacts.mutations.bulkDelete,
-        { ids: [] },
-      );
+      const results = await asAdmin().mutation(api.contacts.mutations.bulkDelete, { ids: [] });
 
       expect(results).toEqual([]);
     });

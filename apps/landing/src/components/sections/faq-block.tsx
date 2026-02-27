@@ -114,9 +114,7 @@ export function StaticFaq() {
       <div className="mx-auto max-w-3xl">
         <FadeIn>
           <div className="mb-16 text-center sm:mb-20">
-            <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">
-              FAQ
-            </p>
+            <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">FAQ</p>
             <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
               Questions? <span className="text-primary">Answers.</span>
             </h2>

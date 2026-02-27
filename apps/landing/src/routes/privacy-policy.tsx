@@ -32,14 +32,12 @@ function PrivacyPolicy() {
 
         <article className="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none">
           <h1>Privacy Policy</h1>
-          <p className="lead">
-            Last updated: February 24, 2026
-          </p>
+          <p className="lead">Last updated: February 24, 2026</p>
 
           <p>
-            Seal (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is committed to protecting your privacy. This Privacy
-            Policy explains how we collect, use, disclose, and safeguard your information when you use
-            our document signing platform (&quot;Service&quot;).
+            Seal (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is committed to protecting
+            your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard
+            your information when you use our document signing platform (&quot;Service&quot;).
           </p>
 
           <h2>1. Information We Collect</h2>
@@ -52,14 +50,12 @@ function PrivacyPolicy() {
 
           <h3>Document Data</h3>
           <p>
-            When you use the Service, we store the documents you upload, signature images, form field
-            data, and recipient information (names and email addresses) that you provide.
+            When you use the Service, we store the documents you upload, signature images, form
+            field data, and recipient information (names and email addresses) that you provide.
           </p>
 
           <h3>Signing Activity</h3>
-          <p>
-            For each document signing event, we collect audit trail data including:
-          </p>
+          <p>For each document signing event, we collect audit trail data including:</p>
           <ul>
             <li>Timestamps of document views, signatures, and other actions</li>
             <li>IP addresses of signers</li>
@@ -70,8 +66,8 @@ function PrivacyPolicy() {
           <h3>Payment Information</h3>
           <p>
             Payment processing is handled by Stripe. We do not store your full credit card number or
-            banking details. Stripe may collect payment information directly in accordance with their
-            privacy policy.
+            banking details. Stripe may collect payment information directly in accordance with
+            their privacy policy.
           </p>
 
           <h3>Usage Data</h3>
@@ -85,7 +81,9 @@ function PrivacyPolicy() {
           <ul>
             <li>Provide, maintain, and improve the Service</li>
             <li>Process and deliver documents for signing</li>
-            <li>Send transactional emails (document invitations, reminders, completion notifications)</li>
+            <li>
+              Send transactional emails (document invitations, reminders, completion notifications)
+            </li>
             <li>Process payments and manage subscriptions</li>
             <li>Maintain audit trails for legal compliance</li>
             <li>Detect and prevent fraud or abuse</li>
@@ -95,8 +93,8 @@ function PrivacyPolicy() {
 
           <h2>3. Third-Party Services</h2>
           <p>
-            We use the following third-party services to operate the platform. Each processes data in
-            accordance with their own privacy policies:
+            We use the following third-party services to operate the platform. Each processes data
+            in accordance with their own privacy policies:
           </p>
           <ul>
             <li>
@@ -115,9 +113,7 @@ function PrivacyPolicy() {
               <strong>Vercel</strong> — Application hosting and deployment
             </li>
           </ul>
-          <p>
-            We do not sell your personal information to third parties.
-          </p>
+          <p>We do not sell your personal information to third parties.</p>
 
           <h2>4. Data Retention</h2>
           <p>
@@ -190,8 +186,8 @@ function PrivacyPolicy() {
 
           <h2>7. Cookies &amp; Tracking</h2>
           <p>
-            We use essential cookies to maintain your session and authentication state. We do not use
-            third-party advertising cookies or cross-site tracking.
+            We use essential cookies to maintain your session and authentication state. We do not
+            use third-party advertising cookies or cross-site tracking.
           </p>
           <p>
             We may use analytics services to understand how the Service is used. These services
@@ -208,16 +204,16 @@ function PrivacyPolicy() {
           <h2>9. International Data Transfers</h2>
           <p>
             Your data may be processed and stored in the United States. By using the Service, you
-            consent to the transfer of your data to the United States, where data protection laws may
-            differ from those in your jurisdiction.
+            consent to the transfer of your data to the United States, where data protection laws
+            may differ from those in your jurisdiction.
           </p>
 
           <h2>10. Changes to This Policy</h2>
           <p>
             We may update this Privacy Policy from time to time. We will notify you of material
-            changes by posting the updated policy on this page and updating the &quot;Last updated&quot; date.
-            Your continued use of the Service after changes are posted constitutes acceptance of the
-            revised policy.
+            changes by posting the updated policy on this page and updating the &quot;Last
+            updated&quot; date. Your continued use of the Service after changes are posted
+            constitutes acceptance of the revised policy.
           </p>
 
           <h2>11. Contact</h2>

@@ -1,4 +1,5 @@
 import { describe, test, expect } from "vitest";
+
 import {
   MAX_FILE_SIZE,
   DROPZONE_ACCEPT_TYPES,
@@ -84,9 +85,7 @@ describe("upload-validation", () => {
       });
       const result = validateFileForUpload(file);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes("exceeds maximum"))).toBe(
-        true,
-      );
+      expect(result.errors.some((e) => e.includes("exceeds maximum"))).toBe(true);
     });
 
     test("rejects a file with wrong MIME type", () => {
@@ -127,9 +126,7 @@ describe("upload-validation", () => {
       });
       const result = validateFileForUpload(file);
       // The source lowercases the extension, so .PDF becomes .pdf
-      expect(
-        result.errors.some((e) => e.includes("Only PDF files are supported")),
-      ).toBe(false);
+      expect(result.errors.some((e) => e.includes("Only PDF files are supported"))).toBe(false);
     });
   });
 });

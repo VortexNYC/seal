@@ -67,9 +67,7 @@ describe("EsignConsentDialog", () => {
     const user = userEvent.setup();
     renderConsent();
     await user.click(screen.getByRole("button", { name: "Decline & Exit" }));
-    expect(
-      screen.queryByRole("button", { name: /Download PDF for Manual Signing/i }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /Download PDF for Manual Signing/i })).toBeNull();
   });
 
   test('"Back to Consent" returns to pending state', async () => {

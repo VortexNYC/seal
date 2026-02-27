@@ -1,4 +1,6 @@
 import { describe, test, expect } from "vitest";
+
+import type { FieldType } from "../../schemas/signature_fields";
 import {
   validateFieldPosition,
   validateFieldType,
@@ -7,7 +9,6 @@ import {
   calculateFieldBounds,
   fieldsOverlap,
 } from "../helpers";
-import type { FieldType } from "../../schemas/signature_fields";
 
 // ---------------------------------------------------------------------------
 // validateFieldPosition
@@ -166,9 +167,7 @@ describe("validateFieldType", () => {
   });
 
   test("accepts dropdown with multiple options", () => {
-    expect(
-      validateFieldType("dropdown", { options: ["A", "B", "C"] }).valid,
-    ).toBe(true);
+    expect(validateFieldType("dropdown", { options: ["A", "B", "C"] }).valid).toBe(true);
   });
 
   // Radio validation
@@ -185,9 +184,7 @@ describe("validateFieldType", () => {
   });
 
   test("accepts radio with options", () => {
-    expect(
-      validateFieldType("radio", { options: ["Yes", "No"] }).valid,
-    ).toBe(true);
+    expect(validateFieldType("radio", { options: ["Yes", "No"] }).valid).toBe(true);
   });
 
   // maxLength / minLength validation
@@ -199,15 +196,11 @@ describe("validateFieldType", () => {
   });
 
   test("accepts maxLength equal to minLength", () => {
-    expect(
-      validateFieldType("text", { maxLength: 10, minLength: 10 }).valid,
-    ).toBe(true);
+    expect(validateFieldType("text", { maxLength: 10, minLength: 10 }).valid).toBe(true);
   });
 
   test("accepts maxLength greater than minLength", () => {
-    expect(
-      validateFieldType("text", { maxLength: 20, minLength: 5 }).valid,
-    ).toBe(true);
+    expect(validateFieldType("text", { maxLength: 20, minLength: 5 }).valid).toBe(true);
   });
 
   test("accepts only maxLength without minLength", () => {
@@ -228,12 +221,9 @@ describe("validateFieldType", () => {
     "attachment",
   ];
 
-  test.each(simpleFieldTypes)(
-    "accepts %s field type without properties",
-    (fieldType) => {
-      expect(validateFieldType(fieldType).valid).toBe(true);
-    },
-  );
+  test.each(simpleFieldTypes)("accepts %s field type without properties", (fieldType) => {
+    expect(validateFieldType(fieldType).valid).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -320,11 +310,7 @@ describe("pixelsToPercentage / percentageToPixels round-trip", () => {
 // ---------------------------------------------------------------------------
 describe("calculateFieldBounds", () => {
   test("converts percentage field to pixel bounds", () => {
-    const result = calculateFieldBounds(
-      { x: 10, y: 20, width: 30, height: 40 },
-      1000,
-      800,
-    );
+    const result = calculateFieldBounds({ x: 10, y: 20, width: 30, height: 40 }, 1000, 800);
     expect(result).toEqual({
       x: 100,
       y: 160,
@@ -334,29 +320,17 @@ describe("calculateFieldBounds", () => {
   });
 
   test("returns zeros for a field at origin with zero dimensions (edge case)", () => {
-    const result = calculateFieldBounds(
-      { x: 0, y: 0, width: 0, height: 0 },
-      500,
-      500,
-    );
+    const result = calculateFieldBounds({ x: 0, y: 0, width: 0, height: 0 }, 500, 500);
     expect(result).toEqual({ x: 0, y: 0, width: 0, height: 0 });
   });
 
   test("converts full-page field correctly", () => {
-    const result = calculateFieldBounds(
-      { x: 0, y: 0, width: 100, height: 100 },
-      1200,
-      900,
-    );
+    const result = calculateFieldBounds({ x: 0, y: 0, width: 100, height: 100 }, 1200, 900);
     expect(result).toEqual({ x: 0, y: 0, width: 1200, height: 900 });
   });
 
   test("handles non-square page dimensions", () => {
-    const result = calculateFieldBounds(
-      { x: 50, y: 50, width: 25, height: 10 },
-      800,
-      1100,
-    );
+    const result = calculateFieldBounds({ x: 50, y: 50, width: 25, height: 10 }, 800, 1100);
     expect(result).toEqual({
       x: 400,
       y: 550,

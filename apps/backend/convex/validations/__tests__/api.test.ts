@@ -1,4 +1,5 @@
 import { describe, test, expect } from "vitest";
+
 import {
   documentStatusSchema,
   recipientRoleSchema,
@@ -622,9 +623,9 @@ describe("updateTemplateSchema", () => {
   });
 
   test("rejects invalid status", () => {
-    expect(
-      updateTemplateSchema.safeParse({ id: "tpl_123", status: "deleted" }).success,
-    ).toBe(false);
+    expect(updateTemplateSchema.safeParse({ id: "tpl_123", status: "deleted" }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -689,15 +690,13 @@ describe("getAuditTrailSchema", () => {
   });
 
   test("rejects limit of 0", () => {
-    expect(
-      getAuditTrailSchema.safeParse({ document_id: "doc_123", limit: 0 }).success,
-    ).toBe(false);
+    expect(getAuditTrailSchema.safeParse({ document_id: "doc_123", limit: 0 }).success).toBe(false);
   });
 
   test("rejects limit over 100", () => {
-    expect(
-      getAuditTrailSchema.safeParse({ document_id: "doc_123", limit: 101 }).success,
-    ).toBe(false);
+    expect(getAuditTrailSchema.safeParse({ document_id: "doc_123", limit: 101 }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -732,15 +731,13 @@ describe("uploadFileContentSchema", () => {
   });
 
   test("rejects missing file_name", () => {
-    expect(
-      uploadFileContentSchema.safeParse({ content_base64: "JVBERi0xLjQK" }).success,
-    ).toBe(false);
+    expect(uploadFileContentSchema.safeParse({ content_base64: "JVBERi0xLjQK" }).success).toBe(
+      false,
+    );
   });
 
   test("rejects missing content_base64", () => {
-    expect(
-      uploadFileContentSchema.safeParse({ file_name: "document.pdf" }).success,
-    ).toBe(false);
+    expect(uploadFileContentSchema.safeParse({ file_name: "document.pdf" }).success).toBe(false);
   });
 
   test("rejects empty object", () => {

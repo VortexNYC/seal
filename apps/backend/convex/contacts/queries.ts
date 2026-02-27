@@ -33,9 +33,7 @@ export const list = permissionQuery("contacts:view")({
 
     return await ctx.db
       .query("contacts")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", organizationId),
-      )
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
       .order("desc")
       .collect();
   },
@@ -80,19 +78,15 @@ export const search = permissionQuery("contacts:view")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
 
-    let searchQuery = ctx.db
-      .query("contacts")
-      .withSearchIndex("search_contacts", (q) => {
-        let sq = q
-          .search("fullName", args.query)
-          .eq("organizationId", organizationId);
+    let searchQuery = ctx.db.query("contacts").withSearchIndex("search_contacts", (q) => {
+      let sq = q.search("fullName", args.query).eq("organizationId", organizationId);
 
-        if (args.status) {
-          sq = sq.eq("status", args.status);
-        }
+      if (args.status) {
+        sq = sq.eq("status", args.status);
+      }
 
-        return sq;
-      });
+      return sq;
+    });
 
     return await searchQuery.take(50);
   },
@@ -190,8 +184,6 @@ export const getRelatedDocuments = permissionQuery("contacts:view")({
       }),
     );
 
-    return documents.filter(
-      (d): d is NonNullable<typeof d> => d !== null,
-    );
+    return documents.filter((d): d is NonNullable<typeof d> => d !== null);
   },
 });

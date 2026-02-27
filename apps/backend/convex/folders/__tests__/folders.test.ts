@@ -719,9 +719,7 @@ describe("Folders", () => {
         });
 
       expect(children.length).toBe(2);
-      expect(children.map((f) => f.name)).toEqual(
-        expect.arrayContaining(["Child 1", "Child 2"]),
-      );
+      expect(children.map((f) => f.name)).toEqual(expect.arrayContaining(["Child 1", "Child 2"]));
     });
 
     test("filters admin-only folders from members", async () => {

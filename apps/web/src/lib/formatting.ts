@@ -72,6 +72,7 @@ export function getStatusLabel(
     | "completed"
     | "cancelled"
     | "declined"
+    | "expired"
     | undefined,
 ): string {
   const labels = {
@@ -82,6 +83,7 @@ export function getStatusLabel(
     completed: "Completed",
     cancelled: "Cancelled",
     declined: "Declined",
+    expired: "Expired",
   };
   return labels[status ?? "draft"];
 }

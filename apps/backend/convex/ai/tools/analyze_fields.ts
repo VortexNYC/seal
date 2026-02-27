@@ -9,7 +9,10 @@ import type { SealAICtx } from "../types";
 export const analyzeDocumentFields = createTool({
   description: "Analyze a PDF document and detect where form fields should be placed",
   args: z.object({
-    documentId: z.string().optional().describe("The Convex document ID (uses current document if omitted)"),
+    documentId: z
+      .string()
+      .optional()
+      .describe("The Convex document ID (uses current document if omitted)"),
   }),
   handler: async (ctx: SealAICtx, args): Promise<string> => {
     const docId = (args.documentId ?? ctx.documentId) as Id<"documents"> | undefined;

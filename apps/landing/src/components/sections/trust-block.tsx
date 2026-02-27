@@ -19,8 +19,7 @@ const trustItems: TrustItem[] = [
   {
     icon: FileCheck,
     title: "Complete audit trails",
-    description:
-      "Every view, signature, and action logged with timestamps and IP addresses.",
+    description: "Every view, signature, and action logged with timestamps and IP addresses.",
   },
   {
     icon: Lock,
@@ -30,8 +29,7 @@ const trustItems: TrustItem[] = [
   {
     icon: Hash,
     title: "Integrity verification",
-    description:
-      "SHA-256 hashing ensures documents and signatures are tamper-proof after signing.",
+    description: "SHA-256 hashing ensures documents and signatures are tamper-proof after signing.",
   },
   {
     icon: Users,
@@ -60,8 +58,8 @@ export function StaticTrust() {
               Built for documents that matter
             </h2>
             <p className="text-muted-foreground mt-6 text-lg text-pretty">
-              When you&apos;re handling legally binding contracts, security isn&apos;t optional. Every
-              feature is built with compliance and data integrity in mind.
+              When you&apos;re handling legally binding contracts, security isn&apos;t optional.
+              Every feature is built with compliance and data integrity in mind.
             </p>
           </div>
         </FadeIn>

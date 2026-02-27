@@ -104,9 +104,7 @@ describe("Notifications mutations", () => {
       expect(result.items).toHaveLength(3);
       // Verify descending order by createdAt
       for (let i = 0; i < result.items.length - 1; i++) {
-        expect(result.items[i]!.createdAt).toBeGreaterThanOrEqual(
-          result.items[i + 1]!.createdAt,
-        );
+        expect(result.items[i]!.createdAt).toBeGreaterThanOrEqual(result.items[i + 1]!.createdAt);
       }
     });
 
@@ -132,9 +130,7 @@ describe("Notifications mutations", () => {
     });
 
     test("rejects unauthenticated requests", async () => {
-      await expect(
-        t.query(api.notifications.index.list, {}),
-      ).rejects.toThrow();
+      await expect(t.query(api.notifications.index.list, {})).rejects.toThrow();
     });
   });
 

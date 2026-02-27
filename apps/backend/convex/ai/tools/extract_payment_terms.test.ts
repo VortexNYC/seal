@@ -4,9 +4,7 @@ import { PaymentExtractionSchema } from "./paymentExtractionSchema";
 
 describe("PaymentExtractionSchema", () => {
   const validExtraction = {
-    lineItems: [
-      { description: "Consulting fee", quantity: 1, unitPriceCents: 500000 },
-    ],
+    lineItems: [{ description: "Consulting fee", quantity: 1, unitPriceCents: 500000 }],
     currency: "usd",
     paymentType: "one_time" as const,
     dueDateTerms: "net_30" as const,

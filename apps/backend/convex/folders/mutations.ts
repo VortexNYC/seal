@@ -49,10 +49,7 @@ async function detectCircularReference(
 }
 
 /** Get the maximum depth of a folder's subtree. */
-async function getSubtreeDepth(
-  db: DatabaseWriter,
-  folderId: Id<"folders">,
-): Promise<number> {
+async function getSubtreeDepth(db: DatabaseWriter, folderId: Id<"folders">): Promise<number> {
   const children = await db
     .query("folders")
     .withIndex("by_parent", (q) => q.eq("parentId", folderId))
@@ -120,9 +117,10 @@ export const updateFolder = adminMutation({
       throw new ConvexError("Folder not found");
     }
 
-    const updates: Partial<{ name: string; visibility: "everyone" | "admin"; updatedAt: number }> = {
-      updatedAt: Date.now(),
-    };
+    const updates: Partial<{ name: string; visibility: "everyone" | "admin"; updatedAt: number }> =
+      {
+        updatedAt: Date.now(),
+      };
     if (args.name !== undefined) {
       const name = args.name.trim();
       if (!name) throw new ConvexError("Folder name cannot be empty");
@@ -251,9 +249,7 @@ export const moveItemsToFolder = adminMutation({
         throw new ConvexError("Target folder not found");
       }
       if (targetFolder.type !== args.itemType) {
-        throw new ConvexError(
-          `Cannot move ${args.itemType}s into a ${targetFolder.type} folder`,
-        );
+        throw new ConvexError(`Cannot move ${args.itemType}s into a ${targetFolder.type} folder`);
       }
     }
 

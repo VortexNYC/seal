@@ -1,5 +1,5 @@
-import { vi, describe, test, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { vi, describe, test, expect, beforeEach } from "vitest";
 
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -30,9 +30,7 @@ describe("PaymentConfigModal", () => {
   test("does not render dialog content when closed", () => {
     mockUseQuery.mockReturnValue(null);
 
-    render(
-      <PaymentConfigModal open={false} onOpenChange={vi.fn()} fieldId={null} />,
-    );
+    render(<PaymentConfigModal open={false} onOpenChange={vi.fn()} fieldId={null} />);
 
     expect(screen.queryByText("Configure Payment")).not.toBeInTheDocument();
   });
@@ -40,9 +38,7 @@ describe("PaymentConfigModal", () => {
   test("renders loading spinner when config is loading", () => {
     mockUseQuery.mockReturnValue(undefined);
 
-    render(
-      <PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />,
-    );
+    render(<PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />);
 
     // Should show spinner, not the full form
     expect(screen.queryByText("Configure Payment")).not.toBeInTheDocument();
@@ -53,9 +49,7 @@ describe("PaymentConfigModal", () => {
   test("renders full form when open with no existing config", () => {
     mockUseQuery.mockReturnValue(null);
 
-    render(
-      <PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />,
-    );
+    render(<PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />);
 
     expect(screen.getByText("Configure Payment")).toBeInTheDocument();
     expect(
@@ -82,9 +76,7 @@ describe("PaymentConfigModal", () => {
       taxEnabled: false,
     });
 
-    render(
-      <PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />,
-    );
+    render(<PaymentConfigModal open={true} onOpenChange={vi.fn()} fieldId={FAKE_FIELD_ID} />);
 
     // 2 * $75.00 = $150.00
     expect(screen.getByText("Total: $150.00")).toBeInTheDocument();

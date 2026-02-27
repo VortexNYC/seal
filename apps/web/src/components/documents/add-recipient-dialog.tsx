@@ -69,9 +69,7 @@ export function AddRecipientDialog({
 
   const contactSuggestions = useQuery(
     api.contacts.queries.suggestForRecipient,
-    activeTab === "outsider" && email.length >= 2
-      ? { searchTerm: email }
-      : "skip",
+    activeTab === "outsider" && email.length >= 2 ? { searchTerm: email } : "skip",
   );
 
   // Filter out contacts whose emails are already added as recipients
@@ -258,13 +256,13 @@ export function AddRecipientDialog({
                     }}
                   />
                   {showSuggestions && filteredSuggestions && filteredSuggestions.length > 0 && (
-                    <div className="absolute top-full left-0 z-50 mt-1 w-full rounded-md border bg-popover p-1 shadow-md">
+                    <div className="bg-popover absolute top-full left-0 z-50 mt-1 w-full rounded-md border p-1 shadow-md">
                       {filteredSuggestions.map((contact) => (
                         <div
                           key={contact._id}
                           role="button"
                           tabIndex={0}
-                          className="flex cursor-pointer flex-col rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                          className="hover:bg-accent flex cursor-pointer flex-col rounded-sm px-2 py-1.5 text-sm"
                           onClick={() => {
                             setEmail(contact.email);
                             setName(contact.fullName);

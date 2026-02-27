@@ -158,21 +158,18 @@ describe("Signature field mutations", () => {
         page: 1,
       });
 
-      const secondFieldId = await authed.mutation(
-        api.signature_fields.mutations.createField,
-        {
-          documentId,
-          recipientId,
-          fieldType: "signature",
-          label: "Signature 2",
-          isRequired: true,
-          x: 10,
-          y: 70,
-          width: 30,
-          height: 10,
-          page: 1,
-        },
-      );
+      const secondFieldId = await authed.mutation(api.signature_fields.mutations.createField, {
+        documentId,
+        recipientId,
+        fieldType: "signature",
+        label: "Signature 2",
+        isRequired: true,
+        x: 10,
+        y: 70,
+        width: 30,
+        height: 10,
+        page: 1,
+      });
 
       const secondField = await t.run(async (ctx) => {
         return await ctx.db.get(secondFieldId);
@@ -645,13 +642,10 @@ describe("Signature field mutations", () => {
       await expect(
         t
           .withIdentity({ subject: "clerk_test_owner" })
-          .mutation(
-            api.signature_fields.mutations.assignFieldToRecipient,
-            {
-              fieldId,
-              recipientId,
-            },
-          ),
+          .mutation(api.signature_fields.mutations.assignFieldToRecipient, {
+            fieldId,
+            recipientId,
+          }),
       ).rejects.toThrow("Cannot modify fields");
     });
   });

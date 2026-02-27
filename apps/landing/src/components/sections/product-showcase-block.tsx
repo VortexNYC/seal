@@ -2,8 +2,8 @@ import { GripVertical, Layout, PenTool } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ComponentType, type SVGProps, useState } from "react";
 
-import { cn } from "~/utils/cn";
 import { FadeIn } from "~/components/ui/fade-in";
+import { cn } from "~/utils/cn";
 
 interface TabData {
   id: string;
@@ -152,8 +152,18 @@ export function StaticProductShowcase() {
                         aria-hidden="true"
                         className="bg-primary flex size-5 shrink-0 items-center justify-center rounded-full"
                       >
-                        <svg className="size-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} />
+                        <svg
+                          className="size-3 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M5 13l4 4L19 7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                          />
                         </svg>
                       </span>
                       {feature}

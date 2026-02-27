@@ -137,7 +137,13 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
     setInstallmentsInterval("month");
     setDepositPercent(50);
     setBalanceDueDays(30);
-    setPaymentMethods({ card: true, ach_debit: false, apple_pay: false, google_pay: false, link: false });
+    setPaymentMethods({
+      card: true,
+      ach_debit: false,
+      apple_pay: false,
+      google_pay: false,
+      link: false,
+    });
     setFeeHandling("absorb");
     setTaxEnabled(false);
     setTaxBehavior("exclusive");

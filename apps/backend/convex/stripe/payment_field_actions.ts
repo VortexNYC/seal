@@ -164,9 +164,7 @@ async function createOneTimeInvoice(
     // Quantity info is included in the description for display on the hosted invoice.
     for (const item of config.items) {
       const description =
-        item.quantity > 1
-          ? `${item.description} (×${item.quantity})`
-          : item.description;
+        item.quantity > 1 ? `${item.description} (×${item.quantity})` : item.description;
       await stripe.invoiceItems.create(
         {
           customer: customer.id,

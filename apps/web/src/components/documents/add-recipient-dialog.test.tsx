@@ -189,10 +189,7 @@ describe("AddRecipientDialog", () => {
     });
 
     test("shows member count in the Team tab trigger", () => {
-      const members = makeMembers([
-        { email: "a@example.com" },
-        { email: "b@example.com" },
-      ]);
+      const members = makeMembers([{ email: "a@example.com" }, { email: "b@example.com" }]);
       mockUseQuery.mockReturnValue(members);
       renderDialog();
       expect(screen.getByText("Team (2)")).toBeInTheDocument();

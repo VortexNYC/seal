@@ -7,8 +7,8 @@
 
 import { v } from "convex/values";
 
-import { permissionQuery } from "../auth";
 import type { Doc, Id } from "../_generated/dataModel";
+import { permissionQuery } from "../auth";
 
 // ─── Helpers ────────────────────────────────────
 
@@ -85,7 +85,8 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
         timeToView: timeToView !== null ? msToHumanReadable(timeToView) : null,
         timeToSign: timeToSign !== null ? msToHumanReadable(timeToSign) : null,
         totalTime: totalTime !== null ? msToHumanReadable(totalTime) : null,
-        daysPending: r.status === "pending" ? Math.floor((Date.now() - sentAt) / (1000 * 60 * 60 * 24)) : null,
+        daysPending:
+          r.status === "pending" ? Math.floor((Date.now() - sentAt) / (1000 * 60 * 60 * 24)) : null,
       };
     });
 
@@ -197,9 +198,7 @@ export const getRecipientTimingStats = permissionQuery("documents:view")({
     const documents = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .filter((q) =>
-        q.and(q.neq(q.field("status"), "deleted"), q.gte(q.field("createdAt"), since)),
-      )
+      .filter((q) => q.and(q.neq(q.field("status"), "deleted"), q.gte(q.field("createdAt"), since)))
       .collect();
 
     const sentDocs = documents.filter((d) => d.sentAt);
@@ -302,10 +301,7 @@ export const getTemplatePerformance = permissionQuery("documents:view")({
       .collect();
 
     // Group by template
-    const byTemplate = new Map<
-      string,
-      { docs: Doc<"documents">[]; templateId: string }
-    >();
+    const byTemplate = new Map<string, { docs: Doc<"documents">[]; templateId: string }>();
     for (const doc of documents) {
       if (!doc.sourceTemplateId) continue;
       const key = doc.sourceTemplateId;
@@ -454,7 +450,9 @@ export const getDocumentsNeedingAttention = permissionQuery("documents:view")({
 
     return {
       staleRecipients: staleRecipients.slice(0, 10),
-      approachingDeadline: approachingDeadline.sort((a, b) => a.daysRemaining - b.daysRemaining).slice(0, 10),
+      approachingDeadline: approachingDeadline
+        .sort((a, b) => a.daysRemaining - b.daysRemaining)
+        .slice(0, 10),
       bouncedEmails: bouncedEmails.slice(0, 10),
       totalIssues: staleRecipients.length + approachingDeadline.length + bouncedEmails.length,
     };

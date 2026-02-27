@@ -1,5 +1,5 @@
-import { vi, describe, test, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { vi, describe, test, expect, beforeEach } from "vitest";
 
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -86,9 +86,7 @@ describe("PaymentFieldSummary", () => {
       }),
     );
 
-    render(
-      <PaymentFieldSummary fieldId={FAKE_FIELD_ID} showInlinePayment={false} />,
-    );
+    render(<PaymentFieldSummary fieldId={FAKE_FIELD_ID} showInlinePayment={false} />);
 
     const payNowLink = screen.getByRole("link");
     expect(payNowLink).toHaveAttribute("href", "https://invoice.stripe.com/test");
@@ -103,9 +101,7 @@ describe("PaymentFieldSummary", () => {
       }),
     );
 
-    render(
-      <PaymentFieldSummary fieldId={FAKE_FIELD_ID} showInlinePayment={false} />,
-    );
+    render(<PaymentFieldSummary fieldId={FAKE_FIELD_ID} showInlinePayment={false} />);
 
     expect(screen.queryByText("Pay Now")).not.toBeInTheDocument();
   });
@@ -113,9 +109,7 @@ describe("PaymentFieldSummary", () => {
   test("shows quantity multiplier for items with quantity > 1", () => {
     mockUseQuery.mockReturnValue(
       makeConfig({
-        items: [
-          { id: "1", description: "Widget", quantity: 3, unitPrice: 1000 },
-        ],
+        items: [{ id: "1", description: "Widget", quantity: 3, unitPrice: 1000 }],
         totalAmountCents: 3000,
       }),
     );

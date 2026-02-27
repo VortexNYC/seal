@@ -47,8 +47,15 @@ describe("DocumentAnalysisSchema", () => {
 
   test("accepts all field types", () => {
     const fieldTypes = [
-      "signature", "text", "number", "date", "checkbox",
-      "dropdown", "radio", "attachment", "payment",
+      "signature",
+      "text",
+      "number",
+      "date",
+      "checkbox",
+      "dropdown",
+      "radio",
+      "attachment",
+      "payment",
     ] as const;
 
     for (const fieldType of fieldTypes) {

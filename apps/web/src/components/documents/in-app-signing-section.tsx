@@ -63,7 +63,7 @@ interface RecipientData {
   email: string;
   name?: string;
   role: "signer" | "viewer" | "approver";
-  status: "pending" | "viewed" | "signed" | "approved" | "declined";
+  status: "pending" | "viewed" | "signed" | "approved" | "declined" | "expired";
   documentWorkflowStatus?: string;
   signatureData?: string;
   signatureType?: string;

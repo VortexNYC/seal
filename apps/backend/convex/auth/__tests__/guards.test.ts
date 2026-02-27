@@ -114,16 +114,14 @@ describe("ensurePermission", () => {
 describe("ensureAnyPermission", () => {
   test("passes when user has at least one of the required permissions", () => {
     const auth = createMockAuth({ permissions: ["documents:edit"] });
-    expect(() =>
-      ensureAnyPermission(auth, ["documents:edit", "documents:delete"]),
-    ).not.toThrow();
+    expect(() => ensureAnyPermission(auth, ["documents:edit", "documents:delete"])).not.toThrow();
   });
 
   test("throws ConvexError when user has none of the required permissions", () => {
     const auth = createMockAuth({ permissions: ["documents:view"] });
-    expect(() =>
-      ensureAnyPermission(auth, ["documents:edit", "documents:delete"]),
-    ).toThrow(ConvexError);
+    expect(() => ensureAnyPermission(auth, ["documents:edit", "documents:delete"])).toThrow(
+      ConvexError,
+    );
   });
 });
 
@@ -132,16 +130,14 @@ describe("ensureAllPermissions", () => {
     const auth = createMockAuth({
       permissions: ["documents:edit", "documents:delete"],
     });
-    expect(() =>
-      ensureAllPermissions(auth, ["documents:edit", "documents:delete"]),
-    ).not.toThrow();
+    expect(() => ensureAllPermissions(auth, ["documents:edit", "documents:delete"])).not.toThrow();
   });
 
   test("throws ConvexError when user is missing one permission", () => {
     const auth = createMockAuth({ permissions: ["documents:edit"] });
-    expect(() =>
-      ensureAllPermissions(auth, ["documents:edit", "documents:delete"]),
-    ).toThrow(ConvexError);
+    expect(() => ensureAllPermissions(auth, ["documents:edit", "documents:delete"])).toThrow(
+      ConvexError,
+    );
   });
 });
 

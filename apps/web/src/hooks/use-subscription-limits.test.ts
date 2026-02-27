@@ -1,5 +1,5 @@
-import { vi, describe, test, expect, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { vi, describe, test, expect, beforeEach } from "vitest";
 
 const mockUseQuery = vi.fn();
 vi.mock("convex/react", () => ({

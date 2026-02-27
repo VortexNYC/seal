@@ -33,9 +33,7 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
               >
                 <div className="mb-8">
                   <h3 className="text-foreground mb-2 text-2xl font-bold">{tier.name}</h3>
-                  {tier.description && (
-                    <p className="text-muted-foreground">{tier.description}</p>
-                  )}
+                  {tier.description && <p className="text-muted-foreground">{tier.description}</p>}
                 </div>
 
                 <div className="mb-8">
@@ -189,10 +187,7 @@ export function StaticPricing() {
           <div className="border-border mt-8 rounded-xl border p-6 text-center">
             <p className="text-foreground text-sm font-medium">
               Need SSO, advanced compliance, or custom integrations?{" "}
-              <a
-                className="text-primary hover:underline"
-                href="mailto:sales@seal.co"
-              >
+              <a className="text-primary hover:underline" href="mailto:sales@seal.co">
                 Talk to us
               </a>
             </p>

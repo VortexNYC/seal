@@ -20,7 +20,19 @@ const SEAL_ORIGIN_PATTERN = /^https?:\/\/(app\.seal\.nyc|localhost:\d+)$/;
  */
 export const SealSigningEmbed = forwardRef<SealSigningEmbedRef, SealSigningEmbedProps>(
   function SealSigningEmbed(
-    { token, baseUrl, theme, hideDecline, onReady, onViewed, onSigned, onDeclined, onError, className, style },
+    {
+      token,
+      baseUrl,
+      theme,
+      hideDecline,
+      onReady,
+      onViewed,
+      onSigned,
+      onDeclined,
+      onError,
+      className,
+      style,
+    },
     ref,
   ) {
     const iframeRef = useRef<HTMLIFrameElement>(null);

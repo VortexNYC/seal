@@ -80,9 +80,7 @@ export function StaticComparison() {
                     <span className="bg-primary/10 mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full">
                       <Check aria-hidden="true" className="text-primary size-3.5" />
                     </span>
-                    <span className="text-foreground text-sm leading-relaxed">
-                      {item.text}
-                    </span>
+                    <span className="text-foreground text-sm leading-relaxed">{item.text}</span>
                   </li>
                 ))}
               </ul>

@@ -35,11 +35,13 @@ import { UploadDialog } from "./upload-dialog";
 
 const FAKE_ORG_ID = "fake_org_id" as Id<"organizations">;
 
-function renderDialog(overrides: {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  onSuccess?: () => void;
-} = {}) {
+function renderDialog(
+  overrides: {
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    onSuccess?: () => void;
+  } = {},
+) {
   const props = {
     organizationId: FAKE_ORG_ID,
     open: true,
@@ -101,9 +103,7 @@ describe("UploadDialog", () => {
       plan: "free",
     });
     renderDialog();
-    expect(
-      screen.getByText(/You've reached your monthly document limit/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/You've reached your monthly document limit/)).toBeInTheDocument();
   });
 
   test("shows upgrade prompt for free plan when at limit", () => {
@@ -163,9 +163,7 @@ describe("UploadDialog", () => {
   test("renders dropzone area with PDF instructions", () => {
     mockUseQuery.mockReturnValue(undefined);
     renderDialog();
-    expect(
-      screen.getByText("Drag & drop a PDF file here, or click to select"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Drag & drop a PDF file here, or click to select")).toBeInTheDocument();
     expect(screen.getByText("PDF files only, one at a time")).toBeInTheDocument();
   });
 
