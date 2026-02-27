@@ -12,6 +12,7 @@ import { type Infer, v } from "convex/values";
  * - completed: All required signatures collected and payment received
  * - cancelled: Workflow cancelled by sender
  * - declined: One or more recipients declined to sign
+ * - expired: Document expired before all signatures were collected
  */
 export const documentWorkflowStatusTuple = v.union(
   v.literal("draft"),
@@ -21,6 +22,7 @@ export const documentWorkflowStatusTuple = v.union(
   v.literal("completed"),
   v.literal("cancelled"),
   v.literal("declined"),
+  v.literal("expired"),
 );
 
 export type DocumentWorkflowStatus = Infer<typeof documentWorkflowStatusTuple>;
@@ -30,12 +32,13 @@ export type DocumentWorkflowStatus = Infer<typeof documentWorkflowStatusTuple>;
  */
 export const WORKFLOW_TRANSITIONS: Record<DocumentWorkflowStatus, DocumentWorkflowStatus[]> = {
   draft: ["sent", "cancelled"],
-  sent: ["in_progress", "cancelled", "declined"],
-  in_progress: ["completed", "waiting_for_payment", "cancelled", "declined"],
+  sent: ["in_progress", "cancelled", "declined", "expired"],
+  in_progress: ["completed", "waiting_for_payment", "cancelled", "declined", "expired"],
   waiting_for_payment: ["completed", "cancelled"],
   completed: [], // Terminal state
   cancelled: [], // Terminal state
   declined: [], // Terminal state
+  expired: ["sent"], // Can be re-sent
 };
 
 /**
@@ -60,6 +63,7 @@ export function getWorkflowStatusLabel(status: DocumentWorkflowStatus): string {
     completed: "Completed",
     cancelled: "Cancelled",
     declined: "Declined",
+    expired: "Expired",
   };
   return labels[status];
 }
