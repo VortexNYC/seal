@@ -12,6 +12,7 @@ import { enqueueAiPipeline } from "../ai/workpool";
 import { logDocumentAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { ensureDocumentLimit, ensureStorageLimit } from "../auth/subscription_guards";
+import { expirationPeriodToMs } from "./send_document_action";
 import { validateFile } from "./upload_config";
 import { createVersionSnapshot } from "./version_helpers";
 import {
@@ -347,13 +348,38 @@ export const sendDocument = permissionMutation("documents:edit")({
       throw new ConvexError("Document not found");
     }
 
-    // 3. Verify document is in draft status (default to draft for migration)
+    // 3. Verify document can be sent (draft or expired)
     const currentStatus = document.workflowStatus ?? "draft";
     if (!canSendDocument(currentStatus)) {
       throw new ConvexError(`Cannot send document with status: ${currentStatus}`);
     }
 
-    // 4. Transition to sent status
+    // 4. If re-sending an expired document, reset expired recipients
+    if (currentStatus === "expired") {
+      const recipients = await ctx.db
+        .query("document_recipients")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+        .collect();
+
+      const now = Date.now();
+      const newExpiresAt = document.expirationPeriod
+        ? now +
+          expirationPeriodToMs(document.expirationPeriod.amount, document.expirationPeriod.unit)
+        : undefined;
+
+      for (const recipient of recipients) {
+        if (recipient.status === "expired") {
+          await ctx.db.patch(recipient._id, {
+            status: "pending",
+            expiresAt: newExpiresAt,
+            expirationNotifiedAt: undefined,
+            updatedAt: now,
+          });
+        }
+      }
+    }
+
+    // 5. Transition to sent status
     await transitionWorkflowStatus(ctx, args.documentId, "sent");
 
     return { success: true };

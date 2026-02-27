@@ -75,14 +75,19 @@ export async function transitionWorkflowStatus(
  * Check if a document is in a terminal state (cannot be modified)
  */
 export function isTerminalWorkflowStatus(status: DocumentWorkflowStatus): boolean {
-  return status === "completed" || status === "cancelled" || status === "declined" || status === "expired";
+  return (
+    status === "completed" ||
+    status === "cancelled" ||
+    status === "declined" ||
+    status === "expired"
+  );
 }
 
 /**
  * Check if a document can be sent
  */
 export function canSendDocument(status: DocumentWorkflowStatus): boolean {
-  return status === "draft";
+  return status === "draft" || status === "expired";
 }
 
 /**

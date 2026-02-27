@@ -109,7 +109,7 @@ function DocumentDetailPage() {
     email: string;
     name?: string;
     role: "signer" | "viewer" | "approver";
-    status: "pending" | "viewed" | "signed" | "approved" | "declined";
+    status: "pending" | "viewed" | "signed" | "approved" | "declined" | "expired";
     signingToken?: string;
   } | null>(null);
   const [sendDocumentOpen, setSendDocumentOpen] = useState(false);
@@ -1007,13 +1007,15 @@ function DocumentDetailPage() {
     documentData.status === "active" &&
     (documentData.workflowStatus === "draft" || !documentData.workflowStatus);
 
-  // Check if document can be sent
+  // Check if document can be sent (or re-sent for expired documents)
+  const isExpired = documentData.workflowStatus === "expired";
   const getSendDocumentValidation = () => {
-    // Basic checks
-    if (documentData.workflowStatus !== "draft" || recipients.length === 0 || !canEdit) {
+    // Basic checks — allow both draft and expired documents
+    const canSendStatus = documentData.workflowStatus === "draft" || isExpired;
+    if (!canSendStatus || recipients.length === 0 || (!canEdit && !isExpired)) {
       return {
         canSend: false,
-        tooltip: "Document must be in draft status with recipients and edit permissions to send",
+        tooltip: "Document must be in draft or expired status with recipients to send",
       };
     }
 
@@ -1108,6 +1110,7 @@ function DocumentDetailPage() {
       </Button>
     ) : null;
 
+  const sendButtonLabel = isExpired ? "Re-send Document" : "Send Document";
   const sendDocumentButton = sendDocumentValidation.canSend ? (
     <Button
       key="send-document"
@@ -1116,14 +1119,14 @@ function DocumentDetailPage() {
       className="flex-1 sm:flex-none"
     >
       <SendIcon className="mr-2 h-4 w-4" />
-      <span className="truncate">Send Document</span>
+      <span className="truncate">{sendButtonLabel}</span>
     </Button>
   ) : (
     <Tooltip key="send-document">
       <TooltipTrigger asChild>
         <Button disabled size="sm" className="flex-1 sm:flex-none">
           <SendIcon className="mr-2 h-4 w-4" />
-          <span className="truncate">Send Document</span>
+          <span className="truncate">{sendButtonLabel}</span>
         </Button>
       </TooltipTrigger>
       <TooltipContent>

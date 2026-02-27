@@ -51,9 +51,10 @@ export const processAutomatedReminders = internalMutation({
 
     for (const [orgId, docs] of docsByOrg) {
       // Fetch org notification settings
-      const notificationSettings = await ctx.db.get(orgId as typeof docs[0]["organizationId"]);
-      const reminderSchedule =
-        notificationSettings?.notificationSettings?.reminderSchedule ?? [3, 7, 14];
+      const notificationSettings = await ctx.db.get(orgId as (typeof docs)[0]["organizationId"]);
+      const reminderSchedule = notificationSettings?.notificationSettings?.reminderSchedule ?? [
+        3, 7, 14,
+      ];
 
       for (const doc of docs) {
         const daysSinceSent = Math.floor((now - doc.sentAt!) / DAY_MS);

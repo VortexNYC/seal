@@ -34,8 +34,8 @@ import {
   documentsTable,
 } from "./schemas/documents";
 import { downloadTokensTable } from "./schemas/download_tokens";
-import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
 import { type EmailStatus, type EmailType, emailLogsTable } from "./schemas/email_logs";
+import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
 import {
   mcpOauthClientsTable,
   mcpOauthCodesTable,

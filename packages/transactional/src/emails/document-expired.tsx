@@ -44,9 +44,7 @@ export function DocumentExpired({
             {/* Expired banner */}
             <Section className="mb-[24px] rounded-lg border border-solid border-[#fecaca] bg-[#fef2f2] p-[20px] text-center">
               <Text className="m-0 mb-[8px] text-[32px]">&#x23F0;</Text>
-              <Text className="m-0 text-[18px] font-semibold text-[#991b1b]">
-                Document Expired
-              </Text>
+              <Text className="m-0 text-[18px] font-semibold text-[#991b1b]">Document Expired</Text>
             </Section>
 
             {/* Main content */}
@@ -57,8 +55,8 @@ export function DocumentExpired({
 
               <Text className="m-0 mb-[24px] text-[16px] leading-[26px] text-[#4b5563]">
                 Your document <strong>&ldquo;{documentName}&rdquo;</strong> expired on{" "}
-                <strong>{expiredAt}</strong>. All unsigned recipients have been marked as expired and
-                can no longer sign this document.
+                <strong>{expiredAt}</strong>. All unsigned recipients have been marked as expired
+                and can no longer sign this document.
               </Text>
 
               <Text className="m-0 mb-[24px] text-[16px] leading-[26px] text-[#4b5563]">

@@ -92,7 +92,14 @@ export const Route = createFileRoute("/_authenticated/$slug/documents/")({
 });
 
 type FilterType = "all" | "owned" | "shared";
-type WorkflowStatusFilter = "all" | "draft" | "sent" | "in_progress" | "completed" | "cancelled";
+type WorkflowStatusFilter =
+  | "all"
+  | "draft"
+  | "sent"
+  | "in_progress"
+  | "completed"
+  | "cancelled"
+  | "expired";
 
 type ViewMode = "grid" | "table";
 type SortField = "name" | "createdAt" | "workflowStatus";
@@ -567,10 +574,13 @@ function DocumentsList({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            {(doc.workflowStatus ?? "draft") === "draft" && (
+                            {((doc.workflowStatus ?? "draft") === "draft" ||
+                              (doc.workflowStatus ?? "draft") === "expired") && (
                               <DropdownMenuItem onClick={() => handleSendDocument(doc._id)}>
                                 <SendIcon className="mr-2 h-4 w-4" />
-                                Send Document
+                                {(doc.workflowStatus ?? "draft") === "expired"
+                                  ? "Re-send Document"
+                                  : "Send Document"}
                               </DropdownMenuItem>
                             )}
                             {((doc.workflowStatus ?? "draft") === "sent" ||
@@ -933,7 +943,11 @@ function DocumentsPage() {
           <div className="space-y-6 pl-4">
             {/* Folder breadcrumbs when inside a folder */}
             {folderId && (
-              <FolderBreadcrumbs folderId={folderId} type="document" onNavigate={handleFolderSelect} />
+              <FolderBreadcrumbs
+                folderId={folderId}
+                type="document"
+                onNavigate={handleFolderSelect}
+              />
             )}
 
             {/* SEA-73: Search Input */}
@@ -1048,6 +1062,13 @@ function DocumentsPage() {
                 >
                   Cancelled
                 </Button>
+                <Button
+                  size="sm"
+                  variant={workflowStatusFilter === "expired" ? "default" : "outline"}
+                  onClick={() => setWorkflowStatusFilter("expired")}
+                >
+                  Expired
+                </Button>
 
                 {/* SEA-74: Date Range Filter */}
                 <div className="w-full sm:ml-2 sm:w-auto sm:border-l sm:pl-2">
@@ -1150,7 +1171,9 @@ function DocumentsPage() {
                   {workflowStatusFilter !== "all" && (
                     <Badge variant="secondary" className="gap-1 pl-2 capitalize">
                       Status:{" "}
-                      {workflowStatusFilter === "in_progress" ? "In Progress" : workflowStatusFilter}
+                      {workflowStatusFilter === "in_progress"
+                        ? "In Progress"
+                        : workflowStatusFilter}
                       <button
                         type="button"
                         onClick={() => setWorkflowStatusFilter("all")}

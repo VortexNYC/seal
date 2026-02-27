@@ -37,10 +37,11 @@ import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { PaymentFieldSummary } from "@/components/documents/field-inputs";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { SignatureCapture } from "@/components/documents/signature-capture";
+import { SealLogo } from "@/components/seal-logo";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { SealLogo } from "@/components/seal-logo";
+import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -703,6 +704,11 @@ function SigningPage() {
 
   const statusBadge = getStatusBadge(recipient.status);
 
+  // Expiration gate — block access if recipient's deadline has passed
+  if (recipient.expiresAt && recipient.expiresAt < Date.now()) {
+    return <DocumentExpiredPage ownerName={data.ownerName} />;
+  }
+
   // Show waiting state for sequential signing when it's not this recipient's turn
   if (waitingForPreviousGroup && !isCompleted) {
     return (
@@ -712,10 +718,10 @@ function SigningPage() {
             <ClockIcon className="size-8 text-amber-600 dark:text-amber-400" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-balance text-xl font-semibold tracking-tight">
+            <h1 className="text-xl font-semibold tracking-tight text-balance">
               Waiting for Previous Signers
             </h1>
-            <p className="text-pretty text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm text-pretty">
               This document uses sequential signing.{" "}
               {sequentialProgress
                 ? `Group ${sequentialProgress.currentGroup} of ${sequentialProgress.totalGroups} is currently signing.`

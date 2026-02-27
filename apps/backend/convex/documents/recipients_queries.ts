@@ -122,6 +122,10 @@ export const getRecipientByToken = query({
       throw new ConvexError("Document not found");
     }
 
+    // 3a. Get document owner name for display
+    const owner = await ctx.db.get(document.ownerId);
+    const ownerName = owner?.name || owner?.email || "the sender";
+
     // 3b. Get organization branding settings
     const organization = document.organizationId ? await ctx.db.get(document.organizationId) : null;
     const branding = organization?.brandingSettings?.enabled
@@ -164,6 +168,7 @@ export const getRecipientByToken = query({
 
     // 5. Return sanitized recipient and document info
     return {
+      ownerName,
       recipient: {
         _id: recipient._id,
         documentId: recipient.documentId,
@@ -178,6 +183,7 @@ export const getRecipientByToken = query({
         signatureData: recipient.signatureData,
         signatureType: recipient.signatureType,
         esignConsentAt: recipient.esignConsentAt,
+        expiresAt: recipient.expiresAt,
       },
       document: {
         _id: document._id,

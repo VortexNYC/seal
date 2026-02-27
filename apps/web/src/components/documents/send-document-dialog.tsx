@@ -1,13 +1,11 @@
 /**
  * Send Document Dialog Component
  * SEA-119: Allows users to send documents to recipients with per-recipient custom messages
- * and optional signing deadline
+ * and optional expiration period
  */
 
 import { useAction, useQuery } from "convex/react";
-import { addDays, format } from "date-fns";
 import {
-  CalendarIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   CreditCardIcon,
@@ -24,7 +22,6 @@ import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Button } from "../ui/button";
-import { Calendar } from "../ui/calendar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import {
   Dialog,
@@ -34,8 +31,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 
 interface SendDocumentDialogProps {
@@ -46,7 +44,7 @@ interface SendDocumentDialogProps {
     name?: string;
     email: string;
     role: "signer" | "viewer" | "approver";
-    status: "pending" | "viewed" | "signed" | "approved" | "declined";
+    status: "pending" | "viewed" | "signed" | "approved" | "declined" | "expired";
     order?: number;
   }>;
   signatureFieldCount: number;
@@ -77,10 +75,17 @@ export function SendDocumentDialog({
   const [recipientMessages, setRecipientMessages] = useState<Record<string, string>>({});
   const [expandedRecipient, setExpandedRecipient] = useState<string | null>(null);
 
-  // SEA-119: Deadline picker state — pre-populate from org default if set
-  const [deadline, setDeadline] = useState<Date | undefined>(
-    defaultDeadlineDays ? addDays(new Date(), defaultDeadlineDays) : undefined,
+  // SEA-119: Expiration period state — pre-populate from org default if set
+  type ExpirationPreset = "none" | "7" | "14" | "30" | "60" | "90" | "custom";
+  const [expirationPreset, setExpirationPreset] = useState<ExpirationPreset>(
+    defaultDeadlineDays
+      ? [7, 14, 30, 60, 90].includes(defaultDeadlineDays)
+        ? (String(defaultDeadlineDays) as ExpirationPreset)
+        : "custom"
+      : "none",
   );
+  const [customAmount, setCustomAmount] = useState(defaultDeadlineDays ?? 30);
+  const [customUnit, setCustomUnit] = useState<"day" | "week" | "month">("day");
 
   // Signing mode: parallel (all at once) or sequential (by order groups)
   const [signingMode, setSigningMode] = useState<"parallel" | "sequential">("parallel");
@@ -113,19 +118,33 @@ export function SendDocumentDialog({
     }));
   };
 
+  const getExpirationPeriod = () => {
+    if (expirationPreset === "none") return undefined;
+    if (expirationPreset === "custom") {
+      return { amount: customAmount, unit: customUnit };
+    }
+    return { amount: Number(expirationPreset), unit: "day" as const };
+  };
+
+  const getExpirationText = () => {
+    const period = getExpirationPeriod();
+    if (!period) return null;
+    const { amount, unit } = period;
+    const unitLabel = amount === 1 ? unit : `${unit}s`;
+    return `Recipients will have ${amount} ${unitLabel} to sign after the document is sent`;
+  };
+
   const handleSend = async () => {
     if (pendingRecipients.length === 0) {
       toast.error("All recipients have already completed their actions");
       return;
     }
 
-    // SEA-119: Validate deadline is at least 24 hours in the future
-    if (deadline) {
-      const minDeadline = addDays(new Date(), 1);
-      if (deadline < minDeadline) {
-        toast.error("Deadline must be at least 24 hours from now");
-        return;
-      }
+    // SEA-119: Validate expiration period
+    const expirationPeriod = getExpirationPeriod();
+    if (expirationPeriod && expirationPeriod.amount < 1) {
+      toast.error("Expiration period must be at least 1");
+      return;
     }
 
     setIsSending(true);
@@ -143,7 +162,7 @@ export function SendDocumentDialog({
         documentId,
         customMessage: customMessage.trim() || undefined,
         recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
-        deadline: deadline?.getTime(),
+        expirationPeriod,
         signingMode: signingMode === "sequential" ? "sequential" : undefined,
       });
 
@@ -156,7 +175,9 @@ export function SendDocumentDialog({
         // Reset state
         setCustomMessage("");
         setRecipientMessages({});
-        setDeadline(undefined);
+        setExpirationPreset("none");
+        setCustomAmount(defaultDeadlineDays ?? 30);
+        setCustomUnit("day");
         setSigningMode("parallel");
       } else {
         toast.error(
@@ -367,43 +388,59 @@ export function SendDocumentDialog({
             </div>
           )}
 
-          {/* SEA-119: Deadline picker */}
+          {/* Expiration Period */}
           <div>
-            <Label className="text-sm font-medium">Signing Deadline (Optional)</Label>
-            <p className="text-muted-foreground mb-2 text-xs">Recipients must sign by this date</p>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deadline ? (
-                    format(deadline, "PPP")
-                  ) : (
-                    <span className="text-muted-foreground">No deadline set</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={deadline}
-                  onSelect={setDeadline}
-                  disabled={(date) => date < addDays(new Date(), 1)}
-                  initialFocus
+            <Label className="text-sm font-medium">Expiration (Optional)</Label>
+            <p className="text-muted-foreground mb-2 text-xs">
+              Set how long recipients have to sign after sending
+            </p>
+            <Select
+              value={expirationPreset}
+              onValueChange={(val) => setExpirationPreset(val as ExpirationPreset)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="No expiration" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No expiration</SelectItem>
+                <SelectItem value="7">7 days</SelectItem>
+                <SelectItem value="14">14 days</SelectItem>
+                <SelectItem value="30">30 days</SelectItem>
+                <SelectItem value="60">60 days</SelectItem>
+                <SelectItem value="90">90 days</SelectItem>
+                <SelectItem value="custom">Custom...</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {expirationPreset === "custom" && (
+              <div className="mt-2 flex gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(Number(e.target.value))}
+                  className="w-24"
                 />
-                {deadline && (
-                  <div className="border-t p-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => setDeadline(undefined)}
-                    >
-                      Clear Deadline
-                    </Button>
-                  </div>
-                )}
-              </PopoverContent>
-            </Popover>
+                <Select
+                  value={customUnit}
+                  onValueChange={(val) => setCustomUnit(val as "day" | "week" | "month")}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">Days</SelectItem>
+                    <SelectItem value="week">Weeks</SelectItem>
+                    <SelectItem value="month">Months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {getExpirationText() && (
+              <p className="text-muted-foreground mt-1.5 text-xs">{getExpirationText()}</p>
+            )}
           </div>
 
           {/* Error box - No signature fields */}
@@ -423,9 +460,7 @@ export function SendDocumentDialog({
             <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
               <p className="text-sm text-blue-900 dark:text-blue-100">
                 Recipients will receive an email with a link to sign the document.
-                {deadline && (
-                  <span className="mt-1 block">Deadline: {format(deadline, "PPP")}</span>
-                )}
+                {getExpirationText() && <span className="mt-1 block">{getExpirationText()}</span>}
               </p>
             </div>
           )}

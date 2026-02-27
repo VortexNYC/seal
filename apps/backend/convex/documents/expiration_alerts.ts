@@ -47,16 +47,16 @@ export const getDocumentsApproachingDeadline = internalQuery({
     }
 
     const alertCandidates: Array<{
-      documentId: typeof activeDocs[0]["_id"];
+      documentId: (typeof activeDocs)[0]["_id"];
       documentName: string;
-      ownerId: typeof activeDocs[0]["ownerId"];
-      organizationId: typeof activeDocs[0]["organizationId"];
+      ownerId: (typeof activeDocs)[0]["ownerId"];
+      organizationId: (typeof activeDocs)[0]["organizationId"];
       deadline: number;
       daysRemaining: number;
     }> = [];
 
     for (const [orgId, docs] of docsByOrg) {
-      const org = await ctx.db.get(orgId as typeof docs[0]["organizationId"]);
+      const org = await ctx.db.get(orgId as (typeof docs)[0]["organizationId"]);
       const expirationAlertDays = org?.notificationSettings?.expirationAlertDays ?? 3;
 
       for (const doc of docs) {

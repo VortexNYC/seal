@@ -7,7 +7,7 @@ import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Separator } from "../ui/separator";
 
-type RecipientStatus = "pending" | "viewed" | "signed" | "approved" | "declined";
+type RecipientStatus = "pending" | "viewed" | "signed" | "approved" | "declined" | "expired";
 
 type RecipientRole = "signer" | "viewer" | "approver";
 
@@ -98,7 +98,8 @@ export function RecipientOptionsDialog({
   };
 
   const canResend =
-    documentStatus !== "draft" && (recipient.status === "pending" || recipient.status === "viewed");
+    documentStatus !== "draft" &&
+    (recipient.status === "pending" || recipient.status === "viewed" || recipient.status === "expired");
 
   const hasSigningLink = !!recipient.signingToken;
 

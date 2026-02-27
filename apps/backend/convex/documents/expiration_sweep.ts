@@ -128,18 +128,16 @@ export const sweepExpiredRecipients = internalMutation({
         });
 
         // Schedule notification email to owner
-        await ctx.scheduler.runAfter(
-          0,
-          internal.documents.expiration_sweep.notifyDocumentExpired,
-          { documentId: doc._id },
-        );
+        await ctx.scheduler.runAfter(0, internal.documents.expiration_sweep.notifyDocumentExpired, {
+          documentId: doc._id,
+        });
 
         documentsExpired++;
       }
     }
 
     if (recipientsExpired > 0 || documentsExpired > 0) {
-      console.log(
+      console.info(
         `Expiration sweep: ${recipientsExpired} recipients expired, ${documentsExpired} documents transitioned`,
       );
     }

@@ -189,13 +189,12 @@ export const sendReminderEmail = internalAction({
       internal.organizations.queries.getBrandingSettingsInternal,
       { organizationId: document.organizationId },
     );
-    const emailBranding =
-      brandingSettings.enabled
-        ? {
-            emailFromName: brandingSettings.emailFromName,
-            emailReplyTo: brandingSettings.emailReplyTo,
-          }
-        : undefined;
+    const emailBranding = brandingSettings.enabled
+      ? {
+          emailFromName: brandingSettings.emailFromName,
+          emailReplyTo: brandingSettings.emailReplyTo,
+        }
+      : undefined;
 
     // 9. Send the email
     const result = await sendReminder({
@@ -288,13 +287,12 @@ export const sendReminderEmailDirect = internalAction({
       internal.organizations.queries.getBrandingSettingsInternal,
       { organizationId: document.organizationId },
     );
-    const emailBranding =
-      brandingSettings.enabled
-        ? {
-            emailFromName: brandingSettings.emailFromName,
-            emailReplyTo: brandingSettings.emailReplyTo,
-          }
-        : undefined;
+    const emailBranding = brandingSettings.enabled
+      ? {
+          emailFromName: brandingSettings.emailFromName,
+          emailReplyTo: brandingSettings.emailReplyTo,
+        }
+      : undefined;
 
     await sendReminder({
       to: recipient.email,

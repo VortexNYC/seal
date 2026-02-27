@@ -7,7 +7,8 @@ export type DocumentWorkflowStatus =
   | "waiting_for_payment"
   | "completed"
   | "cancelled"
-  | "declined";
+  | "declined"
+  | "expired";
 
 interface WorkflowStatusBadgeProps {
   status: DocumentWorkflowStatus | undefined;
@@ -57,6 +58,11 @@ export function WorkflowStatusBadge({ status, className }: WorkflowStatusBadgePr
     declined: {
       label: "Declined",
       variant: "destructive",
+    },
+    expired: {
+      label: "Expired",
+      variant: "destructive",
+      className: "bg-orange-600 hover:bg-orange-600/90 text-white",
     },
   };
 

@@ -14,10 +14,7 @@ import { sendDocumentInvitation } from "./email";
 import { findFirstIncompleteGroup } from "./recipient_helpers";
 
 /** Convert expiration period to milliseconds */
-export function expirationPeriodToMs(
-  amount: number,
-  unit: "day" | "week" | "month",
-): number {
+export function expirationPeriodToMs(amount: number, unit: "day" | "week" | "month"): number {
   const MS_PER_DAY = 86_400_000;
   switch (unit) {
     case "day":
@@ -178,7 +175,16 @@ export const markDocumentAsSent = internalMutation({
       const expiresAt =
         now + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
       for (const recipient of recipients) {
-        await ctx.db.patch(recipient._id, { expiresAt, updatedAt: now });
+        // When re-sending an expired document, reset expired recipients back to pending
+        const isExpiredRecipient = recipient.status === "expired";
+        await ctx.db.patch(recipient._id, {
+          expiresAt,
+          updatedAt: now,
+          ...(isExpiredRecipient && {
+            status: "pending",
+            expirationNotifiedAt: undefined,
+          }),
+        });
       }
     }
 
@@ -188,6 +194,8 @@ export const markDocumentAsSent = internalMutation({
       workflowStatus: "sent",
       sentAt: Date.now(),
       updatedAt: Date.now(),
+      // Clear expiredAt when re-sending an expired document
+      ...(document.workflowStatus === "expired" && { expiredAt: undefined }),
       ...(args.deadline && { deadline: args.deadline }), // SEA-119: Save deadline if provided
       ...(args.signingMode && { signingMode: args.signingMode }),
       ...(args.expirationPeriod && { expirationPeriod: args.expirationPeriod }),
@@ -343,13 +351,12 @@ export const sendDocumentEmails = action({
       internal.organizations.queries.getBrandingSettingsInternal,
       { organizationId: document.organizationId },
     );
-    const emailBranding =
-      brandingSettings.enabled
-        ? {
-            emailFromName: brandingSettings.emailFromName,
-            emailReplyTo: brandingSettings.emailReplyTo,
-          }
-        : undefined;
+    const emailBranding = brandingSettings.enabled
+      ? {
+          emailFromName: brandingSettings.emailFromName,
+          emailReplyTo: brandingSettings.emailReplyTo,
+        }
+      : undefined;
 
     // 6. Build a map of per-recipient messages (SEA-119)
     const recipientMessageMap = new Map<Id<"document_recipients">, string>();
@@ -378,6 +385,12 @@ export const sendDocumentEmails = action({
       );
     }
 
+    // Pre-compute the business deadline for emails (outside loop for consistency)
+    const emailDeadline = args.deadline
+      || (args.expirationPeriod
+        ? Date.now() + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit)
+        : undefined);
+
     for (const recipient of recipientsToEmail) {
       // Skip recipients who have already completed their action
       if (
@@ -395,8 +408,7 @@ export const sendDocumentEmails = action({
       // SEA-119: Use per-recipient message if available, otherwise fallback to default
       const messageForRecipient = recipientMessageMap.get(recipient._id) || args.customMessage;
 
-      // SEA-119: Use deadline if provided, otherwise use token expiration
-      const expiresAt = args.deadline || recipient.tokenExpiresAt;
+      const expiresAt = emailDeadline || recipient.tokenExpiresAt;
 
       // Resolve invoice link from payment field system
       const paymentLink = paymentInvoiceLinks.find(
@@ -504,15 +516,38 @@ export const resendRecipientEmail = action({
     }
 
     // 4. Verify recipient hasn't completed their action
-    if (
-      recipient.status === "signed" ||
-      recipient.status === "approved" ||
-      recipient.status === "declined"
-    ) {
+    if (recipient.status === "signed" || recipient.status === "approved") {
       return {
         success: false,
         error: `Cannot resend - recipient has already ${recipient.status}`,
       };
+    }
+
+    // 4b. If recipient is expired, reset their status and expiration
+    let newExpiresAt: number | undefined;
+    if (recipient.status === "expired") {
+      const document_latest = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
+        documentId: args.documentId,
+      });
+      newExpiresAt = document_latest?.expirationPeriod
+        ? Date.now() +
+          expirationPeriodToMs(
+            document_latest.expirationPeriod.amount,
+            document_latest.expirationPeriod.unit,
+          )
+        : undefined;
+
+      await ctx.runMutation(internal.documents.send_document_action.resetExpiredRecipient, {
+        recipientId: args.recipientId,
+        expiresAt: newExpiresAt,
+      });
+
+      // If document is expired, transition back to sent
+      if (document_latest?.workflowStatus === "expired") {
+        await ctx.runMutation(internal.documents.send_document_action.reactivateExpiredDocument, {
+          documentId: args.documentId,
+        });
+      }
     }
 
     // 5. Generate signing URL
@@ -530,15 +565,19 @@ export const resendRecipientEmail = action({
       internal.organizations.queries.getBrandingSettingsInternal,
       { organizationId: document.organizationId },
     );
-    const emailBranding =
-      brandingSettings.enabled
-        ? {
-            emailFromName: brandingSettings.emailFromName,
-            emailReplyTo: brandingSettings.emailReplyTo,
-          }
-        : undefined;
+    const emailBranding = brandingSettings.enabled
+      ? {
+          emailFromName: brandingSettings.emailFromName,
+          emailReplyTo: brandingSettings.emailReplyTo,
+        }
+      : undefined;
 
     // 7. Send email
+    // For expired recipients that were just reset, use the freshly-computed deadline.
+    // For other recipients, use their existing business deadline (expiresAt), not tokenExpiresAt.
+    const emailExpiresAt =
+      recipient.status === "expired" ? newExpiresAt : recipient.expiresAt ?? recipient.tokenExpiresAt;
+
     const emailResult = await sendDocumentInvitation({
       to: recipient.email,
       recipientName: recipient.name || recipient.email,
@@ -546,7 +585,7 @@ export const resendRecipientEmail = action({
       senderName,
       signingUrl,
       customMessage: args.customMessage,
-      expiresAt: recipient.tokenExpiresAt,
+      expiresAt: emailExpiresAt,
       branding: emailBranding,
     });
 
@@ -600,13 +639,12 @@ export const sendDocumentEmailsInternal = internalAction({
       internal.organizations.queries.getBrandingSettingsInternal,
       { organizationId: document.organizationId },
     );
-    const emailBranding =
-      brandingSettings.enabled
-        ? {
-            emailFromName: brandingSettings.emailFromName,
-            emailReplyTo: brandingSettings.emailReplyTo,
-          }
-        : undefined;
+    const emailBranding = brandingSettings.enabled
+      ? {
+          emailFromName: brandingSettings.emailFromName,
+          emailReplyTo: brandingSettings.emailReplyTo,
+        }
+      : undefined;
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
 
@@ -638,9 +676,47 @@ export const sendDocumentEmailsInternal = internalAction({
         senderName,
         signingUrl,
         customMessage: args.customMessage,
-        expiresAt: recipient.tokenExpiresAt,
+        expiresAt: recipient.expiresAt ?? recipient.tokenExpiresAt,
         branding: emailBranding,
       });
     }
+  },
+});
+
+/**
+ * Reset an expired recipient's status back to pending with new expiration.
+ */
+export const resetExpiredRecipient = internalMutation({
+  args: {
+    recipientId: v.id("document_recipients"),
+    expiresAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.recipientId, {
+      status: "pending",
+      expiresAt: args.expiresAt,
+      expirationNotifiedAt: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Transition an expired document back to "sent" status for re-sending.
+ */
+export const reactivateExpiredDocument = internalMutation({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args) => {
+    const document = await ctx.db.get(args.documentId);
+    if (!document || document.workflowStatus !== "expired") return;
+
+    await ctx.db.patch(args.documentId, {
+      workflowStatus: "sent",
+      sentAt: Date.now(),
+      expiredAt: undefined,
+      updatedAt: Date.now(),
+    });
   },
 });

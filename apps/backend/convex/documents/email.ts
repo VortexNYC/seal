@@ -436,8 +436,15 @@ export async function sendExpirationAlert(
   params: SendExpirationAlertParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const { to, ownerName, documentName, documentUrl, expiresAt, daysRemaining, pendingRecipients } =
-      params;
+    const {
+      to,
+      ownerName,
+      documentName,
+      documentUrl,
+      expiresAt,
+      daysRemaining,
+      pendingRecipients,
+    } = params;
 
     const html = await renderDocumentExpirationAlert({
       ownerName,
