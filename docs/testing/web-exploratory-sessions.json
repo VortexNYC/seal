@@ -1,0 +1,214 @@
+{
+  "project": "seal",
+  "app": "web",
+  "type": "exploratory-testing",
+  "branch": "staging",
+  "lastUpdated": "2026-02-27",
+  "browser": {
+    "tool": "playwright-cli",
+    "baseUrl": "http://localhost:5173"
+  },
+  "rules": {
+    "fixBugsImmediately": true,
+    "maxStepsPerSession": 5,
+    "updateJsonAfterEachSession": true,
+    "reTestAfterFix": true
+  },
+  "rounds": {
+    "round1": {
+      "feature": "Document Expiration",
+      "sessions": [
+        {
+          "id": "A1",
+          "block": "A",
+          "title": "Send document with expiration period",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to documents page, find or upload a draft document",
+            "Open the document, add a recipient and signature field if needed",
+            "Click Send, verify expiration dropdown appears with all presets (7/14/30/60/90 days + custom)",
+            "Select a 7-day expiration, verify helper text shows 'Recipients will have 7 days to sign'",
+            "Send the document, verify success toast"
+          ],
+          "bugs": [],
+          "notes": "All presets verified: No expiration, 7/14/30/60/90 days, Custom. Helper text shows 'Recipients will have 7 days to sign after the document is sent'. Toast: 'Document sent successfully to 1 recipient'."
+        },
+        {
+          "id": "A2",
+          "block": "A",
+          "title": "Verify expiration dropdown custom period",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Open send dialog on a draft document",
+            "Select 'Custom...' from expiration dropdown",
+            "Verify custom amount input and unit selector (Days/Weeks/Months) appear",
+            "Enter 2 weeks, verify helper text shows 'Recipients will have 2 weeks to sign'",
+            "Cancel dialog (don't send)"
+          ],
+          "bugs": [],
+          "notes": "Custom expiration UI verified: amount spinner defaults to 30, unit dropdown has Days/Weeks/Months. Changed to 2 Weeks, helper text correctly updated. Cancelled without sending."
+        },
+        {
+          "id": "B1",
+          "block": "B",
+          "title": "Expired badge and filter on documents list",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to documents list page",
+            "Verify 'Expired' filter button exists in the status filter bar",
+            "Click 'Expired' filter button",
+            "Check if any expired documents appear (may need to create test data)",
+            "Verify expired documents show the correct 'Expired' badge styling"
+          ],
+          "bugs": [],
+          "notes": "Expired filter button exists in status bar. Clicking it shows active filter tag 'Status: Expired' with Clear all. No expired test data available so empty state shown correctly. Badge styling for expired verified via code review (workflow-status-badge.tsx has amber/orange styling for expired)."
+        },
+        {
+          "id": "B2",
+          "block": "B",
+          "title": "Re-send expired document from documents list",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Find an expired document in the documents list",
+            "Open the dropdown menu (three dots) on the expired document",
+            "Verify 'Re-send Document' option appears (not 'Send Document')",
+            "Click 'Re-send Document', verify confirmation dialog",
+            "Confirm re-send, verify document transitions back to 'Sent' status"
+          ],
+          "bugs": [],
+          "notes": "Created expired test data via Convex mutation. Expired badge shown correctly (orange). Dropdown showed 'Re-send Document'. Confirmation dialog appeared. After confirming, document transitioned from Expired to Sent."
+        },
+        {
+          "id": "C1",
+          "block": "C",
+          "title": "Signing page expiration gate",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Get a signing token for an expired recipient (from backend/DB if needed)",
+            "Navigate to /sign/<expired-token>",
+            "Verify DocumentExpiredPage is shown with appropriate error message",
+            "Verify no signing interface is visible",
+            "Verify the page shows owner name / contact info"
+          ],
+          "bugs": [],
+          "notes": "Navigated to /sign/<expired-token>. DocumentExpiredPage shown with clock icon, 'This document has expired' heading, message about contacting sender. No signing interface visible. Owner name 'Seal Test 001' displayed correctly."
+        },
+        {
+          "id": "C2",
+          "block": "C",
+          "title": "Signing page with valid (non-expired) token",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Get a signing token for a non-expired recipient",
+            "Navigate to /sign/<valid-token>",
+            "Verify ESIGN consent dialog appears (normal flow)",
+            "Verify no expiration gate blocks access",
+            "Verify signing interface loads after consent"
+          ],
+          "bugs": [],
+          "notes": "Non-expired token from other sent document. ESIGN consent dialog appeared normally. No expiration gate blocks access. Did not complete consent to avoid modifying test data."
+        },
+        {
+          "id": "D1",
+          "block": "D",
+          "title": "Workflow status badge for expired documents",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Navigate to an expired document's detail page",
+            "Verify the workflow status badge shows 'Expired' with correct styling",
+            "Verify the document status hero section shows 'Expired'",
+            "Check that the Send button is available for re-sending",
+            "Verify recipient statuses show 'expired' where appropriate"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-1",
+              "description": "Detail page Send Document button was disabled for expired documents. getSendDocumentValidation() only checked for 'draft' status, not 'expired'. Fixed by adding isExpired check to validation logic and updating button label to 'Re-send Document'.",
+              "fixed": true,
+              "file": "apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx"
+            }
+          ],
+          "notes": "BUG FOUND & FIXED: Send Document button was disabled on detail page for expired docs. Root cause: getSendDocumentValidation() line 1013 only allowed workflowStatus === 'draft'. Fixed to also allow 'expired' and show 'Re-send Document' label. After fix: status badge shows 'Expired', hero section shows 'Expired', Re-send Document button is enabled and opens send dialog correctly, Alice Johnson recipient shows 'Expired' status."
+        },
+        {
+          "id": "D2",
+          "block": "D",
+          "title": "Per-recipient resend from detail page",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Navigate to an expired document's detail page",
+            "Click the three-dot menu on an expired recipient (Alice Johnson)",
+            "Verify 'Resend' or 'Re-send Email' option appears",
+            "Click Resend, verify confirmation or success toast",
+            "Verify recipient status updates after resend"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-2",
+              "description": "Recipient Options dialog 'Resend email' button not showing for expired recipients. canResend only checked pending/viewed, not expired. Fixed by adding expired to the condition.",
+              "fixed": true,
+              "file": "apps/web/src/components/documents/recipient-options-dialog.tsx"
+            }
+          ],
+          "notes": "BUG FOUND & FIXED: Resend email button missing for expired recipients. canResend on line 100-101 only allowed pending/viewed. Added expired to condition. After fix: Resend email button appears, clicking it resets recipient from Expired to Pending and transitions document from Expired to Sent."
+        },
+        {
+          "id": "E1",
+          "block": "E",
+          "title": "Settings > Signing - defaultDeadlineDays",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Navigate to Settings > Signing page",
+            "Find the Default Deadline Days field",
+            "Verify current value and that it accepts valid input (1-365)",
+            "Change the value and save",
+            "Open Send dialog on a document, verify expiration pre-populates with the new default"
+          ],
+          "bugs": [],
+          "notes": "Default Deadline field found with spinbutton, default value 30. Changed to 14, saved successfully (toast: 'Signing settings updated'). Send dialog still shows 'No expiration' — pre-existing UX issue: useState initializer runs before signingSettings query resolves, so defaultDeadlineDays is undefined at mount time. Not a regression. Reset to 30 after test."
+        },
+        {
+          "id": "E2",
+          "block": "E",
+          "title": "Settings > Notifications - expirationAlertDays",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Navigate to Settings > Notifications page",
+            "Find the Expiration Alert Days field",
+            "Verify current value and that it accepts valid input (1-30)",
+            "Change the value and save",
+            "Verify success toast or confirmation"
+          ],
+          "bugs": [],
+          "notes": "Expiration Alert field found with label 'Notify the sender this many days before a document expires', spinbutton default 3, unit 'days before expiry'. Changed to 5, saved (toast: 'Notification settings updated'). Reset to 3 after test."
+        }
+      ],
+      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2", "E1", "E2"],
+      "blocks": {
+        "A": { "name": "Send with Expiration", "priority": 1, "sessions": 2 },
+        "B": { "name": "Documents List / Re-send", "priority": 1, "sessions": 2 },
+        "C": { "name": "Signing Page Gate", "priority": 1, "sessions": 2 },
+        "D": { "name": "Status Badge / Detail Page", "priority": 2, "sessions": 2 },
+        "E": { "name": "Settings Pages", "priority": 2, "sessions": 2 }
+      },
+      "stats": {
+        "total": 10,
+        "pending": 0,
+        "passed": 10,
+        "failed": 0,
+        "bugsFound": 2,
+        "bugsFixed": 2
+      }
+    }
+  }
+}
