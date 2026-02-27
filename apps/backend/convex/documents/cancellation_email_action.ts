@@ -53,7 +53,7 @@ export const sendCancellationEmails = internalAction({
         continue; // Already declined, no need to notify
       }
 
-      await sendCancellationNotification({
+      await sendCancellationNotification(ctx, {
         to: recipient.email,
         recipientName: recipient.name || recipient.email,
         documentName: document.name,

@@ -108,8 +108,7 @@ import type * as documents_version_helpers from "../documents/version_helpers.js
 import type * as documents_viewed_notification_action from "../documents/viewed_notification_action.js";
 import type * as documents_workflow_helpers from "../documents/workflow_helpers.js";
 import type * as documents_workflow_mutations from "../documents/workflow_mutations.js";
-import type * as emails_email_logs from "../emails/email_logs.js";
-import type * as emails_email_retry from "../emails/email_retry.js";
+import type * as emails_resend_component from "../emails/resend_component.js";
 import type * as emails_user_email_actions from "../emails/user_email_actions.js";
 import type * as fix_user_org from "../fix_user_org.js";
 import type * as folders_mutations from "../folders/mutations.js";
@@ -118,6 +117,7 @@ import type * as http from "../http.js";
 import type * as mcp_oauth_http from "../mcp_oauth/http.js";
 import type * as mcp_oauth_mutations from "../mcp_oauth/mutations.js";
 import type * as mcp_oauth_queries from "../mcp_oauth/queries.js";
+import type * as migrations from "../migrations.js";
 import type * as notifications_index from "../notifications/index.js";
 import type * as organization_roles_helpers from "../organization_roles/helpers.js";
 import type * as organization_roles_migrations from "../organization_roles/migrations.js";
@@ -130,7 +130,6 @@ import type * as organizations_queries from "../organizations/queries.js";
 import type * as payment_fields_helpers from "../payment_fields/helpers.js";
 import type * as payment_fields_mutations from "../payment_fields/mutations.js";
 import type * as payment_fields_queries from "../payment_fields/queries.js";
-import type * as resend_webhooks from "../resend_webhooks.js";
 import type * as rls from "../rls.js";
 import type * as saved_signatures_index from "../saved_signatures/index.js";
 import type * as saved_signatures_mutations from "../saved_signatures/mutations.js";
@@ -152,7 +151,6 @@ import type * as schemas_document_versions from "../schemas/document_versions.js
 import type * as schemas_document_workflow_status from "../schemas/document_workflow_status.js";
 import type * as schemas_documents from "../schemas/documents.js";
 import type * as schemas_download_tokens from "../schemas/download_tokens.js";
-import type * as schemas_email_logs from "../schemas/email_logs.js";
 import type * as schemas_folders from "../schemas/folders.js";
 import type * as schemas_mcp_oauth from "../schemas/mcp_oauth.js";
 import type * as schemas_notifications from "../schemas/notifications.js";
@@ -329,8 +327,7 @@ declare const fullApi: ApiFromModules<{
   "documents/viewed_notification_action": typeof documents_viewed_notification_action;
   "documents/workflow_helpers": typeof documents_workflow_helpers;
   "documents/workflow_mutations": typeof documents_workflow_mutations;
-  "emails/email_logs": typeof emails_email_logs;
-  "emails/email_retry": typeof emails_email_retry;
+  "emails/resend_component": typeof emails_resend_component;
   "emails/user_email_actions": typeof emails_user_email_actions;
   fix_user_org: typeof fix_user_org;
   "folders/mutations": typeof folders_mutations;
@@ -339,6 +336,7 @@ declare const fullApi: ApiFromModules<{
   "mcp_oauth/http": typeof mcp_oauth_http;
   "mcp_oauth/mutations": typeof mcp_oauth_mutations;
   "mcp_oauth/queries": typeof mcp_oauth_queries;
+  migrations: typeof migrations;
   "notifications/index": typeof notifications_index;
   "organization_roles/helpers": typeof organization_roles_helpers;
   "organization_roles/migrations": typeof organization_roles_migrations;
@@ -351,7 +349,6 @@ declare const fullApi: ApiFromModules<{
   "payment_fields/helpers": typeof payment_fields_helpers;
   "payment_fields/mutations": typeof payment_fields_mutations;
   "payment_fields/queries": typeof payment_fields_queries;
-  resend_webhooks: typeof resend_webhooks;
   rls: typeof rls;
   "saved_signatures/index": typeof saved_signatures_index;
   "saved_signatures/mutations": typeof saved_signatures_mutations;
@@ -373,7 +370,6 @@ declare const fullApi: ApiFromModules<{
   "schemas/document_workflow_status": typeof schemas_document_workflow_status;
   "schemas/documents": typeof schemas_documents;
   "schemas/download_tokens": typeof schemas_download_tokens;
-  "schemas/email_logs": typeof schemas_email_logs;
   "schemas/folders": typeof schemas_folders;
   "schemas/mcp_oauth": typeof schemas_mcp_oauth;
   "schemas/notifications": typeof schemas_notifications;
@@ -3937,6 +3933,241 @@ export declare const components: {
             score: number;
             startOrder: number;
           }>;
+        }
+      >;
+    };
+  };
+  resend: {
+    lib: {
+      cancelEmail: FunctionReference<
+        "mutation",
+        "internal",
+        { emailId: string },
+        null
+      >;
+      cleanupAbandonedEmails: FunctionReference<
+        "mutation",
+        "internal",
+        { olderThan?: number },
+        null
+      >;
+      cleanupOldEmails: FunctionReference<
+        "mutation",
+        "internal",
+        { olderThan?: number },
+        null
+      >;
+      createManualEmail: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          from: string;
+          headers?: Array<{ name: string; value: string }>;
+          replyTo?: Array<string>;
+          subject: string;
+          to: Array<string> | string;
+        },
+        string
+      >;
+      get: FunctionReference<
+        "query",
+        "internal",
+        { emailId: string },
+        {
+          bcc?: Array<string>;
+          bounced?: boolean;
+          cc?: Array<string>;
+          clicked?: boolean;
+          complained: boolean;
+          createdAt: number;
+          deliveryDelayed?: boolean;
+          errorMessage?: string;
+          failed?: boolean;
+          finalizedAt: number;
+          from: string;
+          headers?: Array<{ name: string; value: string }>;
+          html?: string;
+          opened: boolean;
+          replyTo: Array<string>;
+          resendId?: string;
+          segment: number;
+          status:
+            | "waiting"
+            | "queued"
+            | "cancelled"
+            | "sent"
+            | "delivered"
+            | "delivery_delayed"
+            | "bounced"
+            | "failed";
+          subject?: string;
+          template?: {
+            id: string;
+            variables?: Record<string, string | number>;
+          };
+          text?: string;
+          to: Array<string>;
+        } | null
+      >;
+      getStatus: FunctionReference<
+        "query",
+        "internal",
+        { emailId: string },
+        {
+          bounced: boolean;
+          clicked: boolean;
+          complained: boolean;
+          deliveryDelayed: boolean;
+          errorMessage: string | null;
+          failed: boolean;
+          opened: boolean;
+          status:
+            | "waiting"
+            | "queued"
+            | "cancelled"
+            | "sent"
+            | "delivered"
+            | "delivery_delayed"
+            | "bounced"
+            | "failed";
+        } | null
+      >;
+      handleEmailEvent: FunctionReference<
+        "mutation",
+        "internal",
+        { event: any },
+        null
+      >;
+      sendEmail: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          bcc?: Array<string>;
+          cc?: Array<string>;
+          from: string;
+          headers?: Array<{ name: string; value: string }>;
+          html?: string;
+          options: {
+            apiKey: string;
+            initialBackoffMs: number;
+            onEmailEvent?: { fnHandle: string };
+            retryAttempts: number;
+            testMode: boolean;
+          };
+          replyTo?: Array<string>;
+          subject?: string;
+          template?: {
+            id: string;
+            variables?: Record<string, string | number>;
+          };
+          text?: string;
+          to: Array<string>;
+        },
+        string
+      >;
+      updateManualEmail: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          emailId: string;
+          errorMessage?: string;
+          resendId?: string;
+          status:
+            | "waiting"
+            | "queued"
+            | "cancelled"
+            | "sent"
+            | "delivered"
+            | "delivery_delayed"
+            | "bounced"
+            | "failed";
+        },
+        null
+      >;
+    };
+  };
+  migrations: {
+    lib: {
+      cancel: FunctionReference<
+        "mutation",
+        "internal",
+        { name: string },
+        {
+          batchSize?: number;
+          cursor?: string | null;
+          error?: string;
+          isDone: boolean;
+          latestEnd?: number;
+          latestStart: number;
+          name: string;
+          next?: Array<string>;
+          processed: number;
+          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
+        }
+      >;
+      cancelAll: FunctionReference<
+        "mutation",
+        "internal",
+        { sinceTs?: number },
+        Array<{
+          batchSize?: number;
+          cursor?: string | null;
+          error?: string;
+          isDone: boolean;
+          latestEnd?: number;
+          latestStart: number;
+          name: string;
+          next?: Array<string>;
+          processed: number;
+          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
+        }>
+      >;
+      clearAll: FunctionReference<
+        "mutation",
+        "internal",
+        { before?: number },
+        null
+      >;
+      getStatus: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; names?: Array<string> },
+        Array<{
+          batchSize?: number;
+          cursor?: string | null;
+          error?: string;
+          isDone: boolean;
+          latestEnd?: number;
+          latestStart: number;
+          name: string;
+          next?: Array<string>;
+          processed: number;
+          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
+        }>
+      >;
+      migrate: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          batchSize?: number;
+          cursor?: string | null;
+          dryRun: boolean;
+          fnHandle: string;
+          name: string;
+          next?: Array<{ fnHandle: string; name: string }>;
+          oneBatchOnly?: boolean;
+        },
+        {
+          batchSize?: number;
+          cursor?: string | null;
+          error?: string;
+          isDone: boolean;
+          latestEnd?: number;
+          latestStart: number;
+          name: string;
+          next?: Array<string>;
+          processed: number;
+          state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
         }
       >;
     };

@@ -386,9 +386,11 @@ export const sendDocumentEmails = action({
     }
 
     // Pre-compute the business deadline for emails (outside loop for consistency)
-    const emailDeadline = args.deadline
-      || (args.expirationPeriod
-        ? Date.now() + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit)
+    const emailDeadline =
+      args.deadline ||
+      (args.expirationPeriod
+        ? Date.now() +
+          expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit)
         : undefined);
 
     for (const recipient of recipientsToEmail) {
@@ -419,7 +421,7 @@ export const sendDocumentEmails = action({
       const resolvedInvoiceCurrency = paymentLink?.currency;
 
       // Send email
-      const emailResult = await sendDocumentInvitation({
+      const emailResult = await sendDocumentInvitation(ctx, {
         to: recipient.email,
         recipientName: recipient.name || recipient.email,
         documentName: document.name,
@@ -576,9 +578,11 @@ export const resendRecipientEmail = action({
     // For expired recipients that were just reset, use the freshly-computed deadline.
     // For other recipients, use their existing business deadline (expiresAt), not tokenExpiresAt.
     const emailExpiresAt =
-      recipient.status === "expired" ? newExpiresAt : recipient.expiresAt ?? recipient.tokenExpiresAt;
+      recipient.status === "expired"
+        ? newExpiresAt
+        : (recipient.expiresAt ?? recipient.tokenExpiresAt);
 
-    const emailResult = await sendDocumentInvitation({
+    const emailResult = await sendDocumentInvitation(ctx, {
       to: recipient.email,
       recipientName: recipient.name || recipient.email,
       documentName: document.name,
@@ -669,7 +673,7 @@ export const sendDocumentEmailsInternal = internalAction({
 
       const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
 
-      await sendDocumentInvitation({
+      await sendDocumentInvitation(ctx, {
         to: recipient.email,
         recipientName: recipient.name || recipient.email,
         documentName: document.name,

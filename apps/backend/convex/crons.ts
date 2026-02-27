@@ -4,11 +4,11 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Process email retries every 5 minutes
+// Clean up old email records from the resend component hourly
 crons.interval(
-  "process-email-retries",
-  { minutes: 5 },
-  internal.emails.email_retry.processEmailRetries,
+  "cleanup-resend-emails",
+  { hours: 1 },
+  internal.emails.resend_component.cleanupResendEmails,
 );
 
 // Clean up expired organization invitations daily at midnight UTC

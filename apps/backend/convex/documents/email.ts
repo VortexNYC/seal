@@ -1,5 +1,9 @@
 /**
- * Email sending utilities using Resend and @seal/email templates
+ * Email sending utilities using @convex-dev/resend component and @seal/email templates.
+ *
+ * Each function accepts an ActionCtx as first parameter to integrate with the
+ * resend component's `sendEmailManually` for tracking, idempotency, and webhook
+ * correlation. The raw Resend SDK is instantiated per-call to support org branding.
  */
 
 import { Resend } from "resend";
@@ -17,10 +21,15 @@ import {
   renderWelcome,
 } from "@seal/transactional";
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+import type { ActionCtx } from "../_generated/server";
+import { resendComponent } from "../emails/resend_component";
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
+
+/** Create a Resend SDK instance (lazily, per-call). */
+function getResendSdk(): Resend {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export interface EmailBrandingParams {
   emailFromName?: string;
@@ -35,11 +44,9 @@ export interface SendDocumentInvitationParams {
   signingUrl: string;
   customMessage?: string;
   expiresAt?: number;
-  // Stripe invoice details (optional, included only for the invoice recipient)
   invoiceUrl?: string;
   invoiceAmount?: number;
   invoiceCurrency?: string;
-  // Branding overrides
   branding?: EmailBrandingParams;
 }
 
@@ -47,6 +54,7 @@ export interface SendDocumentInvitationParams {
  * Send document invitation email to recipient
  */
 export async function sendDocumentInvitation(
+  ctx: ActionCtx,
   params: SendDocumentInvitationParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
@@ -76,27 +84,38 @@ export async function sendDocumentInvitation(
       invoiceCurrency,
     });
 
-    // Use branded from name if configured
     const fromEmail = branding?.emailFromName
       ? `${branding.emailFromName} <no-reply@seal.nyc>`
       : FROM_EMAIL;
 
-    const { data, error } = await resend.emails.send({
-      from: fromEmail,
-      to: [to],
-      subject: `${senderName} sent you a document to sign: ${documentName}`,
-      html,
-      ...(branding?.emailReplyTo ? { replyTo: branding.emailReplyTo } : {}),
-    });
+    const subject = `${senderName} sent you a document to sign: ${documentName}`;
 
-    if (error) {
-      console.error("Error sending email:", error);
-      return { success: false, error: error.message };
-    }
+    const emailId = await resendComponent.sendEmailManually(
+      ctx,
+      {
+        from: fromEmail,
+        to: [to],
+        subject,
+        ...(branding?.emailReplyTo ? { replyTo: [branding.emailReplyTo] } : {}),
+      },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: fromEmail,
+          to: [to],
+          subject,
+          html,
+          ...(branding?.emailReplyTo ? { replyTo: branding.emailReplyTo } : {}),
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: emailId };
   } catch (error) {
-    console.error("Unexpected error sending email:", error);
+    console.error("Error sending document invitation email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -117,11 +136,11 @@ export interface SendSigningCompleteParams {
  * Send signing complete confirmation email to recipient
  */
 export async function sendSigningComplete(
+  ctx: ActionCtx,
   params: SendSigningCompleteParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const { to, recipientName, documentName, signedAt, role, downloadUrl } = params;
-
     const actionText = role === "signer" ? "signed" : role === "approver" ? "approved" : "viewed";
 
     const html = await renderSigningComplete({
@@ -132,21 +151,28 @@ export async function sendSigningComplete(
       downloadUrl,
     });
 
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [to],
-      subject: `You have ${actionText} "${documentName}"`,
-      html,
-    });
+    const subject = `You have ${actionText} "${documentName}"`;
 
-    if (error) {
-      console.error("Error sending signing complete email:", error);
-      return { success: false, error: error.message };
-    }
+    const emailId = await resendComponent.sendEmailManually(
+      ctx,
+      { from: FROM_EMAIL, to: [to], subject },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: FROM_EMAIL,
+          to: [to],
+          subject,
+          html,
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: emailId };
   } catch (error) {
-    console.error("Unexpected error sending signing complete email:", error);
+    console.error("Error sending signing complete email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -170,9 +196,10 @@ export interface SendDocumentCompletedParams {
 }
 
 /**
- * Send document completion notification to sender (when all recipients have signed)
+ * Send document completion notification to sender
  */
 export async function sendDocumentCompleted(
+  ctx: ActionCtx,
   params: SendDocumentCompletedParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
@@ -186,21 +213,28 @@ export async function sendDocumentCompleted(
       recipientsSummary,
     });
 
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [to],
-      subject: `✓ Document Complete: ${documentName}`,
-      html,
-    });
+    const subject = `✓ Document Complete: ${documentName}`;
 
-    if (error) {
-      console.error("Error sending completion email:", error);
-      return { success: false, error: error.message };
-    }
+    const emailId = await resendComponent.sendEmailManually(
+      ctx,
+      { from: FROM_EMAIL, to: [to], subject },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: FROM_EMAIL,
+          to: [to],
+          subject,
+          html,
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: emailId };
   } catch (error) {
-    console.error("Unexpected error sending completion email:", error);
+    console.error("Error sending completion email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -217,7 +251,6 @@ export interface SendReminderParams {
   customMessage?: string;
   expiresAt?: number;
   reminderCount?: number;
-  // Branding overrides
   branding?: EmailBrandingParams;
 }
 
@@ -225,6 +258,7 @@ export interface SendReminderParams {
  * Send reminder email to recipient
  */
 export async function sendReminder(
+  ctx: ActionCtx,
   params: SendReminderParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
@@ -250,27 +284,38 @@ export async function sendReminder(
       reminderCount,
     });
 
-    // Use branded from name if configured
     const fromEmail = branding?.emailFromName
       ? `${branding.emailFromName} <no-reply@seal.nyc>`
       : FROM_EMAIL;
 
-    const { data, error } = await resend.emails.send({
-      from: fromEmail,
-      to: [to],
-      subject: `Reminder: "${documentName}" is waiting for your signature`,
-      html,
-      ...(branding?.emailReplyTo ? { replyTo: branding.emailReplyTo } : {}),
-    });
+    const subject = `Reminder: "${documentName}" is waiting for your signature`;
 
-    if (error) {
-      console.error("Error sending reminder email:", error);
-      return { success: false, error: error.message };
-    }
+    const emailId = await resendComponent.sendEmailManually(
+      ctx,
+      {
+        from: fromEmail,
+        to: [to],
+        subject,
+        ...(branding?.emailReplyTo ? { replyTo: [branding.emailReplyTo] } : {}),
+      },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: fromEmail,
+          to: [to],
+          subject,
+          html,
+          ...(branding?.emailReplyTo ? { replyTo: branding.emailReplyTo } : {}),
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: emailId };
   } catch (error) {
-    console.error("Unexpected error sending reminder email:", error);
+    console.error("Error sending reminder email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -288,6 +333,7 @@ export interface SendWelcomeParams {
  * Send welcome email to new user
  */
 export async function sendWelcome(
+  ctx: ActionCtx,
   params: SendWelcomeParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
@@ -299,21 +345,28 @@ export async function sendWelcome(
       dashboardUrl,
     });
 
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [to],
-      subject: "Welcome to Seal - Your document signing journey starts here",
-      html,
-    });
+    const subject = "Welcome to Seal - Your document signing journey starts here";
 
-    if (error) {
-      console.error("Error sending welcome email:", error);
-      return { success: false, error: error.message };
-    }
+    const emailId = await resendComponent.sendEmailManually(
+      ctx,
+      { from: FROM_EMAIL, to: [to], subject },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: FROM_EMAIL,
+          to: [to],
+          subject,
+          html,
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: emailId };
   } catch (error) {
-    console.error("Unexpected error sending welcome email:", error);
+    console.error("Error sending welcome email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -335,6 +388,7 @@ export interface SendTeamInvitationParams {
  * Send team invitation email
  */
 export async function sendTeamInvitation(
+  ctx: ActionCtx,
   params: SendTeamInvitationParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
@@ -350,21 +404,28 @@ export async function sendTeamInvitation(
       expiresAt,
     });
 
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [to],
-      subject: `${inviterName} invited you to join ${organizationName} on Seal`,
-      html,
-    });
+    const subject = `${inviterName} invited you to join ${organizationName} on Seal`;
 
-    if (error) {
-      console.error("Error sending team invitation email:", error);
-      return { success: false, error: error.message };
-    }
+    const emailId = await resendComponent.sendEmailManually(
+      ctx,
+      { from: FROM_EMAIL, to: [to], subject },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: FROM_EMAIL,
+          to: [to],
+          subject,
+          html,
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: emailId };
   } catch (error) {
-    console.error("Unexpected error sending team invitation email:", error);
+    console.error("Error sending team invitation email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -384,34 +445,43 @@ export interface SendCancellationNotificationParams {
  * Send cancellation notification email to recipient
  */
 export async function sendCancellationNotification(
+  ctx: ActionCtx,
   params: SendCancellationNotificationParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const { to, recipientName, documentName, senderName, reason } = params;
 
     const reasonText = reason ? `\n\nReason: ${reason}` : "";
+    const html = `
+      <p>Hi ${recipientName},</p>
+      <p>${senderName} has cancelled the document <strong>"${documentName}"</strong>. No further action is required from you.${reasonText}</p>
+      <p>If you have questions, please contact the sender directly.</p>
+      <br/>
+      <p style="color: #6b7280; font-size: 14px;">— Seal</p>
+    `;
 
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [to],
-      subject: `Document cancelled: ${documentName}`,
-      html: `
-        <p>Hi ${recipientName},</p>
-        <p>${senderName} has cancelled the document <strong>"${documentName}"</strong>. No further action is required from you.${reasonText}</p>
-        <p>If you have questions, please contact the sender directly.</p>
-        <br/>
-        <p style="color: #6b7280; font-size: 14px;">— Seal</p>
-      `,
-    });
+    const subject = `Document cancelled: ${documentName}`;
 
-    if (error) {
-      console.error("Error sending cancellation email:", error);
-      return { success: false, error: error.message };
-    }
+    const emailId = await resendComponent.sendEmailManually(
+      ctx,
+      { from: FROM_EMAIL, to: [to], subject },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: FROM_EMAIL,
+          to: [to],
+          subject,
+          html,
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: emailId };
   } catch (error) {
-    console.error("Unexpected error sending cancellation email:", error);
+    console.error("Error sending cancellation email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -433,6 +503,7 @@ export interface SendExpirationAlertParams {
  * Send expiration alert email to document owner
  */
 export async function sendExpirationAlert(
+  ctx: ActionCtx,
   params: SendExpirationAlertParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
@@ -455,21 +526,28 @@ export async function sendExpirationAlert(
       pendingRecipients,
     });
 
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [to],
-      subject: `⏰ "${documentName}" expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`,
-      html,
-    });
+    const subject = `⏰ "${documentName}" expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`;
 
-    if (error) {
-      console.error("Error sending expiration alert email:", error);
-      return { success: false, error: error.message };
-    }
+    const emailId = await resendComponent.sendEmailManually(
+      ctx,
+      { from: FROM_EMAIL, to: [to], subject },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: FROM_EMAIL,
+          to: [to],
+          subject,
+          html,
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: emailId };
   } catch (error) {
-    console.error("Unexpected error sending expiration alert email:", error);
+    console.error("Error sending expiration alert email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -491,6 +569,7 @@ export interface SendDocumentViewedParams {
  * Send viewed notification email to document owner
  */
 export async function sendDocumentViewed(
+  ctx: ActionCtx,
   params: SendDocumentViewedParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
@@ -506,21 +585,28 @@ export async function sendDocumentViewed(
       viewedAt,
     });
 
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [to],
-      subject: `${recipientName} viewed "${documentName}"`,
-      html,
-    });
+    const subject = `${recipientName} viewed "${documentName}"`;
 
-    if (error) {
-      console.error("Error sending document viewed email:", error);
-      return { success: false, error: error.message };
-    }
+    const emailId = await resendComponent.sendEmailManually(
+      ctx,
+      { from: FROM_EMAIL, to: [to], subject },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: FROM_EMAIL,
+          to: [to],
+          subject,
+          html,
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: emailId };
   } catch (error) {
-    console.error("Unexpected error sending document viewed email:", error);
+    console.error("Error sending document viewed email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -542,6 +628,7 @@ export interface SendDocumentSharedParams {
  * Send document shared notification email
  */
 export async function sendDocumentShared(
+  ctx: ActionCtx,
   params: SendDocumentSharedParams,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
@@ -565,21 +652,28 @@ export async function sendDocumentShared(
       documentUrl,
     });
 
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [to],
-      subject: `${sharerName} shared "${documentName}" with you`,
-      html,
-    });
+    const subject = `${sharerName} shared "${documentName}" with you`;
 
-    if (error) {
-      console.error("Error sending document shared email:", error);
-      return { success: false, error: error.message };
-    }
+    const emailId = await resendComponent.sendEmailManually(
+      ctx,
+      { from: FROM_EMAIL, to: [to], subject },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: FROM_EMAIL,
+          to: [to],
+          subject,
+          html,
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
-    return { success: true, messageId: data?.id };
+    return { success: true, messageId: emailId };
   } catch (error) {
-    console.error("Unexpected error sending document shared email:", error);
+    console.error("Error sending document shared email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -598,6 +692,7 @@ export interface SendDocumentExpiredNotificationParams {
  * Send document expired notification email to document owner
  */
 export async function sendDocumentExpiredNotification(
+  ctx: ActionCtx,
   params: SendDocumentExpiredNotificationParams,
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -611,12 +706,24 @@ export async function sendDocumentExpiredNotification(
       }),
     });
 
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: params.to,
-      subject: `Your document "${params.documentName}" has expired`,
-      html,
-    });
+    const subject = `Your document "${params.documentName}" has expired`;
+
+    await resendComponent.sendEmailManually(
+      ctx,
+      { from: FROM_EMAIL, to: [params.to], subject },
+      async (idempotencyKey: string) => {
+        const resendSdk = getResendSdk();
+        const { data, error } = await resendSdk.emails.send({
+          from: FROM_EMAIL,
+          to: [params.to],
+          subject,
+          html,
+          headers: { "Idempotency-Key": idempotencyKey },
+        });
+        if (error) throw new Error(error.message);
+        return data!.id;
+      },
+    );
 
     return { success: true };
   } catch (error) {

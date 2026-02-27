@@ -74,7 +74,7 @@ export const sendDocumentSharedEmail = internalAction({
     const documentUrl = `${baseUrl}/documents/${document._id}`;
 
     // 5. Send the email
-    const result = await sendDocumentShared({
+    const result = await sendDocumentShared(ctx, {
       to: recipientUser.email,
       recipientName: recipientUser.name || recipientUser.email,
       sharerName: sharerUser.name || sharerUser.email,

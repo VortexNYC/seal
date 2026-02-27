@@ -667,21 +667,6 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       },
     },
 
-    email_logs: {
-      read: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        if (rlsCtx.orgId !== doc.organizationId) return false;
-
-        // Only admins can view email logs
-        return rlsCtx.isAdmin;
-      },
-      modify: async () => {
-        // Email logs are system-managed
-        return false;
-      },
-    },
-
     // ====================
     // Subscriptions (System-Managed)
     // ====================

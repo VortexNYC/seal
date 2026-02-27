@@ -54,12 +54,6 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
 
-    // Get email logs for this document
-    const emailLogs = await ctx.db
-      .query("email_logs")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
-
     // Recipient funnel
     const funnel = {
       sent: recipients.length,
@@ -90,32 +84,21 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
       };
     });
 
-    // Per-recipient email engagement
-    const emailsByRecipient = new Map<string, Doc<"email_logs">[]>();
-    for (const log of emailLogs) {
-      if (!log.recipientId) continue;
-      const key = log.recipientId;
-      const existing = emailsByRecipient.get(key) ?? [];
-      existing.push(log);
-      emailsByRecipient.set(key, existing);
-    }
-
-    const emailEngagement = recipients.map((r) => {
-      const emails = emailsByRecipient.get(r._id) ?? [];
-      return {
-        recipientId: r._id,
-        name: r.name || r.email,
-        emails: emails.map((e) => ({
-          type: e.type,
-          status: e.status,
-          sentAt: e.sentAt,
-          deliveredAt: e.deliveredAt,
-          openedAt: e.openedAt,
-          clickedAt: e.clickedAt,
-          bouncedAt: e.bouncedAt,
-        })),
-      };
-    });
+    // Email engagement is now tracked by the @convex-dev/resend component.
+    // Per-recipient engagement data is no longer available from the email_logs table.
+    const emailEngagement = recipients.map((r) => ({
+      recipientId: r._id,
+      name: r.name || r.email,
+      emails: [] as Array<{
+        type: string;
+        status: string;
+        sentAt: number | undefined;
+        deliveredAt: number | undefined;
+        openedAt: number | undefined;
+        clickedAt: number | undefined;
+        bouncedAt: number | undefined;
+      }>,
+    }));
 
     return { funnel, recipientTimings, emailEngagement, documentName: document.name };
   },
@@ -123,62 +106,21 @@ export const getDocumentAnalytics = permissionQuery("documents:view")({
 
 // ─── Email Engagement Stats (Org-wide) ──────────
 
+// Email engagement stats are now tracked by the @convex-dev/resend component.
+// This query returns empty stats to preserve the API contract.
 export const getEmailEngagementStats = permissionQuery("documents:view")({
   args: {
     days: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
-    const organizationId = ctx.auth.organization._id;
-    const days = args.days ?? 30;
-    const since = Date.now() - days * 24 * 60 * 60 * 1000;
-
-    const emails = await ctx.db
-      .query("email_logs")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-      .filter((q) => q.gte(q.field("createdAt"), since))
-      .collect();
-
-    const total = emails.length;
-    if (total === 0) {
-      return {
-        total: 0,
-        deliveryRate: 0,
-        openRate: 0,
-        clickRate: 0,
-        bounceRate: 0,
-        avgTimeToOpenMs: null,
-        avgTimeToOpen: null,
-      };
-    }
-
-    let delivered = 0;
-    let opened = 0;
-    let clicked = 0;
-    let bounced = 0;
-    let openTimeSum = 0;
-    let openTimeCount = 0;
-
-    for (const email of emails) {
-      if (email.deliveredAt) delivered++;
-      if (email.openedAt) opened++;
-      if (email.clickedAt) clicked++;
-      if (email.bouncedAt) bounced++;
-      if (email.openedAt && email.sentAt) {
-        openTimeSum += email.openedAt - email.sentAt;
-        openTimeCount++;
-      }
-    }
-
-    const avgTimeToOpenMs = openTimeCount > 0 ? Math.round(openTimeSum / openTimeCount) : null;
-
+  handler: async (_ctx, _args) => {
     return {
-      total,
-      deliveryRate: Math.round((delivered / total) * 100),
-      openRate: delivered > 0 ? Math.round((opened / delivered) * 100) : 0,
-      clickRate: opened > 0 ? Math.round((clicked / opened) * 100) : 0,
-      bounceRate: Math.round((bounced / total) * 100),
-      avgTimeToOpenMs,
-      avgTimeToOpen: avgTimeToOpenMs !== null ? msToHumanReadable(avgTimeToOpenMs) : null,
+      total: 0,
+      deliveryRate: 0,
+      openRate: 0,
+      clickRate: 0,
+      bounceRate: 0,
+      avgTimeToOpenMs: null as number | null,
+      avgTimeToOpen: null as string | null,
     };
   },
 });
@@ -432,20 +374,8 @@ export const getDocumentsNeedingAttention = permissionQuery("documents:view")({
         }
       }
 
-      // Bounced emails
-      const docEmails = await ctx.db
-        .query("email_logs")
-        .withIndex("by_document", (q) => q.eq("documentId", doc._id))
-        .filter((q) => q.neq(q.field("bouncedAt"), undefined))
-        .collect();
-
-      for (const email of docEmails) {
-        bouncedEmails.push({
-          documentId: doc._id,
-          documentName: doc.name,
-          recipientEmail: email.toEmail,
-        });
-      }
+      // Bounced emails are now tracked by the @convex-dev/resend component.
+      // Bounce detection from email_logs is no longer available.
     }
 
     return {

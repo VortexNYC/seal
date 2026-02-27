@@ -20,7 +20,7 @@ export const sendWelcomeEmail = internalAction({
     userName: v.optional(v.string()),
   },
   handler: async (
-    _ctx,
+    ctx,
     args,
   ): Promise<{
     success: boolean;
@@ -30,7 +30,7 @@ export const sendWelcomeEmail = internalAction({
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
     const dashboardUrl = `${baseUrl}/dashboard`;
 
-    const result = await sendWelcome({
+    const result = await sendWelcome(ctx, {
       to: args.userEmail,
       userName: args.userName || "there",
       dashboardUrl,
@@ -61,7 +61,7 @@ export const sendTeamInvitationEmail = internalAction({
     expiresAt: v.optional(v.number()),
   },
   handler: async (
-    _ctx,
+    ctx,
     args,
   ): Promise<{
     success: boolean;
@@ -75,7 +75,7 @@ export const sendTeamInvitationEmail = internalAction({
     // We'll create a redirect URL that works with Clerk
     const inviteUrl = `${baseUrl}/sign-in?redirect_url=/accept-invitation/${args.clerkInvitationId}`;
 
-    const result = await sendTeamInvitation({
+    const result = await sendTeamInvitation(ctx, {
       to: args.inviteeEmail,
       inviterName: args.inviterName,
       inviterEmail: args.inviterEmail,

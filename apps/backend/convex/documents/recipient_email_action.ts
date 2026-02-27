@@ -112,7 +112,7 @@ export const sendPostSignatureEmails = internalAction({
     const completedAt = recipient.signedAt || recipient.approvedAt || recipient.viewedAt;
 
     if (completedAt && isRecipientComplete(recipient.role, recipient.status)) {
-      const confirmResult = await sendSigningComplete({
+      const confirmResult = await sendSigningComplete(ctx, {
         to: recipient.email,
         recipientName: recipient.name || recipient.email,
         documentName: document.name,
@@ -171,7 +171,7 @@ export const sendPostSignatureEmails = internalAction({
 
               for (const nextRecipient of pendingInNextGroup) {
                 const signingUrl = `${baseUrl}/sign/${nextRecipient.signingToken}`;
-                await sendDocumentInvitation({
+                await sendDocumentInvitation(ctx, {
                   to: nextRecipient.email,
                   recipientName: nextRecipient.name || nextRecipient.email,
                   documentName: document.name,
@@ -239,7 +239,7 @@ export const sendPostSignatureEmails = internalAction({
         const documentUrl = `${baseUrl}/documents/${document._id}`;
         const downloadUrl = `${convexSiteUrl}/download?token=${downloadToken}`;
 
-        const completionResult = await sendDocumentCompleted({
+        const completionResult = await sendDocumentCompleted(ctx, {
           to: owner.email,
           senderName: owner.name || owner.email,
           documentName: document.name,

@@ -58,7 +58,7 @@ export const sendViewedNotification = internalAction({
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
     const documentUrl = `${baseUrl}/documents/${args.documentId}`;
 
-    const result = await sendDocumentViewed({
+    const result = await sendDocumentViewed(ctx, {
       to: owner.email,
       ownerName: owner.name || owner.email,
       documentName: document.name,

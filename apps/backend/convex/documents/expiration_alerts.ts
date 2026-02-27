@@ -136,7 +136,7 @@ export const processExpirationAlerts = internalAction({
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
       const documentUrl = `${baseUrl}/documents/${candidate.documentId}`;
 
-      const result = await sendExpirationAlert({
+      const result = await sendExpirationAlert(ctx, {
         to: owner.email,
         ownerName: owner.name || owner.email,
         documentName: candidate.documentName,

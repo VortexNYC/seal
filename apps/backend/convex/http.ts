@@ -36,6 +36,7 @@ import {
   validateRequiredFields,
 } from "./api";
 import { ApiError } from "./api/errors";
+import { resendComponent } from "./emails/resend_component";
 import {
   createAuthorizationCode as mcpCreateAuthorizationCode,
   createRefreshToken as mcpCreateRefreshToken,
@@ -2139,83 +2140,15 @@ http.route({
 /**
  * @route POST /resend-webhooks
  * Resend email delivery webhook handler.
- * Processes: email.delivered, email.opened, email.bounced
- * Logs delivery confirmations to audit trail for ESIGN compliance.
+ * Delegates to @convex-dev/resend component for signature verification,
+ * event parsing, and delivery tracking. The component calls our
+ * `onEmailEvent` mutation for ESIGN audit logging.
  */
 http.route({
   path: "/resend-webhooks",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      console.error("RESEND_WEBHOOK_SECRET not configured");
-      return new Response("Webhook secret not configured", { status: 500 });
-    }
-
-    // Resend uses Svix for webhook signatures (same as Clerk)
-    const svixId = request.headers.get("svix-id");
-    const svixTimestamp = request.headers.get("svix-timestamp");
-    const svixSignature = request.headers.get("svix-signature");
-
-    if (!svixId || !svixTimestamp || !svixSignature) {
-      return new Response("Missing webhook headers", { status: 400 });
-    }
-
-    const payload = await request.text();
-
-    // Verify webhook signature
-    const wh = new Webhook(webhookSecret);
-    let event: {
-      type: string;
-      data: {
-        email_id?: string;
-        to?: string[];
-        created_at?: string;
-        bounce?: { type?: string };
-      };
-    };
-
-    try {
-      event = wh.verify(payload, {
-        "svix-id": svixId,
-        "svix-timestamp": svixTimestamp,
-        "svix-signature": svixSignature,
-      }) as typeof event;
-    } catch (err) {
-      console.error("Resend webhook signature verification failed:", err);
-      return new Response("Invalid signature", { status: 401 });
-    }
-
-    // Map Resend event types to our audit action types
-    const eventTypeMap: Record<string, "email.delivered" | "email.opened" | "email.bounced"> = {
-      "email.delivered": "email.delivered",
-      "email.opened": "email.opened",
-      "email.bounced": "email.bounced",
-    };
-
-    const eventType = eventTypeMap[event.type];
-    if (!eventType) {
-      // Acknowledge but ignore event types we don't track
-      return new Response("OK", { status: 200 });
-    }
-
-    const emailId = event.data.email_id;
-    const recipientEmail = event.data.to?.[0] ?? "unknown";
-
-    if (!emailId) {
-      return new Response("Missing email_id", { status: 400 });
-    }
-
-    await ctx.runMutation(internal.resend_webhooks.logEmailEvent, {
-      resendMessageId: emailId,
-      eventType,
-      recipientEmail,
-      timestamp: event.data.created_at ? new Date(event.data.created_at).getTime() : Date.now(),
-      bounceType: event.data.bounce?.type,
-    });
-
-    return new Response("OK", { status: 200 });
+    return await resendComponent.handleResendEventWebhook(ctx, request);
   }),
 });
 

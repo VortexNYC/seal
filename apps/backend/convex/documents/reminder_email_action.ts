@@ -197,7 +197,7 @@ export const sendReminderEmail = internalAction({
       : undefined;
 
     // 9. Send the email
-    const result = await sendReminder({
+    const result = await sendReminder(ctx, {
       to: recipient.email,
       recipientName: recipient.name || recipient.email,
       documentName: document.name,
@@ -294,7 +294,7 @@ export const sendReminderEmailDirect = internalAction({
         }
       : undefined;
 
-    await sendReminder({
+    await sendReminder(ctx, {
       to: recipient.email,
       recipientName: recipient.name || recipient.email,
       documentName: document.name,

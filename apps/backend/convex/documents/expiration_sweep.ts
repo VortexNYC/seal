@@ -178,7 +178,7 @@ export const notifyDocumentExpired = internalAction({
       return;
     }
 
-    const result = await sendDocumentExpiredNotification({
+    const result = await sendDocumentExpiredNotification(ctx, {
       to: owner.email,
       ownerName: owner.name || owner.email,
       documentName: document.name,

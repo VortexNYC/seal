@@ -34,7 +34,6 @@ import {
   documentsTable,
 } from "./schemas/documents";
 import { downloadTokensTable } from "./schemas/download_tokens";
-import { type EmailStatus, type EmailType, emailLogsTable } from "./schemas/email_logs";
 import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
 import {
   mcpOauthClientsTable,
@@ -138,9 +137,6 @@ export type { FolderType, FolderVisibility };
 // Re-export contact types
 export type { ContactStatus };
 
-// Re-export email types
-export type { EmailStatus, EmailType };
-
 // Re-export audit types
 export type { AuditAction, AuditResourceType };
 
@@ -194,9 +190,6 @@ export default defineSchema({
   // Audit and compliance
   audit_logs: auditLogsTable,
   download_tokens: downloadTokensTable,
-
-  // Email tracking
-  email_logs: emailLogsTable,
 
   // Notifications
   notifications: notificationsTable,
