@@ -5,6 +5,7 @@ import {
   DocumentExpirationAlert,
   type DocumentExpirationAlertProps,
 } from "./emails/document-expiration-alert.js";
+import { DocumentExpired, type DocumentExpiredProps } from "./emails/document-expired.js";
 import { DocumentInvitation, type DocumentInvitationProps } from "./emails/document-invitation.js";
 import { DocumentReminder, type DocumentReminderProps } from "./emails/document-reminder.js";
 import { DocumentShared, type DocumentSharedProps } from "./emails/document-shared.js";
@@ -18,6 +19,7 @@ export {
   DocumentInvitation,
   DocumentCompleted,
   DocumentExpirationAlert,
+  DocumentExpired,
   DocumentReminder,
   DocumentShared,
   DocumentViewed,
@@ -32,6 +34,7 @@ export type {
   SigningCompleteProps,
   DocumentCompletedProps,
   DocumentExpirationAlertProps,
+  DocumentExpiredProps,
   DocumentReminderProps,
   DocumentSharedProps,
   DocumentViewedProps,
@@ -86,6 +89,13 @@ export async function renderTeamInvitation(props: TeamInvitationProps): Promise<
  */
 export async function renderDocumentShared(props: DocumentSharedProps): Promise<string> {
   return render(<DocumentShared {...props} />);
+}
+
+/**
+ * Render DocumentExpired email to HTML string
+ */
+export async function renderDocumentExpired(props: DocumentExpiredProps): Promise<string> {
+  return render(<DocumentExpired {...props} />);
 }
 
 /**

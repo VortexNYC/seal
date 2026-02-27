@@ -7,6 +7,7 @@ import { Resend } from "resend";
 import {
   renderDocumentCompleted,
   renderDocumentExpirationAlert,
+  renderDocumentExpired,
   renderDocumentInvitation,
   renderDocumentReminder,
   renderDocumentShared,
@@ -576,5 +577,43 @@ export async function sendDocumentShared(
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
     };
+  }
+}
+
+export interface SendDocumentExpiredNotificationParams {
+  to: string;
+  ownerName: string;
+  documentName: string;
+  expiredAt: number;
+}
+
+/**
+ * Send document expired notification email to document owner
+ */
+export async function sendDocumentExpiredNotification(
+  params: SendDocumentExpiredNotificationParams,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const html = await renderDocumentExpired({
+      ownerName: params.ownerName,
+      documentName: params.documentName,
+      expiredAt: new Date(params.expiredAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    });
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: params.to,
+      subject: `Your document "${params.documentName}" has expired`,
+      html,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to send document expired notification:", error);
+    return { success: false, error: String(error) };
   }
 }
