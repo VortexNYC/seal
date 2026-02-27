@@ -13,6 +13,22 @@ import { publishWebhookEvent } from "../webhooks/publish";
 import { sendDocumentInvitation } from "./email";
 import { findFirstIncompleteGroup } from "./recipient_helpers";
 
+/** Convert expiration period to milliseconds */
+export function expirationPeriodToMs(
+  amount: number,
+  unit: "day" | "week" | "month",
+): number {
+  const MS_PER_DAY = 86_400_000;
+  switch (unit) {
+    case "day":
+      return amount * MS_PER_DAY;
+    case "week":
+      return amount * 7 * MS_PER_DAY;
+    case "month":
+      return amount * 30 * MS_PER_DAY;
+  }
+}
+
 async function authorizeDocumentOwner(
   ctx: ActionCtx,
   documentId: Id<"documents">,
@@ -68,6 +84,12 @@ export const markDocumentAsSent = internalMutation({
     deadline: v.optional(v.number()), // SEA-119: Signing deadline
     userId: v.optional(v.string()), // Clerk ID for audit trail
     signingMode: v.optional(v.union(v.literal("parallel"), v.literal("sequential"))),
+    expirationPeriod: v.optional(
+      v.object({
+        amount: v.number(),
+        unit: v.union(v.literal("day"), v.literal("week"), v.literal("month")),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
     const document = await ctx.db.get(args.documentId);
@@ -150,6 +172,16 @@ export const markDocumentAsSent = internalMutation({
       });
     }
 
+    // Compute expiresAt for all recipients if expiration period is set
+    if (args.expirationPeriod) {
+      const now = Date.now();
+      const expiresAt =
+        now + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
+      for (const recipient of recipients) {
+        await ctx.db.patch(recipient._id, { expiresAt, updatedAt: now });
+      }
+    }
+
     // Update document status to active and workflow status to sent
     await ctx.db.patch(args.documentId, {
       status: "active",
@@ -158,6 +190,7 @@ export const markDocumentAsSent = internalMutation({
       updatedAt: Date.now(),
       ...(args.deadline && { deadline: args.deadline }), // SEA-119: Save deadline if provided
       ...(args.signingMode && { signingMode: args.signingMode }),
+      ...(args.expirationPeriod && { expirationPeriod: args.expirationPeriod }),
     });
 
     // Audit trail
@@ -208,6 +241,12 @@ export const sendDocumentEmails = action({
     ), // SEA-119: Per-recipient custom messages
     deadline: v.optional(v.number()), // SEA-119: Signing deadline timestamp
     signingMode: v.optional(v.union(v.literal("parallel"), v.literal("sequential"))),
+    expirationPeriod: v.optional(
+      v.object({
+        amount: v.number(),
+        unit: v.union(v.literal("day"), v.literal("week"), v.literal("month")),
+      }),
+    ),
   },
   handler: async (
     ctx,
@@ -395,11 +434,20 @@ export const sendDocumentEmails = action({
 
     // 8. Mark document as sent only when all emails succeed so edits remain possible on failures
     if (allEmailsSucceeded) {
+      // Compute deadline from expirationPeriod if no explicit deadline was provided
+      let computedDeadline = args.deadline;
+      if (!computedDeadline && args.expirationPeriod) {
+        computedDeadline =
+          Date.now() +
+          expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
+      }
+
       await ctx.runMutation(internal.documents.send_document_action.markDocumentAsSent, {
         documentId: args.documentId,
-        deadline: args.deadline, // SEA-119: Pass deadline to be saved
+        deadline: computedDeadline, // SEA-119: Pass deadline to be saved
         userId: senderUser?.clerkId,
         signingMode: args.signingMode,
+        expirationPeriod: args.expirationPeriod,
       });
     }
 
@@ -517,6 +565,12 @@ export const sendDocumentEmailsInternal = internalAction({
   args: {
     documentId: v.id("documents"),
     customMessage: v.optional(v.string()),
+    expirationPeriod: v.optional(
+      v.object({
+        amount: v.number(),
+        unit: v.union(v.literal("day"), v.literal("week"), v.literal("month")),
+      }),
+    ),
   },
   handler: async (ctx, args): Promise<void> => {
     // Get document

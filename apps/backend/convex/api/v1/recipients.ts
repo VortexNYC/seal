@@ -25,7 +25,7 @@ export interface ApiRecipient {
   /** Role in the signing workflow */
   role: "signer" | "approver" | "viewer";
   /** Current status */
-  status: "pending" | "viewed" | "signed" | "approved" | "declined";
+  status: "pending" | "viewed" | "signed" | "approved" | "declined" | "expired";
   /** Signing order (for sequential signing) */
   order?: number;
   /** ISO 8601 timestamp when viewed */

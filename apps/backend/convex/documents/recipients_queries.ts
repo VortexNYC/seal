@@ -265,6 +265,7 @@ export const getRecipientProgress = authQuery({
       signed: 0,
       approved: 0,
       declined: 0,
+      expired: 0,
     };
     const byRole = {
       signer: { total: 0, completed: 0 },

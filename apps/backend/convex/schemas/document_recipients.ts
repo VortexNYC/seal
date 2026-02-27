@@ -20,6 +20,7 @@ export const recipientStatusTuple = v.union(
   v.literal("signed"), // Has signed the document
   v.literal("approved"), // Has approved the document (approvers only)
   v.literal("declined"), // Declined to sign/approve
+  v.literal("expired"), // Signing period expired
 );
 export type RecipientStatus = Infer<typeof recipientStatusTuple>;
 
@@ -79,6 +80,10 @@ export const documentRecipientsTable = defineTable({
   // IP address for audit trail
   ipAddress: v.optional(v.string()),
 
+  // Expiration enforcement
+  expiresAt: v.optional(v.number()),
+  expirationNotifiedAt: v.optional(v.number()),
+
   // Metadata
   createdAt: v.number(),
   updatedAt: v.number(),
@@ -112,6 +117,7 @@ export function getRecipientStatusLabel(status: RecipientStatus): string {
     signed: "Signed",
     approved: "Approved",
     declined: "Declined",
+    expired: "Expired",
   };
   return labels[status];
 }
@@ -136,5 +142,5 @@ export function isRecipientComplete(role: RecipientRole, status: RecipientStatus
  * Check if recipient is in a terminal state
  */
 export function isRecipientTerminal(status: RecipientStatus): boolean {
-  return status === "signed" || status === "approved" || status === "declined";
+  return status === "signed" || status === "approved" || status === "declined" || status === "expired";
 }
