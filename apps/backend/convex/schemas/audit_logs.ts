@@ -21,6 +21,7 @@ export const auditActionTuple = v.union(
   v.literal("document.viewed"),
   v.literal("document.completed"),
   v.literal("document.cancelled"),
+  v.literal("document.expired"),
 
   // Signature field actions
   v.literal("field.created"),
@@ -36,6 +37,7 @@ export const auditActionTuple = v.union(
   v.literal("recipient.declined"),
   v.literal("recipient.esign_consent"),
   v.literal("recipient.esign_opt_out"),
+  v.literal("recipient.expired"),
 
   // Signature actions
   v.literal("signature.created"),

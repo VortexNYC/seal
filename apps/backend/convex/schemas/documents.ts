@@ -87,6 +87,13 @@ export const documentsTable = defineTable({
   deadline: v.optional(v.number()), // Timestamp when signing must be completed by
   expirationAlertsSent: v.optional(v.array(v.number())), // Days-remaining values already alerted
 
+  // Document expiration configuration
+  expirationPeriod: v.optional(v.object({
+    amount: v.number(),
+    unit: v.union(v.literal("day"), v.literal("week"), v.literal("month")),
+  })),
+  expiredAt: v.optional(v.number()),
+
   // Retention policy: completed documents must be retained for 7 years (ESIGN Act)
   retainUntil: v.optional(v.number()), // Timestamp after which the document can be deleted
 
