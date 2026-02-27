@@ -42,6 +42,7 @@ export async function transitionWorkflowStatus(
     completedAt?: number;
     cancelledAt?: number;
     declinedAt?: number;
+    expiredAt?: number;
   } = {
     workflowStatus: newStatus,
     updatedAt: Date.now(),
@@ -62,6 +63,9 @@ export async function transitionWorkflowStatus(
     case "declined":
       updateData.declinedAt = now;
       break;
+    case "expired":
+      updateData.expiredAt = now;
+      break;
   }
 
   await ctx.db.patch(documentId, updateData);
@@ -71,7 +75,7 @@ export async function transitionWorkflowStatus(
  * Check if a document is in a terminal state (cannot be modified)
  */
 export function isTerminalWorkflowStatus(status: DocumentWorkflowStatus): boolean {
-  return status === "completed" || status === "cancelled" || status === "declined";
+  return status === "completed" || status === "cancelled" || status === "declined" || status === "expired";
 }
 
 /**
