@@ -81,4 +81,11 @@ crons.daily(
   internal.documents.expiration_alerts.processExpirationAlerts,
 );
 
+// Sweep expired recipients every 15 minutes
+crons.interval(
+  "sweep-expired-recipients",
+  { minutes: 15 },
+  internal.documents.expiration_sweep.sweepExpiredRecipients,
+);
+
 export default crons;

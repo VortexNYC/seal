@@ -85,6 +85,7 @@ import type * as documents_document_shared_action from "../documents/document_sh
 import type * as documents_download_tokens from "../documents/download_tokens.js";
 import type * as documents_email from "../documents/email.js";
 import type * as documents_expiration_alerts from "../documents/expiration_alerts.js";
+import type * as documents_expiration_sweep from "../documents/expiration_sweep.js";
 import type * as documents_extract_text_action from "../documents/extract_text_action.js";
 import type * as documents_generate_fillable_pdf from "../documents/generate_fillable_pdf.js";
 import type * as documents_hash_document_action from "../documents/hash_document_action.js";
@@ -305,6 +306,7 @@ declare const fullApi: ApiFromModules<{
   "documents/download_tokens": typeof documents_download_tokens;
   "documents/email": typeof documents_email;
   "documents/expiration_alerts": typeof documents_expiration_alerts;
+  "documents/expiration_sweep": typeof documents_expiration_sweep;
   "documents/extract_text_action": typeof documents_extract_text_action;
   "documents/generate_fillable_pdf": typeof documents_generate_fillable_pdf;
   "documents/hash_document_action": typeof documents_hash_document_action;
