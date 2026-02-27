@@ -810,21 +810,6 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
     },
 
     // ====================
-    // Rate Limiting
-    // ====================
-    rate_limit_buckets: {
-      read: async () => {
-        // Rate limit buckets are only accessed by the system internally
-        // No direct user access
-        return false;
-      },
-      modify: async () => {
-        // Rate limit buckets are only modified by internal mutations
-        return false;
-      },
-    },
-
-    // ====================
     // Download Tokens (Internal Use Only)
     // ====================
     download_tokens: {

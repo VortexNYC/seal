@@ -61,7 +61,6 @@ import {
   type PaymentType,
   paymentFieldConfigsTable,
 } from "./schemas/payment_field_configs";
-import { rateLimitBucketsTable, type WindowType } from "./schemas/rate_limits";
 import {
   type AuthenticationMethod,
   recipientsTable,
@@ -146,9 +145,6 @@ export type { NotificationType };
 // Re-export webhook types
 export type { WebhookDeliveryStatus, WebhookEndpointStatus, WebhookEventType };
 
-// Re-export rate limit types
-export type { WindowType };
-
 // Re-export Stripe Connect types
 export type { StripeAccountType, StripeFeeHandling };
 
@@ -216,9 +212,6 @@ export default defineSchema({
   // Webhooks
   webhook_endpoints: webhookEndpoints,
   webhook_deliveries: webhookDeliveries,
-
-  // Rate limiting
-  rate_limit_buckets: rateLimitBucketsTable,
 
   // Data exports (GDPR/CCPA compliance)
   data_exports: dataExportsTable,

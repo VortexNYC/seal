@@ -18,13 +18,6 @@ crons.daily(
   internal.organizations.mutations.cleanupExpiredInvitations,
 );
 
-// Clean up expired rate limit buckets every hour
-crons.interval(
-  "cleanup-rate-limit-buckets",
-  { hours: 1 },
-  internal.api.rate_limit_mutations.cleanupExpiredBuckets,
-);
-
 // Process pending webhook deliveries every minute
 crons.interval(
   "process-webhook-deliveries",

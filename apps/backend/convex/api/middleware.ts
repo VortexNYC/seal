@@ -11,11 +11,10 @@ import { type ApiAuthContext, type ApiScope, requireScope, resolveAuthContext } 
 import { ApiError, apiResponse, handleApiError } from "./errors";
 import {
   buildRateLimitHeaders,
-  checkRateLimit,
-  DEFAULT_RATE_LIMITS,
+  checkApiRateLimit,
   type RateLimitConfig,
   throwRateLimitExceeded,
-} from "./rate_limit";
+} from "./api_rate_limiter";
 import { type ApiVersion, getApiVersion } from "./versioning";
 
 /**
@@ -94,16 +93,6 @@ const STANDARD_HEADERS: Record<string, string> = {
   "X-Frame-Options": "DENY",
   "Cache-Control": "no-store",
 };
-
-/**
- * Merges rate limit config with defaults.
- */
-function getRateLimitConfig(options?: Partial<RateLimitConfig>): RateLimitConfig {
-  return {
-    requestsPerMinute: options?.requestsPerMinute ?? DEFAULT_RATE_LIMITS.requestsPerMinute,
-    requestsPerHour: options?.requestsPerHour ?? DEFAULT_RATE_LIMITS.requestsPerHour,
-  };
-}
 
 /**
  * Parses URL and extracts path segments and query params.
@@ -245,8 +234,7 @@ export function apiHttpAction(handler: ApiHandler, options: ApiEndpointOptions =
           if (!rateLimitKey) {
             throw new ApiError(500, "Rate limit key unavailable", "INTERNAL_ERROR");
           }
-          const rateLimitConfig = getRateLimitConfig(options.rateLimit);
-          const rateLimitResult = await checkRateLimit(ctx, rateLimitKey, rateLimitConfig);
+          const rateLimitResult = await checkApiRateLimit(ctx, rateLimitKey, options.rateLimit);
 
           // Build headers regardless of result (for transparency)
           rateLimitHeaders = buildRateLimitHeaders(rateLimitResult);

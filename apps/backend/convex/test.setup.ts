@@ -1,4 +1,5 @@
 import migrationsComponent from "@convex-dev/migrations/test";
+import rateLimiterComponent from "@convex-dev/rate-limiter/test";
 import resendComponent from "@convex-dev/resend/test";
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
@@ -11,6 +12,7 @@ export function createTestContext() {
   const t = convexTest(schema, modules);
   resendComponent.register(t);
   migrationsComponent.register(t);
+  rateLimiterComponent.register(t);
   return t;
 }
 
