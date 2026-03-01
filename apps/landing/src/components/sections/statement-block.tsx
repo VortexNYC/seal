@@ -6,7 +6,7 @@ export function StaticStatement() {
       <div className="mx-auto max-w-4xl text-center">
         <FadeIn>
           <h2
-            className="text-foreground font-serif font-normal leading-[1.1] tracking-tight text-balance"
+            className="text-foreground font-serif leading-[1.1] font-normal tracking-tight text-balance"
             style={{ fontSize: "clamp(2rem, 6vw, 4.5rem)" }}
           >
             Stop wrestling with your documents.{" "}

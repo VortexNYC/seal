@@ -189,7 +189,7 @@ export function StaticHero() {
           style={{ backgroundColor: "var(--primary)", animationDelay: "0.5s" }}
         />
         <div
-          className="animate-float-slow absolute bottom-[25%] right-[20%] size-3.5 rounded-full opacity-10"
+          className="animate-float-slow absolute right-[20%] bottom-[25%] size-3.5 rounded-full opacity-10"
           style={{ backgroundColor: "var(--primary)", animationDelay: "3s" }}
         />
       </div>

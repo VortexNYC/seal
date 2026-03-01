@@ -211,7 +211,7 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
             />
             {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
             {duplicateWarning && (
-              <p className="text-amber-600 dark:text-amber-400 text-xs">
+              <p className="text-xs text-amber-600 dark:text-amber-400">
                 A contact with this email already exists.
               </p>
             )}

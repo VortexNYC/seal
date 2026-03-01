@@ -194,7 +194,7 @@ function ContactDetailContent() {
                     <StickyNoteIcon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                     <div>
                       <p className="text-muted-foreground text-xs">Notes</p>
-                      <p className="whitespace-pre-wrap text-sm">{contact.notes}</p>
+                      <p className="text-sm whitespace-pre-wrap">{contact.notes}</p>
                     </div>
                   </div>
                 </div>

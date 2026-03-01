@@ -111,10 +111,10 @@ export function StaticFeatures() {
                   <div className="bg-primary/10 mb-6 flex size-12 items-center justify-center rounded-xl">
                     <pillar.icon aria-hidden="true" className="text-primary size-6" />
                   </div>
-                  <p className="text-primary mb-2 text-sm font-semibold uppercase tracking-wider">
+                  <p className="text-primary mb-2 text-sm font-semibold tracking-wider uppercase">
                     {pillar.title}
                   </p>
-                  <h3 className="text-foreground font-serif mb-4 text-2xl sm:text-3xl">
+                  <h3 className="text-foreground mb-4 font-serif text-2xl sm:text-3xl">
                     {pillar.headline}
                   </h3>
                   <p className="text-muted-foreground text-base leading-relaxed text-pretty">

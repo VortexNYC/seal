@@ -58,7 +58,7 @@ export function StaticAi() {
 
         {/* Capability grid */}
         <FadeIn delay={0.15}>
-          <div className="border-border grid gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-2">
+          <div className="border-border bg-border grid gap-px overflow-hidden rounded-2xl border sm:grid-cols-2">
             {capabilities.map((cap) => (
               <div className="bg-card p-8 sm:p-10" key={cap.title}>
                 <cap.icon aria-hidden="true" className="text-primary mb-5 size-6" />

@@ -99,7 +99,7 @@ function IntegrationsPage() {
             <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-10">
               <img
                 alt="Stripe"
-                className="h-8 shrink-0 dark:invert-0 invert opacity-60"
+                className="h-8 shrink-0 opacity-60 invert dark:invert-0"
                 height={32}
                 src="/stripe-wordmark-white.svg"
                 width={80}

@@ -703,7 +703,7 @@ function NeedsAttention() {
               key={`stale-${item.documentId}-${item.recipientEmail}`}
               to="/$slug/documents/$documentId"
               params={{ slug, documentId: item.documentId }}
-              className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted"
+              className="hover:bg-muted flex items-center gap-3 rounded-md p-2 transition-colors"
             >
               <ClockIcon className="h-4 w-4 shrink-0 text-amber-500" />
               <div className="min-w-0 flex-1">
@@ -723,7 +723,7 @@ function NeedsAttention() {
               key={`deadline-${item.documentId}`}
               to="/$slug/documents/$documentId"
               params={{ slug, documentId: item.documentId }}
-              className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted"
+              className="hover:bg-muted flex items-center gap-3 rounded-md p-2 transition-colors"
             >
               <AlertTriangleIcon className="h-4 w-4 shrink-0 text-red-500" />
               <div className="min-w-0 flex-1">
@@ -743,7 +743,7 @@ function NeedsAttention() {
               key={`bounce-${item.documentId}-${item.recipientEmail}`}
               to="/$slug/documents/$documentId"
               params={{ slug, documentId: item.documentId }}
-              className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted"
+              className="hover:bg-muted flex items-center gap-3 rounded-md p-2 transition-colors"
             >
               <MailXIcon className="h-4 w-4 shrink-0 text-red-500" />
               <div className="min-w-0 flex-1">

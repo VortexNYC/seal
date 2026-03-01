@@ -66,7 +66,7 @@ export function StaticTrust() {
 
         {/* Trust grid */}
         <FadeIn delay={0.15}>
-          <div className="border-border grid gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-2 lg:grid-cols-3">
+          <div className="border-border bg-border grid gap-px overflow-hidden rounded-2xl border sm:grid-cols-2 lg:grid-cols-3">
             {trustItems.map((item) => (
               <div className="bg-card p-8 sm:p-10" key={item.title}>
                 <item.icon aria-hidden="true" className="text-primary mb-5 size-6" />
@@ -85,7 +85,7 @@ export function StaticTrust() {
             <span className="text-muted-foreground text-sm">Payments powered by</span>
             <img
               alt="Stripe"
-              className="h-6 dark:invert-0 invert opacity-40"
+              className="h-6 opacity-40 invert dark:invert-0"
               height={24}
               src="/stripe-wordmark-white.svg"
               width={60}

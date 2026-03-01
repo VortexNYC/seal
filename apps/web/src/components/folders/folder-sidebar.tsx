@@ -195,8 +195,8 @@ export function FolderSidebar({
       {/* Loading state */}
       {rootFolders === undefined && (
         <div className="flex flex-col gap-1 px-2 py-1">
-          <div className="bg-muted h-6 rounded animate-pulse" />
-          <div className="bg-muted h-6 rounded animate-pulse" />
+          <div className="bg-muted h-6 animate-pulse rounded" />
+          <div className="bg-muted h-6 animate-pulse rounded" />
         </div>
       )}
 

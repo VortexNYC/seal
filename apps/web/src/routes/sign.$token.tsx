@@ -38,7 +38,6 @@ import { PaymentFieldSummary } from "@/components/documents/field-inputs";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
 import { SignatureCapture } from "@/components/documents/signature-capture";
 import { SealLogo } from "@/components/seal-logo";
-
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
