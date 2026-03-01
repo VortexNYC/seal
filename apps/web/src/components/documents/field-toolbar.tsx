@@ -1,3 +1,4 @@
+import { useMutation, useQuery } from "convex/react";
 import {
   CalendarIcon,
   CheckSquareIcon,
@@ -8,9 +9,15 @@ import {
   HashIcon,
   PaperclipIcon,
   PenToolIcon,
+  Redo2Icon,
   TypeIcon,
+  Undo2Icon,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import { cn } from "@/lib/utils";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { FIELD_DIMENSIONS } from "./draggable-field";
 
@@ -30,6 +37,7 @@ interface FieldToolbarProps {
   onFieldDragEnd?: () => void;
   disabled?: boolean;
   stripeConnected?: boolean;
+  documentId?: Id<"documents">;
 }
 
 interface FieldButtonProps {
@@ -185,6 +193,7 @@ export function FieldToolbar({
   onFieldDragEnd,
   disabled,
   stripeConnected = false,
+  documentId,
 }: FieldToolbarProps) {
   const handleDragStart = (fieldType: FieldType) => {
     onFieldDragStart?.(fieldType);
@@ -194,15 +203,87 @@ export function FieldToolbar({
     onFieldDragEnd?.();
   };
 
+  const undoFields = useMutation(api.signature_fields.timeline_mutations.undoFields);
+  const redoFields = useMutation(api.signature_fields.timeline_mutations.redoFields);
+  const timelineStatus = useQuery(
+    api.signature_fields.timeline_mutations.fieldTimelineStatus,
+    documentId ? { documentId } : "skip",
+  );
+
+  const canUndo = timelineStatus?.canUndo ?? false;
+  const canRedo = timelineStatus?.canRedo ?? false;
+  const isDraft = !disabled;
+
+  const handleUndo = useCallback(async () => {
+    if (!documentId || !canUndo || !isDraft) return;
+    await undoFields({ documentId });
+  }, [documentId, canUndo, isDraft, undoFields]);
+
+  const handleRedo = useCallback(async () => {
+    if (!documentId || !canRedo || !isDraft) return;
+    await redoFields({ documentId });
+  }, [documentId, canRedo, isDraft, redoFields]);
+
+  // Keyboard shortcuts: Ctrl+Z / Cmd+Z for undo, Ctrl+Shift+Z / Cmd+Shift+Z for redo
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const isModKey = e.metaKey || e.ctrlKey;
+      if (!isModKey || e.key.toLowerCase() !== "z") return;
+
+      // Don't capture if user is typing in an input
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+        return;
+      }
+
+      e.preventDefault();
+      if (e.shiftKey) {
+        void handleRedo();
+      } else {
+        void handleUndo();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleUndo, handleRedo]);
+
   return (
     <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800">
       <div className="mb-3 flex items-baseline justify-between border-b border-dashed border-gray-300 pb-2.5 dark:border-slate-600">
         <span className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
           Fields
         </span>
-        <span className="rounded border border-gray-200 bg-gray-100 px-2 py-0.5 text-[9px] font-normal text-gray-400 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-500">
-          {disabled ? "Add a signer first" : "Drag to place"}
-        </span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => void handleUndo()}
+            disabled={!canUndo || !isDraft}
+            title="Undo (Ctrl+Z)"
+            className={cn(
+              "rounded p-1 transition-colors",
+              canUndo && isDraft
+                ? "text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-slate-600 dark:hover:text-gray-200"
+                : "cursor-not-allowed text-gray-300 dark:text-gray-600",
+            )}
+          >
+            <Undo2Icon className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleRedo()}
+            disabled={!canRedo || !isDraft}
+            title="Redo (Ctrl+Shift+Z)"
+            className={cn(
+              "rounded p-1 transition-colors",
+              canRedo && isDraft
+                ? "text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-slate-600 dark:hover:text-gray-200"
+                : "cursor-not-allowed text-gray-300 dark:text-gray-600",
+            )}
+          >
+            <Redo2Icon className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">

@@ -12,6 +12,7 @@ import {
   validateFieldType,
   validatePageNumber,
 } from "./helpers";
+import { pushFieldSnapshot } from "./timeline_helpers";
 
 /**
  * Verify that document is in draft status before allowing field modifications
@@ -179,6 +180,8 @@ export const createField = mutation({
       userAgent: args.userAgent ?? "web",
     });
 
+    await pushFieldSnapshot(ctx, args.documentId);
+
     return fieldId;
   },
 });
@@ -282,6 +285,8 @@ export const updateField = mutation({
       userAgent: args.userAgent ?? "web",
     });
 
+    await pushFieldSnapshot(ctx, field.documentId);
+
     return args.fieldId;
   },
 });
@@ -382,6 +387,8 @@ export const repositionField = mutation({
       userAgent: args.userAgent ?? "web",
     });
 
+    await pushFieldSnapshot(ctx, field.documentId);
+
     return args.fieldId;
   },
 });
@@ -465,6 +472,8 @@ export const deleteField = mutation({
       ipAddress: args.ipAddress ?? "web-authenticated",
       userAgent: args.userAgent ?? "web",
     });
+
+    await pushFieldSnapshot(ctx, field.documentId);
 
     return { success: true };
   },

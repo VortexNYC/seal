@@ -12,6 +12,7 @@ import { v } from "convex/values";
 import { internal } from "../../_generated/api";
 import { internalMutation, internalQuery } from "../../_generated/server";
 import type { DocumentWorkflowStatus } from "../../schemas/document_workflow_status";
+import { workflow } from "../../workflows";
 
 /**
  * API document response format.
@@ -454,10 +455,10 @@ export const voidDocument = internalMutation({
       updatedAt: Date.now(),
     });
 
-    // Schedule cancellation notification emails
-    await ctx.scheduler.runAfter(
-      0,
-      internal.documents.cancellation_email_action.sendCancellationEmails,
+    // Start cancellation workflow with durable retry
+    await workflow.start(
+      ctx,
+      internal.workflows.document_cancellation.documentCancellationWorkflow,
       {
         documentId: args.documentId,
         reason: args.reason,

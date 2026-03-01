@@ -9,12 +9,14 @@ import { mutation } from "../_generated/server";
 import { logRecipientAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { generateStringHash } from "../crypto/helpers";
+import { retrier } from "../retrier";
 import {
   isRecipientComplete,
   recipientRoleTuple,
   recipientStatusTuple,
 } from "../schemas/document_recipients";
 import { publishWebhookEvent } from "../webhooks/publish";
+import { workflow } from "../workflows";
 import {
   findRecipientByToken,
   isRecipientGroupActive,
@@ -316,15 +318,11 @@ export const updateRecipientStatus = authMutation({
 
     // Schedule viewed notification if this is the first view
     if (!recipient.viewedAt && updateData.viewedAt) {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.documents.viewed_notification_action.sendViewedNotification,
-        {
-          recipientId: recipient._id,
-          documentId: recipient.documentId,
-          viewedAt: updateData.viewedAt as number,
-        },
-      );
+      await retrier.run(ctx, internal.documents.viewed_notification_action.sendViewedNotification, {
+        recipientId: recipient._id,
+        documentId: recipient.documentId,
+        viewedAt: updateData.viewedAt as number,
+      });
     }
 
     return { success: true, recipientId: recipient._id };
@@ -492,28 +490,20 @@ export const submitRecipientSignature = mutation({
 
     // 8. Schedule viewed notification if this is the first view
     if (!recipient.viewedAt && updateData.viewedAt) {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.documents.viewed_notification_action.sendViewedNotification,
-        {
-          recipientId: recipient._id,
-          documentId: recipient.documentId,
-          viewedAt: updateData.viewedAt as number,
-        },
-      );
+      await retrier.run(ctx, internal.documents.viewed_notification_action.sendViewedNotification, {
+        recipientId: recipient._id,
+        documentId: recipient.documentId,
+        viewedAt: updateData.viewedAt as number,
+      });
     }
 
-    // 9. Schedule post-signature emails if recipient completed their action
+    // 9. Start post-signature workflow if recipient completed their action
     // (signed, approved, or declined - but not just viewed)
     if (isRecipientComplete(recipient.role, args.status)) {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.documents.recipient_email_action.sendPostSignatureEmails,
-        {
-          recipientId: recipient._id,
-          documentId: recipient.documentId,
-        },
-      );
+      await workflow.start(ctx, internal.workflows.document_completion.postSignatureWorkflow, {
+        recipientId: recipient._id,
+        documentId: recipient.documentId,
+      });
     }
 
     // 10. Publish webhook event for recipient status changes
@@ -734,27 +724,19 @@ export const submitSignatureAuthenticated = authMutation({
 
     // 9. Schedule viewed notification if this is the first view
     if (!recipient.viewedAt && updateData.viewedAt) {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.documents.viewed_notification_action.sendViewedNotification,
-        {
-          recipientId: recipient._id,
-          documentId: args.documentId,
-          viewedAt: updateData.viewedAt as number,
-        },
-      );
+      await retrier.run(ctx, internal.documents.viewed_notification_action.sendViewedNotification, {
+        recipientId: recipient._id,
+        documentId: args.documentId,
+        viewedAt: updateData.viewedAt as number,
+      });
     }
 
-    // 10. Schedule post-signature emails if recipient completed their action
+    // 10. Start post-signature workflow if recipient completed their action
     if (isRecipientComplete(recipient.role, args.status)) {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.documents.recipient_email_action.sendPostSignatureEmails,
-        {
-          recipientId: recipient._id,
-          documentId: args.documentId,
-        },
-      );
+      await workflow.start(ctx, internal.workflows.document_completion.postSignatureWorkflow, {
+        recipientId: recipient._id,
+        documentId: args.documentId,
+      });
     }
 
     return { success: true, recipientId: recipient._id };

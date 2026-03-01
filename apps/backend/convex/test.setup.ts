@@ -1,9 +1,12 @@
 import actionRetrierComponent from "@convex-dev/action-retrier/test";
 import migrationsComponent from "@convex-dev/migrations/test";
+import presenceComponent from "@convex-dev/presence/test";
 import rateLimiterComponent from "@convex-dev/rate-limiter/test";
 import resendComponent from "@convex-dev/resend/test";
+import workflowComponent from "@convex-dev/workflow/test";
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
+import timelineComponent from "convex-timeline/test";
 
 import schema from "./schema";
 
@@ -15,6 +18,9 @@ export function createTestContext() {
   resendComponent.register(t);
   migrationsComponent.register(t);
   rateLimiterComponent.register(t);
+  workflowComponent.register(t);
+  presenceComponent.register(t);
+  timelineComponent.register(t);
   return t;
 }
 

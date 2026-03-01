@@ -51,6 +51,7 @@ import {
   useAIFieldSuggestions,
 } from "../../../../components/documents/ai-field-suggestions";
 import { DeleteFieldDialog } from "../../../../components/documents/delete-field-dialog";
+import { DocumentPresence } from "../../../../components/documents/document-presence";
 import { DocumentProgressRing } from "../../../../components/documents/document-progress-ring";
 import { DocumentStatusHero } from "../../../../components/documents/document-status-hero";
 import {
@@ -1155,6 +1156,7 @@ function DocumentDetailPage() {
             <ArrowLeftIcon className="mr-2 h-4 w-4" />
             <span className="truncate">Back</span>
           </Button>
+          <DocumentPresence documentId={documentId} />
           {sendDocumentButton}
           {aiSuggestionsToggle}
           {saveAsTemplateButton}
@@ -1607,6 +1609,7 @@ function DocumentDetailPage() {
                           onFieldDragEnd={() => setDraggingFieldType(null)}
                           disabled={recipients.filter((r) => r.role === "signer").length === 0}
                           stripeConnected={stripeConnected}
+                          documentId={documentId as Id<"documents">}
                         />
                       </div>
                     )}
