@@ -12,6 +12,7 @@ import { enqueueAiPipeline } from "../ai/workpool";
 import { logDocumentAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { ensureDocumentLimit, ensureStorageLimit } from "../auth/subscription_guards";
+import { retrier } from "../retrier";
 import { expirationPeriodToMs } from "./send_document_action";
 import { validateFile } from "./upload_config";
 import { createVersionSnapshot } from "./version_helpers";
@@ -126,12 +127,12 @@ export const createDocument = permissionMutation("documents:create")({
 
     // 6. Schedule SHA-256 hash computation for document integrity baseline
     // Runs as an action since it needs to download the PDF from storage
-    await ctx.scheduler.runAfter(0, internal.documents.hash_document_action.hashDocument, {
+    await retrier.run(ctx, internal.documents.hash_document_action.hashDocument, {
       documentId,
     });
 
     // 7. Schedule PDF text extraction for search indexing
-    await ctx.scheduler.runAfter(0, internal.documents.extract_text_action.extractDocumentText, {
+    await retrier.run(ctx, internal.documents.extract_text_action.extractDocumentText, {
       documentId,
     });
 
@@ -654,11 +655,11 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
     });
 
     // 7. Schedule hash computation + text extraction for new PDF
-    await ctx.scheduler.runAfter(0, internal.documents.hash_document_action.hashDocument, {
+    await retrier.run(ctx, internal.documents.hash_document_action.hashDocument, {
       documentId: args.documentId,
     });
 
-    await ctx.scheduler.runAfter(0, internal.documents.extract_text_action.extractDocumentText, {
+    await retrier.run(ctx, internal.documents.extract_text_action.extractDocumentText, {
       documentId: args.documentId,
     });
 
@@ -764,11 +765,11 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
     });
 
     // 7. Schedule hash computation + text extraction for restored PDF
-    await ctx.scheduler.runAfter(0, internal.documents.hash_document_action.hashDocument, {
+    await retrier.run(ctx, internal.documents.hash_document_action.hashDocument, {
       documentId: args.documentId,
     });
 
-    await ctx.scheduler.runAfter(0, internal.documents.extract_text_action.extractDocumentText, {
+    await retrier.run(ctx, internal.documents.extract_text_action.extractDocumentText, {
       documentId: args.documentId,
     });
 

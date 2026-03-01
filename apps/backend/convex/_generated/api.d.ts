@@ -129,6 +129,7 @@ import type * as organizations_queries from "../organizations/queries.js";
 import type * as payment_fields_helpers from "../payment_fields/helpers.js";
 import type * as payment_fields_mutations from "../payment_fields/mutations.js";
 import type * as payment_fields_queries from "../payment_fields/queries.js";
+import type * as retrier from "../retrier.js";
 import type * as rls from "../rls.js";
 import type * as saved_signatures_index from "../saved_signatures/index.js";
 import type * as saved_signatures_mutations from "../saved_signatures/mutations.js";
@@ -346,6 +347,7 @@ declare const fullApi: ApiFromModules<{
   "payment_fields/helpers": typeof payment_fields_helpers;
   "payment_fields/mutations": typeof payment_fields_mutations;
   "payment_fields/queries": typeof payment_fields_queries;
+  retrier: typeof retrier;
   rls: typeof rls;
   "saved_signatures/index": typeof saved_signatures_index;
   "saved_signatures/mutations": typeof saved_signatures_mutations;

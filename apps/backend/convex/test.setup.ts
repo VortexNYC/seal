@@ -1,3 +1,4 @@
+import actionRetrierComponent from "@convex-dev/action-retrier/test";
 import migrationsComponent from "@convex-dev/migrations/test";
 import rateLimiterComponent from "@convex-dev/rate-limiter/test";
 import resendComponent from "@convex-dev/resend/test";
@@ -10,6 +11,7 @@ const modules = import.meta.glob("./**/*.*s");
 
 export function createTestContext() {
   const t = convexTest(schema, modules);
+  actionRetrierComponent.register(t);
   resendComponent.register(t);
   migrationsComponent.register(t);
   rateLimiterComponent.register(t);
