@@ -1,12 +1,12 @@
 import { describe, expect, test } from "vitest";
 
-import { ApiError } from "../errors";
 import {
   buildRateLimitHeaders,
   DEFAULT_RATE_LIMITS,
   throwRateLimitExceeded,
 } from "../api_rate_limiter";
 import type { RateLimitResult } from "../api_rate_limiter";
+import { ApiError } from "../errors";
 
 describe("DEFAULT_RATE_LIMITS", () => {
   test("has 60 requests per minute", () => {

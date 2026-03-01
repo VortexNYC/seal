@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import type { Id } from "../../_generated/dataModel";
 import { internal } from "../../_generated/api";
+import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 
 describe("emails/resend_component", () => {

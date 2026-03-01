@@ -7,14 +7,14 @@
 
 import type { ActionCtx } from "../_generated/server";
 import { httpAction } from "../_generated/server";
-import { type ApiAuthContext, type ApiScope, requireScope, resolveAuthContext } from "./context";
-import { ApiError, apiResponse, handleApiError } from "./errors";
 import {
   buildRateLimitHeaders,
   checkApiRateLimit,
   type RateLimitConfig,
   throwRateLimitExceeded,
 } from "./api_rate_limiter";
+import { type ApiAuthContext, type ApiScope, requireScope, resolveAuthContext } from "./context";
+import { ApiError, apiResponse, handleApiError } from "./errors";
 import { type ApiVersion, getApiVersion } from "./versioning";
 
 /**
