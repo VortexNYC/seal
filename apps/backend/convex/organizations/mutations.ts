@@ -7,6 +7,7 @@ import { ConvexError, v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx, mutation } from "../_generated/server";
 import { adminMutation, authMutation } from "../auth";
+import { logAction } from "../audit_logs/helpers";
 import { seedSystemRoles } from "../organization_roles/helpers";
 import { organizationBaseSchema } from "../validations/organizations";
 
@@ -416,8 +417,24 @@ export const updateMemberRole = adminMutation({
       throw new ConvexError("Only owners can assign owner roles");
     }
 
+    const previousRole = membership.role;
+
     await ctx.db.patch(args.memberId, {
       role: args.role,
+    });
+
+    await logAction(ctx, {
+      organizationId: organization._id,
+      userId: currentUser.clerkId,
+      actorType: "user",
+      actorId: currentUser.clerkId,
+      action: "member.role_changed",
+      resourceType: "member",
+      resourceId: membership.userId,
+      oldValues: { role: previousRole },
+      newValues: { role: args.role },
+      metadata: { description: `Role changed from ${previousRole} to ${args.role}` },
+      ipAddress: "web-authenticated",
     });
 
     return { success: true };
@@ -473,7 +490,23 @@ export const removeMember = adminMutation({
       }
     }
 
+    const removedUserId = membership.userId;
+    const removedRole = membership.role;
+
     await ctx.db.delete(args.memberId);
+
+    await logAction(ctx, {
+      organizationId: organization._id,
+      userId: currentUser.clerkId,
+      actorType: "user",
+      actorId: currentUser.clerkId,
+      action: "member.removed",
+      resourceType: "member",
+      resourceId: removedUserId,
+      oldValues: { role: removedRole },
+      metadata: { description: `Member removed from organization` },
+      ipAddress: "web-authenticated",
+    });
 
     return { success: true };
   },
@@ -525,6 +558,19 @@ export const createInvitation = adminMutation({
         permissions: [],
       });
 
+      await logAction(ctx, {
+        organizationId: organization._id,
+        userId: currentUser.clerkId,
+        actorType: "user",
+        actorId: currentUser.clerkId,
+        action: "member.joined",
+        resourceType: "member",
+        resourceId: existingUser.clerkId,
+        newValues: { role: args.role, email },
+        metadata: { description: `${email} added directly to organization` },
+        ipAddress: "web-authenticated",
+      });
+
       return {
         id: membershipId,
         addedDirectly: true,
@@ -561,6 +607,19 @@ export const createInvitation = adminMutation({
       invitedBy: currentUser._id,
       expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
       createdAt: Date.now(),
+    });
+
+    await logAction(ctx, {
+      organizationId: organization._id,
+      userId: currentUser.clerkId,
+      actorType: "user",
+      actorId: currentUser.clerkId,
+      action: "member.invited",
+      resourceType: "member",
+      resourceId: invitationId,
+      newValues: { email, role: args.role },
+      metadata: { description: `Invitation sent to ${email}` },
+      ipAddress: "web-authenticated",
     });
 
     return {
