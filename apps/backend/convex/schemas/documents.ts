@@ -99,6 +99,12 @@ export const documentsTable = defineTable({
   // Retention policy: completed documents must be retained for 7 years (ESIGN Act)
   retainUntil: v.optional(v.number()), // Timestamp after which the document can be deleted
 
+  // Custom redirect URL after signing
+  redirectUrl: v.optional(v.string()), // Recipients are redirected here after signing
+
+  // Dictate next signer: allow current signer to designate who signs next (sequential only)
+  allowDictateNextSigner: v.optional(v.boolean()),
+
   // Signing mode: parallel (all at once) or sequential (enforce order groups)
   signingMode: v.optional(signingModeTuple),
 

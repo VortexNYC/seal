@@ -5,7 +5,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import { mutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 import { logRecipientAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { generateStringHash } from "../crypto/helpers";
@@ -53,6 +53,7 @@ export const addRecipients = permissionMutation("documents:edit")({
         name: v.optional(v.string()),
         role: recipientRoleTuple,
         order: v.optional(v.number()),
+        isPlaceholder: v.optional(v.boolean()),
       }),
     ),
   },
@@ -102,6 +103,7 @@ export const addRecipients = permissionMutation("documents:edit")({
         role: recipient.role,
         status: "pending",
         order: recipient.order,
+        isPlaceholder: recipient.isPlaceholder,
         signingToken: token,
         tokenHash,
         tokenExpiresAt: tokenExpiration,
@@ -990,6 +992,128 @@ export const recordEsignOptOut = mutation({
         userAgent: "signing-page",
       });
     }
+
+    return { success: true };
+  },
+});
+
+/**
+ * Internal mutation: mark a signer as awaiting dictation.
+ * Called by recipient_email_action when the next sequential recipient is a placeholder.
+ */
+export const setAwaitingDictation = internalMutation({
+  args: {
+    recipientId: v.id("document_recipients"),
+    placeholderRecipientId: v.id("document_recipients"),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    await ctx.db.patch(args.recipientId, {
+      awaitingDictation: true,
+      updatedAt: now,
+    });
+  },
+});
+
+/**
+ * Public mutation: a signer designates the next recipient in the signing chain.
+ * Called from the signing page after a signer completes their signature on a document
+ * with allowDictateNextSigner === true and the next slot is a placeholder.
+ */
+export const dictateNextRecipient = mutation({
+  args: {
+    signingToken: v.string(),
+    nextName: v.string(),
+    nextEmail: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // 1. Resolve the calling recipient via token
+    const recipient = await findRecipientByToken(ctx, args.signingToken);
+    if (!recipient) {
+      throw new ConvexError("Invalid signing token");
+    }
+
+    // 2. Must have just signed and be awaiting dictation
+    if (recipient.status !== "signed" && recipient.status !== "approved") {
+      throw new ConvexError("Only completed signers can designate the next recipient");
+    }
+    if (!recipient.awaitingDictation) {
+      throw new ConvexError("No dictation required for this recipient");
+    }
+
+    // 3. Fetch document and verify it has dictation enabled
+    const document = await ctx.db.get(recipient.documentId);
+    if (!document) throw new ConvexError("Document not found");
+    if (!document.allowDictateNextSigner) {
+      throw new ConvexError("This document does not support dictation");
+    }
+
+    // 4. Validate the provided email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(args.nextEmail)) {
+      throw new ConvexError("Invalid email address");
+    }
+
+    // 5. Find the placeholder recipient in the next signing group
+    const allRecipients = await ctx.db
+      .query("document_recipients")
+      .withIndex("by_document", (q) => q.eq("documentId", recipient.documentId))
+      .collect();
+
+    const myOrder = recipient.order ?? 0;
+    const placeholder = allRecipients
+      .filter((r) => (r.order ?? 0) > myOrder && r.isPlaceholder)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+
+    if (!placeholder) {
+      throw new ConvexError("No placeholder recipient found in the next signing group");
+    }
+
+    // 6. Generate a new signing token for the newly-identified recipient
+    const { token, tokenHash } = await generateSigningToken();
+    const now = Date.now();
+    const tokenExpiration = now + 30 * 24 * 60 * 60 * 1000;
+
+    // 7. Update the placeholder with real identity
+    await ctx.db.patch(placeholder._id, {
+      name: args.nextName.trim(),
+      email: args.nextEmail.trim().toLowerCase(),
+      isPlaceholder: false,
+      dictatedBy: recipient._id,
+      dictatedAt: now,
+      signingToken: token,
+      tokenHash,
+      tokenExpiresAt: tokenExpiration,
+      updatedAt: now,
+    });
+
+    // 8. Clear awaitingDictation on the dictating signer
+    await ctx.db.patch(recipient._id, {
+      awaitingDictation: false,
+      updatedAt: now,
+    });
+
+    // 9. Audit log
+    await logRecipientAction(ctx, {
+      organizationId: document.organizationId,
+      actorType: "recipient",
+      actorId: recipient._id,
+      action: "recipient.dictated",
+      documentId: recipient.documentId,
+      recipientId: placeholder._id,
+      newValues: { name: args.nextName, email: args.nextEmail },
+      ipAddress: "0.0.0.0",
+    });
+
+    // 10. Schedule sending the invitation email to the new recipient
+    await ctx.scheduler.runAfter(
+      0,
+      internal.documents.recipient_email_action.sendNextRecipientInvitation,
+      {
+        documentId: recipient.documentId,
+        recipientId: placeholder._id,
+      },
+    );
 
     return { success: true };
   },

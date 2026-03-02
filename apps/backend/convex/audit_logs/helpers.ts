@@ -248,7 +248,8 @@ export async function logRecipientAction(
       | "recipient.signed"
       | "recipient.declined"
       | "recipient.esign_consent"
-      | "recipient.esign_opt_out";
+      | "recipient.esign_opt_out"
+      | "recipient.dictated";
     documentId: Id<"documents">;
     recipientId: Id<"document_recipients">;
     newValues?: Record<string, unknown>;

@@ -12,6 +12,7 @@ import {
   FileSignatureIcon,
   FileTextIcon,
   InfoIcon,
+  LinkIcon,
   Loader2Icon,
   MessageSquareIcon,
   PlusIcon,
@@ -82,6 +83,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../../../../components/ui/collapsible";
+import { Input } from "../../../../components/ui/input";
+import { Label } from "../../../../components/ui/label";
+import { Switch } from "../../../../components/ui/switch";
 
 // SEA-72: Configure PDF.js worker
 // Use unpkg CDN which has reliable pdf.js worker files
@@ -277,6 +281,56 @@ function DocumentDetailPage() {
     [documentSignatures, recipientsById],
   );
 
+  // Document settings: redirect URL and dictate next signer
+  const [redirectUrlInput, setRedirectUrlInput] = useState(documentData.redirectUrl ?? "");
+  const [redirectUrlError, setRedirectUrlError] = useState<string | null>(null);
+  const [isSavingRedirect, setIsSavingRedirect] = useState(false);
+  const [allowDictateNextSigner, setAllowDictateNextSigner] = useState(
+    documentData.allowDictateNextSigner ?? false,
+  );
+
+  const handleSaveRedirectUrl = async () => {
+    const url = redirectUrlInput.trim();
+    if (url) {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+          setRedirectUrlError("Must use http or https protocol");
+          return;
+        }
+      } catch {
+        setRedirectUrlError("Enter a valid URL");
+        return;
+      }
+    }
+    setRedirectUrlError(null);
+    setIsSavingRedirect(true);
+    try {
+      await updateDocument({
+        documentId: documentId as Id<"documents">,
+        redirectUrl: url || null,
+      });
+      toast.success(url ? "Redirect URL saved" : "Redirect URL removed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save redirect URL");
+    } finally {
+      setIsSavingRedirect(false);
+    }
+  };
+
+  const handleToggleDictateNextSigner = async (enabled: boolean) => {
+    setAllowDictateNextSigner(enabled);
+    try {
+      await updateDocument({
+        documentId: documentId as Id<"documents">,
+        allowDictateNextSigner: enabled,
+      });
+    } catch {
+      setAllowDictateNextSigner(!enabled);
+      toast.error("Failed to update setting");
+    }
+  };
+
   // Compute field counts per recipient for the send dialog
   const fieldCountsByRecipient = new Map<string, number>();
   for (const field of signatureFields) {
@@ -288,6 +342,7 @@ function DocumentDetailPage() {
 
   const removeRecipient = useMutation(api.documents.recipients_mutations.removeRecipient);
   const addRecipients = useMutation(api.documents.recipients_mutations.addRecipients);
+  const updateDocument = useMutation(api.documents.mutations.updateDocument);
 
   // Current user for "Add myself" functionality
   const { user } = useUser();
@@ -1496,6 +1551,96 @@ function DocumentDetailPage() {
                   )}
                 </CollapsibleContent>
               </Collapsible>
+
+              {/* Document Settings — redirect URL and dictate next signer (draft only) */}
+              {canEdit && documentData.workflowStatus === "draft" && (
+                <Collapsible
+                  open={openSections.has("doc-settings")}
+                  onOpenChange={() => toggleSection("doc-settings")}
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-slate-100 text-slate-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-slate-800 dark:text-slate-400">
+                          <SettingsIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+                        </div>
+                        <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                          Document Settings
+                        </span>
+                      </div>
+                      <ChevronDownIcon
+                        className={`h-4 w-4 text-slate-500 transition-transform dark:text-slate-400 ${openSections.has("doc-settings") ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+                    <div className="mt-4 space-y-5">
+                      {/* Redirect URL */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                          <LinkIcon className="h-3.5 w-3.5" />
+                          Redirect after signing
+                        </Label>
+                        <p className="text-muted-foreground text-xs">
+                          Recipients are sent to this URL after signing. Leave empty for the default
+                          thank-you page.
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="https://example.com/thank-you"
+                            value={redirectUrlInput}
+                            onChange={(e) => {
+                              setRedirectUrlInput(e.target.value);
+                              setRedirectUrlError(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveRedirectUrl();
+                            }}
+                            className="text-sm"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleSaveRedirectUrl}
+                            disabled={isSavingRedirect}
+                          >
+                            {isSavingRedirect ? (
+                              <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <SaveIcon className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </div>
+                        {redirectUrlError && (
+                          <p className="text-xs text-red-500">{redirectUrlError}</p>
+                        )}
+                      </div>
+
+                      {/* Dictate Next Signer — sequential mode only */}
+                      {documentData.signingMode === "sequential" && (
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                              Signers choose next recipient
+                            </Label>
+                            <p className="text-muted-foreground text-xs">
+                              Allow each signer to designate who signs after them.
+                            </p>
+                          </div>
+                          <Switch
+                            checked={allowDictateNextSigner}
+                            onCheckedChange={handleToggleDictateNextSigner}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
 
               {/* AI Chat Panel - Shows when user opens AI assistant */}
               {canEdit &&

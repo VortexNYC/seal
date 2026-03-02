@@ -40,7 +40,9 @@ import { SignatureCapture } from "@/components/documents/signature-capture";
 import { SealLogo } from "@/components/seal-logo";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
+import { RedirectCountdown } from "@/components/signing/redirect-countdown";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -223,6 +225,10 @@ function SigningPage() {
 
   // Download state
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Post-signing flow: dictation and redirect
+  const [showDictateDialog, setShowDictateDialog] = useState(false);
+  const [showRedirect, setShowRedirect] = useState(false);
 
   // Client IP for audit trail (fetched from Convex HTTP endpoint)
   const [clientIp, setClientIp] = useState("unknown");
@@ -572,6 +578,20 @@ function SigningPage() {
 
   // Check if document is waiting for payment (all signed, payment pending)
   const isWaitingForPayment = doc.workflowStatus === "waiting_for_payment";
+
+  // After page reloads with isCompleted=true, trigger the post-signing flow:
+  // dictation first (if awaiting), then redirect (if configured), else standard thank-you.
+  const postSigningTriggered = useRef(false);
+  useEffect(() => {
+    if (postSigningTriggered.current) return;
+    if (!isCompleted || recipient.status === "declined") return;
+    postSigningTriggered.current = true;
+    if (recipient.awaitingDictation) {
+      setShowDictateDialog(true);
+    } else if (doc.redirectUrl) {
+      setShowRedirect(true);
+    }
+  }, [isCompleted, recipient.status, recipient.awaitingDictation, doc.redirectUrl]);
 
   // Sort fields by page and position for navigation
   const sortedFields = [...fields].sort((a, b) => {
@@ -1265,7 +1285,7 @@ function SigningPage() {
 
           {/* Completed state footer */}
           {isCompleted && recipient.status !== "declined" && (
-            <div className="border-border/50 bg-muted/20 border-t p-6">
+            <div className="border-border/50 bg-muted/20 space-y-4 border-t p-6">
               <Button
                 variant="outline"
                 size="lg"
@@ -1280,6 +1300,14 @@ function SigningPage() {
                 )}
                 {isDownloading ? "Preparing..." : "Download Document"}
               </Button>
+              {showRedirect && doc.redirectUrl && (
+                <RedirectCountdown
+                  redirectUrl={doc.redirectUrl}
+                  recipientEmail={recipient.email}
+                  recipientName={recipient.name ?? recipient.email}
+                  onStayHere={() => setShowRedirect(false)}
+                />
+              )}
             </div>
           )}
         </aside>
@@ -1644,6 +1672,20 @@ function SigningPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dictate Next Signer Dialog */}
+      <DictateNextSignerDialog
+        open={showDictateDialog}
+        signingToken={token}
+        onSuccess={() => {
+          setShowDictateDialog(false);
+          if (doc.redirectUrl) setShowRedirect(true);
+        }}
+        onDefer={() => {
+          setShowDictateDialog(false);
+          if (doc.redirectUrl) setShowRedirect(true);
+        }}
+      />
 
       {/* Field Input Manager */}
       {activeFieldId && (

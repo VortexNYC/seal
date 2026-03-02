@@ -38,6 +38,7 @@ export const auditActionTuple = v.union(
   v.literal("recipient.esign_consent"),
   v.literal("recipient.esign_opt_out"),
   v.literal("recipient.expired"),
+  v.literal("recipient.dictated"),
 
   // Signature actions
   v.literal("signature.created"),

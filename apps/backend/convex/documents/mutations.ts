@@ -215,6 +215,8 @@ export const updateDocument = permissionMutation("documents:edit")({
     documentId: v.id("documents"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
+    redirectUrl: v.optional(v.union(v.string(), v.null())),
+    allowDictateNextSigner: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
@@ -252,10 +254,27 @@ export const updateDocument = permissionMutation("documents:edit")({
       throw new ConvexError("You don't have permission to edit this document");
     }
 
-    // 3. Update the document
+    // 3. Validate redirectUrl if provided
+    if (args.redirectUrl) {
+      try {
+        const parsed = new URL(args.redirectUrl);
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+          throw new ConvexError("Redirect URL must use http or https protocol");
+        }
+      } catch {
+        throw new ConvexError("Redirect URL must be a valid URL");
+      }
+      if (args.redirectUrl.length > 2048) {
+        throw new ConvexError("Redirect URL must be 2048 characters or less");
+      }
+    }
+
+    // 4. Update the document
     const updateData: {
       name?: string;
       description?: string;
+      redirectUrl?: string;
+      allowDictateNextSigner?: boolean;
       updatedAt: number;
     } = {
       updatedAt: Date.now(),
@@ -266,6 +285,13 @@ export const updateDocument = permissionMutation("documents:edit")({
     }
     if (args.description !== undefined) {
       updateData.description = args.description;
+    }
+    if (args.redirectUrl !== undefined) {
+      // null means "clear the field" — patch with undefined to remove it from the document
+      updateData.redirectUrl = args.redirectUrl === null ? undefined : args.redirectUrl;
+    }
+    if (args.allowDictateNextSigner !== undefined) {
+      updateData.allowDictateNextSigner = args.allowDictateNextSigner;
     }
 
     await ctx.db.patch(args.documentId, updateData);

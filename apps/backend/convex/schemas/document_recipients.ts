@@ -84,6 +84,12 @@ export const documentRecipientsTable = defineTable({
   expiresAt: v.optional(v.number()),
   expirationNotifiedAt: v.optional(v.number()),
 
+  // Dictate next signer
+  isPlaceholder: v.optional(v.boolean()), // True if name/email are TBD (to be filled by previous signer)
+  dictatedBy: v.optional(v.id("document_recipients")), // Which recipient designated this one
+  dictatedAt: v.optional(v.number()), // When the designation happened
+  awaitingDictation: v.optional(v.boolean()), // Previous signer signed but hasn't designated next yet
+
   // Metadata
   createdAt: v.number(),
   updatedAt: v.number(),

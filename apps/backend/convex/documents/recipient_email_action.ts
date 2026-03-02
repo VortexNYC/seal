@@ -170,6 +170,25 @@ export const sendPostSignatureEmails = internalAction({
                 : undefined;
 
               for (const nextRecipient of pendingInNextGroup) {
+                // If this recipient is a placeholder, block sending and mark awaitingDictation
+                // on the previous signer so they know to designate the next person
+                if (nextRecipient.isPlaceholder && document.allowDictateNextSigner) {
+                  // Find the signer who just completed (the dictator)
+                  const dictatingRecipient = allRecipients.find(
+                    (r) => r.order === myOrder && isRecipientComplete(r.role, r.status),
+                  );
+                  if (dictatingRecipient) {
+                    await ctx.runMutation(
+                      internal.documents.recipients_mutations.setAwaitingDictation,
+                      {
+                        recipientId: dictatingRecipient._id,
+                        placeholderRecipientId: nextRecipient._id,
+                      },
+                    );
+                  }
+                  break; // Don't send email — defer until dictateNextRecipient is called
+                }
+
                 const signingUrl = `${baseUrl}/sign/${nextRecipient.signingToken}`;
                 await sendDocumentInvitation(ctx, {
                   to: nextRecipient.email,
@@ -262,5 +281,56 @@ export const sendPostSignatureEmails = internalAction({
       completionEmailSent,
       documentCompleted: allComplete,
     };
+  },
+});
+
+/**
+ * Internal action: send signing invitation to a newly-dictated recipient.
+ * Called after dictateNextRecipient sets the placeholder's real name/email/token.
+ */
+export const sendNextRecipientInvitation = internalAction({
+  args: {
+    documentId: v.id("documents"),
+    recipientId: v.id("document_recipients"),
+  },
+  handler: async (ctx, args) => {
+    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
+      documentId: args.documentId,
+    });
+    if (!document) return;
+
+    const recipient = await ctx.runQuery(
+      internal.documents.recipients_queries.getRecipientInternal,
+      { recipientId: args.recipientId },
+    );
+    if (!recipient || recipient.isPlaceholder) return;
+
+    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+      userId: document.ownerId,
+    });
+    const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+
+    const brandingSettings = await ctx.runQuery(
+      internal.organizations.queries.getBrandingSettingsInternal,
+      { organizationId: document.organizationId },
+    );
+    const emailBranding = brandingSettings.enabled
+      ? {
+          emailFromName: brandingSettings.emailFromName,
+          emailReplyTo: brandingSettings.emailReplyTo,
+        }
+      : undefined;
+
+    const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
+    await sendDocumentInvitation(ctx, {
+      to: recipient.email,
+      recipientName: recipient.name || recipient.email,
+      documentName: document.name,
+      senderName,
+      signingUrl,
+      expiresAt: recipient.tokenExpiresAt,
+      branding: emailBranding,
+    });
   },
 });

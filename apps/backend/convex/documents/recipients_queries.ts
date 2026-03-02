@@ -184,6 +184,7 @@ export const getRecipientByToken = query({
         signatureType: recipient.signatureType,
         esignConsentAt: recipient.esignConsentAt,
         expiresAt: recipient.expiresAt,
+        awaitingDictation: recipient.awaitingDictation,
       },
       document: {
         _id: document._id,
@@ -193,6 +194,7 @@ export const getRecipientByToken = query({
         storageId: document.storageId,
         workflowStatus: document.workflowStatus,
         signingMode: document.signingMode,
+        redirectUrl: document.redirectUrl,
       },
       // Sequential signing state
       waitingForPreviousGroup,
@@ -429,5 +431,12 @@ export const findRecipientByTokenInternal = internalQuery({
   args: { signingToken: v.string() },
   handler: async (ctx, args) => {
     return await findRecipientByToken(ctx, args.signingToken);
+  },
+});
+
+export const getRecipientInternal = internalQuery({
+  args: { recipientId: v.id("document_recipients") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.recipientId);
   },
 });
