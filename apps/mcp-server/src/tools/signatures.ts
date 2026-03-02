@@ -25,7 +25,7 @@ import { getAuthToken } from "../utils/auth";
 export function registerSignatureTools(server: McpServer, client: SealApiClient): void {
   // List signatures
   server.tool(
-    "list_signatures",
+    "seal_list_signatures",
     "List all signatures for a document. Returns information about each signature including who signed and when.",
     signatureDocumentIdSchema.shape,
     async (args, extra) => {
@@ -50,7 +50,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
 
   // Get signature
   server.tool(
-    "get_signature",
+    "seal_get_signature",
     "Get detailed information about a specific signature.",
     getSignatureSchema.shape,
     async (args, extra) => {
@@ -78,7 +78,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
 
   // Verify document
   server.tool(
-    "verify_document",
+    "seal_verify_document",
     "Verify the cryptographic integrity of all signatures on a document. Returns whether each signature is valid and the document hasn't been tampered with.",
     signatureDocumentIdSchema.shape,
     async (args, extra) => {
@@ -103,7 +103,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
 
   // Get audit trail
   server.tool(
-    "get_audit_trail",
+    "seal_get_audit_trail",
     "Get the complete audit trail for a document. Shows all events including views, signatures, and modifications with timestamps.",
     getAuditTrailSchema.shape,
     async (args, extra) => {

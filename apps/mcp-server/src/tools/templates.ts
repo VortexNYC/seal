@@ -31,7 +31,7 @@ import { getAuthToken } from "../utils/auth";
 export function registerTemplateTools(server: McpServer, client: SealApiClient): void {
   // List templates
   server.tool(
-    "list_templates",
+    "seal_list_templates",
     "List all templates in your Seal workspace with pagination.",
     listTemplatesSchema.shape,
     async (args, extra) => {
@@ -56,7 +56,7 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
 
   // Get template
   server.tool(
-    "get_template",
+    "seal_get_template",
     "Get detailed information about a specific template.",
     getTemplateSchema.shape,
     async (args, extra) => {
@@ -81,7 +81,7 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
 
   // Get template fields
   server.tool(
-    "get_template_fields",
+    "seal_get_template_fields",
     "Get all field definitions for a template. Fields define where signatures and data entry points are located.",
     templateIdSchema.shape,
     async (args, extra) => {
@@ -106,7 +106,7 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
 
   // Create template
   server.tool(
-    "create_template",
+    "seal_create_template",
     "Create a new template from an existing document. The document's fields will be copied to the template.",
     createTemplateSchema.shape,
     async (args, extra) => {
@@ -136,7 +136,7 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
 
   // Update template
   server.tool(
-    "update_template",
+    "seal_update_template",
     "Update template metadata.",
     updateTemplateSchema.shape,
     async (args, extra) => {
@@ -162,7 +162,7 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
 
   // Delete template
   server.tool(
-    "delete_template",
+    "seal_delete_template",
     "Delete a template. This is a soft delete - the template will be marked as deleted but not removed.",
     templateIdSchema.shape,
     async (args, extra) => {
@@ -187,7 +187,7 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
 
   // Use template
   server.tool(
-    "use_template",
+    "seal_use_template",
     "Create a new document from a template. The new document will have the same fields and layout as the template.",
     useTemplateSchema.shape,
     async (args, extra) => {

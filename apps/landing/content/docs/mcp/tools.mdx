@@ -1,11 +1,11 @@
 ---
 title: MCP Tools Reference
-description: Complete reference for all 27 Seal MCP tools
+description: Complete reference for all 29 Seal MCP tools
 ---
 
 # MCP Tools Reference
 
-The Seal MCP server provides 27 tools that give AI assistants complete access to your Seal account. All tools require OAuth authentication and respect your organization's permissions.
+The Seal MCP server provides 29 tools that give AI assistants complete access to your Seal account. All tools require OAuth authentication and respect your organization's permissions.
 
 ## Document Tools
 
@@ -15,10 +15,11 @@ List all documents in your organization.
 
 **Parameters:**
 
-- `limit` (number, optional): Number of results (max 100, default 20)
-- `status` (string, optional): Filter by status
+- `limit` (number, optional): Number of results (1–100, default 20)
+- `cursor` (string, optional): Pagination cursor from previous response
+- `status` (string, optional): Filter by status — `draft`, `sent`, `in_progress`, `completed`, `cancelled`, `declined`
 
-**Returns:** Array of document objects
+**Returns:** Paginated array of document objects
 
 **Example:**
 
@@ -33,45 +34,81 @@ Get detailed information about a specific document.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
-- `includeRecipients` (boolean, optional): Include recipient details
+- `id` (string, required): Document ID
+- `include_recipients` (boolean, optional): Include recipient details in response
 
 **Returns:** Document object with optional recipients
 
 ### seal_create_document
 
-Create a new document.
+Create a new document in draft status.
 
 **Parameters:**
 
 - `title` (string, required): Document title
-- `storageId` (string, required): Storage ID from upload
-- `fileSize` (number, required): File size in bytes
-- `fileType` (string, required): MIME type
+- `storage_id` (string, required): Storage ID from a prior `seal_upload_file` or `seal_upload_file_content` call
+- `file_size` (number, required): File size in bytes
+- `file_type` (string, optional): MIME type (default `application/pdf`)
+- `description` (string, optional): Document description
+- `page_count` (number, optional): Number of pages
+- `deadline` (string, optional): Signing deadline as ISO 8601 timestamp
 
-**Returns:** Created document object
+**Returns:** `{ id: string }` — the new document ID
+
+### seal_update_document
+
+Update document metadata. Only works for documents in draft status.
+
+**Parameters:**
+
+- `id` (string, required): Document ID
+- `title` (string, optional): New document title
+- `description` (string, optional): New document description
+- `deadline` (string, optional): New signing deadline as ISO 8601 timestamp
+
+**Returns:** `{ success: boolean }`
+
+### seal_delete_document
+
+Delete a document. Only draft documents can be deleted. Use `seal_void_document` for sent documents.
+
+**Parameters:**
+
+- `id` (string, required): Document ID
+
+**Returns:** `{ success: boolean }`
 
 ### seal_send_document
 
-Send a document to recipients for signing.
+Send a document to recipients for signing. The document must be in draft status and have at least one recipient.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
-- `message` (string, optional): Custom message
+- `id` (string, required): Document ID
+- `message` (string, optional): Custom message to include in the signing email
 
-**Returns:** Send confirmation
+**Returns:** `{ success: boolean }`
 
 ### seal_void_document
 
-Cancel a document and prevent further signing.
+Cancel a document and prevent further signing. All recipients will be notified.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
-- `reason` (string, optional): Cancellation reason
+- `id` (string, required): Document ID
+- `reason` (string, required): Reason for voiding the document
 
-**Returns:** Void confirmation
+**Returns:** `{ success: boolean }`
+
+### seal_download_document
+
+Get the download URL for a document. Returns the signed PDF if available, otherwise the original.
+
+**Parameters:**
+
+- `id` (string, required): Document ID
+
+**Returns:** `{ url: string }` — signed download URL
 
 ## Recipient Tools
 
@@ -81,46 +118,84 @@ List all recipients for a document.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
+- `document_id` (string, required): Document ID
 
-**Returns:** Array of recipient objects
+**Returns:** `{ recipients: ApiRecipient[] }`
+
+### seal_get_recipient
+
+Get detailed information about a specific recipient.
+
+**Parameters:**
+
+- `document_id` (string, required): Document ID
+- `id` (string, required): Recipient ID
+
+**Returns:** Recipient object
 
 ### seal_add_recipient
 
-Add a new recipient to a document.
+Add a new recipient to a document. The document must be in draft status.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
-- `email` (string, required): Recipient email
-- `name` (string, required): Recipient name
-- `role` (string, required): Role (signer, approver, viewer)
-- `order` (number, optional): Signing order
+- `document_id` (string, required): Document ID
+- `email` (string, required): Recipient email address
+- `name` (string, required): Recipient display name
+- `role` (string, required): `signer`, `approver`, or `viewer`
+- `order` (number, optional): Signing order for sequential workflows
+- `message` (string, optional): Custom message for this recipient
 
-**Returns:** Created recipient object
+**Returns:** `{ id: string }` — the new recipient ID
+
+### seal_update_recipient
+
+Update a recipient's details. The document must be in draft status.
+
+**Parameters:**
+
+- `document_id` (string, required): Document ID
+- `id` (string, required): Recipient ID
+- `name` (string, optional): New display name
+- `role` (string, optional): New recipient role
+- `order` (number, optional): New signing order
+- `message` (string, optional): New custom message
+
+**Returns:** `{ success: boolean }`
+
+### seal_remove_recipient
+
+Remove a recipient from a document. The document must be in draft status.
+
+**Parameters:**
+
+- `document_id` (string, required): Document ID
+- `id` (string, required): Recipient ID
+
+**Returns:** `{ success: boolean }`
 
 ### seal_send_reminder
 
-Send a reminder email to a recipient.
+Send a reminder email to a recipient who hasn't signed yet.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
-- `recipientId` (string, required): Recipient ID
+- `document_id` (string, required): Document ID
+- `id` (string, required): Recipient ID
 - `message` (string, optional): Custom reminder message
 
-**Returns:** Reminder confirmation
+**Returns:** `{ success: boolean }`
 
 ### seal_add_recipients_bulk
 
-Add multiple recipients to a document at once.
+Add multiple recipients to a document at once. Processes in batches of 5 with partial failure reporting.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
-- `recipients` (array, required): Array of recipient objects with email, name, role, and optional order
+- `document_id` (string, required): Document ID
+- `recipients` (array, required): Array of recipient objects — each with `email`, `name`, `role`, and optional `order` and `message`
 
-**Returns:** Array of created recipient objects with success/failure status
+**Returns:** `{ added, failed, total_requested, recipients[] }`
 
 ### seal_update_recipients_bulk
 
@@ -128,10 +203,10 @@ Update multiple recipients for a document at once.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
-- `recipients` (array, required): Array of recipient updates with recipientId and fields to update
+- `document_id` (string, required): Document ID
+- `updates` (array, required): Array of update objects — each with `id` and optional `name`, `role`, `order`, `message`
 
-**Returns:** Array of update results with success/failure status
+**Returns:** `{ updated, failed, total_requested, recipients[] }`
 
 ## Template Tools
 
@@ -141,10 +216,11 @@ List all templates in your organization.
 
 **Parameters:**
 
-- `limit` (number, optional): Number of results
-- `category` (string, optional): Filter by category
+- `limit` (number, optional): Number of results (1–100, default 20)
+- `cursor` (string, optional): Pagination cursor from previous response
+- `status` (string, optional): Filter by status — `active` or `archived`
 
-**Returns:** Array of template objects
+**Returns:** Paginated array of template objects
 
 ### seal_get_template
 
@@ -152,31 +228,67 @@ Get detailed information about a template.
 
 **Parameters:**
 
-- `templateId` (string, required): Template ID
+- `id` (string, required): Template ID
+- `include_fields` (boolean, optional): Include field definitions in response
 
 **Returns:** Template object
 
 ### seal_get_template_fields
 
-Get field definitions for a template.
+Get all field definitions for a template. Fields define where signatures and data entry points are located.
 
 **Parameters:**
 
-- `templateId` (string, required): Template ID
+- `id` (string, required): Template ID
 
-**Returns:** Array of field definitions
+**Returns:** `{ fields: ApiTemplateField[] }`
+
+### seal_create_template
+
+Create a new template from an existing document. The document's field layout is copied to the template.
+
+**Parameters:**
+
+- `document_id` (string, required): Source document ID
+- `name` (string, required): Template name
+- `description` (string, optional): Template description
+
+**Returns:** `{ id: string }` — the new template ID
+
+### seal_update_template
+
+Update template metadata.
+
+**Parameters:**
+
+- `id` (string, required): Template ID
+- `name` (string, optional): New template name
+- `description` (string, optional): New template description
+- `status` (string, optional): New status — `active` or `archived`
+
+**Returns:** `{ success: boolean }`
+
+### seal_delete_template
+
+Soft-delete a template. The template will be marked as deleted but not removed from the database.
+
+**Parameters:**
+
+- `id` (string, required): Template ID
+
+**Returns:** `{ success: boolean }`
 
 ### seal_use_template
 
-Create a new document from a template.
+Create a new document from a template. The new document inherits the template's field layout.
 
 **Parameters:**
 
-- `templateId` (string, required): Template ID
-- `title` (string, optional): Document title (defaults to template name)
-- `description` (string, optional): Document description
+- `id` (string, required): Template ID
+- `title` (string, optional): Title for the new document (defaults to template name)
+- `description` (string, optional): Description for the new document
 
-**Returns:** Created document object with template fields
+**Returns:** `{ id: string }` — the new document ID
 
 ## Signature Tools
 
@@ -186,52 +298,64 @@ List all signatures for a document.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
+- `document_id` (string, required): Document ID
 
-**Returns:** Array of signature objects
+**Returns:** `{ signatures: ApiSignature[] }`
+
+### seal_get_signature
+
+Get detailed information about a specific signature.
+
+**Parameters:**
+
+- `document_id` (string, required): Document ID
+- `id` (string, required): Signature ID
+
+**Returns:** Signature object with method, timestamp, and cryptographic hash
 
 ### seal_verify_document
 
-Verify the authenticity of a signed document.
+Verify the cryptographic integrity of all signatures on a document. Returns whether each signature is valid and the document hasn't been tampered with.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
+- `document_id` (string, required): Document ID
 
-**Returns:** Verification result with signature details
+**Returns:** Verification result with per-signature validity status
 
 ### seal_get_audit_trail
 
-Get the complete audit trail for a document.
+Get the complete audit trail for a document. Shows all events including views, signatures, and modifications with timestamps.
 
 **Parameters:**
 
-- `documentId` (string, required): Document ID
+- `document_id` (string, required): Document ID
+- `limit` (number, optional): Maximum number of entries to return (1–100)
 
-**Returns:** Array of audit trail events
+**Returns:** `{ entries: ApiAuditEntry[] }`
 
 ## Upload Tools
 
 ### seal_upload_file
 
-Upload a PDF file from a local file path. Only available in stdio mode.
+Upload a PDF file from a local file path. **Only available in stdio mode** — not accessible when using the HTTP transport since it reads files from the server's filesystem.
 
 **Parameters:**
 
-- `filePath` (string, required): Absolute path to the PDF file
+- `file_path` (string, required): Absolute path to the PDF file
 
-**Returns:** Storage ID for use with `seal_create_document`
+**Returns:** `{ storage_id, file_name, file_size }` — use `storage_id` with `seal_create_document`
 
 ### seal_upload_file_content
 
-Upload a PDF using base64-encoded content. Available in all modes.
+Upload a PDF using base64-encoded content. Works in both stdio and HTTP modes.
 
 **Parameters:**
 
-- `content` (string, required): Base64-encoded PDF file content
-- `filename` (string, optional): Original filename
+- `file_name` (string, required): Original filename (e.g., `contract.pdf`)
+- `content_base64` (string, required): Base64-encoded PDF content
 
-**Returns:** Storage ID for use with `seal_create_document`
+**Returns:** `{ storage_id, file_name, file_size }` — use `storage_id` with `seal_create_document`
 
 ## Tool Categories
 
@@ -248,60 +372,69 @@ Upload a PDF using base64-encoded content. Available in all modes.
 ### Create and Send Document
 
 ```
-1. seal_upload_file / seal_upload_file_content - Upload PDF
-2. seal_create_document - Create document with storage ID
-3. seal_add_recipient - Add recipients (or seal_add_recipients_bulk)
-4. seal_send_document - Send for signing
+1. seal_upload_file / seal_upload_file_content — upload PDF
+2. seal_create_document — create document with the storage_id
+3. seal_add_recipient / seal_add_recipients_bulk — add recipients
+4. seal_send_document — send for signing
 ```
 
-### Use Template
+### Use a Template
 
 ```
-1. seal_list_templates - Find template
-2. seal_get_template_fields - Check required fields
-3. seal_use_template - Create document with field values
-4. seal_send_document - Send for signing
+1. seal_list_templates — find the template
+2. seal_get_template_fields — inspect required fields
+3. seal_use_template — create a new document from the template
+4. seal_add_recipients_bulk — add recipients
+5. seal_send_document — send for signing
 ```
 
 ### Track Document Status
 
 ```
-1. seal_list_documents - Get all documents
-2. seal_get_document - Get specific document details
-3. seal_list_recipients - Check recipient status
-4. seal_send_reminder - Send reminders if needed
+1. seal_list_documents — get all documents (filter by status)
+2. seal_get_document — get specific document with recipients
+3. seal_list_recipients — check each recipient's signing status
+4. seal_send_reminder — send nudges to pending recipients
+```
+
+### Verify Signed Document
+
+```
+1. seal_verify_document — verify cryptographic integrity
+2. seal_get_audit_trail — get full activity history
+3. seal_download_document — get the signed PDF URL
 ```
 
 ## Error Handling
 
-All tools return errors in a consistent format:
+All tools return errors in a consistent RFC 7807 format:
 
 ```json
 {
-  "error": {
-    "type": "VALIDATION_ERROR",
-    "message": "Invalid email format",
-    "details": {...}
-  }
+  "type": "VALIDATION_ERROR",
+  "status": 400,
+  "title": "Invalid email format",
+  "details": { "email": ["Must be a valid email address"] }
 }
 ```
 
 Common error types:
 
-- `VALIDATION_ERROR` - Invalid parameters
-- `NOT_FOUND` - Resource doesn't exist
-- `PERMISSION_DENIED` - Insufficient permissions
-- `RATE_LIMIT_EXCEEDED` - Too many requests
+- `VALIDATION_ERROR` — Invalid or missing parameters
+- `NOT_FOUND` — Resource doesn't exist or you lack access
+- `PERMISSION_DENIED` — Insufficient permissions
+- `RATE_LIMIT_EXCEEDED` — Too many requests
+- `AUTH_ERROR` — Missing or invalid authentication
 
 ## Rate Limits
 
 MCP tools share the same rate limits as the REST API:
 
 - **60 requests per minute**
-- **1000 requests per hour**
+- **1,000 requests per hour**
 
 ## Next Steps
 
-- **[MCP Authentication](/docs/mcp/authentication)** - OAuth setup guide
-- **[API Reference](/docs/api-reference)** - Detailed API documentation
-- **[Quick Start](/docs/getting-started/quick-start)** - Integration tutorial
+- **[MCP Authentication](/docs/mcp/authentication)** — OAuth setup guide
+- **[API Reference](/docs/api-reference)** — Detailed REST API documentation
+- **[Quick Start](/docs/getting-started/quick-start)** — Integration tutorial

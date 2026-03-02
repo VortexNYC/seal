@@ -53,7 +53,7 @@ type UpdateRecipientsBulkInput = z.infer<typeof updateRecipientsBulkSchema>;
 export function registerRecipientTools(server: McpServer, client: SealApiClient): void {
   // List recipients
   server.tool(
-    "list_recipients",
+    "seal_list_recipients",
     "List all recipients for a document. Recipients are the people who need to sign or review the document.",
     listRecipientsSchema.shape,
     async (args, extra) => {
@@ -78,7 +78,7 @@ export function registerRecipientTools(server: McpServer, client: SealApiClient)
 
   // Get recipient
   server.tool(
-    "get_recipient",
+    "seal_get_recipient",
     "Get detailed information about a specific recipient.",
     getRecipientSchema.shape,
     async (args, extra) => {
@@ -106,7 +106,7 @@ export function registerRecipientTools(server: McpServer, client: SealApiClient)
 
   // Add recipient
   server.tool(
-    "add_recipient",
+    "seal_add_recipient",
     "Add a recipient to a document. The document must be in draft status.",
     addRecipientSchema.shape,
     async (args, extra) => {
@@ -132,7 +132,7 @@ export function registerRecipientTools(server: McpServer, client: SealApiClient)
 
   // Update recipient
   server.tool(
-    "update_recipient",
+    "seal_update_recipient",
     "Update a recipient's details. The document must be in draft status.",
     updateRecipientSchema.shape,
     async (args, extra) => {
@@ -158,7 +158,7 @@ export function registerRecipientTools(server: McpServer, client: SealApiClient)
 
   // Remove recipient
   server.tool(
-    "remove_recipient",
+    "seal_remove_recipient",
     "Remove a recipient from a document. The document must be in draft status.",
     removeRecipientSchema.shape,
     async (args, extra) => {
@@ -183,7 +183,7 @@ export function registerRecipientTools(server: McpServer, client: SealApiClient)
 
   // Send reminder
   server.tool(
-    "send_reminder",
+    "seal_send_reminder",
     "Send a signing reminder to a recipient. Only works for recipients who haven't signed yet.",
     sendReminderSchema.shape,
     async (args, extra) => {
@@ -209,7 +209,7 @@ export function registerRecipientTools(server: McpServer, client: SealApiClient)
 
   // Bulk add recipients
   server.tool(
-    "add_recipients_bulk",
+    "seal_add_recipients_bulk",
     "Add multiple recipients to a document at once. Useful for setting up complex signing workflows with many participants.",
     addRecipientsBulkSchema.shape,
     async (args, extra) => {
@@ -286,7 +286,7 @@ export function registerRecipientTools(server: McpServer, client: SealApiClient)
 
   // Bulk update recipients
   server.tool(
-    "update_recipients_bulk",
+    "seal_update_recipients_bulk",
     "Update multiple recipients for a document at once. Useful for making batch changes to recipient details.",
     updateRecipientsBulkSchema.shape,
     async (args, extra) => {

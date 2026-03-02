@@ -32,7 +32,7 @@ import { getAuthToken } from "../utils/auth";
 export function registerDocumentTools(server: McpServer, client: SealApiClient): void {
   // List documents
   server.tool(
-    "list_documents",
+    "seal_list_documents",
     "List all documents in your Seal workspace with pagination. Returns document metadata including title, status, and recipient counts.",
     listDocumentsSchema.shape,
     async (args, extra) => {
@@ -57,7 +57,7 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
 
   // Get document
   server.tool(
-    "get_document",
+    "seal_get_document",
     "Get detailed information about a specific document including recipients and download URL.",
     getDocumentSchema.shape,
     async (args, extra) => {
@@ -85,7 +85,7 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
 
   // Create document
   server.tool(
-    "create_document",
+    "seal_create_document",
     "Create a new document in draft status. Requires a storage ID from a previously uploaded file.",
     createDocumentSchema.shape,
     async (args, extra) => {
@@ -120,7 +120,7 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
 
   // Update document
   server.tool(
-    "update_document",
+    "seal_update_document",
     "Update document metadata. Only works for documents in draft status.",
     updateDocumentSchema.shape,
     async (args, extra) => {
@@ -150,7 +150,7 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
 
   // Delete document
   server.tool(
-    "delete_document",
+    "seal_delete_document",
     "Delete a document. Only draft documents can be deleted. Use void_document for sent documents.",
     documentIdSchema.shape,
     async (args, extra) => {
@@ -175,7 +175,7 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
 
   // Send document
   server.tool(
-    "send_document",
+    "seal_send_document",
     "Send a document for signing. The document must be in draft status and have at least one recipient.",
     sendDocumentSchema.shape,
     async (args, extra) => {
@@ -201,7 +201,7 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
 
   // Void document
   server.tool(
-    "void_document",
+    "seal_void_document",
     "Void/cancel a document. Cannot void completed documents. All recipients will be notified.",
     voidDocumentSchema.shape,
     async (args, extra) => {
@@ -227,7 +227,7 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
 
   // Download document
   server.tool(
-    "download_document",
+    "seal_download_document",
     "Get the download URL for a document. Returns the signed PDF if available, otherwise the original.",
     documentIdSchema.shape,
     async (args, extra) => {

@@ -33,7 +33,7 @@ function isStdioMode(): boolean {
  */
 export function registerUploadTools(server: McpServer, client: SealApiClient): void {
   server.tool(
-    "upload_file",
+    "seal_upload_file",
     "Upload a PDF file to Seal storage. Returns a storage_id for use with create_document.",
     uploadFileSchema.shape,
     async (args, extra) => {
@@ -170,7 +170,7 @@ export function registerUploadTools(server: McpServer, client: SealApiClient): v
 
   // Tool for uploading base64-encoded file content (works in all modes)
   server.tool(
-    "upload_file_content",
+    "seal_upload_file_content",
     "Upload a PDF file using base64-encoded content. Works in all modes (stdio and HTTP). Returns a storage_id for use with create_document.",
     uploadFileContentSchema.shape,
     async (args, extra) => {
