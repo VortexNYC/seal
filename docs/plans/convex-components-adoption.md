@@ -18,20 +18,11 @@
 | Presence | `@convex-dev/presence` | Fully adopted — document detail page "who's viewing" avatars |
 | Timeline | `convex-timeline` | Fully adopted — undo/redo for field editor with Ctrl+Z/Ctrl+Shift+Z |
 | Migrations | `@convex-dev/migrations` | Registered but unused — `Migrations` instance exists, 0 `define()` calls |
+| Workflow | `@convex-dev/workflow` | Fully adopted — `postSignatureWorkflow` + `documentCompletionWorkflow` + `documentCancellationWorkflow` in `workflows/` |
 
 ## To Adopt — Confirmed List
 
 ### HIGH Priority
-
-#### `@convex-dev/workflow` (v0.3.4)
-
-Durable multi-step workflows that survive server restarts. Chains mutations + actions with guaranteed completion, configurable retries, delays, parallel/sequential steps, cancellation.
-
-**Seal use case:** Document signing pipeline (`draft → send emails → wait for signatures → generate signed PDF → notify owner → set retention`). Currently each step is independent `scheduler.runAfter()` calls — if any step fails mid-chain, recovery is manual. Workflow guarantees the full chain completes.
-
-**Key API:** `workflow.define()` to declare steps, `workflow.start()` from mutations, reactive status via subscriptions.
-
----
 
 #### `@convex-dev/stripe` (v0.1.3)
 

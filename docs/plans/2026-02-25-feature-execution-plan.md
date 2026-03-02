@@ -2,6 +2,7 @@
 
 > **Status:** IN PROGRESS
 > **Created:** 2026-02-25
+> **Last updated:** 2026-03-02
 > **Source:** Documenso competitive analysis → 13 design documents
 
 ## Strategy
@@ -29,9 +30,9 @@ Signing page + document schema core. Sequential — each depends on the previous
 
 | # | Feature | Design Doc | Status |
 |---|---------|-----------|--------|
-| 3 | Document Expiration | `2026-02-25-document-expiration-design.md` | NOT STARTED |
-| 4 | Custom Redirect | `2026-02-25-custom-redirect-design.md` | NOT STARTED |
-| 5 | Dictate Next Signer | `2026-02-25-dictate-next-signer-design.md` | NOT STARTED |
+| 3 | Document Expiration | `2026-02-25-document-expiration-design.md` | DONE |
+| 4 | Custom Redirect | `2026-02-25-custom-redirect-design.md` | DONE |
+| 5 | Dictate Next Signer | `2026-02-25-dictate-next-signer-design.md` | DONE |
 | 6 | Assistant Recipient Role | `2026-02-25-assistant-recipient-role-design.md` | NOT STARTED |
 
 **Why this order:** Document Expiration defines the signing page interaction order that features 4-6 follow. It also adds the `"expired"` workflow status that other features must handle. Custom Redirect is small and depends on that interaction order. Dictation and Assistant both touch the signing page and recipients schema.
