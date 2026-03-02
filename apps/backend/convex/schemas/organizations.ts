@@ -92,6 +92,9 @@ export const organizationsTable = defineTable({
   // Security policies
   securitySettings: v.optional(securitySettingsValidator),
 
+  // Allow document owners/admins to transfer document ownership to another org member
+  delegateOwnership: v.optional(v.boolean()),
+
   updatedAt: v.number(),
 })
   .index("by_slug", ["slug"])

@@ -814,3 +814,91 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
     return { success: true, versionNumber: newVersionNumber };
   },
 });
+
+// ---------------------------------------------------------------------------
+// Transfer document ownership
+// ---------------------------------------------------------------------------
+
+export const transferDocumentOwnership = permissionMutation("documents:edit")({
+  args: {
+    documentId: v.id("documents"),
+    newOwnerId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const callerId = ctx.auth.user._id;
+    const isAdmin = ctx.auth.isAdmin();
+    const isOwner = ctx.auth.isOwner();
+
+    const document = await ctx.db.get(args.documentId);
+    if (!document || document.status === "deleted") {
+      throw new ConvexError("Document not found");
+    }
+
+    // Only the document owner or an org admin/owner can transfer
+    if (document.ownerId !== callerId && !isAdmin && !isOwner) {
+      throw new ConvexError("Only the document owner or an admin can transfer ownership");
+    }
+
+    // Org must have delegate ownership enabled
+    const org = await ctx.db.get(document.organizationId);
+    if (!org?.delegateOwnership) {
+      throw new ConvexError("Document ownership transfer is not enabled for this organization");
+    }
+
+    // New owner must be a member of the same org
+    const newOwner = await ctx.db.get(args.newOwnerId);
+    if (!newOwner) {
+      throw new ConvexError("Target user not found");
+    }
+    const membership = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user_organization", (q) =>
+        q.eq("userId", args.newOwnerId).eq("organizationId", document.organizationId),
+      )
+      .unique();
+    if (!membership) {
+      throw new ConvexError("Target user is not a member of this organization");
+    }
+
+    // Cannot transfer to the current owner
+    if (document.ownerId === args.newOwnerId) {
+      throw new ConvexError("Target user is already the document owner");
+    }
+
+    // Only allow transfer on non-active-signing documents
+    const status = document.workflowStatus ?? "draft";
+    if (status === "sent" || status === "in_progress") {
+      throw new ConvexError(
+        "Cannot transfer ownership of a document that is currently being signed",
+      );
+    }
+
+    await ctx.db.patch(args.documentId, {
+      ownerId: args.newOwnerId,
+      updatedAt: Date.now(),
+    });
+
+    await logDocumentAction(ctx, {
+      organizationId: document.organizationId,
+      userId: ctx.auth.user.clerkId,
+      action: "document.ownership_transferred",
+      documentId: args.documentId,
+      description: `Ownership transferred to ${newOwner.name ?? newOwner.email}`,
+      ipAddress: "unknown",
+    });
+
+    // Notify the new owner via email
+    await ctx.scheduler.runAfter(
+      0,
+      internal.documents.ownership_transfer_action.sendOwnershipTransferredEmail,
+      {
+        documentId: args.documentId,
+        newOwnerEmail: newOwner.email,
+        newOwnerName: newOwner.name ?? newOwner.email,
+        documentName: document.name,
+      },
+    );
+
+    return { success: true };
+  },
+});

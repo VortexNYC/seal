@@ -1154,3 +1154,19 @@ export const resetOrgSettings = adminMutation({
     return { success: true };
   },
 });
+
+// ---------------------------------------------------------------------------
+// Delegate ownership setting (admin-only)
+// ---------------------------------------------------------------------------
+
+export const updateDelegateOwnership = adminMutation({
+  args: {
+    enabled: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(ctx.auth.organization._id, {
+      delegateOwnership: args.enabled,
+      updatedAt: Date.now(),
+    });
+  },
+});

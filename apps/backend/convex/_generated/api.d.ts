@@ -89,6 +89,7 @@ import type * as documents_extract_text_action from "../documents/extract_text_a
 import type * as documents_generate_fillable_pdf from "../documents/generate_fillable_pdf.js";
 import type * as documents_hash_document_action from "../documents/hash_document_action.js";
 import type * as documents_mutations from "../documents/mutations.js";
+import type * as documents_ownership_transfer_action from "../documents/ownership_transfer_action.js";
 import type * as documents_pdf_form_generator from "../documents/pdf_form_generator.js";
 import type * as documents_queries from "../documents/queries.js";
 import type * as documents_recipient_email_action from "../documents/recipient_email_action.js";
@@ -316,6 +317,7 @@ declare const fullApi: ApiFromModules<{
   "documents/generate_fillable_pdf": typeof documents_generate_fillable_pdf;
   "documents/hash_document_action": typeof documents_hash_document_action;
   "documents/mutations": typeof documents_mutations;
+  "documents/ownership_transfer_action": typeof documents_ownership_transfer_action;
   "documents/pdf_form_generator": typeof documents_pdf_form_generator;
   "documents/queries": typeof documents_queries;
   "documents/recipient_email_action": typeof documents_recipient_email_action;

@@ -7,7 +7,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { KeyRound, Save, Shield } from "lucide-react";
+import { ArrowRightLeft, KeyRound, Save, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -37,8 +37,11 @@ function SecuritySettings() {
   );
 
   const updateSecuritySettings = useMutation(api.organizations.mutations.updateSecuritySettings);
+  const updateDelegateOwnership = useMutation(api.organizations.mutations.updateDelegateOwnership);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDelegateOwnershipUpdating, setIsDelegateOwnershipUpdating] = useState(false);
+  const [delegateOwnership, setDelegateOwnership] = useState(false);
   const [formData, setFormData] = useState({
     ipAllowlistText: "",
     allowApiAccess: true,
@@ -57,7 +60,30 @@ function SecuritySettings() {
     }
   }, [securitySettings]);
 
+  useEffect(() => {
+    if (organization) {
+      setDelegateOwnership(organization.delegateOwnership ?? false);
+    }
+  }, [organization]);
+
   const isOwner = organization?.userRole === "owner";
+  const isAdmin = organization?.userRole === "admin" || organization?.userRole === "owner";
+
+  const handleDelegateOwnershipChange = async (checked: boolean) => {
+    setIsDelegateOwnershipUpdating(true);
+    try {
+      setDelegateOwnership(checked);
+      await updateDelegateOwnership({ enabled: checked });
+      toast.success(checked ? "Ownership transfer enabled" : "Ownership transfer disabled");
+    } catch (error) {
+      setDelegateOwnership(!checked);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update ownership transfer setting",
+      );
+    } finally {
+      setIsDelegateOwnershipUpdating(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,6 +236,38 @@ function SecuritySettings() {
               rows={4}
             />
             <p className="text-muted-foreground mt-2 text-xs">One CIDR range per line</p>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <ArrowRightLeft className="size-5" />
+              <CardTitle>Document Ownership Transfer</CardTitle>
+            </div>
+            <CardDescription>
+              Allow document owners to transfer ownership of their documents to other organization
+              members.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="delegate-ownership" className="text-sm font-medium">
+                  Enable ownership transfer
+                </Label>
+                <p className="text-muted-foreground text-xs">
+                  When enabled, document owners and admins can reassign document ownership to any
+                  organization member.
+                </p>
+              </div>
+              <Switch
+                id="delegate-ownership"
+                checked={delegateOwnership}
+                disabled={!isAdmin || isDelegateOwnershipUpdating}
+                onCheckedChange={handleDelegateOwnershipChange}
+              />
+            </div>
           </CardContent>
         </Card>
 

@@ -22,6 +22,7 @@ export const auditActionTuple = v.union(
   v.literal("document.completed"),
   v.literal("document.cancelled"),
   v.literal("document.expired"),
+  v.literal("document.ownership_transferred"),
 
   // Signature field actions
   v.literal("field.created"),

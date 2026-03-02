@@ -13,6 +13,10 @@ import { DocumentViewed, type DocumentViewedProps } from "./emails/document-view
 import { SigningComplete, type SigningCompleteProps } from "./emails/signing-complete.js";
 import { TeamInvitation, type TeamInvitationProps } from "./emails/team-invitation.js";
 import { Welcome, type WelcomeProps } from "./emails/welcome.js";
+import {
+  OwnershipTransferred,
+  type OwnershipTransferredProps,
+} from "./emails/ownership-transferred.js";
 
 // Re-export components for direct use
 export {
@@ -26,6 +30,7 @@ export {
   SigningComplete,
   TeamInvitation,
   Welcome,
+  OwnershipTransferred,
 };
 
 // Re-export types
@@ -40,6 +45,7 @@ export type {
   DocumentViewedProps,
   TeamInvitationProps,
   WelcomeProps,
+  OwnershipTransferredProps,
 };
 
 /**
@@ -112,4 +118,13 @@ export async function renderDocumentExpirationAlert(
  */
 export async function renderDocumentViewed(props: DocumentViewedProps): Promise<string> {
   return render(<DocumentViewed {...props} />);
+}
+
+/**
+ * Render OwnershipTransferred email to HTML string
+ */
+export async function renderOwnershipTransferred(
+  props: OwnershipTransferredProps,
+): Promise<string> {
+  return render(<OwnershipTransferred {...props} />);
 }

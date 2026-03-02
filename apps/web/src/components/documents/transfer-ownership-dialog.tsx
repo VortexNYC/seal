@@ -1,0 +1,133 @@
+import { useMutation, useQuery } from "convex/react";
+import { ArrowRightLeftIcon, AlertTriangleIcon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface TransferOwnershipDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  documentId: Id<"documents">;
+  documentName: string;
+  currentOwnerId: Id<"users">;
+  sharingMode: string;
+  slug: string;
+}
+
+export function TransferOwnershipDialog({
+  open,
+  onOpenChange,
+  documentId,
+  documentName,
+  currentOwnerId,
+  sharingMode,
+  slug,
+}: TransferOwnershipDialogProps) {
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const organization = useQuery(api.organizations.queries.getOrganization, { slug });
+  const members = useQuery(
+    api.organizations.queries.getOrganizationMembers,
+    organization ? { organizationId: organization._id } : "skip",
+  );
+
+  const transferOwnership = useMutation(api.documents.mutations.transferDocumentOwnership);
+
+  const eligibleMembers = members?.filter((m) => m.userId !== currentOwnerId) ?? [];
+  const isPrivate = sharingMode === "private";
+
+  const handleTransfer = async () => {
+    if (!selectedUserId) return;
+    setIsSubmitting(true);
+    try {
+      await transferOwnership({
+        documentId,
+        newOwnerId: selectedUserId as Id<"users">,
+      });
+      toast.success("Document ownership transferred successfully");
+      onOpenChange(false);
+      setSelectedUserId("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to transfer ownership");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30">
+            <ArrowRightLeftIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <DialogTitle className="text-center">Transfer Ownership</DialogTitle>
+          <DialogDescription className="text-center">
+            Transfer ownership of <span className="font-medium">{documentName}</span> to another
+            organization member.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="new-owner">New owner</Label>
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger id="new-owner">
+                <SelectValue placeholder="Select a member..." />
+              </SelectTrigger>
+              <SelectContent>
+                {eligibleMembers.map((member) => (
+                  <SelectItem key={member.userId} value={member.userId}>
+                    <span className="font-medium">{member.name ?? member.email}</span>
+                    <span className="text-muted-foreground ml-2 text-xs capitalize">
+                      {member.role}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isPrivate && selectedUserId && (
+            <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+              <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                This document's sharing mode is <strong>Private</strong>. After transfer, you will
+                lose access to this document.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button onClick={handleTransfer} disabled={!selectedUserId || isSubmitting}>
+            {isSubmitting ? "Transferring..." : "Transfer Ownership"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

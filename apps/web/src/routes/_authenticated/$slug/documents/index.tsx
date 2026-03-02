@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import Fuse, { type FuseResultMatch } from "fuse.js";
 import {
   ArrowDownIcon,
+  ArrowRightLeftIcon,
   ArrowUpIcon,
   BanIcon,
   CalendarIcon,
@@ -32,6 +33,7 @@ import { toast } from "sonner";
 
 import { DocumentThumbnail } from "@/components/documents/document-thumbnail";
 import { ShareDocumentDialog } from "@/components/documents/share-document-dialog";
+import { TransferOwnershipDialog } from "@/components/documents/transfer-ownership-dialog";
 import { UploadDialog } from "@/components/documents/upload-dialog";
 import { WorkflowStatusBadge } from "@/components/documents/workflow-status-badge";
 import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
@@ -176,6 +178,15 @@ interface DocumentsListProps {
   onUploadClick: () => void;
   /** Open move-to-folder dialog for a document */
   onMoveToFolder: (documentId: Id<"documents">) => void;
+  /** Whether the org has ownership transfer enabled */
+  delegateOwnership: boolean;
+  /** Open transfer ownership dialog for a document */
+  onTransferOwnership: (doc: {
+    _id: Id<"documents">;
+    name: string;
+    ownerId: Id<"users">;
+    sharingMode: string;
+  }) => void;
 }
 
 function DocumentsList({
@@ -192,6 +203,8 @@ function DocumentsList({
   onSortChange,
   onUploadClick,
   onMoveToFolder,
+  delegateOwnership,
+  onTransferOwnership,
 }: DocumentsListProps) {
   const { slug } = Route.useParams();
   const router = useRouter();
@@ -605,6 +618,12 @@ function DocumentsList({
                               <FolderInputIcon className="mr-2 h-4 w-4" />
                               Move to Folder
                             </DropdownMenuItem>
+                            {delegateOwnership && (
+                              <DropdownMenuItem onClick={() => onTransferOwnership(doc)}>
+                                <ArrowRightLeftIcon className="mr-2 h-4 w-4" />
+                                Transfer Ownership
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               onClick={() => handleDelete(doc._id)}
                               className="text-destructive"
@@ -839,6 +858,13 @@ function DocumentsPage() {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<Id<"documents"> | null>(null);
   const [selectedDocumentName, setSelectedDocumentName] = useState("");
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [transferDocument, setTransferDocument] = useState<{
+    id: Id<"documents">;
+    name: string;
+    ownerId: Id<"users">;
+    sharingMode: string;
+  } | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
   const [workflowStatusFilter, setWorkflowStatusFilter] = useState<WorkflowStatusFilter>("all");
   const [refreshKey, setRefreshKey] = useState(0);
@@ -917,6 +943,16 @@ function DocumentsPage() {
     setSelectedDocumentId(documentId);
     setSelectedDocumentName(documentName);
     setShareDialogOpen(true);
+  };
+
+  const handleTransferOwnership = (doc: {
+    _id: Id<"documents">;
+    name: string;
+    ownerId: Id<"users">;
+    sharingMode: string;
+  }) => {
+    setTransferDocument({ id: doc._id, name: doc.name, ownerId: doc.ownerId, sharingMode: doc.sharingMode });
+    setTransferDialogOpen(true);
   };
 
   return (
@@ -1255,6 +1291,8 @@ function DocumentsPage() {
                 onSortChange={handleSortChange}
                 onUploadClick={() => setUploadOpen(true)}
                 onMoveToFolder={handleMoveToFolder}
+                delegateOwnership={organization.delegateOwnership ?? false}
+                onTransferOwnership={handleTransferOwnership}
               />
             </Suspense>
           </div>
@@ -1284,6 +1322,18 @@ function DocumentsPage() {
         type="document"
         onMove={handleMoveConfirm}
       />
+
+      {transferDocument && (
+        <TransferOwnershipDialog
+          open={transferDialogOpen}
+          onOpenChange={setTransferDialogOpen}
+          documentId={transferDocument.id}
+          documentName={transferDocument.name}
+          currentOwnerId={transferDocument.ownerId}
+          sharingMode={transferDocument.sharingMode}
+          slug={slug}
+        />
+      )}
     </PageWrapper>
   );
 }
