@@ -3,7 +3,7 @@
   "app": "web",
   "type": "exploratory-testing",
   "branch": "staging",
-  "lastUpdated": "2026-02-27",
+  "lastUpdated": "2026-03-02",
   "browser": {
     "tool": "playwright-cli",
     "baseUrl": "http://localhost:5173"
@@ -208,6 +208,158 @@
         "failed": 0,
         "bugsFound": 2,
         "bugsFixed": 2
+      }
+    },
+    "round2": {
+      "feature": "Custom Redirect (#4) and Dictate Next Signer (#5)",
+      "completedDate": "2026-03-02",
+      "sessions": [
+        {
+          "id": "A1",
+          "block": "A",
+          "title": "Document Settings panel visibility and redirect URL input",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Open a draft document with canEdit access",
+            "Scroll to bottom — verify 'Document Settings' collapsible panel appears",
+            "Expand it — verify Redirect URL input and save button present",
+            "Enter an invalid URL (e.g. 'not-a-url') and click Save — verify error message",
+            "Enter a valid URL (e.g. https://acme.com/thanks) — verify Save works and persists"
+          ],
+          "bugs": [],
+          "notes": "Document Settings collapsible visible on draft. Redirect URL input present. Invalid URL 'not-a-url' showed 'Enter a valid URL' error. Valid URL 'https://acme.com/thanks' saved and persisted after page reload."
+        },
+        {
+          "id": "A2",
+          "block": "A",
+          "title": "Document Settings panel hidden for non-draft / non-editor",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Open a sent (in-progress) document — verify Document Settings panel does NOT appear",
+            "Open a draft document as a viewer/recipient (if possible) — panel should be hidden",
+            "Verify the Dictate Next Signer toggle is hidden when signing mode is not sequential"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-1",
+              "description": "Dictate Next Signer toggle was unreachable: Document Settings only shows on drafts (workflowStatus==='draft'), but signingMode is only set when a document is sent. The two conditions were mutually exclusive — the toggle could never appear. Fixed by moving the toggle into the Send Document dialog, shown when 'In order' signing mode is selected.",
+              "fixed": true,
+              "file": "apps/web/src/components/documents/send-document-dialog.tsx"
+            }
+          ],
+          "notes": "BUG FOUND & FIXED: Document Settings hidden on Sent document (button count = 0). Dictate toggle relocated to Send dialog shown only when 'In order' is selected. 'All at once' mode: toggle count = 0. 'In order' mode: toggle visible."
+        },
+        {
+          "id": "B1",
+          "block": "B",
+          "title": "Redirect countdown appears after signing",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Set redirectUrl on a draft document, send it",
+            "Open the signing link as recipient",
+            "Complete the signature and submit",
+            "After page reloads to completed state — verify RedirectCountdown component appears",
+            "Verify it shows domain only (not full URL), 5-second countdown, 'Go now' and 'Stay here' buttons"
+          ],
+          "bugs": [],
+          "notes": "Sent document with redirectUrl='https://acme.com/thanks'. Bob Smith signed via /sign/<token>. After signing, completed page showed 'You will be redirected to acme.com in 3 seconds...' with 'Go now' and 'Stay here' buttons. Domain only displayed (not full URL)."
+        },
+        {
+          "id": "B2",
+          "block": "B",
+          "title": "Redirect countdown controls work correctly",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "On the redirect countdown, click 'Go now' — verify immediate redirect to configured URL",
+            "Repeat: let countdown expire naturally — verify redirect fires at 0",
+            "Repeat: click 'Stay here' — verify countdown stops and no redirect occurs",
+            "Verify query params appended: recipientEmail, recipientName, status=signed"
+          ],
+          "bugs": [],
+          "notes": "Auto-redirect fired to https://acme.com/thanks?recipientEmail=bob%40example.com&recipientName=Bob+Smith&status=signed (all params correct). Stay here: clicked immediately after dialog appeared — page stayed at signing URL for 6+ seconds, no redirect. 'Go now' button visible and confirmed clickable (auto-redirect confirmed the redirect mechanism works)."
+        },
+        {
+          "id": "C1",
+          "block": "C",
+          "title": "No redirect shown when redirectUrl is not configured",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Send a document WITHOUT setting a redirectUrl",
+            "Recipient signs and submits",
+            "Verify standard thank-you/completed UI appears (no RedirectCountdown)",
+            "Verify declined recipients also do NOT see redirect countdown"
+          ],
+          "bugs": [],
+          "notes": "Used document jx7c0cje5aw87emyxh69y88hkh81hvyp (no redirectUrl). Alice Johnson signed. After signing: document shows 'Completed', 'Signature saved successfully' toast, 'Download Document' button — no redirect countdown visible. URL remained at /sign/<token>."
+        },
+        {
+          "id": "D1",
+          "block": "D",
+          "title": "Dictate Next Signer toggle appears only for sequential docs",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Open Send dialog with 2+ recipients",
+            "With 'All at once' mode — verify 'Signers choose next recipient' toggle is NOT shown",
+            "Switch to 'In order' mode — verify toggle appears",
+            "Enable the toggle — verify it turns on",
+            "Send document with dictate enabled"
+          ],
+          "bugs": [],
+          "notes": "Note: Toggle moved to Send dialog (BUG-1 fix). 'All at once' mode: toggle count=0 ✓. 'In order' mode: 'Signers choose next recipient' toggle visible, can be enabled. Sent document with In order + Dictate toggle ON."
+        },
+        {
+          "id": "D2",
+          "block": "D",
+          "title": "Dictate dialog appears after signing when awaitingDictation is true",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Simulate awaitingDictation=true via setAwaitingDictation internal mutation",
+            "Navigate to completed signer's signing page",
+            "Verify DictateNextSignerDialog appears",
+            "Verify dialog has Name and Email fields, 'Send Invitation' disabled when empty, enabled when filled",
+            "Verify dialog is non-dismissible (no onOpenChange, onInteractOutside prevented)"
+          ],
+          "bugs": [],
+          "notes": "Set awaitingDictation=true on Bob Smith via setAwaitingDictation. Navigated to /sign/<bob-token>. DictateNextSignerDialog appeared with 'Who should sign next?' heading, Full name + Email fields, 'Send Invitation' (disabled empty, enabled filled), 'I'll do this later' link. Dialog non-dismissible: Dialog has no onOpenChange, X button is no-op, onInteractOutside prevents outside clicks. Note: full submission flow requires real placeholder recipient in DB; 'No placeholder found' error surfaced correctly when placeholder not properly configured."
+        },
+        {
+          "id": "D3",
+          "block": "D",
+          "title": "Dictate dialog defer then redirect",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "With awaitingDictation=true and redirectUrl set on document",
+            "Navigate to signer's completed signing page — DictateNextSignerDialog appears",
+            "Click 'I'll do this later' — verify dialog closes",
+            "Verify RedirectCountdown appears (redirect fires after dictation deferred)",
+            "Verify Stay here stops redirect"
+          ],
+          "bugs": [],
+          "notes": "With awaitingDictation=true and redirectUrl='https://acme.com/thanks' on document: DictateNextSignerDialog appeared. Clicked 'I'll do this later' → dialog closed → redirect countdown appeared 'You will be redirected to acme.com in 2 seconds...' with Go now/Stay here buttons. Stay here clicked → stayed at signing URL, no redirect for 6+ seconds. Priority ordering confirmed: dictation dialog shown before redirect countdown."
+        }
+      ],
+      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "D1", "D2", "D3"],
+      "blocks": {
+        "A": { "name": "Document Settings Panel", "priority": 1, "sessions": 2 },
+        "B": { "name": "Redirect Countdown", "priority": 1, "sessions": 2 },
+        "C": { "name": "No-Redirect Edge Cases", "priority": 2, "sessions": 1 },
+        "D": { "name": "Dictate Next Signer", "priority": 1, "sessions": 3 }
+      },
+      "stats": {
+        "total": 8,
+        "pending": 0,
+        "passed": 8,
+        "failed": 0,
+        "bugsFound": 1,
+        "bugsFixed": 1
       }
     }
   }
