@@ -34,6 +34,7 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 
 interface SendDocumentDialogProps {
@@ -89,6 +90,7 @@ export function SendDocumentDialog({
 
   // Signing mode: parallel (all at once) or sequential (by order groups)
   const [signingMode, setSigningMode] = useState<"parallel" | "sequential">("parallel");
+  const [allowDictateNextSigner, setAllowDictateNextSigner] = useState(false);
 
   // Check if any recipients have order values set (enables sequential option)
   const hasOrderValues = recipients.some((r) => r.order !== undefined && r.order !== 0);
@@ -164,6 +166,8 @@ export function SendDocumentDialog({
         recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
         expirationPeriod,
         signingMode: signingMode === "sequential" ? "sequential" : undefined,
+        allowDictateNextSigner:
+          signingMode === "sequential" && allowDictateNextSigner ? true : undefined,
       });
 
       if (result.success) {
@@ -179,6 +183,7 @@ export function SendDocumentDialog({
         setCustomAmount(defaultDeadlineDays ?? 30);
         setCustomUnit("day");
         setSigningMode("parallel");
+        setAllowDictateNextSigner(false);
       } else {
         toast.error(
           `Failed to send to ${result.emailsFailed} recipient${result.emailsFailed !== 1 ? "s" : ""}`,
@@ -384,6 +389,20 @@ export function SendDocumentDialog({
                   Recipients will sign in the order listed above. To customize the order, set order
                   values on recipients before sending.
                 </p>
+              )}
+              {signingMode === "sequential" && (
+                <div className="mt-3 flex items-start justify-between gap-4 rounded-md border p-3">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Signers choose next recipient</Label>
+                    <p className="text-muted-foreground text-xs">
+                      Allow each signer to designate who signs after them.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={allowDictateNextSigner}
+                    onCheckedChange={setAllowDictateNextSigner}
+                  />
+                </div>
               )}
             </div>
           )}

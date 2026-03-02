@@ -81,6 +81,7 @@ export const markDocumentAsSent = internalMutation({
     deadline: v.optional(v.number()), // SEA-119: Signing deadline
     userId: v.optional(v.string()), // Clerk ID for audit trail
     signingMode: v.optional(v.union(v.literal("parallel"), v.literal("sequential"))),
+    allowDictateNextSigner: v.optional(v.boolean()),
     expirationPeriod: v.optional(
       v.object({
         amount: v.number(),
@@ -198,6 +199,9 @@ export const markDocumentAsSent = internalMutation({
       ...(document.workflowStatus === "expired" && { expiredAt: undefined }),
       ...(args.deadline && { deadline: args.deadline }), // SEA-119: Save deadline if provided
       ...(args.signingMode && { signingMode: args.signingMode }),
+      ...(args.allowDictateNextSigner !== undefined && {
+        allowDictateNextSigner: args.allowDictateNextSigner,
+      }),
       ...(args.expirationPeriod && { expirationPeriod: args.expirationPeriod }),
     });
 
@@ -249,6 +253,7 @@ export const sendDocumentEmails = action({
     ), // SEA-119: Per-recipient custom messages
     deadline: v.optional(v.number()), // SEA-119: Signing deadline timestamp
     signingMode: v.optional(v.union(v.literal("parallel"), v.literal("sequential"))),
+    allowDictateNextSigner: v.optional(v.boolean()),
     expirationPeriod: v.optional(
       v.object({
         amount: v.number(),
@@ -461,6 +466,7 @@ export const sendDocumentEmails = action({
         deadline: computedDeadline, // SEA-119: Pass deadline to be saved
         userId: senderUser?.clerkId,
         signingMode: args.signingMode,
+        allowDictateNextSigner: args.allowDictateNextSigner,
         expirationPeriod: args.expirationPeriod,
       });
     }

@@ -85,7 +85,6 @@ import {
 } from "../../../../components/ui/collapsible";
 import { Input } from "../../../../components/ui/input";
 import { Label } from "../../../../components/ui/label";
-import { Switch } from "../../../../components/ui/switch";
 
 // SEA-72: Configure PDF.js worker
 // Use unpkg CDN which has reliable pdf.js worker files
@@ -285,10 +284,6 @@ function DocumentDetailPage() {
   const [redirectUrlInput, setRedirectUrlInput] = useState(documentData.redirectUrl ?? "");
   const [redirectUrlError, setRedirectUrlError] = useState<string | null>(null);
   const [isSavingRedirect, setIsSavingRedirect] = useState(false);
-  const [allowDictateNextSigner, setAllowDictateNextSigner] = useState(
-    documentData.allowDictateNextSigner ?? false,
-  );
-
   const handleSaveRedirectUrl = async () => {
     const url = redirectUrlInput.trim();
     if (url) {
@@ -315,19 +310,6 @@ function DocumentDetailPage() {
       toast.error(err instanceof Error ? err.message : "Failed to save redirect URL");
     } finally {
       setIsSavingRedirect(false);
-    }
-  };
-
-  const handleToggleDictateNextSigner = async (enabled: boolean) => {
-    setAllowDictateNextSigner(enabled);
-    try {
-      await updateDocument({
-        documentId: documentId as Id<"documents">,
-        allowDictateNextSigner: enabled,
-      });
-    } catch {
-      setAllowDictateNextSigner(!enabled);
-      toast.error("Failed to update setting");
     }
   };
 
@@ -1620,23 +1602,6 @@ function DocumentDetailPage() {
                         )}
                       </div>
 
-                      {/* Dictate Next Signer — sequential mode only */}
-                      {documentData.signingMode === "sequential" && (
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="space-y-1">
-                            <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                              Signers choose next recipient
-                            </Label>
-                            <p className="text-muted-foreground text-xs">
-                              Allow each signer to designate who signs after them.
-                            </p>
-                          </div>
-                          <Switch
-                            checked={allowDictateNextSigner}
-                            onCheckedChange={handleToggleDictateNextSigner}
-                          />
-                        </div>
-                      )}
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
