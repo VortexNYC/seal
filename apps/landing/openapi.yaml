@@ -1,0 +1,1305 @@
+openapi: 3.1.0
+info:
+  title: Seal API
+  description: >
+    The Seal REST API lets you programmatically manage documents, templates,
+    recipients, and signatures. All endpoints are authenticated using API keys
+    issued from your Seal organization settings.
+  version: 1.0.0
+  contact:
+    name: Seal Support
+    url: https://seal.app
+
+servers:
+  - url: https://api.seal.app/api/v1
+    description: Production
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Pass your API key as a Bearer token. API keys are scoped to specific
+        operations — configure scopes in your organization's Settings → Developer
+        → API Keys.
+
+  schemas:
+    DocumentStatus:
+      type: string
+      enum: [draft, sent, in_progress, completed, cancelled, declined]
+      description: Current workflow status of a document
+
+    RecipientRole:
+      type: string
+      enum: [signer, approver, viewer]
+      description: |
+        - `signer` — must provide a signature to complete the document
+        - `approver` — must click Approve; no signature drawn
+        - `viewer` — receives a copy but has no action required
+
+    RecipientStatus:
+      type: string
+      enum: [pending, viewed, signed, approved, declined]
+
+    TemplateStatus:
+      type: string
+      enum: [active, archived]
+
+    SignatureMethod:
+      type: string
+      enum: [draw, type, upload]
+
+    FieldType:
+      type: string
+      enum: [signature, text, date, checkbox, dropdown, radio, attachment]
+
+    Document:
+      type: object
+      required: [id, title, status, created_at, updated_at, recipients_count, signed_count]
+      properties:
+        id:
+          type: string
+          description: Unique document identifier
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        recipients_count:
+          type: integer
+          description: Total number of recipients
+        signed_count:
+          type: integer
+          description: Number of recipients who have completed their action
+        deadline:
+          type: string
+          format: date-time
+          description: Signing deadline
+        download_url:
+          type: string
+          format: uri
+          description: Pre-signed URL to download the document PDF
+        recipients:
+          type: array
+          items:
+            $ref: '#/components/schemas/Recipient'
+          description: Recipient list (only included when include_recipients=true)
+
+    Recipient:
+      type: object
+      required: [id, email, name, role, status]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/RecipientRole'
+        status:
+          $ref: '#/components/schemas/RecipientStatus'
+        order:
+          type: integer
+          description: Position in sequential signing order
+        signed_at:
+          type: string
+          format: date-time
+        viewed_at:
+          type: string
+          format: date-time
+        declined_at:
+          type: string
+          format: date-time
+        decline_reason:
+          type: string
+
+    Template:
+      type: object
+      required: [id, name, status, created_at, updated_at, use_count]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/TemplateStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        use_count:
+          type: integer
+          description: Number of documents created from this template
+        field_count:
+          type: integer
+
+    TemplateField:
+      type: object
+      required: [id, field_type, is_required, page, x, y, width, height]
+      properties:
+        id:
+          type: string
+        field_type:
+          $ref: '#/components/schemas/FieldType'
+        label:
+          type: string
+        is_required:
+          type: boolean
+        page:
+          type: integer
+          description: Page number (1-indexed)
+        x:
+          type: number
+          description: X position as a fraction of page width (0–1)
+        y:
+          type: number
+          description: Y position as a fraction of page height (0–1)
+        width:
+          type: number
+          description: Width as a fraction of page width (0–1)
+        height:
+          type: number
+          description: Height as a fraction of page height (0–1)
+        properties:
+          type: object
+          properties:
+            placeholder:
+              type: string
+            default_value:
+              type: string
+            options:
+              type: array
+              items:
+                type: string
+
+    Signature:
+      type: object
+      required: [id, field_id, recipient_id, document_id, signature_method, signed_at]
+      properties:
+        id:
+          type: string
+        field_id:
+          type: string
+        recipient_id:
+          type: string
+        document_id:
+          type: string
+        signature_method:
+          $ref: '#/components/schemas/SignatureMethod'
+        signed_at:
+          type: string
+          format: date-time
+        signature_image_url:
+          type: string
+          format: uri
+        signature_hash:
+          type: string
+          description: SHA-256 hash of the signature data
+        ip_address:
+          type: string
+        user_agent:
+          type: string
+
+    AuditEntry:
+      type: object
+      required: [id, event_type, timestamp]
+      properties:
+        id:
+          type: string
+        event_type:
+          type: string
+          description: >
+            Dot-separated action identifier, e.g. `document.viewed`,
+            `recipient.signed`, `document.completed`
+        actor_email:
+          type: string
+          format: email
+        actor_name:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        ip_address:
+          type: string
+        user_agent:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    VerificationResult:
+      type: object
+      required: [is_valid, document_hash, signatures, verification_timestamp]
+      properties:
+        is_valid:
+          type: boolean
+          description: True if all signatures are cryptographically valid
+        document_hash:
+          type: string
+          description: SHA-256 hash of the current document
+        verification_timestamp:
+          type: string
+          format: date-time
+        signatures:
+          type: array
+          items:
+            type: object
+            required: [id, recipient_email, is_valid, signed_at, signature_hash]
+            properties:
+              id:
+                type: string
+              recipient_email:
+                type: string
+                format: email
+              is_valid:
+                type: boolean
+              signed_at:
+                type: string
+                format: date-time
+              signature_hash:
+                type: string
+
+    PaginatedDocuments:
+      type: object
+      required: [data, has_more]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+
+    PaginatedTemplates:
+      type: object
+      required: [data, has_more]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Template'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+
+    Error:
+      type: object
+      required: [type, status, title]
+      properties:
+        type:
+          type: string
+          description: Machine-readable error code
+          example: VALIDATION_ERROR
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        title:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+          description: Field-level validation errors
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: AUTH_ERROR
+            status: 401
+            title: Missing or invalid API key
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: NOT_FOUND
+            status: 404
+            title: Document not found
+    ValidationError:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: VALIDATION_ERROR
+            status: 400
+            title: Validation failed
+            details:
+              email: [Must be a valid email address]
+
+tags:
+  - name: Documents
+    description: Create, manage, and send documents for signing
+  - name: Recipients
+    description: Manage the people who sign or review a document
+  - name: Templates
+    description: Reusable document layouts that speed up your workflow
+  - name: Signatures
+    description: Access signature data and verify document integrity
+  - name: Uploads
+    description: Upload PDF files for use with the Documents API
+  - name: Webhooks
+    description: Receive real-time events when document state changes
+
+paths:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Documents
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /documents:
+    get:
+      tags: [Documents]
+      operationId: listDocuments
+      summary: List documents
+      description: >
+        Returns a paginated list of documents in your organization. Use the
+        `next_cursor` from the response to fetch the next page.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from the previous response
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/DocumentStatus'
+          description: Filter documents by status
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDocuments'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Documents]
+      operationId: createDocument
+      summary: Create a document
+      description: >
+        Creates a new document in `draft` status. You must first upload the PDF
+        with the Uploads API to obtain a `storage_id`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, storage_id, file_size]
+              properties:
+                title:
+                  type: string
+                  description: Document title displayed to recipients
+                description:
+                  type: string
+                storage_id:
+                  type: string
+                  description: Storage ID returned by the Uploads API
+                file_size:
+                  type: integer
+                  description: File size in bytes
+                file_type:
+                  type: string
+                  default: application/pdf
+                page_count:
+                  type: integer
+                  description: Number of pages in the document
+                deadline:
+                  type: string
+                  format: date-time
+                  description: Signing deadline — recipients cannot sign after this date
+            example:
+              title: Service Agreement Q1 2026
+              storage_id: kg2a7b3c8d9e0f1a2b3c
+              file_size: 245760
+              page_count: 3
+      responses:
+        '200':
+          description: Document created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id]
+                properties:
+                  id:
+                    type: string
+              example:
+                id: j572a8b1c2d3e4f5a6b7
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /documents/get:
+    get:
+      tags: [Documents]
+      operationId: getDocument
+      summary: Get a document
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Document ID
+        - name: include_recipients
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include recipient list in response
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /documents/update:
+    put:
+      tags: [Documents]
+      operationId: updateDocument
+      summary: Update a document
+      description: Updates document metadata. Only works for `draft` documents.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                deadline:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /documents/delete:
+    delete:
+      tags: [Documents]
+      operationId: deleteDocument
+      summary: Delete a document
+      description: >
+        Permanently deletes a draft document. For sent documents, use
+        `POST /documents/void` instead.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /documents/send:
+    post:
+      tags: [Documents]
+      operationId: sendDocument
+      summary: Send a document
+      description: >
+        Sends the document to all recipients and transitions it from `draft` to
+        `sent`. The document must have at least one recipient.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Custom message included in the invitation email
+      responses:
+        '200':
+          description: Sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /documents/void:
+    post:
+      tags: [Documents]
+      operationId: voidDocument
+      summary: Void a document
+      description: >
+        Cancels a document and notifies all recipients. Cannot void a document
+        that is already `completed`.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  description: Reason for voiding the document
+      responses:
+        '200':
+          description: Voided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /documents/download:
+    get:
+      tags: [Documents]
+      operationId: downloadDocument
+      summary: Get download URL
+      description: >
+        Returns a short-lived pre-signed URL to download the document. If the
+        document is completed, this returns the signed PDF. Otherwise it returns
+        the original uploaded file.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: string
+                    format: uri
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Recipients
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /recipients:
+    get:
+      tags: [Recipients]
+      operationId: listRecipients
+      summary: List recipients
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recipients:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Recipient'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [Recipients]
+      operationId: addRecipient
+      summary: Add a recipient
+      description: Adds a recipient to a draft document.
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, name, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                name:
+                  type: string
+                role:
+                  $ref: '#/components/schemas/RecipientRole'
+                order:
+                  type: integer
+                  description: Signing order position for sequential workflows
+                message:
+                  type: string
+                  description: Custom message for this recipient's invitation email
+            example:
+              email: jane@acme.com
+              name: Jane Smith
+              role: signer
+              order: 1
+      responses:
+        '200':
+          description: Recipient added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /recipients/get:
+    get:
+      tags: [Recipients]
+      operationId: getRecipient
+      summary: Get a recipient
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipient'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /recipients/update:
+    put:
+      tags: [Recipients]
+      operationId: updateRecipient
+      summary: Update a recipient
+      description: Updates a recipient on a draft document.
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                role:
+                  $ref: '#/components/schemas/RecipientRole'
+                order:
+                  type: integer
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /recipients/delete:
+    delete:
+      tags: [Recipients]
+      operationId: removeRecipient
+      summary: Remove a recipient
+      description: Removes a recipient from a draft document.
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /recipients/remind:
+    post:
+      tags: [Recipients]
+      operationId: sendReminder
+      summary: Send a reminder
+      description: >
+        Sends a reminder email to a recipient who has not yet completed their
+        action. Only works for `sent` or `in_progress` documents.
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Custom reminder message
+      responses:
+        '200':
+          description: Reminder sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Templates
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /templates:
+    get:
+      tags: [Templates]
+      operationId: listTemplates
+      summary: List templates
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TemplateStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTemplates'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Templates]
+      operationId: createTemplate
+      summary: Create a template
+      description: >
+        Creates a reusable template from an existing completed document. The
+        document's field layout is copied to the template.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_id, name]
+              properties:
+                document_id:
+                  type: string
+                  description: Source document ID to create the template from
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /templates/get:
+    get:
+      tags: [Templates]
+      operationId: getTemplate
+      summary: Get a template
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: include_fields
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include field definitions in response
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /templates/fields:
+    get:
+      tags: [Templates]
+      operationId: getTemplateFields
+      summary: Get template fields
+      description: >
+        Returns all field definitions for a template. Fields define where
+        signatures, text inputs, and other data entry points are located on
+        the document.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fields:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TemplateField'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /templates/update:
+    put:
+      tags: [Templates]
+      operationId: updateTemplate
+      summary: Update a template
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                status:
+                  $ref: '#/components/schemas/TemplateStatus'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /templates/delete:
+    delete:
+      tags: [Templates]
+      operationId: deleteTemplate
+      summary: Delete a template
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /templates/use:
+    post:
+      tags: [Templates]
+      operationId: useTemplate
+      summary: Create document from template
+      description: >
+        Creates a new draft document pre-populated with the template's field
+        layout. Add recipients and send when ready.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: Title for the new document (defaults to template name)
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Document created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Signatures
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /signatures:
+    get:
+      tags: [Signatures]
+      operationId: listSignatures
+      summary: List signatures
+      description: Returns all signatures collected for a document.
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signatures:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Signature'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /signatures/get:
+    get:
+      tags: [Signatures]
+      operationId: getSignature
+      summary: Get a signature
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Signature'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /signatures/verify:
+    get:
+      tags: [Signatures]
+      operationId: verifyDocument
+      summary: Verify document integrity
+      description: >
+        Verifies the cryptographic integrity of all signatures on a document.
+        Returns whether the document has been tampered with since it was signed.
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /signatures/audit:
+    get:
+      tags: [Signatures]
+      operationId: getAuditTrail
+      summary: Get audit trail
+      description: >
+        Returns the complete activity log for a document, including when it was
+        viewed, signed, completed, and any other notable events.
+      parameters:
+        - name: document_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Uploads
+  # ──────────────────────────────────────────────────────────────────────────
+
+  /uploads/generate-url:
+    post:
+      tags: [Uploads]
+      operationId: generateUploadUrl
+      summary: Generate upload URL
+      description: >
+        Returns a short-lived upload URL for uploading a PDF to Seal's storage.
+        Upload the file with a `POST` request using `Content-Type: application/pdf`,
+        then pass the returned `storage_id` to `POST /documents`.
+      responses:
+        '200':
+          description: Upload URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [upload_url]
+                properties:
+                  upload_url:
+                    type: string
+                    format: uri
+                    description: Pre-signed URL — expires in 60 seconds
+        '401':
+          $ref: '#/components/responses/Unauthorized'
