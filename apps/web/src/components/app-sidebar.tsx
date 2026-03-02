@@ -243,6 +243,11 @@ function buildNavSections({
       visible: canView(permissionFlags?.canViewSettings),
     },
     {
+      title: "Audit Log",
+      url: buildOrganizationPath(slug, "/settings/audit-log"),
+      visible: canView(permissionFlags?.canViewSettings),
+    },
+    {
       title: "Billing",
       url: buildOrganizationPath(slug, "/settings/billing"),
       visible:

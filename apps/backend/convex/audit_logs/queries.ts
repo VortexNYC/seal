@@ -10,9 +10,10 @@
 import { ConvexError, v } from "convex/values";
 
 import { internalQuery, query } from "../_generated/server";
-import { authQuery } from "../auth";
+import { adminQuery, authQuery } from "../auth";
 import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
 import { generateSignatureCertificate } from "../crypto/helpers";
+import { auditActionTuple } from "../schemas/audit_logs";
 import { findRecipientByToken } from "../documents/recipient_helpers";
 
 /**
@@ -302,5 +303,47 @@ export const getSigningSessionAuditTrail = query({
       })),
       recipientStatus: recipient.status,
     };
+  },
+});
+
+/**
+ * List organization audit logs with filters
+ * Admin/owner only. Used by the Audit Log settings page.
+ */
+export const listOrgAuditLogs = adminQuery({
+  args: {
+    dateFrom: v.optional(v.number()),
+    dateTo: v.optional(v.number()),
+    actions: v.optional(v.array(auditActionTuple)),
+    actorUserId: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const orgId = ctx.auth.organization._id;
+    const fetchLimit = Math.min((args.limit ?? 100) * 5, 1000);
+
+    const logs = await ctx.db
+      .query("audit_logs")
+      .withIndex("by_organization_created", (q) => {
+        const base = q.eq("organizationId", orgId);
+        if (args.dateFrom !== undefined && args.dateTo !== undefined) {
+          return base.gte("createdAt", args.dateFrom).lte("createdAt", args.dateTo);
+        }
+        if (args.dateFrom !== undefined) return base.gte("createdAt", args.dateFrom);
+        if (args.dateTo !== undefined) return base.lte("createdAt", args.dateTo);
+        return base;
+      })
+      .order("desc")
+      .take(fetchLimit);
+
+    let filtered = logs;
+    if (args.actions && args.actions.length > 0) {
+      filtered = filtered.filter((l) => args.actions!.includes(l.action));
+    }
+    if (args.actorUserId) {
+      filtered = filtered.filter((l) => l.userId === args.actorUserId);
+    }
+
+    return filtered.slice(0, args.limit ?? 100);
   },
 });

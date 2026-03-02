@@ -24,4 +24,5 @@ export {
   getDocumentAuditLogs,
   getOrganizationAuditLogs,
   getSigningSessionAuditTrail,
+  listOrgAuditLogs,
 } from "./queries";
