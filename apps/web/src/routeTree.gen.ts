@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as VerifyQrTokenRouteImport } from './routes/verify.$qrToken'
 import { Route as SignTokenRouteImport } from './routes/sign.$token'
 import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
@@ -80,6 +81,11 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyQrTokenRoute = VerifyQrTokenRouteImport.update({
+  id: '/verify/$qrToken',
+  path: '/verify/$qrToken',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignTokenRoute = SignTokenRouteImport.update({
@@ -349,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof AuthSignUpRoute
   '/$slug': typeof AuthenticatedSlugRouteWithChildren
   '/sign/$token': typeof SignTokenRoute
+  '/verify/$qrToken': typeof VerifyQrTokenRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
   '/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
@@ -397,6 +404,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/sign/$token': typeof SignTokenRoute
+  '/verify/$qrToken': typeof VerifyQrTokenRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
   '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
@@ -444,6 +452,7 @@ export interface FileRoutesById {
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_authenticated/$slug': typeof AuthenticatedSlugRouteWithChildren
   '/sign/$token': typeof SignTokenRoute
+  '/verify/$qrToken': typeof VerifyQrTokenRoute
   '/_authenticated/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/_authenticated/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
   '/_authenticated/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
@@ -495,6 +504,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/$slug'
     | '/sign/$token'
+    | '/verify/$qrToken'
     | '/$slug/analytics'
     | '/$slug/contacts'
     | '/$slug/documents'
@@ -543,6 +553,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/sign/$token'
+    | '/verify/$qrToken'
     | '/$slug/analytics'
     | '/$slug/home'
     | '/$slug/templates'
@@ -589,6 +600,7 @@ export interface FileRouteTypes {
     | '/_auth/sign-up'
     | '/_authenticated/$slug'
     | '/sign/$token'
+    | '/verify/$qrToken'
     | '/_authenticated/$slug/analytics'
     | '/_authenticated/$slug/contacts'
     | '/_authenticated/$slug/documents'
@@ -637,6 +649,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   LogoTestRoute: typeof LogoTestRoute
   SignTokenRoute: typeof SignTokenRoute
+  VerifyQrTokenRoute: typeof VerifyQrTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -674,6 +687,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$qrToken': {
+      id: '/verify/$qrToken'
+      path: '/verify/$qrToken'
+      fullPath: '/verify/$qrToken'
+      preLoaderRoute: typeof VerifyQrTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign/$token': {
@@ -1191,6 +1211,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   LogoTestRoute: LogoTestRoute,
   SignTokenRoute: SignTokenRoute,
+  VerifyQrTokenRoute: VerifyQrTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

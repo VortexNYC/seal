@@ -1,6 +1,6 @@
 # QR Code Verification Certificate — Design Document
 
-> **Status:** NOT STARTED
+> **Status:** DONE
 
 ## Goal
 

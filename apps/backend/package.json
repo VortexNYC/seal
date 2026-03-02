@@ -35,12 +35,14 @@
     "convex": "catalog:",
     "convex-helpers": "^0.1.111",
     "convex-timeline": "^0.1.2",
+    "nanoid": "^5.1.6",
     "node-forge": "^1.3.3",
     "pdf-lib": "^1.17.1",
     "resend": "^6.8.0",
     "stripe": "^20.2.0",
     "svix": "^1.84.1",
     "unpdf": "^1.4.0",
+    "uqr": "^0.1.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {

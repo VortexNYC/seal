@@ -45,7 +45,7 @@ All 5 features are independent — zero file conflicts. Can run as parallel work
 
 | # | Feature | Design Doc | Status |
 |---|---------|-----------|--------|
-| 7 | QR Code Certificate | `2026-02-25-qr-code-certificate-design.md` | NOT STARTED |
+| 7 | QR Code Certificate | `2026-02-25-qr-code-certificate-design.md` | DONE |
 | 8 | Direct Link Templates | `2026-02-25-direct-link-templates-design.md` | NOT STARTED |
 | 9 | Delegate Ownership | `2026-02-25-delegate-ownership-design.md` | NOT STARTED |
 | 10 | Custom Email Domain | `2026-02-25-custom-email-domain-design.md` | NOT STARTED |

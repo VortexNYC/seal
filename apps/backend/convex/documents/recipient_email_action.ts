@@ -6,6 +6,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
+import { nanoid } from "nanoid";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
@@ -36,6 +37,8 @@ export const markDocumentAsCompleted = internalMutation({
         completedAt: now,
         updatedAt: now,
         retainUntil: now + SEVEN_YEARS_MS,
+        qrToken: nanoid(24),
+        qrTokenGeneratedAt: now,
       });
     }
 

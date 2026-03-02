@@ -13,6 +13,7 @@
 
 import { ConvexError, v } from "convex/values";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { encode as encodeQr } from "uqr";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
@@ -23,11 +24,16 @@ const PAGE_HEIGHT = 841.89;
 const MARGIN = 50;
 const CONTENT_WIDTH = PAGE_WIDTH - 2 * MARGIN;
 
+const QR_SIZE = 72; // points (1 inch)
+const QR_CAPTION = "Scan to verify";
+
 interface CertificateData {
   document: Doc<"documents">;
   recipients: Doc<"document_recipients">[];
   auditLogs: Doc<"audit_logs">[];
   documentHash?: string;
+  qrToken?: string;
+  verifyBaseUrl: string;
 }
 
 /**
@@ -276,6 +282,53 @@ async function generateCertificatePdf(data: CertificateData): Promise<Uint8Array
     },
   );
 
+  // --- QR Code (bottom-right corner of first page) ---
+  if (data.qrToken) {
+    const verifyUrl = `${data.verifyBaseUrl}/verify/${data.qrToken}`;
+    const qr = encodeQr(verifyUrl, { ecc: "Q" });
+    const firstPage = pdfDoc.getPage(0);
+    const moduleSize = QR_SIZE / qr.size;
+    // Quiet zone: 4 modules of white padding
+    const quietZone = 4 * moduleSize;
+    const totalSize = QR_SIZE + quietZone * 2;
+    const qrX = PAGE_WIDTH - MARGIN - totalSize;
+    const qrY = MARGIN + 12; // caption height offset
+
+    // White background (quiet zone)
+    firstPage.drawRectangle({
+      x: qrX,
+      y: qrY,
+      width: totalSize,
+      height: totalSize,
+      color: rgb(1, 1, 1),
+    });
+
+    // Draw QR modules
+    for (let row = 0; row < qr.size; row++) {
+      for (let col = 0; col < qr.size; col++) {
+        if (qr.data[row * qr.size + col]) {
+          firstPage.drawRectangle({
+            x: qrX + quietZone + col * moduleSize,
+            y: qrY + quietZone + (qr.size - 1 - row) * moduleSize, // flip Y axis (PDF origin is bottom-left)
+            width: moduleSize,
+            height: moduleSize,
+            color: rgb(0, 0, 0),
+          });
+        }
+      }
+    }
+
+    // Caption below QR
+    const captionWidth = helvetica.widthOfTextAtSize(QR_CAPTION, 7);
+    firstPage.drawText(QR_CAPTION, {
+      x: qrX + (totalSize - captionWidth) / 2,
+      y: MARGIN,
+      size: 7,
+      font: helvetica,
+      color: rgb(0.4, 0.4, 0.4),
+    });
+  }
+
   return pdfDoc.save();
 }
 
@@ -331,6 +384,8 @@ export const generateCertificate = internalAction({
       recipients,
       auditLogs,
       documentHash: document.documentHash ?? undefined,
+      qrToken: document.qrToken ?? undefined,
+      verifyBaseUrl: process.env.SITE_URL ?? "https://app.seal.so",
     });
 
     // 5. Upload to Convex Storage

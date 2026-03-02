@@ -108,6 +108,10 @@ export const documentsTable = defineTable({
   // Signing mode: parallel (all at once) or sequential (enforce order groups)
   signingMode: v.optional(signingModeTuple),
 
+  // QR code verification token (generated on document completion)
+  qrToken: v.optional(v.string()),
+  qrTokenGeneratedAt: v.optional(v.number()),
+
   // Embedded signing configuration (iFrame SDK)
   embeddingConfig: v.optional(
     v.object({
@@ -138,4 +142,5 @@ export const documentsTable = defineTable({
     filterFields: ["organizationId", "status"],
   })
   .index("by_folder", ["folderId"])
-  .index("by_org_folder", ["organizationId", "folderId"]);
+  .index("by_org_folder", ["organizationId", "folderId"])
+  .index("by_qr_token", ["qrToken"]);

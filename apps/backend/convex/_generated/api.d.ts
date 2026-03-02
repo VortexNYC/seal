@@ -103,6 +103,7 @@ import type * as documents_sharing from "../documents/sharing.js";
 import type * as documents_sharing_cleanup from "../documents/sharing_cleanup.js";
 import type * as documents_sign_pdf_action from "../documents/sign_pdf_action.js";
 import type * as documents_upload_config from "../documents/upload_config.js";
+import type * as documents_verification from "../documents/verification.js";
 import type * as documents_version_helpers from "../documents/version_helpers.js";
 import type * as documents_viewed_notification_action from "../documents/viewed_notification_action.js";
 import type * as documents_workflow_helpers from "../documents/workflow_helpers.js";
@@ -329,6 +330,7 @@ declare const fullApi: ApiFromModules<{
   "documents/sharing_cleanup": typeof documents_sharing_cleanup;
   "documents/sign_pdf_action": typeof documents_sign_pdf_action;
   "documents/upload_config": typeof documents_upload_config;
+  "documents/verification": typeof documents_verification;
   "documents/version_helpers": typeof documents_version_helpers;
   "documents/viewed_notification_action": typeof documents_viewed_notification_action;
   "documents/workflow_helpers": typeof documents_workflow_helpers;
