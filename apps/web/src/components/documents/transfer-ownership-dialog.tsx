@@ -3,8 +3,6 @@ import { ArrowRightLeftIcon, AlertTriangleIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 interface TransferOwnershipDialogProps {
   open: boolean;

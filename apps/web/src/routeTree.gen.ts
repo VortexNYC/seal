@@ -40,6 +40,7 @@ import { Route as AuthenticatedSlugSettingsPaymentsRouteImport } from './routes/
 import { Route as AuthenticatedSlugSettingsNotificationsRouteImport } from './routes/_authenticated/$slug/settings/notifications'
 import { Route as AuthenticatedSlugSettingsBrandingRouteImport } from './routes/_authenticated/$slug/settings/branding'
 import { Route as AuthenticatedSlugSettingsBillingRouteImport } from './routes/_authenticated/$slug/settings/billing'
+import { Route as AuthenticatedSlugSettingsAuditLogRouteImport } from './routes/_authenticated/$slug/settings/audit-log'
 import { Route as AuthenticatedSlugSettingsAiRouteImport } from './routes/_authenticated/$slug/settings/ai'
 import { Route as AuthenticatedSlugPaymentsTaxRouteImport } from './routes/_authenticated/$slug/payments/tax'
 import { Route as AuthenticatedSlugPaymentsSubscriptionsRouteImport } from './routes/_authenticated/$slug/payments/subscriptions'
@@ -231,6 +232,12 @@ const AuthenticatedSlugSettingsBillingRoute =
     path: '/settings/billing',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
+const AuthenticatedSlugSettingsAuditLogRoute =
+  AuthenticatedSlugSettingsAuditLogRouteImport.update({
+    id: '/settings/audit-log',
+    path: '/settings/audit-log',
+    getParentRoute: () => AuthenticatedSlugRoute,
+  } as any)
 const AuthenticatedSlugSettingsAiRoute =
   AuthenticatedSlugSettingsAiRouteImport.update({
     id: '/settings/ai',
@@ -372,6 +379,7 @@ export interface FileRoutesByFullPath {
   '/$slug/payments/subscriptions': typeof AuthenticatedSlugPaymentsSubscriptionsRoute
   '/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
   '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
+  '/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
   '/$slug/settings/notifications': typeof AuthenticatedSlugSettingsNotificationsRoute
@@ -418,6 +426,7 @@ export interface FileRoutesByTo {
   '/$slug/payments/subscriptions': typeof AuthenticatedSlugPaymentsSubscriptionsRoute
   '/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
   '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
+  '/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
   '/$slug/settings/notifications': typeof AuthenticatedSlugSettingsNotificationsRoute
@@ -469,6 +478,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/payments/subscriptions': typeof AuthenticatedSlugPaymentsSubscriptionsRoute
   '/_authenticated/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
   '/_authenticated/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
+  '/_authenticated/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
   '/_authenticated/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
   '/_authenticated/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
   '/_authenticated/$slug/settings/notifications': typeof AuthenticatedSlugSettingsNotificationsRoute
@@ -521,6 +531,7 @@ export interface FileRouteTypes {
     | '/$slug/payments/subscriptions'
     | '/$slug/payments/tax'
     | '/$slug/settings/ai'
+    | '/$slug/settings/audit-log'
     | '/$slug/settings/billing'
     | '/$slug/settings/branding'
     | '/$slug/settings/notifications'
@@ -567,6 +578,7 @@ export interface FileRouteTypes {
     | '/$slug/payments/subscriptions'
     | '/$slug/payments/tax'
     | '/$slug/settings/ai'
+    | '/$slug/settings/audit-log'
     | '/$slug/settings/billing'
     | '/$slug/settings/branding'
     | '/$slug/settings/notifications'
@@ -617,6 +629,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/payments/subscriptions'
     | '/_authenticated/$slug/payments/tax'
     | '/_authenticated/$slug/settings/ai'
+    | '/_authenticated/$slug/settings/audit-log'
     | '/_authenticated/$slug/settings/billing'
     | '/_authenticated/$slug/settings/branding'
     | '/_authenticated/$slug/settings/notifications'
@@ -869,6 +882,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/billing'
       fullPath: '/$slug/settings/billing'
       preLoaderRoute: typeof AuthenticatedSlugSettingsBillingRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/settings/audit-log': {
+      id: '/_authenticated/$slug/settings/audit-log'
+      path: '/settings/audit-log'
+      fullPath: '/$slug/settings/audit-log'
+      preLoaderRoute: typeof AuthenticatedSlugSettingsAuditLogRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
     '/_authenticated/$slug/settings/ai': {
@@ -1140,6 +1160,7 @@ interface AuthenticatedSlugRouteChildren {
   AuthenticatedSlugTemplatesRoute: typeof AuthenticatedSlugTemplatesRoute
   AuthenticatedSlugIndexRoute: typeof AuthenticatedSlugIndexRoute
   AuthenticatedSlugSettingsAiRoute: typeof AuthenticatedSlugSettingsAiRoute
+  AuthenticatedSlugSettingsAuditLogRoute: typeof AuthenticatedSlugSettingsAuditLogRoute
   AuthenticatedSlugSettingsBillingRoute: typeof AuthenticatedSlugSettingsBillingRoute
   AuthenticatedSlugSettingsBrandingRoute: typeof AuthenticatedSlugSettingsBrandingRoute
   AuthenticatedSlugSettingsNotificationsRoute: typeof AuthenticatedSlugSettingsNotificationsRoute
@@ -1163,6 +1184,8 @@ const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
   AuthenticatedSlugTemplatesRoute: AuthenticatedSlugTemplatesRoute,
   AuthenticatedSlugIndexRoute: AuthenticatedSlugIndexRoute,
   AuthenticatedSlugSettingsAiRoute: AuthenticatedSlugSettingsAiRoute,
+  AuthenticatedSlugSettingsAuditLogRoute:
+    AuthenticatedSlugSettingsAuditLogRoute,
   AuthenticatedSlugSettingsBillingRoute: AuthenticatedSlugSettingsBillingRoute,
   AuthenticatedSlugSettingsBrandingRoute:
     AuthenticatedSlugSettingsBrandingRoute,

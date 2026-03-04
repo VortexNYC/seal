@@ -11,6 +11,7 @@ import { FileTextIcon, Loader2Icon, SaveIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { getErrorMessage } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -71,8 +72,7 @@ export function SaveAsTemplateDialog({
       setName(`${documentName} Template`);
       setDescription("");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to save template";
-      toast.error(errorMessage);
+      toast.error(getErrorMessage(error));
     } finally {
       setIsSaving(false);
     }

@@ -26,7 +26,11 @@ interface ParsedError {
  * Parse a Convex error and return a user-friendly message
  */
 export function parseConvexError(error: unknown): ParsedError {
-  const message = error instanceof Error ? error.message : String(error);
+  const rawMessage = error instanceof Error ? error.message : String(error);
+  // Strip the "[CONVEX M(...)] Server Error Uncaught ConvexError: ... at <stack>" prefix
+  // to get just the human-readable message for all error types.
+  const convexMatch = rawMessage.match(/ConvexError:\s*(.+?)(?:\s+at\s+\w|\s+Called by client|$)/s);
+  const message = convexMatch ? convexMatch[1].trim() : rawMessage;
   const lowerMessage = message.toLowerCase();
 
   // Permission errors
@@ -54,7 +58,8 @@ export function parseConvexError(error: unknown): ParsedError {
     return {
       type: "subscription",
       message,
-      userFriendlyMessage: message, // These are already user-friendly
+      userFriendlyMessage:
+        message || "This feature requires a Pro plan. Please upgrade to continue.",
     };
   }
 

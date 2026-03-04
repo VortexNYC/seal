@@ -951,7 +951,12 @@ function DocumentsPage() {
     ownerId: Id<"users">;
     sharingMode: string;
   }) => {
-    setTransferDocument({ id: doc._id, name: doc.name, ownerId: doc.ownerId, sharingMode: doc.sharingMode });
+    setTransferDocument({
+      id: doc._id,
+      name: doc.name,
+      ownerId: doc.ownerId,
+      sharingMode: doc.sharingMode,
+    });
     setTransferDialogOpen(true);
   };
 

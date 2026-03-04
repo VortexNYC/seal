@@ -1625,6 +1625,7 @@ function SigningPage() {
         onOpenChange={(open) => !open && handleCancelSignature()}
       >
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
+          <DialogTitle className="sr-only">Sign Document</DialogTitle>
           <SignatureCapture
             recipientName={recipient.name}
             onSignatureCapture={handleSignatureCapture}

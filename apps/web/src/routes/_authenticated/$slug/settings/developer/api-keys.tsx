@@ -56,6 +56,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import { getErrorMessage } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/developer/api-keys")({
@@ -70,7 +71,14 @@ type ClerkApiScope =
   | "seal:templates:write"
   | "seal:recipients:read"
   | "seal:recipients:write"
-  | "seal:signatures:read";
+  | "seal:signatures:read"
+  | "seal:webhooks:manage"
+  | "seal:members:read"
+  | "seal:settings:read"
+  | "seal:settings:write"
+  | "seal:audit:read"
+  | "seal:contacts:read"
+  | "seal:contacts:write";
 
 const AVAILABLE_SCOPES: {
   value: ClerkApiScope;
@@ -119,6 +127,48 @@ const AVAILABLE_SCOPES: {
     label: "Read Signatures",
     description: "View signature data and verification",
     icon: Shield,
+  },
+  {
+    value: "seal:webhooks:manage",
+    label: "Manage Webhooks",
+    description: "Create, update, and delete webhook endpoints",
+    icon: Shield,
+  },
+  {
+    value: "seal:members:read",
+    label: "Read Members",
+    description: "View organization members and their roles",
+    icon: Users,
+  },
+  {
+    value: "seal:settings:read",
+    label: "Read Settings",
+    description: "View organization settings and configuration",
+    icon: Lock,
+  },
+  {
+    value: "seal:settings:write",
+    label: "Write Settings",
+    description: "Update organization settings and configuration",
+    icon: Lock,
+  },
+  {
+    value: "seal:audit:read",
+    label: "Read Audit Log",
+    description: "View organization audit log and activity history",
+    icon: Shield,
+  },
+  {
+    value: "seal:contacts:read",
+    label: "Read Contacts",
+    description: "View organization contacts",
+    icon: Users,
+  },
+  {
+    value: "seal:contacts:write",
+    label: "Write Contacts",
+    description: "Create, update, and delete contacts",
+    icon: Users,
   },
 ];
 
@@ -217,7 +267,7 @@ function ApiKeysPage() {
       }
     } catch (error) {
       console.error("Failed to create API key:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to create API key");
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -245,7 +295,7 @@ function ApiKeysPage() {
       await fetchApiKeys();
     } catch (error) {
       console.error("Failed to revoke API key:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to revoke API key");
+      toast.error(getErrorMessage(error));
     }
   };
 

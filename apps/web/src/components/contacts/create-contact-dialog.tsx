@@ -5,9 +5,12 @@
  * Checks for duplicate emails and shows a warning toast if one exists.
  */
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,8 +21,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -36,30 +46,36 @@ interface CreateContactDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface FormErrors {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-}
+const createContactSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.email("Please enter a valid email address"),
+  phone: z.string().optional(),
+  company: z.string().optional(),
+  title: z.string().optional(),
+  status: z.enum(["active", "inactive", "lead"]),
+  notes: z.string().optional(),
+});
 
-function validateEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+type CreateContactFormValues = z.infer<typeof createContactSchema>;
 
 export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogProps) {
   const createContact = useMutation(api.contacts.mutations.create);
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [company, setCompany] = useState("");
-  const [title, setTitle] = useState("");
-  const [status, setStatus] = useState<ContactStatus>("active");
-  const [notes, setNotes] = useState("");
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailToCheck, setEmailToCheck] = useState("");
+
+  const form = useForm<CreateContactFormValues>({
+    resolver: zodResolver(createContactSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      company: "",
+      title: "",
+      status: "active",
+      notes: "",
+    },
+  });
 
   const existingContact = useQuery(
     api.contacts.queries.getByEmail,
@@ -68,57 +84,25 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
 
   const duplicateWarning = emailToCheck && existingContact;
 
-  const resetForm = () => {
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPhone("");
-    setCompany("");
-    setTitle("");
-    setStatus("active");
-    setNotes("");
-    setErrors({});
-    setEmailToCheck("");
-  };
-
-  const validate = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    if (!firstName.trim()) {
-      newErrors.firstName = "First name is required";
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+      setEmailToCheck("");
     }
+  }, [open, form]);
 
-    if (!lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    }
-
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!validateEmail(email.trim())) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validate()) return;
-
-    setIsSubmitting(true);
-
+  const handleSubmit = async (values: CreateContactFormValues) => {
     try {
       const result = await createContact({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim(),
-        phone: phone.trim() || undefined,
-        company: company.trim() || undefined,
-        title: title.trim() || undefined,
-        status,
-        notes: notes.trim() || undefined,
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        email: values.email.trim(),
+        phone: values.phone?.trim() || undefined,
+        company: values.company?.trim() || undefined,
+        title: values.title?.trim() || undefined,
+        status: values.status as ContactStatus,
+        notes: values.notes?.trim() || undefined,
       });
 
       if (result.isDuplicate) {
@@ -127,168 +111,188 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
         toast.success("Contact created");
       }
 
-      resetForm();
       onOpenChange(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to create contact";
       toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
     }
-  };
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      resetForm();
-    }
-    onOpenChange(nextOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Contact</DialogTitle>
           <DialogDescription>Create a new contact for your organization.</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">
-                First Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="firstName"
-                value={firstName}
-                onChange={(e) => {
-                  setFirstName(e.target.value);
-                  if (errors.firstName) setErrors((prev) => ({ ...prev, firstName: undefined }));
-                }}
-                placeholder="John"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      First Name <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="John" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.firstName && <p className="text-destructive text-sm">{errors.firstName}</p>}
+
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Last Name <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="lastName">
-                Last Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="lastName"
-                value={lastName}
-                onChange={(e) => {
-                  setLastName(e.target.value);
-                  if (errors.lastName) setErrors((prev) => ({ ...prev, lastName: undefined }));
-                }}
-                placeholder="Doe"
-              />
-              {errors.lastName && <p className="text-destructive text-sm">{errors.lastName}</p>}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">
-              Email <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
-              }}
-              onBlur={() => {
-                const trimmed = email.trim();
-                if (trimmed && validateEmail(trimmed)) {
-                  setEmailToCheck(trimmed);
-                } else {
-                  setEmailToCheck("");
-                }
-              }}
-              placeholder="john@example.com"
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Email <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="john@example.com"
+                      {...field}
+                      onBlur={(e) => {
+                        field.onBlur();
+                        const trimmed = e.target.value.trim();
+                        const valid = createContactSchema.shape.email.safeParse(trimmed).success;
+                        setEmailToCheck(valid ? trimmed : "");
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  {duplicateWarning && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      A contact with this email already exists.
+                    </p>
+                  )}
+                </FormItem>
+              )}
             />
-            {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
-            {duplicateWarning && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                A contact with this email already exists.
-              </p>
-            )}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 (555) 000-0000"
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormControl>
+                    <Input type="tel" placeholder="+1 (555) 000-0000" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="company">Company</Label>
-              <Input
-                id="company"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder="Acme Inc."
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="company"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Acme Inc." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="CEO" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="CEO"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select value={status} onValueChange={(value) => setStatus(value as ContactStatus)}>
-              <SelectTrigger id="status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="lead">Lead</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes about this contact..."
-              rows={3}
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="lead">Lead</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Contact"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add any notes about this contact..."
+                      rows={3}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={form.formState.isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Creating..." : "Create Contact"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

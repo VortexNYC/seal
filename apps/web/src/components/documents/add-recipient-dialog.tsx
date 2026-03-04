@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "convex/react";
 import { CheckIcon, Loader2Icon, UsersIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { cn, getErrorMessage } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
@@ -21,6 +22,10 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+
+const outsiderSchema = z.object({
+  email: z.email("Please enter a valid email address"),
+});
 
 interface AddRecipientDialogProps {
   documentId: Id<"documents">;
@@ -61,6 +66,7 @@ export function AddRecipientDialog({
   const [role, setRole] = useState<"signer" | "viewer" | "approver">("signer");
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const members = useQuery(
     api.organizations.queries.getOrganizationMembers,
@@ -112,10 +118,12 @@ export function AddRecipientDialog({
       recipientEmail = selectedMember.email.toLowerCase().trim();
       recipientName = selectedMember.name || undefined;
     } else {
-      if (!email || !email.includes("@")) {
-        toast.error("Please enter a valid email address");
+      const validation = outsiderSchema.safeParse({ email: email.trim() });
+      if (!validation.success) {
+        setEmailError(validation.error.issues[0].message);
         return;
       }
+      setEmailError(null);
       recipientEmail = email.toLowerCase().trim();
       recipientName = name.trim() || undefined;
     }
@@ -248,6 +256,7 @@ export function AddRecipientDialog({
                     onChange={(e) => {
                       setEmail(e.target.value);
                       setShowSuggestions(true);
+                      if (emailError) setEmailError(null);
                     }}
                     onFocus={() => setShowSuggestions(true)}
                     onBlur={() => {
@@ -284,6 +293,7 @@ export function AddRecipientDialog({
                   )}
                 </div>
               </div>
+              {emailError && <p className="text-destructive text-sm">{emailError}</p>}
 
               <div className="space-y-2">
                 <Label htmlFor="name">Name (Optional)</Label>

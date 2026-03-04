@@ -7,13 +7,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import {
-  DownloadIcon,
-  FileTextIcon,
-  ShieldCheckIcon,
-  UserIcon,
-  UsersIcon,
-} from "lucide-react";
+import { DownloadIcon, FileTextIcon, ShieldCheckIcon, UserIcon, UsersIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
@@ -192,7 +186,15 @@ type AuditLogRow = {
 };
 
 function downloadCsv(rows: AuditLogRow[]) {
-  const headers = ["Date", "Action", "Actor Type", "User ID", "Document ID", "IP Address", "Description"];
+  const headers = [
+    "Date",
+    "Action",
+    "Actor Type",
+    "User ID",
+    "Document ID",
+    "IP Address",
+    "Description",
+  ];
   const lines = [
     headers.join(","),
     ...rows.map((r) =>
@@ -270,8 +272,7 @@ function AuditLogPage() {
     limit: 200,
   });
 
-  const isAdmin =
-    organization?.userRole === "admin" || organization?.userRole === "owner";
+  const isAdmin = organization?.userRole === "admin" || organization?.userRole === "owner";
 
   if (!isAdmin) {
     return (
@@ -307,14 +308,20 @@ function AuditLogPage() {
                     size="sm"
                     onClick={() => setDatePreset(p)}
                   >
-                    {p === "7d" ? "Last 7 days" : p === "30d" ? "Last 30 days" : p === "90d" ? "Last 90 days" : "Custom"}
+                    {p === "7d"
+                      ? "Last 7 days"
+                      : p === "30d"
+                        ? "Last 30 days"
+                        : p === "90d"
+                          ? "Last 90 days"
+                          : "Custom"}
                   </Button>
                 ))}
               </div>
               {datePreset === "custom" && (
                 <div className="flex gap-2">
                   <div className="flex-1 space-y-1">
-                    <Label className="text-xs text-muted-foreground">From</Label>
+                    <Label className="text-muted-foreground text-xs">From</Label>
                     <Input
                       type="date"
                       value={customFrom}
@@ -322,7 +329,7 @@ function AuditLogPage() {
                     />
                   </div>
                   <div className="flex-1 space-y-1">
-                    <Label className="text-xs text-muted-foreground">To</Label>
+                    <Label className="text-muted-foreground text-xs">To</Label>
                     <Input
                       type="date"
                       value={customTo}
@@ -378,7 +385,9 @@ function AuditLogPage() {
         {/* Results */}
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-sm">
-            {logs !== undefined ? `${logs.length} event${logs.length !== 1 ? "s" : ""}` : "Loading…"}
+            {logs !== undefined
+              ? `${logs.length} event${logs.length !== 1 ? "s" : ""}`
+              : "Loading…"}
           </p>
           <Button
             variant="outline"
@@ -467,10 +476,7 @@ function AuditLogTableRow({
 
   return (
     <>
-      <TableRow
-        className="hover:bg-muted/50 cursor-pointer"
-        onClick={() => setExpanded((v) => !v)}
-      >
+      <TableRow className="hover:bg-muted/50 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
         <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
           <span title={new Date(log.createdAt).toLocaleString()}>
             {relativeTime(log.createdAt)}
@@ -489,18 +495,18 @@ function AuditLogTableRow({
         </TableCell>
         <TableCell className="hidden lg:table-cell">
           {log.documentId ? (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
               <FileTextIcon className="h-3.5 w-3.5 shrink-0" />
-              <span className="font-mono truncate max-w-[120px]">{log.documentId.slice(-8)}</span>
+              <span className="max-w-[120px] truncate font-mono">{log.documentId.slice(-8)}</span>
             </div>
           ) : (
             <span className="text-muted-foreground text-xs">—</span>
           )}
         </TableCell>
-        <TableCell className="hidden xl:table-cell text-xs text-muted-foreground font-mono">
+        <TableCell className="text-muted-foreground hidden font-mono text-xs xl:table-cell">
           {log.ipAddress !== "unknown" ? log.ipAddress : "—"}
         </TableCell>
-        <TableCell className="hidden xl:table-cell text-xs text-muted-foreground max-w-[200px] truncate">
+        <TableCell className="text-muted-foreground hidden max-w-[200px] truncate text-xs xl:table-cell">
           {log.metadata?.description ?? "—"}
         </TableCell>
       </TableRow>

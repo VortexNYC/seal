@@ -58,7 +58,7 @@ function VerifySuccess({ result }: { result: VerifyResult }) {
               <CheckCircle2Icon className="h-7 w-7 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-widest">
+              <p className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
                 Document Verified
               </p>
               <h1 className="text-foreground mt-1 text-xl font-semibold">{result.documentName}</h1>
@@ -87,7 +87,7 @@ function VerifySuccess({ result }: { result: VerifyResult }) {
                   <p className="text-foreground text-sm font-medium">{signer.name}</p>
                   <p className="text-muted-foreground text-xs">{signer.maskedEmail}</p>
                   <div className="mt-1 flex items-center gap-2">
-                    <span className="text-muted-foreground capitalize text-xs">{signer.role}</span>
+                    <span className="text-muted-foreground text-xs capitalize">{signer.role}</span>
                     {signer.signedAt && (
                       <>
                         <span className="text-muted-foreground text-xs">·</span>
@@ -151,7 +151,7 @@ function HashField({ hash }: { hash: string }) {
         aria-label="Copy hash"
       >
         {copied ? (
-          <span className="text-green-600 text-xs">Copied</span>
+          <span className="text-xs text-green-600">Copied</span>
         ) : (
           <CopyIcon className="h-3.5 w-3.5" />
         )}

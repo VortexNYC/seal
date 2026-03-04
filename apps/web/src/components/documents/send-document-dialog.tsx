@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { getErrorMessage } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
@@ -36,6 +37,10 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
+
+const expirationSchema = z.object({
+  amount: z.number().int().min(1, "Expiration period must be at least 1"),
+});
 
 interface SendDocumentDialogProps {
   documentId: Id<"documents">;
@@ -91,6 +96,7 @@ export function SendDocumentDialog({
   // Signing mode: parallel (all at once) or sequential (by order groups)
   const [signingMode, setSigningMode] = useState<"parallel" | "sequential">("parallel");
   const [allowDictateNextSigner, setAllowDictateNextSigner] = useState(false);
+  const [expirationError, setExpirationError] = useState<string | null>(null);
 
   // Check if any recipients have order values set (enables sequential option)
   const hasOrderValues = recipients.some((r) => r.order !== undefined && r.order !== 0);
@@ -144,9 +150,13 @@ export function SendDocumentDialog({
 
     // SEA-119: Validate expiration period
     const expirationPeriod = getExpirationPeriod();
-    if (expirationPeriod && expirationPeriod.amount < 1) {
-      toast.error("Expiration period must be at least 1");
-      return;
+    if (expirationPeriod) {
+      const validation = expirationSchema.safeParse({ amount: expirationPeriod.amount });
+      if (!validation.success) {
+        setExpirationError(validation.error.issues[0].message);
+        return;
+      }
+      setExpirationError(null);
     }
 
     setIsSending(true);
@@ -438,7 +448,10 @@ export function SendDocumentDialog({
                   min={1}
                   max={365}
                   value={customAmount}
-                  onChange={(e) => setCustomAmount(Number(e.target.value))}
+                  onChange={(e) => {
+                    setCustomAmount(Number(e.target.value));
+                    if (expirationError) setExpirationError(null);
+                  }}
                   className="w-24"
                 />
                 <Select
@@ -457,6 +470,7 @@ export function SendDocumentDialog({
               </div>
             )}
 
+            {expirationError && <p className="text-destructive mt-1 text-sm">{expirationError}</p>}
             {getExpirationText() && (
               <p className="text-muted-foreground mt-1.5 text-xs">{getExpirationText()}</p>
             )}

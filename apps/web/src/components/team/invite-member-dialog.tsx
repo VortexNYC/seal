@@ -4,10 +4,13 @@
  * Modal for inviting new members to the organization
  */
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAction } from "convex/react";
 import { AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -19,8 +22,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -30,6 +41,13 @@ import {
 } from "@/components/ui/select";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+
+const inviteMemberSchema = z.object({
+  email: z.email("Please enter a valid email address"),
+  role: z.enum(["admin", "member", "viewer"]),
+});
+
+type InviteMemberFormValues = z.infer<typeof inviteMemberSchema>;
 
 interface InviteMemberDialogProps {
   organizationId: Id<"organizations">;
@@ -42,156 +60,139 @@ export function InviteMemberDialog({
   open,
   onOpenChange,
 }: InviteMemberDialogProps) {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "member" | "viewer">("member");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const clerkInvite = useAction(api.organizations.actions.clerkInvite);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
+  const form = useForm<InviteMemberFormValues>({
+    resolver: zodResolver(inviteMemberSchema),
+    defaultValues: { email: "", role: "member" },
+  });
 
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) form.reset();
+  }, [open, form]);
+
+  const handleSubmit = async (values: InviteMemberFormValues) => {
     try {
-      // Validate email
-      if (!email || !email.includes("@")) {
-        setError("Please enter a valid email address");
-        setIsSubmitting(false);
-        return;
-      }
-
       const result = await clerkInvite({
-        email: email.trim().toLowerCase(),
-        role,
+        email: values.email.trim().toLowerCase(),
+        role: values.role,
         organizationId: _organizationId,
       });
 
       if (result.ok) {
         toast.success("Invitation sent", {
-          description: `An invitation has been sent to ${email} via email`,
+          description: `An invitation has been sent to ${values.email} via email`,
         });
-
-        // Reset form and close dialog
-        setEmail("");
-        setRole("member");
         onOpenChange(false);
       } else {
-        setError(result.message || "Failed to send invitation");
-        toast.error("Failed to send invitation", {
-          description: result.message,
-        });
+        form.setError("root", { message: result.message || "Failed to send invitation" });
+        toast.error("Failed to send invitation", { description: result.message });
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to send invitation";
-      setError(errorMessage);
-      toast.error("Failed to send invitation", {
-        description: errorMessage,
-      });
-    } finally {
-      setIsSubmitting(false);
+      form.setError("root", { message: errorMessage });
+      toast.error("Failed to send invitation", { description: errorMessage });
     }
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    onOpenChange(newOpen);
-    if (!newOpen) {
-      // Reset form when closing
-      setEmail("");
-      setRole("member");
-      setError(null);
-    }
-  };
+  const rootError = form.formState.errors.root?.message;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Invite Team Member</DialogTitle>
-            <DialogDescription>
-              Send an invitation to join this workspace. They'll receive an email with instructions.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Invite Team Member</DialogTitle>
+          <DialogDescription>
+            Send an invitation to join this workspace. They'll receive an email with instructions.
+          </DialogDescription>
+        </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            {error && (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
+            {rootError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{rootError}</AlertDescription>
               </Alert>
             )}
 
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="colleague@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-              />
-              <p className="text-muted-foreground text-xs">
-                We'll send them an invitation to join your workspace
-              </p>
-            </div>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email address</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="colleague@example.com" autoFocus {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    We'll send them an invitation to join your workspace
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="grid gap-2">
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={role}
-                onValueChange={(value) => setRole(value as "admin" | "member" | "viewer")}
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="viewer">
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">Viewer</span>
+                          <span className="text-muted-foreground text-xs">
+                            Can view documents and signatures
+                          </span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="member">
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">Member</span>
+                          <span className="text-muted-foreground text-xs">
+                            Can create and send documents
+                          </span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="admin">
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">Admin</span>
+                          <span className="text-muted-foreground text-xs">
+                            Can manage team and settings
+                          </span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={form.formState.isSubmitting}
               >
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="viewer">
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">Viewer</span>
-                      <span className="text-muted-foreground text-xs">
-                        Can view documents and signatures
-                      </span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="member">
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">Member</span>
-                      <span className="text-muted-foreground text-xs">
-                        Can create and send documents
-                      </span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="admin">
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">Admin</span>
-                      <span className="text-muted-foreground text-xs">
-                        Can manage team and settings
-                      </span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Sending..." : "Send Invitation"}
-            </Button>
-          </DialogFooter>
-        </form>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Sending..." : "Send Invitation"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
