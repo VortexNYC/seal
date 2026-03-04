@@ -32,7 +32,7 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
   // List templates
   server.tool(
     "seal_list_templates",
-    "List all templates in your Seal workspace with pagination.",
+    "List all document templates in your workspace. Templates are reusable document layouts with pre-placed signature fields. Filter by status (active or archived) to find templates ready for use. Use seal_use_template to create a new document from any template returned here.",
     listTemplatesSchema.shape,
     async (args, extra) => {
       const { limit, cursor, status } = args as ListTemplatesInput;

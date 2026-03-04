@@ -33,14 +33,15 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
   // List documents
   server.tool(
     "seal_list_documents",
-    "List all documents in your Seal workspace with pagination. Returns document metadata including title, status, and recipient counts.",
+    "List documents in your Seal workspace with pagination and optional filtering. Filter by status, search by title, or narrow by creation date range.",
     listDocumentsSchema.shape,
     async (args, extra) => {
-      const { limit, cursor, status } = args as ListDocumentsInput;
+      const { limit, cursor, status, title_search, created_after, created_before } =
+        args as ListDocumentsInput;
       const authToken = getAuthToken(extra);
       const response = await client.get<PaginatedResponse<ApiDocument>>(
         "/documents",
-        { limit, cursor, status },
+        { limit, cursor, status, title_search, created_after, created_before },
         authToken,
       );
 

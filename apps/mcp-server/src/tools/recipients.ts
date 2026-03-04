@@ -54,7 +54,7 @@ export function registerRecipientTools(server: McpServer, client: SealApiClient)
   // List recipients
   server.tool(
     "seal_list_recipients",
-    "List all recipients for a document. Recipients are the people who need to sign or review the document.",
+    "List all recipients for a document. Returns each recipient's role (signer, approver, or viewer), signing status (pending, completed, declined), signing order for sequential workflows, and contact details. Use this to check who still needs to sign or to find recipient IDs for sending reminders.",
     listRecipientsSchema.shape,
     async (args, extra) => {
       const { document_id } = args as ListRecipientsInput;
@@ -79,7 +79,7 @@ export function registerRecipientTools(server: McpServer, client: SealApiClient)
   // Get recipient
   server.tool(
     "seal_get_recipient",
-    "Get detailed information about a specific recipient.",
+    "Get detailed information about a specific recipient on a document. Returns name, email, role (signer/approver/viewer), signing status, signing order, completion timestamp, and any custom message. Use this when you need full details about one recipient rather than listing all of them.",
     getRecipientSchema.shape,
     async (args, extra) => {
       const { document_id, id } = args as GetRecipientInput;

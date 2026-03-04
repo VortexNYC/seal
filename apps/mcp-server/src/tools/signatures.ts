@@ -51,7 +51,7 @@ export function registerSignatureTools(server: McpServer, client: SealApiClient)
   // Get signature
   server.tool(
     "seal_get_signature",
-    "Get detailed information about a specific signature.",
+    "Get detailed information about a specific signature on a document. Returns the signing method (draw, type, or upload), timestamp, signer identity, and cryptographic hash used for tamper detection. Use this when you need forensic-level detail about a single signature rather than the full list.",
     getSignatureSchema.shape,
     async (args, extra) => {
       const { document_id, id } = args as GetSignatureInput;

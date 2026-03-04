@@ -21,6 +21,7 @@ import express from "express";
 
 import { SealApiClient } from "./client";
 import { getConfig } from "./config";
+import { registerAllPrompts } from "./prompts";
 import { registerAllResources } from "./resources";
 import { registerAllTools } from "./tools";
 import { logger as sealLogger } from "./utils/logger";
@@ -37,9 +38,10 @@ const mcpServer = new McpServer({
 // Create API client
 const apiClient = new SealApiClient(config);
 
-// Register tools and resources
+// Register tools, resources, and prompts
 registerAllTools(mcpServer, apiClient);
 registerAllResources(mcpServer, apiClient);
+registerAllPrompts(mcpServer);
 
 // Create Express app
 const app = express();

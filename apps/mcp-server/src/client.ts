@@ -288,6 +288,23 @@ export class SealApiClient {
   }
 
   /**
+   * Makes a PATCH request.
+   * @param path - API endpoint path
+   * @param body - Optional request body
+   * @param query - Optional query parameters
+   * @param authToken - Optional auth token (overrides default)
+   * @param timeout - Optional timeout in ms (overrides default)
+   */
+  async patch<T>(
+    path: string,
+    body?: Record<string, unknown>,
+    authToken?: string,
+    timeout?: number,
+  ): Promise<T> {
+    return this.request<T>("PATCH", path, { body, authToken, timeout });
+  }
+
+  /**
    * Makes a DELETE request.
    * @param path - API endpoint path
    * @param query - Optional query parameters

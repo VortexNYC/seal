@@ -28,46 +28,77 @@ describe("registerAllTools", () => {
     registerAllTools(mockServer, client);
 
     // Document tools
-    expect(registeredTools).toContain("list_documents");
-    expect(registeredTools).toContain("get_document");
-    expect(registeredTools).toContain("create_document");
-    expect(registeredTools).toContain("update_document");
-    expect(registeredTools).toContain("delete_document");
-    expect(registeredTools).toContain("send_document");
-    expect(registeredTools).toContain("void_document");
-    expect(registeredTools).toContain("download_document");
+    expect(registeredTools).toContain("seal_list_documents");
+    expect(registeredTools).toContain("seal_get_document");
+    expect(registeredTools).toContain("seal_create_document");
+    expect(registeredTools).toContain("seal_update_document");
+    expect(registeredTools).toContain("seal_delete_document");
+    expect(registeredTools).toContain("seal_send_document");
+    expect(registeredTools).toContain("seal_void_document");
+    expect(registeredTools).toContain("seal_download_document");
+    expect(registeredTools).toContain("seal_bulk_send_documents");
+    expect(registeredTools).toContain("seal_bulk_void_documents");
+    expect(registeredTools).toContain("seal_get_document_access");
+    expect(registeredTools).toContain("seal_update_document_access");
 
     // Template tools
-    expect(registeredTools).toContain("list_templates");
-    expect(registeredTools).toContain("get_template");
-    expect(registeredTools).toContain("get_template_fields");
-    expect(registeredTools).toContain("create_template");
-    expect(registeredTools).toContain("update_template");
-    expect(registeredTools).toContain("delete_template");
-    expect(registeredTools).toContain("use_template");
+    expect(registeredTools).toContain("seal_list_templates");
+    expect(registeredTools).toContain("seal_get_template");
+    expect(registeredTools).toContain("seal_get_template_fields");
+    expect(registeredTools).toContain("seal_create_template");
+    expect(registeredTools).toContain("seal_update_template");
+    expect(registeredTools).toContain("seal_delete_template");
+    expect(registeredTools).toContain("seal_use_template");
 
     // Recipient tools
-    expect(registeredTools).toContain("list_recipients");
-    expect(registeredTools).toContain("get_recipient");
-    expect(registeredTools).toContain("add_recipient");
-    expect(registeredTools).toContain("add_recipients_bulk");
-    expect(registeredTools).toContain("update_recipient");
-    expect(registeredTools).toContain("update_recipients_bulk");
-    expect(registeredTools).toContain("remove_recipient");
-    expect(registeredTools).toContain("send_reminder");
+    expect(registeredTools).toContain("seal_list_recipients");
+    expect(registeredTools).toContain("seal_get_recipient");
+    expect(registeredTools).toContain("seal_add_recipient");
+    expect(registeredTools).toContain("seal_add_recipients_bulk");
+    expect(registeredTools).toContain("seal_update_recipient");
+    expect(registeredTools).toContain("seal_update_recipients_bulk");
+    expect(registeredTools).toContain("seal_remove_recipient");
+    expect(registeredTools).toContain("seal_send_reminder");
 
     // Signature tools
-    expect(registeredTools).toContain("list_signatures");
-    expect(registeredTools).toContain("get_signature");
-    expect(registeredTools).toContain("verify_document");
-    expect(registeredTools).toContain("get_audit_trail");
+    expect(registeredTools).toContain("seal_list_signatures");
+    expect(registeredTools).toContain("seal_get_signature");
+    expect(registeredTools).toContain("seal_verify_document");
+    expect(registeredTools).toContain("seal_get_audit_trail");
 
     // Upload tools
-    expect(registeredTools).toContain("upload_file");
-    expect(registeredTools).toContain("upload_file_content");
+    expect(registeredTools).toContain("seal_upload_file");
+    expect(registeredTools).toContain("seal_upload_file_content");
 
-    // Debug tools
-    expect(registeredTools).toContain("debug_auth");
+    // Account & analytics
+    expect(registeredTools).toContain("seal_get_account_info");
+    expect(registeredTools).toContain("seal_get_analytics");
+
+    // Audit log
+    expect(registeredTools).toContain("seal_list_audit_log");
+
+    // Members
+    expect(registeredTools).toContain("seal_list_members");
+    expect(registeredTools).toContain("seal_get_member");
+
+    // Settings
+    expect(registeredTools).toContain("seal_get_settings");
+    expect(registeredTools).toContain("seal_update_settings");
+
+    // Contacts
+    expect(registeredTools).toContain("seal_list_contacts");
+    expect(registeredTools).toContain("seal_get_contact");
+    expect(registeredTools).toContain("seal_create_contact");
+    expect(registeredTools).toContain("seal_delete_contact");
+
+    // Webhooks
+    expect(registeredTools).toContain("seal_list_webhooks");
+    expect(registeredTools).toContain("seal_get_webhook");
+    expect(registeredTools).toContain("seal_create_webhook");
+    expect(registeredTools).toContain("seal_update_webhook");
+    expect(registeredTools).toContain("seal_delete_webhook");
+    expect(registeredTools).toContain("seal_rotate_webhook_secret");
+    expect(registeredTools).toContain("seal_list_webhook_event_types");
   });
 
   test("registers correct number of tools", () => {
@@ -82,8 +113,9 @@ describe("registerAllTools", () => {
     const client = new SealApiClient(mockConfig);
     registerAllTools(mockServer, client);
 
-    // 8 document + 7 template + 8 recipient + 4 signature + 2 upload + 1 debug = 30 tools
-    expect(registeredTools.length).toBe(30);
+    // 12 document + 7 template + 8 recipient + 4 signature + 2 upload
+    // + 2 account/analytics + 1 audit + 2 members + 2 settings + 4 contacts + 7 webhooks = 51 tools
+    expect(registeredTools.length).toBe(51);
   });
 
   test("all registered tools have unique names", () => {
