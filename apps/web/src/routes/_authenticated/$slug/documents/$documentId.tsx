@@ -609,12 +609,12 @@ function DocumentDetailPage() {
                         file={pdfViewer.pdfUrl}
                         onLoadSuccess={pdfViewer.onDocumentLoadSuccess}
                         loading={
-                          <div className="p-16 text-center" style={{ color: "hsl(220 10% 55%)" }}>
+                          <div className="p-16 text-center text-muted-foreground">
                             <div className="animate-pulse">Loading document...</div>
                           </div>
                         }
                         error={
-                          <div className="p-16 text-center" style={{ color: "hsl(0 65% 50%)" }}>
+                          <div className="p-16 text-center text-destructive">
                             Failed to load document
                           </div>
                         }

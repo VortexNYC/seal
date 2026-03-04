@@ -15,22 +15,22 @@ export function DocumentStatusHero({ workflowStatus, createdAt }: DocumentStatus
   const getStatusStyles = () => {
     switch (workflowStatus) {
       case "completed":
-        return "bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800";
+        return "bg-status-completed-surface border-status-completed-border";
       case "in_progress":
-        return "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800";
+        return "bg-status-in-progress-surface border-status-in-progress-border";
       case "waiting_for_payment":
-        return "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800";
+        return "bg-status-in-progress-surface border-status-in-progress-border";
       case "sent":
-        return "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800";
+        return "bg-status-sent-surface border-status-sent-border";
       default:
-        return "bg-amber-50/50 dark:bg-amber-950/50 border-amber-200/50 dark:border-amber-800/50";
+        return "bg-status-in-progress-surface/50 border-status-in-progress-border/50";
     }
   };
 
   const getTextStyles = () => {
     return workflowStatus === "completed"
-      ? "text-emerald-700 dark:text-emerald-300"
-      : "text-stone-800 dark:text-stone-200";
+      ? "text-status-completed-text"
+      : "text-foreground";
   };
 
   return (

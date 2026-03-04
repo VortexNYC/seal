@@ -1,0 +1,20 @@
+/*
+ * Seal Design System — Web Font Declarations
+ *
+ * Three-typeface stack:
+ *   Instrument Serif  — display, marketing headlines, wordmark
+ *   Plus Jakarta Sans — all product UI, body text, labels
+ *   JetBrains Mono    — code blocks, API keys, monospaced data
+ *
+ * Import order matters: this file must be imported before seal-theme-web.css
+ * so that @theme inline font-family tokens resolve correctly.
+ */
+
+/* Instrument Serif — variable (400 only, italic variant included) */
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
+
+/* Plus Jakarta Sans — variable, full weight range 200–800 */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap");
+
+/* JetBrains Mono — variable, full weight range 100–800 */
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap");

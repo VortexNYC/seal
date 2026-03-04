@@ -160,22 +160,22 @@ export function ShareDocumentDialog({
         {/* Dialog Content */}
         <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 duration-200">
           {/* Card with layered shadow for depth */}
-          <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15),0_0_0_1px_rgba(0,0,0,0.03)]">
+          <div className="bg-card relative overflow-hidden rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15),0_0_0_1px_rgba(0,0,0,0.03)]">
             {/* Decorative top accent - blue for sharing */}
             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500" />
 
             {/* Header */}
-            <div className="border-b border-gray-100 px-6 pt-6 pb-4">
+            <div className="border-b border-border px-6 pt-6 pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100">
-                    <Share2Icon className="h-5 w-5 text-blue-500" />
+                  <div className="bg-info-surface flex h-10 w-10 items-center justify-center rounded-xl">
+                    <Share2Icon className="text-info h-5 w-5" />
                   </div>
                   <div>
-                    <DialogPrimitive.Title className="font-['Newsreader',Georgia,serif] text-lg font-medium text-gray-900">
+                    <DialogPrimitive.Title className="font-['Newsreader',Georgia,serif] text-foreground text-lg font-medium">
                       Share document
                     </DialogPrimitive.Title>
-                    <DialogPrimitive.Description className="mt-0.5 text-sm text-gray-500">
+                    <DialogPrimitive.Description className="text-muted-foreground mt-0.5 text-sm">
                       "{documentName}"
                     </DialogPrimitive.Description>
                   </div>
@@ -183,7 +183,7 @@ export function ShareDocumentDialog({
                 <DialogPrimitive.Close asChild>
                   <button
                     type="button"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                    className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
                   >
                     <XIcon className="h-4 w-4" />
                   </button>
@@ -196,7 +196,7 @@ export function ShareDocumentDialog({
               {documentAccess === undefined ? (
                 <ShareDialogSkeleton />
               ) : documentAccess === null ? (
-                <div className="py-8 text-center text-gray-500">
+                <div className="text-muted-foreground py-8 text-center">
                   You don't have permission to view sharing settings.
                 </div>
               ) : (
@@ -205,16 +205,16 @@ export function ShareDocumentDialog({
                   {documentAccess.subscriptionWarning && (
                     <div
                       data-testid="subscription-warning"
-                      className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3"
+                      className="bg-warning-surface border-warning/30 flex items-start gap-3 rounded-xl border p-3"
                     >
-                      <AlertTriangleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
-                      <p className="text-sm text-amber-800">{documentAccess.subscriptionWarning}</p>
+                      <AlertTriangleIcon className="text-warning mt-0.5 h-5 w-5 flex-shrink-0" />
+                      <p className="text-warning text-sm">{documentAccess.subscriptionWarning}</p>
                     </div>
                   )}
 
                   {/* Sharing Mode Selection */}
                   <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700">General access</label>
+                    <label className="text-foreground text-sm font-medium">General access</label>
                     <div className="grid grid-cols-3 gap-2">
                       {(Object.keys(SHARING_MODE_INFO) as SharingMode[]).map((mode) => {
                         const info = SHARING_MODE_INFO[mode];
@@ -230,8 +230,8 @@ export function ShareDocumentDialog({
                             className={cn(
                               "relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all",
                               isSelected
-                                ? "border-blue-500 bg-blue-50"
-                                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50",
+                                ? "border-info bg-info-surface"
+                                : "border-border hover:border-border hover:bg-muted",
                               (isUpdating || isDisabled) && "cursor-not-allowed opacity-50",
                             )}
                           >
@@ -247,8 +247,8 @@ export function ShareDocumentDialog({
                               className={cn(
                                 "rounded-lg p-2",
                                 isSelected
-                                  ? "bg-blue-100 text-blue-600"
-                                  : "bg-gray-100 text-gray-500",
+                                  ? "bg-info-surface text-info"
+                                  : "bg-muted text-muted-foreground",
                               )}
                             >
                               {info.icon}
@@ -256,7 +256,7 @@ export function ShareDocumentDialog({
                             <span
                               className={cn(
                                 "text-xs font-medium",
-                                isSelected ? "text-blue-700" : "text-gray-600",
+                                isSelected ? "text-info" : "text-muted-foreground",
                               )}
                             >
                               {info.label}
@@ -265,7 +265,7 @@ export function ShareDocumentDialog({
                         );
                       })}
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-muted-foreground text-xs">
                       {!documentAccess.canUseTeamSharing && documentAccess.sharingMode === "private"
                         ? "Upgrade to Pro to share with your team"
                         : SHARING_MODE_INFO[documentAccess.sharingMode].description}
@@ -275,7 +275,7 @@ export function ShareDocumentDialog({
                   {/* Add Team Member */}
                   {documentAccess.sharingMode === "specific" && (
                     <div className="space-y-3">
-                      <label className="text-sm font-medium text-gray-700">Add people</label>
+                      <label className="text-foreground text-sm font-medium">Add people</label>
                       <div className="flex gap-2">
                         <Select
                           value={selectedMemberId ?? ""}
@@ -286,7 +286,7 @@ export function ShareDocumentDialog({
                           </SelectTrigger>
                           <SelectContent>
                             {availableMembers.length === 0 ? (
-                              <div className="px-2 py-4 text-center text-sm text-gray-500">
+                              <div className="text-muted-foreground px-2 py-4 text-center text-sm">
                                 No team members to add
                               </div>
                             ) : (
@@ -295,7 +295,9 @@ export function ShareDocumentDialog({
                                   <div className="flex items-center gap-2">
                                     <span>{member.name ?? member.email}</span>
                                     {member.name && (
-                                      <span className="text-xs text-gray-400">{member.email}</span>
+                                      <span className="text-muted-foreground text-xs">
+                                        {member.email}
+                                      </span>
                                     )}
                                   </div>
                                 </SelectItem>
@@ -322,7 +324,7 @@ export function ShareDocumentDialog({
                           type="button"
                           onClick={handleGrantAccess}
                           disabled={!selectedMemberId || isUpdating}
-                          className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {isUpdating ? <Loader2Icon className="h-4 w-4 animate-spin" /> : "Add"}
                         </button>
@@ -332,12 +334,12 @@ export function ShareDocumentDialog({
 
                   {/* People with Access */}
                   <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700">People with access</label>
+                    <label className="text-foreground text-sm font-medium">People with access</label>
                     <div className="space-y-2" data-testid="access-list">
                       {/* Document Owner */}
                       <div
                         data-testid="owner-row"
-                        className="flex items-center justify-between rounded-xl bg-gray-50 p-3"
+                        className="bg-muted flex items-center justify-between rounded-xl p-3"
                       >
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
@@ -349,20 +351,20 @@ export function ShareDocumentDialog({
                             <div className="flex items-center gap-2">
                               <span
                                 data-testid="owner-name"
-                                className="text-sm font-medium text-gray-900"
+                                className="text-foreground text-sm font-medium"
                               >
                                 {documentAccess.owner.name ?? documentAccess.owner.email}
                               </span>
                               <Badge
                                 variant="outline"
-                                className="border-amber-200 bg-amber-50 text-xs text-amber-700"
+                                className="border-warning/30 bg-warning-surface text-warning text-xs"
                               >
                                 <CrownIcon className="mr-1 h-3 w-3" />
                                 Owner
                               </Badge>
                             </div>
                             {documentAccess.owner.name && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-muted-foreground text-xs">
                                 {documentAccess.owner.email}
                               </span>
                             )}
@@ -375,7 +377,7 @@ export function ShareDocumentDialog({
                         <div
                           key={access._id}
                           data-testid="shared-user"
-                          className="flex items-center justify-between rounded-xl bg-gray-50 p-3"
+                          className="bg-muted flex items-center justify-between rounded-xl p-3"
                         >
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
@@ -386,12 +388,12 @@ export function ShareDocumentDialog({
                             <div>
                               <span
                                 data-testid="access-name"
-                                className="text-sm font-medium text-gray-900"
+                                className="text-foreground text-sm font-medium"
                               >
                                 {access.userName ?? access.userEmail}
                               </span>
                               {access.userName && (
-                                <p className="text-xs text-gray-500">{access.userEmail}</p>
+                                <p className="text-muted-foreground text-xs">{access.userEmail}</p>
                               )}
                             </div>
                           </div>
@@ -420,7 +422,7 @@ export function ShareDocumentDialog({
                               data-testid="revoke-access-button"
                               onClick={() => handleRevokeAccess(access.userId)}
                               disabled={isUpdating}
-                              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                              className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-lg p-1.5 transition-colors disabled:opacity-50"
                             >
                               <XIcon className="h-4 w-4" />
                             </button>
@@ -430,8 +432,8 @@ export function ShareDocumentDialog({
 
                       {documentAccess.sharedWith.length === 0 &&
                         documentAccess.sharingMode === "specific" && (
-                          <div className="py-6 text-center text-sm text-gray-500">
-                            <UsersIcon className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+                          <div className="text-muted-foreground py-6 text-center text-sm">
+                            <UsersIcon className="text-muted-foreground/50 mx-auto mb-2 h-8 w-8" />
                             No one else has access yet
                           </div>
                         )}
@@ -442,11 +444,11 @@ export function ShareDocumentDialog({
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end border-t border-gray-100 px-6 py-4">
+            <div className="flex justify-end border-t border-border px-6 py-4">
               <DialogPrimitive.Close asChild>
                 <button
                   type="button"
-                  className="rounded-xl bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                  className="bg-muted text-foreground hover:bg-muted/80 rounded-xl px-4 py-2 text-sm font-medium transition-colors"
                 >
                   Done
                 </button>

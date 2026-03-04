@@ -700,22 +700,22 @@ function SigningPage() {
       case "signed":
       case "approved":
         return {
-          className: `${baseStyles} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`,
+          className: `${baseStyles} bg-success-surface text-success`,
           icon: <CheckCircle2Icon className="h-3 w-3" />,
         };
       case "declined":
         return {
-          className: `${baseStyles} bg-red-500/10 text-red-600 dark:text-red-400`,
+          className: `${baseStyles} bg-destructive/10 text-destructive`,
           icon: <XCircleIcon className="h-3 w-3" />,
         };
       case "viewed":
         return {
-          className: `${baseStyles} bg-blue-500/10 text-blue-600 dark:text-blue-400`,
+          className: `${baseStyles} bg-info-surface text-info`,
           icon: <ClockIcon className="h-3 w-3" />,
         };
       default:
         return {
-          className: `${baseStyles} bg-amber-500/10 text-amber-600 dark:text-amber-400`,
+          className: `${baseStyles} bg-warning-surface text-warning`,
           icon: <ClockIcon className="h-3 w-3" />,
         };
     }
@@ -731,10 +731,10 @@ function SigningPage() {
   // Show waiting state for sequential signing when it's not this recipient's turn
   if (waitingForPreviousGroup && !isCompleted) {
     return (
-      <div className="dark:bg-background flex h-dvh flex-col items-center justify-center bg-[#FAFAF9] px-4">
+      <div className="dark:bg-background flex h-dvh flex-col items-center justify-center bg-background px-4">
         <div className="w-full max-w-md space-y-6 text-center">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-            <ClockIcon className="size-8 text-amber-600 dark:text-amber-400" />
+          <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-warning-surface">
+            <ClockIcon className="size-8 text-warning" />
           </div>
           <div className="space-y-2">
             <h1 className="text-xl font-semibold tracking-tight text-balance">
@@ -791,14 +791,14 @@ function SigningPage() {
 
   return (
     <div
-      className="dark:bg-background flex h-screen flex-col overflow-hidden bg-[#FAFAF9]"
+      className="dark:bg-background flex h-screen flex-col overflow-hidden bg-background"
       style={brandStyle}
       data-embedded={isEmbedded ? "true" : undefined}
     >
       {/* Offline Banner - Global */}
       {!isOnline && (
-        <div className="fixed top-0 right-0 left-0 z-50 border-b border-amber-200 bg-amber-50 px-4 py-2">
-          <div className="flex items-center justify-center gap-2 text-amber-800">
+        <div className="fixed top-0 right-0 left-0 z-50 border-b border-warning-surface bg-warning-surface px-4 py-2">
+          <div className="flex items-center justify-center gap-2 text-warning-foreground">
             <WifiOffIcon className="h-4 w-4" />
             <span className="text-sm font-medium">
               You're offline. Your progress has been saved.
@@ -841,8 +841,8 @@ function SigningPage() {
                   <span
                     className={`inline-flex items-center gap-1.5 text-sm font-medium ${
                       recipient.status === "declined"
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-emerald-600 dark:text-emerald-400"
+                        ? "text-destructive"
+                        : "text-success"
                     }`}
                   >
                     {recipient.status === "declined" ? (
@@ -919,8 +919,8 @@ function SigningPage() {
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-medium ${
                   recipient.status === "declined"
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-emerald-600 dark:text-emerald-400"
+                    ? "text-destructive"
+                    : "text-success"
                 }`}
               >
                 {recipient.status === "declined" ? (
@@ -1067,8 +1067,8 @@ function SigningPage() {
               <div className="space-y-3">
                 {recipient.signedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10">
-                      <CheckCircle2Icon className="h-4 w-4 text-emerald-600" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success-surface">
+                      <CheckCircle2Icon className="h-4 w-4 text-success" />
                     </div>
                     <div>
                       <p className="font-medium">Signed</p>
@@ -1080,8 +1080,8 @@ function SigningPage() {
                 )}
                 {recipient.approvedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10">
-                      <ShieldCheckIcon className="h-4 w-4 text-emerald-600" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success-surface">
+                      <ShieldCheckIcon className="h-4 w-4 text-success" />
                     </div>
                     <div>
                       <p className="font-medium">Approved</p>
@@ -1093,8 +1093,8 @@ function SigningPage() {
                 )}
                 {recipient.declinedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/10">
-                      <XCircleIcon className="h-4 w-4 text-red-600" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
+                      <XCircleIcon className="h-4 w-4 text-destructive" />
                     </div>
                     <div>
                       <p className="font-medium">Declined</p>
@@ -1106,8 +1106,8 @@ function SigningPage() {
                 )}
                 {recipient.viewedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
-                      <ClockIcon className="h-4 w-4 text-blue-600" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info-surface">
+                      <ClockIcon className="h-4 w-4 text-info" />
                     </div>
                     <div>
                       <p className="font-medium">Viewed</p>
@@ -1122,8 +1122,8 @@ function SigningPage() {
                   !recipient.declinedAt &&
                   !recipient.viewedAt && (
                     <div className="flex items-center gap-3 text-sm">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
-                        <ClockIcon className="h-4 w-4 text-amber-600" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning-surface">
+                        <ClockIcon className="h-4 w-4 text-warning" />
                       </div>
                       <div>
                         <p className="font-medium">Pending</p>
@@ -1140,20 +1140,20 @@ function SigningPage() {
               filledRequiredFields.length < requiredFields.length && (
                 <>
                   <Separator />
-                  <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+                  <div className="rounded-xl border border-info-surface bg-info-surface/50 p-4">
                     <div className="flex items-start gap-3">
-                      <PlayCircleIcon className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                      <PlayCircleIcon className="text-info mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                        <p className="text-foreground text-sm font-medium">
                           Resume where you left off
                         </p>
-                        <p className="mt-0.5 text-xs text-blue-700/70 dark:text-blue-300/70">
+                        <p className="text-muted-foreground mt-0.5 text-xs">
                           {filledRequiredFields.length} of {requiredFields.length} fields completed
                         </p>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="mt-2 h-8 px-0 text-blue-700 hover:bg-blue-500/10 hover:text-blue-800"
+                          className="text-info hover:bg-info-surface mt-2 h-8 px-0"
                           onClick={() => {
                             if (unfilledFields.length > 0) {
                               scrollToField(unfilledFields[0]._id);
@@ -1174,14 +1174,14 @@ function SigningPage() {
               <>
                 <Separator />
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                  <div className="rounded-xl border border-warning-surface bg-warning-surface/50 p-4">
                     <div className="flex items-start gap-3">
-                      <CreditCardIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                      <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                        <p className="text-foreground text-sm font-medium">
                           Payment Required
                         </p>
-                        <p className="mt-0.5 text-xs text-amber-700/70 dark:text-amber-300/70">
+                        <p className="text-muted-foreground mt-0.5 text-xs">
                           Please complete payment below before signing.
                         </p>
                       </div>
@@ -1206,14 +1206,14 @@ function SigningPage() {
               <>
                 <Separator />
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                  <div className="rounded-xl border border-warning-surface bg-warning-surface/50 p-4">
                     <div className="flex items-start gap-3">
-                      <CreditCardIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                      <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                        <p className="text-foreground text-sm font-medium">
                           Payment Required
                         </p>
-                        <p className="mt-0.5 text-xs text-amber-700/70 dark:text-amber-300/70">
+                        <p className="text-muted-foreground mt-0.5 text-xs">
                           All signatures collected. Please complete payment below.
                         </p>
                       </div>
@@ -1363,7 +1363,7 @@ function SigningPage() {
                       </Button>
                     </>
                   ) : (
-                    <div className="flex items-center gap-2 text-emerald-600">
+                    <div className="text-success flex items-center gap-2">
                       <CheckCircleIcon className="h-5 w-5" />
                       <span className="text-sm font-medium">All fields completed</span>
                     </div>
@@ -1374,7 +1374,7 @@ function SigningPage() {
           )}
 
           {/* PDF Viewer Area */}
-          <div ref={pdfContainerRef} className="dark:bg-muted/30 flex-1 overflow-auto bg-[#EEEEE9]">
+          <div ref={pdfContainerRef} className="flex-1 overflow-auto bg-secondary dark:bg-muted/30">
             <div className="p-4 sm:p-6 lg:p-8">
               <div className="mx-auto max-w-4xl">
                 {/* Page count header */}
@@ -1494,28 +1494,28 @@ function SigningPage() {
                     {/* Signature Stamp - shown when document is completed with no positioned fields */}
                     {isCompleted && fields.length === 0 && recipient.status === "signed" && (
                       <div className="dark:bg-card border-border/50 mx-auto mt-4 max-w-md rounded-lg border bg-white p-4 shadow-sm">
-                        <div className="overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
+                        <div className="overflow-hidden rounded-md border border-border">
                           {/* Signature details stamp - Name, date and time only */}
-                          <div className="bg-white px-4 py-4 dark:bg-gray-900">
-                            <div className="mb-3 flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                          <div className="bg-card px-4 py-4">
+                            <div className="text-success mb-3 flex items-center gap-2">
                               <CheckCircleIcon className="h-6 w-6" />
                               <span className="text-lg font-medium">Document Signed</span>
                             </div>
                             <div className="flex flex-col gap-2">
                               <div className="flex items-baseline gap-2">
-                                <span className="text-sm text-gray-500 dark:text-gray-400">
+                                <span className="text-muted-foreground text-sm">
                                   Signed by:
                                 </span>
-                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                <span className="text-foreground text-sm font-semibold">
                                   {recipient.name || recipient.email}
                                 </span>
                               </div>
                               {recipient.signedAt && (
                                 <div className="flex items-baseline gap-2">
-                                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                                  <span className="text-muted-foreground text-sm">
                                     Date:
                                   </span>
-                                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                                  <span className="text-foreground text-sm">
                                     {new Date(recipient.signedAt).toLocaleDateString("en-US", {
                                       year: "numeric",
                                       month: "short",

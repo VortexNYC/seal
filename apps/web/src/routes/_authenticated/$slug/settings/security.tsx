@@ -127,9 +127,9 @@ function SecuritySettings() {
     <PageWrapper title="Security Settings">
       <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
         {!isOwner && (
-          <Card className="border-amber-200 bg-amber-50 md:col-span-2 dark:border-amber-900 dark:bg-amber-950">
+          <Card className="border-warning/30 bg-warning-surface md:col-span-2">
             <CardContent className="pt-6">
-              <p className="text-sm text-amber-800 dark:text-amber-200">
+              <p className="text-sm text-warning">
                 Security settings can only be modified by organization owners. Contact your
                 organization owner to make changes.
               </p>

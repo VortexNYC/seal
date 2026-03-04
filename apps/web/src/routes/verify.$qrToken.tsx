@@ -54,8 +54,8 @@ function VerifySuccess({ result }: { result: VerifyResult }) {
         <div className="border-border bg-card rounded-xl border p-8 shadow-sm">
           {/* Status */}
           <div className="mb-6 flex flex-col items-center gap-3 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-50 dark:bg-green-900/20">
-              <CheckCircle2Icon className="h-7 w-7 text-green-600 dark:text-green-400" />
+            <div className="bg-success-surface flex h-14 w-14 items-center justify-center rounded-full">
+              <CheckCircle2Icon className="text-success h-7 w-7" />
             </div>
             <div>
               <p className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
@@ -151,7 +151,7 @@ function HashField({ hash }: { hash: string }) {
         aria-label="Copy hash"
       >
         {copied ? (
-          <span className="text-xs text-green-600">Copied</span>
+          <span className="text-success text-xs">Copied</span>
         ) : (
           <CopyIcon className="h-3.5 w-3.5" />
         )}
@@ -170,8 +170,8 @@ function VerifyFailed() {
 
         <div className="border-border bg-card rounded-xl border p-8 text-center shadow-sm">
           <div className="mb-4 flex justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
-              <ShieldXIcon className="h-7 w-7 text-red-600 dark:text-red-400" />
+            <div className="bg-destructive/10 flex h-14 w-14 items-center justify-center rounded-full">
+              <ShieldXIcon className="text-destructive h-7 w-7" />
             </div>
           </div>
           <h1 className="text-foreground mb-2 text-xl font-semibold">Verification Failed</h1>

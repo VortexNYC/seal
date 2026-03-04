@@ -145,7 +145,7 @@ function HighlightedText({
     }
     // Add highlighted matching text
     parts.push(
-      <mark key={`${start}-${end}`} className="rounded bg-yellow-200 px-0.5 dark:bg-yellow-800">
+      <mark key={`${start}-${end}`} className="rounded bg-warning/30 px-0.5">
         {text.slice(start, end + 1)}
       </mark>,
     );
@@ -559,7 +559,7 @@ function DocumentsList({
                           {doc.aiProcessingStatus === "processing" && (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Loader2Icon className="h-3 w-3 animate-spin text-violet-500" />
+                                <Loader2Icon className="h-3 w-3 animate-spin text-ai-accent" />
                               </TooltipTrigger>
                               <TooltipContent>AI analyzing document</TooltipContent>
                             </Tooltip>
@@ -567,7 +567,7 @@ function DocumentsList({
                           {doc.aiProcessingStatus === "completed" && (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <SparklesIcon className="h-3 w-3 text-violet-500" />
+                                <SparklesIcon className="h-3 w-3 text-ai-accent" />
                               </TooltipTrigger>
                               <TooltipContent>AI analysis complete</TooltipContent>
                             </Tooltip>
@@ -741,10 +741,10 @@ function DocumentsList({
                         <div className="flex items-center gap-1.5">
                           <WorkflowStatusBadge status={doc.workflowStatus} />
                           {doc.aiProcessingStatus === "processing" && (
-                            <Loader2Icon className="h-3 w-3 animate-spin text-violet-500" />
+                            <Loader2Icon className="h-3 w-3 animate-spin text-ai-accent" />
                           )}
                           {doc.aiProcessingStatus === "completed" && (
-                            <SparklesIcon className="h-3 w-3 text-violet-500" />
+                            <SparklesIcon className="h-3 w-3 text-ai-accent" />
                           )}
                         </div>
                       </div>

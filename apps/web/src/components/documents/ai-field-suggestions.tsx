@@ -67,25 +67,25 @@ function getConfidenceColor(confidence: number): {
 } {
   if (confidence >= 0.8) {
     return {
-      bg: "bg-emerald-500/8",
-      border: "border-emerald-500/40",
-      text: "text-emerald-700 dark:text-emerald-400",
-      badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400",
+      bg: "bg-success-surface/50",
+      border: "border-success/40",
+      text: "text-success",
+      badge: "bg-success-surface text-success",
     };
   }
   if (confidence >= 0.5) {
     return {
-      bg: "bg-amber-500/8",
-      border: "border-amber-500/40",
-      text: "text-amber-700 dark:text-amber-400",
-      badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400",
+      bg: "bg-warning-surface/50",
+      border: "border-warning/40",
+      text: "text-warning",
+      badge: "bg-warning-surface text-warning",
     };
   }
   return {
-    bg: "bg-slate-500/8",
-    border: "border-slate-400/40",
-    text: "text-slate-600 dark:text-slate-400",
-    badge: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+    bg: "bg-muted/50",
+    border: "border-border/40",
+    text: "text-muted-foreground",
+    badge: "bg-muted text-muted-foreground",
   };
 }
 
@@ -135,7 +135,7 @@ function SuggestionOverlay({
         "absolute flex items-center gap-1 rounded-[3px] border-[1.5px] border-dashed transition-all duration-200",
         colors.bg,
         colors.border,
-        isSelected ? "opacity-100 ring-2 ring-blue-500/30" : "opacity-70 hover:opacity-100",
+        isSelected ? "opacity-100 ring-2 ring-info/30" : "opacity-70 hover:opacity-100",
       )}
       style={{
         left: absoluteX,
@@ -158,7 +158,7 @@ function SuggestionOverlay({
         {getFieldIcon(field.fieldType)}
       </div>
       {isSelected && (
-        <div className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-white shadow-sm">
+        <div className="bg-info absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-white shadow-sm">
           <CheckIcon className="h-2.5 w-2.5" />
         </div>
       )}
@@ -312,17 +312,17 @@ export function AIFieldReviewBar({
     <div
       role="toolbar"
       aria-label="AI suggestion actions"
-      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm dark:border-slate-700/80 dark:bg-slate-900/95"
+      className="bg-card/95 flex items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm"
     >
       <div className="flex items-center gap-2">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 text-white shadow-sm">
           <SparklesIcon className="h-3.5 w-3.5" />
         </div>
         <div className="font-sans text-sm">
-          <span className="font-semibold text-slate-800 dark:text-slate-200">
+          <span className="text-foreground font-semibold">
             {suggestions.fields.length} field{suggestions.fields.length === 1 ? "" : "s"} detected
           </span>
-          <span className="ml-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <span className="text-muted-foreground ml-1.5 text-xs">
             {selectedIndices.size > 0 && `(${selectedIndices.size} selected)`}
           </span>
         </div>
@@ -339,7 +339,7 @@ export function AIFieldReviewBar({
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 text-xs text-slate-500">
+            <Button variant="ghost" size="sm" className="text-muted-foreground h-7 text-xs">
               <XIcon className="mr-1 h-3 w-3" />
               Dismiss
             </Button>

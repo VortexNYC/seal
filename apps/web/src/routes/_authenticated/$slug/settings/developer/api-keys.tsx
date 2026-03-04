@@ -322,7 +322,7 @@ function ApiKeysPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Key className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                <Key className="h-5 w-5 text-info" />
                 <CardTitle>Your API Keys</CardTitle>
               </div>
               {isPro ? (
@@ -336,7 +336,7 @@ function ApiKeysPage() {
                   <DialogTrigger asChild>
                     <Button
                       size="sm"
-                      className="bg-cyan-600 text-white hover:bg-cyan-500 dark:bg-cyan-600 dark:hover:bg-cyan-500"
+                      className="bg-info text-white hover:bg-info/90"
                     >
                       <Plus className="mr-1 h-4 w-4" />
                       Create API Key
@@ -357,12 +357,12 @@ function ApiKeysPage() {
                     {newKeySecret ? (
                       <div className="space-y-4">
                         <div className="relative">
-                          <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-cyan-500/20 to-cyan-500/10 blur" />
-                          <div className="bg-muted relative flex items-center gap-2 rounded-lg border border-cyan-500/30 p-3">
+                          <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-info/20 to-info/10 blur" />
+                          <div className="bg-muted relative flex items-center gap-2 rounded-lg border border-info/30 p-3">
                             <Input
                               value={newKeySecret}
                               readOnly
-                              className="flex-1 border-0 bg-transparent font-mono text-sm text-cyan-700 focus-visible:ring-0 dark:text-cyan-300"
+                              className="flex-1 border-0 bg-transparent font-mono text-sm text-info focus-visible:ring-0"
                             />
                             <Button
                               variant="ghost"
@@ -371,20 +371,20 @@ function ApiKeysPage() {
                               className="shrink-0"
                             >
                               {copiedKey ? (
-                                <Check className="h-4 w-4 text-emerald-500" />
+                                <Check className="h-4 w-4 text-success" />
                               ) : (
                                 <Copy className="h-4 w-4" />
                               )}
                             </Button>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-50 p-4 dark:bg-amber-950/20">
-                          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500" />
+                        <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-surface p-4">
+                          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
                           <div>
-                            <p className="font-medium text-amber-800 dark:text-amber-200">
+                            <p className="font-medium text-warning">
                               Save this key securely
                             </p>
-                            <p className="text-sm text-amber-700 dark:text-amber-200/70">
+                            <p className="text-sm text-warning">
                               This is the only time you'll see this key. Store it in a secure
                               location.
                             </p>
@@ -393,7 +393,7 @@ function ApiKeysPage() {
                         <DialogFooter>
                           <Button
                             onClick={handleCloseDialog}
-                            className="bg-cyan-600 text-white hover:bg-cyan-500"
+                            className="bg-info text-white hover:bg-info/90"
                           >
                             Done
                           </Button>
@@ -424,15 +424,15 @@ function ApiKeysPage() {
                                   onClick={() => toggleScope(scope.value)}
                                   className={`group relative flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-all ${
                                     isSelected
-                                      ? "border-cyan-500/50 bg-cyan-500/10"
-                                      : "border-border bg-background hover:border-cyan-500/30"
+                                      ? "border-info/50 bg-info-surface"
+                                      : "border-border bg-background hover:border-info/30"
                                   }`}
                                 >
                                   <div className="flex items-center gap-2">
                                     <div
                                       className={`flex h-8 w-8 items-center justify-center rounded-md ${
                                         isSelected
-                                          ? "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400"
+                                          ? "bg-info/20 text-info"
                                           : "bg-muted text-muted-foreground group-hover:text-foreground"
                                       }`}
                                     >
@@ -440,12 +440,12 @@ function ApiKeysPage() {
                                     </div>
                                     <Checkbox
                                       checked={isSelected}
-                                      className="data-[state=checked]:border-cyan-500 data-[state=checked]:bg-cyan-500"
+                                      className="data-[state=checked]:border-info data-[state=checked]:bg-info"
                                     />
                                   </div>
                                   <div>
                                     <p
-                                      className={`text-sm font-medium ${isSelected ? "text-cyan-700 dark:text-cyan-300" : ""}`}
+                                      className={`text-sm font-medium ${isSelected ? "text-info" : ""}`}
                                     >
                                       {scope.label}
                                     </p>
@@ -469,7 +469,7 @@ function ApiKeysPage() {
                           </Button>
                           <Button
                             onClick={handleCreateKey}
-                            className="bg-cyan-600 text-white hover:bg-cyan-500"
+                            className="bg-info text-white hover:bg-info/90"
                           >
                             Create Key
                           </Button>
@@ -493,7 +493,7 @@ function ApiKeysPage() {
             <CardDescription>
               API keys allow secure programmatic access to the Seal API
               {!isPro && !isLoadingPlan && (
-                <span className="mt-1 block text-amber-600 dark:text-amber-400">
+                <span className="mt-1 block text-warning">
                   API keys require a Pro plan.
                 </span>
               )}
@@ -506,7 +506,7 @@ function ApiKeysPage() {
                   <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-2xl border">
                     <Key className="text-muted-foreground h-10 w-10" />
                   </div>
-                  <div className="border-background absolute -right-1 -bottom-1 h-4 w-4 animate-pulse rounded-full border-2 bg-cyan-500" />
+                  <div className="border-background absolute -right-1 -bottom-1 h-4 w-4 animate-pulse rounded-full border-2 bg-info" />
                 </div>
                 <p className="mt-6 font-mono">No API keys configured</p>
                 <p className="text-muted-foreground mt-1 text-sm">
@@ -514,14 +514,14 @@ function ApiKeysPage() {
                 </p>
                 <Button
                   onClick={() => setIsCreating(true)}
-                  className="mt-6 bg-cyan-600 text-white hover:bg-cyan-500"
+                  className="mt-6 bg-info text-white hover:bg-info/90"
                   disabled={!isPro}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create your first API key
                 </Button>
                 {!isPro && !isLoadingPlan && (
-                  <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+                  <p className="mt-2 text-sm text-warning">
                     Requires a Pro plan
                   </p>
                 )}
@@ -545,7 +545,7 @@ function ApiKeysPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <ExternalLink className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+              <ExternalLink className="h-5 w-5 text-info" />
               <CardTitle>API Documentation</CardTitle>
             </div>
             <CardDescription>
@@ -556,23 +556,23 @@ function ApiKeysPage() {
             <div className="space-y-4">
               <div className="bg-muted relative overflow-hidden rounded-lg border">
                 <div className="bg-muted/50 flex items-center gap-2 border-b px-4 py-2">
-                  <div className="h-3 w-3 rounded-full bg-red-500/80" />
-                  <div className="h-3 w-3 rounded-full bg-yellow-500/80" />
-                  <div className="h-3 w-3 rounded-full bg-green-500/80" />
+                  <div className="h-3 w-3 rounded-full bg-destructive/80" />
+                  <div className="h-3 w-3 rounded-full bg-warning/80" />
+                  <div className="h-3 w-3 rounded-full bg-success/80" />
                   <span className="text-muted-foreground ml-2 font-mono text-xs">terminal</span>
                 </div>
                 <div className="p-4">
                   <pre className="overflow-x-auto font-mono text-sm">
                     <code>
-                      <span className="text-cyan-600 dark:text-cyan-400">curl</span>
+                      <span className="text-info">curl</span>
                       <span className="text-foreground"> -X GET </span>
-                      <span className="text-emerald-600 dark:text-emerald-400">
+                      <span className="text-success">
                         "https://api.seal.app/v1/documents"
                       </span>
                       <span className="text-foreground"> \</span>
                       {"\n"}
                       <span className="text-foreground">{"  "}-H </span>
-                      <span className="text-amber-600 dark:text-amber-400">
+                      <span className="text-warning">
                         "Authorization: Bearer YOUR_API_KEY"
                       </span>
                     </code>
@@ -605,16 +605,16 @@ function ApiKeyRow({ apiKey, onRevoke }: ApiKeyRowProps) {
   const [showId, setShowId] = useState(false);
 
   return (
-    <div className="group relative overflow-hidden rounded-lg border transition-all duration-200 hover:border-cyan-500/30 hover:shadow-sm dark:hover:shadow-cyan-500/5">
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-cyan-500" />
+    <div className="group relative overflow-hidden rounded-lg border transition-all duration-200 hover:border-info/30 hover:shadow-sm">
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-info" />
 
       <div className="flex flex-col justify-between gap-4 p-4 pl-5 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-3">
-            <Lock className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+            <Lock className="h-4 w-4 text-info" />
             <span className="truncate font-medium">{apiKey.name}</span>
-            <Badge variant="secondary" className="text-emerald-600 dark:text-emerald-400">
-              <span className="mr-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+            <Badge variant="secondary" className="text-success">
+              <span className="mr-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
               Active
             </Badge>
           </div>
@@ -623,12 +623,12 @@ function ApiKeyRow({ apiKey, onRevoke }: ApiKeyRowProps) {
             <button
               type="button"
               onClick={() => setShowId(!showId)}
-              className="text-muted-foreground inline-flex items-center gap-1.5 font-mono transition-colors hover:text-cyan-600 dark:hover:text-cyan-400"
+              className="text-muted-foreground inline-flex items-center gap-1.5 font-mono transition-colors hover:text-info"
             >
               {showId ? (
                 <>
                   <EyeOff className="h-3.5 w-3.5" />
-                  <span className="text-cyan-600 dark:text-cyan-400">
+                  <span className="text-info">
                     {apiKey.id.slice(0, 16)}...
                   </span>
                 </>
@@ -636,7 +636,7 @@ function ApiKeyRow({ apiKey, onRevoke }: ApiKeyRowProps) {
                 <>
                   <Eye className="h-3.5 w-3.5" />
                   <span>
-                    <span className="text-cyan-600/70 dark:text-cyan-400/70">&gt;</span> sk_****
+                    <span className="text-info/70">&gt;</span> sk_****
                   </span>
                 </>
               )}

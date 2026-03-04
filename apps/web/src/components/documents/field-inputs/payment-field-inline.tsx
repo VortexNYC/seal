@@ -66,7 +66,7 @@ export function PaymentFieldInline({
 
   if (error) {
     return (
-      <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300">
+      <div className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border p-4 text-sm">
         {error}
       </div>
     );
@@ -141,7 +141,7 @@ function PaymentForm({ amount }: { amount: string }) {
       <Button
         type="submit"
         disabled={!stripe || !elements || isSubmitting}
-        className="w-full bg-emerald-600 hover:bg-emerald-700"
+        className="bg-field-payment hover:bg-field-payment/90 w-full text-white"
       >
         {isSubmitting ? (
           <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />

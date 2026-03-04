@@ -63,7 +63,7 @@ export function EsignConsentDialog({
   // Declined state
   if (consentState === "declined") {
     return (
-      <div className="dark:bg-background flex min-h-dvh flex-col items-center justify-center bg-[#FAFAF9] px-4 py-8">
+      <div className="dark:bg-background flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-8">
         <div className="w-full max-w-lg space-y-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
@@ -71,7 +71,7 @@ export function EsignConsentDialog({
 
           <div className="space-y-2 text-center">
             <div className="flex items-center justify-center gap-2">
-              <XCircleIcon className="size-6 text-red-500" />
+              <XCircleIcon className="text-destructive size-6" />
               <h1 className="text-2xl font-bold text-balance">Electronic Signature Declined</h1>
             </div>
             <p className="text-muted-foreground text-sm text-pretty">
@@ -143,7 +143,7 @@ export function EsignConsentDialog({
   // Accepted state (brief flash before proceeding)
   if (consentState === "accepted") {
     return (
-      <div className="dark:bg-background flex min-h-dvh flex-col items-center justify-center bg-[#FAFAF9] px-4 py-8">
+      <div className="dark:bg-background flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-8">
         <div className="w-full max-w-lg space-y-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
@@ -151,7 +151,7 @@ export function EsignConsentDialog({
 
           <div className="space-y-2 text-center">
             <div className="flex items-center justify-center gap-2">
-              <CheckCircle2Icon className="size-6 text-emerald-500" />
+              <CheckCircle2Icon className="text-success size-6" />
               <h1 className="text-2xl font-bold text-balance">Consent Accepted</h1>
             </div>
             <p className="text-muted-foreground text-sm text-pretty">
@@ -159,12 +159,12 @@ export function EsignConsentDialog({
             </p>
           </div>
 
-          <Card className="border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30">
+          <Card className="border-status-completed-border bg-status-completed-surface">
             <CardContent className="space-y-1 p-5 text-center">
-              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              <p className="text-status-completed-text text-sm font-medium">
                 {recipientEmail}
               </p>
-              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+              <p className="text-status-completed-text/80 text-xs">
                 Consent Date:{" "}
                 {new Date().toLocaleDateString("en-US", {
                   month: "short",
@@ -181,7 +181,7 @@ export function EsignConsentDialog({
 
   // Initial consent form
   return (
-    <div className="dark:bg-background flex min-h-dvh flex-col items-center justify-center bg-[#FAFAF9] px-4 py-8">
+    <div className="dark:bg-background flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-8">
       <div className="w-full max-w-lg space-y-6">
         <div className="flex justify-center">
           <SealLogo size={48} variant="color" />
@@ -198,7 +198,7 @@ export function EsignConsentDialog({
 
         <div>
           <h2 className="mb-3 text-lg font-semibold">Electronic Signature Agreement</h2>
-          <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
+          <Card className="border-info-surface bg-info-surface/50">
             <CardContent className="space-y-4 p-5">
               <p className="text-muted-foreground text-sm leading-relaxed">
                 {customConsentText ??

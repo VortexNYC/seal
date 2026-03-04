@@ -118,14 +118,14 @@ export function RecipientOptionsDialog({
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold ${
                 recipient.status === "pending"
-                  ? "bg-slate-200 text-slate-600"
+                  ? "bg-muted text-muted-foreground"
                   : recipient.status === "viewed"
-                    ? "bg-blue-100 text-blue-700"
+                    ? "bg-info-surface text-info"
                     : recipient.status === "signed" || recipient.status === "approved"
-                      ? "bg-emerald-100 text-emerald-700"
+                      ? "bg-success-surface text-success"
                       : recipient.status === "declined"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-slate-200 text-slate-600"
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-muted text-muted-foreground"
               }`}
             >
               {getInitials(recipient.name, recipient.email)}
@@ -144,14 +144,14 @@ export function RecipientOptionsDialog({
                 <span
                   className={`font-medium ${
                     recipient.status === "pending"
-                      ? "text-slate-600"
+                      ? "text-muted-foreground"
                       : recipient.status === "viewed"
-                        ? "text-blue-600"
+                        ? "text-info"
                         : recipient.status === "signed" || recipient.status === "approved"
-                          ? "text-emerald-600"
+                          ? "text-success"
                           : recipient.status === "declined"
-                            ? "text-red-600"
-                            : "text-slate-600"
+                            ? "text-destructive"
+                            : "text-muted-foreground"
                   }`}
                 >
                   {recipient.status.charAt(0).toUpperCase() + recipient.status.slice(1)}
@@ -172,7 +172,7 @@ export function RecipientOptionsDialog({
               onClick={handleCopySigningLink}
               className="hover:bg-muted flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-100 text-blue-700">
+              <div className="bg-info-surface text-info flex h-8 w-8 items-center justify-center rounded-md">
                 <LinkIcon className="h-4 w-4" />
               </div>
               <div>
@@ -190,7 +190,7 @@ export function RecipientOptionsDialog({
               onClick={handleResendEmail}
               className="hover:bg-muted flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+              <div className="bg-success-surface text-success flex h-8 w-8 items-center justify-center rounded-md">
                 <MailIcon className="h-4 w-4" />
               </div>
               <div>
@@ -206,13 +206,13 @@ export function RecipientOptionsDialog({
               <button
                 type="button"
                 onClick={handleRemove}
-                className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-red-50"
+                className="hover:bg-destructive/10 flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-red-100 text-red-700">
+                <div className="bg-destructive/10 text-destructive flex h-8 w-8 items-center justify-center rounded-md">
                   <TrashIcon className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-red-700">Remove recipient</div>
+                  <div className="text-destructive text-sm font-medium">Remove recipient</div>
                   <div className="text-muted-foreground text-xs">Remove from this document</div>
                 </div>
               </button>

@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@react-email/components": "^1.0.2",
+    "@seal/tokens": "workspace:*",
     "@react-email/render": "^2.0.0",
     "react": "catalog:",
     "react-email": "5.1.0"

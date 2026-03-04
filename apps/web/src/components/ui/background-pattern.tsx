@@ -74,7 +74,7 @@ export function BackgroundPattern({ className, opacity = 0.05 }: BackgroundPatte
               <path
                 d={SEAL_ICON_PATH}
                 fill="currentColor"
-                className="text-slate-400"
+                className="text-muted-foreground"
                 style={{ opacity }}
               />
             </g>
@@ -91,7 +91,7 @@ export function BackgroundPattern({ className, opacity = 0.05 }: BackgroundPatte
               cx="1"
               cy="1"
               r="1"
-              className="fill-slate-400"
+              className="fill-muted-foreground"
               style={{ opacity: opacity * 1.5 }}
             />
           </pattern>

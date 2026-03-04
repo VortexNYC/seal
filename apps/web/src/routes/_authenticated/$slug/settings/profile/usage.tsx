@@ -56,15 +56,15 @@ function UsageSettings() {
     <div className="space-y-6">
       {/* Upgrade prompt */}
       {showUpgradePrompt && (
-        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+        <Card className="border-warning/30 bg-warning-surface">
           <CardContent className="flex items-center justify-between py-4">
             <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <AlertTriangle className="h-5 w-5 text-warning" />
               <div>
-                <p className="font-medium text-amber-900 dark:text-amber-100">
+                <p className="font-medium text-warning">
                   Approaching usage limits
                 </p>
-                <p className="text-sm text-amber-700 dark:text-amber-300">
+                <p className="text-sm text-warning">
                   Upgrade to Pro for higher limits and more features
                 </p>
               </div>
@@ -103,10 +103,10 @@ function UsageSettings() {
             </div>
             <Progress
               value={stats.documentsPercentUsed}
-              className={isApproachingDocumentLimit ? "[&>div]:bg-amber-500" : ""}
+              className={isApproachingDocumentLimit ? "[&>div]:bg-warning" : ""}
             />
             {isApproachingDocumentLimit && (
-              <p className="text-xs text-amber-600">
+              <p className="text-xs text-warning">
                 {Math.round(stats.documentsPercentUsed)}% of monthly limit used
               </p>
             )}
@@ -122,10 +122,10 @@ function UsageSettings() {
             </div>
             <Progress
               value={stats.storagePercentUsed}
-              className={isApproachingStorageLimit ? "[&>div]:bg-amber-500" : ""}
+              className={isApproachingStorageLimit ? "[&>div]:bg-warning" : ""}
             />
             {isApproachingStorageLimit && (
-              <p className="text-xs text-amber-600">
+              <p className="text-xs text-warning">
                 {Math.round(stats.storagePercentUsed)}% of storage limit used
               </p>
             )}
@@ -150,13 +150,13 @@ function UsageSettings() {
               icon={CheckCircle}
               label="Completed"
               value={stats.completedThisMonth}
-              className="text-green-600"
+              className="text-success"
             />
             <StatCard
               icon={Clock}
               label="Pending"
               value={stats.workflowCounts.sent + stats.workflowCounts.in_progress}
-              className="text-amber-600"
+              className="text-warning"
             />
           </div>
         </CardContent>
@@ -174,37 +174,37 @@ function UsageSettings() {
               label="Draft"
               count={stats.workflowCounts.draft}
               total={stats.totalDocuments}
-              color="bg-gray-500"
+              color="bg-muted-foreground"
             />
             <StatusRow
               label="Sent"
               count={stats.workflowCounts.sent}
               total={stats.totalDocuments}
-              color="bg-blue-500"
+              color="bg-info"
             />
             <StatusRow
               label="In Progress"
               count={stats.workflowCounts.in_progress}
               total={stats.totalDocuments}
-              color="bg-amber-500"
+              color="bg-warning"
             />
             <StatusRow
               label="Completed"
               count={stats.workflowCounts.completed}
               total={stats.totalDocuments}
-              color="bg-green-500"
+              color="bg-success"
             />
             <StatusRow
               label="Cancelled"
               count={stats.workflowCounts.cancelled}
               total={stats.totalDocuments}
-              color="bg-gray-400"
+              color="bg-muted-foreground"
             />
             <StatusRow
               label="Declined"
               count={stats.workflowCounts.declined}
               total={stats.totalDocuments}
-              color="bg-red-500"
+              color="bg-destructive"
             />
           </div>
         </CardContent>
@@ -228,10 +228,10 @@ function UsageSettings() {
                 {stats.completedThisMonth} of {stats.sentThisMonth} documents completed
               </p>
               {stats.sentThisMonth > 0 && stats.completionRate >= 80 && (
-                <p className="text-sm text-green-600">Great completion rate!</p>
+                <p className="text-sm text-success">Great completion rate!</p>
               )}
               {stats.sentThisMonth > 0 && stats.completionRate < 50 && (
-                <p className="text-sm text-amber-600">
+                <p className="text-sm text-warning">
                   Consider sending reminders to improve completion
                 </p>
               )}

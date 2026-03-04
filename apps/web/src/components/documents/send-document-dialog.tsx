@@ -223,13 +223,13 @@ export function SendDocumentDialog({
         <div className="-mx-6 flex-1 space-y-4 overflow-y-auto px-6 py-4">
           {/* Payment Fields Summary */}
           {paymentConfigs && paymentConfigs.length > 0 && (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950">
+            <div className="rounded-md border border-field-payment-border bg-field-payment-surface p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-field-payment-surface text-field-payment">
                   <CreditCardIcon className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+                  <p className="text-foreground text-sm font-medium">
                     {paymentConfigs.length === 1
                       ? "Payment will be included"
                       : `${paymentConfigs.length} payments will be included`}
@@ -238,7 +238,7 @@ export function SendDocumentDialog({
                     {paymentConfigs.map((config) => (
                       <p
                         key={config._id}
-                        className="text-xs text-emerald-700 dark:text-emerald-300"
+                        className="text-field-payment text-xs"
                       >
                         {new Intl.NumberFormat("en-US", {
                           style: "currency",
@@ -478,11 +478,11 @@ export function SendDocumentDialog({
 
           {/* Error box - No signature fields */}
           {signatureFieldCount === 0 && (
-            <div className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
-              <p className="text-sm font-medium text-red-900 dark:text-red-100">
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3">
+              <p className="text-foreground text-sm font-medium">
                 Cannot send document without signature fields.
               </p>
-              <p className="mt-1 text-xs text-red-800 dark:text-red-200">
+              <p className="text-muted-foreground mt-1 text-xs">
                 Please add at least one signature field before sending.
               </p>
             </div>
@@ -490,8 +490,8 @@ export function SendDocumentDialog({
 
           {/* Info box */}
           {signatureFieldCount > 0 && (
-            <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
-              <p className="text-sm text-blue-900 dark:text-blue-100">
+            <div className="rounded-md border border-info/30 bg-info/10 p-3">
+              <p className="text-foreground text-sm">
                 Recipients will receive an email with a link to sign the document.
                 {getExpirationText() && <span className="mt-1 block">{getExpirationText()}</span>}
               </p>

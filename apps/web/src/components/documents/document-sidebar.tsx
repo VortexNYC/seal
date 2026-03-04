@@ -176,13 +176,13 @@ function activityDotClass(type: ActivityEventType): string {
     case "signed":
     case "approved":
     case "completed":
-      return "[&_.activity-dot]:border-emerald-300 [&_.activity-dot]:bg-emerald-50 [&_.activity-dot]:text-emerald-600 dark:[&_.activity-dot]:border-emerald-700 dark:[&_.activity-dot]:bg-emerald-950 dark:[&_.activity-dot]:text-emerald-400";
+      return "[&_.activity-dot]:border-status-completed-border [&_.activity-dot]:bg-status-completed-surface [&_.activity-dot]:text-status-completed-text";
     case "viewed":
-      return "[&_.activity-dot]:border-blue-300 [&_.activity-dot]:bg-blue-50 [&_.activity-dot]:text-blue-600 dark:[&_.activity-dot]:border-blue-700 dark:[&_.activity-dot]:bg-blue-950 dark:[&_.activity-dot]:text-blue-400";
+      return "[&_.activity-dot]:border-info-surface [&_.activity-dot]:bg-info-surface [&_.activity-dot]:text-info";
     case "declined":
-      return "[&_.activity-dot]:border-red-300 [&_.activity-dot]:bg-red-50 [&_.activity-dot]:text-red-600 dark:[&_.activity-dot]:border-red-700 dark:[&_.activity-dot]:bg-red-950 dark:[&_.activity-dot]:text-red-400";
+      return "[&_.activity-dot]:border-destructive/30 [&_.activity-dot]:bg-destructive/10 [&_.activity-dot]:text-destructive";
     default:
-      return "[&_.activity-dot]:border-slate-200 [&_.activity-dot]:bg-white [&_.activity-dot]:text-slate-500 dark:[&_.activity-dot]:border-slate-700 dark:[&_.activity-dot]:bg-slate-900 dark:[&_.activity-dot]:text-slate-400";
+      return "[&_.activity-dot]:border-border [&_.activity-dot]:bg-card [&_.activity-dot]:text-muted-foreground";
   }
 }
 
@@ -262,35 +262,35 @@ export function DocumentSidebar({
       <Collapsible
         open={openSections.has("recipients")}
         onOpenChange={() => toggleSection("recipients")}
-        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+        className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:rounded-xl"
       >
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+            className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-muted sm:px-4 sm:py-3.5"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-blue-100 text-blue-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-blue-900 dark:text-blue-400">
+              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-info-surface text-info sm:h-8 sm:w-8 sm:rounded-lg">
                 <UsersIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
               </div>
-              <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+              <span className="font-sans text-[0.9375rem] font-semibold text-foreground sm:text-sm">
                 Recipients
               </span>
               {recipients.length > 0 && (
-                <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <span className="ml-2 rounded-xl bg-muted px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-muted-foreground">
                   {recipients.length}
                 </span>
               )}
             </div>
             <ChevronDownIcon
               className={cn(
-                "h-4 w-4 text-slate-500 transition-transform dark:text-slate-400",
+                "h-4 w-4 text-muted-foreground transition-transform",
                 openSections.has("recipients") && "rotate-180",
               )}
             />
           </button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+        <CollapsibleContent className="border-t border-border/50 px-5 pb-5 sm:px-4 sm:pb-4">
           {canEdit && !isUserAlreadyRecipient && (
             <Button variant="outline" size="sm" className="mt-3 mb-3 w-full" onClick={onAddMyself}>
               <UserIcon className="mr-2 h-4 w-4" />
@@ -303,16 +303,16 @@ export function DocumentSidebar({
                 const status = "status" in recipient ? (recipient.status as string) : "pending";
                 const statusColorClass =
                   status === "viewed"
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                    ? "bg-info-surface text-info"
                     : status === "signed" || status === "approved"
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                      ? "bg-status-completed-surface text-status-completed-text"
                       : status === "declined"
-                        ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                        : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400";
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-muted text-muted-foreground";
                 return (
                   <div
                     key={recipient._id}
-                    className="flex items-center gap-3.5 rounded-xl border border-transparent bg-slate-50 p-3.5 transition-all hover:border-slate-200 hover:bg-slate-100 sm:flex-wrap sm:gap-2.5 sm:p-3 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700"
+                    className="flex items-center gap-3.5 rounded-xl border border-transparent bg-muted p-3.5 transition-all hover:border-border hover:bg-muted sm:flex-wrap sm:gap-2.5 sm:p-3"
                   >
                     <div
                       className={cn(
@@ -323,11 +323,11 @@ export function DocumentSidebar({
                       {getInitials(recipient.name ?? undefined, recipient.email)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-sans text-sm font-semibold text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+                      <div className="truncate font-sans text-sm font-semibold text-foreground sm:text-[0.8125rem]">
                         {recipient.name || recipient.email}
                       </div>
                       {recipient.name && (
-                        <div className="truncate font-sans text-xs text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
+                        <div className="truncate font-sans text-xs text-muted-foreground sm:text-[0.6875rem]">
                           {recipient.email}
                         </div>
                       )}
@@ -361,13 +361,13 @@ export function DocumentSidebar({
             </div>
           ) : (
             <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-10 sm:w-10 sm:rounded-[10px] dark:bg-slate-800 dark:text-slate-400">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground sm:h-10 sm:w-10 sm:rounded-[10px]">
                 <UsersIcon className="h-6 w-6" />
               </div>
-              <div className="mb-1 font-sans text-sm font-semibold text-slate-700 sm:text-[0.8125rem] dark:text-slate-300">
+              <div className="mb-1 font-sans text-sm font-semibold text-foreground sm:text-[0.8125rem]">
                 No recipients
               </div>
-              <div className="font-sans text-xs leading-relaxed text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
+              <div className="font-sans text-xs leading-relaxed text-muted-foreground sm:text-[0.6875rem]">
                 Add recipients who need to sign or view this document.
               </div>
             </div>
@@ -375,7 +375,7 @@ export function DocumentSidebar({
           {canEdit && (
             <button
               type="button"
-              className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 border-dashed border-slate-200 bg-transparent p-3 font-sans text-[0.8125rem] font-semibold text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 sm:rounded-lg sm:p-2.5 sm:text-xs dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400"
+              className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 border-dashed border-border bg-transparent p-3 font-sans text-[0.8125rem] font-semibold text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary sm:rounded-lg sm:p-2.5 sm:text-xs"
               onClick={onAddRecipient}
             >
               <PlusIcon className="h-4 w-4" />
@@ -390,33 +390,33 @@ export function DocumentSidebar({
         <Collapsible
           open={openSections.has("doc-settings")}
           onOpenChange={() => toggleSection("doc-settings")}
-          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+          className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:rounded-xl"
         >
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+              className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-muted sm:px-4 sm:py-3.5"
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-slate-100 text-slate-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-slate-800 dark:text-slate-400">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-muted text-muted-foreground sm:h-8 sm:w-8 sm:rounded-lg">
                   <SettingsIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
                 </div>
-                <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                <span className="font-sans text-[0.9375rem] font-semibold text-foreground sm:text-sm">
                   Document Settings
                 </span>
               </div>
               <ChevronDownIcon
                 className={cn(
-                  "h-4 w-4 text-slate-500 transition-transform dark:text-slate-400",
+                  "h-4 w-4 text-muted-foreground transition-transform",
                   openSections.has("doc-settings") && "rotate-180",
                 )}
               />
             </button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+          <CollapsibleContent className="border-t border-border/50 px-5 pb-5 sm:px-4 sm:pb-4">
             <div className="mt-4 space-y-5">
               <div className="space-y-2">
-                <Label className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                <Label className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-foreground uppercase">
                   <LinkIcon className="h-3.5 w-3.5" />
                   Redirect after signing
                 </Label>
@@ -447,7 +447,7 @@ export function DocumentSidebar({
                     )}
                   </Button>
                 </div>
-                {redirectUrlError && <p className="text-xs text-red-500">{redirectUrlError}</p>}
+                {redirectUrlError && <p className="text-xs text-destructive">{redirectUrlError}</p>}
               </div>
             </div>
           </CollapsibleContent>
@@ -461,9 +461,9 @@ export function DocumentSidebar({
         (threadId ? (
           <AIChatPanel threadId={threadId} slug={slug} onClose={onCloseAIChat} />
         ) : (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900">
-            <Loader2Icon className="h-5 w-5 animate-spin text-violet-500" />
-            <p className="font-sans text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 shadow-sm sm:rounded-xl">
+            <Loader2Icon className="h-5 w-5 animate-spin text-ai-accent" />
+            <p className="font-sans text-sm text-muted-foreground">
               Starting AI assistant...
             </p>
           </div>
@@ -474,9 +474,9 @@ export function DocumentSidebar({
         aiEnabled &&
         !documentAnnotations.annotations &&
         aiProcessingStatus === "processing" && (
-          <div className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-5 py-4 sm:rounded-xl dark:border-slate-700 dark:bg-slate-800/30">
-            <Loader2Icon className="h-4 w-4 animate-spin text-slate-400" />
-            <span className="font-sans text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-muted/30 px-5 py-4 sm:rounded-xl">
+            <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground/60" />
+            <span className="font-sans text-xs text-muted-foreground">
               Scanning for insights...
             </span>
           </div>
@@ -487,33 +487,33 @@ export function DocumentSidebar({
         <Collapsible
           open={openSections.has("insights")}
           onOpenChange={() => toggleSection("insights")}
-          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+          className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:rounded-xl"
         >
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+              className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-muted sm:px-4 sm:py-3.5"
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-rose-100 text-rose-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-rose-900 dark:text-rose-400">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-ai-accent-surface text-ai-accent sm:h-8 sm:w-8 sm:rounded-lg">
                   <ScanSearchIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
                 </div>
-                <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                <span className="font-sans text-[0.9375rem] font-semibold text-foreground sm:text-sm">
                   Insights
                 </span>
-                <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <span className="ml-2 rounded-xl bg-muted px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-muted-foreground">
                   {documentAnnotations.annotations.annotations.length}
                 </span>
               </div>
               <ChevronDownIcon
                 className={cn(
-                  "h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400",
+                  "h-4 w-4 text-muted-foreground transition-transform duration-200",
                   openSections.has("insights") && "rotate-180",
                 )}
               />
             </button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+          <CollapsibleContent className="border-t border-border/50 px-5 pb-5 sm:px-4 sm:pb-4">
             <div className="mt-3">
               <AIInsightsPanel
                 annotations={documentAnnotations.annotations}
@@ -532,35 +532,35 @@ export function DocumentSidebar({
         <Collapsible
           open={openSections.has("fields")}
           onOpenChange={() => toggleSection("fields")}
-          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+          className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:rounded-xl"
         >
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+              className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-muted sm:px-4 sm:py-3.5"
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-violet-100 text-violet-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-violet-900 dark:text-violet-400">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-ai-accent-surface text-ai-accent sm:h-8 sm:w-8 sm:rounded-lg">
                   <FileSignatureIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
                 </div>
-                <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                <span className="font-sans text-[0.9375rem] font-semibold text-foreground sm:text-sm">
                   Signature Fields
                 </span>
                 {signatureFields.length > 0 && (
-                  <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  <span className="ml-2 rounded-xl bg-muted px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-muted-foreground">
                     {signatureFields.length}
                   </span>
                 )}
               </div>
               <ChevronDownIcon
                 className={cn(
-                  "h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400",
+                  "h-4 w-4 text-muted-foreground transition-transform duration-200",
                   openSections.has("fields") && "rotate-180",
                 )}
               />
             </button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+          <CollapsibleContent className="border-t border-border/50 px-5 pb-5 sm:px-4 sm:pb-4">
             {canEdit && (
               <div className="mt-4 mb-4">
                 <FieldToolbar
@@ -584,13 +584,13 @@ export function DocumentSidebar({
               />
             ) : (
               <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-10 sm:w-10 sm:rounded-[10px] dark:bg-slate-800 dark:text-slate-400">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground sm:h-10 sm:w-10 sm:rounded-[10px]">
                   <FileSignatureIcon className="h-6 w-6" />
                 </div>
-                <div className="mb-1 font-sans text-sm font-semibold text-slate-700 sm:text-[0.8125rem] dark:text-slate-300">
+                <div className="mb-1 font-sans text-sm font-semibold text-foreground sm:text-[0.8125rem]">
                   No fields yet
                 </div>
-                <div className="font-sans text-xs leading-relaxed text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
+                <div className="font-sans text-xs leading-relaxed text-muted-foreground sm:text-[0.6875rem]">
                   Drag fields from above onto the document to mark where recipients should sign or
                   fill in information.
                 </div>
@@ -604,70 +604,70 @@ export function DocumentSidebar({
       <Collapsible
         open={openSections.has("details")}
         onOpenChange={() => toggleSection("details")}
-        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+        className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:rounded-xl"
       >
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+            className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-muted sm:px-4 sm:py-3.5"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-teal-100 text-teal-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-teal-900 dark:text-teal-400">
+              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-info-surface text-info sm:h-8 sm:w-8 sm:rounded-lg">
                 <InfoIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
               </div>
-              <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+              <span className="font-sans text-[0.9375rem] font-semibold text-foreground sm:text-sm">
                 Details
               </span>
             </div>
             <ChevronDownIcon
               className={cn(
-                "h-4 w-4 text-slate-500 transition-transform dark:text-slate-400",
+                "h-4 w-4 text-muted-foreground transition-transform",
                 openSections.has("details") && "rotate-180",
               )}
             />
           </button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+        <CollapsibleContent className="border-t border-border/50 px-5 pb-5 sm:px-4 sm:pb-4">
           <div className="mt-4 grid grid-cols-2 gap-4 sm:gap-2.5">
-            <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
-              <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
+            <div className="rounded-[10px] bg-muted p-3.5 sm:rounded-lg sm:p-3">
+              <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-muted-foreground uppercase sm:text-[0.5625rem]">
                 File Size
               </div>
-              <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+              <div className="font-sans text-sm font-medium text-foreground sm:text-[0.8125rem]">
                 {formatFileSize(fileSize)}
               </div>
             </div>
-            <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
-              <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
+            <div className="rounded-[10px] bg-muted p-3.5 sm:rounded-lg sm:p-3">
+              <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-muted-foreground uppercase sm:text-[0.5625rem]">
                 Pages
               </div>
-              <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+              <div className="font-sans text-sm font-medium text-foreground sm:text-[0.8125rem]">
                 {pageCount || numPages || "—"}
               </div>
             </div>
-            <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
-              <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
+            <div className="rounded-[10px] bg-muted p-3.5 sm:rounded-lg sm:p-3">
+              <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-muted-foreground uppercase sm:text-[0.5625rem]">
                 Uploaded
               </div>
-              <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+              <div className="font-sans text-sm font-medium text-foreground sm:text-[0.8125rem]">
                 {formatDate(createdAt)}
               </div>
             </div>
-            <div className="rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
-              <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
+            <div className="rounded-[10px] bg-muted p-3.5 sm:rounded-lg sm:p-3">
+              <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-muted-foreground uppercase sm:text-[0.5625rem]">
                 Fields
               </div>
-              <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+              <div className="font-sans text-sm font-medium text-foreground sm:text-[0.8125rem]">
                 {signatureFields.length}
               </div>
             </div>
           </div>
           {description && (
-            <div className="col-span-2 mt-4 rounded-[10px] bg-slate-50 p-3.5 sm:rounded-lg sm:p-3 dark:bg-slate-800">
-              <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-slate-500 uppercase sm:text-[0.5625rem] dark:text-slate-400">
+            <div className="col-span-2 mt-4 rounded-[10px] bg-muted p-3.5 sm:rounded-lg sm:p-3">
+              <div className="mb-1 font-sans text-[0.625rem] font-semibold tracking-wide text-muted-foreground uppercase sm:text-[0.5625rem]">
                 Description
               </div>
-              <div className="font-sans text-sm font-medium text-slate-800 sm:text-[0.8125rem] dark:text-slate-200">
+              <div className="font-sans text-sm font-medium text-foreground sm:text-[0.8125rem]">
                 {description}
               </div>
             </div>
@@ -679,37 +679,37 @@ export function DocumentSidebar({
       <Collapsible
         open={openSections.has("activity")}
         onOpenChange={() => toggleSection("activity")}
-        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+        className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:rounded-xl"
       >
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+            className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-muted sm:px-4 sm:py-3.5"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-amber-100 text-amber-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-amber-900 dark:text-amber-400">
+              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-warning-surface text-warning sm:h-8 sm:w-8 sm:rounded-lg">
                 <ActivityIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
               </div>
-              <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+              <span className="font-sans text-[0.9375rem] font-semibold text-foreground sm:text-sm">
                 Activity
               </span>
               {activityEvents.length > 0 && (
-                <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <span className="ml-2 rounded-xl bg-muted px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-muted-foreground">
                   {activityEvents.length}
                 </span>
               )}
             </div>
             <ChevronDownIcon
               className={cn(
-                "h-4 w-4 text-slate-500 transition-transform dark:text-slate-400",
+                "h-4 w-4 text-muted-foreground transition-transform",
                 openSections.has("activity") && "rotate-180",
               )}
             />
           </button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+        <CollapsibleContent className="border-t border-border/50 px-5 pb-5 sm:px-4 sm:pb-4">
           {activityEvents.length > 0 ? (
-            <div className="relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-0.5 before:rounded-sm before:bg-slate-200 before:content-[''] sm:before:left-[13px] dark:before:bg-slate-700">
+            <div className="relative mt-4 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-0.5 before:rounded-sm before:bg-border before:content-[''] sm:before:left-[13px]">
               {activityEvents.slice(0, 10).map((event, index) => (
                 <div
                   key={`${event.type}-${event.timestamp}`}
@@ -723,10 +723,10 @@ export function DocumentSidebar({
                     {getActivityIcon(event.type)}
                   </div>
                   <div className="min-w-0 flex-1 pt-1">
-                    <div className="font-sans text-[0.8125rem] leading-snug text-slate-700 sm:text-xs dark:text-slate-300">
+                    <div className="font-sans text-[0.8125rem] leading-snug text-foreground sm:text-xs">
                       {event.description}
                     </div>
-                    <div className="mt-1 font-sans text-[0.6875rem] text-slate-500 sm:text-[0.625rem] dark:text-slate-400">
+                    <div className="mt-1 font-sans text-[0.6875rem] text-muted-foreground sm:text-[0.625rem]">
                       {formatRelativeTime(event.timestamp)}
                     </div>
                   </div>
@@ -735,13 +735,13 @@ export function DocumentSidebar({
             </div>
           ) : (
             <div className="px-4 py-8 text-center sm:px-3 sm:py-6">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 sm:h-10 sm:w-10 sm:rounded-[10px] dark:bg-slate-800 dark:text-slate-400">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground sm:h-10 sm:w-10 sm:rounded-[10px]">
                 <ActivityIcon className="h-6 w-6" />
               </div>
-              <div className="mb-1 font-sans text-sm font-semibold text-slate-700 sm:text-[0.8125rem] dark:text-slate-300">
+              <div className="mb-1 font-sans text-sm font-semibold text-foreground sm:text-[0.8125rem]">
                 No activity yet
               </div>
-              <div className="font-sans text-xs leading-relaxed text-slate-500 sm:text-[0.6875rem] dark:text-slate-400">
+              <div className="font-sans text-xs leading-relaxed text-muted-foreground sm:text-[0.6875rem]">
                 Activity will appear here as recipients interact with this document.
               </div>
             </div>

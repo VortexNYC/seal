@@ -8,25 +8,25 @@ export const Route = createFileRoute("/logo-test")({
 
 function LogoTestPage() {
   return (
-    <div className="min-h-screen space-y-20 bg-slate-50 p-10 dark:bg-slate-950">
+    <div className="min-h-screen space-y-20 bg-background p-10">
       <section>
         <h2 className="mb-4 text-xl font-bold dark:text-white">Icon Only (Proportional)</h2>
         <div className="flex flex-wrap items-end gap-10">
           <div className="flex flex-col items-center gap-2">
             <SealLogoBadgeFixed size={32} />
-            <span className="text-xs text-slate-500">32px</span>
+            <span className="text-xs text-muted-foreground">32px</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <SealLogoBadgeFixed size={64} />
-            <span className="text-xs text-slate-500">64px</span>
+            <span className="text-xs text-muted-foreground">64px</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <SealLogoBadgeFixed size={120} />
-            <span className="text-xs text-slate-500">120px</span>
+            <span className="text-xs text-muted-foreground">120px</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <SealLogoBadgeFixed size={240} />
-            <span className="text-xs text-slate-500">240px</span>
+            <span className="text-xs text-muted-foreground">240px</span>
           </div>
         </div>
       </section>
@@ -36,15 +36,15 @@ function LogoTestPage() {
         <div className="flex flex-wrap items-end gap-10">
           <div className="flex flex-col items-center gap-2">
             <SealLogoBadgeFixed size={32} withText />
-            <span className="text-xs text-slate-500">32px height</span>
+            <span className="text-xs text-muted-foreground">32px height</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <SealLogoBadgeFixed size={64} withText />
-            <span className="text-xs text-slate-500">64px height</span>
+            <span className="text-xs text-muted-foreground">64px height</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <SealLogoBadgeFixed size={120} withText />
-            <span className="text-xs text-slate-500">120px height</span>
+            <span className="text-xs text-muted-foreground">120px height</span>
           </div>
         </div>
       </section>

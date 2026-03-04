@@ -303,9 +303,9 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
   const getStatusIcon = (status: FileWithStatus["status"]) => {
     switch (status) {
       case "success":
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+        return <CheckCircle2 className="text-success h-4 w-4" />;
       case "error":
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <AlertCircle className="text-destructive h-4 w-4" />;
       case "uploading":
         return (
           <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
@@ -436,7 +436,7 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
                               )}
                             {fileWithStatus.retryCount !== undefined &&
                               fileWithStatus.retryCount > 0 && (
-                                <span className="ml-2 text-orange-500">
+                                <span className="text-warning ml-2">
                                   (Retry {fileWithStatus.retryCount}/{MAX_RETRIES})
                                 </span>
                               )}
@@ -446,7 +446,7 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
                               <Progress value={fileWithStatus.progress} className="h-1.5" />
                             )}
                           {fileWithStatus.status === "error" && fileWithStatus.error && (
-                            <p className="mt-1 text-xs text-red-500">{fileWithStatus.error}</p>
+                            <p className="text-destructive mt-1 text-xs">{fileWithStatus.error}</p>
                           )}
                         </div>
                         {fileWithStatus.status === "pending" && !uploading && (

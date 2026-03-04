@@ -21,12 +21,12 @@ export function CitationChip({ documentId, pageNumber, documentName, slug }: Cit
     <Link
       to="/$slug/documents/$documentId"
       params={{ slug, documentId }}
-      className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:bg-violet-900/30 dark:text-violet-300 dark:hover:bg-violet-900/50"
+      className="bg-ai-accent-surface text-ai-accent hover:bg-ai-accent-surface/80 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors"
     >
       <FileTextIcon className="h-3 w-3" />
       {documentName}
       {pageNumber > 0 && (
-        <span className="text-violet-500 dark:text-violet-400">p.{pageNumber}</span>
+        <span className="text-ai-accent/70">p.{pageNumber}</span>
       )}
     </Link>
   );

@@ -44,7 +44,7 @@ export function WorkflowStatusBadge({ status, className }: WorkflowStatusBadgePr
     waiting_for_payment: {
       label: "Awaiting Payment",
       variant: "default",
-      className: "bg-amber-500 hover:bg-amber-500/90 text-white",
+      className: "bg-warning hover:bg-warning/90 text-warning-foreground",
     },
     completed: {
       label: "Completed",
@@ -62,7 +62,7 @@ export function WorkflowStatusBadge({ status, className }: WorkflowStatusBadgePr
     expired: {
       label: "Expired",
       variant: "destructive",
-      className: "bg-orange-600 hover:bg-orange-600/90 text-white",
+      className: "bg-expired hover:bg-expired/90 text-expired-foreground",
     },
   };
 

@@ -41,7 +41,7 @@ export function DocumentPresence({ documentId }: DocumentPresenceProps) {
               )}
             >
               {entry.image && <AvatarImage src={entry.image} alt={entry.name ?? "User"} />}
-              <AvatarFallback className="bg-emerald-100 text-xs font-medium text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+              <AvatarFallback className="bg-success-surface text-success text-xs font-medium">
                 {getInitials(entry.name)}
               </AvatarFallback>
             </Avatar>

@@ -71,9 +71,9 @@ function getStatusLabel(status: ConnectionStatus) {
 function getStatusIcon(status: ConnectionStatus) {
   switch (status) {
     case "connected":
-      return <BadgeCheck className="h-4 w-4 text-emerald-500" />;
+      return <BadgeCheck className="text-success h-4 w-4" />;
     case "pending":
-      return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+      return <AlertTriangle className="text-warning h-4 w-4" />;
     case "restricted":
       return <BadgeX className="text-destructive h-4 w-4" />;
     case "not_connected":
@@ -166,7 +166,7 @@ function PaymentsSettingsPage() {
           Connect Stripe to accept payments through documents. Only workspace owners and admins can
           manage payment settings.
           {!isPro && !isLoadingPlan && (
-            <span className="mt-1 block text-amber-600 dark:text-amber-400">
+            <span className="mt-1 block text-warning">
               Stripe Connect requires a Pro plan.
             </span>
           )}
@@ -192,7 +192,7 @@ function PaymentsSettingsPage() {
             <CardDescription>
               Manage onboarding status, required actions, and connection health.
               {!isPro && !isLoadingPlan && (
-                <span className="mt-1 block text-amber-600 dark:text-amber-400">
+                <span className="mt-1 block text-warning">
                   Upgrade to Pro to connect Stripe and accept payments.
                 </span>
               )}

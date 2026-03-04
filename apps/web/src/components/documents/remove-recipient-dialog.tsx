@@ -51,39 +51,39 @@ export function RemoveRecipientDialog({
         <AlertDialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 duration-150" />
 
         <AlertDialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[400px] -translate-x-1/2 -translate-y-1/2 duration-150">
-          <div className="rounded-lg border border-gray-200 bg-white shadow-lg">
+          <div className="bg-card border-border rounded-lg border shadow-lg">
             <div className="p-6">
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-50">
-                  <UserXIcon className="h-5 w-5 text-red-600" />
+                <div className="bg-destructive/10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+                  <UserXIcon className="text-destructive h-5 w-5" />
                 </div>
-                <AlertDialogPrimitive.Title className="text-base font-semibold text-gray-900">
+                <AlertDialogPrimitive.Title className="text-foreground text-base font-semibold">
                   Remove recipient?
                 </AlertDialogPrimitive.Title>
               </div>
 
-              <AlertDialogPrimitive.Description className="text-sm text-gray-500">
+              <AlertDialogPrimitive.Description className="text-muted-foreground text-sm">
                 This recipient will no longer have access to this document.
               </AlertDialogPrimitive.Description>
 
-              <div className="mt-3 rounded-md border border-gray-100 bg-gray-50 px-3 py-2">
+              <div className="bg-muted border-border mt-3 rounded-md border px-3 py-2">
                 {recipientName && (
-                  <div className="text-sm font-medium text-gray-900">{recipientName}</div>
+                  <div className="text-foreground text-sm font-medium">{recipientName}</div>
                 )}
-                <div className="text-sm text-gray-500">{recipientEmail}</div>
+                <div className="text-muted-foreground text-sm">{recipientEmail}</div>
                 {recipientRole && (
-                  <div className="mt-1 text-xs text-gray-400">{formatRole(recipientRole)}</div>
+                  <div className="text-muted-foreground mt-1 text-xs">{formatRole(recipientRole)}</div>
                 )}
               </div>
 
               {hasFields && (
-                <div className="mt-3 flex items-start gap-2.5 rounded-md border border-amber-200 bg-amber-50 p-3">
-                  <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <div className="bg-warning-surface border-warning/30 mt-3 flex items-start gap-2.5 rounded-md border p-3">
+                  <AlertTriangleIcon className="text-warning mt-0.5 h-4 w-4 shrink-0" />
                   <div>
-                    <div className="text-sm font-medium text-amber-800">
+                    <div className="text-warning text-sm font-medium">
                       {fieldCount} {fieldCount === 1 ? "field" : "fields"} will be deleted
                     </div>
-                    <div className="mt-0.5 text-xs text-amber-700">
+                    <div className="text-warning mt-0.5 text-xs opacity-80">
                       All fields assigned to this recipient will be permanently removed from the
                       document.
                     </div>
@@ -92,11 +92,11 @@ export function RemoveRecipientDialog({
               )}
             </div>
 
-            <div className="flex justify-end gap-3 rounded-b-lg border-t border-gray-100 bg-gray-50 px-6 py-4">
+            <div className="bg-muted border-border flex justify-end gap-3 rounded-b-lg border-t px-6 py-4">
               <AlertDialogPrimitive.Cancel asChild>
                 <button
                   type="button"
-                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                  className="border-border text-foreground hover:bg-muted/80 rounded-md border bg-transparent px-4 py-2 text-sm font-medium transition-colors"
                 >
                   Cancel
                 </button>
@@ -106,7 +106,7 @@ export function RemoveRecipientDialog({
                 type="button"
                 onClick={handleConfirm}
                 disabled={isRemoving}
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="bg-destructive hover:bg-destructive/90 rounded-md px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isRemoving ? "Removing..." : hasFields ? "Remove with fields" : "Remove"}
               </button>

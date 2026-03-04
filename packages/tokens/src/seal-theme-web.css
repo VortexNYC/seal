@@ -1,0 +1,511 @@
+/*
+ * Seal Design System — single source of truth for all web apps.
+ *
+ * This IS the Seal identity. The web app and landing site inherit everything
+ * here. Apps only override what is genuinely unique to them:
+ *   - Landing: fumadocs color overrides, marketing-specific animations
+ *   - Web app: sidebar dimensions, chart colors
+ *
+ * Color space: OKLCH throughout (perceptually uniform, excellent for dark mode).
+ * Brand: Wax Red (#A63D2F) — oklch(0.441 0.148 30)
+ */
+
+/* ── Light mode (default) ─────────────────────────────────────────────────── */
+:root {
+  /* Shadcn/Radix semantic tokens */
+  --background: oklch(0.982 0.002 90);       /* #FAFAF9 — warm off-white */
+  --foreground: oklch(0.138 0.010 65);        /* #1A1714 — near-black, warm */
+  --card: oklch(1 0 0);                       /* #FFFFFF */
+  --card-foreground: oklch(0.138 0.010 65);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.138 0.010 65);
+  --primary: oklch(0.441 0.148 30);           /* #A63D2F — Wax Red */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.962 0.006 80);         /* #F5F3F0 — elevated surface */
+  --secondary-foreground: oklch(0.138 0.010 65);
+  --muted: oklch(0.962 0.006 80);
+  --muted-foreground: oklch(0.563 0.012 70);  /* #8A8279 — warm mid-gray */
+  --accent: oklch(0.962 0.006 80);
+  --accent-foreground: oklch(0.138 0.010 65);
+  --destructive: oklch(0.441 0.148 30);       /* matches primary (wax red) */
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.912 0.008 75);            /* #E8E4DF — warm light border */
+  --input: oklch(0.912 0.008 75);
+  --ring: oklch(0.513 0.156 30);              /* #C8473A — wax red hover */
+
+  /* Sidebar */
+  --sidebar: oklch(0.962 0.006 80);           /* #F5F3F0 */
+  --sidebar-foreground: oklch(0.138 0.010 65);
+  --sidebar-primary: oklch(0.441 0.148 30);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.940 0.007 75);
+  --sidebar-accent-foreground: oklch(0.138 0.010 65);
+  --sidebar-border: oklch(0.912 0.008 75);
+  --sidebar-ring: oklch(0.513 0.156 30);
+
+  /* Border radius */
+  --radius: 0.5rem;                           /* 8px base */
+
+  /* ── Brand scale — Wax Red ──────────────────────────────────────────────── */
+  --brand-50: oklch(0.965 0.012 30);
+  --brand-100: oklch(0.930 0.028 30);
+  --brand-200: oklch(0.870 0.055 30);
+  --brand-300: oklch(0.780 0.090 30);
+  --brand-400: oklch(0.660 0.125 30);
+  --brand-500: oklch(0.513 0.156 30);         /* #C8473A — hover */
+  --brand-600: oklch(0.441 0.148 30);         /* #A63D2F — primary */
+  --brand-700: oklch(0.370 0.128 30);
+  --brand-800: oklch(0.295 0.100 30);
+  --brand-900: oklch(0.225 0.072 30);
+
+  /* ── Semantic status colors ─────────────────────────────────────────────── */
+  --success: oklch(0.580 0.160 152);          /* green */
+  --success-foreground: oklch(1 0 0);
+  --success-surface: oklch(0.960 0.040 152);
+  --warning: oklch(0.720 0.160 75);           /* amber */
+  --warning-foreground: oklch(0.180 0.020 75);
+  --warning-surface: oklch(0.970 0.040 80);
+  --info: oklch(0.560 0.200 255);             /* blue */
+  --info-foreground: oklch(1 0 0);
+  --info-surface: oklch(0.960 0.035 255);
+  --expired: oklch(0.441 0.148 30);           /* same as primary/destructive */
+  --expired-foreground: oklch(1 0 0);
+
+  /* ── Signer color slots (10 recipients) ────────────────────────────────── */
+  --signer-1: oklch(0.55 0.18 255);           /* Blue */
+  --signer-1-surface: oklch(0.96 0.04 255);
+  --signer-2: oklch(0.58 0.16 152);           /* Green */
+  --signer-2-surface: oklch(0.96 0.04 152);
+  --signer-3: oklch(0.52 0.22 295);           /* Purple */
+  --signer-3-surface: oklch(0.96 0.04 295);
+  --signer-4: oklch(0.65 0.18 50);            /* Orange */
+  --signer-4-surface: oklch(0.97 0.04 50);
+  --signer-5: oklch(0.58 0.20 340);           /* Pink */
+  --signer-5-surface: oklch(0.97 0.04 340);
+  --signer-6: oklch(0.62 0.14 195);           /* Cyan */
+  --signer-6-surface: oklch(0.96 0.04 195);
+  --signer-7: oklch(0.78 0.16 95);            /* Yellow */
+  --signer-7-surface: oklch(0.98 0.04 95);
+  --signer-8: oklch(0.48 0.22 275);           /* Indigo */
+  --signer-8-surface: oklch(0.96 0.04 275);
+  --signer-9: oklch(0.56 0.14 178);           /* Teal */
+  --signer-9-surface: oklch(0.96 0.04 178);
+  --signer-10: oklch(0.58 0.20 15);           /* Rose */
+  --signer-10-surface: oklch(0.97 0.04 15);
+
+  /* ── Motion tokens ──────────────────────────────────────────────────────── */
+  --duration-instant: 80ms;                   /* hover bg, icon color */
+  --duration-fast: 150ms;                     /* dropdown open, tooltip */
+  --duration-default: 200ms;                  /* modal, panel, most UI */
+  --duration-slow: 350ms;                     /* page transitions, reveals */
+  --duration-deliberate: 600ms;               /* hero entry, signing complete */
+
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);    /* elements entering */
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);         /* elements leaving */
+  --ease-linear: linear;                            /* progress bars */
+
+  /* ── Role badge colors ──────────────────────────────────────────────────── */
+  --role-owner: oklch(0.52 0.22 295);         /* purple */
+  --role-owner-surface: oklch(0.962 0.018 295);
+  --role-admin: oklch(0.55 0.18 255);          /* blue */
+  --role-admin-surface: oklch(0.962 0.018 255);
+  --role-member: oklch(0.58 0.16 152);         /* green */
+  --role-member-surface: oklch(0.962 0.018 152);
+  --role-viewer: oklch(0.57 0 0);              /* neutral gray */
+  --role-viewer-surface: oklch(0.940 0 0);
+  --role-system: oklch(0.441 0.148 30);        /* brand red (destructive) */
+  --role-system-surface: oklch(0.965 0.012 30);
+
+  /* ── Field type colors ───────────────────────────────────────────────────── */
+  --field-signature: oklch(0.55 0.18 255);     /* blue */
+  --field-signature-surface: oklch(0.962 0.018 255);
+  --field-signature-border: oklch(0.84 0.06 255);
+  --field-text: oklch(0.58 0.16 152);          /* green */
+  --field-text-surface: oklch(0.962 0.018 152);
+  --field-text-border: oklch(0.84 0.06 152);
+  --field-number: oklch(0.72 0.16 75);         /* amber */
+  --field-number-surface: oklch(0.970 0.030 80);
+  --field-number-border: oklch(0.86 0.07 80);
+  --field-date: oklch(0.52 0.22 295);          /* purple */
+  --field-date-surface: oklch(0.962 0.018 295);
+  --field-date-border: oklch(0.84 0.07 295);
+  --field-checkbox: oklch(0.65 0.18 50);       /* orange */
+  --field-checkbox-surface: oklch(0.970 0.025 50);
+  --field-checkbox-border: oklch(0.86 0.07 50);
+  --field-dropdown: oklch(0.62 0.14 195);      /* cyan */
+  --field-dropdown-surface: oklch(0.962 0.018 195);
+  --field-dropdown-border: oklch(0.84 0.06 195);
+  --field-radio: oklch(0.58 0.20 340);         /* pink */
+  --field-radio-surface: oklch(0.970 0.018 340);
+  --field-radio-border: oklch(0.86 0.07 340);
+  --field-attachment: oklch(0.68 0.16 120);    /* lime/yellow-green */
+  --field-attachment-surface: oklch(0.970 0.025 120);
+  --field-attachment-border: oklch(0.86 0.07 120);
+  --field-payment: oklch(0.58 0.15 165);       /* emerald */
+  --field-payment-surface: oklch(0.962 0.018 165);
+  --field-payment-border: oklch(0.84 0.06 165);
+
+  /* ── Document status surface colors ─────────────────────────────────────── */
+  --status-completed-surface: oklch(0.962 0.030 152);
+  --status-completed-border: oklch(0.880 0.060 152);
+  --status-completed-text: oklch(0.480 0.140 152);
+  --status-in-progress-surface: oklch(0.970 0.030 80);
+  --status-in-progress-border: oklch(0.880 0.060 80);
+  --status-in-progress-text: oklch(0.480 0.120 75);
+  --status-sent-surface: oklch(0.962 0.025 255);
+  --status-sent-border: oklch(0.860 0.060 255);
+  --status-sent-text: oklch(0.480 0.160 255);
+  --status-declined-surface: oklch(0.970 0.025 15);
+  --status-declined-border: oklch(0.860 0.060 15);
+  --status-declined-text: oklch(0.480 0.150 15);
+
+  /* ── AI feature accent colors ────────────────────────────────────────────── */
+  --ai-accent: oklch(0.52 0.22 295);           /* violet — AI identity */
+  --ai-accent-foreground: oklch(1 0 0);
+  --ai-accent-surface: oklch(0.968 0.018 295);
+  --ai-accent-border: oklch(0.860 0.070 295);
+  --ai-response-surface: oklch(0.962 0.020 255);
+  --ai-response-text: oklch(0.520 0.180 255);
+  --ai-autofill-surface: oklch(0.962 0.025 152);
+  --ai-autofill-text: oklch(0.520 0.150 152);
+  --ai-error-surface: oklch(0.970 0.025 15);
+  --ai-error-text: oklch(0.520 0.180 15);
+  --ai-suggestion-surface: oklch(0.968 0.018 295);
+  --ai-suggestion-text: oklch(0.520 0.220 295);
+  --ai-warning-surface: oklch(0.970 0.030 80);
+  --ai-warning-text: oklch(0.520 0.160 75);
+
+  /* ── Spacing semantic tokens ────────────────────────────────────────────── */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.5rem;    /* 24px */
+  --space-6: 2rem;      /* 32px */
+  --space-8: 3rem;      /* 48px */
+  --space-10: 4rem;     /* 64px */
+}
+
+/* ── Dark mode ────────────────────────────────────────────────────────────── */
+.dark {
+  --background: oklch(0.070 0 0);             /* #0A0A0A — deep black */
+  --foreground: oklch(0.950 0.008 75);        /* #F0ECE8 — warm near-white */
+  --card: oklch(0.118 0 0);                   /* #141414 — surface */
+  --card-foreground: oklch(0.950 0.008 75);
+  --popover: oklch(0.155 0 0);               /* #202020 — elevated popover */
+  --popover-foreground: oklch(0.950 0.008 75);
+  --primary: oklch(0.513 0.156 30);           /* #C8473A — lighter wax red for dark */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.155 0 0);
+  --secondary-foreground: oklch(0.950 0.008 75);
+  --muted: oklch(0.155 0 0);
+  --muted-foreground: oklch(0.573 0 0);       /* #8a8a8a — neutral mid */
+  --accent: oklch(0.155 0 0);
+  --accent-foreground: oklch(0.950 0.008 75);
+  --destructive: oklch(0.513 0.156 30);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.197 0 0);                 /* #252525 */
+  --input: oklch(0.197 0 0);
+  --ring: oklch(0.513 0.156 30);
+
+  /* Sidebar */
+  --sidebar: oklch(0.118 0 0);               /* #141414 */
+  --sidebar-foreground: oklch(0.950 0.008 75);
+  --sidebar-primary: oklch(0.513 0.156 30);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.155 0 0);
+  --sidebar-accent-foreground: oklch(0.950 0.008 75);
+  --sidebar-border: oklch(0.197 0 0);
+  --sidebar-ring: oklch(0.513 0.156 30);
+
+  /* ── Signer color slots — dark mode (lightened for dark bg) ────────────── */
+  --signer-1: oklch(0.70 0.15 255);           /* Blue */
+  --signer-1-surface: oklch(0.165 0.030 255);
+  --signer-2: oklch(0.70 0.14 152);           /* Green */
+  --signer-2-surface: oklch(0.165 0.030 152);
+  --signer-3: oklch(0.72 0.18 295);           /* Purple */
+  --signer-3-surface: oklch(0.200 0.035 295);
+  --signer-4: oklch(0.75 0.15 50);            /* Orange */
+  --signer-4-surface: oklch(0.200 0.030 50);
+  --signer-5: oklch(0.72 0.18 340);           /* Pink */
+  --signer-5-surface: oklch(0.200 0.030 340);
+  --signer-6: oklch(0.72 0.12 195);           /* Cyan */
+  --signer-6-surface: oklch(0.200 0.025 195);
+  --signer-7: oklch(0.78 0.15 95);            /* Yellow */
+  --signer-7-surface: oklch(0.200 0.028 95);
+  --signer-8: oklch(0.68 0.20 270);           /* Indigo */
+  --signer-8-surface: oklch(0.200 0.035 270);
+  --signer-9: oklch(0.72 0.13 178);           /* Teal */
+  --signer-9-surface: oklch(0.200 0.028 178);
+  --signer-10: oklch(0.72 0.18 15);           /* Rose */
+  --signer-10-surface: oklch(0.200 0.035 15);
+
+  /* ── Role badge colors — dark mode ─────────────────────────────────────── */
+  --role-owner: oklch(0.72 0.18 295);
+  --role-owner-surface: oklch(0.200 0.040 295);
+  --role-admin: oklch(0.70 0.15 255);
+  --role-admin-surface: oklch(0.200 0.035 255);
+  --role-member: oklch(0.70 0.14 152);
+  --role-member-surface: oklch(0.200 0.030 152);
+  --role-viewer: oklch(0.70 0 0);
+  --role-viewer-surface: oklch(0.220 0 0);
+  --role-system: oklch(0.650 0.150 30);
+  --role-system-surface: oklch(0.200 0.040 30);
+
+  /* ── Field type colors — dark mode ──────────────────────────────────────── */
+  --field-signature: oklch(0.70 0.15 255);
+  --field-signature-surface: oklch(0.200 0.030 255);
+  --field-signature-border: oklch(0.300 0.060 255);
+  --field-text: oklch(0.70 0.14 152);
+  --field-text-surface: oklch(0.200 0.030 152);
+  --field-text-border: oklch(0.300 0.050 152);
+  --field-number: oklch(0.75 0.15 75);
+  --field-number-surface: oklch(0.200 0.030 80);
+  --field-number-border: oklch(0.300 0.060 80);
+  --field-date: oklch(0.72 0.18 295);
+  --field-date-surface: oklch(0.200 0.035 295);
+  --field-date-border: oklch(0.300 0.060 295);
+  --field-checkbox: oklch(0.75 0.15 50);
+  --field-checkbox-surface: oklch(0.200 0.030 50);
+  --field-checkbox-border: oklch(0.300 0.060 50);
+  --field-dropdown: oklch(0.72 0.12 195);
+  --field-dropdown-surface: oklch(0.200 0.025 195);
+  --field-dropdown-border: oklch(0.300 0.050 195);
+  --field-radio: oklch(0.72 0.18 340);
+  --field-radio-surface: oklch(0.200 0.030 340);
+  --field-radio-border: oklch(0.300 0.060 340);
+  --field-attachment: oklch(0.75 0.14 120);
+  --field-attachment-surface: oklch(0.200 0.030 120);
+  --field-attachment-border: oklch(0.300 0.060 120);
+  --field-payment: oklch(0.72 0.13 165);
+  --field-payment-surface: oklch(0.200 0.030 165);
+  --field-payment-border: oklch(0.300 0.055 165);
+
+  /* ── Document status surface colors — dark mode ──────────────────────────── */
+  --status-completed-surface: oklch(0.160 0.040 152);
+  --status-completed-border: oklch(0.280 0.070 152);
+  --status-completed-text: oklch(0.700 0.150 152);
+  --status-in-progress-surface: oklch(0.170 0.035 80);
+  --status-in-progress-border: oklch(0.300 0.070 80);
+  --status-in-progress-text: oklch(0.750 0.150 75);
+  --status-sent-surface: oklch(0.165 0.030 255);
+  --status-sent-border: oklch(0.290 0.065 255);
+  --status-sent-text: oklch(0.700 0.160 255);
+  --status-declined-surface: oklch(0.170 0.035 15);
+  --status-declined-border: oklch(0.290 0.065 15);
+  --status-declined-text: oklch(0.700 0.160 15);
+
+  /* ── AI feature accent colors — dark mode ────────────────────────────────── */
+  --ai-accent: oklch(0.72 0.20 295);
+  --ai-accent-foreground: oklch(1 0 0);
+  --ai-accent-surface: oklch(0.200 0.040 295);
+  --ai-accent-border: oklch(0.320 0.080 295);
+  --ai-response-surface: oklch(0.165 0.030 255);
+  --ai-response-text: oklch(0.700 0.160 255);
+  --ai-autofill-surface: oklch(0.165 0.030 152);
+  --ai-autofill-text: oklch(0.700 0.145 152);
+  --ai-error-surface: oklch(0.170 0.035 15);
+  --ai-error-text: oklch(0.700 0.160 15);
+  --ai-suggestion-surface: oklch(0.200 0.040 295);
+  --ai-suggestion-text: oklch(0.720 0.200 295);
+  --ai-warning-surface: oklch(0.170 0.030 80);
+  --ai-warning-text: oklch(0.750 0.155 75);
+
+  /* ── Brand scale — dark mode (lighter for visibility) ───────────────────── */
+  --brand-50: oklch(0.220 0.035 30);
+  --brand-100: oklch(0.270 0.055 30);
+  --brand-200: oklch(0.330 0.080 30);
+  --brand-300: oklch(0.400 0.110 30);
+  --brand-400: oklch(0.470 0.138 30);
+  --brand-500: oklch(0.513 0.156 30);
+  --brand-600: oklch(0.580 0.150 30);
+  --brand-700: oklch(0.650 0.130 30);
+  --brand-800: oklch(0.740 0.100 30);
+  --brand-900: oklch(0.850 0.060 30);
+
+  /* ── Semantic status colors — dark mode ─────────────────────────────────── */
+  --success: oklch(0.620 0.150 152);
+  --success-foreground: oklch(1 0 0);
+  --success-surface: oklch(0.165 0.040 152);
+  --warning: oklch(0.750 0.150 75);
+  --warning-foreground: oklch(0.150 0.015 75);
+  --warning-surface: oklch(0.160 0.030 80);
+  --info: oklch(0.620 0.190 255);
+  --info-foreground: oklch(1 0 0);
+  --info-surface: oklch(0.160 0.035 255);
+  --expired: oklch(0.513 0.156 30);
+  --expired-foreground: oklch(1 0 0);
+}
+
+/* ── Tailwind theme mapping ───────────────────────────────────────────────── */
+@theme inline {
+  /* Fonts */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+
+  /* Semantic colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Border radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Brand scale */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+
+  /* Status colors */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-surface: var(--success-surface);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-surface: var(--warning-surface);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-surface: var(--info-surface);
+  --color-expired: var(--expired);
+  --color-expired-foreground: var(--expired-foreground);
+
+  /* Signer color slots */
+  --color-signer-1: var(--signer-1);
+  --color-signer-1-surface: var(--signer-1-surface);
+  --color-signer-2: var(--signer-2);
+  --color-signer-2-surface: var(--signer-2-surface);
+  --color-signer-3: var(--signer-3);
+  --color-signer-3-surface: var(--signer-3-surface);
+  --color-signer-4: var(--signer-4);
+  --color-signer-4-surface: var(--signer-4-surface);
+  --color-signer-5: var(--signer-5);
+  --color-signer-5-surface: var(--signer-5-surface);
+  --color-signer-6: var(--signer-6);
+  --color-signer-6-surface: var(--signer-6-surface);
+  --color-signer-7: var(--signer-7);
+  --color-signer-7-surface: var(--signer-7-surface);
+  --color-signer-8: var(--signer-8);
+  --color-signer-8-surface: var(--signer-8-surface);
+  --color-signer-9: var(--signer-9);
+  --color-signer-9-surface: var(--signer-9-surface);
+  --color-signer-10: var(--signer-10);
+  --color-signer-10-surface: var(--signer-10-surface);
+
+  /* Motion */
+  --duration-instant: var(--duration-instant);
+  --duration-fast: var(--duration-fast);
+  --duration-default: var(--duration-default);
+  --duration-slow: var(--duration-slow);
+  --duration-deliberate: var(--duration-deliberate);
+  --ease-enter: var(--ease-enter);
+  --ease-exit: var(--ease-exit);
+  --ease-linear: var(--ease-linear);
+
+  /* Role badge colors */
+  --color-role-owner: var(--role-owner);
+  --color-role-owner-surface: var(--role-owner-surface);
+  --color-role-admin: var(--role-admin);
+  --color-role-admin-surface: var(--role-admin-surface);
+  --color-role-member: var(--role-member);
+  --color-role-member-surface: var(--role-member-surface);
+  --color-role-viewer: var(--role-viewer);
+  --color-role-viewer-surface: var(--role-viewer-surface);
+  --color-role-system: var(--role-system);
+  --color-role-system-surface: var(--role-system-surface);
+
+  /* Field type colors */
+  --color-field-signature: var(--field-signature);
+  --color-field-signature-surface: var(--field-signature-surface);
+  --color-field-signature-border: var(--field-signature-border);
+  --color-field-text: var(--field-text);
+  --color-field-text-surface: var(--field-text-surface);
+  --color-field-text-border: var(--field-text-border);
+  --color-field-number: var(--field-number);
+  --color-field-number-surface: var(--field-number-surface);
+  --color-field-number-border: var(--field-number-border);
+  --color-field-date: var(--field-date);
+  --color-field-date-surface: var(--field-date-surface);
+  --color-field-date-border: var(--field-date-border);
+  --color-field-checkbox: var(--field-checkbox);
+  --color-field-checkbox-surface: var(--field-checkbox-surface);
+  --color-field-checkbox-border: var(--field-checkbox-border);
+  --color-field-dropdown: var(--field-dropdown);
+  --color-field-dropdown-surface: var(--field-dropdown-surface);
+  --color-field-dropdown-border: var(--field-dropdown-border);
+  --color-field-radio: var(--field-radio);
+  --color-field-radio-surface: var(--field-radio-surface);
+  --color-field-radio-border: var(--field-radio-border);
+  --color-field-attachment: var(--field-attachment);
+  --color-field-attachment-surface: var(--field-attachment-surface);
+  --color-field-attachment-border: var(--field-attachment-border);
+  --color-field-payment: var(--field-payment);
+  --color-field-payment-surface: var(--field-payment-surface);
+  --color-field-payment-border: var(--field-payment-border);
+
+  /* Document status surface colors */
+  --color-status-completed-surface: var(--status-completed-surface);
+  --color-status-completed-border: var(--status-completed-border);
+  --color-status-completed-text: var(--status-completed-text);
+  --color-status-in-progress-surface: var(--status-in-progress-surface);
+  --color-status-in-progress-border: var(--status-in-progress-border);
+  --color-status-in-progress-text: var(--status-in-progress-text);
+  --color-status-sent-surface: var(--status-sent-surface);
+  --color-status-sent-border: var(--status-sent-border);
+  --color-status-sent-text: var(--status-sent-text);
+  --color-status-declined-surface: var(--status-declined-surface);
+  --color-status-declined-border: var(--status-declined-border);
+  --color-status-declined-text: var(--status-declined-text);
+
+  /* AI accent colors */
+  --color-ai-accent: var(--ai-accent);
+  --color-ai-accent-foreground: var(--ai-accent-foreground);
+  --color-ai-accent-surface: var(--ai-accent-surface);
+  --color-ai-accent-border: var(--ai-accent-border);
+  --color-ai-response-surface: var(--ai-response-surface);
+  --color-ai-response-text: var(--ai-response-text);
+  --color-ai-autofill-surface: var(--ai-autofill-surface);
+  --color-ai-autofill-text: var(--ai-autofill-text);
+  --color-ai-error-surface: var(--ai-error-surface);
+  --color-ai-error-text: var(--ai-error-text);
+  --color-ai-suggestion-surface: var(--ai-suggestion-surface);
+  --color-ai-suggestion-text: var(--ai-suggestion-text);
+  --color-ai-warning-surface: var(--ai-warning-surface);
+  --color-ai-warning-text: var(--ai-warning-text);
+}

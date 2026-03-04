@@ -2,6 +2,8 @@ import type Konva from "konva";
 import { useEffect, useRef, useState } from "react";
 import { Group, Image as KonvaImage, Rect, Text, Transformer } from "react-konva";
 
+import { canvas } from "@seal/tokens/theme";
+
 import type { FieldType } from "./field-toolbar";
 import { getRecipientColorById, type RecipientColor, UNASSIGNED_COLOR } from "./recipient-colors";
 
@@ -84,57 +86,8 @@ interface DraggableFieldProps {
   useRecipientColors?: boolean;
 }
 
-/**
- * Craft-inspired field color palette
- * Deep ink colors with vibrant accents
- */
-const FIELD_COLORS: Record<FieldType, { ink: string; accent: string; glow: string }> = {
-  signature: {
-    ink: "#1e3a5f",
-    accent: "#3b82f6",
-    glow: "rgba(59, 130, 246, 0.25)",
-  },
-  text: {
-    ink: "#14532d",
-    accent: "#22c55e",
-    glow: "rgba(34, 197, 94, 0.25)",
-  },
-  number: {
-    ink: "#78350f",
-    accent: "#f59e0b",
-    glow: "rgba(245, 158, 11, 0.25)",
-  },
-  date: {
-    ink: "#4c1d95",
-    accent: "#8b5cf6",
-    glow: "rgba(139, 92, 246, 0.25)",
-  },
-  checkbox: {
-    ink: "#7c2d12",
-    accent: "#f97316",
-    glow: "rgba(249, 115, 22, 0.25)",
-  },
-  dropdown: {
-    ink: "#164e63",
-    accent: "#06b6d4",
-    glow: "rgba(6, 182, 212, 0.25)",
-  },
-  radio: {
-    ink: "#831843",
-    accent: "#ec4899",
-    glow: "rgba(236, 72, 153, 0.25)",
-  },
-  attachment: {
-    ink: "#3f6212",
-    accent: "#84cc16",
-    glow: "rgba(132, 204, 22, 0.25)",
-  },
-  payment: {
-    ink: "#065f46",
-    accent: "#10b981",
-    glow: "rgba(16, 185, 129, 0.25)",
-  },
-};
+/** Canvas field color palette — sourced from @seal/tokens */
+const FIELD_COLORS = canvas.fieldColors;
 
 /**
  * Field type labels
@@ -267,7 +220,7 @@ export function DraggableField({
             cornerRadius={4}
             stroke={colors.accent}
             strokeWidth={isSelected ? 2 : 1.5}
-            fill="#ffffff"
+            fill={canvas.chrome.background}
           />
           <Text
             x={x}
@@ -298,11 +251,11 @@ export function DraggableField({
         <Rect
           width={field.width}
           height={field.height}
-          fill="#ffffff"
+          fill={canvas.chrome.background}
           stroke={isSelected ? colors.accent : colors.ink}
           strokeWidth={isSelected ? 2 : 1}
           cornerRadius={6}
-          shadowColor={isSelected ? colors.glow : "rgba(0,0,0,0.08)"}
+          shadowColor={isSelected ? colors.glow : canvas.chrome.shadowCheckbox}
           shadowBlur={isSelected ? 12 : 4}
           shadowOpacity={1}
           shadowOffsetY={isSelected ? 0 : 2}
@@ -348,7 +301,7 @@ export function DraggableField({
                 cornerRadius={3}
                 stroke={colors.accent}
                 strokeWidth={1.5}
-                fill="#ffffff"
+                fill={canvas.chrome.background}
               />
               {/* Checkbox checkmark (faded) */}
               <Text
@@ -370,7 +323,7 @@ export function DraggableField({
                 text={option}
                 fontSize={11}
                 fontFamily="'DM Sans', system-ui, sans-serif"
-                fill="#374151"
+                fill={canvas.chrome.optionText}
                 listening={false}
               />
             </Group>
@@ -390,11 +343,11 @@ export function DraggableField({
         <Rect
           width={field.width}
           height={field.height}
-          fill={isUnassigned ? "#fafafa" : "#ffffff"}
-          stroke={isSelected ? colors.accent : "#cbd5e1"}
+          fill={isUnassigned ? canvas.chrome.backgroundUnassigned : canvas.chrome.background}
+          stroke={isSelected ? colors.accent : canvas.chrome.borderUnselected}
           strokeWidth={isSelected ? 2 : 1}
           cornerRadius={6}
-          shadowColor={isSelected ? colors.glow : "rgba(0,0,0,0.06)"}
+          shadowColor={isSelected ? colors.glow : canvas.chrome.shadowUnselected}
           shadowBlur={isSelected ? 12 : 4}
           shadowOpacity={1}
           shadowOffsetY={isSelected ? 0 : 2}
@@ -530,11 +483,11 @@ export function DraggableField({
         <Rect
           width={field.width}
           height={field.height}
-          fill="#ffffff"
-          stroke={isSelected ? colors.accent : "#22c55e"}
+          fill={canvas.chrome.background}
+          stroke={isSelected ? colors.accent : canvas.filled.stroke}
           strokeWidth={isSelected ? 2 : 1}
           cornerRadius={6}
-          shadowColor={isSelected ? colors.glow : "rgba(34, 197, 94, 0.1)"}
+          shadowColor={isSelected ? colors.glow : canvas.filled.shadowColor}
           shadowBlur={isSelected ? 12 : 4}
           shadowOpacity={1}
           shadowOffsetY={isSelected ? 0 : 2}
@@ -545,19 +498,19 @@ export function DraggableField({
           y={0}
           width={4}
           height={field.height}
-          fill="#22c55e"
+          fill={canvas.filled.accent}
           cornerRadius={[6, 0, 0, 6]}
         />
 
         {sealIcon && (
           <Group x={4} y={0}>
-            <Rect width={sidebarWidth} height={field.height} fill="rgba(34, 197, 94, 0.08)" />
+            <Rect width={sidebarWidth} height={field.height} fill={canvas.filled.accentTint} />
             <Rect
               x={sidebarWidth}
               y={0}
               width={1}
               height={field.height}
-              fill="#22c55e"
+              fill={canvas.filled.accent}
               opacity={0.2}
             />
             <KonvaImage
@@ -578,7 +531,7 @@ export function DraggableField({
           text={getFieldTypeLabel(field.fieldType)}
           fontSize={titleFontSize}
           fontStyle="bold"
-          fill="#166534"
+          fill={canvas.filled.titleText}
           align="left"
         />
 
@@ -590,7 +543,7 @@ export function DraggableField({
               width={availableWidth}
               text={`Signed by: ${signerName}`}
               fontSize={detailFontSize}
-              fill="#6b7280"
+              fill={canvas.filled.detailText}
               align="left"
             />
 
@@ -601,7 +554,7 @@ export function DraggableField({
                 width={availableWidth}
                 text={`Date: ${formattedDate.date} at ${formattedDate.time}`}
                 fontSize={detailFontSize}
-                fill="#6b7280"
+                fill={canvas.filled.detailText}
                 align="left"
               />
             )}
@@ -615,7 +568,7 @@ export function DraggableField({
             width={availableWidth}
             text={`${signerName} • ${formattedDate.date}`}
             fontSize={detailFontSize}
-            fill="#6b7280"
+            fill={canvas.filled.detailText}
             align="left"
           />
         )}
@@ -670,7 +623,7 @@ export function DraggableField({
           rotateEnabled={false}
           borderStroke={colors.accent}
           borderStrokeWidth={1.5}
-          anchorFill="#ffffff"
+          anchorFill={canvas.chrome.anchorFill}
           anchorStroke={colors.accent}
           anchorStrokeWidth={1.5}
           anchorSize={8}

@@ -74,13 +74,13 @@ export function PaymentFieldSummary({
   const isPayable = config.paymentStatus !== "paid" && config.paymentStatus !== "cancelled";
 
   return (
-    <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+    <div className="border-field-payment-border bg-field-payment-surface/50 space-y-3 rounded-lg border p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CreditCardIcon className="h-4 w-4 text-emerald-600" />
-          <span className="text-sm font-semibold text-emerald-800">Payment Required</span>
+          <CreditCardIcon className="text-field-payment h-4 w-4" />
+          <span className="text-field-payment text-sm font-semibold">Payment Required</span>
         </div>
-        <Badge variant="outline" className="border-emerald-200 text-emerald-700">
+        <Badge variant="outline" className="border-field-payment-border text-field-payment">
           {PAYMENT_TYPE_LABELS[config.paymentType] ?? config.paymentType}
         </Badge>
       </div>
@@ -89,13 +89,13 @@ export function PaymentFieldSummary({
       <div className="space-y-1">
         {config.items.map((item) => (
           <div key={item.id} className="flex justify-between text-sm">
-            <span className="text-gray-700">
+            <span className="text-foreground">
               {item.description}
               {item.quantity > 1 && (
                 <span className="text-muted-foreground"> x{item.quantity}</span>
               )}
             </span>
-            <span className="font-medium text-gray-900">
+            <span className="text-foreground font-medium">
               {formatCents(item.quantity * item.unitPrice, config.currency)}
             </span>
           </div>
@@ -103,16 +103,16 @@ export function PaymentFieldSummary({
       </div>
 
       {/* Total */}
-      <div className="flex justify-between border-t border-emerald-200 pt-2">
-        <span className="text-sm font-semibold text-gray-900">Total</span>
-        <span className="text-sm font-bold text-emerald-700">
+      <div className="border-field-payment-border flex justify-between border-t pt-2">
+        <span className="text-foreground text-sm font-semibold">Total</span>
+        <span className="text-field-payment text-sm font-bold">
           {formatCents(config.totalAmountCents, config.currency)}
         </span>
       </div>
 
       {/* Payment status */}
       {config.paymentStatus && (
-        <div className="flex items-center justify-between border-t border-emerald-200 pt-2">
+        <div className="border-field-payment-border flex items-center justify-between border-t pt-2">
           <span className="text-muted-foreground text-xs">Status</span>
           <Badge variant={PAYMENT_STATUS_CONFIG[config.paymentStatus]?.variant ?? "secondary"}>
             {PAYMENT_STATUS_CONFIG[config.paymentStatus]?.label ?? config.paymentStatus}
@@ -136,7 +136,7 @@ export function PaymentFieldSummary({
           href={config.hostedInvoiceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1 inline-flex w-full items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+          className="bg-field-payment hover:bg-field-payment/90 mt-1 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           Pay Now &rarr;
         </a>

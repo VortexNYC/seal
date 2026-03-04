@@ -139,7 +139,7 @@ function SealFieldIcon({ size, containerHeight }: { size: number; containerHeigh
   const containerWidth = size + 6;
   return (
     <div
-      className="flex items-center justify-center rounded-l-sm border-r border-gray-200/50 bg-white/95 shadow-sm"
+      className="bg-card/95 flex items-center justify-center rounded-l-sm border-r shadow-sm"
       style={{
         width: containerWidth,
         height: containerHeight,
@@ -205,7 +205,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
     if (isFilledField && signatureDetails) {
       return (
         <div
-          className="absolute overflow-hidden rounded-sm border border-gray-300 bg-gray-50/80"
+          className="bg-muted/80 absolute overflow-hidden rounded-sm border"
           style={{
             left: `${absoluteX}px`,
             top: `${absoluteY}px`,
@@ -224,20 +224,20 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
               <div className="flex flex-col gap-0.5">
                 {/* Field type */}
                 <div className="flex items-baseline gap-1">
-                  <span className="text-[9px] text-gray-500">{getFieldTypeLabel(fieldType)}</span>
+                  <span className="text-muted-foreground text-[9px]">{getFieldTypeLabel(fieldType)}</span>
                 </div>
                 {/* Signer name */}
                 <div className="flex items-baseline gap-1">
-                  <span className="text-[9px] text-gray-500">Signed by:</span>
-                  <span className="truncate text-[10px] font-semibold text-gray-800">
+                  <span className="text-muted-foreground text-[9px]">Signed by:</span>
+                  <span className="text-foreground truncate text-[10px] font-semibold">
                     {signatureDetails.signerName || signatureDetails.signerEmail}
                   </span>
                 </div>
                 {/* Date and time */}
                 {formattedDate && (
                   <div className="flex items-baseline gap-1">
-                    <span className="text-[9px] text-gray-500">Date:</span>
-                    <span className="text-[9px] text-gray-700">
+                    <span className="text-muted-foreground text-[9px]">Date:</span>
+                    <span className="text-foreground/70 text-[9px]">
                       {formattedDate.date} at {formattedDate.time}
                     </span>
                   </div>
@@ -251,7 +251,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
               className="flex h-full flex-col justify-center bg-white/90 py-0.5 pr-1"
               style={{ paddingLeft: sealIconSize + 10 }}
             >
-              <div className="text-[7px] text-gray-600">
+              <div className="text-muted-foreground text-[7px]">
                 <div className="truncate font-medium">{getFieldTypeLabel(fieldType)}</div>
                 <div className="mt-0.5 truncate text-[6px]">
                   {signatureDetails.signerName || signatureDetails.signerEmail}
@@ -278,12 +278,12 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
           "hover:border-primary hover:bg-primary/5",
           "flex items-center justify-center text-xs",
           isFilled
-            ? "border-green-500 bg-green-50/50"
+            ? "border-success bg-success-surface/50"
             : isRequired
-              ? "border-red-400 bg-red-50/30"
-              : "border-blue-400 bg-blue-50/30",
+              ? "border-destructive bg-destructive/5"
+              : "border-info bg-info-surface/30",
           isActive && "ring-primary border-primary animate-pulse ring-2 ring-offset-2",
-          isMainSignature && !isActive && "ring-2 ring-yellow-500",
+          isMainSignature && !isActive && "ring-warning ring-2",
         )}
         style={{
           left: `${absoluteX}px`,
@@ -301,7 +301,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
           style={{ paddingLeft: sealIconSize + 10 }}
         >
           <div className="flex items-center gap-1">
-            {isMainSignature && <StarIcon className="h-3 w-3 text-yellow-600" />}
+            {isMainSignature && <StarIcon className="h-3 w-3 text-warning" />}
             {getFieldIcon(fieldType)}
             {absoluteWidth > 80 && (
               <span className="max-w-[60px] truncate text-[10px] font-medium">
@@ -310,28 +310,23 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
             )}
           </div>
           {isFilled && absoluteHeight > 25 && (
-            <div className="text-[9px] font-medium text-green-700">
+            <div className="text-[9px] font-medium text-success">
               {fieldType === "payment" && paymentInfo
                 ? `✓ ${paymentInfo.paymentStatus === "paid" ? "Paid" : "Pending"}`
                 : "✓ Filled"}
             </div>
           )}
           {!isFilled && isRequired && absoluteHeight > 25 && (
-            <div className="text-[9px] font-medium text-red-700">Required</div>
+            <div className="text-[9px] font-medium text-destructive">Required</div>
           )}
           {fieldType === "payment" && paymentInfo && absoluteHeight > 25 && (
-            <div
-              className={cn(
-                "text-[9px] font-semibold",
-                paymentInfo.paymentStatus === "paid" ? "text-green-700" : "text-emerald-700",
-              )}
-            >
+            <div className="text-field-payment text-[9px] font-semibold">
               {paymentInfo.paymentStatus === "paid" ? "✓ " : ""}
               {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
             </div>
           )}
           {isMainSignature && absoluteHeight > 30 && (
-            <div className="text-[8px] font-medium text-yellow-700">Document Signature</div>
+            <div className="text-[8px] font-medium text-warning">Document Signature</div>
           )}
         </div>
 
@@ -342,12 +337,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
             {getFieldTypeLabel(fieldType)}
             {isRequired && " • Required"}
             {fieldType === "payment" && paymentInfo && (
-              <span
-                className={cn(
-                  "ml-1 font-semibold",
-                  paymentInfo.paymentStatus === "paid" ? "text-green-700" : "text-emerald-700",
-                )}
-              >
+              <span className="text-field-payment ml-1 font-semibold">
                 • {paymentInfo.paymentStatus === "paid" ? "Paid " : ""}
                 {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
               </span>

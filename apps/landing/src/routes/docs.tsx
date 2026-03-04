@@ -1,5 +1,4 @@
 import "fumadocs-ui/style.css";
-import "~/styles/docs-theme.css";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";

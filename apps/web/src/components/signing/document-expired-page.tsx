@@ -8,13 +8,13 @@ interface DocumentExpiredPageProps {
 
 export function DocumentExpiredPage({ ownerName }: DocumentExpiredPageProps) {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
+    <div className="bg-background flex min-h-dvh flex-col items-center justify-center px-4">
       <div className="w-full max-w-md space-y-6 text-center">
         <SealLogo className="mx-auto h-10 w-auto" />
 
-        <div className="rounded-lg border bg-white p-8 shadow-sm dark:bg-gray-900">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-            <ClockIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
+        <div className="bg-card rounded-lg border p-8 shadow-sm">
+          <div className="bg-destructive/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+            <ClockIcon className="text-destructive h-6 w-6" />
           </div>
 
           <h1 className="text-xl font-semibold text-balance">This document has expired</h1>

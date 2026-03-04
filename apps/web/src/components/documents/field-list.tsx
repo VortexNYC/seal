@@ -64,15 +64,15 @@ const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
 };
 
 const FIELD_COLORS: Record<FieldType, string> = {
-  signature: "bg-blue-100 text-blue-700 border-blue-200",
-  text: "bg-green-100 text-green-700 border-green-200",
-  number: "bg-amber-100 text-amber-700 border-amber-200",
-  date: "bg-purple-100 text-purple-700 border-purple-200",
-  checkbox: "bg-orange-100 text-orange-700 border-orange-200",
-  dropdown: "bg-cyan-100 text-cyan-700 border-cyan-200",
-  radio: "bg-pink-100 text-pink-700 border-pink-200",
-  attachment: "bg-lime-100 text-lime-700 border-lime-200",
-  payment: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  signature: "bg-field-signature-surface text-field-signature border-field-signature-border",
+  text: "bg-field-text-surface text-field-text border-field-text-border",
+  number: "bg-field-number-surface text-field-number border-field-number-border",
+  date: "bg-field-date-surface text-field-date border-field-date-border",
+  checkbox: "bg-field-checkbox-surface text-field-checkbox border-field-checkbox-border",
+  dropdown: "bg-field-dropdown-surface text-field-dropdown border-field-dropdown-border",
+  radio: "bg-field-radio-surface text-field-radio border-field-radio-border",
+  attachment: "bg-field-attachment-surface text-field-attachment border-field-attachment-border",
+  payment: "bg-field-payment-surface text-field-payment border-field-payment-border",
 };
 
 const FIELD_LABELS: Record<FieldType, string> = {
@@ -158,7 +158,7 @@ function FieldRow({
             )}
             {field.fieldType === "payment" && field.paymentConfig && (
               <div className="mt-1 flex items-center gap-1.5 text-xs">
-                <span className="font-semibold text-emerald-700">
+                <span className="font-semibold text-field-payment">
                   {formatCents(field.paymentConfig.totalAmountCents, field.paymentConfig.currency)}
                 </span>
                 <span className="text-muted-foreground">•</span>

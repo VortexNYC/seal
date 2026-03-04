@@ -22,7 +22,7 @@ export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
   const progressOffset = ringCircumference - (progress.percentComplete / 100) * ringCircumference;
 
   return (
-    <div className="flex animate-[fadeInUp_0.3s_ease-out_forwards] flex-col items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:rounded-xl sm:p-4 dark:border-slate-700 dark:bg-slate-900">
+    <div className="flex animate-[fadeInUp_0.3s_ease-out_forwards] flex-col items-center gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:rounded-xl sm:p-4">
       {/* Progress Ring */}
       <div className="relative h-[120px] w-[120px] sm:h-[90px] sm:w-[90px]">
         <svg
@@ -38,7 +38,7 @@ export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
             cy="60"
             r={ringRadius}
             fill="none"
-            stroke="hsl(220 15% 92%)"
+            stroke="var(--border)"
             strokeWidth="8"
           />
           {/* Progress circle */}
@@ -47,7 +47,7 @@ export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
             cy="60"
             r={ringRadius}
             fill="none"
-            stroke="hsl(145 55% 45%)"
+            stroke="var(--success)"
             strokeWidth="8"
             strokeLinecap="round"
             strokeDasharray={ringCircumference}
@@ -57,10 +57,10 @@ export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
         </svg>
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-serif text-[1.75rem] leading-none font-semibold text-slate-800 sm:text-xl dark:text-slate-200">
+          <span className="font-serif text-[1.75rem] leading-none font-semibold text-foreground sm:text-xl">
             {progress.percentComplete}%
           </span>
-          <span className="mt-0.5 font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400">
+          <span className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">
             Complete
           </span>
         </div>
@@ -71,23 +71,23 @@ export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
         <StatusBox
           value={progress.byStatus.signed}
           label="Signed"
-          colorClass="text-emerald-600 dark:text-emerald-400"
+          colorClass="text-success"
         />
         <StatusBox
           value={progress.byStatus.pending}
           label="Pending"
-          colorClass="text-amber-600 dark:text-amber-400"
+          colorClass="text-warning"
         />
         <StatusBox
           value={progress.byStatus.viewed}
           label="Viewed"
-          colorClass="text-slate-700 dark:text-slate-300"
+          colorClass="text-foreground"
         />
         {progress.byStatus.declined > 0 && (
           <StatusBox
             value={progress.byStatus.declined}
             label="Declined"
-            colorClass="text-red-500 dark:text-red-400"
+            colorClass="text-destructive"
           />
         )}
       </div>
@@ -103,9 +103,9 @@ interface StatusBoxProps {
 
 function StatusBox({ value, label, colorClass }: StatusBoxProps) {
   return (
-    <div className="rounded-[10px] bg-slate-50 px-2 py-3 text-center sm:px-1.5 sm:py-2.5 dark:bg-slate-800">
+    <div className="rounded-[10px] bg-muted px-2 py-3 text-center sm:px-1.5 sm:py-2.5">
       <div className={`font-sans text-xl font-semibold sm:text-base ${colorClass}`}>{value}</div>
-      <div className="mt-0.5 font-sans text-[0.6875rem] text-slate-500 dark:text-slate-400">
+      <div className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">
         {label}
       </div>
     </div>

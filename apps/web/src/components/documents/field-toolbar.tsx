@@ -161,13 +161,13 @@ function FieldButton({ type, icon, label, onDragStart, onDragEnd, disabled }: Fi
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       disabled={disabled}
-      className={`group relative flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 transition-colors dark:border-slate-700 dark:bg-slate-900 ${
+      className={`group bg-card border-border relative flex items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors ${
         disabled
           ? "cursor-not-allowed opacity-50"
-          : "cursor-grab hover:border-gray-300 active:cursor-grabbing dark:hover:border-slate-600"
+          : "hover:border-border cursor-grab active:cursor-grabbing"
       } ${isDragging ? "scale-95 border-dashed opacity-40" : ""}`}
     >
-      <div className="flex items-center text-gray-400 transition-colors group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
+      <div className="text-muted-foreground flex items-center transition-colors">
         <GripVerticalIcon className="h-3 w-3" />
       </div>
       <div
@@ -180,7 +180,7 @@ function FieldButton({ type, icon, label, onDragStart, onDragEnd, disabled }: Fi
       >
         {icon}
       </div>
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+      <span className="text-foreground text-sm font-medium">{label}</span>
     </button>
   );
 }
@@ -249,9 +249,9 @@ export function FieldToolbar({
   }, [handleUndo, handleRedo]);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800">
-      <div className="mb-3 flex items-baseline justify-between border-b border-dashed border-gray-300 pb-2.5 dark:border-slate-600">
-        <span className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
+    <div className="bg-muted border-border rounded-xl border p-4">
+      <div className="border-border mb-3 flex items-baseline justify-between border-b border-dashed pb-2.5">
+        <span className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
           Fields
         </span>
         <div className="flex items-center gap-1">
@@ -263,8 +263,8 @@ export function FieldToolbar({
             className={cn(
               "rounded p-1 transition-colors",
               canUndo && isDraft
-                ? "text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-slate-600 dark:hover:text-gray-200"
-                : "cursor-not-allowed text-gray-300 dark:text-gray-600",
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-muted-foreground/30 cursor-not-allowed",
             )}
           >
             <Undo2Icon className="h-3.5 w-3.5" />
@@ -277,8 +277,8 @@ export function FieldToolbar({
             className={cn(
               "rounded p-1 transition-colors",
               canRedo && isDraft
-                ? "text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-slate-600 dark:hover:text-gray-200"
-                : "cursor-not-allowed text-gray-300 dark:text-gray-600",
+                ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-muted-foreground/30 cursor-not-allowed",
             )}
           >
             <Redo2Icon className="h-3.5 w-3.5" />

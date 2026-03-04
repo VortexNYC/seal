@@ -185,7 +185,7 @@ export function CreateContactDialog({ open, onOpenChange }: CreateContactDialogP
                   </FormControl>
                   <FormMessage />
                   {duplicateWarning && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                    <p className="text-warning text-xs">
                       A contact with this email already exists.
                     </p>
                   )}

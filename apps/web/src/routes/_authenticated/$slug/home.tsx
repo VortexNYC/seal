@@ -486,12 +486,12 @@ function StatusBreakdown() {
   const { data: stats } = useSuspenseQuery(convexQuery(api.dashboard.queries.getDocumentStats, {}));
 
   const breakdown = [
-    { label: "Draft", count: stats.draft, color: "bg-gray-400" },
-    { label: "Sent", count: stats.sent, color: "bg-blue-500" },
-    { label: "In Progress", count: stats.inProgress, color: "bg-amber-500" },
-    { label: "Completed", count: stats.completed, color: "bg-green-500" },
-    { label: "Cancelled", count: stats.cancelled, color: "bg-red-400" },
-    { label: "Declined", count: stats.declined, color: "bg-red-600" },
+    { label: "Draft", count: stats.draft, color: "bg-muted-foreground" },
+    { label: "Sent", count: stats.sent, color: "bg-info" },
+    { label: "In Progress", count: stats.inProgress, color: "bg-warning" },
+    { label: "Completed", count: stats.completed, color: "bg-success" },
+    { label: "Cancelled", count: stats.cancelled, color: "bg-destructive/70" },
+    { label: "Declined", count: stats.declined, color: "bg-destructive" },
   ].filter((item) => item.count > 0);
 
   const total = stats.total || 1; // Prevent division by zero
@@ -686,10 +686,10 @@ function NeedsAttention() {
   if (!attention || attention.totalIssues === 0) return null;
 
   return (
-    <Card className="border-amber-200 dark:border-amber-900">
+    <Card className="border-warning/30">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <AlertTriangleIcon className="h-4 w-4 text-amber-500" />
+          <AlertTriangleIcon className="h-4 w-4 text-warning" />
           <CardTitle className="text-base">Needs Attention</CardTitle>
           <span className="text-muted-foreground text-xs">
             {attention.totalIssues} issue{attention.totalIssues !== 1 ? "s" : ""}
@@ -705,7 +705,7 @@ function NeedsAttention() {
               params={{ slug, documentId: item.documentId }}
               className="hover:bg-muted flex items-center gap-3 rounded-md p-2 transition-colors"
             >
-              <ClockIcon className="h-4 w-4 shrink-0 text-amber-500" />
+              <ClockIcon className="h-4 w-4 shrink-0 text-warning" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
                   <span className="font-medium">{item.recipientName}</span> hasn&apos;t viewed{" "}
@@ -725,7 +725,7 @@ function NeedsAttention() {
               params={{ slug, documentId: item.documentId }}
               className="hover:bg-muted flex items-center gap-3 rounded-md p-2 transition-colors"
             >
-              <AlertTriangleIcon className="h-4 w-4 shrink-0 text-red-500" />
+              <AlertTriangleIcon className="h-4 w-4 shrink-0 text-destructive" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
                   <span className="font-medium">{item.documentName}</span> deadline in{" "}
@@ -745,7 +745,7 @@ function NeedsAttention() {
               params={{ slug, documentId: item.documentId }}
               className="hover:bg-muted flex items-center gap-3 rounded-md p-2 transition-colors"
             >
-              <MailXIcon className="h-4 w-4 shrink-0 text-red-500" />
+              <MailXIcon className="h-4 w-4 shrink-0 text-destructive" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
                   Email bounced for <span className="font-medium">{item.recipientEmail}</span>

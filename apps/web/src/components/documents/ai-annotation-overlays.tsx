@@ -61,37 +61,37 @@ const CATEGORY_CONFIG: Record<
   obligation: {
     label: "Obligation",
     icon: BookOpenIcon,
-    bgColor: "bg-blue-100/50 dark:bg-blue-900/20",
-    textColor: "text-blue-700 dark:text-blue-300",
-    dotColor: "bg-blue-500",
+    bgColor: "bg-ai-response-surface/50",
+    textColor: "text-ai-response-text",
+    dotColor: "bg-ai-accent",
   },
   payment: {
     label: "Payment",
     icon: BanknoteIcon,
-    bgColor: "bg-emerald-100/50 dark:bg-emerald-900/20",
-    textColor: "text-emerald-700 dark:text-emerald-300",
-    dotColor: "bg-emerald-500",
+    bgColor: "bg-ai-autofill-surface/50",
+    textColor: "text-ai-autofill-text",
+    dotColor: "bg-ai-autofill-text",
   },
   risk: {
     label: "Risk",
     icon: AlertTriangleIcon,
-    bgColor: "bg-rose-100/50 dark:bg-rose-900/20",
-    textColor: "text-rose-700 dark:text-rose-300",
-    dotColor: "bg-rose-500",
+    bgColor: "bg-ai-error-surface/50",
+    textColor: "text-ai-error-text",
+    dotColor: "bg-ai-error-text",
   },
   dates: {
     label: "Date",
     icon: CalendarIcon,
-    bgColor: "bg-violet-100/50 dark:bg-violet-900/20",
-    textColor: "text-violet-700 dark:text-violet-300",
-    dotColor: "bg-violet-500",
+    bgColor: "bg-ai-suggestion-surface/50",
+    textColor: "text-ai-suggestion-text",
+    dotColor: "bg-ai-accent",
   },
   terms: {
     label: "Term",
     icon: ScaleIcon,
-    bgColor: "bg-amber-100/50 dark:bg-amber-900/20",
-    textColor: "text-amber-700 dark:text-amber-300",
-    dotColor: "bg-amber-500",
+    bgColor: "bg-ai-warning-surface/50",
+    textColor: "text-ai-warning-text",
+    dotColor: "bg-ai-warning-text",
   },
 };
 
@@ -173,7 +173,7 @@ function HighlightOverlay({
       <TooltipContent
         side="top"
         sideOffset={4}
-        className="max-w-xs border border-slate-200 bg-white px-3 py-2 shadow-lg dark:border-slate-700 dark:bg-slate-800"
+        className="max-w-xs border border-border bg-popover px-3 py-2 shadow-lg"
       >
         <div className="mb-0.5 flex items-center gap-1.5">
           <config.icon className={cn("h-3 w-3", config.textColor)} />
@@ -183,7 +183,7 @@ function HighlightOverlay({
             {config.label}
           </span>
         </div>
-        <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+        <p className="text-xs leading-relaxed text-popover-foreground">
           {annotation.summary}
         </p>
       </TooltipContent>
@@ -269,13 +269,13 @@ export function AIInsightsPanel({
                 "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-all",
                 isActive
                   ? cn(config.bgColor, config.textColor)
-                  : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500",
+                  : "bg-muted text-muted-foreground/60",
               )}
             >
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
-                  isActive ? config.dotColor : "bg-slate-300 dark:bg-slate-600",
+                  isActive ? config.dotColor : "bg-border",
                 )}
               />
               {config.label}
@@ -295,7 +295,7 @@ export function AIInsightsPanel({
               type="button"
               onClick={() => onPageJump(annotation.page)}
               aria-label={`${config.label} insight on page ${annotation.page}: ${annotation.summary}`}
-              className="flex items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+              className="flex items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted"
             >
               <span
                 className={cn(
@@ -305,11 +305,11 @@ export function AIInsightsPanel({
                 )}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-xs leading-snug text-slate-700 dark:text-slate-300">
+                <p className="text-xs leading-snug text-foreground">
                   {annotation.summary}
                 </p>
               </div>
-              <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              <span className="text-muted-foreground shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
                 p.{annotation.page}
               </span>
             </button>
@@ -322,7 +322,7 @@ export function AIInsightsPanel({
         <AlertDialogTrigger asChild>
           <button
             type="button"
-            className="text-[11px] text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
+            className="text-muted-foreground/60 text-[11px] transition-colors hover:text-muted-foreground"
           >
             Dismiss all insights
           </button>

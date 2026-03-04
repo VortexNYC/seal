@@ -334,7 +334,7 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CreditCardIcon className="h-5 w-5 text-emerald-600" />
+            <CreditCardIcon className="text-field-payment h-5 w-5" />
             Configure Payment
           </DialogTitle>
           <DialogDescription>
@@ -741,7 +741,7 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
 
         <DialogFooter className="gap-2 border-t pt-4">
           <div className="flex flex-1 items-center gap-2">
-            <Badge variant="outline" className="border-emerald-200 text-emerald-700">
+            <Badge variant="outline" className="border-field-payment-border text-field-payment">
               Total: {formatCents(total)}
             </Badge>
           </div>

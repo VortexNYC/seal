@@ -48,6 +48,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-input/number-format": "^2.0.3",
     "@seal/backend": "workspace:*",
+    "@seal/tokens": "workspace:*",
     "@sentry/react": "^10.36.0",
     "@stripe/connect-js": "^3.3.34",
     "@stripe/react-connect-js": "^3.3.33",

@@ -458,7 +458,7 @@ export function SignatureCapture({
                       className={`relative cursor-pointer rounded-lg border-2 p-3 transition-colors ${
                         selectedSavedSignature === sig._id
                           ? "border-primary bg-primary/5"
-                          : "border-gray-200 hover:border-gray-300"
+                          : "border-border hover:border-border"
                       }`}
                       onClick={() => setSelectedSavedSignature(sig._id)}
                     >
@@ -467,7 +467,7 @@ export function SignatureCapture({
                           <div className="flex items-center gap-2">
                             <span className="truncate text-sm font-medium">{sig.name}</span>
                             {sig.isDefault && (
-                              <StarIcon className="h-3 w-3 flex-shrink-0 fill-yellow-500 text-yellow-500" />
+                              <StarIcon className="fill-warning text-warning h-3 w-3 flex-shrink-0" />
                             )}
                           </div>
                           <div className="text-muted-foreground mt-1 text-xs">
@@ -526,7 +526,7 @@ export function SignatureCapture({
                 {/* SEA-116: Responsive container for signature canvas */}
                 <div
                   ref={canvasContainerRef}
-                  className="overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white"
+                  className="border-border overflow-hidden rounded-lg border-2 border-dashed bg-white"
                 >
                   <SignatureCanvas
                     ref={signaturePadRef}
@@ -605,7 +605,7 @@ export function SignatureCapture({
                 </Select>
               </div>
               {typedName && (
-                <div className="overflow-hidden rounded-lg border-2 border-gray-300 bg-white p-4 sm:p-8">
+                <div className="border-border overflow-hidden rounded-lg border-2 bg-white p-4 sm:p-8">
                   {/* SEA-116: Responsive font size for mobile */}
                   <p
                     className="truncate text-center text-3xl sm:text-5xl"
@@ -634,7 +634,7 @@ export function SignatureCapture({
                 />
               </div>
               {uploadedImage && (
-                <div className="rounded-lg border-2 border-gray-300 bg-white p-4">
+                <div className="border-border rounded-lg border-2 bg-white p-4">
                   <img
                     src={uploadedImage}
                     alt="Uploaded signature"

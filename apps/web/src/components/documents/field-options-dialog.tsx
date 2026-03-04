@@ -213,16 +213,16 @@ export function FieldOptionsDialog({
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
-        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.98] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_16px_70px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)]">
+        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.98] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] bg-card border-border fixed top-1/2 left-1/2 z-50 w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border shadow-[0_16px_70px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)]">
           {/* Header */}
           <div className="relative px-5 pt-5 pb-4">
-            <DialogPrimitive.Title className="mb-1 text-base font-semibold tracking-tight text-gray-900">
+            <DialogPrimitive.Title className="text-foreground mb-1 text-base font-semibold tracking-tight">
               {config.title}
             </DialogPrimitive.Title>
-            <DialogPrimitive.Description className="text-sm text-gray-500">
+            <DialogPrimitive.Description className="text-muted-foreground text-sm">
               {config.description}
             </DialogPrimitive.Description>
-            <DialogPrimitive.Close className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900">
+            <DialogPrimitive.Close className="text-muted-foreground hover:bg-muted hover:text-foreground absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-md transition-colors">
               <XIcon className="h-4 w-4" />
             </DialogPrimitive.Close>
           </div>
@@ -230,34 +230,34 @@ export function FieldOptionsDialog({
           {/* Body */}
           <div className="max-h-[50vh] overflow-y-auto px-5 pb-5">
             <div>
-              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-gray-400 uppercase">
+              <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide uppercase">
                 Options
               </div>
 
               {options.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <p className="max-w-[220px] text-sm text-gray-400">{config.emptyText}</p>
+                  <p className="text-muted-foreground max-w-[220px] text-sm">{config.emptyText}</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-0.5 rounded-lg bg-gray-50 p-0.5">
+                <div className="bg-muted flex flex-col gap-0.5 rounded-lg p-0.5">
                   {options.map((option, index) => (
                     <div
                       key={option.id}
-                      className={`group flex items-center gap-2 rounded-md bg-white px-2.5 py-2 transition-colors ${
+                      className={`group bg-card flex items-center gap-2 rounded-md px-2.5 py-2 transition-colors ${
                         draggedIndex === index ? "opacity-50" : ""
-                      } ${dragOverIndex === index ? "bg-gray-100" : ""}`}
+                      } ${dragOverIndex === index ? "bg-muted" : ""}`}
                       draggable
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
                     >
-                      <div className="flex h-4 w-4 cursor-grab items-center justify-center text-gray-400 opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="text-muted-foreground flex h-4 w-4 cursor-grab items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
                         <GripVerticalIcon className="h-3.5 w-3.5" />
                       </div>
                       <input
                         ref={index === options.length - 1 ? newInputRef : null}
                         type="text"
-                        className="min-w-0 flex-1 border-none bg-transparent py-1 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
+                        className="text-foreground placeholder:text-muted-foreground min-w-0 flex-1 border-none bg-transparent py-1 text-sm focus:outline-none"
                         value={option.label}
                         onChange={(e) => handleOptionChange(option.id, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, index)}
@@ -266,7 +266,7 @@ export function FieldOptionsDialog({
                       />
                       <button
                         type="button"
-                        className="flex h-6 w-6 items-center justify-center rounded text-gray-400 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
+                        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all group-hover:opacity-100"
                         onClick={() => handleDeleteOption(option.id)}
                         title="Remove option"
                       >
@@ -279,7 +279,7 @@ export function FieldOptionsDialog({
 
               <button
                 type="button"
-                className="mt-2 flex w-full items-center justify-start gap-1.5 rounded-lg border border-dashed border-gray-300 bg-transparent px-3 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900"
+                className="border-border text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground mt-2 flex w-full items-center justify-start gap-1.5 rounded-lg border border-dashed bg-transparent px-3 py-2.5 text-sm font-medium transition-colors"
                 onClick={handleAddOption}
               >
                 <PlusIcon className="h-3.5 w-3.5" />
@@ -289,8 +289,8 @@ export function FieldOptionsDialog({
 
             {/* Default option toggle - only for dropdown and radio */}
             {fieldType !== "checkbox" && options.length > 0 && (
-              <div className="mt-4 border-t border-gray-200 pt-4">
-                <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-gray-400 uppercase">
+              <div className="border-border mt-4 border-t pt-4">
+                <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide uppercase">
                   Default Selection
                 </div>
                 <label className="flex cursor-pointer items-start gap-2.5">
@@ -304,11 +304,11 @@ export function FieldOptionsDialog({
                         setDefaultOptionId(undefined);
                       }
                     }}
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900 focus:ring-offset-0"
+                    className="border-border text-foreground mt-0.5 h-4 w-4 rounded focus:ring-offset-0"
                   />
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-900">Pre-select first option</div>
-                    <div className="mt-0.5 text-xs text-gray-400">
+                    <div className="text-foreground text-sm font-medium">Pre-select first option</div>
+                    <div className="text-muted-foreground mt-0.5 text-xs">
                       Recipients will see this option already selected
                     </div>
                   </div>
@@ -318,17 +318,17 @@ export function FieldOptionsDialog({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 border-t border-gray-200 bg-white px-5 py-4">
+          <div className="bg-card border-border flex items-center justify-end gap-2 border-t px-5 py-4">
             <button
               type="button"
-              className="rounded-md border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
+              className="border-border text-foreground hover:bg-muted rounded-md border bg-transparent px-3.5 py-2 text-sm font-medium transition-colors"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </button>
             <button
               type="button"
-              className="rounded-md border border-gray-900 bg-gray-900 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+              className="bg-foreground text-background hover:bg-foreground/90 rounded-md px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
               onClick={handleConfirm}
               disabled={!canConfirm}
             >

@@ -131,11 +131,11 @@ export function StripeConnectProvider({
     return (
       <div
         className={cn(
-          "rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950",
+          "border-destructive/30 bg-destructive/10 rounded-md border p-4",
           className,
         )}
       >
-        <p className="text-sm font-medium text-red-800 dark:text-red-200">
+        <p className="text-destructive text-sm font-medium">
           Failed to load Stripe components
         </p>
         <p className="text-muted-foreground mt-1 text-xs">{error}</p>

@@ -212,23 +212,23 @@ export function InAppSigningSection({
   const getStatusConfig = () => {
     if (isCompleted) {
       return {
-        bgColor: "bg-emerald-100 dark:bg-emerald-900",
-        textColor: "text-emerald-600 dark:text-emerald-400",
+        bgColor: "bg-success-surface",
+        textColor: "text-success",
         icon: CheckCircleIcon,
         label: recipient.status === "approved" ? "Approved" : "Signed",
       };
     }
     if (isDeclined) {
       return {
-        bgColor: "bg-red-100 dark:bg-red-900",
-        textColor: "text-red-600 dark:text-red-400",
+        bgColor: "bg-destructive/10",
+        textColor: "text-destructive",
         icon: XCircleIcon,
         label: "Declined",
       };
     }
     return {
-      bgColor: "bg-amber-100 dark:bg-amber-900",
-      textColor: "text-amber-600 dark:text-amber-400",
+      bgColor: "bg-warning-surface",
+      textColor: "text-warning",
       icon: ClockIcon,
       label: "Pending",
     };
@@ -242,12 +242,12 @@ export function InAppSigningSection({
       <Collapsible
         open={isOpen}
         onOpenChange={onOpenChange}
-        className="overflow-hidden rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm sm:rounded-xl dark:border-amber-800 dark:from-amber-950 dark:to-orange-950"
+        className="border-warning/30 bg-warning-surface/50 overflow-hidden rounded-2xl border-2 shadow-sm sm:rounded-xl"
       >
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-amber-100/50 sm:px-4 sm:py-3.5 dark:hover:bg-amber-900/50"
+            className="hover:bg-warning-surface/80 flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
           >
             <div className="flex items-center gap-3">
               <div
@@ -256,7 +256,7 @@ export function InAppSigningSection({
                 <PenLineIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
               </div>
               <div className="text-left">
-                <span className="block font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+                <span className="text-foreground block font-sans text-[0.9375rem] font-semibold sm:text-sm">
                   Your Signature
                 </span>
                 <span
@@ -268,25 +268,25 @@ export function InAppSigningSection({
               </div>
             </div>
             <ChevronDownIcon
-              className={`h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400 ${isOpen ? "rotate-180" : ""}`}
+              className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
             />
           </button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="border-t border-amber-200/50 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-amber-800/50">
+        <CollapsibleContent className="border-warning/20 px-5 pb-5 sm:px-4 sm:pb-4 border-t">
           {/* Progress bar */}
           {canSign && fields.length > 0 && (
             <div className="mt-4 mb-4">
               <div className="mb-2 flex items-center justify-between">
-                <span className="font-sans text-xs font-medium text-slate-600 dark:text-slate-400">
+                <span className="text-muted-foreground font-sans text-xs font-medium">
                   Progress
                 </span>
-                <span className="font-sans text-xs text-slate-500 dark:text-slate-400">
+                <span className="text-muted-foreground font-sans text-xs">
                   {filledRequiredFields.length} of {requiredFields.length} required fields
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+              <div className="bg-muted h-2 overflow-hidden rounded-full">
                 <div
-                  className="h-full rounded-full bg-amber-500 transition-all duration-300"
+                  className="bg-warning h-full rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -296,7 +296,7 @@ export function InAppSigningSection({
           {/* Fields list */}
           {canSign && fields.length > 0 && (
             <div className="mb-4 space-y-2">
-              <div className="mb-2 font-sans text-xs font-medium text-slate-600 dark:text-slate-400">
+              <div className="text-muted-foreground mb-2 font-sans text-xs font-medium">
                 Fields to complete
               </div>
               {fields.map((field) => (
@@ -307,15 +307,15 @@ export function InAppSigningSection({
                   disabled={!canSign}
                   className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors ${
                     field.isFilled
-                      ? "cursor-default border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950"
-                      : "cursor-pointer border-slate-200 bg-white hover:border-amber-300 hover:bg-amber-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-amber-700 dark:hover:bg-amber-950"
+                      ? "border-success/30 bg-success-surface cursor-default"
+                      : "border-border bg-card hover:border-warning/50 hover:bg-warning-surface cursor-pointer"
                   }`}
                 >
                   <div
                     className={`flex h-6 w-6 items-center justify-center rounded-md ${
                       field.isFilled
-                        ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400"
-                        : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                        ? "bg-success-surface text-success"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {field.isFilled ? (
@@ -325,13 +325,13 @@ export function InAppSigningSection({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-sans text-sm text-slate-700 dark:text-slate-300">
+                    <div className="text-foreground truncate font-sans text-sm">
                       {field.label || getFieldTypeLabel(field.fieldType)}
                     </div>
-                    <div className="font-sans text-xs text-slate-500 dark:text-slate-400">
+                    <div className="text-muted-foreground font-sans text-xs">
                       Page {field.page}
                       {field.isRequired && !field.isFilled && (
-                        <span className="ml-1 text-amber-600 dark:text-amber-400">• Required</span>
+                        <span className="text-warning ml-1">• Required</span>
                       )}
                     </div>
                   </div>
@@ -343,10 +343,10 @@ export function InAppSigningSection({
           {/* Completed state */}
           {isCompleted && (
             <div className="mt-4 py-4 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
+              <div className="bg-success-surface text-success mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                 <CheckCircleIcon className="h-6 w-6" />
               </div>
-              <div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <div className="text-foreground font-sans text-sm font-semibold">
                 {recipient.status === "approved"
                   ? "You have approved this document"
                   : "You have signed this document"}
@@ -357,10 +357,10 @@ export function InAppSigningSection({
           {/* Declined state */}
           {isDeclined && (
             <div className="mt-4 py-4 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400">
+              <div className="bg-destructive/10 text-destructive mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                 <XCircleIcon className="h-6 w-6" />
               </div>
-              <div className="font-sans text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <div className="text-foreground font-sans text-sm font-semibold">
                 You have declined this document
               </div>
             </div>
@@ -381,7 +381,7 @@ export function InAppSigningSection({
                 variant="outline"
                 onClick={() => setShowDeclineDialog(true)}
                 disabled={isSubmitting}
-                className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950 dark:hover:text-red-300"
+                className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive w-full"
               >
                 <XCircleIcon className="mr-2 h-4 w-4" />
                 Decline

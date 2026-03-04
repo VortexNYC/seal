@@ -57,8 +57,8 @@ export function DictateNextSignerDialog({
     <Dialog open={open}>
       <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30">
-            <UserPlusIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <div className="bg-info-surface mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
+            <UserPlusIcon className="text-info h-6 w-6" />
           </div>
           <DialogTitle className="text-center">Who should sign next?</DialogTitle>
           <DialogDescription className="text-center">

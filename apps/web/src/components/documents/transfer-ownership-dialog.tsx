@@ -78,8 +78,8 @@ export function TransferOwnershipDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30">
-            <ArrowRightLeftIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <div className="bg-info-surface mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
+            <ArrowRightLeftIcon className="text-info h-6 w-6" />
           </div>
           <DialogTitle className="text-center">Transfer Ownership</DialogTitle>
           <DialogDescription className="text-center">
@@ -109,9 +109,9 @@ export function TransferOwnershipDialog({
           </div>
 
           {isPrivate && selectedUserId && (
-            <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
-              <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <p className="text-sm text-amber-700 dark:text-amber-300">
+            <div className="border-warning/30 bg-warning-surface flex gap-2 rounded-lg border p-3">
+              <AlertTriangleIcon className="text-warning mt-0.5 h-4 w-4 shrink-0" />
+              <p className="text-warning text-sm">
                 This document's sharing mode is <strong>Private</strong>. After transfer, you will
                 lose access to this document.
               </p>

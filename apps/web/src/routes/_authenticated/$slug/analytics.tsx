@@ -336,8 +336,8 @@ function StatCard({
       <CardContent>
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold">{value}</span>
-          {trend === "up" && <ArrowUpIcon className="h-4 w-4 text-green-500" />}
-          {trend === "down" && <ArrowDownIcon className="h-4 w-4 text-red-500" />}
+          {trend === "up" && <ArrowUpIcon className="h-4 w-4 text-success" />}
+          {trend === "down" && <ArrowDownIcon className="h-4 w-4 text-destructive" />}
         </div>
         {progress !== undefined && <Progress value={progress} className="mt-2 h-2" />}
         {description && <p className="text-muted-foreground mt-1 text-xs">{description}</p>}

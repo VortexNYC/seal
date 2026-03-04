@@ -47,22 +47,22 @@ function formatRelativeTime(timestamp: number): string {
 function getNotificationIcon(type: Notification["type"]) {
   switch (type) {
     case "document_shared":
-      return <Share2Icon className="h-4 w-4 text-blue-500" />;
+      return <Share2Icon className="text-info h-4 w-4" />;
     case "access_revoked":
     case "bulk_access_revoked":
-      return <ShieldAlertIcon className="h-4 w-4 text-red-500" />;
+      return <ShieldAlertIcon className="text-destructive h-4 w-4" />;
     case "access_updated":
-      return <KeyIcon className="h-4 w-4 text-amber-500" />;
+      return <KeyIcon className="text-warning h-4 w-4" />;
     case "ownership_transferred":
-      return <UserIcon className="h-4 w-4 text-purple-500" />;
+      return <UserIcon className="text-ai-accent h-4 w-4" />;
     case "document_signed":
     case "document_completed":
     case "signature_requested":
-      return <FileTextIcon className="h-4 w-4 text-green-500" />;
+      return <FileTextIcon className="text-success h-4 w-4" />;
     case "sharing_disabled":
-      return <ShieldAlertIcon className="h-4 w-4 text-orange-500" />;
+      return <ShieldAlertIcon className="text-warning h-4 w-4" />;
     default:
-      return <BellIcon className="h-4 w-4 text-gray-500" />;
+      return <BellIcon className="text-muted-foreground h-4 w-4" />;
   }
 }
 
@@ -147,7 +147,7 @@ function EmailStatusIndicator({
     case "pending":
       return (
         <span
-          className="inline-flex items-center gap-1 text-[10px] text-amber-600"
+          className="text-warning inline-flex items-center gap-1 text-[10px]"
           title="Email sending..."
         >
           <ClockIcon className="h-3 w-3" />
@@ -156,7 +156,7 @@ function EmailStatusIndicator({
     case "sent":
       return (
         <span
-          className="inline-flex items-center gap-1 text-[10px] text-green-600"
+          className="text-success inline-flex items-center gap-1 text-[10px]"
           title="Email sent"
         >
           <MailIcon className="h-3 w-3" />
@@ -166,7 +166,7 @@ function EmailStatusIndicator({
     case "failed":
       return (
         <span
-          className="inline-flex items-center gap-1 text-[10px] text-red-600"
+          className="text-destructive inline-flex items-center gap-1 text-[10px]"
           title={lastError ?? "Email failed to send"}
         >
           <MailIcon className="h-3 w-3" />
@@ -199,7 +199,9 @@ function NotificationItem({
     <div
       className={cn(
         "flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors",
-        notification.read ? "bg-transparent hover:bg-gray-50" : "bg-blue-50/50 hover:bg-blue-50",
+        notification.read
+          ? "bg-transparent hover:bg-muted"
+          : "bg-info-surface/50 hover:bg-info-surface",
       )}
       onClick={handleClick}
       onKeyDown={(e) => e.key === "Enter" && handleClick()}
@@ -209,13 +211,13 @@ function NotificationItem({
         <p
           className={cn(
             "text-sm leading-tight",
-            notification.read ? "text-gray-600" : "font-medium text-gray-900",
+            notification.read ? "text-muted-foreground" : "text-foreground font-medium",
           )}
         >
           {getNotificationMessage(notification)}
         </p>
         <div className="mt-1 flex items-center gap-2">
-          <span className="text-xs text-gray-400">
+          <span className="text-muted-foreground text-xs">
             {formatRelativeTime(notification.createdAt)}
           </span>
           <EmailStatusIndicator
@@ -226,7 +228,7 @@ function NotificationItem({
       </div>
       {!notification.read && (
         <div className="flex-shrink-0">
-          <div className="h-2 w-2 rounded-full bg-blue-500" />
+          <div className="bg-info h-2 w-2 rounded-full" />
         </div>
       )}
     </div>
@@ -262,11 +264,11 @@ function NotificationsSkeleton() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
-        <BellIcon className="h-6 w-6 text-gray-400" />
+      <div className="bg-muted mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+        <BellIcon className="text-muted-foreground h-6 w-6" />
       </div>
-      <p className="text-sm font-medium text-gray-900">No notifications</p>
-      <p className="mt-1 text-xs text-gray-500">You're all caught up!</p>
+      <p className="text-foreground text-sm font-medium">No notifications</p>
+      <p className="text-muted-foreground mt-1 text-xs">You're all caught up!</p>
     </div>
   );
 }
@@ -311,7 +313,7 @@ export function NotificationsPopover({ slug }: NotificationsPopoverProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              className="text-info hover:bg-info-surface hover:text-info h-7 text-xs"
               onClick={handleMarkAllAsRead}
             >
               <CheckIcon className="mr-1 h-3 w-3" />
@@ -341,7 +343,7 @@ export function NotificationsPopover({ slug }: NotificationsPopoverProps) {
 
         {hasNotifications && notifications.hasMore && (
           <div className="border-t px-4 py-3 text-center">
-            <Button variant="ghost" size="sm" className="text-xs text-gray-500">
+            <Button variant="ghost" size="sm" className="text-muted-foreground text-xs">
               <Loader2Icon className="mr-1 h-3 w-3 animate-spin" />
               Load more
             </Button>
