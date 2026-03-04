@@ -48,7 +48,6 @@
   "devDependencies": {
     "@clerk/types": "^4.101.12",
     "convex-test": "^0.0.41",
-    "vite": "catalog:",
     "vitest": "catalog:"
   }
 }

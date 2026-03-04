@@ -6,8 +6,8 @@ import { ConvexError, v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx, mutation } from "../_generated/server";
-import { adminMutation, authMutation } from "../auth";
 import { logAction } from "../audit_logs/helpers";
+import { adminMutation, authMutation } from "../auth";
 import { seedSystemRoles } from "../organization_roles/helpers";
 import { organizationBaseSchema } from "../validations/organizations";
 

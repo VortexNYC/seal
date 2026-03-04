@@ -13,8 +13,8 @@ import { internalQuery, query } from "../_generated/server";
 import { adminQuery, authQuery } from "../auth";
 import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
 import { generateSignatureCertificate } from "../crypto/helpers";
-import { auditActionTuple } from "../schemas/audit_logs";
 import { findRecipientByToken } from "../documents/recipient_helpers";
+import { auditActionTuple } from "../schemas/audit_logs";
 
 /**
  * Get audit trail for a document (authenticated)

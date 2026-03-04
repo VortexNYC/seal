@@ -30,6 +30,13 @@ const clerkApiScopeValidator = v.union(
   v.literal("seal:recipients:read"),
   v.literal("seal:recipients:write"),
   v.literal("seal:signatures:read"),
+  v.literal("seal:webhooks:manage"),
+  v.literal("seal:members:read"),
+  v.literal("seal:settings:read"),
+  v.literal("seal:settings:write"),
+  v.literal("seal:audit:read"),
+  v.literal("seal:contacts:read"),
+  v.literal("seal:contacts:write"),
 );
 
 export const createClerkApiKey = action({
@@ -193,13 +200,26 @@ export const revokeClerkApiKey = action({
     }
 
     try {
-      const clerk = getClerkClient();
+      const secretKey = process.env.CLERK_SECRET_KEY;
+      if (!secretKey) {
+        throw new ConvexError("CLERK_SECRET_KEY not configured");
+      }
 
-      const apiKeysApi = clerk.apiKeys as unknown as {
-        revoke: (params: { apiKeyID: string }) => Promise<void>;
-      };
+      const response = await fetch(`https://api.clerk.com/v1/api_keys/${args.apiKeyId}/revoke`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${secretKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
 
-      await apiKeysApi.revoke({ apiKeyID: args.apiKeyId });
+      if (!response.ok) {
+        const body = await response.text();
+        console.error("[revokeClerkApiKey] API error:", response.status, body);
+        throw new ConvexError(`Failed to revoke API key: ${response.status}`);
+      }
+
       return { success: true };
     } catch (error) {
       console.error("[revokeClerkApiKey] Error:", error);
