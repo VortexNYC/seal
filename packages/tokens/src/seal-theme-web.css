@@ -8,13 +8,13 @@
  *
  * Color space: OKLCH throughout (perceptually uniform, excellent for dark mode).
  * Brand: Wax Red (#A63D2F) — oklch(0.441 0.148 30)
- * Destructive: Brick-Red — oklch(0.340 0.140 25) — intentionally darker/separate from primary
+ * Source of truth: Paper design boards (board 02 light mode, board 04 dark mode)
  */
 
 /* ── Light mode (default) ─────────────────────────────────────────────────── */
 :root {
   /* Shadcn/Radix semantic tokens */
-  --background: oklch(0.968 0.010 80);       /* warm parchment — slightly richer than off-white */
+  --background: oklch(0.982 0.002 90);       /* #FAFAF9 — per board 02 */
   --foreground: oklch(0.138 0.010 65);        /* #1A1714 — near-black, warm */
   --card: oklch(1 0 0);                       /* #FFFFFF */
   --card-foreground: oklch(0.138 0.010 65);
@@ -28,7 +28,7 @@
   --muted-foreground: oklch(0.563 0.012 70);  /* #8A8279 — warm mid-gray */
   --accent: oklch(0.962 0.006 80);
   --accent-foreground: oklch(0.138 0.010 65);
-  --destructive: oklch(0.340 0.140 25);       /* brick-red — darker/distinct from primary */
+  --destructive: oklch(0.449 0.206 22);       /* #DC2626 — per board 02 */
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.912 0.008 75);            /* #E8E4DF — warm light border */
   --input: oklch(0.912 0.008 75);
@@ -60,16 +60,16 @@
   --brand-900: oklch(0.225 0.072 30);
 
   /* ── Semantic status colors ─────────────────────────────────────────────── */
-  --success: oklch(0.460 0.110 152);          /* forest sage — muted, authoritative */
+  --success: oklch(0.527 0.167 155);          /* #16A34A — per board 02 */
   --success-foreground: oklch(1 0 0);
-  --success-surface: oklch(0.958 0.022 152);
-  --warning: oklch(0.580 0.100 75);           /* straw amber — warm, not neon */
+  --success-surface: oklch(0.960 0.040 152);
+  --warning: oklch(0.628 0.170 54);           /* #D97706 — per board 02 */
   --warning-foreground: oklch(0.180 0.020 75);
-  --warning-surface: oklch(0.965 0.025 80);
-  --info: oklch(0.460 0.130 240);             /* slate blue — calm, not electric */
+  --warning-surface: oklch(0.970 0.040 80);
+  --info: oklch(0.489 0.220 254);             /* #2563EB — per board 02 */
   --info-foreground: oklch(1 0 0);
-  --info-surface: oklch(0.958 0.020 240);
-  --expired: oklch(0.441 0.148 30);           /* Wax Red — same as primary */
+  --info-surface: oklch(0.960 0.035 255);
+  --expired: oklch(0.441 0.148 30);           /* Wax Red — same as primary — expired docs */
   --expired-foreground: oklch(1 0 0);
 
   /* ── Signer color slots (10 recipients) ────────────────────────────────── */
@@ -147,15 +147,15 @@
   --field-payment-border: oklch(0.84 0.06 165);
 
   /* ── Document status surface colors ─────────────────────────────────────── */
-  --status-completed-surface: oklch(0.960 0.020 152);
-  --status-completed-border: oklch(0.875 0.045 152);
-  --status-completed-text: oklch(0.420 0.095 152);
-  --status-in-progress-surface: oklch(0.965 0.022 80);
-  --status-in-progress-border: oklch(0.875 0.045 80);
-  --status-in-progress-text: oklch(0.420 0.080 75);
-  --status-sent-surface: oklch(0.960 0.018 240);
-  --status-sent-border: oklch(0.858 0.045 240);
-  --status-sent-text: oklch(0.400 0.110 240);
+  --status-completed-surface: oklch(0.962 0.030 152);
+  --status-completed-border: oklch(0.880 0.060 152);
+  --status-completed-text: oklch(0.480 0.140 152);
+  --status-in-progress-surface: oklch(0.970 0.030 80);
+  --status-in-progress-border: oklch(0.880 0.060 80);
+  --status-in-progress-text: oklch(0.480 0.120 75);
+  --status-sent-surface: oklch(0.962 0.025 255);
+  --status-sent-border: oklch(0.860 0.060 255);
+  --status-sent-text: oklch(0.480 0.160 255);
   --status-declined-surface: oklch(0.970 0.025 15);
   --status-declined-border: oklch(0.860 0.060 15);
   --status-declined-text: oklch(0.480 0.150 15);
@@ -203,7 +203,7 @@
   --muted-foreground: oklch(0.573 0 0);       /* #8a8a8a — neutral mid */
   --accent: oklch(0.155 0 0);
   --accent-foreground: oklch(0.950 0.008 75);
-  --destructive: oklch(0.577 0.145 25);       /* brick-red, distinct from primary 0.513 */
+  --destructive: oklch(0.577 0.245 27);       /* per board 04 dark mode */
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.197 0 0);                 /* #252525 */
   --input: oklch(0.197 0 0);
@@ -283,15 +283,15 @@
   --field-payment-border: oklch(0.300 0.055 165);
 
   /* ── Document status surface colors — dark mode ──────────────────────────── */
-  --status-completed-surface: oklch(0.158 0.028 152);
-  --status-completed-border: oklch(0.275 0.055 152);
-  --status-completed-text: oklch(0.680 0.115 152);
-  --status-in-progress-surface: oklch(0.166 0.025 80);
-  --status-in-progress-border: oklch(0.290 0.055 80);
-  --status-in-progress-text: oklch(0.720 0.105 75);
-  --status-sent-surface: oklch(0.160 0.022 240);
-  --status-sent-border: oklch(0.285 0.050 240);
-  --status-sent-text: oklch(0.700 0.120 240);
+  --status-completed-surface: oklch(0.160 0.040 152);
+  --status-completed-border: oklch(0.280 0.070 152);
+  --status-completed-text: oklch(0.700 0.150 152);
+  --status-in-progress-surface: oklch(0.170 0.035 80);
+  --status-in-progress-border: oklch(0.300 0.070 80);
+  --status-in-progress-text: oklch(0.750 0.150 75);
+  --status-sent-surface: oklch(0.165 0.030 255);
+  --status-sent-border: oklch(0.290 0.065 255);
+  --status-sent-text: oklch(0.700 0.160 255);
   --status-declined-surface: oklch(0.170 0.035 15);
   --status-declined-border: oklch(0.290 0.065 15);
   --status-declined-text: oklch(0.700 0.160 15);
@@ -324,16 +324,16 @@
   --brand-800: oklch(0.740 0.100 30);
   --brand-900: oklch(0.850 0.060 30);
 
-  /* ── Semantic status colors — dark mode ─────────────────────────────────── */
-  --success: oklch(0.650 0.120 152);         /* sage, legible on dark */
+  /* ── Semantic status colors — dark mode (per board 04) ──────────────────── */
+  --success: oklch(0.700 0.165 160);
   --success-foreground: oklch(1 0 0);
-  --success-surface: oklch(0.162 0.025 152);
-  --warning: oklch(0.720 0.110 75);          /* straw, muted on dark */
+  --success-surface: oklch(0.165 0.040 152);
+  --warning: oklch(0.770 0.175 75);
   --warning-foreground: oklch(0.150 0.015 75);
-  --warning-surface: oklch(0.158 0.020 80);
-  --info: oklch(0.660 0.130 240);            /* slate blue, calm on dark */
+  --warning-surface: oklch(0.160 0.030 80);
+  --info: oklch(0.620 0.195 260);
   --info-foreground: oklch(1 0 0);
-  --info-surface: oklch(0.158 0.022 240);
+  --info-surface: oklch(0.160 0.035 255);
   --expired: oklch(0.513 0.156 30);
   --expired-foreground: oklch(1 0 0);
 }
