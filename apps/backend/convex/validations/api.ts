@@ -70,6 +70,20 @@ export const listDocumentsSchema = z.object({
     .describe("Maximum number of documents to return (1-100, default 20)"),
   cursor: z.string().optional().describe("Pagination cursor from previous response"),
   status: documentStatusSchema.optional().describe("Filter by workflow status"),
+  title_search: z
+    .string()
+    .optional()
+    .describe("Case-insensitive substring search on document title"),
+  created_after: z
+    .string()
+    .optional()
+    .describe("Return documents created after this ISO 8601 timestamp (e.g. 2025-01-01T00:00:00Z)"),
+  created_before: z
+    .string()
+    .optional()
+    .describe(
+      "Return documents created before this ISO 8601 timestamp (e.g. 2025-12-31T23:59:59Z)",
+    ),
 });
 export type ListDocumentsInput = z.infer<typeof listDocumentsSchema>;
 
@@ -290,6 +304,114 @@ export const getAuditTrailSchema = z.object({
 export type GetAuditTrailInput = z.infer<typeof getAuditTrailSchema>;
 
 // =============================================================================
+// Account Schemas
+// =============================================================================
+
+/** Schema for getting account info (no args) */
+export const getAccountInfoSchema = z.object({});
+export type GetAccountInfoInput = z.infer<typeof getAccountInfoSchema>;
+
+/** Account/organization info response */
+export interface ApiAccountInfo {
+  name: string;
+  slug: string;
+  type: "personal" | "group" | "company";
+  timezone: string;
+  status: "active" | "suspended" | "deleted";
+  members: {
+    total: number;
+    active: number;
+    by_role: { owner: number; admin: number; member: number; viewer: number };
+  };
+  documents: {
+    total: number;
+    draft: number;
+    sent: number;
+    in_progress: number;
+    completed: number;
+    cancelled: number;
+    declined: number;
+  };
+  signing_settings: {
+    allowed_signature_types: string[];
+    default_deadline_days: number;
+  };
+  ai_enabled: boolean;
+}
+
+// =============================================================================
+// Webhook Schemas
+// =============================================================================
+
+/** Webhook endpoint status values */
+export const webhookStatusSchema = z.enum(["active", "paused", "disabled"]);
+export type WebhookStatus = z.infer<typeof webhookStatusSchema>;
+
+/** All supported webhook event types */
+export const webhookEventTypeSchema = z.enum([
+  "document.created",
+  "document.sent",
+  "document.viewed",
+  "document.completed",
+  "document.voided",
+  "document.expired",
+  "document.declined",
+  "recipient.added",
+  "recipient.viewed",
+  "recipient.signed",
+  "recipient.approved",
+  "recipient.declined",
+  "recipient.reminded",
+  "template.created",
+  "template.updated",
+  "template.used",
+]);
+export type WebhookEventType = z.infer<typeof webhookEventTypeSchema>;
+
+/** Schema for listing webhooks (no args — returns all for the org) */
+export const listWebhooksSchema = z.object({});
+export type ListWebhooksInput = z.infer<typeof listWebhooksSchema>;
+
+/** Schema for getting a single webhook */
+export const getWebhookSchema = z.object({
+  id: z.string().describe("The webhook endpoint ID"),
+});
+export type GetWebhookInput = z.infer<typeof getWebhookSchema>;
+
+/** Schema for creating a webhook */
+export const createWebhookSchema = z.object({
+  name: z.string().describe("Friendly name for the webhook endpoint (max 100 chars)"),
+  url: z.string().url().describe("HTTPS URL to send webhook events to"),
+  events: z
+    .array(webhookEventTypeSchema)
+    .describe("Event types to subscribe to. Pass an empty array to receive all events."),
+  description: z.string().optional().describe("Optional description of this webhook endpoint"),
+});
+export type CreateWebhookInput = z.infer<typeof createWebhookSchema>;
+
+/** Schema for updating a webhook */
+export const updateWebhookSchema = z.object({
+  id: z.string().describe("The webhook endpoint ID"),
+  name: z.string().optional().describe("New friendly name"),
+  url: z.string().url().optional().describe("New HTTPS delivery URL"),
+  events: z
+    .array(webhookEventTypeSchema)
+    .optional()
+    .describe("New set of event types to subscribe to"),
+  description: z.string().optional().describe("New description"),
+  status: webhookStatusSchema
+    .optional()
+    .describe("New status: active (delivering), paused (temporarily stopped), disabled (failed)"),
+});
+export type UpdateWebhookInput = z.infer<typeof updateWebhookSchema>;
+
+/** Schema for webhook ID-only operations (delete, rotate secret) */
+export const webhookIdSchema = z.object({
+  id: z.string().describe("The webhook endpoint ID"),
+});
+export type WebhookIdInput = z.infer<typeof webhookIdSchema>;
+
+// =============================================================================
 // Upload Schemas
 // =============================================================================
 
@@ -409,6 +531,32 @@ export interface ApiVerificationResult {
   verification_timestamp: string;
 }
 
+/** Webhook endpoint response from API */
+export interface ApiWebhookEndpoint {
+  id: string;
+  name: string;
+  url: string;
+  status: WebhookStatus;
+  events: string[];
+  description?: string;
+  secret_prefix: string;
+  created_at: string;
+  updated_at: string;
+  stats: {
+    total_deliveries: number;
+    successful: number;
+    failed: number;
+    success_rate: number;
+  };
+}
+
+/** Webhook event type info */
+export interface ApiWebhookEventType {
+  type: string;
+  category: string;
+  description: string;
+}
+
 /** Paginated response wrapper */
 export interface PaginatedResponse<T> {
   data: T[];
@@ -426,3 +574,332 @@ export interface ApiError {
 
 /** @deprecated Use ApiError instead */
 export type ApiErrorResponse = ApiError;
+
+// =============================================================================
+// Members Schemas
+// =============================================================================
+
+/** Member role values */
+export const memberRoleSchema = z.enum(["owner", "admin", "member", "viewer"]);
+export type MemberRole = z.infer<typeof memberRoleSchema>;
+
+/** Schema for listing members */
+export const listMembersSchema = z.object({
+  role: memberRoleSchema.optional().describe("Filter by role"),
+});
+export type ListMembersInput = z.infer<typeof listMembersSchema>;
+
+/** Schema for getting a single member */
+export const getMemberSchema = z.object({
+  id: z.string().describe("Membership record ID"),
+});
+export type GetMemberInput = z.infer<typeof getMemberSchema>;
+
+/** Member response from API */
+export interface ApiMember {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  avatar_url?: string;
+  role: MemberRole;
+  status: string;
+  joined_at: string;
+}
+
+// =============================================================================
+// Settings Schemas
+// =============================================================================
+
+/** Schema for updating org settings */
+export const updateSettingsSchema = z.object({
+  signing: z
+    .object({
+      allowed_signature_types: z
+        .array(z.enum(["draw", "type", "upload"]))
+        .optional()
+        .describe("Allowed signature input methods"),
+      default_deadline_days: z
+        .number()
+        .min(1)
+        .max(365)
+        .optional()
+        .describe("Default deadline in days (1–365)"),
+      esign_consent_text: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("Custom ESIGN consent text (null = use default)"),
+    })
+    .optional()
+    .describe("Signing configuration"),
+  notifications: z
+    .object({
+      reminder_schedule: z
+        .array(z.number())
+        .optional()
+        .describe("Days after sending to auto-remind (e.g. [3, 7, 14])"),
+      expiration_alert_days: z
+        .number()
+        .min(0)
+        .max(30)
+        .optional()
+        .describe("Days before deadline to send expiration alert"),
+      send_completion_email: z
+        .boolean()
+        .optional()
+        .describe("Notify owner when all parties complete signing"),
+      send_viewed_notification: z
+        .boolean()
+        .optional()
+        .describe("Notify owner when a recipient views the document"),
+    })
+    .optional()
+    .describe("Email notification preferences"),
+  ai: z
+    .object({
+      enabled: z.boolean().optional().describe("Enable AI features"),
+      auto_analyze: z.boolean().optional().describe("Auto-analyze new documents"),
+    })
+    .optional()
+    .describe("AI configuration"),
+  security: z
+    .object({
+      ip_allowlist: z
+        .array(z.string())
+        .optional()
+        .describe("Allowed IP ranges in CIDR notation (empty = all IPs allowed)"),
+      allow_api_access: z.boolean().optional().describe("Whether API access is enabled"),
+      require_mfa: z.boolean().optional().describe("Require MFA for all members"),
+      session_timeout_minutes: z
+        .number()
+        .nullable()
+        .optional()
+        .describe("Session timeout in minutes (null = browser default)"),
+    })
+    .optional()
+    .describe("Security configuration"),
+});
+export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
+
+/** Settings response from API */
+export interface ApiSettings {
+  signing: {
+    allowed_signature_types: ("draw" | "type" | "upload")[];
+    default_deadline_days: number;
+    esign_consent_text: string | null;
+  };
+  notifications: {
+    reminder_schedule: number[];
+    expiration_alert_days: number;
+    send_completion_email: boolean;
+    send_viewed_notification: boolean;
+  };
+  ai: {
+    enabled: boolean;
+    auto_analyze: boolean;
+  };
+  security: {
+    ip_allowlist: string[];
+    allow_api_access: boolean;
+    require_mfa: boolean;
+    session_timeout_minutes: number | null;
+  };
+}
+
+// =============================================================================
+// Audit Log Schemas
+// =============================================================================
+
+/** Schema for listing org-wide audit log */
+export const listAuditLogSchema = z.object({
+  limit: z.number().min(1).max(100).optional().describe("Number of entries (1–100, default 20)"),
+  cursor: z.string().optional().describe("Pagination cursor from previous response"),
+  document_id: z.string().optional().describe("Filter by document ID"),
+  action: z.string().optional().describe("Filter by action type (e.g. document.signed)"),
+  created_after: z.string().optional().describe("Return entries after this ISO 8601 timestamp"),
+  created_before: z.string().optional().describe("Return entries before this ISO 8601 timestamp"),
+});
+export type ListAuditLogInput = z.infer<typeof listAuditLogSchema>;
+
+/** Audit log entry from API */
+export interface ApiAuditLogEntry {
+  id: string;
+  action: string;
+  actor_type: string;
+  actor_name?: string;
+  actor_email?: string;
+  resource_type: string;
+  resource_id?: string;
+  document_id?: string;
+  ip_address?: string;
+  source?: string;
+  created_at: string;
+}
+
+// =============================================================================
+// Contacts Schemas
+// =============================================================================
+
+/** Contact status values */
+export const contactStatusSchema = z.enum(["active", "inactive", "lead"]);
+export type ContactStatus = z.infer<typeof contactStatusSchema>;
+
+/** Schema for listing contacts */
+export const listContactsSchema = z.object({
+  limit: z.number().min(1).max(100).optional().describe("Number of results (1–100, default 20)"),
+  cursor: z.string().optional().describe("Pagination cursor from previous response"),
+  status: contactStatusSchema.optional().describe("Filter by status"),
+  search: z.string().optional().describe("Search by name or email"),
+});
+export type ListContactsInput = z.infer<typeof listContactsSchema>;
+
+/** Schema for getting a single contact */
+export const getContactSchema = z.object({
+  id: z.string().describe("Contact ID"),
+});
+export type GetContactInput = z.infer<typeof getContactSchema>;
+
+/** Schema for creating a contact */
+export const createContactSchema = z.object({
+  first_name: z.string().describe("First name"),
+  last_name: z.string().describe("Last name"),
+  email: z.string().email().describe("Email address"),
+  phone: z.string().optional().describe("Phone number"),
+  company: z.string().optional().describe("Company or organization"),
+  title: z.string().optional().describe("Job title"),
+  status: contactStatusSchema.optional().describe("Contact status (default: active)"),
+  notes: z.string().optional().describe("Free-form notes"),
+  tags: z.array(z.string()).optional().describe("Tags for categorization"),
+});
+export type CreateContactInput = z.infer<typeof createContactSchema>;
+
+/** Schema for deleting a contact */
+export const deleteContactSchema = z.object({
+  id: z.string().describe("Contact ID"),
+});
+export type DeleteContactInput = z.infer<typeof deleteContactSchema>;
+
+/** Contact response from API */
+export interface ApiContact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  title?: string;
+  status: ContactStatus;
+  notes?: string;
+  tags?: string[];
+  last_contacted_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// =============================================================================
+// Document Access Schemas
+// =============================================================================
+
+/** Document sharing mode values */
+export const documentSharingModeSchema = z.enum(["private", "workspace", "specific"]);
+export type DocumentSharingMode = z.infer<typeof documentSharingModeSchema>;
+
+/** Schema for getting document access */
+export const getDocumentAccessSchema = z.object({
+  id: z.string().describe("Document ID"),
+});
+export type GetDocumentAccessInput = z.infer<typeof getDocumentAccessSchema>;
+
+/** Schema for updating document access */
+export const updateDocumentAccessSchema = z.object({
+  id: z.string().describe("Document ID"),
+  sharing_mode: documentSharingModeSchema.describe(
+    "Who can access: private (owner only), workspace (all members), specific (granted users only)",
+  ),
+});
+export type UpdateDocumentAccessInput = z.infer<typeof updateDocumentAccessSchema>;
+
+/** Document access response */
+export interface ApiDocumentAccess {
+  document_id: string;
+  sharing_mode: DocumentSharingMode;
+}
+
+// =============================================================================
+// Bulk Document Operations Schemas
+// =============================================================================
+
+/** Schema for bulk voiding documents */
+export const bulkVoidDocumentsSchema = z.object({
+  document_ids: z
+    .array(z.string())
+    .min(1)
+    .max(50)
+    .describe("Array of document IDs to void (max 50)"),
+  reason: z.string().describe("Reason for voiding the documents"),
+});
+export type BulkVoidDocumentsInput = z.infer<typeof bulkVoidDocumentsSchema>;
+
+/** Schema for bulk sending documents */
+export const bulkSendDocumentsSchema = z.object({
+  document_ids: z
+    .array(z.string())
+    .min(1)
+    .max(50)
+    .describe("Array of draft document IDs to send (max 50, each must have recipients)"),
+  message: z.string().optional().describe("Custom message to include in signing emails"),
+});
+export type BulkSendDocumentsInput = z.infer<typeof bulkSendDocumentsSchema>;
+
+/** Result of a single operation in a bulk request */
+export interface BulkOperationResult {
+  id: string;
+  success: boolean;
+  error?: string;
+}
+
+/** Summary returned from bulk operations */
+export interface BulkOperationSummary {
+  succeeded: number;
+  failed: number;
+  total_requested: number;
+  results: BulkOperationResult[];
+}
+
+// =============================================================================
+// Analytics Schemas
+// =============================================================================
+
+/** Schema for getting analytics */
+export const getAnalyticsSchema = z.object({
+  from: z
+    .string()
+    .optional()
+    .describe("Start of date range as ISO 8601 timestamp (default: 30 days ago)"),
+  to: z.string().optional().describe("End of date range as ISO 8601 timestamp (default: now)"),
+});
+export type GetAnalyticsInput = z.infer<typeof getAnalyticsSchema>;
+
+/** Analytics response from API */
+export interface ApiAnalytics {
+  period: { from: string; to: string };
+  documents: {
+    total_created: number;
+    total_sent: number;
+    total_completed: number;
+    total_cancelled: number;
+    total_declined: number;
+    completion_rate: number;
+    median_signing_hours: number | null;
+  };
+  workspace_snapshot: {
+    draft: number;
+    sent: number;
+    in_progress: number;
+    completed: number;
+    cancelled: number;
+    declined: number;
+  };
+}

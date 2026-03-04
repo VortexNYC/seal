@@ -184,6 +184,12 @@ export const API_SCOPES = {
   RECIPIENTS_WRITE: "seal:recipients:write",
   SIGNATURES_READ: "seal:signatures:read",
   WEBHOOKS_MANAGE: "seal:webhooks:manage",
+  MEMBERS_READ: "seal:members:read",
+  SETTINGS_READ: "seal:settings:read",
+  SETTINGS_WRITE: "seal:settings:write",
+  AUDIT_READ: "seal:audit:read",
+  CONTACTS_READ: "seal:contacts:read",
+  CONTACTS_WRITE: "seal:contacts:write",
 } as const;
 
 export type ApiScope = (typeof API_SCOPES)[keyof typeof API_SCOPES];
@@ -203,6 +209,12 @@ export const SCOPE_PERMISSION_MAP: Record<ApiScope, string[]> = {
   [API_SCOPES.RECIPIENTS_WRITE]: ["documents:edit"],
   [API_SCOPES.SIGNATURES_READ]: ["documents:view", "audit:view"],
   [API_SCOPES.WEBHOOKS_MANAGE]: ["settings:integrations"],
+  [API_SCOPES.MEMBERS_READ]: ["members:view"],
+  [API_SCOPES.SETTINGS_READ]: ["settings:view"],
+  [API_SCOPES.SETTINGS_WRITE]: ["settings:edit"],
+  [API_SCOPES.AUDIT_READ]: ["audit:view"],
+  [API_SCOPES.CONTACTS_READ]: ["contacts:view"],
+  [API_SCOPES.CONTACTS_WRITE]: ["contacts:create", "contacts:edit", "contacts:delete"],
 };
 
 /**

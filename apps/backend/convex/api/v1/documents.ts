@@ -12,6 +12,7 @@ import { v } from "convex/values";
 import { internal } from "../../_generated/api";
 import { internalMutation, internalQuery } from "../../_generated/server";
 import type { DocumentWorkflowStatus } from "../../schemas/document_workflow_status";
+import { publishWebhookEvent } from "../../webhooks/publish";
 import { workflow } from "../../workflows";
 
 /**
@@ -59,6 +60,9 @@ export const listDocuments = internalQuery({
     limit: v.optional(v.number()),
     cursor: v.optional(v.string()),
     status: v.optional(v.string()),
+    title_search: v.optional(v.string()),
+    created_after: v.optional(v.string()),
+    created_before: v.optional(v.string()),
   },
   handler: async (
     ctx,
@@ -70,6 +74,15 @@ export const listDocuments = internalQuery({
   }> => {
     const limit = Math.min(args.limit ?? 20, 100);
 
+    // When filters are active, fetch more to ensure we can fill the page after post-filtering
+    const hasFilters = !!(
+      args.status ||
+      args.title_search ||
+      args.created_after ||
+      args.created_before
+    );
+    const fetchLimit = hasFilters ? Math.min(limit * 5, 500) : limit + 1;
+
     // Get documents for the organization
     const query = ctx.db
       .query("documents")
@@ -77,22 +90,29 @@ export const listDocuments = internalQuery({
         q.eq("organizationId", args.organizationId).eq("status", "active"),
       );
 
-    // Apply cursor-based pagination
-    const documents = await query.order("desc").take(limit + 1);
+    const documents = await query.order("desc").take(fetchLimit);
 
-    // Check if there are more results
-    const hasMore = documents.length > limit;
-    const resultDocs = hasMore ? documents.slice(0, limit) : documents;
+    // Apply post-filters
+    const createdAfterMs = args.created_after ? new Date(args.created_after).getTime() : undefined;
+    const createdBeforeMs = args.created_before
+      ? new Date(args.created_before).getTime()
+      : undefined;
+    const titleSearch = args.title_search?.toLowerCase();
 
-    // Filter by workflow status if provided
-    let filteredDocs = resultDocs;
-    if (args.status) {
-      filteredDocs = resultDocs.filter((doc) => (doc.workflowStatus ?? "draft") === args.status);
-    }
+    const filteredDocs = documents.filter((doc) => {
+      if (args.status && (doc.workflowStatus ?? "draft") !== args.status) return false;
+      if (titleSearch && !doc.name.toLowerCase().includes(titleSearch)) return false;
+      if (createdAfterMs !== undefined && doc.createdAt < createdAfterMs) return false;
+      if (createdBeforeMs !== undefined && doc.createdAt > createdBeforeMs) return false;
+      return true;
+    });
+
+    const hasMore = filteredDocs.length > limit;
+    const resultDocs = hasMore ? filteredDocs.slice(0, limit) : filteredDocs;
 
     // Get recipient counts for each document
     const apiDocuments: ApiDocument[] = await Promise.all(
-      filteredDocs.map(async (doc) => {
+      resultDocs.map(async (doc) => {
         const recipients = await ctx.db
           .query("document_recipients")
           .withIndex("by_document", (q) => q.eq("documentId", doc._id))
@@ -116,7 +136,6 @@ export const listDocuments = internalQuery({
       }),
     );
 
-    // Generate next cursor if there are more results
     const lastDoc = resultDocs[resultDocs.length - 1];
     const nextCursor = hasMore && lastDoc ? lastDoc._id : undefined;
 
@@ -401,6 +420,18 @@ export const sendDocument = internalMutation({
       });
     }
 
+    // Publish webhook event unconditionally — don't gate on email success
+    await publishWebhookEvent(ctx, {
+      organizationId: args.organizationId,
+      eventType: "document.sent",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        recipient_count: recipients.length,
+        sent_at: new Date().toISOString(),
+      },
+    });
+
     // Schedule email sending as a background action
     await ctx.scheduler.runAfter(
       0,
@@ -455,6 +486,18 @@ export const voidDocument = internalMutation({
       updatedAt: Date.now(),
     });
 
+    // Publish webhook event unconditionally
+    await publishWebhookEvent(ctx, {
+      organizationId: args.organizationId,
+      eventType: "document.voided",
+      data: {
+        document_id: args.documentId,
+        name: document.name,
+        reason: args.reason,
+        voided_at: new Date().toISOString(),
+      },
+    });
+
     // Start cancellation workflow with durable retry
     await workflow.start(
       ctx,
@@ -501,5 +544,232 @@ export const getDocumentDownloadUrl = internalQuery({
     }
 
     return { url };
+  },
+});
+
+// =============================================================================
+// Document Access / Sharing Mode
+// =============================================================================
+
+/** Sharing mode for a document */
+export type DocumentSharingMode = "private" | "workspace" | "specific";
+
+/** API response for document access/sharing configuration */
+export interface ApiDocumentAccess {
+  /** Document ID */
+  document_id: string;
+  /**
+   * Who can access this document:
+   * - "private" — owner only
+   * - "workspace" — all org members (Pro plan)
+   * - "specific" — only explicitly granted users (Pro plan)
+   */
+  sharing_mode: DocumentSharingMode;
+}
+
+/**
+ * Internal query to get a document's sharing mode.
+ *
+ * @internal
+ */
+export const getDocumentAccess = internalQuery({
+  args: {
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args): Promise<ApiDocumentAccess | null> => {
+    const document = await ctx.db.get(args.documentId);
+    if (!document || document.status === "deleted") return null;
+    if (document.organizationId !== args.organizationId) return null;
+
+    return {
+      document_id: args.documentId,
+      sharing_mode: (document.sharingMode ?? "private") as DocumentSharingMode,
+    };
+  },
+});
+
+/**
+ * Internal mutation to update a document's sharing mode.
+ * Can be changed on any document that isn't deleted.
+ *
+ * @internal
+ */
+export const updateDocumentAccess = internalMutation({
+  args: {
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+    documentId: v.id("documents"),
+    sharing_mode: v.union(v.literal("private"), v.literal("workspace"), v.literal("specific")),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean }> => {
+    const document = await ctx.db.get(args.documentId);
+    if (!document || document.status === "deleted") throw new Error("Document not found");
+    if (document.organizationId !== args.organizationId) throw new Error("Document not found");
+
+    await ctx.db.patch(args.documentId, {
+      sharingMode: args.sharing_mode,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+// =============================================================================
+// Bulk Document Operations
+// =============================================================================
+
+/** Result of a single item in a bulk operation */
+interface BulkOperationResult {
+  id: string;
+  success: boolean;
+  error?: string;
+}
+
+/** Summary returned from a bulk operation */
+export interface BulkOperationSummary {
+  succeeded: number;
+  failed: number;
+  total_requested: number;
+  results: BulkOperationResult[];
+}
+
+/**
+ * Internal mutation to void multiple documents at once.
+ *
+ * @internal
+ */
+export const bulkVoidDocuments = internalMutation({
+  args: {
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+    document_ids: v.array(v.id("documents")),
+    reason: v.string(),
+  },
+  handler: async (ctx, args): Promise<BulkOperationSummary> => {
+    const results: BulkOperationResult[] = [];
+
+    for (const documentId of args.document_ids) {
+      const document = await ctx.db.get(documentId);
+
+      if (!document || document.status === "deleted") {
+        results.push({ id: documentId, success: false, error: "Document not found" });
+        continue;
+      }
+
+      if (document.organizationId !== args.organizationId) {
+        results.push({ id: documentId, success: false, error: "Document not found" });
+        continue;
+      }
+
+      const status = document.workflowStatus ?? "draft";
+      if (status === "completed" || status === "cancelled" || status === "declined") {
+        results.push({
+          id: documentId,
+          success: false,
+          error: `Cannot void document with status: ${status}`,
+        });
+        continue;
+      }
+
+      await ctx.db.patch(documentId, {
+        workflowStatus: "cancelled",
+        cancelledAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      results.push({ id: documentId, success: true });
+    }
+
+    const succeeded = results.filter((r) => r.success).length;
+
+    return {
+      succeeded,
+      failed: results.length - succeeded,
+      total_requested: results.length,
+      results,
+    };
+  },
+});
+
+/**
+ * Internal mutation to send multiple draft documents at once.
+ * Each document must have at least one recipient.
+ *
+ * @internal
+ */
+export const bulkSendDocuments = internalMutation({
+  args: {
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+    document_ids: v.array(v.id("documents")),
+    message: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<BulkOperationSummary> => {
+    const results: BulkOperationResult[] = [];
+
+    for (const documentId of args.document_ids) {
+      const document = await ctx.db.get(documentId);
+
+      if (!document || document.status === "deleted") {
+        results.push({ id: documentId, success: false, error: "Document not found" });
+        continue;
+      }
+
+      if (document.organizationId !== args.organizationId) {
+        results.push({ id: documentId, success: false, error: "Document not found" });
+        continue;
+      }
+
+      const status = document.workflowStatus ?? "draft";
+      if (status !== "draft") {
+        results.push({
+          id: documentId,
+          success: false,
+          error: `Document is not in draft status (current: ${status})`,
+        });
+        continue;
+      }
+
+      const recipients = await ctx.db
+        .query("document_recipients")
+        .withIndex("by_document", (q) => q.eq("documentId", documentId))
+        .collect();
+
+      if (recipients.length === 0) {
+        results.push({
+          id: documentId,
+          success: false,
+          error: "Document has no recipients",
+        });
+        continue;
+      }
+
+      await ctx.db.patch(documentId, {
+        workflowStatus: "sent",
+        sentAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      // Schedule sending emails for each recipient via existing workflow
+      await ctx.scheduler.runAfter(
+        0,
+        internal.documents.send_document_action.sendDocumentEmailsInternal,
+        { documentId, customMessage: args.message },
+      );
+
+      results.push({ id: documentId, success: true });
+    }
+
+    const succeeded = results.filter((r) => r.success).length;
+
+    return {
+      succeeded,
+      failed: results.length - succeeded,
+      total_requested: results.length,
+      results,
+    };
   },
 });

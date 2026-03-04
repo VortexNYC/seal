@@ -614,6 +614,30 @@ http.route({
 });
 
 // =============================================================================
+// ACCOUNT API
+// =============================================================================
+
+/**
+ * Get Account Info
+ *
+ * @route GET /api/v1/account
+ * @scope Authenticated (any valid API key)
+ *
+ * @returns Organization details, member counts, document counts, and settings
+ */
+http.route({
+  path: "/api/v1/account",
+  method: "GET",
+  handler: apiHttpAction(async ({ ctx, auth }) => {
+    const info = await ctx.runQuery(internal.api.v1.account.getAccountInfo, {
+      userId: auth.userId,
+      organizationId: auth.organizationId,
+    });
+    return apiResponse(200, info);
+  }),
+});
+
+// =============================================================================
 // DOCUMENTS API
 // =============================================================================
 
@@ -626,6 +650,9 @@ http.route({
  * @queryparam {number} [limit=20] - Maximum results (1-100)
  * @queryparam {string} [cursor] - Pagination cursor
  * @queryparam {string} [status] - Filter by workflow status
+ * @queryparam {string} [title_search] - Case-insensitive substring match on document title
+ * @queryparam {string} [created_after] - ISO 8601 timestamp — return documents created after this date
+ * @queryparam {string} [created_before] - ISO 8601 timestamp — return documents created before this date
  *
  * @returns Paginated list of documents
  */
@@ -642,6 +669,9 @@ http.route({
         limit,
         cursor,
         status: query.status,
+        title_search: query.title_search,
+        created_after: query.created_after,
+        created_before: query.created_before,
       });
 
       return paginatedResponse(result.documents, result.hasMore, result.nextCursor);
@@ -2134,6 +2164,462 @@ http.route({
 });
 
 // =============================================================================
+// MEMBERS API
+// =============================================================================
+
+/**
+ * List Workspace Members
+ *
+ * @route GET /api/v1/members
+ * @scope seal:members:read
+ */
+http.route({
+  path: "/api/v1/members",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      const role = query.role as "owner" | "admin" | "member" | "viewer" | undefined;
+      const members = await ctx.runQuery(internal.api.v1.members.listMembers, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        role,
+      });
+      return apiResponse(200, { data: members });
+    },
+    { scope: API_SCOPES.MEMBERS_READ },
+  ),
+});
+
+/**
+ * Get Member Details
+ *
+ * @route GET /api/v1/members/get
+ * @scope seal:members:read
+ */
+http.route({
+  path: "/api/v1/members/get",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+      }
+      let member = null;
+      try {
+        member = await ctx.runQuery(internal.api.v1.members.getMember, {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          memberId: query.id as Parameters<typeof ctx.runQuery>[1]["memberId"],
+        });
+      } catch {
+        // Invalid ID format — treat as not found
+      }
+      if (!member) {
+        throw new ApiError(404, "Member not found", "RESOURCE_NOT_FOUND");
+      }
+      return apiResponse(200, member);
+    },
+    { scope: API_SCOPES.MEMBERS_READ },
+  ),
+});
+
+// =============================================================================
+// SETTINGS API
+// =============================================================================
+
+/**
+ * Get Organization Settings
+ *
+ * @route GET /api/v1/settings
+ * @scope seal:settings:read
+ */
+http.route({
+  path: "/api/v1/settings",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth }) => {
+      const settings = await ctx.runQuery(internal.api.v1.settings.getSettings, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+      });
+      return apiResponse(200, settings);
+    },
+    { scope: API_SCOPES.SETTINGS_READ },
+  ),
+});
+
+/**
+ * Update Organization Settings
+ *
+ * @route PATCH /api/v1/settings
+ * @scope seal:settings:write
+ */
+http.route({
+  path: "/api/v1/settings",
+  method: "PATCH",
+  handler: apiHttpAction(
+    async ({ ctx, auth, request }) => {
+      const body = await parseJsonBody<{
+        signing?: unknown;
+        notifications?: unknown;
+        ai?: unknown;
+        security?: unknown;
+      }>(request);
+
+      await ctx.runMutation(internal.api.v1.settings.updateSettings, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        signing: body.signing as Parameters<typeof ctx.runMutation>[1]["signing"],
+        notifications: body.notifications as Parameters<typeof ctx.runMutation>[1]["notifications"],
+        ai: body.ai as Parameters<typeof ctx.runMutation>[1]["ai"],
+        security: body.security as Parameters<typeof ctx.runMutation>[1]["security"],
+      });
+
+      return apiResponse(200, { success: true });
+    },
+    { scope: API_SCOPES.SETTINGS_WRITE },
+  ),
+});
+
+// =============================================================================
+// AUDIT LOG API
+// =============================================================================
+
+/**
+ * List Organization Audit Log
+ *
+ * @route GET /api/v1/audit-log
+ * @scope seal:audit:read
+ */
+http.route({
+  path: "/api/v1/audit-log",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      const { limit, cursor } = parsePagination(query);
+      const result = await ctx.runQuery(internal.api.v1.audit.listAuditLog, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        limit,
+        cursor,
+        document_id: query.document_id as Parameters<typeof ctx.runQuery>[1]["document_id"],
+        action: query.action,
+        created_after: query.created_after ? new Date(query.created_after).getTime() : undefined,
+        created_before: query.created_before ? new Date(query.created_before).getTime() : undefined,
+      });
+      return apiResponse(200, result);
+    },
+    { scope: API_SCOPES.AUDIT_READ },
+  ),
+});
+
+// =============================================================================
+// CONTACTS API
+// =============================================================================
+
+/**
+ * List Contacts
+ *
+ * @route GET /api/v1/contacts
+ * @scope seal:contacts:read
+ */
+http.route({
+  path: "/api/v1/contacts",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      const { limit, cursor } = parsePagination(query);
+      const result = await ctx.runQuery(internal.api.v1.contacts.listContacts, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        limit,
+        cursor,
+        status: query.status as Parameters<typeof ctx.runQuery>[1]["status"],
+        search: query.search,
+      });
+      return apiResponse(200, result);
+    },
+    { scope: API_SCOPES.CONTACTS_READ },
+  ),
+});
+
+/**
+ * Get Contact
+ *
+ * @route GET /api/v1/contacts/get
+ * @scope seal:contacts:read
+ */
+http.route({
+  path: "/api/v1/contacts/get",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+      }
+      let contact = null;
+      try {
+        contact = await ctx.runQuery(internal.api.v1.contacts.getContact, {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          contactId: query.id as Parameters<typeof ctx.runQuery>[1]["contactId"],
+        });
+      } catch {
+        // Invalid ID format — treat as not found
+      }
+      if (!contact) {
+        throw new ApiError(404, "Contact not found", "RESOURCE_NOT_FOUND");
+      }
+      return apiResponse(200, contact);
+    },
+    { scope: API_SCOPES.CONTACTS_READ },
+  ),
+});
+
+/**
+ * Create Contact
+ *
+ * @route POST /api/v1/contacts
+ * @scope seal:contacts:write
+ */
+http.route({
+  path: "/api/v1/contacts",
+  method: "POST",
+  handler: apiHttpAction(
+    async ({ ctx, auth, request }) => {
+      const body = await parseJsonBody<{
+        first_name?: string;
+        last_name?: string;
+        email?: string;
+        phone?: string;
+        company?: string;
+        title?: string;
+        status?: string;
+        notes?: string;
+        tags?: string[];
+      }>(request);
+      validateRequiredFields(body as Record<string, unknown>, ["first_name", "last_name", "email"]);
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (body.email && !emailRegex.test(body.email)) {
+        throw new ApiError(422, "Invalid email address", "VALIDATION_ERROR", {
+          email: ["email must be a valid email address"],
+        });
+      }
+
+      const result = await ctx.runMutation(internal.api.v1.contacts.createContact, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        first_name: body.first_name!,
+        last_name: body.last_name!,
+        email: body.email!,
+        phone: body.phone,
+        company: body.company,
+        title: body.title,
+        status: body.status as Parameters<typeof ctx.runMutation>[1]["status"],
+        notes: body.notes,
+        tags: body.tags,
+      });
+
+      return apiResponse(201, result);
+    },
+    { scope: API_SCOPES.CONTACTS_WRITE },
+  ),
+});
+
+/**
+ * Delete Contact
+ *
+ * @route DELETE /api/v1/contacts/delete
+ * @scope seal:contacts:write
+ */
+http.route({
+  path: "/api/v1/contacts/delete",
+  method: "DELETE",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+      }
+      try {
+        await ctx.runMutation(internal.api.v1.contacts.deleteContact, {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          contactId: query.id as Parameters<typeof ctx.runMutation>[1]["contactId"],
+        });
+      } catch {
+        throw new ApiError(404, "Contact not found", "RESOURCE_NOT_FOUND");
+      }
+      return apiResponse(200, { success: true });
+    },
+    { scope: API_SCOPES.CONTACTS_WRITE },
+  ),
+});
+
+// =============================================================================
+// DOCUMENT ACCESS / SHARING MODE
+// =============================================================================
+
+/**
+ * Get Document Sharing Mode
+ *
+ * @route GET /api/v1/documents/access
+ * @scope seal:documents:read
+ */
+http.route({
+  path: "/api/v1/documents/access",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+      }
+      let access = null;
+      try {
+        access = await ctx.runQuery(internal.api.v1.documents.getDocumentAccess, {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          documentId: query.id as Parameters<typeof ctx.runQuery>[1]["documentId"],
+        });
+      } catch {
+        // Invalid ID format — treat as not found
+      }
+      if (!access) {
+        throw new ApiError(404, "Document not found", "RESOURCE_NOT_FOUND");
+      }
+      return apiResponse(200, access);
+    },
+    { scope: API_SCOPES.DOCUMENTS_READ },
+  ),
+});
+
+/**
+ * Update Document Sharing Mode
+ *
+ * @route PUT /api/v1/documents/access
+ * @scope seal:documents:write
+ */
+http.route({
+  path: "/api/v1/documents/access",
+  method: "PUT",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query, request }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+      }
+      const body = await parseJsonBody<{ sharing_mode?: string }>(request);
+      validateRequiredFields(body as Record<string, unknown>, ["sharing_mode"]);
+
+      await ctx.runMutation(internal.api.v1.documents.updateDocumentAccess, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        documentId: query.id as Parameters<typeof ctx.runMutation>[1]["documentId"],
+        sharing_mode: body.sharing_mode as Parameters<typeof ctx.runMutation>[1]["sharing_mode"],
+      });
+      return apiResponse(200, { success: true });
+    },
+    { scope: API_SCOPES.DOCUMENTS_WRITE },
+  ),
+});
+
+// =============================================================================
+// BULK DOCUMENT OPERATIONS
+// =============================================================================
+
+/**
+ * Bulk Void Documents
+ *
+ * @route POST /api/v1/documents/bulk-void
+ * @scope seal:documents:write
+ */
+http.route({
+  path: "/api/v1/documents/bulk-void",
+  method: "POST",
+  handler: apiHttpAction(
+    async ({ ctx, auth, request }) => {
+      const body = await parseJsonBody<{ document_ids?: string[]; reason?: string }>(request);
+      validateRequiredFields(body as Record<string, unknown>, ["document_ids", "reason"]);
+
+      if (!Array.isArray(body.document_ids) || body.document_ids.length === 0) {
+        throw new ApiError(400, "document_ids must be a non-empty array", "VALIDATION_ERROR");
+      }
+      if (body.document_ids.length > 50) {
+        throw new ApiError(400, "Cannot void more than 50 documents at once", "VALIDATION_ERROR");
+      }
+
+      const result = await ctx.runMutation(internal.api.v1.documents.bulkVoidDocuments, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        document_ids: body.document_ids as Parameters<typeof ctx.runMutation>[1]["document_ids"],
+        reason: body.reason!,
+      });
+      return apiResponse(200, result);
+    },
+    { scope: API_SCOPES.DOCUMENTS_WRITE },
+  ),
+});
+
+/**
+ * Bulk Send Documents
+ *
+ * @route POST /api/v1/documents/bulk-send
+ * @scope seal:documents:write
+ */
+http.route({
+  path: "/api/v1/documents/bulk-send",
+  method: "POST",
+  handler: apiHttpAction(
+    async ({ ctx, auth, request }) => {
+      const body = await parseJsonBody<{ document_ids?: string[]; message?: string }>(request);
+      validateRequiredFields(body as Record<string, unknown>, ["document_ids"]);
+
+      if (!Array.isArray(body.document_ids) || body.document_ids.length === 0) {
+        throw new ApiError(400, "document_ids must be a non-empty array", "VALIDATION_ERROR");
+      }
+      if (body.document_ids.length > 50) {
+        throw new ApiError(400, "Cannot send more than 50 documents at once", "VALIDATION_ERROR");
+      }
+
+      const result = await ctx.runMutation(internal.api.v1.documents.bulkSendDocuments, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        document_ids: body.document_ids as Parameters<typeof ctx.runMutation>[1]["document_ids"],
+        message: body.message,
+      });
+      return apiResponse(200, result);
+    },
+    { scope: API_SCOPES.DOCUMENTS_WRITE },
+  ),
+});
+
+// =============================================================================
+// ANALYTICS
+// =============================================================================
+
+/**
+ * Get Analytics
+ *
+ * @route GET /api/v1/analytics
+ * @scope seal:documents:read
+ */
+http.route({
+  path: "/api/v1/analytics",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      const analytics = await ctx.runQuery(internal.api.v1.analytics.getAnalytics, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        from: query.from ? new Date(query.from).getTime() : undefined,
+        to: query.to ? new Date(query.to).getTime() : undefined,
+      });
+      return apiResponse(200, analytics);
+    },
+    { scope: API_SCOPES.DOCUMENTS_READ },
+  ),
+});
+
+// =============================================================================
 // PUBLIC DOWNLOAD (Token-Based)
 // =============================================================================
 
@@ -2212,5 +2698,57 @@ http.route({
     return Response.redirect(downloadUrl, 302);
   }),
 });
+
+// ---------------------------------------------------------------------------
+// BUG-11 fix: CORS preflight handler for all /api/v1/* paths.
+// Convex HTTP router requires explicit route registration per method — there
+// is no wildcard method support, so OPTIONS must be registered separately.
+// Using pathPrefix so a single handler covers every API endpoint.
+// ---------------------------------------------------------------------------
+
+const corsPreflightHandler = httpAction(async (_ctx, _request) => {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Version",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
+});
+
+http.route({ pathPrefix: "/api/v1/", method: "OPTIONS", handler: corsPreflightHandler });
+
+// ---------------------------------------------------------------------------
+// BUG-12 fix: RFC 7807 fallback for unmatched /api/v1/* paths.
+// Exact-path routes registered above take priority; these prefix handlers
+// only fire when no explicit route matches (unknown path or wrong method).
+// ---------------------------------------------------------------------------
+
+const apiNotFoundHandler = httpAction(async (_ctx, request) => {
+  return new Response(
+    JSON.stringify({
+      type: "https://api.seal.app/errors/not-found",
+      title: "Not Found",
+      status: 404,
+      detail: `No API endpoint found for ${request.method} ${new URL(request.url).pathname}`,
+      code: "ENDPOINT_NOT_FOUND",
+      instance: request.url,
+    }),
+    {
+      status: 404,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "no-store",
+      },
+    },
+  );
+});
+
+for (const method of ["GET", "POST", "PUT", "PATCH", "DELETE"] as const) {
+  http.route({ pathPrefix: "/api/v1/", method, handler: apiNotFoundHandler });
+}
 
 export default http;
