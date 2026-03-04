@@ -360,13 +360,11 @@ const access = await getDocumentAccessLevel(ctx, document, userId, orgId);
 
 ## Known Issues & Technical Debt
 
-*Last reviewed: 2026-02-18*
+*Last reviewed: 2026-03-04*
 
 ### Open
 
-1. **Document Detail Page Complexity**: `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` is ~1,667 lines — should be split into smaller components with custom hooks
-2. **Form Validation**: Frontend lacks schema-based validation (no Zod integration with forms)
-3. **Field List Virtualization**: Long field lists in document editor don't use virtualization (consider `@tanstack/react-virtual` for lists >50 items)
+*(none)*
 
 ### Resolved
 
@@ -381,6 +379,10 @@ const access = await getDocumentAccessLevel(ctx, document, userId, orgId);
 - ~~**File Upload Fields**~~ — **Fixed**: Convex Storage upload via `generateAttachmentUploadUrl` mutation; stores `storageId` instead of base64
 - ~~**Sentry Integration**~~ — **Fixed**: `Sentry.captureException` called in `ErrorBoundary.componentDidCatch`
 - ~~**Rate Limiting**~~ — **Fixed**: Sliding window rate limiter in `api/rate_limit.ts` with DB-backed counters and hourly cleanup cron
+- ~~**Document Detail Page Complexity**~~ — **Fixed**: Extracted `useSectionState`, `useDocumentState`, `usePdfViewer`, `useFieldPlacement` hooks plus `DocumentSidebar` component; route file reduced significantly
+- ~~**Field List Virtualization**~~ — **Fixed**: `field-list.tsx` uses `@tanstack/react-virtual` with threshold at 20 items; `overscan: 5`, `gap: 8`, dynamic row height measurement via `measureElement`
+- ~~**Form Validation**~~ — **Fixed**: Zod validation with `@hookform/resolvers` integrated into recipient, send, contact, and member invite forms
+- ~~**Pro Plan Error Messages Expose Stack Traces**~~ — **Fixed**: `parseConvexError` in `utils.ts` now extracts the user-facing message from Convex error strings; `save-as-template-dialog.tsx` uses `getErrorMessage()` consistently
 
 ## Component Guidelines
 

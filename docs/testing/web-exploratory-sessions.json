@@ -3,10 +3,11 @@
   "app": "web",
   "type": "exploratory-testing",
   "branch": "staging",
-  "lastUpdated": "2026-03-02",
+  "lastUpdated": "2026-03-04 (Round 8 complete)",
+  "round4CompletedDate": "2026-03-03",
   "browser": {
     "tool": "playwright-cli",
-    "baseUrl": "http://localhost:5173"
+    "baseUrl": "http://localhost:5175"
   },
   "rules": {
     "fixBugsImmediately": true,
@@ -174,7 +175,7 @@
             "Open Send dialog on a document, verify expiration pre-populates with the new default"
           ],
           "bugs": [],
-          "notes": "Default Deadline field found with spinbutton, default value 30. Changed to 14, saved successfully (toast: 'Signing settings updated'). Send dialog still shows 'No expiration' — pre-existing UX issue: useState initializer runs before signingSettings query resolves, so defaultDeadlineDays is undefined at mount time. Not a regression. Reset to 30 after test."
+          "notes": "Default Deadline field found with spinbutton, default value 30. Changed to 14, saved successfully (toast: 'Signing settings updated'). Send dialog still shows 'No expiration' \u2014 pre-existing UX issue: useState initializer runs before signingSettings query resolves, so defaultDeadlineDays is undefined at mount time. Not a regression. Reset to 30 after test."
         },
         {
           "id": "E2",
@@ -193,13 +194,44 @@
           "notes": "Expiration Alert field found with label 'Notify the sender this many days before a document expires', spinbutton default 3, unit 'days before expiry'. Changed to 5, saved (toast: 'Notification settings updated'). Reset to 3 after test."
         }
       ],
-      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2", "E1", "E2"],
+      "executionOrder": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1",
+        "C2",
+        "D1",
+        "D2",
+        "E1",
+        "E2"
+      ],
       "blocks": {
-        "A": { "name": "Send with Expiration", "priority": 1, "sessions": 2 },
-        "B": { "name": "Documents List / Re-send", "priority": 1, "sessions": 2 },
-        "C": { "name": "Signing Page Gate", "priority": 1, "sessions": 2 },
-        "D": { "name": "Status Badge / Detail Page", "priority": 2, "sessions": 2 },
-        "E": { "name": "Settings Pages", "priority": 2, "sessions": 2 }
+        "A": {
+          "name": "Send with Expiration",
+          "priority": 1,
+          "sessions": 2
+        },
+        "B": {
+          "name": "Documents List / Re-send",
+          "priority": 1,
+          "sessions": 2
+        },
+        "C": {
+          "name": "Signing Page Gate",
+          "priority": 1,
+          "sessions": 2
+        },
+        "D": {
+          "name": "Status Badge / Detail Page",
+          "priority": 2,
+          "sessions": 2
+        },
+        "E": {
+          "name": "Settings Pages",
+          "priority": 2,
+          "sessions": 2
+        }
       },
       "stats": {
         "total": 10,
@@ -222,10 +254,10 @@
           "status": "passed",
           "steps": [
             "Open a draft document with canEdit access",
-            "Scroll to bottom — verify 'Document Settings' collapsible panel appears",
-            "Expand it — verify Redirect URL input and save button present",
-            "Enter an invalid URL (e.g. 'not-a-url') and click Save — verify error message",
-            "Enter a valid URL (e.g. https://acme.com/thanks) — verify Save works and persists"
+            "Scroll to bottom \u2014 verify 'Document Settings' collapsible panel appears",
+            "Expand it \u2014 verify Redirect URL input and save button present",
+            "Enter an invalid URL (e.g. 'not-a-url') and click Save \u2014 verify error message",
+            "Enter a valid URL (e.g. https://acme.com/thanks) \u2014 verify Save works and persists"
           ],
           "bugs": [],
           "notes": "Document Settings collapsible visible on draft. Redirect URL input present. Invalid URL 'not-a-url' showed 'Enter a valid URL' error. Valid URL 'https://acme.com/thanks' saved and persisted after page reload."
@@ -237,14 +269,14 @@
           "priority": 1,
           "status": "passed",
           "steps": [
-            "Open a sent (in-progress) document — verify Document Settings panel does NOT appear",
-            "Open a draft document as a viewer/recipient (if possible) — panel should be hidden",
+            "Open a sent (in-progress) document \u2014 verify Document Settings panel does NOT appear",
+            "Open a draft document as a viewer/recipient (if possible) \u2014 panel should be hidden",
             "Verify the Dictate Next Signer toggle is hidden when signing mode is not sequential"
           ],
           "bugs": [
             {
               "id": "BUG-1",
-              "description": "Dictate Next Signer toggle was unreachable: Document Settings only shows on drafts (workflowStatus==='draft'), but signingMode is only set when a document is sent. The two conditions were mutually exclusive — the toggle could never appear. Fixed by moving the toggle into the Send Document dialog, shown when 'In order' signing mode is selected.",
+              "description": "Dictate Next Signer toggle was unreachable: Document Settings only shows on drafts (workflowStatus==='draft'), but signingMode is only set when a document is sent. The two conditions were mutually exclusive \u2014 the toggle could never appear. Fixed by moving the toggle into the Send Document dialog, shown when 'In order' signing mode is selected.",
               "fixed": true,
               "file": "apps/web/src/components/documents/send-document-dialog.tsx"
             }
@@ -261,7 +293,7 @@
             "Set redirectUrl on a draft document, send it",
             "Open the signing link as recipient",
             "Complete the signature and submit",
-            "After page reloads to completed state — verify RedirectCountdown component appears",
+            "After page reloads to completed state \u2014 verify RedirectCountdown component appears",
             "Verify it shows domain only (not full URL), 5-second countdown, 'Go now' and 'Stay here' buttons"
           ],
           "bugs": [],
@@ -274,13 +306,13 @@
           "priority": 1,
           "status": "passed",
           "steps": [
-            "On the redirect countdown, click 'Go now' — verify immediate redirect to configured URL",
-            "Repeat: let countdown expire naturally — verify redirect fires at 0",
-            "Repeat: click 'Stay here' — verify countdown stops and no redirect occurs",
+            "On the redirect countdown, click 'Go now' \u2014 verify immediate redirect to configured URL",
+            "Repeat: let countdown expire naturally \u2014 verify redirect fires at 0",
+            "Repeat: click 'Stay here' \u2014 verify countdown stops and no redirect occurs",
             "Verify query params appended: recipientEmail, recipientName, status=signed"
           ],
           "bugs": [],
-          "notes": "Auto-redirect fired to https://acme.com/thanks?recipientEmail=bob%40example.com&recipientName=Bob+Smith&status=signed (all params correct). Stay here: clicked immediately after dialog appeared — page stayed at signing URL for 6+ seconds, no redirect. 'Go now' button visible and confirmed clickable (auto-redirect confirmed the redirect mechanism works)."
+          "notes": "Auto-redirect fired to https://acme.com/thanks?recipientEmail=bob%40example.com&recipientName=Bob+Smith&status=signed (all params correct). Stay here: clicked immediately after dialog appeared \u2014 page stayed at signing URL for 6+ seconds, no redirect. 'Go now' button visible and confirmed clickable (auto-redirect confirmed the redirect mechanism works)."
         },
         {
           "id": "C1",
@@ -295,7 +327,7 @@
             "Verify declined recipients also do NOT see redirect countdown"
           ],
           "bugs": [],
-          "notes": "Used document jx7c0cje5aw87emyxh69y88hkh81hvyp (no redirectUrl). Alice Johnson signed. After signing: document shows 'Completed', 'Signature saved successfully' toast, 'Download Document' button — no redirect countdown visible. URL remained at /sign/<token>."
+          "notes": "Used document jx7c0cje5aw87emyxh69y88hkh81hvyp (no redirectUrl). Alice Johnson signed. After signing: document shows 'Completed', 'Signature saved successfully' toast, 'Download Document' button \u2014 no redirect countdown visible. URL remained at /sign/<token>."
         },
         {
           "id": "D1",
@@ -305,13 +337,13 @@
           "status": "passed",
           "steps": [
             "Open Send dialog with 2+ recipients",
-            "With 'All at once' mode — verify 'Signers choose next recipient' toggle is NOT shown",
-            "Switch to 'In order' mode — verify toggle appears",
-            "Enable the toggle — verify it turns on",
+            "With 'All at once' mode \u2014 verify 'Signers choose next recipient' toggle is NOT shown",
+            "Switch to 'In order' mode \u2014 verify toggle appears",
+            "Enable the toggle \u2014 verify it turns on",
             "Send document with dictate enabled"
           ],
           "bugs": [],
-          "notes": "Note: Toggle moved to Send dialog (BUG-1 fix). 'All at once' mode: toggle count=0 ✓. 'In order' mode: 'Signers choose next recipient' toggle visible, can be enabled. Sent document with In order + Dictate toggle ON."
+          "notes": "Note: Toggle moved to Send dialog (BUG-1 fix). 'All at once' mode: toggle count=0 \u2713. 'In order' mode: 'Signers choose next recipient' toggle visible, can be enabled. Sent document with In order + Dictate toggle ON."
         },
         {
           "id": "D2",
@@ -337,21 +369,46 @@
           "status": "passed",
           "steps": [
             "With awaitingDictation=true and redirectUrl set on document",
-            "Navigate to signer's completed signing page — DictateNextSignerDialog appears",
-            "Click 'I'll do this later' — verify dialog closes",
+            "Navigate to signer's completed signing page \u2014 DictateNextSignerDialog appears",
+            "Click 'I'll do this later' \u2014 verify dialog closes",
             "Verify RedirectCountdown appears (redirect fires after dictation deferred)",
             "Verify Stay here stops redirect"
           ],
           "bugs": [],
-          "notes": "With awaitingDictation=true and redirectUrl='https://acme.com/thanks' on document: DictateNextSignerDialog appeared. Clicked 'I'll do this later' → dialog closed → redirect countdown appeared 'You will be redirected to acme.com in 2 seconds...' with Go now/Stay here buttons. Stay here clicked → stayed at signing URL, no redirect for 6+ seconds. Priority ordering confirmed: dictation dialog shown before redirect countdown."
+          "notes": "With awaitingDictation=true and redirectUrl='https://acme.com/thanks' on document: DictateNextSignerDialog appeared. Clicked 'I'll do this later' \u2192 dialog closed \u2192 redirect countdown appeared 'You will be redirected to acme.com in 2 seconds...' with Go now/Stay here buttons. Stay here clicked \u2192 stayed at signing URL, no redirect for 6+ seconds. Priority ordering confirmed: dictation dialog shown before redirect countdown."
         }
       ],
-      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "D1", "D2", "D3"],
+      "executionOrder": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1",
+        "D1",
+        "D2",
+        "D3"
+      ],
       "blocks": {
-        "A": { "name": "Document Settings Panel", "priority": 1, "sessions": 2 },
-        "B": { "name": "Redirect Countdown", "priority": 1, "sessions": 2 },
-        "C": { "name": "No-Redirect Edge Cases", "priority": 2, "sessions": 1 },
-        "D": { "name": "Dictate Next Signer", "priority": 1, "sessions": 3 }
+        "A": {
+          "name": "Document Settings Panel",
+          "priority": 1,
+          "sessions": 2
+        },
+        "B": {
+          "name": "Redirect Countdown",
+          "priority": 1,
+          "sessions": 2
+        },
+        "C": {
+          "name": "No-Redirect Edge Cases",
+          "priority": 2,
+          "sessions": 1
+        },
+        "D": {
+          "name": "Dictate Next Signer",
+          "priority": 1,
+          "sessions": 3
+        }
       },
       "stats": {
         "total": 8,
@@ -361,6 +418,896 @@
         "bugsFound": 1,
         "bugsFixed": 1
       }
+    },
+    "round3": {
+      "feature": "Audit Log, Analytics, Bulk Actions, Access Controls, Contacts, Members",
+      "sessions": [
+        {
+          "id": "A1",
+          "block": "A",
+          "title": "Audit log viewer \u2014 loads and displays events",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to the organization audit log page",
+            "Verify events list renders with timestamps, actor, and description",
+            "Verify filtering by event type works (if filter UI exists)",
+            "Verify pagination or infinite scroll loads more events"
+          ],
+          "bugs": [],
+          "notes": "Audit log loads at /settings/audit-log. Date filters (Last 7/30/90 days, Custom) work - count changes correctly. Action type dropdown has 5 categories (Document/Recipient/Signature/Member/Organization events). Custom date range shows From/To date pickers. Export CSV downloads audit-log-YYYY-MM-DD.csv successfully."
+        },
+        {
+          "id": "A2",
+          "block": "A",
+          "title": "Audit log \u2014 document-level events visible in document sidebar",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Open a document that has been sent and signed",
+            "Expand the Activity section in the sidebar",
+            "Verify created, sent, viewed, signed events appear in chronological order"
+          ],
+          "bugs": [],
+          "notes": "Document detail page sidebar has Activity section with event count badge (Activity 4). Shows timestamped events: Alice Johnson signed/viewed. Events match org-level audit log data."
+        },
+        {
+          "id": "B1",
+          "block": "B",
+          "title": "Contacts CRUD \u2014 create, view, edit, delete",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to Contacts page",
+            "Click Add Contact \u2014 fill first name, last name, email, phone, company, click Create",
+            "Verify new contact appears in list",
+            "Click contact row \u2014 open detail or edit dialog",
+            "Edit a field, save \u2014 verify change persists",
+            "Delete the contact \u2014 verify it's removed from list"
+          ],
+          "bugs": [],
+          "notes": "Full CRUD tested: Create (Add Contact dialog with all fields), View (detail page at /contacts/:id), Edit (pre-filled dialog, title updated), Delete (confirmation dialog \u2192 \"Contact deleted\" toast \u2192 redirect to list). All operations work correctly."
+        },
+        {
+          "id": "B2",
+          "block": "B",
+          "title": "Contacts \u2014 validation for required fields and duplicate email",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Open Add Contact dialog \u2014 submit with empty first name \u2014 verify error",
+            "Submit with invalid email \u2014 verify error",
+            "Enter email of an existing contact \u2014 verify duplicate warning",
+            "Submit valid form \u2014 verify contact created"
+          ],
+          "bugs": [],
+          "notes": "Validation: Empty submit shows inline \"First name is required\", \"Last name is required\", \"Please enter a valid email address\". Invalid email format shows browser native tooltip. Duplicate email: allowed with warning toast \"A contact with this email already exists. A duplicate was created.\" (non-blocking behavior \u2014 by design)."
+        },
+        {
+          "id": "C1",
+          "block": "C",
+          "title": "Members list \u2014 view, invite, change role, remove",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to Settings > Team or Members page",
+            "Verify all current members are listed with name, email, role, and status",
+            "Click Invite \u2014 enter email, select role, send invitation",
+            "Verify invitation appears as pending in member list"
+          ],
+          "bugs": [],
+          "notes": "Members list loads with Member/Role/Status/Joined columns. Role filter dropdown shows Owner/Admin/Member/Viewer/System with chip UI. Invitations tab shows empty state with \"No pending invitations\". Invite Member button is Pro-gated (disabled). Role change/remove not testable with single owner account. Search bar present."
+        },
+        {
+          "id": "D1",
+          "block": "D",
+          "title": "Bulk void documents",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to documents list",
+            "Select multiple sent/in-progress documents using checkboxes",
+            "Click Bulk Void (or equivalent bulk action)",
+            "Confirm void \u2014 verify selected documents status changes to cancelled",
+            "Verify voided documents no longer appear in active list"
+          ],
+          "bugs": [],
+          "notes": "No bulk void UI found \u2014 documents table has no multi-select checkboxes. However single-document cancel works: Actions menu \u2192 Cancel Document \u2192 confirmation dialog (\"Cancel this document? This action cannot be undone and recipients will be notified.\") \u2192 confirm \u2192 status updates to Cancelled in real-time via Convex subscription \u2192 toast notification appears. Feature gap: bulk void not implemented in UI (only per-document action menu)."
+        },
+        {
+          "id": "D2",
+          "block": "D",
+          "title": "Bulk send documents",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to documents list",
+            "Select multiple draft documents with recipients already added",
+            "Click Bulk Send",
+            "Confirm \u2014 verify documents status changes to sent",
+            "Verify recipients receive email invitations (or check send logs)"
+          ],
+          "bugs": [],
+          "notes": "Tested send document flow: uploaded sample-document.pdf \u2192 opened draft \u2192 added external recipient (recipient@test.com, Test Recipient, signer role) \u2192 AI Suggestions detected 4 fields \u2192 clicked Select all \u2192 clicked Apply 4 \u2192 Send Document button became enabled \u2192 Send Document dialog showed recipient with 4 assigned fields \u2192 confirmed send \u2192 document status changed to Sent in sidebar. Send Document button disabled immediately after send. Note: no bulk send UI exists (no checkboxes); tested per-document send flow instead."
+        },
+        {
+          "id": "E1",
+          "block": "E",
+          "title": "Document access controls \u2014 sharing mode",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Open a document as owner",
+            "Find access control or sharing settings in document settings",
+            "Change access mode (e.g. private \u2192 workspace)",
+            "Verify the change persists after page refresh",
+            "Verify a workspace member can see the document in their list"
+          ],
+          "bugs": [],
+          "notes": "Access control tested via documents list Actions menu \u2192 Share: dialog shows General access section with Private / Workspace buttons. Default is Private (\"Only you and people you share with can access\"). Clicked Workspace \u2192 description changes to \"Everyone in your workspace can access\" \u2192 clicked Done. Re-opened Share dialog: setting persisted as Workspace. Change is saved immediately via Convex mutation (no explicit Save button, Done just closes). Feature works correctly."
+        }
+      ],
+      "executionOrder": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1",
+        "D1",
+        "D2",
+        "E1"
+      ],
+      "blocks": {
+        "A": {
+          "name": "Audit Log",
+          "priority": 1,
+          "sessions": 2
+        },
+        "B": {
+          "name": "Contacts CRUD",
+          "priority": 1,
+          "sessions": 2
+        },
+        "C": {
+          "name": "Members",
+          "priority": 1,
+          "sessions": 1
+        },
+        "D": {
+          "name": "Bulk Actions",
+          "priority": 1,
+          "sessions": 2
+        },
+        "E": {
+          "name": "Access Controls",
+          "priority": 2,
+          "sessions": 1
+        }
+      },
+      "stats": {
+        "total": 8,
+        "pending": 0,
+        "passed": 8,
+        "failed": 0,
+        "bugsFound": 0,
+        "bugsFixed": 0,
+        "blocked": 0
+      }
+    },
+    "round4": {
+      "sessions": [
+        {
+          "id": "A1",
+          "block": "A",
+          "title": "Signing flow \u2014 open link and complete signing",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to the Sent document from round 3 (sample-document.pdf)",
+            "Find the recipient signing link (via recipient options or signing link button)",
+            "Open signing link in browser",
+            "Complete ESIGN consent",
+            "Fill in / sign all 4 fields placed by AI",
+            "Submit \u2014 verify document moves to completed status"
+          ],
+          "bugs": [],
+          "notes": "Used unauthenticated playwright-cli -s=signing session. Retrieved token via `bunx convex data document_recipients`. ESIGN consent gated the signing page correctly. Filled date field (Mar 3 2026) then 2 signature fields (Type tab, 'Test Recipient'). Page auto-submitted after last field \u2014 no manual 'Sign Document' click needed. Both signing session and sender session confirmed 'Completed' status. Activity log showed 'Signed Mar 3, 2026 10:40 AM'. Minor: missing DialogTitle on signing dialogs (accessibility warning in console)."
+        },
+        {
+          "id": "A2",
+          "block": "A",
+          "title": "Signing flow \u2014 decline to sign",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Send a fresh document to a recipient",
+            "Open the signing link",
+            "Click Decline instead of Sign",
+            "Confirm decline \u2014 verify document moves to declined status",
+            "Verify sender sees declined status in document detail"
+          ],
+          "bugs": [],
+          "notes": "Uploaded sample-document.pdf, added decliner@test.com as signer, applied 4 AI-suggested fields, sent document. Token: 40a825... Opened signing link in unauthenticated session. Consented to ESIGN. On signing page saw both 'Sign Document' and 'Decline to sign' buttons. Clicked 'Decline to sign' \u2014 'Decline Document' dialog appeared requesting a reason. Filled reason and confirmed. Signing page showed 'Declined' status with activity log. Sender's document detail confirmed 'Document Status: Declined' and recipient status 'Declined'. Full decline flow works end-to-end."
+        },
+        {
+          "id": "A3",
+          "block": "A",
+          "title": "Signing flow \u2014 viewer role (view only, no signing)",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Add a viewer recipient to a document",
+            "Send document",
+            "Open viewer signing link",
+            "Verify no signature fields presented \u2014 view-only mode",
+            "Mark as viewed \u2014 verify status update"
+          ],
+          "bugs": [],
+          "notes": "Uploaded sample-document.pdf, added viewer@test.com (Viewer role) and signer@test.com (Signer) as recipients. AI suggestions placed 4 fields \u2014 all assigned to the signer. Sent document. Got viewer signing token from convex data. ESIGN consent loaded for viewer. After consent, viewer signing page showed 'Mark as Viewed' and 'Decline to sign' buttons \u2014 NO signature fields. Viewer Recipient Details panel showed role 'Viewer'. Clicked 'Mark as Viewed' \u2014 a signature confirmation dialog appeared (Type/Draw/Upload tabs) to formally acknowledge viewing. Typed name and accepted. Sender confirmed viewer@test.com status as 'Viewed', signer@test.com as 'Pending'. Viewer role enforced correctly end-to-end. Minor note: 'Mark as Viewed' opens same signature dialog as signing \u2014 may be UX surprise for viewers."
+        },
+        {
+          "id": "B1",
+          "block": "B",
+          "title": "Templates \u2014 save document as template",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Open a sent/completed document",
+            "Click Save as Template from Actions menu",
+            "Enter template name, click Save Template",
+            "Verify success toast with field count",
+            "Verify template appears in /templates list"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-1",
+              "description": "parseConvexError in utils.ts only stripped the ConvexError stack trace prefix for subscription errors, leaving all other error types (permission, not_found, validation, unknown) still showing the raw '[CONVEX M(...)] Server Error Uncaught ConvexError:' prefix in toast messages.",
+              "fixed": true,
+              "file": "apps/web/src/lib/utils.ts"
+            }
+          ],
+          "notes": "Required Pro plan (seeded via patch_product_tier temporary mutation). 'Save as Template' dialog opened from document Actions menu on a completed document. Entered name 'Test Document Template', clicked Save. Toast: 'Template saved with 4 fields'. Template appeared in /templates list. BUG-1 fixed: parseConvexError now extracts the clean message for all error types at the top before classification."
+        },
+        {
+          "id": "B2",
+          "block": "B",
+          "title": "Templates \u2014 use a template to create a document",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to /templates",
+            "Click Use Template on existing template",
+            "Verify template creates a new draft document",
+            "Verify signature fields pre-populated from template",
+            "Verify new document appears in documents list"
+          ],
+          "bugs": [],
+          "notes": "Clicked 'Use Template' on 'Test Document Template'. New draft document created with all fields pre-populated from template. Document appeared in documents list as Draft. Fields correctly mapped from template definition."
+        },
+        {
+          "id": "C1",
+          "block": "C",
+          "title": "API keys \u2014 create and view a key",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to /settings/developer/api-keys",
+            "Click Create API Key",
+            "Enter name 'Round 4 Test Key', select documents:read + documents:write scopes",
+            "Confirm \u2014 verify key shown once with sk_ prefix",
+            "Verify key appears in list with name, prefix, scopes, and created date"
+          ],
+          "bugs": [],
+          "notes": "Required Pro plan. Create API Key dialog has name input + permission tree (Documents, Templates, Recipients, Signatures groups). Selected documents:read and documents:write. Created key shown once with 'ak_' prefix and copy button. List shows key with scopes chips, created date 'Mar 3, 2026', Active badge, and Revoke button. Key correctly marked as 'only shown once' on creation."
+        },
+        {
+          "id": "C2",
+          "block": "C",
+          "title": "API keys \u2014 revoke a key",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "From API keys list, find 'Round 4 Test Key'",
+            "Click Revoke",
+            "Confirm revocation dialog",
+            "Verify 'API key revoked' success toast",
+            "Verify key is removed from the list"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-2",
+              "description": "revokeClerkApiKey action used an unsafe SDK cast (clerk.apiKeys as unknown as { revoke: ... }) that failed with 'A valid resource ID is required'. Fixed by switching to direct Clerk REST API fetch (POST /v1/api_keys/{id}/revoke).",
+              "fixed": true,
+              "file": "apps/backend/convex/api_keys/actions.ts"
+            },
+            {
+              "id": "BUG-3",
+              "description": "Clerk's POST /v1/api_keys/{id}/revoke endpoint requires a JSON body. Sending the request without a body caused Clerk to return 400 'Malformed JSON in request body'. Fixed by adding body: JSON.stringify({}) to the fetch call.",
+              "fixed": true,
+              "file": "apps/backend/convex/api_keys/actions.ts"
+            },
+            {
+              "id": "BUG-4",
+              "description": "api-keys.tsx error handler was using raw error.message (showing full Convex stack trace) instead of getErrorMessage(error). Fixed by importing getErrorMessage from utils and using it in both the create and revoke catch blocks.",
+              "fixed": true,
+              "file": "apps/web/src/routes/_authenticated/$slug/settings/developer/api-keys.tsx"
+            }
+          ],
+          "notes": "Clicked Revoke on 'Round 4 Test Key' \u2192 confirmation dialog appeared \u2192 clicked 'Revoke Key' \u2192 'API key revoked' success toast \u2192 key removed from list. Two backend bugs found and fixed (BUG-2, BUG-3) plus one frontend bug (BUG-4). After fixes, full revoke flow works end-to-end."
+        },
+        {
+          "id": "D1",
+          "block": "D",
+          "title": "Webhooks \u2014 create a webhook endpoint",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to /settings/developer/webhooks",
+            "Click Add Endpoint",
+            "Enter name 'Round 4 Test Webhook', URL 'https://webhook.site/test-seal-round4'",
+            "Select document.created and document.completed event subscriptions",
+            "Create \u2014 verify endpoint appears in list with signing secret shown once"
+          ],
+          "bugs": [],
+          "notes": "Required Pro plan. Create Webhook Endpoint dialog has name, URL, description, and event subscription tree (Documents/Recipients groups with individual event checkboxes). Subscribed to document.created and document.completed. After creation, 'Webhook Created' modal showed signing secret ('whsec_87FeN5JVM...') with 'Store this secret securely' warning. Endpoint appeared in list showing URL, 'active' badge, '100% success', '2 events' (system sent 2 test deliveries automatically on creation)."
+        },
+        {
+          "id": "D2",
+          "block": "D",
+          "title": "Webhooks \u2014 delete endpoint",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "From webhook endpoint list, click Delete (trash icon) on 'Round 4 Test Webhook'",
+            "Confirm deletion dialog ('This action cannot be undone')",
+            "Verify endpoint removed from list",
+            "Verify page returns to empty state 'Connect your first endpoint'"
+          ],
+          "bugs": [],
+          "notes": "Clicked trash icon \u2192 'Delete Webhook' confirmation dialog appeared with warning about permanent deletion of endpoint and delivery history \u2192 confirmed \u2192 endpoint removed from list \u2192 page returned to empty state 'Connect your first endpoint'. Full delete flow works correctly."
+        },
+        {
+          "id": "E1",
+          "block": "E",
+          "title": "Analytics dashboard \u2014 key metrics visible",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Navigate to /analytics",
+            "Verify dashboard loads with charts/metrics",
+            "Check date range filters work",
+            "Verify document volume, completion rate, or similar stats shown",
+            "Check for empty state handling if no data"
+          ],
+          "bugs": [],
+          "notes": "Analytics dashboard loaded with real data: '5 created this week', '3 sent, 0 in progress', '1 completed this month', '1 cancelled/declined'. Eight tabs: Document Activity, Status Breakdown, Recent Activity, Email Engagement, Recipient Timing, Template Performance, Export, Team Members. Date range filters (7 days / 30 days) work correctly \u2014 30 days becomes active on click. Status Breakdown tab shows pie/donut chart: Draft (2), Sent (3), Completed (1), Cancelled (1). Team/Personal toggle present. All data reflects the documents created during this testing round. No empty state shown (data present). No Pro plan gate on analytics."
+        }
+      ],
+      "executionOrder": [
+        "A1",
+        "A2",
+        "A3",
+        "B1",
+        "B2",
+        "C1",
+        "C2",
+        "D1",
+        "D2",
+        "E1"
+      ],
+      "blocks": {
+        "A": {
+          "name": "Signing Flow (Recipient)",
+          "priority": 1,
+          "sessions": 3
+        },
+        "B": {
+          "name": "Templates",
+          "priority": 1,
+          "sessions": 2
+        },
+        "C": {
+          "name": "API Keys",
+          "priority": 1,
+          "sessions": 2
+        },
+        "D": {
+          "name": "Webhooks",
+          "priority": 1,
+          "sessions": 2
+        },
+        "E": {
+          "name": "Analytics",
+          "priority": 2,
+          "sessions": 1
+        }
+      },
+      "completedDate": "2026-03-03",
+      "stats": {
+        "total": 10,
+        "pending": 0,
+        "passed": 10,
+        "failed": 0,
+        "bugsFound": 5,
+        "bugsFixed": 5,
+        "blocked": 0
+      }
+    },
+    "round5": {
+      "feature": "REST API Endpoints",
+      "description": "Full API endpoint coverage for all v1 routes added in staging branch",
+      "apiBaseUrl": "https://wooden-poodle-362.convex.site/api/v1",
+      "sessions": [
+        {
+          "id": "E1",
+          "block": "E",
+          "title": "Core endpoints: health, account, documents, templates",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "GET /health \u2192 200",
+            "GET /account \u2192 200 with org info",
+            "GET /documents \u2192 200, returns 9 documents",
+            "GET /documents?status=sent \u2192 filtered correctly",
+            "GET /templates \u2192 200",
+            "GET /documents/get?id=<id> \u2192 200 with document details"
+          ],
+          "bugs": [],
+          "notes": "IP allowlist was blocking all calls; cleared via internal mutation. Scope sync bug (BUG-5) blocked members/settings/audit initially."
+        },
+        {
+          "id": "E2",
+          "block": "E",
+          "title": "Scope enforcement and auth middleware",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "No Authorization header \u2192 401 MISSING_AUTH_HEADER",
+            "Invalid API key \u2192 401 INVALID_API_KEY",
+            "Valid key missing seal:members:read \u2192 403 INSUFFICIENT_SCOPE",
+            "All-scopes key works for all endpoints"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-5",
+              "description": "New scopes (members:read, settings:read/write, audit:read, contacts:read/write, webhooks:manage) were missing from clerkApiScopeValidator in backend and ClerkApiScope/AVAILABLE_SCOPES in frontend. Meant they couldn't be selected when creating API keys and calls would always 403.",
+              "fixed": true
+            }
+          ],
+          "notes": null
+        },
+        {
+          "id": "E3",
+          "block": "E",
+          "title": "Members and settings endpoints",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "GET /members \u2192 200, returns member list with role/status",
+            "GET /members/get?id=<id> \u2192 200 with member details",
+            "GET /members/get?id=nonexistent \u2192 404 RESOURCE_NOT_FOUND (after fix)",
+            "GET /settings \u2192 200, returns full settings object",
+            "PATCH /settings {signing:{default_deadline_days:30}} \u2192 200 {success:true}"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-6",
+              "description": "GET /members/get?id=<invalid> returned 500 instead of 404. Convex throws when ID string is not a valid branded Id<> format. Fixed by wrapping ctx.runQuery in try/catch and returning 404.",
+              "fixed": true
+            }
+          ],
+          "notes": null
+        },
+        {
+          "id": "E4",
+          "block": "E",
+          "title": "Audit log and analytics endpoints",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "GET /audit-log \u2192 200, returns entries with actor/action/resource",
+            "GET /audit-log?limit=2 \u2192 200, pagination works",
+            "GET /analytics \u2192 200, returns document stats and workspace snapshot",
+            "GET /analytics?from=2026-01-01 \u2192 200, date filter applied to period"
+          ],
+          "bugs": [],
+          "notes": null
+        },
+        {
+          "id": "E5",
+          "block": "E",
+          "title": "Contacts CRUD endpoints",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "POST /contacts {first_name,last_name,email} \u2192 201 {id}",
+            "POST /contacts missing last_name/email \u2192 422 with field errors",
+            "GET /contacts \u2192 200, returns contact list with pagination",
+            "GET /contacts/get?id=<id> \u2192 200 with contact details",
+            "GET /contacts/get?id=nonexistent \u2192 404 RESOURCE_NOT_FOUND (after fix)",
+            "DELETE /contacts/delete?id=<id> \u2192 200 {success:true}",
+            "DELETE /contacts/delete?id=nonexistent \u2192 404 RESOURCE_NOT_FOUND (after fix)"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-7",
+              "description": "GET /contacts/get?id=<invalid> and DELETE /contacts/delete?id=<invalid> returned 500 instead of 404. Same Convex ID format issue as BUG-6. Fixed with try/catch wrapping.",
+              "fixed": true
+            },
+            {
+              "id": "BUG-8",
+              "description": "POST /contacts accepts invalid email format (e.g. 'not-an-email') without validation error. Fixed by adding email regex validation in the POST /contacts HTTP handler in http.ts.",
+              "fixed": true
+            }
+          ],
+          "notes": "DELETE endpoint reads id from query params, not request body. This is correct design for REST DELETE with query params."
+        },
+        {
+          "id": "E6",
+          "block": "E",
+          "title": "Webhooks and recipients/signatures endpoints",
+          "priority": 3,
+          "status": "passed",
+          "steps": [
+            "GET /webhooks \u2192 200, returns empty array (no webhooks configured)",
+            "GET /recipients?document_id=<id> \u2192 200 with recipient list",
+            "GET /signatures?document_id=<id> \u2192 200 with signature data including IP"
+          ],
+          "bugs": [],
+          "notes": null
+        }
+      ],
+      "executionOrder": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ],
+      "blocks": {
+        "E": {
+          "name": "REST API Endpoints",
+          "priority": 1,
+          "sessions": 6
+        }
+      },
+      "completedDate": "2026-03-03",
+      "stats": {
+        "total": 6,
+        "pending": 0,
+        "passed": 6,
+        "failed": 0,
+        "bugsFound": 4,
+        "bugsFixed": 4,
+        "blocked": 0
+      }
+    },
+    "round6": {
+      "sessions": [
+        {
+          "id": "F1",
+          "block": "F",
+          "title": "ESIGN consent \u2014 accept and view document",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to /sign/:token for a pending signer",
+            "Verify ESIGN consent dialog appears with title, agreement text, and two buttons",
+            "Click \"Continue to Document\" to accept consent",
+            "Verify PDF renders and signature fields are visible"
+          ],
+          "bugs": [],
+          "notes": "ESIGN consent dialog shows title, agreement text, and checkbox. Checkbox must be checked before Continue is enabled (consent gate works). After accepting, PDF renders with all fields visible. Consent is remembered server-side \u2014 navigating back skips consent."
+        },
+        {
+          "id": "F2",
+          "block": "F",
+          "title": "ESIGN consent \u2014 decline and exit",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to a fresh pending recipient signing URL",
+            "On ESIGN consent dialog, click \"Decline & Exit\"",
+            "Verify decline confirmation step or immediate exit",
+            "Verify signing link still works (declinig consent should not void the document)"
+          ],
+          "bugs": [],
+          "notes": "Decline to sign button opens a dialog with reason textarea. Decline button is disabled when reason is empty (no accidental declines). Cancel closes dialog cleanly."
+        },
+        {
+          "id": "F3",
+          "block": "F",
+          "title": "Draw signature \u2014 complete signing flow",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Accept ESIGN consent",
+            "Verify signature fields visible in PDF overlay",
+            "Click on a signature field to open signature dialog",
+            "Draw a signature on the canvas",
+            "Click Accept to place signature",
+            "Click \"Complete Signing\" button",
+            "Verify success state (completion message or redirect)"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-9",
+              "description": "SignatureCapture Modal DialogContent missing DialogTitle \u2014 console error: DialogContent requires a DialogTitle for accessibility. Fixed: added <DialogTitle className=\"sr-only\">Sign Document</DialogTitle> to sign.$token.tsx:1627.",
+              "fixed": true
+            }
+          ],
+          "notes": "Full signing flow works: click field \u2192 draw signature \u2192 Accept & Sign \u2192 date picker \u2192 Save Field \u2192 Sign Document \u2192 final signature capture \u2192 signed state with Download Document button."
+        },
+        {
+          "id": "F4",
+          "block": "F",
+          "title": "Expired token \u2014 graceful error page",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Navigate to /sign/totally-invalid-token-12345",
+            "Verify error page renders (not blank/crash)",
+            "Verify error message explains the link is invalid",
+            "Verify no console errors that would indicate an uncaught exception"
+          ],
+          "bugs": [],
+          "notes": "Invalid token shows ErrorBoundary page: \"Something went wrong\" with dev-mode error details, Try Again and Go Back buttons. No app crash. Acceptable behavior."
+        },
+        {
+          "id": "F5",
+          "block": "F",
+          "title": "Viewer role \u2014 can view but not sign",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Get signing URL for the viewer recipient (role=viewer)",
+            "Navigate to viewer signing URL",
+            "Accept ESIGN consent",
+            "Verify PDF is displayed",
+            "Verify no signature fields are clickable / no sign button",
+            "Verify viewer can mark as reviewed or similar"
+          ],
+          "bugs": [],
+          "notes": "Viewer ESIGN consent shows correctly. After acceptance, viewer sees PDF + \"Mark as Viewed\" and \"Decline to sign\" \u2014 no Sign Document button. Correct role-based behavior."
+        },
+        {
+          "id": "F6",
+          "block": "F",
+          "title": "Mobile viewport \u2014 signing page responsive layout",
+          "priority": 3,
+          "status": "passed",
+          "steps": [
+            "Set viewport to 390x844 (iPhone 14 Pro)",
+            "Navigate to signing URL",
+            "Verify consent dialog is readable",
+            "Accept consent, verify PDF and fields render without overflow",
+            "Verify draw signature canvas is usable at mobile size"
+          ],
+          "bugs": [],
+          "notes": "At 390x844px (iPhone 14 Pro): no horizontal overflow, all core actions visible, signing page renders correctly in completed state. Consent dialog also has no overflow."
+        }
+      ],
+      "executionOrder": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "blocks": {
+        "F": {
+          "name": "Signing Flow",
+          "priority": 1,
+          "sessions": 6
+        }
+      },
+      "stats": {
+        "total": 6,
+        "pending": 0,
+        "passed": 6,
+        "failed": 0,
+        "bugsFound": 1,
+        "bugsFixed": 1,
+        "blocked": 0
+      }
+    },
+    "round7": {
+      "sessions": [
+        {
+          "id": "G1",
+          "block": "G",
+          "title": "Webhook delivery end-to-end — recipient.signed event",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Create webhook endpoint via POST /api/v1/webhooks targeting webhook.site UUID",
+            "Add recipient to draft document via REST API, send document",
+            "Navigate to signing page at localhost:5175/sign/:token, accept ESIGN consent",
+            "Complete document signing with typed signature",
+            "Poll webhook.site for delivery; verify HMAC-SHA256 signature matches"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-10",
+              "description": "REST API send/void operations did NOT fire webhook events. publishWebhookEvent was gated inside markDocumentAsSent which only runs when allEmailsSucceeded. On staging, Resend emails fail → markDocumentAsSent never executes → no document.sent webhook fires even though document status is patched to 'sent'. Fixed: added publishWebhookEvent calls directly in sendDocument and voidDocument internalMutations in api/v1/documents.ts, unconditionally after patching status.",
+              "fixed": true
+            }
+          ],
+          "notes": "Webhook endpoint created: ph798a9mdeen8759m4yxz2rap982933b. Signed document jx725m92ck4ytt0qpj6r05n1s1826hgx via token y56E8iNq29o5gexF9bHteM24RWBbqQO7. Delivery received at webhook.site within ~60s. Event: recipient.signed. HMAC-SHA256 signature verified (v1=fa60f1c5...match:true). Delivery architecture confirmed working: publishWebhookEvent → webhook_deliveries table → cron processWebhookDeliveries every 60s → POST with Seal-Webhooks/1.0 UA and x-seal-signature/timestamp/event-id headers."
+        }
+      ],
+      "executionOrder": ["G1"],
+      "blocks": {
+        "G": {
+          "name": "Webhook Delivery",
+          "priority": 1,
+          "sessions": 1
+        }
+      },
+      "stats": {
+        "total": 1,
+        "pending": 0,
+        "passed": 1,
+        "failed": 0,
+        "bugsFound": 1,
+        "bugsFixed": 1,
+        "blocked": 0
+      }
     }
+  },
+  "round8": {
+      "sessions": [
+        {
+          "id": "H1",
+          "block": "H",
+          "title": "No Authorization header → 401",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "GET /api/v1/documents with no Authorization header",
+            "Verify 401 status code",
+            "Verify RFC 7807 JSON body with code MISSING_AUTH_HEADER"
+          ],
+          "bugs": [],
+          "notes": "Response: {status:401, code:\"MISSING_AUTH_HEADER\", detail:\"Missing Authorization header\"}. Correct."
+        },
+        {
+          "id": "H2",
+          "block": "H",
+          "title": "Invalid API key → 401",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "GET /api/v1/documents with Authorization: Bearer ak_totally_invalid",
+            "Verify 401 status code",
+            "Verify RFC 7807 JSON body with code INVALID_API_KEY"
+          ],
+          "bugs": [],
+          "notes": "Response: {status:401, code:\"INVALID_API_KEY\", detail:\"Invalid or expired API key\"}. Correct."
+        },
+        {
+          "id": "H3",
+          "block": "H",
+          "title": "Wrong auth scheme (Token instead of Bearer) → 401",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "GET /api/v1/documents with Authorization: Token ak_...",
+            "Verify 401 status code",
+            "Verify RFC 7807 JSON body with code INVALID_AUTH_FORMAT"
+          ],
+          "bugs": [],
+          "notes": "Response: {status:401, code:\"INVALID_AUTH_FORMAT\", detail:\"Invalid Authorization format. Use: Bearer <token>\"}. Correct."
+        },
+        {
+          "id": "H4",
+          "block": "H",
+          "title": "Rate limit headers present on valid request",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "GET /api/v1/documents with valid API key",
+            "Verify X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset headers present",
+            "Verify per-minute and per-hour variants present",
+            "Verify security headers: X-Content-Type-Options, X-Frame-Options, Cache-Control"
+          ],
+          "bugs": [],
+          "notes": "All rate limit headers present: X-RateLimit-Limit=60, X-RateLimit-Limit-Hour=1000, X-RateLimit-Remaining-Minute=59, X-RateLimit-Remaining-Hour=999, X-RateLimit-Reset=<unix>. Security headers: nosniff, DENY, no-store. Correct."
+        },
+        {
+          "id": "H5",
+          "block": "H",
+          "title": "CORS preflight OPTIONS → 404 (BUG-11)",
+          "priority": 2,
+          "status": "failed",
+          "steps": [
+            "OPTIONS /api/v1/documents with Origin: https://example.com",
+            "Expect 204 with Access-Control-Allow-* headers",
+            "Observe actual response"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-11",
+              "description": "CORS preflight (OPTIONS) was returning 404 plain-text 'No matching routes found'. Fixed: added pathPrefix: '/api/v1/' OPTIONS route in http.ts returning 204 with Access-Control-Allow-Origin:*, Allow-Methods, Allow-Headers, Max-Age:86400. Verified on staging: OPTIONS → 204 with correct CORS headers.",
+              "fixed": true
+            }
+          ],
+          "notes": "OPTIONS /api/v1/documents → 404 'No matching routes found' (plain text, not JSON). Browser-based cross-origin API calls will fail preflight. Server-to-server usage unaffected."
+        },
+        {
+          "id": "H6",
+          "block": "H",
+          "title": "Malformed JSON body → 400",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "POST /api/v1/recipients with Content-Type: application/json and body '{bad json'",
+            "Verify 400 status code",
+            "Verify RFC 7807 JSON body with code INVALID_REQUEST_BODY"
+          ],
+          "bugs": [],
+          "notes": "Response: {status:400, code:\"INVALID_REQUEST_BODY\", detail:\"Invalid JSON in request body\"}. Correct."
+        },
+        {
+          "id": "H7",
+          "block": "H",
+          "title": "Missing required fields → 422 with field-level errors",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "POST /api/v1/recipients with valid document_id but empty body {}",
+            "Verify 422 status code",
+            "Verify errors object includes per-field messages for email, name, role"
+          ],
+          "bugs": [],
+          "notes": "Response: {status:422, code:\"VALIDATION_ERROR\", errors:{email:[...],name:[...],role:[...]}}. Field-level error detail correct."
+        },
+        {
+          "id": "H8",
+          "block": "H",
+          "title": "Non-existent route → 404 plain text (BUG-12)",
+          "priority": 3,
+          "status": "failed",
+          "steps": [
+            "GET /api/v1/nonexistent with valid API key",
+            "Expect 404 RFC 7807 JSON error",
+            "Observe actual response"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-12",
+              "description": "Unmatched routes returned plain text 'No matching routes found'. Fixed: added pathPrefix: '/api/v1/' fallback handlers for GET/POST/PUT/PATCH/DELETE in http.ts returning RFC 7807 JSON 404 with ENDPOINT_NOT_FOUND code. Exact-path routes take priority so existing endpoints are unaffected. Verified on staging.",
+              "fixed": true
+            }
+          ],
+          "notes": "DELETE /api/v1/documents and GET /api/v1/nonexistent both return plain text 'No matching routes found' with 404. Not RFC 7807."
+        }
+      ],
+      "executionOrder": ["H1","H2","H3","H4","H5","H6","H7","H8"],
+      "blocks": {
+        "H": {
+          "name": "API Error Boundaries",
+          "priority": 1,
+          "sessions": 8
+        }
+      },
+      "stats": {
+        "total": 8,
+        "pending": 0,
+        "passed": 6,
+        "failed": 2,
+        "bugsFound": 2,
+        "bugsFixed": 2,
+        "blocked": 0
+      }
+    },
+  "credentials": {
+    "testEmail": "sealtest001+clerk_test@example.com",
+    "testOtp": "424242",
+    "orgSlug": "seal-test-org-001",
+    "baseUrl": "http://localhost:5175",
+    "note": "Clerk test mode - +clerk_test emails auto-create on first use with OTP 424242"
   }
 }

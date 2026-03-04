@@ -10,13 +10,13 @@ import { DocumentInvitation, type DocumentInvitationProps } from "./emails/docum
 import { DocumentReminder, type DocumentReminderProps } from "./emails/document-reminder.js";
 import { DocumentShared, type DocumentSharedProps } from "./emails/document-shared.js";
 import { DocumentViewed, type DocumentViewedProps } from "./emails/document-viewed.js";
-import { SigningComplete, type SigningCompleteProps } from "./emails/signing-complete.js";
-import { TeamInvitation, type TeamInvitationProps } from "./emails/team-invitation.js";
-import { Welcome, type WelcomeProps } from "./emails/welcome.js";
 import {
   OwnershipTransferred,
   type OwnershipTransferredProps,
 } from "./emails/ownership-transferred.js";
+import { SigningComplete, type SigningCompleteProps } from "./emails/signing-complete.js";
+import { TeamInvitation, type TeamInvitationProps } from "./emails/team-invitation.js";
+import { Welcome, type WelcomeProps } from "./emails/welcome.js";
 
 // Re-export components for direct use
 export {
