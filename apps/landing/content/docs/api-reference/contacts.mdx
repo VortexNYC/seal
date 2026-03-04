@@ -1,0 +1,304 @@
+---
+title: Contacts API
+description: Manage your workspace contact directory via the Seal REST API
+---
+
+# Contacts API
+
+The Contacts API provides full CRUD access to your workspace's contact directory. Contacts represent people you frequently send documents to — storing their details centrally so you don't need to re-enter them for every document.
+
+## The Contact Object
+
+### Attributes
+
+| Attribute           | Type     | Description                                              |
+| ------------------- | -------- | -------------------------------------------------------- |
+| `id`                | string   | Unique contact identifier                                |
+| `first_name`        | string   | First name                                               |
+| `last_name`         | string   | Last name                                                |
+| `full_name`         | string   | Full name (first + last)                                 |
+| `email`             | string   | Email address                                            |
+| `phone`             | string   | Phone number (optional)                                  |
+| `company`           | string   | Company or organization (optional)                       |
+| `title`             | string   | Job title (optional)                                     |
+| `status`            | string   | Contact status: `active`, `inactive`, or `lead`          |
+| `notes`             | string   | Free-form notes (optional)                               |
+| `tags`              | string[] | Tags for categorization (optional)                       |
+| `last_contacted_at` | string   | ISO 8601 timestamp of last contact (optional)            |
+| `created_at`        | string   | ISO 8601 creation timestamp                              |
+| `updated_at`        | string   | ISO 8601 last update timestamp                           |
+
+### Example Object
+
+```json
+{
+  "id": "con_abc123",
+  "first_name": "Jane",
+  "last_name": "Smith",
+  "full_name": "Jane Smith",
+  "email": "jane@acme.com",
+  "phone": "+1-555-0100",
+  "company": "ACME Corp",
+  "title": "VP Operations",
+  "status": "active",
+  "notes": "Met at legal tech conference 2024",
+  "tags": ["vip", "enterprise"],
+  "last_contacted_at": "2024-01-20T09:00:00Z",
+  "created_at": "2023-09-01T14:00:00Z",
+  "updated_at": "2024-01-20T09:00:00Z"
+}
+```
+
+## Contact Status
+
+| Status     | Description                                       |
+| ---------- | ------------------------------------------------- |
+| `active`   | Current contact you send documents to regularly   |
+| `inactive` | Former contact, kept for historical reference     |
+| `lead`     | Prospect you haven't yet sent a document to       |
+
+## List Contacts
+
+Retrieve a paginated list of contacts in your workspace.
+
+### Endpoint
+
+```
+GET /api/v1/contacts
+```
+
+### Required Scope
+
+`seal:contacts:read`
+
+### Query Parameters
+
+| Parameter | Type   | Description                                             |
+| --------- | ------ | ------------------------------------------------------- |
+| `limit`   | number | Number of results (max 100, default 20)                 |
+| `cursor`  | string | Pagination cursor from previous response                |
+| `status`  | string | Filter by status: `active`, `inactive`, or `lead`       |
+| `search`  | string | Search by name or email (case-insensitive, partial match)|
+
+### TypeScript Example
+
+```typescript
+// Search for active contacts at a specific company
+const response = await fetch(
+  "https://seal.convex.site/api/v1/contacts?status=active&search=acme&limit=50",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const { contacts, has_more, next_cursor } = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://seal.convex.site/api/v1/contacts?status=active&limit=20" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "contacts": [
+    {
+      "id": "con_abc123",
+      "first_name": "Jane",
+      "last_name": "Smith",
+      "full_name": "Jane Smith",
+      "email": "jane@acme.com",
+      "company": "ACME Corp",
+      "title": "VP Operations",
+      "status": "active",
+      "created_at": "2023-09-01T14:00:00Z",
+      "updated_at": "2024-01-20T09:00:00Z"
+    }
+  ],
+  "has_more": false,
+  "next_cursor": null
+}
+```
+
+## Get Contact
+
+Retrieve a single contact by ID.
+
+### Endpoint
+
+```
+GET /api/v1/contacts/get?id={id}
+```
+
+### Required Scope
+
+`seal:contacts:read`
+
+### Query Parameters
+
+| Parameter | Type   | Description               |
+| --------- | ------ | ------------------------- |
+| `id`      | string | **Required.** Contact ID  |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/contacts/get?id=con_abc123",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const contact = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://seal.convex.site/api/v1/contacts/get?id=con_abc123" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+## Create Contact
+
+Add a new contact to the workspace directory.
+
+### Endpoint
+
+```
+POST /api/v1/contacts
+```
+
+### Required Scope
+
+`seal:contacts:write`
+
+### Request Body
+
+| Field        | Type     | Required | Description                               |
+| ------------ | -------- | -------- | ----------------------------------------- |
+| `first_name` | string   | Yes      | First name                                |
+| `last_name`  | string   | Yes      | Last name                                 |
+| `email`      | string   | Yes      | Email address                             |
+| `phone`      | string   | No       | Phone number                              |
+| `company`    | string   | No       | Company or organization                   |
+| `title`      | string   | No       | Job title                                 |
+| `status`     | string   | No       | `active`, `inactive`, or `lead` (default: `active`) |
+| `notes`      | string   | No       | Free-form notes                           |
+| `tags`       | string[] | No       | Tags for categorization                   |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/contacts", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    first_name: "Jane",
+    last_name: "Smith",
+    email: "jane@acme.com",
+    company: "ACME Corp",
+    title: "VP Operations",
+    tags: ["enterprise"],
+  }),
+});
+
+const { id } = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://seal.convex.site/api/v1/contacts" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "Jane",
+    "last_name": "Smith",
+    "email": "jane@acme.com",
+    "company": "ACME Corp",
+    "title": "VP Operations"
+  }'
+```
+
+### Response
+
+```json
+{
+  "id": "con_abc123"
+}
+```
+
+## Delete Contact
+
+Permanently remove a contact from the workspace directory.
+
+### Endpoint
+
+```
+DELETE /api/v1/contacts/delete?id={id}
+```
+
+### Required Scope
+
+`seal:contacts:write`
+
+### Query Parameters
+
+| Parameter | Type   | Description              |
+| --------- | ------ | ------------------------ |
+| `id`      | string | **Required.** Contact ID |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/contacts/delete?id=con_abc123",
+  {
+    method: "DELETE",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const result = await response.json();
+// { "success": true }
+```
+
+### cURL Example
+
+```bash
+curl -X DELETE "https://seal.convex.site/api/v1/contacts/delete?id=con_abc123" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "success": true
+}
+```
+
+<Callout type="warn">
+  **Warning**: Deleting a contact is permanent. Historical documents that referenced this contact's email are not affected — only the contact directory entry is removed.
+</Callout>
+
+## Next Steps
+
+- **[Documents API](/docs/api-reference/documents)** - Send documents to contacts
+- **[Recipients API](/docs/api-reference/recipients)** - Add contacts as document recipients
+- **[Members API](/docs/api-reference/members)** - View workspace team members

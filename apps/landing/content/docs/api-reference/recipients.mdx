@@ -88,7 +88,7 @@ const response = await fetch(
   },
 );
 
-const recipients = await response.json();
+const { data: recipients } = await response.json();
 ```
 
 ### cURL Example
@@ -101,26 +101,28 @@ curl -X GET "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p
 ### Response
 
 ```json
-[
-  {
-    "id": "rec_abc123",
-    "email": "john@example.com",
-    "name": "John Doe",
-    "role": "signer",
-    "status": "signed",
-    "order": 1,
-    "viewed_at": "2024-01-27T10:45:00Z",
-    "completed_at": "2024-01-27T11:00:00Z"
-  },
-  {
-    "id": "rec_def456",
-    "email": "jane@example.com",
-    "name": "Jane Smith",
-    "role": "signer",
-    "status": "pending",
-    "order": 2
-  }
-]
+{
+  "data": [
+    {
+      "id": "rec_abc123",
+      "email": "john@example.com",
+      "name": "John Doe",
+      "role": "signer",
+      "status": "signed",
+      "order": 1,
+      "viewed_at": "2024-01-27T10:45:00Z",
+      "completed_at": "2024-01-27T11:00:00Z"
+    },
+    {
+      "id": "rec_def456",
+      "email": "jane@example.com",
+      "name": "Jane Smith",
+      "role": "signer",
+      "status": "pending",
+      "order": 2
+    }
+  ]
+}
 ```
 
 ## Get Recipient

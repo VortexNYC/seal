@@ -1,3 +1,6 @@
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+
 /**
  * Generates Fumadocs MDX pages from the OpenAPI spec.
  *
@@ -10,8 +13,6 @@
  */
 import { generateFiles } from "fumadocs-openapi";
 import { createOpenAPI } from "fumadocs-openapi/server";
-import * as path from "node:path";
-import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
@@ -32,5 +33,5 @@ await generateFiles({
   }),
 });
 
-console.log("API docs generated. Note: generated pages require RSC to render.");
-console.log("For interactive docs, the /api-reference Scalar route is used instead.");
+console.info("API docs generated. Note: generated pages require RSC to render.");
+console.info("For interactive docs, the /api-reference Scalar route is used instead.");

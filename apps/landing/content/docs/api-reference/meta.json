@@ -1,5 +1,17 @@
 {
   "title": "API Reference",
-  "pages": ["documents", "recipients", "templates", "signatures", "webhooks", "uploads"],
+  "pages": [
+    "documents",
+    "recipients",
+    "templates",
+    "signatures",
+    "contacts",
+    "members",
+    "analytics",
+    "audit-log",
+    "settings",
+    "webhooks",
+    "uploads"
+  ],
   "defaultOpen": true
 }

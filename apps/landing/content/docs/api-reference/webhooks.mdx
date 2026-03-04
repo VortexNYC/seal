@@ -11,29 +11,44 @@ The Webhooks API allows you to configure HTTP endpoints that receive real-time n
 
 ### Attributes
 
-| Attribute           | Type   | Description                            |
-| ------------------- | ------ | -------------------------------------- |
-| `id`                | string | Unique webhook identifier              |
-| `url`               | string | HTTPS endpoint URL                     |
-| `events`            | array  | Array of subscribed event types        |
-| `status`            | string | Status: `active`, `paused`, `disabled` |
-| `secret`            | string | HMAC secret for signature verification |
-| `created_at`        | string | ISO 8601 creation timestamp            |
-| `last_triggered_at` | string | ISO 8601 last trigger timestamp        |
+| Attribute       | Type   | Description                                                       |
+| --------------- | ------ | ----------------------------------------------------------------- |
+| `id`            | string | Unique webhook identifier                                         |
+| `name`          | string | Human-readable label for this endpoint                            |
+| `url`           | string | HTTPS endpoint URL                                                |
+| `events`        | array  | Array of subscribed event types                                   |
+| `status`        | string | Status: `active`, `paused`, `disabled`                            |
+| `secret_prefix` | string | First 12 characters of the HMAC secret (full secret shown once at creation) |
+| `description`   | string | Optional description                                              |
+| `stats`         | object | Delivery stats: `total_deliveries`, `successful`, `failed`, `success_rate` |
+| `created_at`    | string | ISO 8601 creation timestamp                                       |
+| `updated_at`    | string | ISO 8601 last update timestamp                                    |
 
 ### Example Object
 
 ```json
 {
   "id": "wh_abc123",
+  "name": "Production webhook",
   "url": "https://api.example.com/webhooks/seal",
   "events": ["document.sent", "recipient.signed", "document.completed"],
   "status": "active",
-  "secret": "whsec_xxx",
+  "secret_prefix": "whsec_ac7Ng4",
+  "description": "Notifies our CRM on document events",
+  "stats": {
+    "total_deliveries": 42,
+    "successful": 41,
+    "failed": 1,
+    "success_rate": 97
+  },
   "created_at": "2024-01-15T10:00:00Z",
-  "last_triggered_at": "2024-01-27T11:00:00Z"
+  "updated_at": "2024-01-27T11:00:00Z"
 }
 ```
+
+<Callout type="info">
+  **Security**: The full HMAC secret (`whsec_...`) is only returned once, at creation time. Subsequent reads show only `secret_prefix` (the first 12 characters) for identification. Store the secret securely — if lost, use the rotate-secret endpoint to generate a new one.
+</Callout>
 
 ## List Webhooks
 

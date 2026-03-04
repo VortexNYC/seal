@@ -70,7 +70,7 @@ const response = await fetch("https://seal.convex.site/api/v1/documents?limit=20
   },
 });
 
-const { documents, has_more, next_cursor } = await response.json();
+const { data, has_more, next_cursor } = await response.json();
 ```
 
 ### cURL Example
@@ -84,7 +84,7 @@ curl -X GET "https://seal.convex.site/api/v1/documents?limit=20&status=sent" \
 
 ```json
 {
-  "documents": [
+  "data": [
     {
       "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
       "title": "Service Agreement",
@@ -435,12 +435,18 @@ curl -X POST "https://seal.convex.site/api/v1/documents/send?id=jd7k8l9m0n1p2q3r
 
 ### Response
 
+Returns the updated document object.
+
 ```json
 {
   "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+  "title": "Service Agreement",
   "status": "sent",
-  "sent_at": "2024-01-27T10:31:00Z",
-  "recipients_notified": 2
+  "created_at": "2024-01-27T10:30:00Z",
+  "updated_at": "2024-01-27T10:31:00Z",
+  "recipients_count": 2,
+  "signed_count": 0,
+  "download_url": "https://storage.convex.cloud/..."
 }
 ```
 
@@ -577,6 +583,291 @@ curl -X GET "https://seal.convex.site/api/v1/documents/download?id=jd7k8l9m0n1p2
   a new URL if the previous one has expired.
 </Callout>
 
+## Get Document Access
+
+Retrieve the current sharing mode for a document.
+
+### Endpoint
+
+```
+GET /api/v1/documents/access?id={id}
+```
+
+### Required Scope
+
+`seal:documents:read`
+
+### Query Parameters
+
+| Parameter | Type   | Description               |
+| --------- | ------ | ------------------------- |
+| `id`      | string | **Required.** Document ID |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/access?id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const access = await response.json();
+console.log(access.sharing_mode); // "private" | "workspace" | "specific"
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://seal.convex.site/api/v1/documents/access?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "document_id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+  "sharing_mode": "private"
+}
+```
+
+| `sharing_mode` | Description                                          |
+| -------------- | ---------------------------------------------------- |
+| `private`      | Only the document owner can access it                |
+| `workspace`    | All workspace members can view the document (Pro)    |
+| `specific`     | Access granted to specific users only                |
+
+## Update Document Access
+
+Change the sharing mode for a document.
+
+### Endpoint
+
+```
+PATCH /api/v1/documents/access?id={id}
+```
+
+### Required Scope
+
+`seal:documents:write`
+
+### Query Parameters
+
+| Parameter | Type   | Description               |
+| --------- | ------ | ------------------------- |
+| `id`      | string | **Required.** Document ID |
+
+### Request Body
+
+| Field          | Type   | Required | Description                                            |
+| -------------- | ------ | -------- | ------------------------------------------------------ |
+| `sharing_mode` | string | Yes      | New sharing mode: `private`, `workspace`, or `specific` |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/access?id=jd7k8l9m0n1p2q3r4s5t6u7v",
+  {
+    method: "PATCH",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ sharing_mode: "workspace" }),
+  },
+);
+
+const result = await response.json();
+// { "success": true }
+```
+
+### cURL Example
+
+```bash
+curl -X PATCH "https://seal.convex.site/api/v1/documents/access?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"sharing_mode": "workspace"}'
+```
+
+### Response
+
+```json
+{
+  "success": true
+}
+```
+
+## Bulk Void Documents
+
+Void (cancel) multiple documents in a single request. Each document is processed independently — failures in one do not block others.
+
+### Endpoint
+
+```
+POST /api/v1/documents/bulk-void
+```
+
+### Required Scope
+
+`seal:documents:write`
+
+### Request Body
+
+| Field          | Type     | Required | Description                              |
+| -------------- | -------- | -------- | ---------------------------------------- |
+| `document_ids` | string[] | Yes      | IDs of documents to void (max 50)        |
+| `reason`       | string   | No       | Cancellation reason shown to recipients  |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/bulk-void",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      document_ids: [
+        "jd7k8l9m0n1p2q3r4s5t6u7v",
+        "ab1cd2ef3gh4ij5kl6mn7op8",
+      ],
+      reason: "Contract terms updated — please sign the revised version",
+    }),
+  },
+);
+
+const result = await response.json();
+console.log(`Voided: ${result.succeeded} / ${result.total_requested}`);
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://seal.convex.site/api/v1/documents/bulk-void" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "document_ids": ["jd7k8l9m0n1p2q3r4s5t6u7v", "ab1cd2ef3gh4ij5kl6mn7op8"],
+    "reason": "Superseded by revised agreement"
+  }'
+```
+
+### Response
+
+```json
+{
+  "total_requested": 2,
+  "succeeded": 1,
+  "failed": 1,
+  "results": [
+    {
+      "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+      "success": true
+    },
+    {
+      "id": "ab1cd2ef3gh4ij5kl6mn7op8",
+      "success": false,
+      "error": "Cannot void a completed document"
+    }
+  ]
+}
+```
+
+<Callout type="warn">
+  Documents that are already `completed`, `cancelled`, or `declined` cannot be voided and will appear in `results` with `success: false`.
+</Callout>
+
+## Bulk Send Documents
+
+Send multiple draft documents to their recipients in a single request. Each document is processed independently.
+
+### Endpoint
+
+```
+POST /api/v1/documents/bulk-send
+```
+
+### Required Scope
+
+`seal:documents:write`
+
+### Request Body
+
+| Field          | Type     | Required | Description                        |
+| -------------- | -------- | -------- | ---------------------------------- |
+| `document_ids` | string[] | Yes      | IDs of draft documents to send (max 50) |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/documents/bulk-send",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      document_ids: [
+        "jd7k8l9m0n1p2q3r4s5t6u7v",
+        "ab1cd2ef3gh4ij5kl6mn7op8",
+        "cd3ef4gh5ij6kl7mn8op9qr0",
+      ],
+    }),
+  },
+);
+
+const result = await response.json();
+console.log(`Sent: ${result.succeeded} / ${result.total_requested}`);
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://seal.convex.site/api/v1/documents/bulk-send" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "document_ids": [
+      "jd7k8l9m0n1p2q3r4s5t6u7v",
+      "ab1cd2ef3gh4ij5kl6mn7op8"
+    ]
+  }'
+```
+
+### Response
+
+```json
+{
+  "total_requested": 3,
+  "succeeded": 2,
+  "failed": 1,
+  "results": [
+    { "id": "jd7k8l9m0n1p2q3r4s5t6u7v", "success": true },
+    { "id": "ab1cd2ef3gh4ij5kl6mn7op8", "success": true },
+    {
+      "id": "cd3ef4gh5ij6kl7mn8op9qr0",
+      "success": false,
+      "error": "Document has no recipients"
+    }
+  ]
+}
+```
+
+<Callout type="info">
+  Only `draft` documents with at least one recipient can be bulk-sent. Documents that are already sent, completed, or cancelled will appear in `results` with `success: false`.
+</Callout>
+
 ## Document Status Workflow
 
 Documents progress through the following statuses:
@@ -602,4 +893,5 @@ draft → sent → in_progress → completed
 
 - **[Recipients API](/docs/api-reference/recipients)** - Manage document recipients
 - **[Uploads API](/docs/api-reference/uploads)** - Generate upload URLs for documents
+- **[Analytics API](/docs/api-reference/analytics)** - Completion rates and signing metrics
 - **[Webhooks](/docs/webhooks)** - Receive real-time document status updates
