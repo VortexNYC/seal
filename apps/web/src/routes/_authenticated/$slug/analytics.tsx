@@ -525,6 +525,7 @@ const STATUS_COLORS: Record<string, string> = {
   completed: "#22c55e",
   cancelled: "hsl(0, 70%, 55%)",
   declined: "hsl(0, 50%, 45%)",
+  expired: "hsl(var(--expired))",
 };
 
 function StatusPieChart() {
@@ -538,6 +539,7 @@ function StatusPieChart() {
       { name: "Completed", value: stats.completed, color: STATUS_COLORS.completed },
       { name: "Cancelled", value: stats.cancelled, color: STATUS_COLORS.cancelled },
       { name: "Declined", value: stats.declined, color: STATUS_COLORS.declined },
+      { name: "Expired", value: stats.expired, color: STATUS_COLORS.expired },
     ];
     return items.filter((item) => item.value > 0);
   }, [stats]);
@@ -615,6 +617,7 @@ function StatusBarChart() {
       { name: "Completed", value: stats.completed, fill: STATUS_COLORS.completed },
       { name: "Cancelled", value: stats.cancelled, fill: STATUS_COLORS.cancelled },
       { name: "Declined", value: stats.declined, fill: STATUS_COLORS.declined },
+      { name: "Expired", value: stats.expired, fill: STATUS_COLORS.expired },
     ],
     [stats],
   );

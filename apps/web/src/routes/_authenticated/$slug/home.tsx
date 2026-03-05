@@ -492,6 +492,7 @@ function StatusBreakdown() {
     { label: "Completed", count: stats.completed, color: "bg-success" },
     { label: "Cancelled", count: stats.cancelled, color: "bg-destructive/70" },
     { label: "Declined", count: stats.declined, color: "bg-destructive" },
+    { label: "Expired", count: stats.expired, color: "bg-expired" },
   ].filter((item) => item.count > 0);
 
   const total = stats.total || 1; // Prevent division by zero

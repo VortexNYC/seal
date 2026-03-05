@@ -109,6 +109,7 @@ export const sendDocument = permissionMutation("documents:edit")({
     const now = Date.now();
     await ctx.db.patch(args.documentId, {
       status: "active",
+      workflowStatus: "sent",
       sentAt: now,
       updatedAt: now,
     });

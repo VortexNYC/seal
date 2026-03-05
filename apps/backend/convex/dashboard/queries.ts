@@ -45,6 +45,7 @@ export const getDocumentStats = permissionQuery("documents:view")({
       completed: 0,
       cancelled: 0,
       declined: 0,
+      expired: 0,
     };
 
     for (const doc of documents) {
@@ -67,6 +68,9 @@ export const getDocumentStats = permissionQuery("documents:view")({
           break;
         case "declined":
           stats.declined++;
+          break;
+        case "expired":
+          stats.expired++;
           break;
       }
     }
