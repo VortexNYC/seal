@@ -1,16 +1,7 @@
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Hr,
-  Html,
-  Preview,
-  Section,
-  Tailwind,
-  Text,
-} from "@react-email/components";
+import { Button, Section, Text } from "@react-email/components";
+
+import { status } from "../styles.js";
+import { EmailLayout, emailStyles } from "./email-layout.js";
 
 export interface SigningCompleteProps {
   recipientName: string;
@@ -41,98 +32,82 @@ export function SigningComplete({
     minute: "2-digit",
   });
 
+  const capitalizedAction = actionPastTense.charAt(0).toUpperCase() + actionPastTense.slice(1);
+
   return (
-    <Html>
-      <Head />
-      <Preview>{previewText}</Preview>
-      <Tailwind>
-        <Body className="mx-auto my-auto bg-[#f6f9fc] py-[40px] font-sans">
-          <Container className="mx-auto my-[40px] w-[520px] rounded-lg border border-solid border-[#e6ebf1] bg-white p-[40px]">
-            {/* Header */}
-            <Section className="text-center">
-              <Heading className="m-0 mb-[8px] text-[28px] font-semibold text-[#1a1a1a]">
-                Seal
-              </Heading>
-              <Text className="m-0 text-[14px] text-[#6b7280]">
-                {actionPastTense.charAt(0).toUpperCase() + actionPastTense.slice(1)} Confirmation
-              </Text>
-            </Section>
+    <EmailLayout
+      preview={previewText}
+      subtitle={`${capitalizedAction} Confirmation`}
+      footerText="This confirmation was sent by Seal. Please keep this email for your records."
+    >
+      {/* Success icon */}
+      <Section className="mb-[24px] text-center">
+        <div
+          style={{
+            width: "64px",
+            height: "64px",
+            backgroundColor: status.successSurface,
+            borderRadius: "50%",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            style={{ margin: "0", fontSize: "32px", lineHeight: "64px", color: status.success }}
+          >
+            &#x2713;
+          </Text>
+        </div>
+      </Section>
 
-            <Hr className="my-[24px] border-[#e6ebf1]" />
+      <Section>
+        <Text style={emailStyles.bodyText}>Hello {recipientName},</Text>
 
-            {/* Success icon */}
-            <Section className="mb-[24px] text-center">
-              <div
-                style={{
-                  width: "64px",
-                  height: "64px",
-                  backgroundColor: "#dcfce7",
-                  borderRadius: "50%",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text className="m-0 text-[32px]" style={{ lineHeight: "64px" }}>
-                  ✓
-                </Text>
-              </div>
-            </Section>
+        <Text style={emailStyles.bodyTextSpaced}>
+          You have successfully <strong>{actionText}</strong> the following document:
+        </Text>
 
-            {/* Main content */}
-            <Section>
-              <Text className="m-0 mb-[16px] text-[16px] leading-[26px] text-[#1a1a1a]">
-                Hello {recipientName},
-              </Text>
+        {/* Document card — success variant */}
+        <Section
+          style={{
+            backgroundColor: status.successSurface,
+            border: `1px solid #6ee7b7`,
+            borderRadius: "8px",
+            padding: "20px",
+            marginBottom: "24px",
+          }}
+        >
+          <Text
+            style={{
+              margin: "0 0 8px 0",
+              fontSize: "18px",
+              fontWeight: "500",
+              color: status.success,
+            }}
+          >
+            {documentName}
+          </Text>
+          <Text style={{ margin: "0", fontSize: "14px", color: "#15803d" }}>
+            {capitalizedAction} on: {formattedDate}
+          </Text>
+        </Section>
 
-              <Text className="m-0 mb-[24px] text-[16px] leading-[26px] text-[#4b5563]">
-                You have successfully <strong>{actionText}</strong> the following document:
-              </Text>
+        <Text style={emailStyles.bodyTextMuted}>
+          A copy of this document has been saved for your records. You will receive another email
+          when all parties have completed signing.
+        </Text>
 
-              {/* Document card */}
-              <Section className="mb-[24px] rounded-lg border border-solid border-[#bbf7d0] bg-[#f0fdf4] p-[20px]">
-                <Text className="m-0 mb-[8px] text-[18px] font-medium text-[#166534]">
-                  {documentName}
-                </Text>
-                <Text className="m-0 text-[14px] text-[#15803d]">
-                  {actionPastTense.charAt(0).toUpperCase() + actionPastTense.slice(1)} on:{" "}
-                  {formattedDate}
-                </Text>
-              </Section>
-
-              <Text className="m-0 mb-[16px] text-[16px] leading-[26px] text-[#4b5563]">
-                A copy of this document has been saved for your records. You will receive another
-                email when all parties have completed signing.
-              </Text>
-
-              {/* Download button if available */}
-              {downloadUrl && (
-                <Section className="my-[32px] text-center">
-                  <Button
-                    className="rounded-lg bg-[#0f172a] px-[32px] py-[14px] text-center text-[16px] font-medium text-white no-underline"
-                    href={downloadUrl}
-                  >
-                    Download Document
-                  </Button>
-                </Section>
-              )}
-            </Section>
-
-            <Hr className="my-[24px] border-[#e6ebf1]" />
-
-            {/* Footer */}
-            <Section>
-              <Text className="m-0 text-[12px] leading-[20px] text-[#9ca3af]">
-                This confirmation was sent by Seal. Please keep this email for your records.
-              </Text>
-              <Text className="m-0 mt-[12px] text-[12px] leading-[20px] text-[#9ca3af]">
-                © {new Date().getFullYear()} Seal. All rights reserved.
-              </Text>
-            </Section>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+        {/* Download button if available */}
+        {downloadUrl && (
+          <Section className="my-[32px] text-center">
+            <Button style={emailStyles.ctaButton} href={downloadUrl}>
+              Download Document
+            </Button>
+          </Section>
+        )}
+      </Section>
+    </EmailLayout>
   );
 }
 

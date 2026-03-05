@@ -1,16 +1,7 @@
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Hr,
-  Html,
-  Preview,
-  Section,
-  Tailwind,
-  Text,
-} from "@react-email/components";
+import { Button, Section, Text } from "@react-email/components";
+
+import { email, status } from "../styles.js";
+import { EmailLayout, emailStyles } from "./email-layout.js";
 
 interface RecipientSummary {
   name: string;
@@ -66,108 +57,100 @@ export function DocumentCompleted({
   };
 
   return (
-    <Html>
-      <Head />
-      <Preview>{previewText}</Preview>
-      <Tailwind>
-        <Body className="mx-auto my-auto bg-[#f6f9fc] py-[40px] font-sans">
-          <Container className="mx-auto my-[40px] w-[520px] rounded-lg border border-solid border-[#e6ebf1] bg-white p-[40px]">
-            {/* Header */}
-            <Section className="text-center">
-              <Heading className="m-0 mb-[8px] text-[28px] font-semibold text-[#1a1a1a]">
-                Seal
-              </Heading>
-              <Text className="m-0 text-[14px] text-[#6b7280]">Document Complete</Text>
-            </Section>
+    <EmailLayout
+      preview={previewText}
+      subtitle="Document Complete"
+      footerText="This notification was sent by Seal. Please keep this email for your records."
+    >
+      {/* Success banner */}
+      <Section
+        style={{
+          backgroundColor: status.successSurface,
+          border: `1px solid #6ee7b7`,
+          borderRadius: "8px",
+          padding: "20px",
+          marginBottom: "24px",
+          textAlign: "center",
+        }}
+      >
+        <Text style={{ margin: "0 0 8px 0", fontSize: "32px" }}>&#x2713;</Text>
+        <Text style={{ margin: "0", fontSize: "18px", fontWeight: "600", color: status.success }}>
+          All Signatures Collected
+        </Text>
+      </Section>
 
-            <Hr className="my-[24px] border-[#e6ebf1]" />
+      <Section>
+        <Text style={emailStyles.bodyText}>Hello {senderName},</Text>
 
-            {/* Success banner */}
-            <Section className="mb-[24px] rounded-lg border border-solid border-[#bbf7d0] bg-[#f0fdf4] p-[20px] text-center">
-              <Text className="m-0 mb-[8px] text-[32px]">✓</Text>
-              <Text className="m-0 text-[18px] font-semibold text-[#166534]">
-                All Signatures Collected
-              </Text>
-            </Section>
+        <Text style={emailStyles.bodyTextSpaced}>
+          Great news! All recipients have completed their actions on your document. Here&apos;s the
+          summary:
+        </Text>
 
-            {/* Main content */}
-            <Section>
-              <Text className="m-0 mb-[16px] text-[16px] leading-[26px] text-[#1a1a1a]">
-                Hello {senderName},
-              </Text>
+        {/* Document card */}
+        <Section style={emailStyles.documentCard}>
+          <Text style={emailStyles.documentTitle}>{documentName}</Text>
+          <Text style={emailStyles.documentMeta}>Completed on: {formattedDate}</Text>
+        </Section>
 
-              <Text className="m-0 mb-[24px] text-[16px] leading-[26px] text-[#4b5563]">
-                Great news! All recipients have completed their actions on your document. Here's the
-                summary:
-              </Text>
-
-              {/* Document card */}
-              <Section className="mb-[24px] rounded-lg border border-solid border-[#e5e7eb] bg-[#f9fafb] p-[20px]">
-                <Text className="m-0 mb-[4px] text-[18px] font-medium text-[#1a1a1a]">
-                  {documentName}
-                </Text>
-                <Text className="m-0 text-[14px] text-[#6b7280]">
-                  Completed on: {formattedDate}
-                </Text>
-              </Section>
-
-              {/* Recipients summary */}
-              {recipientsSummary.length > 0 && (
-                <Section className="mb-[24px]">
-                  <Text className="m-0 mb-[12px] text-[14px] font-semibold text-[#1a1a1a]">
-                    Recipient Activity:
-                  </Text>
-                  {recipientsSummary.map((recipient, index) => (
-                    <Section
-                      key={recipient.email}
-                      className={`py-[12px] ${index < recipientsSummary.length - 1 ? "border-b border-solid border-[#e5e7eb]" : ""}`}
-                    >
-                      <Text className="m-0 text-[14px] font-medium text-[#1a1a1a]">
-                        {recipient.name}
-                      </Text>
-                      <Text className="m-0 mt-[2px] text-[12px] text-[#6b7280]">
-                        {recipient.email}
-                      </Text>
-                      <Text className="m-0 mt-[4px] text-[12px] text-[#059669]">
-                        {getRoleLabel(recipient.role)} •{" "}
-                        {formatRecipientDate(recipient.completedAt)}
-                      </Text>
-                    </Section>
-                  ))}
-                </Section>
-              )}
-
-              {/* CTA Button */}
-              <Section className="my-[32px] text-center">
-                <Button
-                  className="rounded-lg bg-[#0f172a] px-[32px] py-[14px] text-center text-[16px] font-medium text-white no-underline"
-                  href={documentUrl}
+        {/* Recipients summary */}
+        {recipientsSummary.length > 0 && (
+          <Section style={{ marginBottom: "24px" }}>
+            <Text
+              style={{
+                margin: "0 0 12px 0",
+                fontSize: "14px",
+                fontWeight: "600",
+                color: email.foreground,
+              }}
+            >
+              Recipient Activity:
+            </Text>
+            {recipientsSummary.map((recipient, index) => (
+              <Section
+                key={recipient.email}
+                style={{
+                  padding: "12px 0",
+                  borderBottom:
+                    index < recipientsSummary.length - 1 ? `1px solid ${email.border}` : undefined,
+                }}
+              >
+                <Text
+                  style={{
+                    margin: "0",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: email.foreground,
+                  }}
                 >
-                  View Completed Document
-                </Button>
+                  {recipient.name}
+                </Text>
+                <Text
+                  style={{ margin: "2px 0 0 0", fontSize: "12px", color: email.mutedForeground }}
+                >
+                  {recipient.email}
+                </Text>
+                <Text style={{ margin: "4px 0 0 0", fontSize: "12px", color: status.success }}>
+                  {getRoleLabel(recipient.role)} &bull; {formatRecipientDate(recipient.completedAt)}
+                </Text>
               </Section>
+            ))}
+          </Section>
+        )}
 
-              <Text className="m-0 text-[14px] leading-[22px] text-[#4b5563]">
-                The signed document is now available in your Seal dashboard. You can download it at
-                any time.
-              </Text>
-            </Section>
+        {/* CTA Button */}
+        <Section className="my-[32px] text-center">
+          <Button style={emailStyles.ctaButton} href={documentUrl}>
+            View Completed Document
+          </Button>
+        </Section>
 
-            <Hr className="my-[24px] border-[#e6ebf1]" />
-
-            {/* Footer */}
-            <Section>
-              <Text className="m-0 text-[12px] leading-[20px] text-[#9ca3af]">
-                This notification was sent by Seal. Please keep this email for your records.
-              </Text>
-              <Text className="m-0 mt-[12px] text-[12px] leading-[20px] text-[#9ca3af]">
-                © {new Date().getFullYear()} Seal. All rights reserved.
-              </Text>
-            </Section>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+        <Text style={emailStyles.infoText}>
+          The signed document is now available in your Seal dashboard. You can download it at any
+          time.
+        </Text>
+      </Section>
+    </EmailLayout>
   );
 }
 

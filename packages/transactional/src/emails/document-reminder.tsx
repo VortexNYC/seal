@@ -1,17 +1,7 @@
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Hr,
-  Html,
-  Link,
-  Preview,
-  Section,
-  Tailwind,
-  Text,
-} from "@react-email/components";
+import { Button, Link, Section, Text } from "@react-email/components";
+
+import { email, status } from "../styles.js";
+import { EmailLayout, emailStyles } from "./email-layout.js";
 
 export interface DocumentReminderProps {
   recipientName: string;
@@ -42,116 +32,110 @@ export function DocumentReminder({
       })
     : null;
 
-  const isUrgent = expiresAt && expiresAt - Date.now() < 3 * 24 * 60 * 60 * 1000; // Less than 3 days
+  const isUrgent = expiresAt && expiresAt - Date.now() < 3 * 24 * 60 * 60 * 1000;
+
+  const urgentBadgeStyle = {
+    display: "inline-block" as const,
+    backgroundColor: isUrgent ? status.destructive + "14" : email.warningSurface,
+    border: `1px solid ${isUrgent ? status.destructive + "40" : email.warning + "60"}`,
+    borderRadius: "9999px",
+    padding: "8px 16px",
+  };
 
   return (
-    <Html>
-      <Head />
-      <Preview>{previewText}</Preview>
-      <Tailwind>
-        <Body className="mx-auto my-auto bg-[#f6f9fc] py-[40px] font-sans">
-          <Container className="mx-auto my-[40px] w-[520px] rounded-lg border border-solid border-[#e6ebf1] bg-white p-[40px]">
-            {/* Header */}
-            <Section className="text-center">
-              <Heading className="m-0 mb-[8px] text-[28px] font-semibold text-[#1a1a1a]">
-                Seal
-              </Heading>
-              <Text className="m-0 text-[14px] text-[#6b7280]">Signature Reminder</Text>
-            </Section>
+    <EmailLayout
+      preview={previewText}
+      subtitle="Signature Reminder"
+      footerText={`This reminder was sent by Seal on behalf of ${senderName}. If you've already signed this document, please disregard this email.`}
+    >
+      {/* Reminder badge */}
+      <Section className="mb-[24px] text-center">
+        <div style={urgentBadgeStyle}>
+          <Text
+            style={{
+              margin: "0",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: isUrgent ? status.destructive : email.warning,
+            }}
+          >
+            {isUrgent
+              ? `Urgent Reminder${reminderCount > 1 ? ` #${reminderCount}` : ""}`
+              : `Friendly Reminder${reminderCount > 1 ? ` #${reminderCount}` : ""}`}
+          </Text>
+        </div>
+      </Section>
 
-            <Hr className="my-[24px] border-[#e6ebf1]" />
+      <Section>
+        <Text style={emailStyles.bodyText}>Hello {recipientName},</Text>
 
-            {/* Reminder badge */}
-            <Section className="mb-[24px] text-center">
-              <div
-                style={{
-                  display: "inline-block",
-                  backgroundColor: isUrgent ? "#fef2f2" : "#fefce8",
-                  border: `1px solid ${isUrgent ? "#fecaca" : "#fde68a"}`,
-                  borderRadius: "9999px",
-                  padding: "8px 16px",
-                }}
-              >
-                <Text
-                  className={`m-0 text-[14px] font-medium ${isUrgent ? "text-[#dc2626]" : "text-[#ca8a04]"}`}
-                >
-                  {isUrgent
-                    ? `⚠️ Urgent Reminder${reminderCount > 1 ? ` #${reminderCount}` : ""}`
-                    : `📬 Friendly Reminder${reminderCount > 1 ? ` #${reminderCount}` : ""}`}
-                </Text>
-              </div>
-            </Section>
+        <Text style={emailStyles.bodyTextMuted}>
+          This is a reminder that <strong style={emailStyles.strong}>{senderName}</strong> is
+          waiting for your signature on the following document:
+        </Text>
 
-            {/* Main content */}
-            <Section>
-              <Text className="m-0 mb-[16px] text-[16px] leading-[26px] text-[#1a1a1a]">
-                Hello {recipientName},
-              </Text>
+        {/* Document card */}
+        <Section
+          style={{
+            ...emailStyles.documentCard,
+            ...(isUrgent
+              ? {
+                  backgroundColor: status.destructive + "08",
+                  borderColor: status.destructive + "30",
+                }
+              : {}),
+          }}
+        >
+          <Text style={emailStyles.documentTitle}>{documentName}</Text>
+          {expirationDate && (
+            <Text
+              style={{
+                ...emailStyles.documentMeta,
+                color: status.destructive,
+                fontWeight: isUrgent ? "500" : undefined,
+              }}
+            >
+              {isUrgent ? "Expires soon: " : "Expires: "}
+              {expirationDate}
+            </Text>
+          )}
+        </Section>
 
-              <Text className="m-0 mb-[16px] text-[16px] leading-[26px] text-[#4b5563]">
-                This is a reminder that <strong className="text-[#1a1a1a]">{senderName}</strong> is
-                waiting for your signature on the following document:
-              </Text>
+        {/* Custom message */}
+        {customMessage && (
+          <Section style={emailStyles.messageBox}>
+            <Text
+              style={{
+                margin: "0",
+                fontSize: "14px",
+                color: email.warningText,
+                fontStyle: "italic",
+              }}
+            >
+              &ldquo;{customMessage}&rdquo;
+            </Text>
+            <Text style={{ margin: "4px 0 0 0", fontSize: "12px", color: email.warning }}>
+              &mdash; {senderName}
+            </Text>
+          </Section>
+        )}
 
-              {/* Document card */}
-              <Section
-                className={`mb-[24px] rounded-lg border border-solid p-[20px] ${isUrgent ? "border-[#fecaca] bg-[#fef2f2]" : "border-[#e5e7eb] bg-[#f9fafb]"}`}
-              >
-                <Text className="m-0 mb-[4px] text-[18px] font-medium text-[#1a1a1a]">
-                  {documentName}
-                </Text>
-                {expirationDate && (
-                  <Text
-                    className={`m-0 text-[14px] ${isUrgent ? "font-medium text-[#dc2626]" : "text-[#ef4444]"}`}
-                  >
-                    {isUrgent ? "⏰ Expires soon: " : "Expires: "}
-                    {expirationDate}
-                  </Text>
-                )}
-              </Section>
+        {/* CTA Button */}
+        <Section className="my-[32px] text-center">
+          <Button style={emailStyles.ctaButton} href={signingUrl}>
+            Review & Sign Now
+          </Button>
+        </Section>
 
-              {/* Custom message */}
-              {customMessage && (
-                <Section className="mb-[24px] border-l-4 border-solid border-[#eab308] bg-[#fefce8] py-[12px] pr-[12px] pl-[16px]">
-                  <Text className="m-0 text-[14px] text-[#713f12] italic">"{customMessage}"</Text>
-                  <Text className="m-0 mt-[4px] text-[12px] text-[#a16207]">— {senderName}</Text>
-                </Section>
-              )}
-
-              {/* CTA Button */}
-              <Section className="my-[32px] text-center">
-                <Button
-                  className="rounded-lg bg-[#0f172a] px-[32px] py-[14px] text-center text-[16px] font-medium text-white no-underline"
-                  href={signingUrl}
-                >
-                  Review & Sign Now
-                </Button>
-              </Section>
-
-              <Text className="m-0 mb-[16px] text-[14px] leading-[22px] text-[#6b7280]">
-                Or copy and paste this link into your browser:
-              </Text>
-              <Link href={signingUrl} className="text-[14px] break-all text-[#2563eb]">
-                {signingUrl}
-              </Link>
-            </Section>
-
-            <Hr className="my-[24px] border-[#e6ebf1]" />
-
-            {/* Footer */}
-            <Section>
-              <Text className="m-0 text-[12px] leading-[20px] text-[#9ca3af]">
-                This reminder was sent by Seal on behalf of {senderName}. If you've already signed
-                this document, please disregard this email.
-              </Text>
-              <Text className="m-0 mt-[12px] text-[12px] leading-[20px] text-[#9ca3af]">
-                © {new Date().getFullYear()} Seal. All rights reserved.
-              </Text>
-            </Section>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+        <Text style={emailStyles.smallText}>Or copy and paste this link into your browser:</Text>
+        <Link
+          href={signingUrl}
+          style={{ fontSize: "14px", color: emailStyles.linkColor, wordBreak: "break-all" }}
+        >
+          {signingUrl}
+        </Link>
+      </Section>
+    </EmailLayout>
   );
 }
 

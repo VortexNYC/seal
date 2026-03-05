@@ -1,16 +1,7 @@
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Hr,
-  Html,
-  Preview,
-  Section,
-  Tailwind,
-  Text,
-} from "@react-email/components";
+import { Button, Section, Text } from "@react-email/components";
+
+import { email } from "../styles.js";
+import { EmailLayout, emailStyles } from "./email-layout.js";
 
 export interface DocumentExpirationAlertProps {
   ownerName: string;
@@ -42,92 +33,84 @@ export function DocumentExpirationAlert({
   });
 
   return (
-    <Html>
-      <Head />
-      <Preview>{previewText}</Preview>
-      <Tailwind>
-        <Body className="mx-auto my-auto bg-[#f6f9fc] py-[40px] font-sans">
-          <Container className="mx-auto my-[40px] w-[520px] rounded-lg border border-solid border-[#e6ebf1] bg-white p-[40px]">
-            {/* Header */}
-            <Section className="text-center">
-              <Heading className="m-0 mb-[8px] text-[28px] font-semibold text-[#1a1a1a]">
-                Seal
-              </Heading>
-              <Text className="m-0 text-[14px] text-[#6b7280]">Expiration Alert</Text>
-            </Section>
+    <EmailLayout
+      preview={previewText}
+      subtitle="Expiration Alert"
+      footerText="This notification was sent by Seal based on your organization's notification settings."
+    >
+      {/* Warning banner */}
+      <Section
+        style={{
+          backgroundColor: email.warningSurface,
+          border: `1px solid ${email.warning}60`,
+          borderRadius: "8px",
+          padding: "20px",
+          marginBottom: "24px",
+          textAlign: "center",
+        }}
+      >
+        <Text style={{ margin: "0 0 8px 0", fontSize: "32px" }}>&#x23F0;</Text>
+        <Text style={{ margin: "0", fontSize: "18px", fontWeight: "600", color: email.warning }}>
+          Expires in {daysRemaining} Day{daysRemaining === 1 ? "" : "s"}
+        </Text>
+      </Section>
 
-            <Hr className="my-[24px] border-[#e6ebf1]" />
+      <Section>
+        <Text style={emailStyles.bodyText}>Hello {ownerName},</Text>
 
-            {/* Warning banner */}
-            <Section className="mb-[24px] rounded-lg border border-solid border-[#fde68a] bg-[#fffbeb] p-[20px] text-center">
-              <Text className="m-0 mb-[8px] text-[32px]">⏰</Text>
-              <Text className="m-0 text-[18px] font-semibold text-[#92400e]">
-                Expires in {daysRemaining} Day{daysRemaining === 1 ? "" : "s"}
-              </Text>
-            </Section>
+        <Text style={emailStyles.bodyTextSpaced}>
+          Your document <strong>&ldquo;{documentName}&rdquo;</strong> has a deadline approaching on{" "}
+          <strong>{formattedExpiry}</strong> and still has pending signatures.
+        </Text>
 
-            {/* Main content */}
-            <Section>
-              <Text className="m-0 mb-[16px] text-[16px] leading-[26px] text-[#1a1a1a]">
-                Hello {ownerName},
-              </Text>
-
-              <Text className="m-0 mb-[24px] text-[16px] leading-[26px] text-[#4b5563]">
-                Your document <strong>&ldquo;{documentName}&rdquo;</strong> has a deadline
-                approaching on <strong>{formattedExpiry}</strong> and still has pending signatures.
-              </Text>
-
-              {/* Pending recipients */}
-              {pendingRecipients.length > 0 && (
-                <Section className="mb-[24px]">
-                  <Text className="m-0 mb-[12px] text-[14px] font-semibold text-[#1a1a1a]">
-                    Still waiting on:
-                  </Text>
-                  {pendingRecipients.map((recipient) => (
-                    <Section key={recipient.email} className="py-[8px]">
-                      <Text className="m-0 text-[14px] font-medium text-[#1a1a1a]">
-                        {recipient.name}
-                      </Text>
-                      <Text className="m-0 mt-[2px] text-[12px] text-[#6b7280]">
-                        {recipient.email}
-                      </Text>
-                    </Section>
-                  ))}
-                </Section>
-              )}
-
-              {/* CTA Button */}
-              <Section className="my-[32px] text-center">
-                <Button
-                  className="rounded-lg bg-[#0f172a] px-[32px] py-[14px] text-center text-[16px] font-medium text-white no-underline"
-                  href={documentUrl}
+        {/* Pending recipients */}
+        {pendingRecipients.length > 0 && (
+          <Section style={{ marginBottom: "24px" }}>
+            <Text
+              style={{
+                margin: "0 0 12px 0",
+                fontSize: "14px",
+                fontWeight: "600",
+                color: email.foreground,
+              }}
+            >
+              Still waiting on:
+            </Text>
+            {pendingRecipients.map((recipient) => (
+              <Section key={recipient.email} style={{ padding: "8px 0" }}>
+                <Text
+                  style={{
+                    margin: "0",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: email.foreground,
+                  }}
                 >
-                  View Document
-                </Button>
+                  {recipient.name}
+                </Text>
+                <Text
+                  style={{ margin: "2px 0 0 0", fontSize: "12px", color: email.mutedForeground }}
+                >
+                  {recipient.email}
+                </Text>
               </Section>
+            ))}
+          </Section>
+        )}
 
-              <Text className="m-0 text-[14px] leading-[22px] text-[#4b5563]">
-                You can send a manual reminder to pending recipients from the document page, or
-                extend the deadline if more time is needed.
-              </Text>
-            </Section>
+        {/* CTA Button */}
+        <Section className="my-[32px] text-center">
+          <Button style={emailStyles.ctaButton} href={documentUrl}>
+            View Document
+          </Button>
+        </Section>
 
-            <Hr className="my-[24px] border-[#e6ebf1]" />
-
-            {/* Footer */}
-            <Section>
-              <Text className="m-0 text-[12px] leading-[20px] text-[#9ca3af]">
-                This notification was sent by Seal based on your organization&apos;s notification
-                settings.
-              </Text>
-              <Text className="m-0 mt-[12px] text-[12px] leading-[20px] text-[#9ca3af]">
-                © {new Date().getFullYear()} Seal. All rights reserved.
-              </Text>
-            </Section>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+        <Text style={emailStyles.infoText}>
+          You can send a manual reminder to pending recipients from the document page, or extend the
+          deadline if more time is needed.
+        </Text>
+      </Section>
+    </EmailLayout>
   );
 }
 

@@ -1,17 +1,7 @@
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Hr,
-  Html,
-  Link,
-  Preview,
-  Section,
-  Tailwind,
-  Text,
-} from "@react-email/components";
+import { Button, Link, Section, Text } from "@react-email/components";
+
+import { email, status } from "../styles.js";
+import { EmailLayout, emailStyles } from "./email-layout.js";
 
 export interface DocumentInvitationProps {
   recipientName: string;
@@ -56,112 +46,96 @@ export function DocumentInvitation({
       : null;
 
   return (
-    <Html>
-      <Head />
-      <Preview>{previewText}</Preview>
-      <Tailwind>
-        <Body className="mx-auto my-auto bg-[#f6f9fc] py-[40px] font-sans">
-          <Container className="mx-auto my-[40px] w-[520px] rounded-lg border border-solid border-[#e6ebf1] bg-white p-[40px]">
-            {/* Header */}
-            <Section className="text-center">
-              <Heading className="m-0 mb-[8px] text-[28px] font-semibold text-[#1a1a1a]">
-                Seal
-              </Heading>
-              <Text className="m-0 text-[14px] text-[#6b7280]">Document Signature Request</Text>
+    <EmailLayout
+      preview={previewText}
+      subtitle="Document Signature Request"
+      footerText={`This email was sent by Seal on behalf of ${senderName}. If you didn't expect this email, you can safely ignore it.`}
+    >
+      <Section>
+        <Text style={emailStyles.bodyText}>Hello {recipientName},</Text>
+
+        <Text style={emailStyles.bodyTextMuted}>
+          <strong style={emailStyles.strong}>{senderName}</strong> has sent you a document to sign:
+        </Text>
+
+        {/* Document card */}
+        <Section style={emailStyles.documentCard}>
+          <Text style={emailStyles.documentTitle}>{documentName}</Text>
+          {expirationDate && (
+            <Text style={{ ...emailStyles.documentMeta, color: status.destructive }}>
+              Expires: {expirationDate}
+            </Text>
+          )}
+        </Section>
+
+        {/* Custom message */}
+        {customMessage && (
+          <Section style={emailStyles.messageBox}>
+            <Text
+              style={{
+                margin: "0",
+                fontSize: "14px",
+                color: email.warningText,
+                fontStyle: "italic",
+              }}
+            >
+              &ldquo;{customMessage}&rdquo;
+            </Text>
+            <Text style={{ margin: "4px 0 0 0", fontSize: "12px", color: email.warning }}>
+              &mdash; {senderName}
+            </Text>
+          </Section>
+        )}
+
+        {/* Invoice section */}
+        {invoiceUrl && (
+          <Section
+            style={{
+              backgroundColor: status.infoSurface,
+              border: `1px solid #bfdbfe`,
+              borderRadius: "8px",
+              padding: "16px",
+              marginBottom: "24px",
+            }}
+          >
+            <Text style={{ margin: "0", fontSize: "14px", fontWeight: "600", color: "#1e3a8a" }}>
+              Invoice attached
+            </Text>
+            <Text style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#1e40af" }}>
+              {invoiceAmountFormatted
+                ? `Amount due: ${invoiceAmountFormatted}`
+                : "Please review and pay the invoice before signing."}
+            </Text>
+            <Section className="mt-[12px] text-center">
+              <Button style={emailStyles.ctaButtonSecondary} href={invoiceUrl}>
+                Review Invoice
+              </Button>
             </Section>
-
-            <Hr className="my-[24px] border-[#e6ebf1]" />
-
-            {/* Main content */}
-            <Section>
-              <Text className="m-0 mb-[16px] text-[16px] leading-[26px] text-[#1a1a1a]">
-                Hello {recipientName},
-              </Text>
-
-              <Text className="m-0 mb-[16px] text-[16px] leading-[26px] text-[#4b5563]">
-                <strong className="text-[#1a1a1a]">{senderName}</strong> has sent you a document to
-                sign:
-              </Text>
-
-              {/* Document card */}
-              <Section className="mb-[24px] rounded-lg border border-solid border-[#e5e7eb] bg-[#f9fafb] p-[20px]">
-                <Text className="m-0 mb-[4px] text-[18px] font-medium text-[#1a1a1a]">
-                  {documentName}
-                </Text>
-                {expirationDate && (
-                  <Text className="m-0 text-[14px] text-[#ef4444]">Expires: {expirationDate}</Text>
-                )}
-              </Section>
-
-              {/* Custom message */}
-              {customMessage && (
-                <Section className="mb-[24px] border-l-4 border-solid border-[#eab308] bg-[#fefce8] py-[12px] pr-[12px] pl-[16px]">
-                  <Text className="m-0 text-[14px] text-[#713f12] italic">"{customMessage}"</Text>
-                  <Text className="m-0 mt-[4px] text-[12px] text-[#a16207]">— {senderName}</Text>
-                </Section>
-              )}
-
-              {invoiceUrl && (
-                <Section className="mb-[24px] rounded-lg border border-solid border-[#dbeafe] bg-[#eff6ff] p-[16px]">
-                  <Text className="m-0 text-[14px] font-semibold text-[#1e3a8a]">
-                    Invoice attached
-                  </Text>
-                  <Text className="m-0 mt-[4px] text-[13px] text-[#1e40af]">
-                    {invoiceAmountFormatted
-                      ? `Amount due: ${invoiceAmountFormatted}`
-                      : "Please review and pay the invoice before signing."}
-                  </Text>
-                  <Section className="mt-[12px] text-center">
-                    <Button
-                      className="rounded-lg bg-[#2563eb] px-[24px] py-[10px] text-center text-[14px] font-medium text-white no-underline"
-                      href={invoiceUrl}
-                    >
-                      Review Invoice
-                    </Button>
-                  </Section>
-                  <Text className="m-0 mt-[10px] text-[12px] text-[#64748b]">
-                    Or open this link:{" "}
-                    <Link href={invoiceUrl} className="break-all text-[#2563eb]">
-                      {invoiceUrl}
-                    </Link>
-                  </Text>
-                </Section>
-              )}
-
-              {/* CTA Button */}
-              <Section className="my-[32px] text-center">
-                <Button
-                  className="rounded-lg bg-[#0f172a] px-[32px] py-[14px] text-center text-[16px] font-medium text-white no-underline"
-                  href={signingUrl}
-                >
-                  Review & Sign Document
-                </Button>
-              </Section>
-
-              <Text className="m-0 mb-[16px] text-[14px] leading-[22px] text-[#6b7280]">
-                Or copy and paste this link into your browser:
-              </Text>
-              <Link href={signingUrl} className="text-[14px] break-all text-[#2563eb]">
-                {signingUrl}
+            <Text style={{ margin: "10px 0 0 0", fontSize: "12px", color: email.mutedForeground }}>
+              Or open this link:{" "}
+              <Link href={invoiceUrl} style={{ color: "#2563eb", wordBreak: "break-all" }}>
+                {invoiceUrl}
               </Link>
-            </Section>
+            </Text>
+          </Section>
+        )}
 
-            <Hr className="my-[24px] border-[#e6ebf1]" />
+        {/* CTA Button */}
+        <Section className="my-[32px] text-center">
+          <Button style={emailStyles.ctaButton} href={signingUrl}>
+            Review & Sign Document
+          </Button>
+        </Section>
 
-            {/* Footer */}
-            <Section>
-              <Text className="m-0 text-[12px] leading-[20px] text-[#9ca3af]">
-                This email was sent by Seal on behalf of {senderName}. If you didn't expect this
-                email, you can safely ignore it.
-              </Text>
-              <Text className="m-0 mt-[12px] text-[12px] leading-[20px] text-[#9ca3af]">
-                © {new Date().getFullYear()} Seal. All rights reserved.
-              </Text>
-            </Section>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+        <Text style={emailStyles.smallText}>Or copy and paste this link into your browser:</Text>
+        <Link
+          href={signingUrl}
+          style={{ fontSize: "14px", color: emailStyles.linkColor, wordBreak: "break-all" }}
+        >
+          {signingUrl}
+        </Link>
+      </Section>
+    </EmailLayout>
   );
 }
 
