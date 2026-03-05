@@ -3,7 +3,8 @@
   "app": "web",
   "type": "exploratory-testing",
   "branch": "staging",
-  "lastUpdated": "2026-03-04 (Round 8 complete)",
+  "lastUpdated": "2026-03-05",
+  "round11CompletedDate": "2026-03-05",
   "round4CompletedDate": "2026-03-03",
   "browser": {
     "tool": "playwright-cli",
@@ -1118,7 +1119,7 @@
         {
           "id": "G1",
           "block": "G",
-          "title": "Webhook delivery end-to-end — recipient.signed event",
+          "title": "Webhook delivery end-to-end \u2014 recipient.signed event",
           "priority": 1,
           "status": "passed",
           "steps": [
@@ -1131,14 +1132,16 @@
           "bugs": [
             {
               "id": "BUG-10",
-              "description": "REST API send/void operations did NOT fire webhook events. publishWebhookEvent was gated inside markDocumentAsSent which only runs when allEmailsSucceeded. On staging, Resend emails fail → markDocumentAsSent never executes → no document.sent webhook fires even though document status is patched to 'sent'. Fixed: added publishWebhookEvent calls directly in sendDocument and voidDocument internalMutations in api/v1/documents.ts, unconditionally after patching status.",
+              "description": "REST API send/void operations did NOT fire webhook events. publishWebhookEvent was gated inside markDocumentAsSent which only runs when allEmailsSucceeded. On staging, Resend emails fail \u2192 markDocumentAsSent never executes \u2192 no document.sent webhook fires even though document status is patched to 'sent'. Fixed: added publishWebhookEvent calls directly in sendDocument and voidDocument internalMutations in api/v1/documents.ts, unconditionally after patching status.",
               "fixed": true
             }
           ],
-          "notes": "Webhook endpoint created: ph798a9mdeen8759m4yxz2rap982933b. Signed document jx725m92ck4ytt0qpj6r05n1s1826hgx via token y56E8iNq29o5gexF9bHteM24RWBbqQO7. Delivery received at webhook.site within ~60s. Event: recipient.signed. HMAC-SHA256 signature verified (v1=fa60f1c5...match:true). Delivery architecture confirmed working: publishWebhookEvent → webhook_deliveries table → cron processWebhookDeliveries every 60s → POST with Seal-Webhooks/1.0 UA and x-seal-signature/timestamp/event-id headers."
+          "notes": "Webhook endpoint created: ph798a9mdeen8759m4yxz2rap982933b. Signed document jx725m92ck4ytt0qpj6r05n1s1826hgx via token y56E8iNq29o5gexF9bHteM24RWBbqQO7. Delivery received at webhook.site within ~60s. Event: recipient.signed. HMAC-SHA256 signature verified (v1=fa60f1c5...match:true). Delivery architecture confirmed working: publishWebhookEvent \u2192 webhook_deliveries table \u2192 cron processWebhookDeliveries every 60s \u2192 POST with Seal-Webhooks/1.0 UA and x-seal-signature/timestamp/event-id headers."
         }
       ],
-      "executionOrder": ["G1"],
+      "executionOrder": [
+        "G1"
+      ],
       "blocks": {
         "G": {
           "name": "Webhook Delivery",
@@ -1155,154 +1158,789 @@
         "bugsFixed": 1,
         "blocked": 0
       }
-    }
-  },
-  "round8": {
+    },
+    "round9": {
       "sessions": [
         {
-          "id": "H1",
-          "block": "H",
-          "title": "No Authorization header → 401",
+          "id": "A1",
+          "block": "A",
+          "title": "Dashboard \u2014 stats cards, chart, status breakdown",
           "priority": 1,
           "status": "passed",
           "steps": [
-            "GET /api/v1/documents with no Authorization header",
-            "Verify 401 status code",
-            "Verify RFC 7807 JSON body with code MISSING_AUTH_HEADER"
-          ],
-          "bugs": [],
-          "notes": "Response: {status:401, code:\"MISSING_AUTH_HEADER\", detail:\"Missing Authorization header\"}. Correct."
-        },
-        {
-          "id": "H2",
-          "block": "H",
-          "title": "Invalid API key → 401",
-          "priority": 1,
-          "status": "passed",
-          "steps": [
-            "GET /api/v1/documents with Authorization: Bearer ak_totally_invalid",
-            "Verify 401 status code",
-            "Verify RFC 7807 JSON body with code INVALID_API_KEY"
-          ],
-          "bugs": [],
-          "notes": "Response: {status:401, code:\"INVALID_API_KEY\", detail:\"Invalid or expired API key\"}. Correct."
-        },
-        {
-          "id": "H3",
-          "block": "H",
-          "title": "Wrong auth scheme (Token instead of Bearer) → 401",
-          "priority": 2,
-          "status": "passed",
-          "steps": [
-            "GET /api/v1/documents with Authorization: Token ak_...",
-            "Verify 401 status code",
-            "Verify RFC 7807 JSON body with code INVALID_AUTH_FORMAT"
-          ],
-          "bugs": [],
-          "notes": "Response: {status:401, code:\"INVALID_AUTH_FORMAT\", detail:\"Invalid Authorization format. Use: Bearer <token>\"}. Correct."
-        },
-        {
-          "id": "H4",
-          "block": "H",
-          "title": "Rate limit headers present on valid request",
-          "priority": 1,
-          "status": "passed",
-          "steps": [
-            "GET /api/v1/documents with valid API key",
-            "Verify X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset headers present",
-            "Verify per-minute and per-hour variants present",
-            "Verify security headers: X-Content-Type-Options, X-Frame-Options, Cache-Control"
-          ],
-          "bugs": [],
-          "notes": "All rate limit headers present: X-RateLimit-Limit=60, X-RateLimit-Limit-Hour=1000, X-RateLimit-Remaining-Minute=59, X-RateLimit-Remaining-Hour=999, X-RateLimit-Reset=<unix>. Security headers: nosniff, DENY, no-store. Correct."
-        },
-        {
-          "id": "H5",
-          "block": "H",
-          "title": "CORS preflight OPTIONS → 404 (BUG-11)",
-          "priority": 2,
-          "status": "failed",
-          "steps": [
-            "OPTIONS /api/v1/documents with Origin: https://example.com",
-            "Expect 204 with Access-Control-Allow-* headers",
-            "Observe actual response"
+            "Verified 4 stat cards: Total Documents (6), Pending Signatures (2), Completed (0), Completion Rate (0%)",
+            "Activity chart renders with dates Feb 2 - Mar 4, Y-axis 0-4",
+            "Status breakdown showed Draft 3 (50%) + Sent 2 (33%) — missing Expired (BUG-1, fixed)",
+            "Export button opens dialog with filters, Summary CSV and Detailed CSV download correctly",
+            "Recent documents list shows 5 docs with correct status badges, doc with 2/2 signed still shows Sent (BUG-2, fixed)"
           ],
           "bugs": [
-            {
-              "id": "BUG-11",
-              "description": "CORS preflight (OPTIONS) was returning 404 plain-text 'No matching routes found'. Fixed: added pathPrefix: '/api/v1/' OPTIONS route in http.ts returning 204 with Access-Control-Allow-Origin:*, Allow-Methods, Allow-Headers, Max-Age:86400. Verified on staging: OPTIONS → 204 with correct CORS headers.",
-              "fixed": true
-            }
+            { "id": "BUG-1", "description": "Status Breakdown missing 'Expired' status — getDocumentStats query had no case for expired, frontend also missing expired entry", "fixed": true },
+            { "id": "BUG-2", "description": "sendDocument mutation missing workflowStatus: 'sent' — documents sent via this path never transition properly", "fixed": true }
           ],
-          "notes": "OPTIONS /api/v1/documents → 404 'No matching routes found' (plain text, not JSON). Browser-based cross-origin API calls will fail preflight. Server-to-server usage unaffected."
+          "notes": "BUG-3 (cosmetic): '6 created this month' text is misleading in March since all docs were created in February — getPeriodStats uses 30-day window, not calendar month"
         },
         {
-          "id": "H6",
-          "block": "H",
-          "title": "Malformed JSON body → 400",
+          "id": "A2",
+          "block": "A",
+          "title": "Dashboard \u2014 recent docs, quick actions, dark mode toggle",
           "priority": 2,
           "status": "passed",
           "steps": [
-            "POST /api/v1/recipients with Content-Type: application/json and body '{bad json'",
-            "Verify 400 status code",
-            "Verify RFC 7807 JSON body with code INVALID_REQUEST_BODY"
+            "Recent documents: 5 entries with Sent/Expired/Draft badges, correct dates and signature counts",
+            "View all navigates to /plasma-shlomo/documents correctly",
+            "Quick Actions: Upload Document, Use Template, View All Documents, View Analytics — all navigate correctly",
+            "Dark mode toggle: switches instantly, all cards/chart/sidebar render properly in dark mode, no contrast issues",
+            "Recent Activity: 10 audit log entries with user names and dates"
           ],
           "bugs": [],
-          "notes": "Response: {status:400, code:\"INVALID_REQUEST_BODY\", detail:\"Invalid JSON in request body\"}. Correct."
+          "notes": "Team Overview section also verified: 1 active member, 1 total, 0 pending"
         },
         {
-          "id": "H7",
-          "block": "H",
-          "title": "Missing required fields → 422 with field-level errors",
+          "id": "B1",
+          "block": "B",
+          "title": "Documents list \u2014 filters, search, sort, pagination",
           "priority": 1,
           "status": "passed",
           "steps": [
-            "POST /api/v1/recipients with valid document_id but empty body {}",
-            "Verify 422 status code",
-            "Verify errors object includes per-field messages for email, name, role"
+            "Documents page loads with All Documents/My Documents/Shared tabs, search bar, status filters",
+            "Expired filter: correctly shows 1 expired doc with active filter chip and 'Clear all' button",
+            "Search: 'Plasma' correctly filters to Plasma LOI.pdf with highlighted match text",
+            "Grid view toggle: switches to card layout with thumbnails, status, size, upload date, sharing mode",
+            "Actions menu (3-dot): shows Cancel Document, Download, Share, Move to Folder, Delete options"
           ],
           "bugs": [],
-          "notes": "Response: {status:422, code:\"VALIDATION_ERROR\", errors:{email:[...],name:[...],role:[...]}}. Field-level error detail correct."
+          "notes": "No pagination needed with 6 docs. Sort by Upload Date works (arrow indicator visible)"
         },
         {
-          "id": "H8",
-          "block": "H",
-          "title": "Non-existent route → 404 plain text (BUG-12)",
-          "priority": 3,
-          "status": "failed",
+          "id": "B2",
+          "block": "B",
+          "title": "Document creation \u2014 upload, add recipients, place fields",
+          "priority": 1,
+          "status": "pending",
           "steps": [
-            "GET /api/v1/nonexistent with valid API key",
-            "Expect 404 RFC 7807 JSON error",
-            "Observe actual response"
+            "Upload a new PDF",
+            "Add a recipient with email",
+            "Drag/place a signature field",
+            "Verify field appears on document",
+            "Save as draft"
           ],
-          "bugs": [
-            {
-              "id": "BUG-12",
-              "description": "Unmatched routes returned plain text 'No matching routes found'. Fixed: added pathPrefix: '/api/v1/' fallback handlers for GET/POST/PUT/PATCH/DELETE in http.ts returning RFC 7807 JSON 404 with ENDPOINT_NOT_FOUND code. Exact-path routes take priority so existing endpoints are unaffected. Verified on staging.",
-              "fixed": true
-            }
+          "bugs": [],
+          "notes": "Deferred — upload/field placement requires file interaction and complex drag-and-drop"
+        },
+        {
+          "id": "C1",
+          "block": "C",
+          "title": "Contacts page \u2014 CRUD, search, empty state",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Contacts page: 2 contacts (Robert Smith, Alice Johnson) with email, company, title, status, actions",
+            "Add Contact dialog: First Name*, Last Name*, Email*, Phone, Company, Title, Status dropdown, Notes",
+            "Zod validation: empty required fields show 'First name is required', 'Last name is required', 'Please enter a valid email address'",
+            "Status filters: All/Active/Inactive/Lead tabs present",
+            "Export CSV and search bar available"
           ],
-          "notes": "DELETE /api/v1/documents and GET /api/v1/nonexistent both return plain text 'No matching routes found' with 404. Not RFC 7807."
+          "bugs": [],
+          "notes": "Did not test full CRUD (create/edit/delete) to avoid polluting test data"
+        },
+        {
+          "id": "C2",
+          "block": "C",
+          "title": "Templates page \u2014 list, create from doc, preview",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Templates page: clean empty state with icon, 'No templates yet' message, helpful description",
+            "Info banner: 'Templates save time on recurring documents' with instructions",
+            "'Go to Documents' CTA navigates correctly",
+            "Analytics page verified: Team/Personal toggle, 5 stat cards, 8 tab views, time range filters, Document Trends chart"
+          ],
+          "bugs": [],
+          "notes": "No templates exist yet — empty state UX is good"
+        },
+        {
+          "id": "D1",
+          "block": "D",
+          "title": "Settings \u2014 profile, team members, billing info",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "General Settings: Workspace Name editable, Workspace Slug read-only, Save Changes button",
+            "Full settings sub-nav: General, Team, Profile, AI, Branding, Signing, Notifications, Security, Audit Log, Billing, Stripe Connect",
+            "Team page: Members/Invitations tabs, 1 member (shlomo kabareti, owner, Active, Feb 16), Search, Role filter, Invite Member button",
+            "Audit Log: Filters (date range, action type, user), 38 events, Export CSV, color-coded action badges, IP tracking",
+            "All settings pages load without errors"
+          ],
+          "bugs": [],
+          "notes": null
+        },
+        {
+          "id": "D2",
+          "block": "D",
+          "title": "Settings \u2014 developer section, API keys, webhooks",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Developer nav expands with API Keys, Webhooks, Documentation sub-items",
+            "API Keys: empty state with key icon, 'Create your first API key' CTA, API Documentation section with terminal preview",
+            "Webhooks: empty state with 'Connect your first endpoint' CTA, Add Endpoint button, Event Types Reference expandable",
+            "All pages load cleanly, no console errors"
+          ],
+          "bugs": [],
+          "notes": null
+        },
+        {
+          "id": "E1",
+          "block": "E",
+          "title": "Sidebar navigation \u2014 all routes, breadcrumbs, org switcher",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "All sidebar nav items tested: Dashboard, Documents, Templates, Contacts, Analytics — all navigate correctly",
+            "Settings expands to sub-nav (General/Team/Profile/AI/Branding/Signing/Notifications/Security/Audit Log/Billing/Stripe Connect)",
+            "Developer expands to API Keys/Webhooks/Documentation"
+          ],
+          "bugs": [],
+          "notes": "Org switcher not tested (only 1 org). Payments section expansion not fully tested."
+        },
+        {
+          "id": "E2",
+          "block": "E",
+          "title": "Responsive behavior, error handling, edge cases",
+          "priority": 2,
+          "status": "pending",
+          "steps": [
+            "Test window resize behavior",
+            "Trigger an error (visit non-existent route)",
+            "Check 404 page",
+            "Test rapid navigation between pages",
+            "Verify toast notifications work"
+          ],
+          "bugs": [],
+          "notes": "Deferred — remaining session to test in next pass"
         }
       ],
-      "executionOrder": ["H1","H2","H3","H4","H5","H6","H7","H8"],
+      "executionOrder": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1",
+        "C2",
+        "D1",
+        "D2",
+        "E1",
+        "E2"
+      ],
       "blocks": {
-        "H": {
-          "name": "API Error Boundaries",
+        "A": {
+          "name": "Dashboard",
           "priority": 1,
-          "sessions": 8
+          "sessions": 2
+        },
+        "B": {
+          "name": "Documents",
+          "priority": 1,
+          "sessions": 2
+        },
+        "C": {
+          "name": "Contacts & Templates",
+          "priority": 2,
+          "sessions": 2
+        },
+        "D": {
+          "name": "Settings",
+          "priority": 1,
+          "sessions": 2
+        },
+        "E": {
+          "name": "Navigation & Polish",
+          "priority": 1,
+          "sessions": 2
         }
       },
       "stats": {
-        "total": 8,
-        "pending": 0,
-        "passed": 6,
-        "failed": 2,
+        "total": 10,
+        "pending": 2,
+        "passed": 8,
+        "failed": 0,
         "bugsFound": 2,
         "bugsFixed": 2,
         "blocked": 0
       }
+    }
+  },
+  "round13": {
+      "sessions": [
+        {
+          "id": "A1",
+          "block": "A",
+          "title": "Document creation — upload PDF and configure",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to Documents, click '+' button — file chooser opened via input[type=file].click()",
+            "Uploaded sample-document.pdf (51KB GDPR form) — document created in draft state",
+            "PDF preview renders correctly with 1 page, German/English text visible",
+            "AI field detection ran automatically — detected 4 fields with confidence percentages"
+          ],
+          "bugs": [],
+          "notes": "Upload works via hidden file input. AI detection is automatic on upload."
+        },
+        {
+          "id": "A2",
+          "block": "A",
+          "title": "Field placement — drag fields onto PDF",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "AI 'Apply all' placed 4 fields (2 signatures, 2 dates) — all created as 'Unassigned'",
+            "Added self as signer recipient — field toolbar buttons became enabled",
+            "Field properties dialog: Label, Required toggle, Placeholder, Help Text fields all working",
+            "Deleted all 4 AI-placed fields (each with confirmation dialog: 'Remove this signature/date?')",
+            "Dragged Signature from toolbar to PDF via mouse simulation — 'Assign Field to Recipient' dialog appeared with auto-populated name and recipient. Placed successfully."
+          ],
+          "bugs": [
+            {
+              "id": "BUG-14",
+              "description": "AI-placed fields are created without recipientId (Unassigned) and there is no UI to assign them to a recipient afterward. Field properties dialog shows 'Assigned to' info only when already assigned but has no way to change assignment. Users must delete AI fields and manually re-place them to assign recipients.",
+              "fixed": true,
+              "fix": "Added recipient selector dropdown to FieldPropertiesPanel. Uses existing assignFieldToRecipient mutation. Shows warning when unassigned."
+            }
+          ],
+          "notes": "Drag-and-drop works. Field deletion has proper confirmation. BUG-14: AI field assignment gap."
+        },
+        {
+          "id": "B1",
+          "block": "B",
+          "title": "Send document — complete send flow with signing",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Send Document button enabled after all fields assigned. Dialog shows: recipients list (with field count), default message textarea (0/500 chars), expiration dropdown (No expiration, 7/14/30/60/90 days, Custom)",
+            "Set message 'Please review and sign...', selected '7 days' expiration — info text updated dynamically",
+            "Clicked Send — button showed 'Sending...' (disabled), status changed Draft → Sent",
+            "In-app signing: filled signature field via Type tab (name + Dancing Script font), clicked Accept & Sign — field marked complete on PDF with green check",
+            "Final signing: Type tab in main signing section, 'Skip & Sign' to skip signature library save — status changed to 100% Complete, recipient marked 'Signed'"
+          ],
+          "bugs": [],
+          "notes": "Full lifecycle: draft → sent → signed → completed. Signature library save prompt is a nice touch. Two-phase signing: fill fields first, then submit final signature."
+        },
+        {
+          "id": "C1",
+          "block": "C",
+          "title": "Search / Command Palette",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Ctrl+K opened Search Documents dialog with search input, status filter dropdown ('All statuses'), and date filter button",
+            "Typed 'sample' — 3 results appeared instantly with document names and content preview",
+            "Typed non-existent query — empty listbox (no results), no error message shown",
+            "Escape key closes the dialog correctly. Keyboard hints shown: ↑↓ navigate · ↵ select · esc close"
+          ],
+          "bugs": [],
+          "notes": "Search is fast and includes content preview. Status and date filters available. Missing: explicit 'No results found' message for empty searches."
+        },
+        {
+          "id": "D1",
+          "block": "D",
+          "title": "Activity timeline — document audit trail",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Activity section on document detail page shows 4 events with timestamps",
+            "Events logged: 'Document created' (48m ago), 'added as signer' (44m ago), 'signed the document' (Just now), 'viewed the document' (Just now)",
+            "Each event shows actor name and relative timestamp",
+            "Events appear in reverse chronological order"
+          ],
+          "bugs": [],
+          "notes": "Tested activity inline on document detail rather than separate audit log page. Full audit trail captured for create/add-recipient/sign/view actions."
+        }
+      ],
+      "executionOrder": ["A1", "A2", "B1", "C1", "D1"],
+      "blocks": {
+        "A": { "name": "Document Creation", "priority": 1, "sessions": 2 },
+        "B": { "name": "Send Flow", "priority": 1, "sessions": 1 },
+        "C": { "name": "Search", "priority": 2, "sessions": 1 },
+        "D": { "name": "Audit Log", "priority": 2, "sessions": 1 }
+      },
+      "stats": {
+        "total": 5,
+        "pending": 0,
+        "passed": 5,
+        "failed": 0,
+        "bugsFound": 1,
+        "bugsFixed": 1,
+        "blocked": 0
+      }
     },
+  "round12": {
+      "sessions": [
+        {
+          "id": "A1",
+          "block": "A",
+          "title": "API key creation — full lifecycle",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to Developer > API Keys — page shows empty state 'No API keys configured' with Create button and API docs section",
+            "Click 'Create API Key' — dialog with Key Name field, 14 permission checkboxes (Read/Write: Documents, Templates, Recipients, Signatures, Webhooks, Members, Settings, Audit Log, Contacts), 'Selected: 0 permissions' counter",
+            "Clicked Create Key with empty fields — no validation error shown (minor issue: should validate name/permissions)",
+            "Filled name 'Test API Key', selected Read Documents + Read Templates (counter: 'Selected: 2 permissions'), clicked Create Key — toast: 'API key created successfully'",
+            "Key created dialog: shows full key 'ak_KSY0K0EVXQ6VWXZ3M5FXH899CHHMFVR6' with warning 'Copy your API key now. You won't be able to see it again.'",
+            "Key card: 'Test API Key', 'Active' badge, 'sk_****' prefix, 'Created Mar 5, 2026', permissions tags (documents:read, templates:read), Revoke button",
+            "Revoke: confirmation dialog 'This will immediately revoke access for this API key. Any applications using this key will stop working.' — confirmed — toast: 'API key revoked', empty state returned"
+          ],
+          "bugs": [
+            {
+              "id": "BUG-13",
+              "description": "React hydration error: <button> nested inside <button> in API key permission checkboxes. The permission toggle wraps a Radix Checkbox (which renders as <button>) inside another <button> element. Console shows 'In HTML, <button> cannot be a descendant of <button>'. Does not break functionality but is a DOM nesting violation.",
+              "fixed": false
+            }
+          ],
+          "notes": "Full CRUD lifecycle works. Key displayed once with copy functionality. Revoke has proper confirmation. BUG-13 is cosmetic (hydration warning, no functional impact)."
+        },
+        {
+          "id": "B1",
+          "block": "B",
+          "title": "Webhook endpoint configuration",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigate to Developer > Webhooks — empty state 'Connect your first endpoint' with Add Endpoint button",
+            "Event Types Reference and Webhook Documentation sections with HMAC-SHA256 verification code example",
+            "Webhook headers documented: X-Seal-Signature, X-Seal-Timestamp, X-Seal-Event-Id, X-Seal-Event-Type",
+            "Add Endpoint dialog: Name, Endpoint URL (with 'Must be HTTPS' hint), Description, Events organized by category",
+            "Events: Documents (7: created/sent/viewed/completed/voided/expired/declined), Recipients (6: added/viewed/signed/approved/declined/reminded), Templates (3: created/updated/used)",
+            "Category-level checkbox selects all sub-events — checked Documents category + individual recipient.signed",
+            "Created endpoint — toast: 'Webhook endpoint created', signing secret modal: 'whsec_lyRkI5yAocFRnDD9pBBwPOxMM6B7QJqW' with copy warning",
+            "Endpoint card: 'Test Webhook', 'active' badge, URL shown, '100% success' rate"
+          ],
+          "bugs": [],
+          "notes": "Complete webhook CRUD. Well-documented with code examples and header reference."
+        },
+        {
+          "id": "C1",
+          "block": "C",
+          "title": "Profile settings — user info and preferences",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Navigate to Settings > Profile — sub-nav: General, Security, Notifications, Integrations, Usage",
+            "General: Clerk UserProfile with avatar, name (shlomo kabareti), email (shlomo@plasma.nyc Primary), Update profile button, Add email address, Connect account",
+            "Bio section: textarea with 0/500 counter, Save Bio button disabled until text entered",
+            "Filled bio (58 chars) — counter updated to 58/500, Save Bio enabled — clicked — toast: 'Profile updated successfully'",
+            "Profile > Security: loads Clerk security component with Password section",
+            "Profile > Notifications: Email Notifications toggle (on), Document Events (on), Reminders (on), Weekly Digest (off), In-App Notifications section"
+          ],
+          "bugs": [],
+          "notes": "Profile sub-pages all load correctly. Bio save works with character counter."
+        },
+        {
+          "id": "D1",
+          "block": "D",
+          "title": "Multi-recipient document — add and manage recipients",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Opened draft document 'sample-document.pdf' — Recipients section shows 1 existing recipient",
+            "Add Recipient dialog: Team tab shows 'All team members have been added', External tab has Email/Name/Role fields",
+            "Zod validation: invalid email 'not-an-email' disables Add Recipient button, valid email 'test@example.com' enables it",
+            "Role dropdown: 3 options — Signer (Must sign), Viewer (View only), Approver (Must approve)",
+            "Selected Viewer role, filled name 'Test User' — clicked Add Recipient — toast: 'Recipient added successfully'",
+            "Sidebar updated: 'Recipients 2' count, both recipients listed with Recipient options buttons"
+          ],
+          "bugs": [],
+          "notes": "Multi-recipient workflow works correctly with role selection and validation."
+        },
+        {
+          "id": "E1",
+          "block": "E",
+          "title": "Responsive viewport and sidebar collapse",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Desktop (1280px): full sidebar visible with navigation items, user info, dark mode toggle",
+            "Tablet (768px): sidebar still inline, content reflows — Toggle Sidebar button present",
+            "Mobile (375px): sidebar still renders but Toggle Sidebar converts to sheet/overlay mode",
+            "Clicked Toggle Sidebar at 375px — sidebar becomes overlay with heading 'Sidebar', data-state='open'",
+            "Resized back to 1280px — layout restores to normal desktop view"
+          ],
+          "bugs": [],
+          "notes": "Responsive behavior works. Sidebar transitions from inline to overlay at narrow widths."
+        }
+      ],
+      "executionOrder": ["A1", "B1", "C1", "D1", "E1"],
+      "blocks": {
+        "A": { "name": "API Keys", "priority": 1, "sessions": 1 },
+        "B": { "name": "Webhooks", "priority": 1, "sessions": 1 },
+        "C": { "name": "Profile", "priority": 2, "sessions": 1 },
+        "D": { "name": "Multi-Recipient", "priority": 1, "sessions": 1 },
+        "E": { "name": "Responsive", "priority": 2, "sessions": 1 }
+      },
+      "stats": {
+        "total": 5,
+        "pending": 0,
+        "passed": 5,
+        "failed": 0,
+        "bugsFound": 1,
+        "bugsFixed": 0,
+        "blocked": 0
+      }
+    },
+    "round11": {
+      "sessions": [
+        {
+          "id": "A1",
+          "block": "A",
+          "title": "Document detail — sidebar sections, status hero, progress ring",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Opened sent document — status hero shows 'Sent' with 100% Complete progress ring (1 Signed, 0 Pending, 0 Viewed)",
+            "Recipients section: 'Decline Tester' with Signed status and options button",
+            "Signature Fields (2): Payment field ($25 One-time) and Signature field on Page 1",
+            "Details section: File Size 51.86 KB, Pages 1, Uploaded Feb 23, Fields 2",
+            "Activity (4): signed, viewed, added as signer, document created — correct chronological order",
+            "Recipient Options dialog: shows avatar, name, email, role, 'Copy signing link' action",
+            "Section toggling: collapse/expand works, collapsed state removes [expanded] attribute"
+          ],
+          "bugs": [],
+          "notes": "Document shows Sent status but 100% Complete — this is BUG-2 stale data from Round 9 (fix prevents future occurrences)"
+        },
+        {
+          "id": "A2",
+          "block": "A",
+          "title": "Document detail — document settings, AI features, field toolbar",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Opened draft document — shows AI Suggestions and AI Chat buttons in header",
+            "AI detected 4 fields with confidence %: Place/Date (98%), Signature (99%), Mailing Confirmation (95% each)",
+            "AI Insights section: 1 Obligation ('GDPR data protection'), 1 Risk ('liability for lost documents')",
+            "Document Settings: Redirect URL with validation — invalid 'not-a-url' shows 'Enter a valid URL', valid URL saves with toast",
+            "Signature Fields toolbar: 9 field types — Signature, Text, Number, Date, Payment, Checkbox, Select, Choice, File",
+            "Add Recipient dialog: Team/External tabs, Zod validation gates button (disabled with bad email, enabled with valid)",
+            "Undo/Redo buttons present (disabled when no actions taken)"
+          ],
+          "bugs": [],
+          "notes": "Rich draft document experience with AI field detection, insights, and comprehensive field type support"
+        },
+        {
+          "id": "B1",
+          "block": "B",
+          "title": "Settings — Branding, Signing, AI pages",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Branding: Custom branding toggle (on), Company name/website, Logo upload (max 2MB), Primary/Accent color pickers, Email from name/reply-to, Hide Powered by Seal toggle, Custom footer text",
+            "Signing: 3 signature type checkboxes (Draw/Type/Upload all checked), Default Deadline spinner (30 days), E-Sign Consent Text textarea",
+            "AI: 3 toggles — Enable AI features, Auto-analyze uploaded docs, Show insights to signers (all checked)",
+            "All pages load without errors, all controls interactive, Save Changes button present"
+          ],
+          "bugs": [],
+          "notes": "All 3 settings pages are fully populated and functional"
+        },
+        {
+          "id": "B2",
+          "block": "B",
+          "title": "Settings — Notifications, Security, Billing pages",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Notifications: Reminder Schedule with Day 3/7/14 tags (removable) + Add spinner, Expiration Alert (3 days), Email toggles (completion/viewed)",
+            "Security: API Access toggle (on), Require MFA toggle, Session timeout spinner (15-10080 min range), IP Allowlist textarea (CIDR), Ownership Transfer toggle",
+            "Billing: Pro Plan - Business ($10/month), Next billing Mar 21, Features: Full API, Webhooks, MCP, Unlimited members, Manage Billing button",
+            "All form controls interactive, proper labels and helper text"
+          ],
+          "bugs": [],
+          "notes": null
+        },
+        {
+          "id": "C1",
+          "block": "C",
+          "title": "Member invite — full flow with validation",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Team page: Members/Invitations tabs, 1 member (shlomo kabareti, owner), Invite Member button",
+            "Invite dialog: Email field, Role dropdown with 3 options (Viewer/Member/Admin), Cancel/Send buttons",
+            "Zod validation: empty email → 'Please enter a valid email address', invalid 'not-an-email' → same error",
+            "Role descriptions: Viewer 'Can view documents', Member 'Can create and send', Admin 'Can manage team and settings'",
+            "Invitations tab: 'No pending invitations' empty state with 0 count and helpful message"
+          ],
+          "bugs": [],
+          "notes": "Did not submit actual invite to avoid polluting test data"
+        },
+        {
+          "id": "D1",
+          "block": "D",
+          "title": "Dark mode — full app coverage",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Toggled dark mode on via sidebar switch",
+            "Team settings: clean dark background, text readable, empty state visible",
+            "Documents list: table rows, status badges (Sent/Expired/Draft), thumbnails all render properly",
+            "Contacts: table with Active badges, search bar, filter tabs — all good contrast",
+            "Analytics: 5 stat cards, tab bar, time range filters, chart area — all clean on dark background",
+            "Toggled back to light mode — no visual glitches on transition"
+          ],
+          "bugs": [],
+          "notes": "No contrast issues found across any page. Dark mode is well-implemented with proper token usage."
+        }
+      ],
+      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "D1"],
+      "blocks": {
+        "A": { "name": "Document Detail", "priority": 1, "sessions": 2 },
+        "B": { "name": "Settings Deep-Dive", "priority": 2, "sessions": 2 },
+        "C": { "name": "Team Management", "priority": 1, "sessions": 1 },
+        "D": { "name": "Dark Mode & Polish", "priority": 2, "sessions": 1 }
+      },
+      "stats": {
+        "total": 6,
+        "pending": 0,
+        "passed": 6,
+        "failed": 0,
+        "bugsFound": 0,
+        "bugsFixed": 0,
+        "blocked": 0
+      }
+    },
+    "round10": {
+      "sessions": [
+        {
+          "id": "V1",
+          "block": "V",
+          "title": "Verify BUG-1 fix — expired status in dashboard breakdown",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Pushed backend changes via `npx convex dev --once`",
+            "Reloaded dashboard — Status Breakdown now shows Draft 3 (50%), Sent 2 (33%), Expired 1 (17%)",
+            "All percentages sum to 100%, expired bar renders with correct color token"
+          ],
+          "bugs": [],
+          "notes": "BUG-1 from Round 9 verified fixed. Expired status visible in dashboard Status Breakdown."
+        },
+        {
+          "id": "V2",
+          "block": "V",
+          "title": "Verify BUG-1 fix — expired status in analytics charts",
+          "priority": 1,
+          "status": "passed",
+          "steps": [
+            "Navigated to Analytics page",
+            "Pie chart legend shows 'Expired (1)' entry",
+            "Bar chart includes expired data point with correct color"
+          ],
+          "bugs": [],
+          "notes": "Analytics charts correctly include expired status after fix to analytics.tsx STATUS_COLORS, pieData, and barData."
+        },
+        {
+          "id": "V3",
+          "block": "V",
+          "title": "Payments section — overview and sub-pages",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Payments Overview: 4 stat cards (Total Revenue, Monthly Revenue, Paid Invoices, Pending)",
+            "Transactions tab: clean empty state with 'No transactions yet'",
+            "Full sub-nav verified: Overview, Subscriptions, History, Payouts, Balances, Disputes, Tax Documents"
+          ],
+          "bugs": [],
+          "notes": "All payment sub-pages load without errors. No Stripe Connect account configured so data is empty/placeholder."
+        },
+        {
+          "id": "V4",
+          "block": "V",
+          "title": "Notifications panel and 404 page",
+          "priority": 2,
+          "status": "passed",
+          "steps": [
+            "Notifications panel: 'No notifications' with 'You're all caught up!' empty state",
+            "Navigated to /plasma-shlomo/nonexistent-page — 404 page renders",
+            "404 shows 'Page Not Found' with Try Again, Go Back, Go Home buttons",
+            "Sidebar remains visible for navigation from 404 page"
+          ],
+          "bugs": [],
+          "notes": "Clean error handling for non-existent routes. All 3 recovery buttons work."
+        }
+      ],
+      "executionOrder": ["V1", "V2", "V3", "V4"],
+      "blocks": {
+        "V": {
+          "name": "Verification & Coverage Gaps",
+          "priority": 1,
+          "sessions": 4
+        }
+      },
+      "stats": {
+        "total": 4,
+        "pending": 0,
+        "passed": 4,
+        "failed": 0,
+        "bugsFound": 0,
+        "bugsFixed": 0,
+        "blocked": 0
+      }
+    },
+    "round8": {
+    "sessions": [
+      {
+        "id": "H1",
+        "block": "H",
+        "title": "No Authorization header \u2192 401",
+        "priority": 1,
+        "status": "passed",
+        "steps": [
+          "GET /api/v1/documents with no Authorization header",
+          "Verify 401 status code",
+          "Verify RFC 7807 JSON body with code MISSING_AUTH_HEADER"
+        ],
+        "bugs": [],
+        "notes": "Response: {status:401, code:\"MISSING_AUTH_HEADER\", detail:\"Missing Authorization header\"}. Correct."
+      },
+      {
+        "id": "H2",
+        "block": "H",
+        "title": "Invalid API key \u2192 401",
+        "priority": 1,
+        "status": "passed",
+        "steps": [
+          "GET /api/v1/documents with Authorization: Bearer ak_totally_invalid",
+          "Verify 401 status code",
+          "Verify RFC 7807 JSON body with code INVALID_API_KEY"
+        ],
+        "bugs": [],
+        "notes": "Response: {status:401, code:\"INVALID_API_KEY\", detail:\"Invalid or expired API key\"}. Correct."
+      },
+      {
+        "id": "H3",
+        "block": "H",
+        "title": "Wrong auth scheme (Token instead of Bearer) \u2192 401",
+        "priority": 2,
+        "status": "passed",
+        "steps": [
+          "GET /api/v1/documents with Authorization: Token ak_...",
+          "Verify 401 status code",
+          "Verify RFC 7807 JSON body with code INVALID_AUTH_FORMAT"
+        ],
+        "bugs": [],
+        "notes": "Response: {status:401, code:\"INVALID_AUTH_FORMAT\", detail:\"Invalid Authorization format. Use: Bearer <token>\"}. Correct."
+      },
+      {
+        "id": "H4",
+        "block": "H",
+        "title": "Rate limit headers present on valid request",
+        "priority": 1,
+        "status": "passed",
+        "steps": [
+          "GET /api/v1/documents with valid API key",
+          "Verify X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset headers present",
+          "Verify per-minute and per-hour variants present",
+          "Verify security headers: X-Content-Type-Options, X-Frame-Options, Cache-Control"
+        ],
+        "bugs": [],
+        "notes": "All rate limit headers present: X-RateLimit-Limit=60, X-RateLimit-Limit-Hour=1000, X-RateLimit-Remaining-Minute=59, X-RateLimit-Remaining-Hour=999, X-RateLimit-Reset=<unix>. Security headers: nosniff, DENY, no-store. Correct."
+      },
+      {
+        "id": "H5",
+        "block": "H",
+        "title": "CORS preflight OPTIONS \u2192 404 (BUG-11)",
+        "priority": 2,
+        "status": "failed",
+        "steps": [
+          "OPTIONS /api/v1/documents with Origin: https://example.com",
+          "Expect 204 with Access-Control-Allow-* headers",
+          "Observe actual response"
+        ],
+        "bugs": [
+          {
+            "id": "BUG-11",
+            "description": "CORS preflight (OPTIONS) was returning 404 plain-text 'No matching routes found'. Fixed: added pathPrefix: '/api/v1/' OPTIONS route in http.ts returning 204 with Access-Control-Allow-Origin:*, Allow-Methods, Allow-Headers, Max-Age:86400. Verified on staging: OPTIONS \u2192 204 with correct CORS headers.",
+            "fixed": true
+          }
+        ],
+        "notes": "OPTIONS /api/v1/documents \u2192 404 'No matching routes found' (plain text, not JSON). Browser-based cross-origin API calls will fail preflight. Server-to-server usage unaffected."
+      },
+      {
+        "id": "H6",
+        "block": "H",
+        "title": "Malformed JSON body \u2192 400",
+        "priority": 2,
+        "status": "passed",
+        "steps": [
+          "POST /api/v1/recipients with Content-Type: application/json and body '{bad json'",
+          "Verify 400 status code",
+          "Verify RFC 7807 JSON body with code INVALID_REQUEST_BODY"
+        ],
+        "bugs": [],
+        "notes": "Response: {status:400, code:\"INVALID_REQUEST_BODY\", detail:\"Invalid JSON in request body\"}. Correct."
+      },
+      {
+        "id": "H7",
+        "block": "H",
+        "title": "Missing required fields \u2192 422 with field-level errors",
+        "priority": 1,
+        "status": "passed",
+        "steps": [
+          "POST /api/v1/recipients with valid document_id but empty body {}",
+          "Verify 422 status code",
+          "Verify errors object includes per-field messages for email, name, role"
+        ],
+        "bugs": [],
+        "notes": "Response: {status:422, code:\"VALIDATION_ERROR\", errors:{email:[...],name:[...],role:[...]}}. Field-level error detail correct."
+      },
+      {
+        "id": "H8",
+        "block": "H",
+        "title": "Non-existent route \u2192 404 plain text (BUG-12)",
+        "priority": 3,
+        "status": "failed",
+        "steps": [
+          "GET /api/v1/nonexistent with valid API key",
+          "Expect 404 RFC 7807 JSON error",
+          "Observe actual response"
+        ],
+        "bugs": [
+          {
+            "id": "BUG-12",
+            "description": "Unmatched routes returned plain text 'No matching routes found'. Fixed: added pathPrefix: '/api/v1/' fallback handlers for GET/POST/PUT/PATCH/DELETE in http.ts returning RFC 7807 JSON 404 with ENDPOINT_NOT_FOUND code. Exact-path routes take priority so existing endpoints are unaffected. Verified on staging.",
+            "fixed": true
+          }
+        ],
+        "notes": "DELETE /api/v1/documents and GET /api/v1/nonexistent both return plain text 'No matching routes found' with 404. Not RFC 7807."
+      }
+    ],
+    "executionOrder": [
+      "H1",
+      "H2",
+      "H3",
+      "H4",
+      "H5",
+      "H6",
+      "H7",
+      "H8"
+    ],
+    "blocks": {
+      "H": {
+        "name": "API Error Boundaries",
+        "priority": 1,
+        "sessions": 8
+      }
+    },
+    "stats": {
+      "total": 8,
+      "pending": 0,
+      "passed": 6,
+      "failed": 2,
+      "bugsFound": 2,
+      "bugsFixed": 2,
+      "blocked": 0
+    }
+  },
   "credentials": {
     "testEmail": "sealtest001+clerk_test@example.com",
     "testOtp": "424242",
