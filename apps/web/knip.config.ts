@@ -27,6 +27,8 @@ const config: KnipConfig = {
     "tw-animate-css",
     // Radix UI (used by shadcn/ui components)
     "@radix-ui/*",
+    // Design tokens (imported via @seal/tokens/theme subpath — knip can't trace workspace subpath exports)
+    "@seal/tokens",
   ],
   ignoreBinaries: ["oxlint", "oxfmt", "knip", "vite", "vitest", "tsc", "playwright"],
   ignoreExportsUsedInFile: true,

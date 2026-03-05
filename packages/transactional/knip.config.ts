@@ -9,10 +9,9 @@ const config: KnipConfig = {
   ],
   ignoreDependencies: [
     // React Email core dependencies (used at runtime)
-    "react",
     "react-email",
-    // React types (used by TSX files)
-    "@types/react",
+    // Design tokens (imported via @seal/tokens/theme subpath — knip can't trace workspace subpath exports)
+    "@seal/tokens",
   ],
   ignoreBinaries: ["oxlint", "oxfmt", "knip", "email", "tsc"],
   ignoreExportsUsedInFile: true,
