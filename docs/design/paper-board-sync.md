@@ -58,9 +58,9 @@ Last audited: 2026-03-04
 | Signing Experience (Dark) | 3HB-0 | ⬜ | Need to test |
 | Email Template (Dark) | 3HC-0 | ⬜ | Transactional package |
 | Marketing Hero | 3Q2-0 | ⬜ | Landing site |
-| Document Field Editor | 4Q3-0 | ❌ | Not yet audited |
-| Document Detail | 4UV-0 | ❌ | Not yet audited |
-| Settings | 4ZP-0 | 🔄 | Basic structure verified. Need detailed audit |
+| Document Field Editor | 4Q3-0 | ✅ | Three-panel layout: field type sidebar, PDF viewer, field properties. All colors match semantic tokens. Step indicator is custom component using primary for active, #10B981 for completed, #FFFFFF14 for pending. Field type active state uses sidebar-accent (#FEF3F2). Signer colors from board 04. Properties panel uses standard form tokens (input bg, border, muted-foreground placeholder). Delete button uses destructive tokens. No gaps. |
+| Document Detail | 4UV-0 | ✅ | Full document view with sidebar, header (title + status badge), line tabs (board 23 pattern), signers card, and activity timeline. All status badges match board 11 (success green #10B981/#065F46). Activity timeline uses green dots for signed events, neutral #E8E4DF for viewed/sent with 1px connector line. Certificate panel shows document metadata. Signer avatar colors from board 04. All tokens match, no gaps. |
+| Settings | 4ZP-0 | ✅ | Settings sub-sidebar uses brand-tint active state (#FEF3F2 bg + 2px left border #A63D2F). Section headers use #C8C0B8 (lighter than muted-foreground — intentional for category labels). Team page: members table with avatar signer colors (board 04), role badges (bg #F5F3F0 = muted), pending invites with dashed avatar. All primary, foreground, muted-foreground, border tokens match. No gaps. |
 | Marketing Hero v2 | 53L-0 | ⬜ | Landing site |
 | Mobile Signing | 4O6-0 | ⬜ | Mobile responsive — separate audit |
 
