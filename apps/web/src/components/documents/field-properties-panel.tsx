@@ -9,6 +9,7 @@
 import { useMutation } from "convex/react";
 import {
   AlertCircleIcon,
+  AlertTriangleIcon,
   CalendarIcon,
   CheckSquareIcon,
   CreditCardIcon,
@@ -180,6 +181,33 @@ export function FieldPropertiesPanel({
   }, [field]);
 
   const updateField = useMutation(api.signature_fields.mutations.updateField);
+  const assignField = useMutation(api.signature_fields.mutations.assignFieldToRecipient);
+
+  // Recipient assignment state
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string>(
+    field.recipientId ?? "unassigned",
+  );
+
+  // Update recipient selection when field changes
+  useEffect(() => {
+    setSelectedRecipientId(field.recipientId ?? "unassigned");
+  }, [field.recipientId]);
+
+  const handleRecipientChange = async (value: string) => {
+    if (value === "unassigned" || value === selectedRecipientId) return;
+    setSelectedRecipientId(value);
+    try {
+      await assignField({
+        fieldId: field._id,
+        recipientId: value as Id<"document_recipients">,
+      });
+      toast.success("Field assigned to recipient");
+      onSave?.();
+    } catch (error) {
+      setSelectedRecipientId(field.recipientId ?? "unassigned");
+      toast.error(error instanceof Error ? error.message : "Failed to assign field");
+    }
+  };
 
   // Save function
   const handleSave = async () => {
@@ -233,9 +261,6 @@ export function FieldPropertiesPanel({
     }
   };
 
-  // Get recipient info
-  const recipient = recipients.find((r) => r._id === field.recipientId);
-
   // Determine which fields to show based on field type
   const showPlaceholder =
     field.fieldType === "text" || field.fieldType === "number" || field.fieldType === "date";
@@ -266,26 +291,41 @@ export function FieldPropertiesPanel({
       {/* Content */}
       <div className="flex-1 space-y-6 overflow-y-auto p-4">
         {/* Assigned Recipient */}
-        {recipient && (
-          <div className="space-y-2">
-            <Label className="text-muted-foreground text-xs">Assigned to</Label>
-            <div className="bg-muted/50 flex items-center gap-2 rounded-md p-2">
-              <div className="bg-primary/10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium">
-                {(recipient.name || recipient.email)[0].toUpperCase()}
-              </div>
-              <div className="flex min-w-0 flex-col">
-                {recipient.name && (
-                  <span className="truncate text-sm font-medium">{recipient.name}</span>
-                )}
-                <span
-                  className={`truncate text-xs ${recipient.name ? "text-muted-foreground" : "text-sm"}`}
-                >
-                  {recipient.email}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="space-y-2">
+          <Label htmlFor="field-recipient">Assigned to</Label>
+          {recipients.length > 0 ? (
+            <Select value={selectedRecipientId} onValueChange={handleRecipientChange}>
+              <SelectTrigger
+                id="field-recipient"
+                className={
+                  selectedRecipientId === "unassigned"
+                    ? "border-warning/50 text-warning"
+                    : undefined
+                }
+              >
+                <SelectValue placeholder="Select a recipient" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned" disabled>
+                  Unassigned
+                </SelectItem>
+                {recipients.map((r) => (
+                  <SelectItem key={r._id} value={r._id}>
+                    {r.name ? `${r.name} (${r.email})` : r.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <p className="text-muted-foreground text-xs">Add a recipient to the document first</p>
+          )}
+          {selectedRecipientId === "unassigned" && recipients.length > 0 && (
+            <p className="text-warning flex items-center gap-1 text-xs">
+              <AlertTriangleIcon className="h-3 w-3" />
+              This field must be assigned before sending
+            </p>
+          )}
+        </div>
 
         {/* Configure Payment button for payment fields */}
         {field.fieldType === "payment" && onConfigurePayment && (
