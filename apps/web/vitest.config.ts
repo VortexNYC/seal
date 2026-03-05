@@ -13,5 +13,10 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     globals: false,
+    server: {
+      deps: {
+        inline: ["zod"],
+      },
+    },
   },
 });

@@ -105,7 +105,7 @@ describe("CreateContactDialog", () => {
       await user.type(screen.getByLabelText(/last name/i), "Doe");
       await user.click(screen.getByRole("button", { name: /create contact/i }));
 
-      expect(screen.getByText("Email is required")).toBeDefined();
+      expect(screen.getByText("Please enter a valid email address")).toBeDefined();
       expect(mockCreateContact).not.toHaveBeenCalled();
     });
 
@@ -118,7 +118,7 @@ describe("CreateContactDialog", () => {
       // Leave email empty
       await user.click(screen.getByRole("button", { name: /create contact/i }));
 
-      expect(screen.getByText("Email is required")).toBeDefined();
+      expect(screen.getByText("Please enter a valid email address")).toBeDefined();
       expect(mockCreateContact).not.toHaveBeenCalled();
     });
 

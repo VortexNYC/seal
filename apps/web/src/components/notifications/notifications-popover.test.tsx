@@ -365,8 +365,8 @@ describe("NotificationsPopover", () => {
       const notif = makeNotification({ read: false });
       renderPopover({ notifications: makeNotificationList([notif]), unreadCount: 1 });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      // The blue dot is a div with class containing 'bg-blue-500'
-      const dot = document.querySelector(".bg-blue-500.rounded-full");
+      // The unread dot uses bg-info (semantic token) with rounded-full
+      const dot = document.querySelector(".bg-info.rounded-full");
       expect(dot).toBeInTheDocument();
     });
 
@@ -375,7 +375,7 @@ describe("NotificationsPopover", () => {
       const notif = makeNotification({ read: true });
       renderPopover({ notifications: makeNotificationList([notif]), unreadCount: 0 });
       await user.click(screen.getByRole("button", { name: "Notifications" }));
-      const dot = document.querySelector(".bg-blue-500.rounded-full");
+      const dot = document.querySelector(".bg-info.rounded-full");
       expect(dot).not.toBeInTheDocument();
     });
 
