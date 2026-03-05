@@ -28,9 +28,7 @@ export function DocumentStatusHero({ workflowStatus, createdAt }: DocumentStatus
   };
 
   const getTextStyles = () => {
-    return workflowStatus === "completed"
-      ? "text-status-completed-text"
-      : "text-foreground";
+    return workflowStatus === "completed" ? "text-status-completed-text" : "text-foreground";
   };
 
   return (

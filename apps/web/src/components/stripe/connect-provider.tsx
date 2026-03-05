@@ -130,14 +130,9 @@ export function StripeConnectProvider({
   if (error) {
     return (
       <div
-        className={cn(
-          "border-destructive/30 bg-destructive/10 rounded-md border p-4",
-          className,
-        )}
+        className={cn("border-destructive/30 bg-destructive/10 rounded-md border p-4", className)}
       >
-        <p className="text-destructive text-sm font-medium">
-          Failed to load Stripe components
-        </p>
+        <p className="text-destructive text-sm font-medium">Failed to load Stripe components</p>
         <p className="text-muted-foreground mt-1 text-xs">{error}</p>
       </div>
     );

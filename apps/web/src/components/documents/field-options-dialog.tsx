@@ -307,7 +307,9 @@ export function FieldOptionsDialog({
                     className="border-border text-foreground mt-0.5 h-4 w-4 rounded focus:ring-offset-0"
                   />
                   <div className="flex-1">
-                    <div className="text-foreground text-sm font-medium">Pre-select first option</div>
+                    <div className="text-foreground text-sm font-medium">
+                      Pre-select first option
+                    </div>
                     <div className="text-muted-foreground mt-0.5 text-xs">
                       Recipients will see this option already selected
                     </div>

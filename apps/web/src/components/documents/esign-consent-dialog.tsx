@@ -161,9 +161,7 @@ export function EsignConsentDialog({
 
           <Card className="border-status-completed-border bg-status-completed-surface">
             <CardContent className="space-y-1 p-5 text-center">
-              <p className="text-status-completed-text text-sm font-medium">
-                {recipientEmail}
-              </p>
+              <p className="text-status-completed-text text-sm font-medium">{recipientEmail}</p>
               <p className="text-status-completed-text/80 text-xs">
                 Consent Date:{" "}
                 {new Date().toLocaleDateString("en-US", {

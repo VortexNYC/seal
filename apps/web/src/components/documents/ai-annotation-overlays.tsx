@@ -183,9 +183,7 @@ function HighlightOverlay({
             {config.label}
           </span>
         </div>
-        <p className="text-xs leading-relaxed text-popover-foreground">
-          {annotation.summary}
-        </p>
+        <p className="text-xs leading-relaxed text-popover-foreground">{annotation.summary}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -273,10 +271,7 @@ export function AIInsightsPanel({
               )}
             >
               <span
-                className={cn(
-                  "h-1.5 w-1.5 rounded-full",
-                  isActive ? config.dotColor : "bg-border",
-                )}
+                className={cn("h-1.5 w-1.5 rounded-full", isActive ? config.dotColor : "bg-border")}
               />
               {config.label}
               <span className="opacity-60">{count}</span>
@@ -305,9 +300,7 @@ export function AIInsightsPanel({
                 )}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-xs leading-snug text-foreground">
-                  {annotation.summary}
-                </p>
+                <p className="text-xs leading-snug text-foreground">{annotation.summary}</p>
               </div>
               <span className="text-muted-foreground shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
                 p.{annotation.page}

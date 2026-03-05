@@ -236,10 +236,7 @@ export function SendDocumentDialog({
                   </p>
                   <div className="mt-1 space-y-0.5">
                     {paymentConfigs.map((config) => (
-                      <p
-                        key={config._id}
-                        className="text-field-payment text-xs"
-                      >
+                      <p key={config._id} className="text-field-payment text-xs">
                         {new Intl.NumberFormat("en-US", {
                           style: "currency",
                           currency: config.currency.toUpperCase(),

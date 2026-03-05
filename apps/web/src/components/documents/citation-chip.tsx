@@ -25,9 +25,7 @@ export function CitationChip({ documentId, pageNumber, documentName, slug }: Cit
     >
       <FileTextIcon className="h-3 w-3" />
       {documentName}
-      {pageNumber > 0 && (
-        <span className="text-ai-accent/70">p.{pageNumber}</span>
-      )}
+      {pageNumber > 0 && <span className="text-ai-accent/70">p.{pageNumber}</span>}
     </Link>
   );
 }

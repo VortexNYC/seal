@@ -334,7 +334,9 @@ export function ShareDocumentDialog({
 
                   {/* People with Access */}
                   <div className="space-y-3">
-                    <label className="text-foreground text-sm font-medium">People with access</label>
+                    <label className="text-foreground text-sm font-medium">
+                      People with access
+                    </label>
                     <div className="space-y-2" data-testid="access-list">
                       {/* Document Owner */}
                       <div

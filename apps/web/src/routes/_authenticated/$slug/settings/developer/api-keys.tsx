@@ -334,10 +334,7 @@ function ApiKeysPage() {
                   }}
                 >
                   <DialogTrigger asChild>
-                    <Button
-                      size="sm"
-                      className="bg-info text-white hover:bg-info/90"
-                    >
+                    <Button size="sm" className="bg-info text-white hover:bg-info/90">
                       <Plus className="mr-1 h-4 w-4" />
                       Create API Key
                     </Button>
@@ -381,9 +378,7 @@ function ApiKeysPage() {
                         <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-surface p-4">
                           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
                           <div>
-                            <p className="font-medium text-warning">
-                              Save this key securely
-                            </p>
+                            <p className="font-medium text-warning">Save this key securely</p>
                             <p className="text-sm text-warning">
                               This is the only time you'll see this key. Store it in a secure
                               location.
@@ -493,9 +488,7 @@ function ApiKeysPage() {
             <CardDescription>
               API keys allow secure programmatic access to the Seal API
               {!isPro && !isLoadingPlan && (
-                <span className="mt-1 block text-warning">
-                  API keys require a Pro plan.
-                </span>
+                <span className="mt-1 block text-warning">API keys require a Pro plan.</span>
               )}
             </CardDescription>
           </CardHeader>
@@ -521,9 +514,7 @@ function ApiKeysPage() {
                   Create your first API key
                 </Button>
                 {!isPro && !isLoadingPlan && (
-                  <p className="mt-2 text-sm text-warning">
-                    Requires a Pro plan
-                  </p>
+                  <p className="mt-2 text-sm text-warning">Requires a Pro plan</p>
                 )}
               </div>
             ) : (
@@ -566,15 +557,11 @@ function ApiKeysPage() {
                     <code>
                       <span className="text-info">curl</span>
                       <span className="text-foreground"> -X GET </span>
-                      <span className="text-success">
-                        "https://api.seal.app/v1/documents"
-                      </span>
+                      <span className="text-success">"https://api.seal.app/v1/documents"</span>
                       <span className="text-foreground"> \</span>
                       {"\n"}
                       <span className="text-foreground">{"  "}-H </span>
-                      <span className="text-warning">
-                        "Authorization: Bearer YOUR_API_KEY"
-                      </span>
+                      <span className="text-warning">"Authorization: Bearer YOUR_API_KEY"</span>
                     </code>
                   </pre>
                 </div>
@@ -628,9 +615,7 @@ function ApiKeyRow({ apiKey, onRevoke }: ApiKeyRowProps) {
               {showId ? (
                 <>
                   <EyeOff className="h-3.5 w-3.5" />
-                  <span className="text-info">
-                    {apiKey.id.slice(0, 16)}...
-                  </span>
+                  <span className="text-info">{apiKey.id.slice(0, 16)}...</span>
                 </>
               ) : (
                 <>

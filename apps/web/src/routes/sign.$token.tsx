@@ -840,9 +840,7 @@ function SigningPage() {
                   <span className="text-muted-foreground/40">·</span>
                   <span
                     className={`inline-flex items-center gap-1.5 text-sm font-medium ${
-                      recipient.status === "declined"
-                        ? "text-destructive"
-                        : "text-success"
+                      recipient.status === "declined" ? "text-destructive" : "text-success"
                     }`}
                   >
                     {recipient.status === "declined" ? (
@@ -918,9 +916,7 @@ function SigningPage() {
             {isCompleted && (
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-                  recipient.status === "declined"
-                    ? "text-destructive"
-                    : "text-success"
+                  recipient.status === "declined" ? "text-destructive" : "text-success"
                 }`}
               >
                 {recipient.status === "declined" ? (
@@ -1178,9 +1174,7 @@ function SigningPage() {
                     <div className="flex items-start gap-3">
                       <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-foreground text-sm font-medium">
-                          Payment Required
-                        </p>
+                        <p className="text-foreground text-sm font-medium">Payment Required</p>
                         <p className="text-muted-foreground mt-0.5 text-xs">
                           Please complete payment below before signing.
                         </p>
@@ -1210,9 +1204,7 @@ function SigningPage() {
                     <div className="flex items-start gap-3">
                       <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-foreground text-sm font-medium">
-                          Payment Required
-                        </p>
+                        <p className="text-foreground text-sm font-medium">Payment Required</p>
                         <p className="text-muted-foreground mt-0.5 text-xs">
                           All signatures collected. Please complete payment below.
                         </p>
@@ -1503,18 +1495,14 @@ function SigningPage() {
                             </div>
                             <div className="flex flex-col gap-2">
                               <div className="flex items-baseline gap-2">
-                                <span className="text-muted-foreground text-sm">
-                                  Signed by:
-                                </span>
+                                <span className="text-muted-foreground text-sm">Signed by:</span>
                                 <span className="text-foreground text-sm font-semibold">
                                   {recipient.name || recipient.email}
                                 </span>
                               </div>
                               {recipient.signedAt && (
                                 <div className="flex items-baseline gap-2">
-                                  <span className="text-muted-foreground text-sm">
-                                    Date:
-                                  </span>
+                                  <span className="text-muted-foreground text-sm">Date:</span>
                                   <span className="text-foreground text-sm">
                                     {new Date(recipient.signedAt).toLocaleDateString("en-US", {
                                       year: "numeric",

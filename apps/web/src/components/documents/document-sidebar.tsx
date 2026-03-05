@@ -463,9 +463,7 @@ export function DocumentSidebar({
         ) : (
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 shadow-sm sm:rounded-xl">
             <Loader2Icon className="h-5 w-5 animate-spin text-ai-accent" />
-            <p className="font-sans text-sm text-muted-foreground">
-              Starting AI assistant...
-            </p>
+            <p className="font-sans text-sm text-muted-foreground">Starting AI assistant...</p>
           </div>
         ))}
 

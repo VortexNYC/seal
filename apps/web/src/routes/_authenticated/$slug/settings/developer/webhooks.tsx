@@ -185,9 +185,7 @@ function WebhookEndpointsSection({
         <CardDescription>
           Configure endpoints to receive webhook events
           {!isPro && !isLoadingPlan && (
-            <span className="mt-1 block text-warning">
-              Webhooks require a Pro plan.
-            </span>
+            <span className="mt-1 block text-warning">Webhooks require a Pro plan.</span>
           )}
         </CardDescription>
       </CardHeader>
@@ -379,12 +377,8 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
             <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-surface p-4">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
               <div>
-                <p className="font-medium text-warning">
-                  Store this secret securely
-                </p>
-                <p className="text-sm text-warning">
-                  You'll need it to verify webhook signatures.
-                </p>
+                <p className="font-medium text-warning">Store this secret securely</p>
+                <p className="text-sm text-warning">You'll need it to verify webhook signatures.</p>
               </div>
             </div>
             <DialogFooter>
@@ -709,9 +703,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
                 <div className="bg-muted/50 flex flex-1 items-center gap-2 rounded-lg border px-3 py-2">
                   <code
                     className={`font-mono text-sm transition-all duration-300 ${
-                      showSecret
-                        ? "text-ai-accent"
-                        : "text-muted-foreground blur-sm"
+                      showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm"
                     }`}
                   >
                     {showSecret ? `${endpoint.secretPrefix}...` : "whsec_••••••••••••••••"}
@@ -752,10 +744,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
               <Label>Subscribed Events</Label>
               <div className="flex flex-wrap gap-1.5">
                 {endpoint.events.length === 0 ? (
-                  <Badge
-                    variant="outline"
-                    className="font-mono text-xs text-ai-accent"
-                  >
+                  <Badge variant="outline" className="font-mono text-xs text-ai-accent">
                     All events
                   </Badge>
                 ) : (

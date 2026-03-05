@@ -62,9 +62,7 @@ function MessageBubble({
       <div
         className={cn(
           "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
-          isUser
-            ? "bg-muted text-muted-foreground"
-            : "bg-ai-accent text-ai-accent-foreground",
+          isUser ? "bg-muted text-muted-foreground" : "bg-ai-accent text-ai-accent-foreground",
         )}
       >
         {isUser ? <UserIcon className="h-3.5 w-3.5" /> : <BotIcon className="h-3.5 w-3.5" />}
@@ -226,12 +224,8 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
             <SparklesIcon className="h-4 w-4" />
           </div>
           <div>
-            <div className="font-sans text-sm font-semibold text-foreground">
-              Seal AI
-            </div>
-            <div className="text-muted-foreground font-sans text-[10px]">
-              Document assistant
-            </div>
+            <div className="font-sans text-sm font-semibold text-foreground">Seal AI</div>
+            <div className="text-muted-foreground font-sans text-[10px]">Document assistant</div>
           </div>
         </div>
         <button
@@ -256,9 +250,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
               <SparklesIcon className="text-ai-accent h-6 w-6" />
             </div>
             <div className="text-center">
-              <p className="font-sans text-sm font-medium text-foreground">
-                How can I help?
-              </p>
+              <p className="font-sans text-sm font-medium text-foreground">How can I help?</p>
               <p className="text-muted-foreground mt-1 font-sans text-xs">
                 I can analyze documents, suggest fields, and search across your workspace
               </p>

@@ -224,7 +224,9 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
               <div className="flex flex-col gap-0.5">
                 {/* Field type */}
                 <div className="flex items-baseline gap-1">
-                  <span className="text-muted-foreground text-[9px]">{getFieldTypeLabel(fieldType)}</span>
+                  <span className="text-muted-foreground text-[9px]">
+                    {getFieldTypeLabel(fieldType)}
+                  </span>
                 </div>
                 {/* Signer name */}
                 <div className="flex items-baseline gap-1">

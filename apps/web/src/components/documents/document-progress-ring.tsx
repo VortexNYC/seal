@@ -60,29 +60,15 @@ export function DocumentProgressRing({ progress }: DocumentProgressRingProps) {
           <span className="font-serif text-[1.75rem] leading-none font-semibold text-foreground sm:text-xl">
             {progress.percentComplete}%
           </span>
-          <span className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">
-            Complete
-          </span>
+          <span className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">Complete</span>
         </div>
       </div>
 
       {/* Status Grid */}
       <div className="grid w-full grid-cols-2 gap-3 sm:gap-2">
-        <StatusBox
-          value={progress.byStatus.signed}
-          label="Signed"
-          colorClass="text-success"
-        />
-        <StatusBox
-          value={progress.byStatus.pending}
-          label="Pending"
-          colorClass="text-warning"
-        />
-        <StatusBox
-          value={progress.byStatus.viewed}
-          label="Viewed"
-          colorClass="text-foreground"
-        />
+        <StatusBox value={progress.byStatus.signed} label="Signed" colorClass="text-success" />
+        <StatusBox value={progress.byStatus.pending} label="Pending" colorClass="text-warning" />
+        <StatusBox value={progress.byStatus.viewed} label="Viewed" colorClass="text-foreground" />
         {progress.byStatus.declined > 0 && (
           <StatusBox
             value={progress.byStatus.declined}
@@ -105,9 +91,7 @@ function StatusBox({ value, label, colorClass }: StatusBoxProps) {
   return (
     <div className="rounded-[10px] bg-muted px-2 py-3 text-center sm:px-1.5 sm:py-2.5">
       <div className={`font-sans text-xl font-semibold sm:text-base ${colorClass}`}>{value}</div>
-      <div className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">
-        {label}
-      </div>
+      <div className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">{label}</div>
     </div>
   );
 }

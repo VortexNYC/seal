@@ -72,7 +72,9 @@ export function RemoveRecipientDialog({
                 )}
                 <div className="text-muted-foreground text-sm">{recipientEmail}</div>
                 {recipientRole && (
-                  <div className="text-muted-foreground mt-1 text-xs">{formatRole(recipientRole)}</div>
+                  <div className="text-muted-foreground mt-1 text-xs">
+                    {formatRole(recipientRole)}
+                  </div>
                 )}
               </div>
 

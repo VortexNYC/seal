@@ -61,9 +61,7 @@ function UsageSettings() {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-warning" />
               <div>
-                <p className="font-medium text-warning">
-                  Approaching usage limits
-                </p>
+                <p className="font-medium text-warning">Approaching usage limits</p>
                 <p className="text-sm text-warning">
                   Upgrade to Pro for higher limits and more features
                 </p>

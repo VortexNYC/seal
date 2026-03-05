@@ -166,9 +166,7 @@ function PaymentsSettingsPage() {
           Connect Stripe to accept payments through documents. Only workspace owners and admins can
           manage payment settings.
           {!isPro && !isLoadingPlan && (
-            <span className="mt-1 block text-warning">
-              Stripe Connect requires a Pro plan.
-            </span>
+            <span className="mt-1 block text-warning">Stripe Connect requires a Pro plan.</span>
           )}
         </p>
 
