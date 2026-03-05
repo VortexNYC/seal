@@ -84,6 +84,7 @@ localhost-*.log
 apps/web/.env.test
 sample-doc.pdf
 .playwright-cli/
+.playwright-profile/
 
 # Auth state files (local dev)
 apps/backend/auth-state.json

@@ -204,6 +204,15 @@ ensureResourceOwnerOrAdmin(auth, resourceOwnerId);
 - `CLERK_SECRET_KEY` - Clerk secret key
 - `CLERK_WEBHOOK_SECRET` - Clerk webhook signature verification
 
+### Test Account (Development)
+
+When testing the app locally via Playwright or browser automation, use:
+
+- **Email**: `shlomo@plasma.nyc`
+- **Password**: `12345678`
+- **Sign-in flow**: Email → "Use another method" → "Sign in with your password" → enter password
+- **Note**: 2FA (email verification code) may be required for new devices. Check email for the 6-digit code or disable 2FA in the Clerk dev dashboard for automated testing.
+
 ## Important Conventions
 
 ### Never infer type "any"
