@@ -31,12 +31,12 @@ Last audited: 2026-03-04
 | 09 | Brand in Context | Z4-0 | ⬜ | Reference board, no code |
 | 10 | Form Controls | 1G1-0 | 🔄 | Checkbox border fixed (border-primary→border-input). Minor dark mode gaps: input bg #1A1A1A vs token #141414, border #2E2E2E vs #252525. Focus ring opacity 12% vs 50%. |
 | 11 | Badges & Status | 1IK-0 | 🔄 | Status badges verified visually. Need to check payment badges, count badges |
-| 12 | Cards | 1KQ-0 | ❌ | Not yet audited |
-| 13 | Tables & Lists | 1XJ-0 | ❌ | Not yet audited |
+| 12 | Cards | 1KQ-0 | ✅ | Light mode tokens match (card, border, foreground, secondary, status badges). Component uses semantic tokens correctly. Dark mode neutral hex in mockup differs slightly from board 04 color system — board 04 is authoritative. Border-radius 10px vs code 12px (rounded-xl). |
+| 13 | Tables & Lists | 1XJ-0 | ✅ | All semantic colors match. Status badges, pagination, checkbox styling all use correct tokens. Bulk selection uses #FEF5F4 brand tint (= sidebar-accent). Dark mode consistent with other boards. |
 | 14 | Empty States | 23E-0 | ❌ | Not yet audited |
-| 15 | Toasts & Modals | 25W-0 | ❌ | Not yet audited |
+| 15 | Toasts & Modals | 25W-0 | 🔄 | All semantic colors match tokens. Paper shows colored left-border toast pattern (3px border-left) — Sonner doesn't implement this yet. Modals use standard dialog tokens. No token changes needed. |
 | 16 | Loading States | 29I-0 | ❌ | Not yet audited |
-| 17 | Navigation | 1NP-0 | ❌ | Not yet audited |
+| 17 | Navigation | 1NP-0 | 🔄 | Sidebar-accent updated to brand tint (#FEF5F4 light / #2A1410 dark). Sidebar bg Paper=#FFFFFF vs token=#F5F3F0 (intentional tint). Active/inactive states, tabs, breadcrumbs use correct semantic tokens. |
 | 18 | Spacing & Grid | 3R7-0 | 🔄 | Spacing tokens exist (space-1 through space-10). Need to verify against board |
 | 19 | Avatars & Presence | 3U7-0 | ❌ | Not yet audited |
 | 20 | Dropdowns & Menus | 3WT-0 | ❌ | Not yet audited |
@@ -44,7 +44,7 @@ Last audited: 2026-03-04
 | 22 | File Upload | 40L-0 | ❌ | Not yet audited |
 | 23 | Tabs | 42I-0 | ❌ | Not yet audited |
 | 24 | Date Picker | 43Y-0 | ❌ | Not yet audited |
-| 25 | App Shell & Sidebar | 47Q-0 | ❌ | Not yet audited |
+| 25 | App Shell & Sidebar | 47Q-0 | 🔄 | Sidebar layout and nav items match. Active state differs from board 17 (neutral #141414 vs brand-tint #2A1410) — following board 17 as authoritative Navigation board. Token values (foreground, muted, separator) consistent. |
 | 26 | Motion Principles | 4AG-0 | 🔄 | Motion tokens exist. Need to verify against board |
 
 ## Screen Mocks

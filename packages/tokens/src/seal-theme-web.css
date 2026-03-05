@@ -39,7 +39,7 @@
   --sidebar-foreground: oklch(0.138 0.010 65);
   --sidebar-primary: oklch(0.441 0.148 30);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.940 0.007 75);
+  --sidebar-accent: oklch(0.972 0.012 30);          /* #FEF5F4 — brand tint per board 17 */
   --sidebar-accent-foreground: oklch(0.138 0.010 65);
   --sidebar-border: oklch(0.912 0.008 75);
   --sidebar-ring: oklch(0.513 0.156 30);
@@ -214,7 +214,7 @@
   --sidebar-foreground: oklch(0.950 0.008 75);
   --sidebar-primary: oklch(0.513 0.156 30);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.155 0 0);
+  --sidebar-accent: oklch(0.155 0.035 30);           /* #2A1410 — brand tint per board 17 */
   --sidebar-accent-foreground: oklch(0.950 0.008 75);
   --sidebar-border: oklch(0.197 0 0);
   --sidebar-ring: oklch(0.513 0.156 30);
