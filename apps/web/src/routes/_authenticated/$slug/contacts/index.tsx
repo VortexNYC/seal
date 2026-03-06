@@ -299,6 +299,7 @@ function ContactsTableContent({
                 aria-label={`Open contact ${contact.fullName}`}
                 onClick={() => handleOpenContact(contact._id)}
                 onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget) return;
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
                     handleOpenContact(contact._id);

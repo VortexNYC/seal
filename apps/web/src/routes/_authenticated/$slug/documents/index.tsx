@@ -519,6 +519,7 @@ function DocumentsList({
                       aria-label={`Open document ${doc.name}`}
                       onClick={() => handleOpenDocument(doc._id)}
                       onKeyDown={(event) => {
+                        if (event.target !== event.currentTarget) return;
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
                           handleOpenDocument(doc._id);
@@ -662,6 +663,7 @@ function DocumentsList({
                   tabIndex={0}
                   aria-label={`Open document ${doc.name}`}
                   onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
                       handleOpenDocument(doc._id);

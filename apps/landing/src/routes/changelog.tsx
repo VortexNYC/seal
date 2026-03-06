@@ -70,7 +70,7 @@ function ChangelogPage() {
                         </Badge>
                         <span className="text-muted-foreground flex items-center gap-1 text-sm">
                           <Calendar className="size-3" />
-                          {new Date(entry.releaseDate).toLocaleDateString(undefined, {
+                          {new Date(entry.releaseDate).toLocaleDateString("en-US", {
                             year: "numeric",
                             month: "long",
                             day: "numeric",

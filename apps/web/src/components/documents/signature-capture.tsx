@@ -479,11 +479,13 @@ export function SignatureCapture({
                   </p>
                 </div>
               ) : (
-                <div className="grid gap-3">
+                <div className="grid gap-3" role="listbox" aria-label="Saved signatures">
                   {savedSignatures.map((sig: Doc<"saved_signatures">) => (
-                    <button
-                      type="button"
+                    <div
                       key={sig._id}
+                      role="option"
+                      aria-selected={selectedSavedSignature === sig._id}
+                      tabIndex={0}
                       className={cn(
                         "relative cursor-pointer rounded-lg border-2 p-3 transition-colors",
                         selectedSavedSignature === sig._id
@@ -492,12 +494,12 @@ export function SignatureCapture({
                       )}
                       onClick={() => setSelectedSavedSignature(sig._id)}
                       onKeyDown={(event) => {
+                        if (event.target !== event.currentTarget) return;
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
                           setSelectedSavedSignature(sig._id);
                         }
                       }}
-                      aria-pressed={selectedSavedSignature === sig._id}
                       aria-label={`Select ${sig.name} signature`}
                     >
                       <div className="flex items-center gap-3">
@@ -548,7 +550,7 @@ export function SignatureCapture({
                           </Button>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
