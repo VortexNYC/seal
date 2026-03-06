@@ -124,7 +124,11 @@ export function EsignConsentDialog({
           </Card>
 
           <div className="text-center">
-            <Button variant="ghost" onClick={handleBackToConsent}>
+            <Button
+              variant="ghost"
+              onClick={handleBackToConsent}
+              aria-label="Return to consent terms"
+            >
               Back to Consent
             </Button>
           </div>
@@ -254,17 +258,24 @@ export function EsignConsentDialog({
           </Label>
         </div>
 
-        <div className="space-y-3">
-          <Button
-            className="w-full"
-            size="lg"
-            disabled={!isChecked || isSubmitting}
-            onClick={handleAccept}
-          >
-            {isSubmitting ? "Recording consent..." : "Continue to Document"}
-          </Button>
-          <div className="text-center">
-            <Button variant="ghost" onClick={handleDecline}>
+          <div className="space-y-3">
+            <Button
+              className="h-12 w-full text-base font-medium shadow-sm transition-shadow hover:shadow"
+              size="lg"
+              disabled={!isChecked || isSubmitting}
+              onClick={handleAccept}
+              aria-label="Accept electronic signature consent"
+            >
+              {isSubmitting ? "Recording consent..." : "Continue to Document"}
+            </Button>
+            <div className="text-center">
+            <Button
+              variant="ghost"
+              className="text-muted-foreground"
+              onClick={handleDecline}
+              disabled={isSubmitting}
+              aria-label="Decline electronic signature consent"
+            >
               Decline &amp; Exit
             </Button>
           </div>

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useRef } from "react";
 
+import { cn } from "@/lib/utils";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Badge } from "../ui/badge";
@@ -126,15 +127,16 @@ function FieldRow({
   return (
     <div
       onClick={() => onFieldSelect?.(isSelected ? null : field._id)}
-      className={`w-full cursor-pointer rounded-lg border-2 p-3 transition-all ${
+      className={cn(
+        "w-full cursor-pointer rounded-lg border-2 p-3 transition-colors",
         isSelected
           ? "border-primary bg-primary/5"
-          : "border-border bg-background hover:border-primary/50 hover:bg-muted/50"
-      }`}
+          : "border-border bg-background hover:border-primary/50 hover:bg-muted/50",
+      )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-1 items-start gap-2">
-          <div className={`mt-0.5 rounded-md border p-1.5 ${FIELD_COLORS[field.fieldType]}`}>
+          <div className={cn("mt-0.5 rounded-md border p-1.5", FIELD_COLORS[field.fieldType])}>
             {FIELD_ICONS[field.fieldType]}
           </div>
           <div className="min-w-0 flex-1">
@@ -179,6 +181,7 @@ function FieldRow({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label="Open field properties"
               title="Field properties"
               onClick={(e) => {
                 e.stopPropagation();
@@ -191,6 +194,7 @@ function FieldRow({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label="Delete this field"
               title="Delete field"
               onClick={(e) => {
                 e.stopPropagation();

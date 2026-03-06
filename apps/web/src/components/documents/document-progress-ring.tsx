@@ -2,6 +2,8 @@
  * Circular progress ring showing document signing progress.
  */
 
+import { cn } from "@/lib/utils";
+
 interface ProgressData {
   percentComplete: number;
   byStatus: {
@@ -90,7 +92,7 @@ interface StatusBoxProps {
 function StatusBox({ value, label, colorClass }: StatusBoxProps) {
   return (
     <div className="rounded-[10px] bg-muted px-2 py-3 text-center sm:px-1.5 sm:py-2.5">
-      <div className={`font-sans text-xl font-semibold sm:text-base ${colorClass}`}>{value}</div>
+      <div className={cn("font-sans text-xl font-semibold sm:text-base", colorClass)}>{value}</div>
       <div className="text-muted-foreground mt-0.5 font-sans text-[0.6875rem]">{label}</div>
     </div>
   );

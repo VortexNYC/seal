@@ -58,6 +58,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { pageSEO } from "@/lib/seo";
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -257,9 +258,8 @@ function SigningPage() {
       if (isEmbedded) {
         postSealEvent("seal:viewed", { token });
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to record consent. Please try again.");
-      console.error("ESIGN consent error:", error);
     } finally {
       setIsConsentSubmitting(false);
     }
@@ -278,9 +278,8 @@ function SigningPage() {
           ipAddress: clientIp,
           method,
         });
-      } catch (error) {
+      } catch {
         // Opt-out logging is best-effort — don't block the user's action
-        console.error("Failed to log opt-out:", error);
       }
     },
     [convexClient, token, clientIp],
@@ -311,9 +310,7 @@ function SigningPage() {
     const updatePdfWidth = () => {
       if (pdfContainerRef.current) {
         const containerWidth = pdfContainerRef.current.clientWidth;
-        // Leave some padding (32px total for p-4)
         const availableWidth = containerWidth - 32;
-        // Cap at 700px max, min at 280px for mobile
         setPdfWidth(Math.max(280, Math.min(700, availableWidth)));
       }
     };
@@ -321,12 +318,19 @@ function SigningPage() {
     // Initial calculation after mount
     const timer = setTimeout(updatePdfWidth, 100);
 
-    // Update on resize
-    window.addEventListener("resize", updatePdfWidth);
+    // Throttled resize handler
+    let rafId: number;
+    const handleResize = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(updatePdfWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("resize", updatePdfWidth);
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -356,9 +360,8 @@ function SigningPage() {
             status: "viewed",
             ipAddress: clientIp,
           });
-        } catch (error) {
+        } catch {
           // Silent failure - viewing tracking is not critical
-          console.error("Failed to track document view:", error);
         }
       }
     };
@@ -416,7 +419,6 @@ function SigningPage() {
         postSealEvent("seal:error", { token, code: "SIGN_FAILED", message });
       }
       toast.error(message);
-      console.error(error);
     },
   });
 
@@ -490,7 +492,6 @@ function SigningPage() {
         postSealEvent("seal:error", { token, code: "DECLINE_FAILED", message });
       }
       toast.error(message);
-      console.error(error);
     },
   });
 
@@ -526,8 +527,7 @@ function SigningPage() {
       link.click();
       document.body.removeChild(link);
       toast.success("Download started");
-    } catch (error) {
-      console.error("Failed to download document:", error);
+    } catch (_error) {
       toast.error("Failed to download document");
     } finally {
       setIsDownloading(false);
@@ -543,18 +543,22 @@ function SigningPage() {
   const handleFieldSave = async (value?: string, signatureImageUrl?: string) => {
     if (!activeFieldId) return;
 
-    await convexClient.mutation(api.signatures.mutations.saveFieldValue, {
-      signingToken: token,
-      fieldId: activeFieldId,
-      value,
-      signatureImageUrl,
-      ipAddress: clientIp,
-      userAgent: navigator.userAgent,
-    });
+    try {
+      await convexClient.mutation(api.signatures.mutations.saveFieldValue, {
+        signingToken: token,
+        fieldId: activeFieldId,
+        value,
+        signatureImageUrl,
+        ipAddress: clientIp,
+        userAgent: navigator.userAgent,
+      });
 
-    await refetchFields();
-    setShowFieldInput(false);
-    setActiveFieldId(null);
+      await refetchFields();
+      setShowFieldInput(false);
+      setActiveFieldId(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save field");
+    }
   };
 
   // Calculate field completion progress
@@ -569,12 +573,50 @@ function SigningPage() {
   // Check for main signature field
   const mainSignatureField = fields.find((f) => f.isMainSignature === true);
   const isMainSignatureFilled = mainSignatureField?.isFilled || false;
+  const unfilledRequiredCount = requiredFields.length - filledRequiredFields.length;
 
   // Check if recipient has already completed their action
   const isCompleted =
     recipient.status === "signed" ||
     recipient.status === "approved" ||
     recipient.status === "declined";
+
+  const isSigningActionDisabled =
+    isCompleted ||
+    submitSignatureMutation.isPending ||
+    hasUnpaidPayments ||
+    !allRequiredFieldsFilled;
+  const signingButtonLabel = useMemo(() => {
+    if (hasUnpaidPayments) {
+      return "Payment required";
+    }
+    if (!allRequiredFieldsFilled) {
+      return `Please complete ${unfilledRequiredCount} more required field${unfilledRequiredCount === 1 ? "" : "s"}`;
+    }
+    if (mainSignatureField && isMainSignatureFilled) {
+      return recipient.role === "signer"
+        ? "Submit Signature"
+        : recipient.role === "approver"
+          ? "Submit Approval"
+          : "Submit";
+    }
+    return recipient.role === "signer"
+      ? "Sign Document"
+      : recipient.role === "approver"
+        ? "Approve Document"
+        : "Mark as Viewed";
+  }, [
+    allRequiredFieldsFilled,
+    hasUnpaidPayments,
+    mainSignatureField,
+    isMainSignatureFilled,
+    recipient.role,
+    unfilledRequiredCount,
+  ]);
+  const activeField = useMemo(
+    () => (activeFieldId ? fields.find((f) => f._id === activeFieldId) : null),
+    [activeFieldId, fields],
+  );
 
   // Check if document is waiting for payment (all signed, payment pending)
   const isWaitingForPayment = doc.workflowStatus === "waiting_for_payment";
@@ -669,9 +711,9 @@ function SigningPage() {
   // State for collapsible sections on mobile
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
 
-  // Format date helper
+  // Format date helper — uses browser locale for i18n
   const formatDate = (dateString: string | number) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -700,22 +742,22 @@ function SigningPage() {
       case "signed":
       case "approved":
         return {
-          className: `${baseStyles} bg-success-surface text-success`,
+          className: cn(baseStyles, "bg-success-surface text-success"),
           icon: <CheckCircle2Icon className="h-3 w-3" />,
         };
       case "declined":
         return {
-          className: `${baseStyles} bg-destructive/10 text-destructive`,
+          className: cn(baseStyles, "bg-destructive/10 text-destructive"),
           icon: <XCircleIcon className="h-3 w-3" />,
         };
       case "viewed":
         return {
-          className: `${baseStyles} bg-info-surface text-info`,
+          className: cn(baseStyles, "bg-info-surface text-info"),
           icon: <ClockIcon className="h-3 w-3" />,
         };
       default:
         return {
-          className: `${baseStyles} bg-warning-surface text-warning`,
+          className: cn(baseStyles, "bg-warning-surface text-warning"),
           icon: <ClockIcon className="h-3 w-3" />,
         };
     }
@@ -731,7 +773,11 @@ function SigningPage() {
   // Show waiting state for sequential signing when it's not this recipient's turn
   if (waitingForPreviousGroup && !isCompleted) {
     return (
-      <div className="dark:bg-background flex h-dvh flex-col items-center justify-center bg-background px-4">
+      <div
+        className="dark:bg-background flex h-dvh flex-col items-center justify-center bg-background px-4"
+        role="status"
+        aria-live="polite"
+      >
         <div className="w-full max-w-md space-y-6 text-center">
           <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-warning-surface">
             <ClockIcon className="size-8 text-warning" />
@@ -791,13 +837,19 @@ function SigningPage() {
 
   return (
     <div
-      className="dark:bg-background flex h-screen flex-col overflow-hidden bg-background"
+      className="dark:bg-background flex h-dvh flex-col overflow-hidden bg-background"
       style={brandStyle}
       data-embedded={isEmbedded ? "true" : undefined}
     >
-      {/* Offline Banner - Global */}
-      {!isOnline && (
-        <div className="fixed top-0 right-0 left-0 z-50 border-b border-warning-surface bg-warning-surface px-4 py-2">
+      <h1 className="sr-only">{doc.name} — Sign Document</h1>
+
+    {/* Offline Banner - Global */}
+    {!isOnline && (
+      <div
+        className="fixed top-0 right-0 left-0 z-50 border-b border-warning-surface bg-warning-surface px-4 py-2"
+        role="status"
+        aria-live="polite"
+      >
           <div className="flex items-center justify-center gap-2 text-warning-foreground">
             <WifiOffIcon className="h-4 w-4" />
             <span className="text-sm font-medium">
@@ -809,12 +861,19 @@ function SigningPage() {
 
       {/* Desktop Header - Full width top bar (hidden in embedded mode) */}
       <header
-        className={`border-border/50 dark:bg-card hidden shrink-0 border-b bg-white lg:block ${isEmbedded ? "!hidden" : ""}`}
+        className={cn(
+          "border-border/50 hidden shrink-0 border-b bg-card lg:block",
+          isEmbedded && "!hidden",
+        )}
       >
         <div className="flex h-14 items-center justify-between px-6">
           {/* Left: Logo + Document context */}
           <div className="flex items-center gap-4">
-            <a href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
+            <a
+              href="/"
+              aria-label="Go to sign-in page"
+              className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
+            >
               {branding?.logoUrl ? (
                 <img
                   src={branding.logoUrl}
@@ -839,9 +898,12 @@ function SigningPage() {
                 <>
                   <span className="text-muted-foreground/40">·</span>
                   <span
-                    className={`inline-flex items-center gap-1.5 text-sm font-medium ${
-                      recipient.status === "declined" ? "text-destructive" : "text-success"
-                    }`}
+                    role="status"
+                    aria-live="polite"
+                    className={cn(
+                      "inline-flex items-center gap-1.5 text-sm font-medium",
+                      recipient.status === "declined" ? "text-destructive" : "text-success",
+                    )}
                   >
                     {recipient.status === "declined" ? (
                       <XCircleIcon className="h-4 w-4" />
@@ -862,7 +924,7 @@ function SigningPage() {
                 <div className="flex items-center gap-2">
                   <div className="bg-muted h-1.5 w-20 overflow-hidden rounded-full">
                     <div
-                      className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+                      className="bg-primary h-full rounded-full transition-[width] duration-500 ease-out"
                       style={{ width: `${fieldCompletionPercent}%` }}
                     />
                   </div>
@@ -873,7 +935,7 @@ function SigningPage() {
                 <div className="bg-border/60 h-5 w-px" />
               </div>
             )}
-            <span className={statusBadge.className}>
+            <span className={statusBadge.className} role="status" aria-live="polite">
               {statusBadge.icon}
               {recipient.status.charAt(0).toUpperCase() + recipient.status.slice(1)}
             </span>
@@ -883,11 +945,18 @@ function SigningPage() {
 
       {/* Mobile Header - Only visible on small screens (hidden in embedded mode) */}
       <header
-        className={`dark:bg-background/80 border-border/50 sticky top-0 z-40 border-b bg-white/80 backdrop-blur-xl lg:hidden ${isEmbedded ? "!hidden" : ""}`}
+        className={cn(
+          "border-border/50 sticky top-0 z-40 border-b bg-background/80 backdrop-blur-xl lg:hidden",
+          isEmbedded && "!hidden",
+        )}
       >
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
-            <a href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
+            <a
+              href="/"
+              aria-label="Go to sign-in page"
+              className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
+            >
               {branding?.logoUrl ? (
                 <img
                   src={branding.logoUrl}
@@ -905,7 +974,7 @@ function SigningPage() {
               <div className="flex items-center gap-2">
                 <div className="bg-muted h-1.5 w-16 overflow-hidden rounded-full">
                   <div
-                    className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+                    className="bg-primary h-full rounded-full transition-[width] duration-500 ease-out"
                     style={{ width: `${fieldCompletionPercent}%` }}
                   />
                 </div>
@@ -915,9 +984,12 @@ function SigningPage() {
             {/* Completion status on mobile header */}
             {isCompleted && (
               <span
-                className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-                  recipient.status === "declined" ? "text-destructive" : "text-success"
-                }`}
+                role="status"
+                aria-live="polite"
+                className={cn(
+                  "inline-flex items-center gap-1.5 text-xs font-medium",
+                  recipient.status === "declined" ? "text-destructive" : "text-success",
+                )}
               >
                 {recipient.status === "declined" ? (
                   <XCircleIcon className="h-3.5 w-3.5" />
@@ -935,11 +1007,13 @@ function SigningPage() {
           <CollapsibleTrigger asChild>
             <button
               type="button"
+              aria-expanded={isInfoExpanded}
+              aria-controls="signing-mobile-info"
               className="bg-muted/30 border-border/30 hover:bg-muted/50 flex w-full items-center justify-between border-t px-4 py-2.5 transition-colors"
             >
               <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
                 <span className="truncate text-sm font-medium">{doc.name}</span>
-                <span className={statusBadge.className}>
+                <span className={statusBadge.className} role="status" aria-live="polite">
                   {statusBadge.icon}
                   {recipient.status.charAt(0).toUpperCase() + recipient.status.slice(1)}
                 </span>
@@ -951,7 +1025,7 @@ function SigningPage() {
               )}
             </button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="dark:bg-card border-border/30 border-t bg-white">
+          <CollapsibleContent id="signing-mobile-info" className="border-border/30 border-t bg-card">
             <div className="space-y-4 px-4 py-4">
               {doc.description && (
                 <p className="text-muted-foreground text-sm">{doc.description}</p>
@@ -981,7 +1055,7 @@ function SigningPage() {
       {/* Main Layout - Side by side on desktop */}
       <div className="min-h-0 flex-1 overflow-hidden lg:flex">
         {/* Right Sidebar - Document Info (Desktop only) - Uses order-2 to appear on right */}
-        <aside className="border-border/50 dark:bg-card hidden overflow-hidden bg-white lg:order-2 lg:flex lg:w-[380px] lg:flex-col lg:border-l xl:w-[420px]">
+        <aside className="border-border/50 hidden overflow-hidden bg-card lg:order-2 lg:flex lg:w-[380px] lg:flex-col lg:border-l xl:w-[420px]">
           {/* Sidebar Header - Document Details */}
           {doc.description && (
             <div className="border-border/50 border-b p-6">
@@ -1006,9 +1080,16 @@ function SigningPage() {
                       {filledRequiredFields.length}/{requiredFields.length}
                     </span>
                   </div>
-                  <div className="bg-muted h-2 overflow-hidden rounded-full">
+                  <div
+                    className="bg-muted h-2 overflow-hidden rounded-full"
+                    role="progressbar"
+                    aria-valuenow={fieldCompletionPercent}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="Field completion progress"
+                  >
                     <div
-                      className="from-primary to-primary/80 h-full rounded-full bg-gradient-to-r transition-all duration-500 ease-out"
+                      className="bg-primary h-full rounded-full transition-[width] duration-500 ease-out"
                       style={{ width: `${fieldCompletionPercent}%` }}
                     />
                   </div>
@@ -1155,6 +1236,7 @@ function SigningPage() {
                               scrollToField(unfilledFields[0]._id);
                             }
                           }}
+                          aria-label="Jump to the next incomplete field"
                         >
                           Continue
                           <ArrowDownIcon className="ml-1 h-3.5 w-3.5" />
@@ -1239,24 +1321,15 @@ function SigningPage() {
                       : undefined
                   }
                   onClick={handleSignButtonClick}
-                  disabled={submitSignatureMutation.isPending || hasUnpaidPayments}
+                  disabled={isSigningActionDisabled}
+                  aria-label={signingButtonLabel}
                 >
                   {submitSignatureMutation.isPending ? (
                     "Submitting..."
                   ) : (
                     <>
                       <PenLineIcon className="mr-2 h-4 w-4" />
-                      {mainSignatureField && isMainSignatureFilled
-                        ? recipient.role === "signer"
-                          ? "Submit Signature"
-                          : recipient.role === "approver"
-                            ? "Submit Approval"
-                            : "Submit"
-                        : recipient.role === "signer"
-                          ? "Sign Document"
-                          : recipient.role === "approver"
-                            ? "Approve Document"
-                            : "Mark as Viewed"}
+                      {signingButtonLabel}
                     </>
                   )}
                 </Button>
@@ -1267,6 +1340,7 @@ function SigningPage() {
                     className="text-muted-foreground hover:text-foreground w-full"
                     onClick={handleDeclineClick}
                     disabled={declineMutation.isPending}
+                    aria-label="Open decline confirmation"
                   >
                     Decline to sign
                   </Button>
@@ -1277,13 +1351,20 @@ function SigningPage() {
 
           {/* Completed state footer */}
           {isCompleted && recipient.status !== "declined" && (
-            <div className="border-border/50 bg-muted/20 space-y-4 border-t p-6">
+            <div className="border-border/50 space-y-4 border-t bg-success-surface/30 p-6">
+              <div className="flex items-center justify-center gap-2 text-success">
+                <CheckCircleIcon className="h-5 w-5" />
+                <span className="text-sm font-semibold">
+                  {recipient.status === "approved" ? "Document Approved" : "Document Signed"}
+                </span>
+              </div>
               <Button
                 variant="outline"
                 size="lg"
                 className="h-12 w-full"
                 onClick={handleDownload}
                 disabled={isDownloading}
+                aria-label="Download the signed document"
               >
                 {isDownloading ? (
                   <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
@@ -1308,13 +1389,13 @@ function SigningPage() {
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:order-1">
           {/* Field Navigation Bar */}
           {!isCompleted && fields.length > 0 && (
-            <div className="dark:bg-background/80 border-border/50 sticky top-0 z-30 border-b bg-white/80 px-4 py-2.5 backdrop-blur-xl lg:top-0">
+            <div className="border-border/50 sticky top-0 z-30 border-b bg-background/80 px-4 py-2.5 backdrop-blur-xl lg:top-0">
               <div className="mx-auto flex max-w-4xl items-center justify-between">
                 <div className="hidden items-center gap-4 sm:flex">
                   <div className="flex items-center gap-2">
                     <div className="bg-muted h-1.5 w-24 overflow-hidden rounded-full">
                       <div
-                        className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+                        className="bg-primary h-full rounded-full transition-[width] duration-500 ease-out"
                         style={{ width: `${fieldCompletionPercent}%` }}
                       />
                     </div>
@@ -1336,6 +1417,7 @@ function SigningPage() {
                         className="h-9"
                         onClick={navigateToPreviousField}
                         disabled={unfilledFields.length <= 1}
+                        aria-label="Navigate to previous required field"
                       >
                         <ArrowUpIcon className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Prev</span>
@@ -1349,15 +1431,16 @@ function SigningPage() {
                         className="h-9"
                         onClick={navigateToNextField}
                         disabled={unfilledFields.length <= 1}
+                        aria-label="Navigate to next required field"
                       >
                         <span className="hidden sm:inline">Next</span>
                         <ArrowDownIcon className="h-4 w-4 sm:ml-1" />
                       </Button>
                     </>
                   ) : (
-                    <div className="text-success flex items-center gap-2">
+                    <div className="text-success flex items-center gap-2 animate-in fade-in slide-in-from-bottom-1 duration-300">
                       <CheckCircleIcon className="h-5 w-5" />
-                      <span className="text-sm font-medium">All fields completed</span>
+                      <span className="text-sm font-semibold">All fields completed — ready to sign</span>
                     </div>
                   )}
                 </div>
@@ -1393,7 +1476,11 @@ function SigningPage() {
                       file={pdfUrl}
                       onLoadSuccess={onDocumentLoadSuccess}
                       loading={
-                        <div className="dark:bg-card border-border/50 rounded-lg border bg-white p-16 text-center shadow-sm">
+                        <div
+                          className="border-border/50 rounded-lg border bg-card p-16 text-center shadow-sm"
+                          role="status"
+                          aria-live="polite"
+                        >
                           <div className="animate-pulse space-y-4">
                             <div className="bg-muted mx-auto h-4 w-1/3 rounded" />
                             <div className="bg-muted mx-auto h-4 w-1/2 rounded" />
@@ -1402,7 +1489,10 @@ function SigningPage() {
                         </div>
                       }
                       error={
-                        <div className="dark:bg-card border-destructive/30 rounded-lg border bg-white p-16 text-center shadow-sm">
+                        <div
+                          className="border-destructive/30 rounded-lg border bg-card p-16 text-center shadow-sm"
+                          role="alert"
+                        >
                           <p className="text-destructive font-medium">Failed to load PDF</p>
                           <p className="text-muted-foreground mt-1 text-sm">
                             Please try refreshing the page
@@ -1417,7 +1507,7 @@ function SigningPage() {
                         return (
                           <div
                             key={`page_${pageNumber}`}
-                            className="dark:bg-card border-border/50 relative mb-4 overflow-hidden rounded-lg border bg-white shadow-sm last:mb-0"
+                            className="border-border/50 relative mb-4 overflow-hidden rounded-lg border bg-card shadow-sm last:mb-0"
                           >
                             <Page
                               pageNumber={pageNumber}
@@ -1485,7 +1575,7 @@ function SigningPage() {
 
                     {/* Signature Stamp - shown when document is completed with no positioned fields */}
                     {isCompleted && fields.length === 0 && recipient.status === "signed" && (
-                      <div className="dark:bg-card border-border/50 mx-auto mt-4 max-w-md rounded-lg border bg-white p-4 shadow-sm">
+                      <div className="border-border/50 mx-auto mt-4 max-w-md rounded-lg border bg-card p-4 shadow-sm">
                         <div className="overflow-hidden rounded-md border border-border">
                           {/* Signature details stamp - Name, date and time only */}
                           <div className="bg-card px-4 py-4">
@@ -1504,13 +1594,13 @@ function SigningPage() {
                                 <div className="flex items-baseline gap-2">
                                   <span className="text-muted-foreground text-sm">Date:</span>
                                   <span className="text-foreground text-sm">
-                                    {new Date(recipient.signedAt).toLocaleDateString("en-US", {
+                                    {new Date(recipient.signedAt).toLocaleDateString(undefined, {
                                       year: "numeric",
                                       month: "short",
                                       day: "numeric",
                                     })}{" "}
                                     at{" "}
-                                    {new Date(recipient.signedAt).toLocaleTimeString("en-US", {
+                                    {new Date(recipient.signedAt).toLocaleTimeString(undefined, {
                                       hour: "2-digit",
                                       minute: "2-digit",
                                       hour12: true,
@@ -1525,7 +1615,7 @@ function SigningPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="dark:bg-card border-border/50 rounded-lg border bg-white p-16 text-center shadow-sm">
+                  <div className="border-border/50 rounded-lg border bg-card p-16 text-center shadow-sm">
                     <div className="animate-pulse space-y-4">
                       <div className="bg-muted mx-auto h-4 w-1/3 rounded" />
                       <div className="bg-muted mx-auto h-4 w-1/2 rounded" />
@@ -1540,7 +1630,10 @@ function SigningPage() {
           {/* Mobile Action Bar - Fixed at bottom on mobile */}
           {!isCompleted && !showSignatureCapture && (
             <div
-              className={`dark:bg-background/95 border-border/50 sticky bottom-0 z-40 border-t bg-white/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden ${isEmbedded ? "!block" : ""}`}
+              className={cn(
+                "border-border/50 sticky bottom-0 z-40 border-t bg-background/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden",
+                isEmbedded && "!block",
+              )}
             >
               <div className="flex gap-3">
                 {!(isEmbedded && embedParams.hideDecline) && (
@@ -1550,6 +1643,7 @@ function SigningPage() {
                     className="h-12 flex-1"
                     onClick={handleDeclineClick}
                     disabled={declineMutation.isPending}
+                    aria-label="Decline document"
                   >
                     Decline
                   </Button>
@@ -1558,21 +1652,16 @@ function SigningPage() {
                   size="lg"
                   className="h-12 flex-1 font-medium"
                   onClick={handleSignButtonClick}
-                  disabled={submitSignatureMutation.isPending}
+                  disabled={isSigningActionDisabled}
+                  aria-label={signingButtonLabel}
                 >
                   {submitSignatureMutation.isPending ? (
                     "Submitting..."
-                  ) : mainSignatureField && isMainSignatureFilled ? (
-                    "Submit"
-                  ) : recipient.role === "signer" ? (
-                    <>
-                      <PenLineIcon className="mr-2 h-4 w-4" />
-                      Sign
-                    </>
-                  ) : recipient.role === "approver" ? (
-                    "Approve"
                   ) : (
-                    "Mark Viewed"
+                    <>
+                      {recipient.role === "signer" && <PenLineIcon className="mr-2 h-4 w-4" />}
+                      {signingButtonLabel}
+                    </>
                   )}
                 </Button>
               </div>
@@ -1581,22 +1670,31 @@ function SigningPage() {
 
           {/* Mobile Completed Footer */}
           {isCompleted && (
-            <div className="dark:bg-background/95 border-border/50 sticky bottom-0 z-40 border-t bg-white/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+            <div className="border-border/50 sticky bottom-0 z-40 border-t bg-background/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
               {recipient.status !== "declined" ? (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-12 w-full"
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                >
-                  {isDownloading ? (
-                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <DownloadIcon className="mr-2 h-4 w-4" />
-                  )}
-                  {isDownloading ? "Preparing..." : "Download Document"}
-                </Button>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2 text-success">
+                    <CheckCircleIcon className="h-4 w-4" />
+                    <span className="text-xs font-semibold">
+                      {recipient.status === "approved" ? "Approved" : "Signed"} successfully
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="h-12 w-full"
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    aria-label="Download the final signed document"
+                  >
+                    {isDownloading ? (
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <DownloadIcon className="mr-2 h-4 w-4" />
+                    )}
+                    {isDownloading ? "Preparing..." : "Download Document"}
+                  </Button>
+                </div>
               ) : (
                 <p className="text-muted-foreground text-center text-sm">
                   You have declined this document.
@@ -1677,19 +1775,17 @@ function SigningPage() {
       />
 
       {/* Field Input Manager */}
-      {activeFieldId && (
+      {activeField && (
         <FieldInputManager
           open={showFieldInput}
           onOpenChange={setShowFieldInput}
-          fieldId={activeFieldId}
-          fieldType={fields.find((f) => f._id === activeFieldId)?.fieldType || "text"}
-          label={capitalizeFieldLabel(fields.find((f) => f._id === activeFieldId)?.label || "")}
-          isRequired={fields.find((f) => f._id === activeFieldId)?.isRequired || false}
-          currentValue={fields.find((f) => f._id === activeFieldId)?.currentValue}
-          currentSignatureImageUrl={
-            fields.find((f) => f._id === activeFieldId)?.currentSignatureImageUrl
-          }
-          properties={fields.find((f) => f._id === activeFieldId)?.properties}
+          fieldId={activeField._id}
+          fieldType={activeField.fieldType || "text"}
+          label={capitalizeFieldLabel(activeField.label || "")}
+          isRequired={activeField.isRequired || false}
+          currentValue={activeField.currentValue}
+          currentSignatureImageUrl={activeField.currentSignatureImageUrl}
+          properties={activeField.properties}
           onSave={handleFieldSave}
           recipientName={recipient.name}
           signingToken={token}
@@ -1700,7 +1796,7 @@ function SigningPage() {
       {!isEmbedded && !branding?.hideSealBranding && (
         <div className="border-border/50 text-muted-foreground hidden shrink-0 border-t py-2 text-center text-xs lg:block">
           {branding?.customFooterText || (
-            <a href="https://seal.nyc" className="hover:text-foreground transition-colors">
+            <a href="https://seal.nyc" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
               Powered by Seal
             </a>
           )}

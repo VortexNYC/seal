@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { cn } from "@/lib/utils";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Button } from "../ui/button";
@@ -125,7 +126,7 @@ export function RecipientSelectorDialog({
                           <SelectItem key={recipient._id} value={recipient._id}>
                             <div className="flex items-center gap-3">
                               <div
-                                className={`h-3 w-3 flex-shrink-0 rounded-full ${color.bg}`}
+                                className={cn("h-3 w-3 flex-shrink-0 rounded-full", color.bg)}
                                 aria-hidden="true"
                               />
                               <div className="flex flex-col">

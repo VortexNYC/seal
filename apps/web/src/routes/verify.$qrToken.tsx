@@ -43,7 +43,7 @@ interface VerifyResult {
 
 function VerifySuccess({ result }: { result: VerifyResult }) {
   return (
-    <div className="bg-background flex min-h-screen flex-col items-center px-4 py-16">
+    <div className="bg-background flex min-h-dvh flex-col items-center px-4 py-16">
       <div className="w-full max-w-lg">
         {/* Logo */}
         <div className="mb-10 text-center">
@@ -162,7 +162,7 @@ function HashField({ hash }: { hash: string }) {
 
 function VerifyFailed() {
   return (
-    <div className="bg-background flex min-h-screen flex-col items-center px-4 py-16">
+    <div className="bg-background flex min-h-dvh flex-col items-center px-4 py-16">
       <div className="w-full max-w-lg">
         <div className="mb-10 text-center">
           <span className="text-foreground text-2xl font-bold tracking-tight">Seal</span>

@@ -18,6 +18,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { FormSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -101,7 +102,7 @@ function UsageSettings() {
             </div>
             <Progress
               value={stats.documentsPercentUsed}
-              className={isApproachingDocumentLimit ? "[&>div]:bg-warning" : ""}
+              className={cn(isApproachingDocumentLimit && "[&>div]:bg-warning")}
             />
             {isApproachingDocumentLimit && (
               <p className="text-xs text-warning">
@@ -120,7 +121,7 @@ function UsageSettings() {
             </div>
             <Progress
               value={stats.storagePercentUsed}
-              className={isApproachingStorageLimit ? "[&>div]:bg-warning" : ""}
+              className={cn(isApproachingStorageLimit && "[&>div]:bg-warning")}
             />
             {isApproachingStorageLimit && (
               <p className="text-xs text-warning">
@@ -281,10 +282,10 @@ function StatCard({ icon: Icon, label, value, className }: StatCardProps) {
   return (
     <div className="rounded-lg border p-4">
       <div className="flex items-center gap-2">
-        <Icon className={`text-muted-foreground h-4 w-4 ${className || ""}`} />
+        <Icon className={cn("text-muted-foreground h-4 w-4", className)} />
         <span className="text-muted-foreground text-sm">{label}</span>
       </div>
-      <p className={`mt-2 text-2xl font-bold ${className || ""}`}>{value}</p>
+      <p className={cn("mt-2 text-2xl font-bold", className)}>{value}</p>
     </div>
   );
 }
@@ -301,11 +302,11 @@ function StatusRow({ label, count, total, color }: StatusRowProps) {
 
   return (
     <div className="flex items-center gap-3">
-      <div className={`h-3 w-3 rounded-full ${color}`} />
+      <div className={cn("h-3 w-3 rounded-full", color)} />
       <span className="w-24 text-sm">{label}</span>
       <div className="flex-1">
         <div className="bg-muted h-2 overflow-hidden rounded-full">
-          <div className={`h-full ${color}`} style={{ width: `${percentage}%` }} />
+          <div className={cn("h-full", color)} style={{ width: `${percentage}%` }} />
         </div>
       </div>
       <span className="text-muted-foreground w-12 text-right text-sm">{count}</span>

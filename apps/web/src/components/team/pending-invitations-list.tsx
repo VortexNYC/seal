@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getErrorMessage } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -193,7 +193,7 @@ export function PendingInvitationsList({
                   disabled={resendingId === invitation.id || revokingId === invitation.id}
                 >
                   <RefreshCw
-                    className={`mr-2 h-4 w-4 ${resendingId === invitation.id ? "animate-spin" : ""}`}
+                    className={cn("mr-2 h-4 w-4", resendingId === invitation.id && "animate-spin")}
                   />
                   {resendingId === invitation.id ? "Sending..." : "Resend"}
                 </Button>

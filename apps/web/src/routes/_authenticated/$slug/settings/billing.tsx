@@ -154,9 +154,8 @@ function BillingSettingsPage() {
         returnUrl: currentUrl,
       });
       window.location.href = url;
-    } catch (error) {
+    } catch {
       toast.error("Failed to open billing portal. Please try again.");
-      console.error("Portal error:", error);
       setPortalLoading(false);
     }
   }
@@ -196,7 +195,12 @@ function BillingSettingsPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Complete your upgrade</CardTitle>
-                <Button variant="ghost" size="icon" onClick={handleCancelCheckout}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Close checkout"
+                  onClick={handleCancelCheckout}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>

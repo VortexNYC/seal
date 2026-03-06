@@ -136,8 +136,8 @@ function PaymentsSettingsPage() {
       if (result.status === "refreshed") {
         toast.success("Stripe account status updated");
       }
-    } catch (error) {
-      console.error("Failed to refresh account status:", error);
+    } catch {
+      // Refresh failure is non-critical
     } finally {
       setIsRefreshing(false);
     }

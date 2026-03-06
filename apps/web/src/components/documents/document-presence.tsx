@@ -57,8 +57,8 @@ export function DocumentPresence({ documentId }: DocumentPresenceProps) {
             <div
               className={cn(
                 "flex size-7 items-center justify-center rounded-full",
-                "bg-stone-200 text-xs font-medium text-stone-600",
-                "ring-2 ring-white dark:bg-stone-700 dark:text-stone-300 dark:ring-stone-950",
+                "bg-muted text-xs font-medium text-muted-foreground",
+                "ring-2 ring-background",
               )}
             >
               +{overflow}

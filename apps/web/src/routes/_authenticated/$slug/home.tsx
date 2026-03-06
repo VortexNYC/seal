@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { pageSEO } from "@/lib/seo";
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -512,7 +513,7 @@ function StatusBreakdown() {
           <div className="space-y-3">
             {breakdown.map((item) => (
               <div key={item.label} className="flex items-center gap-3">
-                <div className={`h-3 w-3 rounded-full ${item.color}`} />
+                <div className={cn("h-3 w-3 rounded-full", item.color)} />
                 <div className="flex-1">
                   <div className="flex justify-between text-sm">
                     <span>{item.label}</span>

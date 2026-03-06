@@ -301,7 +301,12 @@ function TemplatesList({
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              aria-label={`Template actions for ${template.name}`}
+                            >
                               <MoreVerticalIcon className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -337,7 +342,10 @@ function TemplatesList({
             /* Grid View */
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {paginatedTemplates.map((template) => (
-                <Card key={template._id} className="transition-shadow hover:shadow-lg">
+                <Card
+                  key={template._id}
+                  className="hover:-translate-y-0.5 transition-all duration-200 hover:shadow-lg"
+                >
                   {template.thumbnailDataUrl && (
                     <div className="bg-muted flex h-32 w-full items-center justify-center overflow-hidden border-b">
                       <img
@@ -355,7 +363,12 @@ function TemplatesList({
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            aria-label={`Template actions for ${template.name}`}
+                          >
                             <MoreVerticalIcon className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -674,7 +687,7 @@ function TemplatesPage() {
             )}
 
             {/* Search and View Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-card/60 p-3">
               {/* Search */}
               <div className="relative max-w-sm flex-1">
                 <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -686,29 +699,31 @@ function TemplatesPage() {
                 />
               </div>
 
-              {/* View mode toggle */}
+                      {/* View mode toggle */}
               <div className="bg-background flex items-center gap-1 rounded-md border">
-                <Button
-                  variant={viewMode === "table" ? "default" : "ghost"}
-                  size="icon"
-                  className="h-9 w-9"
-                  onClick={() => setViewMode("table")}
-                >
-                  <LayoutListIcon className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  size="icon"
-                  className="h-9 w-9"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <LayoutGridIcon className="h-4 w-4" />
-                </Button>
+                    <Button
+                      variant={viewMode === "table" ? "default" : "ghost"}
+                      size="icon"
+                      className="h-9 w-9"
+                      aria-label="Table view"
+                      onClick={() => setViewMode("table")}
+                    >
+                      <LayoutListIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "grid" ? "default" : "ghost"}
+                      size="icon"
+                      className="h-9 w-9"
+                      aria-label="Grid view"
+                      onClick={() => setViewMode("grid")}
+                    >
+                      <LayoutGridIcon className="h-4 w-4" />
+                    </Button>
               </div>
             </div>
 
             {/* Info card */}
-            <Card className="bg-muted/50">
+            <Card className="border-dashed">
               <CardContent className="py-4">
                 <div className="flex items-start gap-3">
                   <FileTextIcon className="text-muted-foreground mt-0.5 h-5 w-5" />

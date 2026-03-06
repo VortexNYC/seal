@@ -1,6 +1,7 @@
 import { LinkIcon, MailIcon, TrashIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { cn } from "@/lib/utils";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Button } from "../ui/button";
@@ -116,7 +117,8 @@ export function RecipientOptionsDialog({
         <div className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-3">
             <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold ${
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-sans text-sm font-semibold",
                 recipient.status === "pending"
                   ? "bg-muted text-muted-foreground"
                   : recipient.status === "viewed"
@@ -125,8 +127,8 @@ export function RecipientOptionsDialog({
                       ? "bg-success-surface text-success"
                       : recipient.status === "declined"
                         ? "bg-destructive/10 text-destructive"
-                        : "bg-muted text-muted-foreground"
-              }`}
+                        : "bg-muted text-muted-foreground",
+              )}
             >
               {getInitials(recipient.name, recipient.email)}
             </div>
@@ -135,14 +137,15 @@ export function RecipientOptionsDialog({
                 <div className="truncate text-sm font-medium">{recipient.name}</div>
               )}
               <div
-                className={`truncate text-xs ${recipient.name ? "text-muted-foreground" : "text-sm font-medium"}`}
+                className={cn("truncate text-xs", recipient.name ? "text-muted-foreground" : "text-sm font-medium")}
               >
                 {recipient.email}
               </div>
               <div className="text-muted-foreground mt-0.5 text-xs">
                 {getRoleLabel(recipient.role)} &middot;{" "}
                 <span
-                  className={`font-medium ${
+                  className={cn(
+                    "font-medium",
                     recipient.status === "pending"
                       ? "text-muted-foreground"
                       : recipient.status === "viewed"
@@ -151,15 +154,20 @@ export function RecipientOptionsDialog({
                           ? "text-success"
                           : recipient.status === "declined"
                             ? "text-destructive"
-                            : "text-muted-foreground"
-                  }`}
+                            : "text-muted-foreground",
+                  )}
                 >
                   {recipient.status.charAt(0).toUpperCase() + recipient.status.slice(1)}
                 </span>
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Close recipient options"
+            onClick={() => onOpenChange(false)}
+          >
             <XIcon className="h-4 w-4" />
           </Button>
         </div>

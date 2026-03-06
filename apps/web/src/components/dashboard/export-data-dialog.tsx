@@ -166,8 +166,7 @@ export function ExportDataDialog() {
       URL.revokeObjectURL(url);
 
       toast.success("CSV exported successfully");
-    } catch (error) {
-      console.error("Export error:", error);
+    } catch {
       toast.error("Failed to export CSV");
     } finally {
       setIsExporting(false);
@@ -244,8 +243,7 @@ export function ExportDataDialog() {
       URL.revokeObjectURL(url);
 
       toast.success("Detailed CSV exported successfully");
-    } catch (error) {
-      console.error("Export error:", error);
+    } catch {
       toast.error("Failed to export CSV");
     } finally {
       setIsExporting(false);

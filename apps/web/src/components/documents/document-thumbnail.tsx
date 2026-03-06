@@ -8,6 +8,7 @@ import { FileIcon, Loader2Icon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { generateThumbnailFromUrl } from "@/lib/pdf-utils";
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -100,7 +101,7 @@ export function DocumentThumbnail({
 
   return (
     <div
-      className={`${className} bg-muted border-border flex items-center justify-center overflow-hidden rounded border`}
+      className={cn("bg-muted border-border flex items-center justify-center overflow-hidden rounded border", className)}
     >
       {thumbnail ? (
         <img

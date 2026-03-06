@@ -29,6 +29,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import { toast } from "sonner";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -105,6 +106,7 @@ export function SignatureCapture({
   const allowedTabs: SignatureType[] = allowedSignatureTypes
     ? (allowedSignatureTypes.map((t) => ORG_TO_TAB[t]).filter(Boolean) as SignatureType[])
     : ["drawn", "typed", "uploaded"];
+  const hasAvailableMethods = allowedTabs.length > 0 || showLibrary;
 
   const defaultTab: TabType = showLibrary ? "saved" : (allowedTabs[0] ?? "drawn");
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
@@ -130,13 +132,20 @@ export function SignatureCapture({
 
     updateCanvasWidth();
 
-    // Handle resize and orientation change
-    window.addEventListener("resize", updateCanvasWidth);
-    window.addEventListener("orientationchange", updateCanvasWidth);
+    // Throttled resize and orientation change handler
+    let rafId: number;
+    const handleResize = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(updateCanvasWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
 
     return () => {
-      window.removeEventListener("resize", updateCanvasWidth);
-      window.removeEventListener("orientationchange", updateCanvasWidth);
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
     };
   }, []);
 
@@ -386,6 +395,25 @@ export function SignatureCapture({
     setPendingSignatureData(null);
   };
 
+  if (!hasAvailableMethods) {
+    return (
+      <Card className="mx-auto w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle>Sign Document</CardTitle>
+          <CardDescription>No signature methods are currently available.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0 text-sm text-muted-foreground">
+          Contact your organization administrator to re-enable signing methods.
+          <div className="mt-4">
+            <Button variant="outline" onClick={onCancel}>
+              Close
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mx-auto w-full max-w-2xl">
       <CardHeader>
@@ -396,7 +424,7 @@ export function SignatureCapture({
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
           {/* SEA-116: Mobile-optimized tabs with icon-only on small screens */}
           <TabsList
-            className={`grid h-auto w-full`}
+            className="grid h-auto w-full"
             style={{
               gridTemplateColumns: `repeat(${allowedTabs.length + (showLibrary ? 1 : 0)}, minmax(0, 1fr))`,
             }}
@@ -453,14 +481,24 @@ export function SignatureCapture({
               ) : (
                 <div className="grid gap-3">
                   {savedSignatures.map((sig: Doc<"saved_signatures">) => (
-                    <div
+                    <button
+                      type="button"
                       key={sig._id}
-                      className={`relative cursor-pointer rounded-lg border-2 p-3 transition-colors ${
+                      className={cn(
+                        "relative cursor-pointer rounded-lg border-2 p-3 transition-colors",
                         selectedSavedSignature === sig._id
                           ? "border-primary bg-primary/5"
-                          : "border-border hover:border-border"
-                      }`}
+                          : "border-border hover:border-border",
+                      )}
                       onClick={() => setSelectedSavedSignature(sig._id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedSavedSignature(sig._id);
+                        }
+                      }}
+                      aria-pressed={selectedSavedSignature === sig._id}
+                      aria-label={`Select ${sig.name} signature`}
                     >
                       <div className="flex items-center gap-3">
                         <div className="min-w-0 flex-1">
@@ -485,6 +523,7 @@ export function SignatureCapture({
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7"
+                              aria-label={`Set ${sig.name} as default signature`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleSetDefault(sig._id);
@@ -498,6 +537,7 @@ export function SignatureCapture({
                             variant="ghost"
                             size="icon"
                             className="text-destructive hover:text-destructive h-7 w-7"
+                            aria-label={`Delete saved signature ${sig.name}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteSavedSignature(sig._id);
@@ -508,7 +548,7 @@ export function SignatureCapture({
                           </Button>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}

@@ -116,7 +116,9 @@ function SigningSettings() {
                 <Checkbox
                   id={`sig-${type}`}
                   checked={formData.allowedSignatureTypes.includes(type)}
+                  disabled={isSubmitting}
                   onCheckedChange={(checked) => handleSignatureTypeToggle(type, checked === true)}
+                  aria-label={`${type === "draw" ? "Draw signature" : type === "type" ? "Type signature" : "Upload signature image"} option`}
                 />
                 <Label htmlFor={`sig-${type}`} className="text-sm font-medium">
                   {type === "draw"
@@ -139,13 +141,18 @@ function SigningSettings() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
+              <Label htmlFor="default-deadline-days" className="sr-only">
+                Default deadline in days
+              </Label>
               <Input
+                id="default-deadline-days"
                 type="number"
                 min={1}
                 max={365}
                 value={formData.defaultDeadlineDays}
+                disabled={isSubmitting}
                 onChange={(e) =>
-                  setFormData({ ...formData, defaultDeadlineDays: Number(e.target.value) })
+                setFormData({ ...formData, defaultDeadlineDays: Number(e.target.value) })
                 }
                 className="w-24"
               />
@@ -163,16 +170,22 @@ function SigningSettings() {
           </CardHeader>
           <CardContent>
             <Textarea
+              id="esign-consent-text"
               value={formData.esignConsentText}
+              disabled={isSubmitting}
               onChange={(e) => setFormData({ ...formData, esignConsentText: e.target.value })}
               placeholder="By signing this document electronically..."
               rows={4}
+              aria-describedby="esign-consent-help"
             />
+            <p id="esign-consent-help" className="text-muted-foreground mt-2 text-xs">
+              This text is shown to recipients before they can sign.
+            </p>
           </CardContent>
         </Card>
 
         <div className="flex justify-end md:col-span-2">
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} aria-busy={isSubmitting}>
             <Save className="mr-2 size-4" />
             {isSubmitting ? "Saving..." : "Save Changes"}
           </Button>

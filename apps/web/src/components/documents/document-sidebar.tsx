@@ -312,7 +312,7 @@ export function DocumentSidebar({
                 return (
                   <div
                     key={recipient._id}
-                    className="flex items-center gap-3.5 rounded-xl border border-transparent bg-muted p-3.5 transition-all hover:border-border hover:bg-muted sm:flex-wrap sm:gap-2.5 sm:p-3"
+                    className="flex items-center gap-3.5 rounded-xl border border-transparent bg-muted p-3.5 transition-colors hover:border-border hover:bg-muted sm:flex-wrap sm:gap-2.5 sm:p-3"
                   >
                     <div
                       className={cn(
@@ -375,7 +375,7 @@ export function DocumentSidebar({
           {canEdit && (
             <button
               type="button"
-              className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 border-dashed border-border bg-transparent p-3 font-sans text-[0.8125rem] font-semibold text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary sm:rounded-lg sm:p-2.5 sm:text-xs"
+              className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 border-dashed border-border bg-transparent p-3 font-sans text-[0.8125rem] font-semibold text-muted-foreground transition-[color,border-color,background-color] hover:border-primary hover:bg-primary/5 hover:text-primary sm:rounded-lg sm:p-2.5 sm:text-xs"
               onClick={onAddRecipient}
             >
               <PlusIcon className="h-4 w-4" />

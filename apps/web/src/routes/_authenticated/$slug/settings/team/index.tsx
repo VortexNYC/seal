@@ -77,7 +77,7 @@ function TeamSettings() {
       }
     >
       <Tabs defaultValue="members" className="w-full">
-        <TabsList>
+        <TabsList className="bg-card/60">
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="invitations">
             Invitations
@@ -137,9 +137,9 @@ function TeamSettings() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent className="text-muted-foreground flex h-32 items-center justify-center text-sm">
-                You don't have permission to view invitations
+            <Card className="border-dashed">
+              <CardContent className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+                You do not have permission to view invitations
               </CardContent>
             </Card>
           )}

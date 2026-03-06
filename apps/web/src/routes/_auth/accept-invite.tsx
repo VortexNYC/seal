@@ -19,7 +19,7 @@ function AcceptInviteRoute() {
   // Wait for Clerk to load
   if (!isLoaded) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-2 text-center">
+      <div className="flex h-dvh flex-col items-center justify-center gap-2 text-center">
         <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
         <p className="text-muted-foreground text-sm">Loading...</p>
       </div>

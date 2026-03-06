@@ -394,6 +394,13 @@ function DocumentsList({
     }
   };
 
+  const handleOpenDocument = (documentId: Id<"documents">) => {
+    router.navigate({
+      to: "/$slug/documents/$documentId",
+      params: { slug, documentId },
+    });
+  };
+
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -507,12 +514,16 @@ function DocumentsList({
                     <TableRow
                       key={doc._id}
                       className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() =>
-                        router.navigate({
-                          to: "/$slug/documents/$documentId",
-                          params: { slug, documentId: doc._id },
-                        })
-                      }
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Open document ${doc.name}`}
+                      onClick={() => handleOpenDocument(doc._id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          handleOpenDocument(doc._id);
+                        }
+                      }}
                     >
                       <TableCell>
                         <DocumentThumbnail
@@ -580,6 +591,7 @@ function DocumentsList({
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={`Document actions for ${doc.name}`}
                               className="h-8 w-8"
                               onClick={(e) => e.stopPropagation()}
                             >
@@ -645,13 +657,17 @@ function DocumentsList({
               {paginatedDocuments.map((doc) => (
                 <Card
                   key={doc._id}
-                  className="cursor-pointer transition-shadow hover:shadow-lg"
-                  onClick={() =>
-                    router.navigate({
-                      to: "/$slug/documents/$documentId",
-                      params: { slug, documentId: doc._id },
-                    })
-                  }
+                  className="cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open document ${doc.name}`}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleOpenDocument(doc._id);
+                    }
+                  }}
+                  onClick={() => handleOpenDocument(doc._id)}
                 >
                   <div className="bg-muted flex h-32 w-full items-center justify-center overflow-hidden border-b">
                     <DocumentThumbnail
@@ -674,11 +690,12 @@ function DocumentsList({
                           />
                         </CardTitle>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={`Document actions for ${doc.name}`}
                             className="h-8 w-8 shrink-0"
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -774,7 +791,7 @@ function DocumentsList({
           {/* Pagination (SEA-68: 20 items per page) */}
           {totalPages > 1 && (
             <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-              <p className="text-muted-foreground text-center text-sm sm:text-left">
+              <p className="text-muted-foreground text-center text-sm sm:text-left" aria-live="polite">
                 Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
                 {Math.min(currentPage * ITEMS_PER_PAGE, sortedDocuments.length)} of{" "}
                 {sortedDocuments.length} documents
@@ -992,7 +1009,7 @@ function DocumentsPage() {
             )}
 
             {/* SEA-73: Search Input */}
-            <div className="relative">
+            <div className="relative rounded-lg border bg-card/60 px-2 py-2">
               <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
                 type="text"
@@ -1015,7 +1032,7 @@ function DocumentsPage() {
             </div>
 
             {/* Filter Tabs */}
-            <div className="space-y-4">
+            <div className="space-y-4 rounded-lg border bg-card/50 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -1039,22 +1056,24 @@ function DocumentsPage() {
                 </div>
                 {/* SEA-68: View mode toggle */}
                 <div className="bg-background flex items-center gap-1 rounded-md border">
-                  <Button
-                    variant={viewMode === "table" ? "default" : "ghost"}
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => setViewMode("table")}
-                  >
-                    <LayoutListIcon className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "grid" ? "default" : "ghost"}
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => setViewMode("grid")}
-                  >
-                    <LayoutGridIcon className="h-4 w-4" />
-                  </Button>
+                    <Button
+                      variant={viewMode === "table" ? "default" : "ghost"}
+                      size="icon"
+                      className="h-9 w-9"
+                      aria-label="Table view"
+                      onClick={() => setViewMode("table")}
+                    >
+                      <LayoutListIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "grid" ? "default" : "ghost"}
+                      size="icon"
+                      className="h-9 w-9"
+                      aria-label="Grid view"
+                      onClick={() => setViewMode("grid")}
+                    >
+                      <LayoutGridIcon className="h-4 w-4" />
+                    </Button>
                 </div>
               </div>
 

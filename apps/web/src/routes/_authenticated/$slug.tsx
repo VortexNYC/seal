@@ -52,7 +52,7 @@ function WorkspaceLayout() {
     <SidebarProvider>
       <PostHogIdentify organization={orgData} />
       <DotPattern className="fixed inset-0 z-0" />
-      <div className="bg-background/80 relative z-10 flex h-screen w-full overflow-hidden">
+      <div className="bg-background/80 relative z-10 flex h-dvh w-full overflow-hidden">
         <AppSidebar slug={slug} organization={orgData} permissions={permissions} />
         <main className="h-full min-h-0 flex-1 overflow-hidden">
           <Outlet />

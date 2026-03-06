@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -127,9 +128,7 @@ function ProfileSettings() {
             <div className="flex items-center justify-between">
               <p className="text-muted-foreground text-sm">A brief description about yourself</p>
               <p
-                className={`text-sm ${
-                  bio.length >= MAX_BIO_LENGTH * 0.9 ? "text-destructive" : "text-muted-foreground"
-                }`}
+                className={cn("text-sm", bio.length >= MAX_BIO_LENGTH * 0.9 ? "text-destructive" : "text-muted-foreground")}
               >
                 {bio.length}/{MAX_BIO_LENGTH}
               </p>

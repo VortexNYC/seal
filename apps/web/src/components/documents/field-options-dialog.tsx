@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { cn } from "@/lib/utils";
+
 /**
  * Option item for multi-choice fields
  */
@@ -243,9 +245,7 @@ export function FieldOptionsDialog({
                   {options.map((option, index) => (
                     <div
                       key={option.id}
-                      className={`group bg-card flex items-center gap-2 rounded-md px-2.5 py-2 transition-colors ${
-                        draggedIndex === index ? "opacity-50" : ""
-                      } ${dragOverIndex === index ? "bg-muted" : ""}`}
+                      className={cn("group bg-card flex items-center gap-2 rounded-md px-2.5 py-2 transition-colors", draggedIndex === index && "opacity-50", dragOverIndex === index && "bg-muted")}
                       draggable
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}
@@ -266,7 +266,7 @@ export function FieldOptionsDialog({
                       />
                       <button
                         type="button"
-                        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex h-6 w-6 items-center justify-center rounded opacity-0 transition-all group-hover:opacity-100"
+                        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex h-6 w-6 items-center justify-center rounded opacity-0 transition-opacity group-hover:opacity-100"
                         onClick={() => handleDeleteOption(option.id)}
                         title="Remove option"
                       >

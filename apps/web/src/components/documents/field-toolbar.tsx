@@ -161,11 +161,7 @@ function FieldButton({ type, icon, label, onDragStart, onDragEnd, disabled }: Fi
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       disabled={disabled}
-      className={`group bg-card border-border relative flex items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors ${
-        disabled
-          ? "cursor-not-allowed opacity-50"
-          : "hover:border-border cursor-grab active:cursor-grabbing"
-      } ${isDragging ? "scale-95 border-dashed opacity-40" : ""}`}
+      className={cn("group bg-card border-border relative flex items-center gap-2 rounded-lg border px-3 py-2.5 transition-colors", disabled ? "cursor-not-allowed opacity-50" : "hover:border-border cursor-grab active:cursor-grabbing", isDragging && "scale-95 border-dashed opacity-40")}
     >
       <div className="text-muted-foreground flex items-center transition-colors">
         <GripVerticalIcon className="h-3 w-3" />

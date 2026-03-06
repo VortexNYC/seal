@@ -1,5 +1,5 @@
 import { ExternalLinkIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -27,7 +27,7 @@ export function RedirectCountdown({
     }
   })();
 
-  const buildFinalUrl = () => {
+  const buildFinalUrl = useCallback(() => {
     try {
       const url = new URL(redirectUrl);
       url.searchParams.set("recipientEmail", recipientEmail);
@@ -37,7 +37,7 @@ export function RedirectCountdown({
     } catch {
       return redirectUrl;
     }
-  };
+  }, [recipientEmail, recipientName, redirectUrl]);
 
   useEffect(() => {
     if (cancelled || secondsLeft <= 0) return;
@@ -54,8 +54,7 @@ export function RedirectCountdown({
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cancelled]);
+  }, [buildFinalUrl, cancelled, secondsLeft]);
 
   const handleGoNow = () => {
     window.location.href = buildFinalUrl();
@@ -67,26 +66,24 @@ export function RedirectCountdown({
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 text-center">
-      <div className="text-muted-foreground flex items-center gap-2 text-sm">
-        <ExternalLinkIcon className="h-4 w-4" />
-        <span>
-          You will be redirected to{" "}
+    <div className="flex flex-col items-center gap-4 rounded-xl border border-info-surface bg-info-surface/30 p-4 text-center">
+      <div className="flex items-center gap-3" role="status" aria-live="polite">
+        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-info/20" />
+          <ExternalLinkIcon className="text-info relative h-4 w-4" />
+        </div>
+        <span className="text-muted-foreground text-sm">
+          Redirecting to{" "}
           <span className="text-foreground font-medium">{destination}</span> in{" "}
-          <span className="text-foreground font-medium tabular-nums">{secondsLeft}</span>{" "}
-          {secondsLeft === 1 ? "second" : "seconds"}...
+          <span className="text-foreground font-semibold tabular-nums">{secondsLeft}s</span>
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleGoNow}
-          className="text-primary text-sm font-medium underline underline-offset-4 hover:no-underline"
-        >
+        <Button variant="default" size="sm" onClick={handleGoNow} disabled={secondsLeft === 0}>
+          <ExternalLinkIcon className="mr-1.5 h-3.5 w-3.5" />
           Go now
-        </button>
-        <span className="text-muted-foreground/40">·</span>
-        <Button variant="outline" size="sm" onClick={handleStayHere}>
+        </Button>
+        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={handleStayHere}>
           Stay here
         </Button>
       </div>

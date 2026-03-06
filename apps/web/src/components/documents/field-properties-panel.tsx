@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
+import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -273,7 +274,7 @@ export function FieldPropertiesPanel({
       {/* Header */}
       <div className="flex items-center justify-between border-b p-4">
         <div className="flex items-center gap-2">
-          <div className={`rounded-md border p-1.5 ${FIELD_COLORS[field.fieldType]}`}>
+          <div className={cn("rounded-md border p-1.5", FIELD_COLORS[field.fieldType])}>
             {FIELD_ICONS[field.fieldType]}
           </div>
           <div>
@@ -283,7 +284,7 @@ export function FieldPropertiesPanel({
             </p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button variant="ghost" size="icon" aria-label="Close field properties" onClick={onClose}>
           <XIcon className="h-4 w-4" />
         </Button>
       </div>

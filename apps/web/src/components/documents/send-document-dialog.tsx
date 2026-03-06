@@ -18,7 +18,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { getErrorMessage } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -200,7 +200,6 @@ export function SendDocumentDialog({
         );
       }
     } catch (error) {
-      console.error("Error sending document:", error);
       toast.error("Failed to send document", {
         description: getErrorMessage(error),
       });
@@ -361,11 +360,12 @@ export function SendDocumentDialog({
                 <button
                   type="button"
                   onClick={() => setSigningMode("parallel")}
-                  className={`flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors ${
+                  className={cn(
+                    "flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors",
                     signingMode === "parallel"
                       ? "border-primary bg-primary/5 ring-primary/20 ring-1"
-                      : "hover:bg-muted"
-                  }`}
+                      : "hover:bg-muted",
+                  )}
                 >
                   <UsersIcon className="text-muted-foreground size-4 shrink-0" />
                   <div>
@@ -376,11 +376,12 @@ export function SendDocumentDialog({
                 <button
                   type="button"
                   onClick={() => setSigningMode("sequential")}
-                  className={`flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors ${
+                  className={cn(
+                    "flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-colors",
                     signingMode === "sequential"
                       ? "border-primary bg-primary/5 ring-primary/20 ring-1"
-                      : "hover:bg-muted"
-                  }`}
+                      : "hover:bg-muted",
+                  )}
                 >
                   <ListOrderedIcon className="text-muted-foreground size-4 shrink-0" />
                   <div>

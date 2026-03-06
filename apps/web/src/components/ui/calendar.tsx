@@ -146,6 +146,7 @@ function CalendarDayButton({
   const defaultClassNames = getDefaultClassNames();
 
   const ref = React.useRef<HTMLButtonElement>(null);
+  const dayLabel = day.date.toLocaleDateString();
   React.useEffect(() => {
     if (modifiers.focused) ref.current?.focus();
   }, [modifiers.focused]);
@@ -155,7 +156,8 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString()}
+      data-day={dayLabel}
+      aria-label={`Select ${dayLabel}`}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

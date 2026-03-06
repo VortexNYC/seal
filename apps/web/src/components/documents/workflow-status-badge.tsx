@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 
 export type DocumentWorkflowStatus =
@@ -69,7 +70,7 @@ export function WorkflowStatusBadge({ status, className }: WorkflowStatusBadgePr
   const { label, variant, className: badgeClassName } = config[workflowStatus];
 
   return (
-    <Badge variant={variant} className={`${badgeClassName} ${className || ""}`}>
+    <Badge variant={variant} className={cn(badgeClassName, className)}>
       {label}
     </Badge>
   );

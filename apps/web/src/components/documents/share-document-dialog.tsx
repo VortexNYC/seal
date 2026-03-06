@@ -162,7 +162,7 @@ export function ShareDocumentDialog({
           {/* Card with layered shadow for depth */}
           <div className="bg-card relative overflow-hidden rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15),0_0_0_1px_rgba(0,0,0,0.03)]">
             {/* Decorative top accent - blue for sharing */}
-            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500" />
+            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-info/80 via-info/90 to-primary/80" />
 
             {/* Header */}
             <div className="border-b border-border px-6 pt-6 pb-4">
@@ -228,7 +228,7 @@ export function ShareDocumentDialog({
                             onClick={() => handleSharingModeChange(mode)}
                             disabled={isUpdating || isDisabled}
                             className={cn(
-                              "relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all",
+                              "relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-colors",
                               isSelected
                                 ? "border-info bg-info-surface"
                                 : "border-border hover:border-border hover:bg-muted",
@@ -238,7 +238,7 @@ export function ShareDocumentDialog({
                             {requiresPro && !documentAccess.canUseTeamSharing && (
                               <Badge
                                 variant="outline"
-                                className="absolute -top-2 -right-2 border-0 bg-gradient-to-r from-purple-500 to-indigo-500 px-1.5 py-0.5 text-[10px] text-white"
+                                className="absolute -top-2 -right-2 border-0 bg-gradient-to-r from-info to-primary px-1.5 py-0.5 text-[10px] text-white"
                               >
                                 Pro
                               </Badge>
@@ -345,7 +345,7 @@ export function ShareDocumentDialog({
                       >
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-xs text-white">
+                            <AvatarFallback className="bg-gradient-to-br from-warning to-warning/70 text-xs text-white">
                               {getInitials(documentAccess.owner.name ?? documentAccess.owner.email)}
                             </AvatarFallback>
                           </Avatar>
@@ -383,7 +383,7 @@ export function ShareDocumentDialog({
                         >
                           <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-gradient-to-br from-blue-400 to-indigo-500 text-xs text-white">
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-xs text-white">
                                 {getInitials(access.userName ?? access.userEmail)}
                               </AvatarFallback>
                             </Avatar>

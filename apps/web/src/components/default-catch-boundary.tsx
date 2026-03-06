@@ -38,7 +38,7 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center p-4 sm:p-6 lg:p-8"
+      className="flex min-h-dvh items-center justify-center p-4 sm:p-6 lg:p-8"
       role="alert"
       aria-live="assertive"
     >

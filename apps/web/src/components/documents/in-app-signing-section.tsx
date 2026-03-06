@@ -10,6 +10,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
@@ -104,6 +105,7 @@ export function InAppSigningSection({
       ? Math.round((filledRequiredFields.length / requiredFields.length) * 100)
       : 100;
   const allRequiredFilled = filledRequiredFields.length === requiredFields.length;
+  const completionLabel = `${filledRequiredFields.length} of ${requiredFields.length} required fields complete`;
 
   // Get main signature field for final submission
   const mainSignatureField = fields.find((f) => f.isMainSignature && f.fieldType === "signature");
@@ -247,11 +249,13 @@ export function InAppSigningSection({
         <CollapsibleTrigger asChild>
           <button
             type="button"
+            aria-expanded={isOpen}
+            aria-controls="in-app-signing-content"
             className="hover:bg-warning-surface/80 flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none sm:px-4 sm:py-3.5"
           >
             <div className="flex items-center gap-3">
               <div
-                className={`flex h-9 w-9 items-center justify-center rounded-[10px] ${statusConfig.bgColor} ${statusConfig.textColor} sm:h-8 sm:w-8 sm:rounded-lg`}
+                className={cn("flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg", statusConfig.bgColor, statusConfig.textColor)}
               >
                 <PenLineIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
               </div>
@@ -260,7 +264,7 @@ export function InAppSigningSection({
                   Your Signature
                 </span>
                 <span
-                  className={`font-sans text-xs ${statusConfig.textColor} flex items-center gap-1`}
+                  className={cn("font-sans text-xs flex items-center gap-1", statusConfig.textColor)}
                 >
                   <StatusIcon className="h-3 w-3" />
                   {statusConfig.label}
@@ -268,11 +272,11 @@ export function InAppSigningSection({
               </div>
             </div>
             <ChevronDownIcon
-              className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+              className={cn("text-muted-foreground h-4 w-4 transition-transform duration-200", isOpen && "rotate-180")}
             />
           </button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="border-warning/20 px-5 pb-5 sm:px-4 sm:pb-4 border-t">
+        <CollapsibleContent id="in-app-signing-content" className="border-warning/20 px-5 pb-5 sm:px-4 sm:pb-4 border-t">
           {/* Progress bar */}
           {canSign && fields.length > 0 && (
             <div className="mt-4 mb-4">
@@ -280,13 +284,13 @@ export function InAppSigningSection({
                 <span className="text-muted-foreground font-sans text-xs font-medium">
                   Progress
                 </span>
-                <span className="text-muted-foreground font-sans text-xs">
+                <span className="text-muted-foreground font-sans text-xs" aria-live="polite">
                   {filledRequiredFields.length} of {requiredFields.length} required fields
                 </span>
               </div>
               <div className="bg-muted h-2 overflow-hidden rounded-full">
                 <div
-                  className="bg-warning h-full rounded-full transition-all duration-300"
+                  className="bg-warning h-full rounded-full transition-[width] duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -305,18 +309,29 @@ export function InAppSigningSection({
                   type="button"
                   onClick={() => handleFieldClick(field._id)}
                   disabled={!canSign}
-                  className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                  aria-label={`Open ${field.label || getFieldTypeLabel(field.fieldType)} field on page ${field.page}`}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
                     field.isFilled
                       ? "border-success/30 bg-success-surface cursor-default"
-                      : "border-border bg-card hover:border-warning/50 hover:bg-warning-surface cursor-pointer"
-                  }`}
+                      : "border-border bg-card hover:border-warning/50 hover:bg-warning-surface cursor-pointer",
+                  )}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      if (canSign) {
+                        handleFieldClick(field._id);
+                      }
+                    }
+                  }}
                 >
                   <div
-                    className={`flex h-6 w-6 items-center justify-center rounded-md ${
+                    className={cn(
+                      "flex h-6 w-6 items-center justify-center rounded-md",
                       field.isFilled
                         ? "bg-success-surface text-success"
-                        : "bg-muted text-muted-foreground"
-                    }`}
+                        : "bg-muted text-muted-foreground",
+                    )}
                   >
                     {field.isFilled ? (
                       <CheckCircleIcon className="h-4 w-4" />
@@ -342,7 +357,7 @@ export function InAppSigningSection({
 
           {/* Completed state */}
           {isCompleted && (
-            <div className="mt-4 py-4 text-center">
+            <div className="mt-4 rounded-xl bg-success-surface/50 py-5 text-center">
               <div className="bg-success-surface text-success mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                 <CheckCircleIcon className="h-6 w-6" />
               </div>
@@ -351,6 +366,9 @@ export function InAppSigningSection({
                   ? "You have approved this document"
                   : "You have signed this document"}
               </div>
+              <p className="text-muted-foreground mt-1 text-xs">
+                A copy has been sent to your email
+              </p>
             </div>
           )}
 
@@ -372,18 +390,23 @@ export function InAppSigningSection({
               <Button
                 onClick={() => setShowSignatureCapture(true)}
                 disabled={!allRequiredFilled || isSubmitting}
-                className="w-full"
+                aria-label={allRequiredFilled ? "Open signature capture" : completionLabel}
+                className="h-11 w-full text-sm font-medium shadow-sm transition-shadow hover:shadow"
               >
                 <PenLineIcon className="mr-2 h-4 w-4" />
-                {recipient.role === "approver" ? "Approve Document" : "Sign Document"}
+                {allRequiredFilled
+                  ? recipient.role === "approver"
+                    ? "Approve Document"
+                    : "Sign Document"
+                  : `Complete ${requiredFields.length - filledRequiredFields.length} more field${requiredFields.length - filledRequiredFields.length === 1 ? "" : "s"}`}
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={() => setShowDeclineDialog(true)}
                 disabled={isSubmitting}
-                className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive w-full"
+                aria-label="Decline this document"
+                className="text-muted-foreground hover:text-destructive w-full"
               >
-                <XCircleIcon className="mr-2 h-4 w-4" />
                 Decline
               </Button>
             </div>

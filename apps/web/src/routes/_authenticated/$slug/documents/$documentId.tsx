@@ -363,7 +363,6 @@ function DocumentDetailPage() {
         toast.error(result.error || "Failed to resend email");
       }
     } catch (error) {
-      console.error("Error resending email:", error);
       toast.error(error instanceof Error ? error.message : "Failed to resend email");
     }
   };
@@ -449,13 +448,13 @@ function DocumentDetailPage() {
     canEdit && aiEnabled ? (
       <div key="ai-toggle" className="flex items-center gap-1.5 sm:flex-none">
         {documentData.aiProcessingStatus === "processing" && (
-          <span className="flex items-center gap-1.5 text-xs text-violet-600 dark:text-violet-400">
+          <span className="flex items-center gap-1.5 text-xs text-ai-accent">
             <Loader2Icon className="h-3 w-3 animate-spin" />
             Analyzing...
           </span>
         )}
         {documentData.aiProcessingStatus === "failed" && (
-          <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+          <span className="flex items-center gap-1.5 text-xs text-warning">
             Analysis incomplete
           </span>
         )}
@@ -463,7 +462,7 @@ function DocumentDetailPage() {
           onClick={handleToggleAiSuggestions}
           size="sm"
           variant="ghost"
-          className="text-violet-700 dark:text-violet-400"
+          className="text-ai-accent"
         >
           {showAiSuggestions ? (
             <EyeIcon className="mr-1.5 h-3.5 w-3.5" />
@@ -478,8 +477,8 @@ function DocumentDetailPage() {
           variant="ghost"
           disabled={isCreatingThread}
           className={cn(
-            "text-violet-700 dark:text-violet-400",
-            showAIChat && "bg-violet-100 dark:bg-violet-900/40",
+            "text-ai-accent",
+            showAIChat && "bg-ai-accent/20 dark:bg-ai-accent/20",
           )}
           aria-pressed={showAIChat}
         >
@@ -565,7 +564,7 @@ function DocumentDetailPage() {
           <div className="lg:col-span-2">
             <div
               ref={pdfViewer.pdfWrapperRef}
-              className="relative min-h-[600px] rounded-2xl bg-stone-100 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-stone-900"
+              className="relative min-h-[600px] rounded-2xl bg-muted/80 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-background"
             >
               {pdfViewer.pdfUrl ? (
                 <TransformWrapper
@@ -582,7 +581,7 @@ function DocumentDetailPage() {
                   }}
                 >
                   <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                    <div className="flex items-center gap-2 font-serif text-base font-medium text-stone-800 sm:gap-3 sm:text-lg dark:text-stone-200">
+                    <div className="flex items-center gap-2 font-serif text-base font-medium text-foreground sm:gap-3 sm:text-lg">
                       <span>Document Preview</span>
                     </div>
                     <PdfViewerControls
@@ -603,7 +602,7 @@ function DocumentDetailPage() {
                       ref={pdfViewer.containerRef}
                       onDragOver={fieldPlacement.handleFieldDragOver}
                       onDrop={fieldPlacement.handleFieldDrop}
-                      className={`relative overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition-all duration-300 dark:border-slate-700 dark:bg-slate-900 ${fieldPlacement.draggingFieldType ? "scale-[1.002] border-blue-500 shadow-lg ring-4 ring-blue-500/10" : ""}`}
+                       className={cn("relative overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-300 dark:border-border/80 dark:bg-card", fieldPlacement.draggingFieldType && "scale-[1.002] border-primary shadow-lg ring-4 ring-primary/20")}
                     >
                       <Document
                         file={pdfViewer.pdfUrl}
@@ -682,9 +681,9 @@ function DocumentDetailPage() {
                     showAiSuggestions &&
                     !aiSuggestions.suggestions &&
                     documentData.aiProcessingStatus === "processing" && (
-                      <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-violet-300/50 bg-violet-50/50 px-4 py-3 dark:border-violet-700/50 dark:bg-violet-950/30">
-                        <Loader2Icon className="h-4 w-4 animate-spin text-violet-500" />
-                        <span className="font-sans text-xs text-violet-600 dark:text-violet-400">
+                      <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-ai-accent/40 bg-ai-accent/10 px-4 py-3 dark:border-ai-accent/30 dark:bg-ai-accent/15">
+                        <Loader2Icon className="h-4 w-4 animate-spin text-ai-accent" />
+                        <span className="font-sans text-xs text-ai-accent">
                           Detecting form fields...
                         </span>
                       </div>
@@ -693,16 +692,16 @@ function DocumentDetailPage() {
               ) : (
                 <>
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 font-serif text-lg font-medium text-stone-800 sm:flex-wrap sm:text-base dark:text-stone-200">
+                    <div className="flex items-center gap-3 font-serif text-lg font-medium text-foreground sm:flex-wrap sm:text-base">
                       <span>Document Preview</span>
                       {pdfViewer.numPages && (
-                        <span className="rounded-full bg-stone-200 px-2.5 py-1 font-sans text-xs font-medium text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+                        <span className="rounded-full bg-muted px-2.5 py-1 font-sans text-xs font-medium text-muted-foreground">
                           {pdfViewer.numPages} {pdfViewer.numPages === 1 ? "page" : "pages"}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="relative overflow-hidden rounded-lg border border-stone-200 bg-white p-16 text-center text-stone-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-stone-400">
+                  <div className="relative overflow-hidden rounded-lg border border-border bg-card p-16 text-center text-muted-foreground shadow-sm dark:border-border/80 dark:bg-card">
                     <div className="animate-pulse">Loading document...</div>
                   </div>
                 </>

@@ -10,6 +10,7 @@
 import type { VariantProps } from "class-variance-authority";
 import type { LucideIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Button, type buttonVariants } from "./button";
 import { Card, CardContent } from "./card";
 
@@ -49,14 +50,21 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   const content = (
-    <div className={`flex flex-col items-center justify-center py-12 ${className ?? ""}`}>
-      <div className="bg-muted mx-auto mb-4 flex size-16 items-center justify-center rounded-full">
+    <div
+      className={cn(
+        "flex w-full max-w-xl flex-col items-center justify-center px-4 py-12 text-center",
+        className,
+      )}
+      role="status"
+      aria-live="polite"
+    >
+      <div className="border-border/60 bg-muted/80 relative mx-auto mb-4 flex size-14 items-center justify-center rounded-full border shadow-sm ring-1 ring-white/10 dark:ring-white/5">
         <Icon className="text-muted-foreground h-8 w-8" />
       </div>
-      <h3 className="text-lg font-medium">{title}</h3>
-      <p className="text-muted-foreground mt-1 max-w-md px-4 text-center text-sm">{description}</p>
+      <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
+      <p className="text-muted-foreground mt-2 max-w-md px-2 text-sm leading-relaxed">{description}</p>
       {(action || secondaryAction) && (
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-6 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
           {action && (
             <Button onClick={action.onClick} variant={action.variant ?? "default"}>
               {action.icon && <action.icon className="mr-2 h-4 w-4" />}
@@ -79,7 +87,7 @@ export function EmptyState({
 
   if (withCard) {
     return (
-      <Card>
+      <Card className="rounded-2xl border-dashed">
         <CardContent className="p-0">{content}</CardContent>
       </Card>
     );

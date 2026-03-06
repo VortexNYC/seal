@@ -21,12 +21,12 @@ export function WorkspaceLayoutSkeleton() {
   return (
     <SidebarProvider>
       <div
-        className="flex h-screen w-full overflow-hidden"
+        className="flex h-dvh w-full overflow-hidden"
         role="status"
         aria-label="Loading workspace"
       >
         {/* Sidebar Skeleton */}
-        <aside className="bg-sidebar flex h-screen w-[240px] flex-col gap-2 border-r p-2">
+        <aside className="bg-sidebar flex h-dvh w-[240px] flex-col gap-2 border-r p-2">
           {/* Logo/Header */}
           <div className="flex items-center gap-2 px-2 py-4">
             <Skeleton className="h-8 w-8 rounded-md" />

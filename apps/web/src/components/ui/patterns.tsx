@@ -48,7 +48,7 @@ export function GridLayout({ children, className, showStripes = true }: GridLayo
   return (
     <div
       className={cn(
-        "grid min-h-screen",
+        "grid min-h-dvh",
         showStripes ? "grid-cols-1 md:grid-cols-[40px_1fr_40px]" : "grid-cols-1",
         className,
       )}

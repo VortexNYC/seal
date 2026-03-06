@@ -3,6 +3,7 @@
  */
 
 import { formatDate, getStatusLabel } from "@/lib/formatting";
+import { cn } from "@/lib/utils";
 
 import type { DocumentWorkflowStatus } from "./workflow-status-badge";
 
@@ -32,14 +33,17 @@ export function DocumentStatusHero({ workflowStatus, createdAt }: DocumentStatus
   };
 
   return (
-    <div className={`rounded-2xl border p-6 text-center sm:rounded-xl sm:p-4 ${getStatusStyles()}`}>
-      <div className="mb-2 font-sans text-[10px] font-semibold tracking-widest text-stone-500 uppercase dark:text-stone-400">
+    <div
+      className={cn("rounded-2xl border p-6 text-center shadow-sm sm:rounded-xl sm:p-5", getStatusStyles())}
+      aria-live="polite"
+    >
+      <div className="mb-2 text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
         Document Status
       </div>
-      <div className={`mb-1 font-serif text-3xl font-medium sm:text-2xl ${getTextStyles()}`}>
+      <div className={cn("mb-1 text-3xl font-semibold sm:text-2xl", getTextStyles())}>
         {getStatusLabel(workflowStatus)}
       </div>
-      <div className="font-sans text-sm text-stone-500 sm:text-xs dark:text-stone-400">
+      <div className="text-sm font-medium text-muted-foreground sm:text-xs">
         Created {formatDate(createdAt)}
       </div>
     </div>

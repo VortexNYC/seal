@@ -205,6 +205,12 @@ function ContactsTableContent({
     }
   };
 
+  const handleOpenContact = (contactId: Id<"contacts">) => {
+    router.navigate({
+      to: `/${slug}/contacts/${contactId}`,
+    });
+  };
+
   const toggleSelect = (id: Id<"contacts">) => {
     const next = new Set(selectedIds);
     if (next.has(id)) {
@@ -255,7 +261,7 @@ function ContactsTableContent({
     <>
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-muted/50 flex items-center gap-2 rounded-lg border p-2">
+        <div className="bg-muted/50 flex items-center justify-between gap-2 rounded-lg border p-2">
           <span className="text-muted-foreground text-sm">{selectedIds.size} selected</span>
           <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)}>
             Delete ({selectedIds.size})
@@ -288,11 +294,16 @@ function ContactsTableContent({
                 key={contact._id}
                 className="hover:bg-muted/50 cursor-pointer"
                 data-state={selectedIds.has(contact._id) ? "selected" : undefined}
-                onClick={() =>
-                  router.navigate({
-                    to: `/${slug}/contacts/${contact._id}`,
-                  })
-                }
+                role="button"
+                tabIndex={0}
+                aria-label={`Open contact ${contact.fullName}`}
+                onClick={() => handleOpenContact(contact._id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleOpenContact(contact._id);
+                  }
+                }}
               >
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
@@ -322,6 +333,7 @@ function ContactsTableContent({
                       <Button
                         variant="ghost"
                         size="icon"
+                        aria-label={`Contact actions for ${contact.fullName ?? "selected contact"}`}
                         className="h-8 w-8"
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -520,7 +532,7 @@ function ContactsPage() {
     >
       <div className="space-y-6">
         {/* Search Input */}
-        <div className="relative">
+        <div className="relative rounded-lg border bg-card/60 px-2 py-2">
           <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             type="text"
@@ -533,6 +545,7 @@ function ContactsPage() {
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Clear search"
               className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2"
               onClick={() => setSearchInput("")}
             >

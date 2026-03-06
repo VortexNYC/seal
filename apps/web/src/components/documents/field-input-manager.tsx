@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { getErrorMessage } from "@/lib/utils";
@@ -73,6 +73,13 @@ export function FieldInputManager({
   const [isValid, setIsValid] = useState(!isRequired); // If not required, start as valid
   const [validationError, setValidationError] = useState<string | undefined>();
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setValue(currentValue || properties?.defaultValue || "");
+    setSignatureImageUrl(currentSignatureImageUrl);
+    setIsValid(!isRequired);
+    setValidationError(undefined);
+  }, [currentValue, currentSignatureImageUrl, isRequired, properties?.defaultValue]);
 
   const handleValidationChange = (valid: boolean, error?: string) => {
     setIsValid(valid);

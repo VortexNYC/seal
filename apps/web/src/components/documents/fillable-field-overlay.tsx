@@ -253,13 +253,13 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
               className="flex h-full flex-col justify-center bg-white/90 py-0.5 pr-1"
               style={{ paddingLeft: sealIconSize + 10 }}
             >
-              <div className="text-muted-foreground text-[7px]">
+              <div className="text-muted-foreground text-[8px]">
                 <div className="truncate font-medium">{getFieldTypeLabel(fieldType)}</div>
-                <div className="mt-0.5 truncate text-[6px]">
+                <div className="mt-0.5 truncate text-[7px]">
                   {signatureDetails.signerName || signatureDetails.signerEmail}
                 </div>
                 {formattedDate && (
-                  <div className="mt-0.5 truncate text-[6px]">
+                  <div className="mt-0.5 truncate text-[7px]">
                     {formattedDate.date} at {formattedDate.time}
                   </div>
                 )}
@@ -275,8 +275,11 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
         ref={ref}
         type="button"
         onClick={() => onClick(fieldId)}
+        aria-label={`${label} ${isRequired ? "required " : ""}field, ${getFieldTypeLabel(fieldType)}${
+          isMainSignature ? ", main signature" : ""
+        }`}
         className={cn(
-          "group absolute cursor-pointer rounded-sm border-2 transition-all",
+          "group absolute cursor-pointer rounded-sm border-2 transition-colors",
           "hover:border-primary hover:bg-primary/5",
           "flex items-center justify-center text-xs",
           isFilled
@@ -284,7 +287,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
             : isRequired
               ? "border-destructive bg-destructive/5"
               : "border-info bg-info-surface/30",
-          isActive && "ring-primary border-primary animate-pulse ring-2 ring-offset-2",
+          isActive && "ring-primary border-primary motion-safe:animate-pulse ring-2 ring-offset-2",
           isMainSignature && !isActive && "ring-warning ring-2",
         )}
         style={{
@@ -332,8 +335,8 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
           )}
         </div>
 
-        {/* Hover tooltip for smaller fields */}
-        <div className="bg-popover text-popover-foreground absolute top-full left-0 z-10 mt-1 hidden rounded-md border p-2 text-xs whitespace-nowrap shadow-md group-hover:block">
+        {/* Tooltip for smaller fields — visible on hover and focus */}
+        <div className="bg-popover text-popover-foreground absolute top-full left-0 z-10 mt-1 hidden rounded-md border p-2 text-xs whitespace-nowrap shadow-md group-hover:block group-focus:block">
           <div className="font-medium">{label}</div>
           <div className="text-muted-foreground text-[10px]">
             {getFieldTypeLabel(fieldType)}

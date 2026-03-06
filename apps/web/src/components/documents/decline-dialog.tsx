@@ -54,16 +54,27 @@ export function DeclineDialog({ open, onOpenChange, onDecline, isSubmitting }: D
             placeholder="Enter your reason here..."
             rows={4}
             className="resize-none"
+            aria-describedby="decline-reason-help"
+            autoFocus={open}
           />
+          <p id="decline-reason-help" className="text-muted-foreground text-xs">
+            Please provide a short reason so the sender understands why you declined.
+          </p>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+            aria-label="Cancel decline action"
+          >
             Cancel
           </Button>
           <Button
             variant="destructive"
             onClick={handleConfirm}
             disabled={isSubmitting || !reason.trim()}
+            aria-label="Confirm document decline"
           >
             {isSubmitting ? "Declining..." : "Decline"}
           </Button>

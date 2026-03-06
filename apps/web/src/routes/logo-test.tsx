@@ -8,7 +8,7 @@ export const Route = createFileRoute("/logo-test")({
 
 function LogoTestPage() {
   return (
-    <div className="min-h-screen space-y-20 bg-background p-10">
+    <div className="min-h-dvh space-y-20 bg-background p-10">
       <section>
         <h2 className="mb-4 text-xl font-bold dark:text-white">Icon Only (Proportional)</h2>
         <div className="flex flex-wrap items-end gap-10">

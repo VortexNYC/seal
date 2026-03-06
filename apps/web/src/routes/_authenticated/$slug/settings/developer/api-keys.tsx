@@ -56,7 +56,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { getErrorMessage } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/developer/api-keys")({
@@ -364,6 +364,7 @@ function ApiKeysPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label="Copy API key"
                               onClick={handleCopyKey}
                               className="shrink-0"
                             >
@@ -417,19 +418,19 @@ function ApiKeysPage() {
                                   key={scope.value}
                                   type="button"
                                   onClick={() => toggleScope(scope.value)}
-                                  className={`group relative flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-all ${
+                                   className={cn("group relative flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-colors",
                                     isSelected
                                       ? "border-info/50 bg-info-surface"
-                                      : "border-border bg-background hover:border-info/30"
-                                  }`}
+                                      : "border-border bg-background hover:border-info/30",
+                                  )}
                                 >
                                   <div className="flex items-center gap-2">
                                     <div
-                                      className={`flex h-8 w-8 items-center justify-center rounded-md ${
+                                      className={cn("flex h-8 w-8 items-center justify-center rounded-md",
                                         isSelected
                                           ? "bg-info/20 text-info"
-                                          : "bg-muted text-muted-foreground group-hover:text-foreground"
-                                      }`}
+                                          : "bg-muted text-muted-foreground group-hover:text-foreground",
+                                      )}
                                     >
                                       <IconComponent className="h-4 w-4" />
                                     </div>
@@ -440,7 +441,7 @@ function ApiKeysPage() {
                                   </div>
                                   <div>
                                     <p
-                                      className={`text-sm font-medium ${isSelected ? "text-info" : ""}`}
+                                      className={cn("text-sm font-medium", isSelected && "text-info")}
                                     >
                                       {scope.label}
                                     </p>
@@ -592,7 +593,7 @@ function ApiKeyRow({ apiKey, onRevoke }: ApiKeyRowProps) {
   const [showId, setShowId] = useState(false);
 
   return (
-    <div className="group relative overflow-hidden rounded-lg border transition-all duration-200 hover:border-info/30 hover:shadow-sm">
+  <div className="group relative overflow-hidden rounded-lg border transition-[border-color,box-shadow] duration-200 hover:border-info/30 hover:shadow-sm">
       <div className="absolute top-0 bottom-0 left-0 w-1 bg-info" />
 
       <div className="flex flex-col justify-between gap-4 p-4 pl-5 sm:flex-row sm:items-center">

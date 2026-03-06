@@ -386,6 +386,7 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
                     variant="ghost"
                     size="icon"
                     className="shrink-0"
+                    aria-label={`Remove invoice item`}
                     onClick={() => removeItem(item.id)}
                     disabled={items.length <= 1}
                   >

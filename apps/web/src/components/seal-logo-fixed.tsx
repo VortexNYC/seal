@@ -27,9 +27,9 @@ export function SealLogoBadgeFixed({
   return (
     <div
       className={cn(
-        "inline-flex items-center justify-center bg-linear-to-br from-[#f0f7ff] to-white dark:from-slate-800 dark:to-slate-900",
-        "shadow-brand-700/10 border-brand-700/5 border shadow-xl dark:border-slate-700",
-        "hover:shadow-brand-700/15 transition-all duration-300 hover:shadow-2xl",
+        "inline-flex items-center justify-center bg-linear-to-br from-background to-muted dark:from-background dark:to-muted",
+        "shadow-brand-700/10 border-brand-700/5 border shadow-xl",
+        "hover:shadow-brand-700/15 transition-shadow duration-300 hover:shadow-2xl",
         className,
       )}
       style={{

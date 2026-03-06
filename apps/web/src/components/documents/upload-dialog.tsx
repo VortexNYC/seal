@@ -8,6 +8,7 @@ import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { useAnalytics } from "../../hooks/use-analytics";
+import { cn } from "../../lib/utils";
 import { extractPdfMetadata } from "../../lib/pdf-utils";
 import {
   DROPZONE_ACCEPT_TYPES,
@@ -356,11 +357,7 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
               {/* Dropzone Area */}
               <div
                 {...getRootProps()}
-                className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-                  isDragActive
-                    ? "border-primary bg-primary/5"
-                    : "border-muted-foreground/25 hover:border-primary/50"
-                } ${uploading ? "cursor-not-allowed opacity-50" : ""}`}
+                className={cn("cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors", isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50", uploading && "cursor-not-allowed opacity-50")}
               >
                 <input {...getInputProps()} />
                 <Upload className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
@@ -455,6 +452,7 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
+                            aria-label={`Remove ${fileWithStatus.file.name}`}
                             onClick={() => removeFile(index)}
                           >
                             <X className="h-4 w-4" />

@@ -125,9 +125,8 @@ function PaymentForm({ amount }: { amount: string }) {
         } else {
           toast.success("Payment successful!");
         }
-      } catch (err) {
+      } catch {
         toast.error("An unexpected error occurred");
-        console.error("Payment error:", err);
       } finally {
         setIsSubmitting(false);
       }

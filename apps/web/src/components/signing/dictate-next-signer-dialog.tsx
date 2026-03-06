@@ -54,7 +54,7 @@ export function DictateNextSignerDialog({
   };
 
   return (
-    <Dialog open={open}>
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onDefer()}>
       <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="bg-info-surface mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
@@ -95,6 +95,7 @@ export function DictateNextSignerDialog({
               type="button"
               onClick={onDefer}
               className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-4 transition-colors hover:no-underline"
+              aria-label="Skip designating the next signer for now"
             >
               I&apos;ll do this later
             </button>
@@ -102,6 +103,7 @@ export function DictateNextSignerDialog({
               type="submit"
               disabled={!name.trim() || !email.trim() || isSubmitting}
               className="sm:ml-auto"
+              aria-label="Send next signer invitation"
             >
               {isSubmitting ? "Sending..." : "Send Invitation"}
             </Button>

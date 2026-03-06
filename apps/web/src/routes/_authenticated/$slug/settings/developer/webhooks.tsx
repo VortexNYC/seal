@@ -63,6 +63,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 
@@ -362,6 +363,7 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Copy webhook secret"
                     onClick={handleCopySecret}
                     className="shrink-0"
                   >
@@ -599,8 +601,8 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-      <div className="group relative overflow-hidden rounded-lg border transition-all duration-200 hover:border-ai-accent/30 hover:shadow-sm">
-        <div className={`absolute top-0 bottom-0 left-0 w-1 ${config.border}`} />
+    <div className="group relative overflow-hidden rounded-lg border transition-[border-color,box-shadow] duration-200 hover:border-ai-accent/30 hover:shadow-sm">
+        <div className={cn("absolute top-0 bottom-0 left-0 w-1", config.border)} />
 
         <div className="p-4 pl-5">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -614,7 +616,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
                   )}
                   <span className="font-medium">{endpoint.name}</span>
                 </CollapsibleTrigger>
-                <div className={`h-2 w-2 rounded-full ${config.dot}`} />
+                <div className={cn("h-2 w-2 rounded-full", config.dot)} />
                 <Badge variant="secondary" className={config.badge}>
                   {endpoint.status}
                 </Badge>
@@ -625,13 +627,14 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
               </div>
               <div className="text-muted-foreground flex items-center gap-4 text-xs">
                 <span
-                  className={`font-mono font-medium ${
+                  className={cn(
+                    "font-mono font-medium",
                     endpoint.stats.successRate >= 90
                       ? "text-success"
                       : endpoint.stats.successRate >= 70
                         ? "text-warning"
-                        : "text-destructive"
-                  }`}
+                        : "text-destructive",
+                  )}
                 >
                   {endpoint.stats.successRate}% success
                 </span>
@@ -651,7 +654,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
                 disabled={isTesting}
                 title="Send test webhook"
               >
-                <Send className={`h-4 w-4 ${isTesting ? "animate-pulse" : ""}`} />
+                <Send className={cn("h-4 w-4", isTesting && "motion-safe:animate-pulse")} />
               </Button>
               <Button
                 variant="outline"
@@ -702,19 +705,25 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
               <div className="flex items-center gap-2">
                 <div className="bg-muted/50 flex flex-1 items-center gap-2 rounded-lg border px-3 py-2">
                   <code
-                    className={`font-mono text-sm transition-all duration-300 ${
-                      showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm"
-                    }`}
+                    className={cn(
+                      "font-mono text-sm transition-[filter,color] duration-300",
+                      showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm",
+                    )}
                   >
                     {showSecret ? `${endpoint.secretPrefix}...` : "whsec_••••••••••••••••"}
                   </code>
                 </div>
-                <Button variant="outline" size="icon" onClick={() => setShowSecret(!showSecret)}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={showSecret ? "Hide signing secret" : "Show signing secret"}
+                  onClick={() => setShowSecret(!showSecret)}
+                >
                   {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="icon" title="Rotate secret">
+                    <Button variant="outline" size="icon" title="Rotate secret" aria-label="Rotate signing secret">
                       <RefreshCw className="h-4 w-4" />
                     </Button>
                   </AlertDialogTrigger>
@@ -833,7 +842,7 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
     <div className="relative flex items-start gap-3">
       {!isLast && <div className="bg-border absolute top-7 bottom-0 left-[11px] w-px" />}
       <div
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${config.bg}`}
+        className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-full", config.bg)}
       >
         {config.icon}
       </div>
@@ -850,7 +859,7 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
           </div>
           <div className="text-muted-foreground flex items-center gap-3 text-xs">
             {delivery.responseCode && (
-              <span className={`font-mono font-medium ${responseCodeColor}`}>
+              <span className={cn("font-mono font-medium", responseCodeColor)}>
                 {delivery.responseCode}
               </span>
             )}
