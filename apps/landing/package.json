@@ -9,7 +9,7 @@
     "docs:generate:api": "bun run tools/generate-api-docs.ts",
     "search:generate": "bun ./tools/generate-search-index.ts",
     "sitemap:generate": "bun ./tools/generate-sitemap.ts",
-    "build": "bun run docs:generate && bun run search:generate && bun run sitemap:generate && vite build",
+    "build": "bun run docs:generate && bun run search:generate && bun run sitemap:generate && NODE_OPTIONS='--max-old-space-size=8192' vite build",
     "preview": "vite preview",
     "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit",
