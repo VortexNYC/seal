@@ -47,7 +47,7 @@ function ChangelogDetailPage() {
           {/* Back link */}
           <div className="mb-8">
             <Link
-              className="inline-flex items-center gap-2 text-white/50 transition-colors hover:text-white"
+              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 transition-colors"
               to="/changelog"
             >
               <ArrowLeft className="size-4" />
@@ -58,13 +58,13 @@ function ChangelogDetailPage() {
           {/* Header */}
           <header className="mb-12">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <Badge className="border-teal-500/30 text-teal-400" variant="outline">
+              <Badge className="border-primary/30 text-primary" variant="outline">
                 <Tag className="mr-1 size-3" />
                 {entry.version}
               </Badge>
-              <span className="flex items-center gap-1 text-sm text-white/40">
+              <span className="text-muted-foreground flex items-center gap-1 text-sm">
                 <Calendar className="size-3" />
-                {new Date(entry.releaseDate).toLocaleDateString("en-US", {
+                {new Date(entry.releaseDate).toLocaleDateString(undefined, {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -72,16 +72,16 @@ function ChangelogDetailPage() {
               </span>
             </div>
 
-            <h1 className="mb-4 text-4xl font-bold tracking-tight text-balance text-white sm:text-5xl">
+            <h1 className="text-foreground mb-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl">
               {entry.title}
             </h1>
 
-            {entry.summary && <p className="text-xl text-pretty text-white/60">{entry.summary}</p>}
+            {entry.summary && <p className="text-muted-foreground text-xl text-pretty">{entry.summary}</p>}
           </header>
 
           {/* Cover image */}
           {entry.coverImage?.asset && (
-            <div className="mb-12 overflow-hidden rounded-2xl border border-white/10">
+            <div className="mb-12 overflow-hidden rounded-2xl border border-border">
               <img
                 alt={entry.coverImage.alt || entry.title}
                 className="h-auto w-full"
@@ -95,22 +95,22 @@ function ChangelogDetailPage() {
           {/* New Features */}
           {entry.features && entry.features.length > 0 && (
             <section className="mb-12">
-              <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold text-white">
-                <Sparkles className="size-6 text-teal-400" />
+              <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
+                <Sparkles className="text-primary size-6" />
                 New Features
               </h2>
               <div className="space-y-6">
                 {entry.features.map((feature: ChangelogFeature) => (
                   <div
-                    className="rounded-xl border border-white/10 bg-white/5 p-6"
+                    className="rounded-xl border border-border bg-muted/50 p-6"
                     key={`feature-${feature.title}`}
                   >
-                    <h3 className="mb-2 text-lg font-semibold text-white">{feature.title}</h3>
+                    <h3 className="text-foreground mb-2 text-lg font-semibold">{feature.title}</h3>
                     {feature.description && (
-                      <p className="text-pretty text-white/60">{feature.description}</p>
+                      <p className="text-muted-foreground text-pretty">{feature.description}</p>
                     )}
                     {feature.image?.asset && (
-                      <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
+                      <div className="mt-4 overflow-hidden rounded-lg border border-border">
                         <img
                           alt={feature.image.alt || feature.title}
                           className="h-auto w-full"
@@ -130,14 +130,14 @@ function ChangelogDetailPage() {
           {/* Improvements */}
           {entry.improvements && entry.improvements.length > 0 && (
             <section className="mb-12">
-              <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold text-white">
-                <Rocket className="size-6 text-green-400" />
+              <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
+                <Rocket className="size-6 text-green-600 dark:text-green-400" />
                 Improvements
               </h2>
               <ul className="space-y-3">
                 {entry.improvements.map((item: string) => (
                   <li
-                    className="flex items-start gap-3 text-white/70"
+                    className="text-muted-foreground flex items-start gap-3"
                     key={`improvement-${item.slice(0, 30)}`}
                   >
                     <span className="mt-2 size-1.5 shrink-0 rounded-full bg-green-400" />
@@ -151,14 +151,14 @@ function ChangelogDetailPage() {
           {/* Bug Fixes */}
           {entry.fixes && entry.fixes.length > 0 && (
             <section className="mb-12">
-              <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold text-white">
-                <Bug className="size-6 text-orange-400" />
+              <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
+                <Bug className="size-6 text-orange-600 dark:text-orange-400" />
                 Bug Fixes
               </h2>
               <ul className="space-y-3">
                 {entry.fixes.map((item: string) => (
                   <li
-                    className="flex items-start gap-3 text-white/70"
+                    className="text-muted-foreground flex items-start gap-3"
                     key={`fix-${item.slice(0, 30)}`}
                   >
                     <span className="mt-2 size-1.5 shrink-0 rounded-full bg-orange-400" />
@@ -172,15 +172,15 @@ function ChangelogDetailPage() {
           {/* Breaking Changes */}
           {entry.breakingChanges && entry.breakingChanges.length > 0 && (
             <section className="mb-12">
-              <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold text-white">
-                <TriangleAlert className="size-6 text-red-400" />
+              <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
+                <TriangleAlert className="size-6 text-red-600 dark:text-red-400" />
                 Breaking Changes
               </h2>
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6">
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6">
                 <ul className="space-y-3">
                   {entry.breakingChanges.map((item: string) => (
                     <li
-                      className="flex items-start gap-3 text-white/70"
+                      className="text-muted-foreground flex items-start gap-3"
                       key={`breaking-${item.slice(0, 30)}`}
                     >
                       <span className="mt-2 size-1.5 shrink-0 rounded-full bg-red-400" />
