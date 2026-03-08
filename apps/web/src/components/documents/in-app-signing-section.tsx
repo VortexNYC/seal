@@ -123,27 +123,22 @@ export function InAppSigningSection({
   const handleFieldSave = async (value?: string, signatureImageUrl?: string) => {
     if (!activeFieldId) return;
 
-    try {
-      // Determine signature method from the data
-      let signatureMethod: "draw" | "type" | "upload" | undefined;
-      if (signatureImageUrl) {
-        // If it's a data URL, it could be drawn or uploaded
-        // Typed signatures are usually text values, not image URLs
-        signatureMethod = "draw";
-      }
-
-      await saveFieldValue({
-        documentId,
-        fieldId: activeFieldId,
-        value,
-        signatureImageUrl,
-        signatureMethod,
-        userAgent: navigator.userAgent,
-      });
-      onFieldsRefetch();
-    } finally {
-      setActiveFieldId(null);
+    // Determine signature method from the data
+    let signatureMethod: "draw" | "type" | "upload" | undefined;
+    if (signatureImageUrl) {
+      signatureMethod = "draw";
     }
+
+    await saveFieldValue({
+      documentId,
+      fieldId: activeFieldId,
+      value,
+      signatureImageUrl,
+      signatureMethod,
+      userAgent: navigator.userAgent,
+    });
+    onFieldsRefetch();
+    setActiveFieldId(null);
   };
 
   const handleSignDocument = async (
