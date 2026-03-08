@@ -140,10 +140,7 @@ export function InAppSigningSection({
         signatureMethod,
         userAgent: navigator.userAgent,
       });
-      toast.success("Field saved");
       onFieldsRefetch();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save field");
     } finally {
       setActiveFieldId(null);
     }

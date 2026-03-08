@@ -543,22 +543,18 @@ function SigningPage() {
   const handleFieldSave = async (value?: string, signatureImageUrl?: string) => {
     if (!activeFieldId) return;
 
-    try {
-      await convexClient.mutation(api.signatures.mutations.saveFieldValue, {
-        signingToken: token,
-        fieldId: activeFieldId,
-        value,
-        signatureImageUrl,
-        ipAddress: clientIp,
-        userAgent: navigator.userAgent,
-      });
+    await convexClient.mutation(api.signatures.mutations.saveFieldValue, {
+      signingToken: token,
+      fieldId: activeFieldId,
+      value,
+      signatureImageUrl,
+      ipAddress: clientIp,
+      userAgent: navigator.userAgent,
+    });
 
-      await refetchFields();
-      setShowFieldInput(false);
-      setActiveFieldId(null);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save field");
-    }
+    await refetchFields();
+    setShowFieldInput(false);
+    setActiveFieldId(null);
   };
 
   // Calculate field completion progress
