@@ -83,6 +83,15 @@ export function EnforceOrganization({ children }: EnforceOrganizationProps) {
   const isWithinOrg = isPathWithinOrganization(activeOrganizationSlug, location.pathname);
 
   if (!isWithinOrg) {
+    // Check if the path looks like it's under a different org slug
+    // (e.g. /some-other-slug/home). In that case, let the $slug route
+    // handle the error — don't silently redirect to the user's org.
+    const segments = location.pathname.split("/").filter(Boolean);
+    const looksLikeOrgPath = segments.length >= 1 && segments[0] !== activeOrganizationSlug;
+    if (looksLikeOrgPath) {
+      return <>{children}</>;
+    }
+
     const redirectPath = buildOrganizationPath(activeOrganizationSlug, "/home");
     return <Navigate to={redirectPath} replace />;
   }

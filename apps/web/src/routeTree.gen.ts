@@ -27,6 +27,7 @@ import { Route as AuthenticatedSlugHomeRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSlugDocumentsRouteImport } from './routes/_authenticated/$slug/documents'
 import { Route as AuthenticatedSlugContactsRouteImport } from './routes/_authenticated/$slug/contacts'
 import { Route as AuthenticatedSlugAnalyticsRouteImport } from './routes/_authenticated/$slug/analytics'
+import { Route as AuthenticatedSlugSplatRouteImport } from './routes/_authenticated/$slug/$'
 import { Route as AuthenticatedOnboardingChooseOrganizationIndexRouteImport } from './routes/_authenticated/onboarding/choose-organization/index'
 import { Route as AuthenticatedSlugSettingsIndexRouteImport } from './routes/_authenticated/$slug/settings/index'
 import { Route as AuthenticatedSlugPaymentsIndexRouteImport } from './routes/_authenticated/$slug/payments/index'
@@ -154,6 +155,11 @@ const AuthenticatedSlugAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedSlugRoute,
   } as any)
+const AuthenticatedSlugSplatRoute = AuthenticatedSlugSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any)
 const AuthenticatedOnboardingChooseOrganizationIndexRoute =
   AuthenticatedOnboardingChooseOrganizationIndexRouteImport.update({
     id: '/onboarding/choose-organization/',
@@ -363,6 +369,7 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof AuthenticatedSlugRouteWithChildren
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
+  '/$slug/$': typeof AuthenticatedSlugSplatRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
   '/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
@@ -413,6 +420,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof AuthSignUpRoute
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
+  '/$slug/$': typeof AuthenticatedSlugSplatRoute
   '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/$slug/home': typeof AuthenticatedSlugHomeRoute
   '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
@@ -462,6 +470,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug': typeof AuthenticatedSlugRouteWithChildren
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
+  '/_authenticated/$slug/$': typeof AuthenticatedSlugSplatRoute
   '/_authenticated/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
   '/_authenticated/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
   '/_authenticated/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
@@ -515,6 +524,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/sign/$token'
     | '/verify/$qrToken'
+    | '/$slug/$'
     | '/$slug/analytics'
     | '/$slug/contacts'
     | '/$slug/documents'
@@ -565,6 +575,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/sign/$token'
     | '/verify/$qrToken'
+    | '/$slug/$'
     | '/$slug/analytics'
     | '/$slug/home'
     | '/$slug/templates'
@@ -613,6 +624,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug'
     | '/sign/$token'
     | '/verify/$qrToken'
+    | '/_authenticated/$slug/$'
     | '/_authenticated/$slug/analytics'
     | '/_authenticated/$slug/contacts'
     | '/_authenticated/$slug/documents'
@@ -791,6 +803,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/$slug/analytics'
       preLoaderRoute: typeof AuthenticatedSlugAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedSlugRoute
+    }
+    '/_authenticated/$slug/$': {
+      id: '/_authenticated/$slug/$'
+      path: '/$'
+      fullPath: '/$slug/$'
+      preLoaderRoute: typeof AuthenticatedSlugSplatRouteImport
       parentRoute: typeof AuthenticatedSlugRoute
     }
     '/_authenticated/onboarding/choose-organization/': {
@@ -1152,6 +1171,7 @@ const AuthenticatedSlugSettingsTeamRouteWithChildren =
   )
 
 interface AuthenticatedSlugRouteChildren {
+  AuthenticatedSlugSplatRoute: typeof AuthenticatedSlugSplatRoute
   AuthenticatedSlugAnalyticsRoute: typeof AuthenticatedSlugAnalyticsRoute
   AuthenticatedSlugContactsRoute: typeof AuthenticatedSlugContactsRouteWithChildren
   AuthenticatedSlugDocumentsRoute: typeof AuthenticatedSlugDocumentsRouteWithChildren
@@ -1176,6 +1196,7 @@ interface AuthenticatedSlugRouteChildren {
 }
 
 const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
+  AuthenticatedSlugSplatRoute: AuthenticatedSlugSplatRoute,
   AuthenticatedSlugAnalyticsRoute: AuthenticatedSlugAnalyticsRoute,
   AuthenticatedSlugContactsRoute: AuthenticatedSlugContactsRouteWithChildren,
   AuthenticatedSlugDocumentsRoute: AuthenticatedSlugDocumentsRouteWithChildren,

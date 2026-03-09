@@ -1,8 +1,9 @@
 import { useUser } from "@clerk/clerk-react";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { type ErrorComponentProps, createFileRoute, useRouter } from "@tanstack/react-router";
 import { useAction, useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import {
   ArrowLeftIcon,
   EyeIcon,
@@ -20,7 +21,9 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { toast } from "sonner";
 
+import { NotFoundPage } from "@/components/not-found-page";
 import { PageWrapper } from "@/components/page-wrapper";
+import { RouteErrorComponent } from "@/components/route-error-component";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { buildActivityEvents } from "@/lib/document-activity";
 import { countSignatureFields } from "@/lib/signature-fields";
@@ -66,7 +69,28 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 
 export const Route = createFileRoute("/_authenticated/$slug/documents/$documentId")({
   component: DocumentDetailPage,
+  errorComponent: DocumentErrorComponent,
 });
+
+function DocumentErrorComponent(props: ErrorComponentProps) {
+  const message =
+    props.error instanceof ConvexError
+      ? String(props.error.data)
+      : props.error instanceof Error
+        ? props.error.message
+        : "";
+
+  const isNotFound =
+    message.includes("not found") ||
+    message.includes("Could not find") ||
+    message.includes("does not match validator");
+
+  if (isNotFound) {
+    return <NotFoundPage />;
+  }
+
+  return <RouteErrorComponent {...props} />;
+}
 
 function DocumentDetailPage() {
   const { slug, documentId } = Route.useParams();
