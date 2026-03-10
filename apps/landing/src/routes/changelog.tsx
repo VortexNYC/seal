@@ -31,7 +31,7 @@ function ChangelogPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mx-auto mb-16 max-w-3xl text-center">
-          <h1 className="mb-4 text-4xl font-bold tracking-tight text-balance text-foreground sm:text-5xl lg:text-6xl">
+          <h1 className="text-foreground mb-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl">
             Changelog
           </h1>
           <p className="text-muted-foreground text-lg text-pretty sm:text-xl">
@@ -51,13 +51,13 @@ function ChangelogPage() {
                 <article className="group relative" key={entry._id}>
                   {/* Timeline line */}
                   {index < entries.length - 1 && (
-                    <div className="absolute top-8 left-[7px] h-full w-px bg-border" />
+                    <div className="bg-border absolute top-8 left-[7px] h-full w-px" />
                   )}
 
                   <div className="flex gap-6">
                     {/* Timeline dot */}
                     <div className="relative shrink-0">
-                      <div className="bg-background size-4 rounded-full border-2 border-primary" />
+                      <div className="bg-background border-primary size-4 rounded-full border-2" />
                     </div>
 
                     {/* Content */}
@@ -88,7 +88,7 @@ function ChangelogPage() {
 
                       {/* Cover image */}
                       {entry.coverImage?.asset && (
-                        <div className="mb-4 overflow-hidden rounded-xl border border-border">
+                        <div className="border-border mb-4 overflow-hidden rounded-xl border">
                           <img
                             alt={entry.coverImage.alt || entry.title}
                             className="h-auto w-full"
