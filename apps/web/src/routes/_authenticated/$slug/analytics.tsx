@@ -63,11 +63,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { cn } from "@/lib/utils";
+import { pageSEO } from "@/lib/seo";
 import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/analytics")({
   component: AnalyticsPage,
   pendingComponent: DashboardSkeleton,
+  head: () => ({
+    meta: [
+      { title: pageSEO.analytics.title },
+      { name: "description", content: pageSEO.analytics.description },
+    ],
+  }),
 });
 
 function AnalyticsPage() {

@@ -6,10 +6,12 @@
  * This is an unauthenticated route - no Clerk login required.
  */
 
+import { ConvexError } from "convex/values";
 import { convexQuery } from "@convex-dev/react-query";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useRouteContext } from "@tanstack/react-router";
+import { type ErrorComponentProps, createFileRoute, Link, useRouteContext } from "@tanstack/react-router";
 import {
+  AlertCircle,
   ArrowDownIcon,
   ArrowUpIcon,
   CheckCircle2Icon,
@@ -44,6 +46,13 @@ import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signe
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
@@ -111,8 +120,43 @@ function useEmbeddedSigning(token: string) {
   return { isEmbedded, embedParams, postSealEvent };
 }
 
+function SigningErrorComponent({ error }: ErrorComponentProps) {
+  const isInvalidToken =
+    error instanceof ConvexError ||
+    (error instanceof Error && /invalid.*token|token.*invalid|not found/i.test(error.message));
+
+  return (
+    <div className="flex min-h-dvh items-center justify-center p-4">
+      <Card className="w-full max-w-md text-center">
+        <CardHeader>
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <AlertCircle className="text-muted-foreground h-6 w-6" />
+          </div>
+          <CardTitle className="text-xl">
+            {isInvalidToken ? "Invalid Signing Link" : "Something went wrong"}
+          </CardTitle>
+          <CardDescription>
+            {isInvalidToken
+              ? "This signing link is invalid or has expired. Please check the link and try again, or contact the sender for a new link."
+              : "We encountered an error loading this document. Please try again or contact support."}
+          </CardDescription>
+        </CardHeader>
+        <CardFooter className="flex justify-center gap-2">
+          <Button asChild variant="default">
+            <Link to="/">Go Home</Link>
+          </Button>
+          <Button variant="outline" onClick={() => window.history.back()}>
+            Go Back
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/sign/$token")({
   component: SigningPage,
+  errorComponent: SigningErrorComponent,
   head: () => ({
     meta: [
       { title: pageSEO.sign.title },

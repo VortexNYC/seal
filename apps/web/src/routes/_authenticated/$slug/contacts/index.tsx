@@ -65,8 +65,8 @@ export const Route = createFileRoute("/_authenticated/$slug/contacts/")({
   component: ContactsPage,
   head: () => ({
     meta: [
-      { title: pageSEO.documents.title.replace("Documents", "Contacts") },
-      { name: "description", content: "Manage your organization contacts" },
+      { title: pageSEO.contacts.title },
+      { name: "description", content: pageSEO.contacts.description },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

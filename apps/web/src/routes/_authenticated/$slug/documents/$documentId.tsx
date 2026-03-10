@@ -70,6 +70,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 export const Route = createFileRoute("/_authenticated/$slug/documents/$documentId")({
   component: DocumentDetailPage,
   errorComponent: DocumentErrorComponent,
+  head: () => ({
+    meta: [
+      { title: "Document - Seal" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
 });
 
 function DocumentErrorComponent(props: ErrorComponentProps) {

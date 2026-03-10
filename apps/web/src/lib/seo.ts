@@ -71,6 +71,16 @@ export const pageSEO: Record<string, PageSEO> = {
     description: "Manage your account settings, notifications, and preferences.",
     noIndex: true,
   },
+  analytics: {
+    title: "Analytics - Seal",
+    description: "View document analytics, signing metrics, and team performance.",
+    noIndex: true,
+  },
+  contacts: {
+    title: "Contacts - Seal",
+    description: "Manage your contacts and recipients for document signing.",
+    noIndex: true,
+  },
 };
 
 /**
