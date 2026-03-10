@@ -6,8 +6,8 @@
  */
 
 import { type ErrorComponentProps, createFileRoute, Outlet } from "@tanstack/react-router";
-import { ConvexError } from "convex/values";
 import { useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";

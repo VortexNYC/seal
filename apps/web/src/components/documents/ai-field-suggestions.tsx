@@ -135,7 +135,7 @@ function SuggestionOverlay({
         "absolute flex items-center gap-1 rounded-[3px] border-[1.5px] border-dashed transition-[color,background-color,border-color] duration-200",
         colors.bg,
         colors.border,
-        isSelected ? "opacity-100 ring-2 ring-info/30" : "opacity-70 hover:opacity-100",
+        isSelected ? "ring-info/30 opacity-100 ring-2" : "opacity-70 hover:opacity-100",
       )}
       style={{
         left: absoluteX,
@@ -315,7 +315,7 @@ export function AIFieldReviewBar({
       className="bg-card/95 flex items-center justify-between gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm"
     >
       <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-ai-accent to-primary text-white shadow-sm">
+        <div className="from-ai-accent to-primary flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow-sm">
           <SparklesIcon className="h-3.5 w-3.5" />
         </div>
         <div className="font-sans text-sm">
@@ -362,7 +362,7 @@ export function AIFieldReviewBar({
           size="sm"
           onClick={handleApply}
           disabled={isApplying}
-          className="h-7 bg-gradient-to-r from-ai-accent to-primary text-xs text-white shadow-sm hover:from-ai-accent/90 hover:to-primary/90"
+          className="from-ai-accent to-primary hover:from-ai-accent/90 hover:to-primary/90 h-7 bg-gradient-to-r text-xs text-white shadow-sm"
         >
           <CheckIcon className="mr-1 h-3 w-3" />
           {isApplying

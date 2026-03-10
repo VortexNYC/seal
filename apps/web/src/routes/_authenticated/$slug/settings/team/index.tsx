@@ -138,7 +138,7 @@ function TeamSettings() {
             </Card>
           ) : (
             <Card className="border-dashed">
-              <CardContent className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+              <CardContent className="text-muted-foreground flex h-32 items-center justify-center text-sm">
                 You do not have permission to view invitations
               </CardContent>
             </Card>

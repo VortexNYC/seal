@@ -247,7 +247,11 @@ export function InAppSigningSection({
           >
             <div className="flex items-center gap-3">
               <div
-                className={cn("flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg", statusConfig.bgColor, statusConfig.textColor)}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-[10px] sm:h-8 sm:w-8 sm:rounded-lg",
+                  statusConfig.bgColor,
+                  statusConfig.textColor,
+                )}
               >
                 <PenLineIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
               </div>
@@ -256,7 +260,10 @@ export function InAppSigningSection({
                   Your Signature
                 </span>
                 <span
-                  className={cn("font-sans text-xs flex items-center gap-1", statusConfig.textColor)}
+                  className={cn(
+                    "flex items-center gap-1 font-sans text-xs",
+                    statusConfig.textColor,
+                  )}
                 >
                   <StatusIcon className="h-3 w-3" />
                   {statusConfig.label}
@@ -264,11 +271,17 @@ export function InAppSigningSection({
               </div>
             </div>
             <ChevronDownIcon
-              className={cn("text-muted-foreground h-4 w-4 transition-transform duration-200", isOpen && "rotate-180")}
+              className={cn(
+                "text-muted-foreground h-4 w-4 transition-transform duration-200",
+                isOpen && "rotate-180",
+              )}
             />
           </button>
         </CollapsibleTrigger>
-        <CollapsibleContent id="in-app-signing-content" className="border-warning/20 px-5 pb-5 sm:px-4 sm:pb-4 border-t">
+        <CollapsibleContent
+          id="in-app-signing-content"
+          className="border-warning/20 border-t px-5 pb-5 sm:px-4 sm:pb-4"
+        >
           {/* Progress bar */}
           {canSign && fields.length > 0 && (
             <div className="mt-4 mb-4">
@@ -349,7 +362,7 @@ export function InAppSigningSection({
 
           {/* Completed state */}
           {isCompleted && (
-            <div className="mt-4 rounded-xl bg-success-surface/50 py-5 text-center">
+            <div className="bg-success-surface/50 mt-4 rounded-xl py-5 text-center">
               <div className="bg-success-surface text-success mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                 <CheckCircleIcon className="h-6 w-6" />
               </div>

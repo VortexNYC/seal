@@ -162,7 +162,7 @@ function WebhookEndpointsSection({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Radio className="h-5 w-5 text-ai-accent" />
+            <Radio className="text-ai-accent h-5 w-5" />
             <CardTitle>Webhook Endpoints</CardTitle>
           </div>
           {isPro ? (
@@ -186,7 +186,7 @@ function WebhookEndpointsSection({
         <CardDescription>
           Configure endpoints to receive webhook events
           {!isPro && !isLoadingPlan && (
-            <span className="mt-1 block text-warning">Webhooks require a Pro plan.</span>
+            <span className="text-warning mt-1 block">Webhooks require a Pro plan.</span>
           )}
         </CardDescription>
       </CardHeader>
@@ -198,10 +198,10 @@ function WebhookEndpointsSection({
                 <Webhook className="text-muted-foreground h-10 w-10" />
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-32 w-32 animate-[ping_2s_ease-in-out_infinite] rounded-full border border-ai-accent/20" />
+                <div className="border-ai-accent/20 h-32 w-32 animate-[ping_2s_ease-in-out_infinite] rounded-full border" />
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-24 w-24 animate-[ping_2s_ease-in-out_infinite_0.5s] rounded-full border border-ai-accent/30" />
+                <div className="border-ai-accent/30 h-24 w-24 animate-[ping_2s_ease-in-out_infinite_0.5s] rounded-full border" />
               </div>
             </div>
             <p className="mt-8 font-mono">Connect your first endpoint</p>
@@ -210,14 +210,14 @@ function WebhookEndpointsSection({
             </p>
             <Button
               onClick={() => setIsCreating(true)}
-              className="mt-6 bg-ai-accent text-white hover:bg-ai-accent/90"
+              className="bg-ai-accent hover:bg-ai-accent/90 mt-6 text-white"
               disabled={!isPro}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Endpoint
             </Button>
             {!isPro && !isLoadingPlan && (
-              <p className="mt-2 text-sm text-warning">Requires a Pro plan</p>
+              <p className="text-warning mt-2 text-sm">Requires a Pro plan</p>
             )}
           </div>
         ) : (
@@ -333,7 +333,7 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-ai-accent text-white hover:bg-ai-accent/90">
+        <Button size="sm" className="bg-ai-accent hover:bg-ai-accent/90 text-white">
           <Plus className="mr-1 h-4 w-4" />
           Add Endpoint
         </Button>
@@ -353,12 +353,12 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
             <div>
               <Label>Signing Secret</Label>
               <div className="relative mt-1.5">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-ai-accent/20 to-ai-accent/10 blur" />
-                <div className="bg-muted relative flex items-center gap-2 rounded-lg border border-ai-accent/30 p-3">
+                <div className="from-ai-accent/20 to-ai-accent/10 absolute -inset-1 rounded-lg bg-gradient-to-r blur" />
+                <div className="bg-muted border-ai-accent/30 relative flex items-center gap-2 rounded-lg border p-3">
                   <Input
                     value={newSecret}
                     readOnly
-                    className="flex-1 border-0 bg-transparent font-mono text-sm text-ai-accent focus-visible:ring-0"
+                    className="text-ai-accent flex-1 border-0 bg-transparent font-mono text-sm focus-visible:ring-0"
                   />
                   <Button
                     variant="ghost"
@@ -368,7 +368,7 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                     className="shrink-0"
                   >
                     {copiedSecret ? (
-                      <Check className="h-4 w-4 text-success" />
+                      <Check className="text-success h-4 w-4" />
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}
@@ -376,17 +376,17 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                 </div>
               </div>
             </div>
-            <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-surface p-4">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+            <div className="border-warning/30 bg-warning-surface flex items-start gap-3 rounded-lg border p-4">
+              <AlertTriangle className="text-warning mt-0.5 h-5 w-5 shrink-0" />
               <div>
-                <p className="font-medium text-warning">Store this secret securely</p>
-                <p className="text-sm text-warning">You'll need it to verify webhook signatures.</p>
+                <p className="text-warning font-medium">Store this secret securely</p>
+                <p className="text-warning text-sm">You'll need it to verify webhook signatures.</p>
               </div>
             </div>
             <DialogFooter>
               <Button
                 onClick={handleClose}
-                className="bg-ai-accent text-white hover:bg-ai-accent/90"
+                className="bg-ai-accent hover:bg-ai-accent/90 text-white"
               >
                 Done
               </Button>
@@ -473,13 +473,13 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                               id={event.type}
                               checked={selectedEvents.includes(event.type)}
                               onCheckedChange={() => toggleEvent(event.type)}
-                              className="mt-0.5 data-[state=checked]:border-ai-accent data-[state=checked]:bg-ai-accent"
+                              className="data-[state=checked]:border-ai-accent data-[state=checked]:bg-ai-accent mt-0.5"
                             />
                             <Label
                               htmlFor={event.type}
                               className="cursor-pointer text-sm font-normal"
                             >
-                              <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs text-ai-accent">
+                              <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
                                 {event.type}
                               </code>
                             </Label>
@@ -498,7 +498,7 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
               </Button>
               <Button
                 onClick={handleCreate}
-                className="bg-ai-accent text-white hover:bg-ai-accent/90"
+                className="bg-ai-accent hover:bg-ai-accent/90 text-white"
               >
                 Create Endpoint
               </Button>
@@ -601,14 +601,14 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-    <div className="group relative overflow-hidden rounded-lg border transition-[border-color,box-shadow] duration-200 hover:border-ai-accent/30 hover:shadow-sm">
+      <div className="group hover:border-ai-accent/30 relative overflow-hidden rounded-lg border transition-[border-color,box-shadow] duration-200 hover:shadow-sm">
         <div className={cn("absolute top-0 bottom-0 left-0 w-1", config.border)} />
 
         <div className="p-4 pl-5">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="min-w-0 flex-1 space-y-2">
               <div className="flex flex-wrap items-center gap-3">
-                <CollapsibleTrigger className="flex items-center gap-2 transition-colors hover:text-ai-accent">
+                <CollapsibleTrigger className="hover:text-ai-accent flex items-center gap-2 transition-colors">
                   {isExpanded ? (
                     <ChevronDown className="text-muted-foreground h-4 w-4" />
                   ) : (
@@ -723,7 +723,12 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="icon" title="Rotate secret" aria-label="Rotate signing secret">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      title="Rotate secret"
+                      aria-label="Rotate signing secret"
+                    >
                       <RefreshCw className="h-4 w-4" />
                     </Button>
                   </AlertDialogTrigger>
@@ -739,7 +744,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleRotateSecret}
-                        className="bg-warning text-white hover:bg-warning/90"
+                        className="bg-warning hover:bg-warning/90 text-white"
                       >
                         Rotate Secret
                       </AlertDialogAction>
@@ -753,7 +758,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
               <Label>Subscribed Events</Label>
               <div className="flex flex-wrap gap-1.5">
                 {endpoint.events.length === 0 ? (
-                  <Badge variant="outline" className="font-mono text-xs text-ai-accent">
+                  <Badge variant="outline" className="text-ai-accent font-mono text-xs">
                     All events
                   </Badge>
                 ) : (
@@ -770,7 +775,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
               <Label>Recent Deliveries</Label>
               {deliveries === undefined ? (
                 <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                  <div className="border-muted-foreground/30 h-4 w-4 animate-spin rounded-full border-2 border-t-ai-accent" />
+                  <div className="border-muted-foreground/30 border-t-ai-accent h-4 w-4 animate-spin rounded-full border-2" />
                   Loading...
                 </div>
               ) : deliveries.length === 0 ? (
@@ -804,15 +809,15 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
 
   const statusConfig = {
     pending: {
-      icon: <Clock className="h-4 w-4 text-info" />,
+      icon: <Clock className="text-info h-4 w-4" />,
       bg: "bg-info-surface",
     },
     delivered: {
-      icon: <Check className="h-4 w-4 text-success" />,
+      icon: <Check className="text-success h-4 w-4" />,
       bg: "bg-success-surface",
     },
     failed: {
-      icon: <XCircle className="h-4 w-4 text-destructive" />,
+      icon: <XCircle className="text-destructive h-4 w-4" />,
       bg: "bg-destructive/10",
     },
     abandoned: {
@@ -853,7 +858,7 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
           className="bg-muted/30 hover:bg-muted/50 flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors"
         >
           <div className="flex items-center gap-2">
-            <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs text-ai-accent">
+            <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
               {delivery.eventType}
             </code>
           </div>
@@ -911,7 +916,7 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
             {delivery.errorMessage && (
               <div>
                 <span className="text-muted-foreground text-xs">Error</span>
-                <div className="bg-destructive/10 mt-1 rounded border border-destructive/30 p-2 font-mono text-xs text-destructive">
+                <div className="bg-destructive/10 border-destructive/30 text-destructive mt-1 rounded border p-2 font-mono text-xs">
                   {delivery.errorMessage}
                 </div>
               </div>
@@ -964,7 +969,7 @@ function EventTypesReference({ eventTypes }: EventTypesReferenceProps) {
           <CardHeader className="hover:bg-muted/50 cursor-pointer transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-ai-accent" />
+                <Zap className="text-ai-accent h-5 w-5" />
                 <div>
                   <CardTitle className="text-base">Event Types Reference</CardTitle>
                   <CardDescription>All available webhook event types</CardDescription>
@@ -990,7 +995,7 @@ function EventTypesReference({ eventTypes }: EventTypesReferenceProps) {
                         key={event.type}
                         className="bg-muted/30 flex items-start justify-between gap-4 rounded-lg border px-3 py-2"
                       >
-                        <code className="bg-muted shrink-0 rounded px-1.5 py-0.5 font-mono text-xs text-ai-accent">
+                        <code className="bg-muted text-ai-accent shrink-0 rounded px-1.5 py-0.5 font-mono text-xs">
                           {event.type}
                         </code>
                         <span className="text-muted-foreground text-right text-sm">
@@ -1014,7 +1019,7 @@ function WebhookDocumentation() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <ExternalLink className="h-5 w-5 text-ai-accent" />
+          <ExternalLink className="text-ai-accent h-5 w-5" />
           <CardTitle>Webhook Documentation</CardTitle>
         </div>
         <CardDescription>Learn how to verify and handle webhook events</CardDescription>
@@ -1022,9 +1027,9 @@ function WebhookDocumentation() {
       <CardContent className="space-y-4">
         <div className="bg-muted relative overflow-hidden rounded-lg border">
           <div className="bg-muted/50 flex items-center gap-2 border-b px-4 py-2">
-            <div className="h-3 w-3 rounded-full bg-destructive/80" />
-            <div className="h-3 w-3 rounded-full bg-warning/80" />
-            <div className="h-3 w-3 rounded-full bg-success/80" />
+            <div className="bg-destructive/80 h-3 w-3 rounded-full" />
+            <div className="bg-warning/80 h-3 w-3 rounded-full" />
+            <div className="bg-success/80 h-3 w-3 rounded-full" />
             <span className="text-muted-foreground ml-2 font-mono text-xs">
               verify-signature.js
             </span>
@@ -1091,7 +1096,7 @@ function WebhookDocumentation() {
               ["X-Seal-Event-Type", "Event type name"],
             ].map(([header, description]) => (
               <div key={header} className="flex items-center justify-between gap-4">
-                <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs text-ai-accent">
+                <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
                   {header}
                 </code>
                 <span className="text-muted-foreground">{description}</span>

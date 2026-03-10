@@ -245,7 +245,11 @@ export function FieldOptionsDialog({
                   {options.map((option, index) => (
                     <div
                       key={option.id}
-                      className={cn("group bg-card flex items-center gap-2 rounded-md px-2.5 py-2 transition-colors", draggedIndex === index && "opacity-50", dragOverIndex === index && "bg-muted")}
+                      className={cn(
+                        "group bg-card flex items-center gap-2 rounded-md px-2.5 py-2 transition-colors",
+                        draggedIndex === index && "opacity-50",
+                        dragOverIndex === index && "bg-muted",
+                      )}
                       draggable
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}

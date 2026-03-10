@@ -22,10 +22,10 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
-import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -333,7 +333,7 @@ export function FieldPropertiesPanel({
           <div className="space-y-2">
             <Button
               variant="outline"
-              className="w-full border-field-payment-border bg-field-payment-surface text-field-payment hover:bg-field-payment-surface/80"
+              className="border-field-payment-border bg-field-payment-surface text-field-payment hover:bg-field-payment-surface/80 w-full"
               onClick={() => onConfigurePayment(field._id)}
             >
               <CreditCardIcon className="mr-2 h-4 w-4" />

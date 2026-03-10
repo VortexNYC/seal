@@ -287,7 +287,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
             : isRequired
               ? "border-destructive bg-destructive/5"
               : "border-info bg-info-surface/30",
-          isActive && "ring-primary border-primary motion-safe:animate-pulse ring-2 ring-offset-2",
+          isActive && "ring-primary border-primary ring-2 ring-offset-2 motion-safe:animate-pulse",
           isMainSignature && !isActive && "ring-warning ring-2",
         )}
         style={{
@@ -306,7 +306,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
           style={{ paddingLeft: sealIconSize + 10 }}
         >
           <div className="flex items-center gap-1">
-            {isMainSignature && <StarIcon className="h-3 w-3 text-warning" />}
+            {isMainSignature && <StarIcon className="text-warning h-3 w-3" />}
             {getFieldIcon(fieldType)}
             {absoluteWidth > 80 && (
               <span className="max-w-[60px] truncate text-[10px] font-medium">
@@ -315,14 +315,14 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
             )}
           </div>
           {isFilled && absoluteHeight > 25 && (
-            <div className="text-[9px] font-medium text-success">
+            <div className="text-success text-[9px] font-medium">
               {fieldType === "payment" && paymentInfo
                 ? `✓ ${paymentInfo.paymentStatus === "paid" ? "Paid" : "Pending"}`
                 : "✓ Filled"}
             </div>
           )}
           {!isFilled && isRequired && absoluteHeight > 25 && (
-            <div className="text-[9px] font-medium text-destructive">Required</div>
+            <div className="text-destructive text-[9px] font-medium">Required</div>
           )}
           {fieldType === "payment" && paymentInfo && absoluteHeight > 25 && (
             <div className="text-field-payment text-[9px] font-semibold">
@@ -331,7 +331,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
             </div>
           )}
           {isMainSignature && absoluteHeight > 30 && (
-            <div className="text-[8px] font-medium text-warning">Document Signature</div>
+            <div className="text-warning text-[8px] font-medium">Document Signature</div>
           )}
         </div>
 

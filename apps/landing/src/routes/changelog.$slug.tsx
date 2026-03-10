@@ -76,12 +76,14 @@ function ChangelogDetailPage() {
               {entry.title}
             </h1>
 
-            {entry.summary && <p className="text-muted-foreground text-xl text-pretty">{entry.summary}</p>}
+            {entry.summary && (
+              <p className="text-muted-foreground text-xl text-pretty">{entry.summary}</p>
+            )}
           </header>
 
           {/* Cover image */}
           {entry.coverImage?.asset && (
-            <div className="mb-12 overflow-hidden rounded-2xl border border-border">
+            <div className="border-border mb-12 overflow-hidden rounded-2xl border">
               <img
                 alt={entry.coverImage.alt || entry.title}
                 className="h-auto w-full"
@@ -102,7 +104,7 @@ function ChangelogDetailPage() {
               <div className="space-y-6">
                 {entry.features.map((feature: ChangelogFeature) => (
                   <div
-                    className="rounded-xl border border-border bg-muted/50 p-6"
+                    className="border-border bg-muted/50 rounded-xl border p-6"
                     key={`feature-${feature.title}`}
                   >
                     <h3 className="text-foreground mb-2 text-lg font-semibold">{feature.title}</h3>
@@ -110,7 +112,7 @@ function ChangelogDetailPage() {
                       <p className="text-muted-foreground text-pretty">{feature.description}</p>
                     )}
                     {feature.image?.asset && (
-                      <div className="mt-4 overflow-hidden rounded-lg border border-border">
+                      <div className="border-border mt-4 overflow-hidden rounded-lg border">
                         <img
                           alt={feature.image.alt || feature.title}
                           className="h-auto w-full"
@@ -176,7 +178,7 @@ function ChangelogDetailPage() {
                 <TriangleAlert className="size-6 text-red-600 dark:text-red-400" />
                 Breaking Changes
               </h2>
-              <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6">
+              <div className="border-destructive/30 bg-destructive/10 rounded-xl border p-6">
                 <ul className="space-y-3">
                   {entry.breakingChanges.map((item: string) => (
                     <li

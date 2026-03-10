@@ -71,46 +71,46 @@ export const status = {
 
 /** 10 signer color slots — used for recipient color-coding */
 export const signers = [
-  { color: "#2563eb", surface: "#eff6ff" },  // 1 Blue
-  { color: "#1f8f5c", surface: "#e8f7ef" },  // 2 Green
-  { color: "#7c3aed", surface: "#f5f0fe" },  // 3 Purple
-  { color: "#d97706", surface: "#fffbeb" },  // 4 Orange
-  { color: "#db2777", surface: "#fdf2f8" },  // 5 Pink
-  { color: "#0891b2", surface: "#ecfeff" },  // 6 Cyan
-  { color: "#ca8a04", surface: "#fefce8" },  // 7 Yellow
-  { color: "#4f46e5", surface: "#eef2ff" },  // 8 Indigo
-  { color: "#0d9488", surface: "#f0fdfa" },  // 9 Teal
-  { color: "#e11d48", surface: "#fff1f2" },  // 10 Rose
+  { color: "#2563eb", surface: "#eff6ff" }, // 1 Blue
+  { color: "#1f8f5c", surface: "#e8f7ef" }, // 2 Green
+  { color: "#7c3aed", surface: "#f5f0fe" }, // 3 Purple
+  { color: "#d97706", surface: "#fffbeb" }, // 4 Orange
+  { color: "#db2777", surface: "#fdf2f8" }, // 5 Pink
+  { color: "#0891b2", surface: "#ecfeff" }, // 6 Cyan
+  { color: "#ca8a04", surface: "#fefce8" }, // 7 Yellow
+  { color: "#4f46e5", surface: "#eef2ff" }, // 8 Indigo
+  { color: "#0d9488", surface: "#f0fdfa" }, // 9 Teal
+  { color: "#e11d48", surface: "#fff1f2" }, // 10 Rose
 ] as const;
 
 /** Role badge colors — light mode hex */
 export const roles = {
-  owner: { color: "#7c3aed", surface: "#f5f0fe" },   // purple
-  admin: { color: "#2563eb", surface: "#eff6ff" },    // blue
-  member: { color: "#1f8f5c", surface: "#e8f7ef" },  // green
-  viewer: { color: "#737373", surface: "#f5f5f5" },  // neutral gray
-  system: { color: "#a63d2f", surface: "#f9eeec" },  // brand red
+  owner: { color: "#7c3aed", surface: "#f5f0fe" }, // purple
+  admin: { color: "#2563eb", surface: "#eff6ff" }, // blue
+  member: { color: "#1f8f5c", surface: "#e8f7ef" }, // green
+  viewer: { color: "#737373", surface: "#f5f5f5" }, // neutral gray
+  system: { color: "#a63d2f", surface: "#f9eeec" }, // brand red
 } as const;
 
 /** Field type colors — light mode hex */
 export const fields = {
   signature: { color: "#2563eb", surface: "#eff6ff", border: "#bfdbfe" },
-  text:       { color: "#1f8f5c", surface: "#e8f7ef", border: "#bbf7d0" },
-  number:     { color: "#c97f00", surface: "#fefce8", border: "#fde68a" },
-  date:       { color: "#7c3aed", surface: "#f5f0fe", border: "#ddd6fe" },
-  checkbox:   { color: "#d97706", surface: "#fffbeb", border: "#fed7aa" },
-  dropdown:   { color: "#0891b2", surface: "#ecfeff", border: "#a5f3fc" },
-  radio:      { color: "#db2777", surface: "#fdf2f8", border: "#fbcfe8" },
+  text: { color: "#1f8f5c", surface: "#e8f7ef", border: "#bbf7d0" },
+  number: { color: "#c97f00", surface: "#fefce8", border: "#fde68a" },
+  date: { color: "#7c3aed", surface: "#f5f0fe", border: "#ddd6fe" },
+  checkbox: { color: "#d97706", surface: "#fffbeb", border: "#fed7aa" },
+  dropdown: { color: "#0891b2", surface: "#ecfeff", border: "#a5f3fc" },
+  radio: { color: "#db2777", surface: "#fdf2f8", border: "#fbcfe8" },
   attachment: { color: "#65a30d", surface: "#f7fee7", border: "#d9f99d" },
-  payment:    { color: "#059669", surface: "#ecfdf5", border: "#a7f3d0" },
+  payment: { color: "#059669", surface: "#ecfdf5", border: "#a7f3d0" },
 } as const;
 
 /** Document status surface colors — light mode hex */
 export const docStatus = {
-  completed:  { surface: "#e8f7ef", border: "#6ee7b7", text: "#065f46" },
+  completed: { surface: "#e8f7ef", border: "#6ee7b7", text: "#065f46" },
   inProgress: { surface: "#fef7e0", border: "#fde68a", text: "#78350f" },
-  sent:       { surface: "#eff6ff", border: "#93c5fd", text: "#1e3a8a" },
-  declined:   { surface: "#fff1f2", border: "#fca5a5", text: "#7f1d1d" },
+  sent: { surface: "#eff6ff", border: "#93c5fd", text: "#1e3a8a" },
+  declined: { surface: "#fff1f2", border: "#fca5a5", text: "#7f1d1d" },
 } as const;
 
 /** AI feature accent colors — light mode hex */
@@ -141,14 +141,14 @@ export const ai = {
 export const canvas = {
   fieldColors: {
     signature: { ink: "#1e3a5f", accent: "#3b82f6", glow: "rgba(59, 130, 246, 0.25)" },
-    text:       { ink: "#14532d", accent: "#22c55e", glow: "rgba(34, 197, 94, 0.25)" },
-    number:     { ink: "#78350f", accent: "#f59e0b", glow: "rgba(245, 158, 11, 0.25)" },
-    date:       { ink: "#4c1d95", accent: "#8b5cf6", glow: "rgba(139, 92, 246, 0.25)" },
-    checkbox:   { ink: "#7c2d12", accent: "#f97316", glow: "rgba(249, 115, 22, 0.25)" },
-    dropdown:   { ink: "#164e63", accent: "#06b6d4", glow: "rgba(6, 182, 212, 0.25)" },
-    radio:      { ink: "#831843", accent: "#ec4899", glow: "rgba(236, 72, 153, 0.25)" },
+    text: { ink: "#14532d", accent: "#22c55e", glow: "rgba(34, 197, 94, 0.25)" },
+    number: { ink: "#78350f", accent: "#f59e0b", glow: "rgba(245, 158, 11, 0.25)" },
+    date: { ink: "#4c1d95", accent: "#8b5cf6", glow: "rgba(139, 92, 246, 0.25)" },
+    checkbox: { ink: "#7c2d12", accent: "#f97316", glow: "rgba(249, 115, 22, 0.25)" },
+    dropdown: { ink: "#164e63", accent: "#06b6d4", glow: "rgba(6, 182, 212, 0.25)" },
+    radio: { ink: "#831843", accent: "#ec4899", glow: "rgba(236, 72, 153, 0.25)" },
     attachment: { ink: "#3f6212", accent: "#84cc16", glow: "rgba(132, 204, 22, 0.25)" },
-    payment:    { ink: "#065f46", accent: "#10b981", glow: "rgba(16, 185, 129, 0.25)" },
+    payment: { ink: "#065f46", accent: "#10b981", glow: "rgba(16, 185, 129, 0.25)" },
   },
   /** Colors for fields that have been signed/completed */
   filled: {
@@ -188,4 +188,16 @@ export const email = {
 } as const;
 
 /** All tokens as a single export */
-export const tokens = { brand, light, dark, status, signers, roles, fields, docStatus, ai, canvas, email } as const;
+export const tokens = {
+  brand,
+  light,
+  dark,
+  status,
+  signers,
+  roles,
+  fields,
+  docStatus,
+  ai,
+  canvas,
+  email,
+} as const;

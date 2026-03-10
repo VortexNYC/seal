@@ -200,7 +200,7 @@ function NotificationItem({
       className={cn(
         "flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors",
         notification.read
-          ? "bg-transparent hover:bg-muted"
+          ? "hover:bg-muted bg-transparent"
           : "bg-info-surface/50 hover:bg-info-surface",
       )}
       onClick={handleClick}

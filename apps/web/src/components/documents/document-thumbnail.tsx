@@ -101,7 +101,10 @@ export function DocumentThumbnail({
 
   return (
     <div
-      className={cn("bg-muted border-border flex items-center justify-center overflow-hidden rounded border", className)}
+      className={cn(
+        "bg-muted border-border flex items-center justify-center overflow-hidden rounded border",
+        className,
+      )}
     >
       {thumbnail ? (
         <img

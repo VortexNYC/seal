@@ -137,7 +137,10 @@ export function RecipientOptionsDialog({
                 <div className="truncate text-sm font-medium">{recipient.name}</div>
               )}
               <div
-                className={cn("truncate text-xs", recipient.name ? "text-muted-foreground" : "text-sm font-medium")}
+                className={cn(
+                  "truncate text-xs",
+                  recipient.name ? "text-muted-foreground" : "text-sm font-medium",
+                )}
               >
                 {recipient.email}
               </div>
