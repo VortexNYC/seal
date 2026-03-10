@@ -145,7 +145,7 @@ function HighlightedText({
     }
     // Add highlighted matching text
     parts.push(
-      <mark key={`${start}-${end}`} className="rounded bg-warning/30 px-0.5">
+      <mark key={`${start}-${end}`} className="bg-warning/30 rounded px-0.5">
         {text.slice(start, end + 1)}
       </mark>,
     );
@@ -571,7 +571,7 @@ function DocumentsList({
                           {doc.aiProcessingStatus === "processing" && (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Loader2Icon className="h-3 w-3 animate-spin text-ai-accent" />
+                                <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
                               </TooltipTrigger>
                               <TooltipContent>AI analyzing document</TooltipContent>
                             </Tooltip>
@@ -579,7 +579,7 @@ function DocumentsList({
                           {doc.aiProcessingStatus === "completed" && (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <SparklesIcon className="h-3 w-3 text-ai-accent" />
+                                <SparklesIcon className="text-ai-accent h-3 w-3" />
                               </TooltipTrigger>
                               <TooltipContent>AI analysis complete</TooltipContent>
                             </Tooltip>
@@ -692,8 +692,8 @@ function DocumentsList({
                           />
                         </CardTitle>
                       </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -760,10 +760,10 @@ function DocumentsList({
                         <div className="flex items-center gap-1.5">
                           <WorkflowStatusBadge status={doc.workflowStatus} />
                           {doc.aiProcessingStatus === "processing" && (
-                            <Loader2Icon className="h-3 w-3 animate-spin text-ai-accent" />
+                            <Loader2Icon className="text-ai-accent h-3 w-3 animate-spin" />
                           )}
                           {doc.aiProcessingStatus === "completed" && (
-                            <SparklesIcon className="h-3 w-3 text-ai-accent" />
+                            <SparklesIcon className="text-ai-accent h-3 w-3" />
                           )}
                         </div>
                       </div>
@@ -793,7 +793,10 @@ function DocumentsList({
           {/* Pagination (SEA-68: 20 items per page) */}
           {totalPages > 1 && (
             <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-              <p className="text-muted-foreground text-center text-sm sm:text-left" aria-live="polite">
+              <p
+                className="text-muted-foreground text-center text-sm sm:text-left"
+                aria-live="polite"
+              >
                 Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
                 {Math.min(currentPage * ITEMS_PER_PAGE, sortedDocuments.length)} of{" "}
                 {sortedDocuments.length} documents
@@ -1011,7 +1014,7 @@ function DocumentsPage() {
             )}
 
             {/* SEA-73: Search Input */}
-            <div className="relative rounded-lg border bg-card/60 px-2 py-2">
+            <div className="bg-card/60 relative rounded-lg border px-2 py-2">
               <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
                 type="text"
@@ -1034,7 +1037,7 @@ function DocumentsPage() {
             </div>
 
             {/* Filter Tabs */}
-            <div className="space-y-4 rounded-lg border bg-card/50 p-3">
+            <div className="bg-card/50 space-y-4 rounded-lg border p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -1058,24 +1061,24 @@ function DocumentsPage() {
                 </div>
                 {/* SEA-68: View mode toggle */}
                 <div className="bg-background flex items-center gap-1 rounded-md border">
-                    <Button
-                      variant={viewMode === "table" ? "default" : "ghost"}
-                      size="icon"
-                      className="h-9 w-9"
-                      aria-label="Table view"
-                      onClick={() => setViewMode("table")}
-                    >
-                      <LayoutListIcon className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === "grid" ? "default" : "ghost"}
-                      size="icon"
-                      className="h-9 w-9"
-                      aria-label="Grid view"
-                      onClick={() => setViewMode("grid")}
-                    >
-                      <LayoutGridIcon className="h-4 w-4" />
-                    </Button>
+                  <Button
+                    variant={viewMode === "table" ? "default" : "ghost"}
+                    size="icon"
+                    className="h-9 w-9"
+                    aria-label="Table view"
+                    onClick={() => setViewMode("table")}
+                  >
+                    <LayoutListIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "ghost"}
+                    size="icon"
+                    className="h-9 w-9"
+                    aria-label="Grid view"
+                    onClick={() => setViewMode("grid")}
+                  >
+                    <LayoutGridIcon className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 

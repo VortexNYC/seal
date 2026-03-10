@@ -322,7 +322,7 @@ function ApiKeysPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Key className="h-5 w-5 text-info" />
+                <Key className="text-info h-5 w-5" />
                 <CardTitle>Your API Keys</CardTitle>
               </div>
               {isPro ? (
@@ -334,7 +334,7 @@ function ApiKeysPage() {
                   }}
                 >
                   <DialogTrigger asChild>
-                    <Button size="sm" className="bg-info text-white hover:bg-info/90">
+                    <Button size="sm" className="bg-info hover:bg-info/90 text-white">
                       <Plus className="mr-1 h-4 w-4" />
                       Create API Key
                     </Button>
@@ -354,12 +354,12 @@ function ApiKeysPage() {
                     {newKeySecret ? (
                       <div className="space-y-4">
                         <div className="relative">
-                          <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-info/20 to-info/10 blur" />
-                          <div className="bg-muted relative flex items-center gap-2 rounded-lg border border-info/30 p-3">
+                          <div className="from-info/20 to-info/10 absolute -inset-1 rounded-lg bg-gradient-to-r blur" />
+                          <div className="bg-muted border-info/30 relative flex items-center gap-2 rounded-lg border p-3">
                             <Input
                               value={newKeySecret}
                               readOnly
-                              className="flex-1 border-0 bg-transparent font-mono text-sm text-info focus-visible:ring-0"
+                              className="text-info flex-1 border-0 bg-transparent font-mono text-sm focus-visible:ring-0"
                             />
                             <Button
                               variant="ghost"
@@ -369,18 +369,18 @@ function ApiKeysPage() {
                               className="shrink-0"
                             >
                               {copiedKey ? (
-                                <Check className="h-4 w-4 text-success" />
+                                <Check className="text-success h-4 w-4" />
                               ) : (
                                 <Copy className="h-4 w-4" />
                               )}
                             </Button>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-surface p-4">
-                          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+                        <div className="border-warning/30 bg-warning-surface flex items-start gap-3 rounded-lg border p-4">
+                          <AlertTriangle className="text-warning mt-0.5 h-5 w-5 shrink-0" />
                           <div>
-                            <p className="font-medium text-warning">Save this key securely</p>
-                            <p className="text-sm text-warning">
+                            <p className="text-warning font-medium">Save this key securely</p>
+                            <p className="text-warning text-sm">
                               This is the only time you'll see this key. Store it in a secure
                               location.
                             </p>
@@ -389,7 +389,7 @@ function ApiKeysPage() {
                         <DialogFooter>
                           <Button
                             onClick={handleCloseDialog}
-                            className="bg-info text-white hover:bg-info/90"
+                            className="bg-info hover:bg-info/90 text-white"
                           >
                             Done
                           </Button>
@@ -418,7 +418,8 @@ function ApiKeysPage() {
                                   key={scope.value}
                                   type="button"
                                   onClick={() => toggleScope(scope.value)}
-                                   className={cn("group relative flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-colors",
+                                  className={cn(
+                                    "group relative flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-colors",
                                     isSelected
                                       ? "border-info/50 bg-info-surface"
                                       : "border-border bg-background hover:border-info/30",
@@ -426,7 +427,8 @@ function ApiKeysPage() {
                                 >
                                   <div className="flex items-center gap-2">
                                     <div
-                                      className={cn("flex h-8 w-8 items-center justify-center rounded-md",
+                                      className={cn(
+                                        "flex h-8 w-8 items-center justify-center rounded-md",
                                         isSelected
                                           ? "bg-info/20 text-info"
                                           : "bg-muted text-muted-foreground group-hover:text-foreground",
@@ -441,7 +443,10 @@ function ApiKeysPage() {
                                   </div>
                                   <div>
                                     <p
-                                      className={cn("text-sm font-medium", isSelected && "text-info")}
+                                      className={cn(
+                                        "text-sm font-medium",
+                                        isSelected && "text-info",
+                                      )}
                                     >
                                       {scope.label}
                                     </p>
@@ -465,7 +470,7 @@ function ApiKeysPage() {
                           </Button>
                           <Button
                             onClick={handleCreateKey}
-                            className="bg-info text-white hover:bg-info/90"
+                            className="bg-info hover:bg-info/90 text-white"
                           >
                             Create Key
                           </Button>
@@ -489,7 +494,7 @@ function ApiKeysPage() {
             <CardDescription>
               API keys allow secure programmatic access to the Seal API
               {!isPro && !isLoadingPlan && (
-                <span className="mt-1 block text-warning">API keys require a Pro plan.</span>
+                <span className="text-warning mt-1 block">API keys require a Pro plan.</span>
               )}
             </CardDescription>
           </CardHeader>
@@ -500,7 +505,7 @@ function ApiKeysPage() {
                   <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-2xl border">
                     <Key className="text-muted-foreground h-10 w-10" />
                   </div>
-                  <div className="border-background absolute -right-1 -bottom-1 h-4 w-4 animate-pulse rounded-full border-2 bg-info" />
+                  <div className="border-background bg-info absolute -right-1 -bottom-1 h-4 w-4 animate-pulse rounded-full border-2" />
                 </div>
                 <p className="mt-6 font-mono">No API keys configured</p>
                 <p className="text-muted-foreground mt-1 text-sm">
@@ -508,14 +513,14 @@ function ApiKeysPage() {
                 </p>
                 <Button
                   onClick={() => setIsCreating(true)}
-                  className="mt-6 bg-info text-white hover:bg-info/90"
+                  className="bg-info hover:bg-info/90 mt-6 text-white"
                   disabled={!isPro}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create your first API key
                 </Button>
                 {!isPro && !isLoadingPlan && (
-                  <p className="mt-2 text-sm text-warning">Requires a Pro plan</p>
+                  <p className="text-warning mt-2 text-sm">Requires a Pro plan</p>
                 )}
               </div>
             ) : (
@@ -537,7 +542,7 @@ function ApiKeysPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <ExternalLink className="h-5 w-5 text-info" />
+              <ExternalLink className="text-info h-5 w-5" />
               <CardTitle>API Documentation</CardTitle>
             </div>
             <CardDescription>
@@ -548,9 +553,9 @@ function ApiKeysPage() {
             <div className="space-y-4">
               <div className="bg-muted relative overflow-hidden rounded-lg border">
                 <div className="bg-muted/50 flex items-center gap-2 border-b px-4 py-2">
-                  <div className="h-3 w-3 rounded-full bg-destructive/80" />
-                  <div className="h-3 w-3 rounded-full bg-warning/80" />
-                  <div className="h-3 w-3 rounded-full bg-success/80" />
+                  <div className="bg-destructive/80 h-3 w-3 rounded-full" />
+                  <div className="bg-warning/80 h-3 w-3 rounded-full" />
+                  <div className="bg-success/80 h-3 w-3 rounded-full" />
                   <span className="text-muted-foreground ml-2 font-mono text-xs">terminal</span>
                 </div>
                 <div className="p-4">
@@ -593,16 +598,16 @@ function ApiKeyRow({ apiKey, onRevoke }: ApiKeyRowProps) {
   const [showId, setShowId] = useState(false);
 
   return (
-  <div className="group relative overflow-hidden rounded-lg border transition-[border-color,box-shadow] duration-200 hover:border-info/30 hover:shadow-sm">
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-info" />
+    <div className="group hover:border-info/30 relative overflow-hidden rounded-lg border transition-[border-color,box-shadow] duration-200 hover:shadow-sm">
+      <div className="bg-info absolute top-0 bottom-0 left-0 w-1" />
 
       <div className="flex flex-col justify-between gap-4 p-4 pl-5 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-3">
-            <Lock className="h-4 w-4 text-info" />
+            <Lock className="text-info h-4 w-4" />
             <span className="truncate font-medium">{apiKey.name}</span>
             <Badge variant="secondary" className="text-success">
-              <span className="mr-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+              <span className="bg-success mr-1.5 h-1.5 w-1.5 animate-pulse rounded-full" />
               Active
             </Badge>
           </div>
@@ -611,7 +616,7 @@ function ApiKeyRow({ apiKey, onRevoke }: ApiKeyRowProps) {
             <button
               type="button"
               onClick={() => setShowId(!showId)}
-              className="text-muted-foreground inline-flex items-center gap-1.5 font-mono transition-colors hover:text-info"
+              className="text-muted-foreground hover:text-info inline-flex items-center gap-1.5 font-mono transition-colors"
             >
               {showId ? (
                 <>

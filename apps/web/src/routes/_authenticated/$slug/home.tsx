@@ -691,7 +691,7 @@ function NeedsAttention() {
     <Card className="border-warning/30">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <AlertTriangleIcon className="h-4 w-4 text-warning" />
+          <AlertTriangleIcon className="text-warning h-4 w-4" />
           <CardTitle className="text-base">Needs Attention</CardTitle>
           <span className="text-muted-foreground text-xs">
             {attention.totalIssues} issue{attention.totalIssues !== 1 ? "s" : ""}
@@ -707,7 +707,7 @@ function NeedsAttention() {
               params={{ slug, documentId: item.documentId }}
               className="hover:bg-muted flex items-center gap-3 rounded-md p-2 transition-colors"
             >
-              <ClockIcon className="h-4 w-4 shrink-0 text-warning" />
+              <ClockIcon className="text-warning h-4 w-4 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
                   <span className="font-medium">{item.recipientName}</span> hasn&apos;t viewed{" "}
@@ -727,7 +727,7 @@ function NeedsAttention() {
               params={{ slug, documentId: item.documentId }}
               className="hover:bg-muted flex items-center gap-3 rounded-md p-2 transition-colors"
             >
-              <AlertTriangleIcon className="h-4 w-4 shrink-0 text-destructive" />
+              <AlertTriangleIcon className="text-destructive h-4 w-4 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
                   <span className="font-medium">{item.documentName}</span> deadline in{" "}
@@ -747,7 +747,7 @@ function NeedsAttention() {
               params={{ slug, documentId: item.documentId }}
               className="hover:bg-muted flex items-center gap-3 rounded-md p-2 transition-colors"
             >
-              <MailXIcon className="h-4 w-4 shrink-0 text-destructive" />
+              <MailXIcon className="text-destructive h-4 w-4 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
                   Email bounced for <span className="font-medium">{item.recipientEmail}</span>

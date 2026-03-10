@@ -72,7 +72,7 @@ function MessageBubble({
           "max-w-[85%] rounded-xl px-3.5 py-2.5 font-sans text-sm leading-relaxed",
           isUser
             ? "bg-muted text-foreground"
-            : "bg-card text-card-foreground ring-1 ring-border/60",
+            : "bg-card text-card-foreground ring-border/60 ring-1",
         )}
       >
         {isStreaming ? (
@@ -81,7 +81,7 @@ function MessageBubble({
           <span className="whitespace-pre-wrap">{parseTextWithCitations(text, slug)}</span>
         )}
         {isStreaming && (
-          <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-ai-accent/50" />
+          <span className="bg-ai-accent/50 ml-0.5 inline-block h-3.5 w-1.5 animate-pulse rounded-sm" />
         )}
       </div>
     </div>
@@ -99,8 +99,8 @@ function ProgressIndicator({ threadId }: { threadId: string }) {
 
   return (
     <div className="flex items-center gap-2 px-3 py-2" aria-live="polite" role="status">
-      <LoaderIcon className="h-3.5 w-3.5 animate-spin text-ai-accent" />
-      <span className="font-sans text-xs text-muted-foreground">
+      <LoaderIcon className="text-ai-accent h-3.5 w-3.5 animate-spin" />
+      <span className="text-muted-foreground font-sans text-xs">
         {progress.completedTools.length > 0
           ? `Running ${progress.completedTools.at(-1)}...`
           : "Thinking..."}
@@ -133,7 +133,7 @@ function SuggestionChips({ onSelect }: { onSelect: (text: string) => void }) {
           key={suggestion}
           type="button"
           onClick={() => onSelect(suggestion)}
-          className="rounded-lg border border-border bg-card px-3 py-2 text-left font-sans text-xs text-muted-foreground transition-colors hover:border-ai-accent-border hover:bg-ai-accent-surface"
+          className="border-border bg-card text-muted-foreground hover:border-ai-accent-border hover:bg-ai-accent-surface rounded-lg border px-3 py-2 text-left font-sans text-xs transition-colors"
         >
           {suggestion}
         </button>
@@ -216,22 +216,22 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:rounded-xl">
+    <div className="border-border bg-card flex h-full flex-col overflow-hidden rounded-2xl border shadow-sm sm:rounded-xl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
+      <div className="border-border/50 flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div className="bg-ai-accent text-ai-accent-foreground flex h-8 w-8 items-center justify-center rounded-lg">
             <SparklesIcon className="h-4 w-4" />
           </div>
           <div>
-            <div className="font-sans text-sm font-semibold text-foreground">Seal AI</div>
+            <div className="text-foreground font-sans text-sm font-semibold">Seal AI</div>
             <div className="text-muted-foreground font-sans text-[10px]">Document assistant</div>
           </div>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="text-muted-foreground rounded-md p-1.5 transition-colors hover:bg-muted hover:text-foreground"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md p-1.5 transition-colors"
           aria-label="Close AI panel"
         >
           <XIcon className="h-4 w-4" />
@@ -242,7 +242,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
       <div className="flex-1 overflow-y-auto px-4 py-3" role="log" aria-label="Chat messages">
         {paginationStatus === "LoadingFirstPage" ? (
           <div className="flex items-center justify-center py-8">
-            <LoaderIcon className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoaderIcon className="text-muted-foreground h-5 w-5 animate-spin" />
           </div>
         ) : isEmpty ? (
           <div className="flex flex-col items-center gap-4 py-6">
@@ -250,7 +250,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
               <SparklesIcon className="text-ai-accent h-6 w-6" />
             </div>
             <div className="text-center">
-              <p className="font-sans text-sm font-medium text-foreground">How can I help?</p>
+              <p className="text-foreground font-sans text-sm font-medium">How can I help?</p>
               <p className="text-muted-foreground mt-1 font-sans text-xs">
                 I can analyze documents, suggest fields, and search across your workspace
               </p>
@@ -285,14 +285,14 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
       </div>
 
       {/* Input area */}
-      <div className="border-t border-border/50 px-3 py-3">
+      <div className="border-border/50 border-t px-3 py-3">
         {progress.isTracking ? (
           <div className="flex items-center justify-center" aria-live="polite">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleAbort}
-              className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
+              className="text-muted-foreground hover:text-destructive h-8 gap-1.5 text-xs"
             >
               <SquareIcon className="h-3 w-3" />
               Stop generating
@@ -308,7 +308,7 @@ export function AIChatPanel({ threadId, slug, onClose }: AIChatPanelProps) {
               placeholder="Ask about this document or search across all..."
               aria-label="Message to AI assistant"
               rows={1}
-              className="max-h-24 min-h-[36px] flex-1 resize-none rounded-lg border border-input bg-muted px-3 py-2 font-sans text-sm text-foreground placeholder:text-muted-foreground focus:border-ai-accent focus:ring-1 focus:ring-ai-accent focus:outline-none"
+              className="border-input bg-muted text-foreground placeholder:text-muted-foreground focus:border-ai-accent focus:ring-ai-accent max-h-24 min-h-[36px] flex-1 resize-none rounded-lg border px-3 py-2 font-sans text-sm focus:ring-1 focus:outline-none"
             />
             <Button
               size="sm"

@@ -29,7 +29,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,6 +50,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -402,7 +402,7 @@ export function SignatureCapture({
           <CardTitle>Sign Document</CardTitle>
           <CardDescription>No signature methods are currently available.</CardDescription>
         </CardHeader>
-        <CardContent className="pt-0 text-sm text-muted-foreground">
+        <CardContent className="text-muted-foreground pt-0 text-sm">
           Contact your organization administrator to re-enable signing methods.
           <div className="mt-4">
             <Button variant="outline" onClick={onCancel}>
