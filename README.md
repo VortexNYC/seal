@@ -1,312 +1,196 @@
-Welcome to your new TanStack app!
+# Seal
 
-# Getting Started
+Seal is a Bun + Turborepo monorepo for the Seal document-signing platform. It contains the product web app, public site and developer docs, Convex backend, MCP server, transactional email templates, an embeddable React SDK, and shared design tokens.
 
-To run this application:
+## Workspace Overview
+
+| Path | Purpose | Stack |
+| --- | --- | --- |
+| `apps/web` | Main product app | React 19, TanStack Router, Vite, Clerk, Convex |
+| `apps/landing` | Marketing site and published developer docs | TanStack Start, Fumadocs, Sanity |
+| `apps/backend` | Convex backend, REST API, webhooks, jobs | Convex, TypeScript |
+| `apps/mcp-server` | MCP server for Seal tools/resources | Bun, Express, MCP SDK |
+| `packages/transactional` | Transactional email templates | React Email |
+| `packages/react-sdk` | Embeddable React SDK | TypeScript |
+| `packages/tokens` | Shared theme/font tokens | CSS, TypeScript |
+| `tooling/typescript` | Shared TS config | TypeScript |
+
+## Prerequisites
+
+- Bun `1.3.0` or newer
+- A Convex deployment for backend-backed local work
+- Clerk credentials for authenticated flows
+- Optional: Sanity credentials for landing/CMS work
+- Optional: Stripe, Resend, and other integration secrets for billing/email flows
+
+Install dependencies once from the repo root:
 
 ```bash
 bun install
-bun --bun run start
 ```
 
-# Building For Production
+## Local Development
 
-To build this application for production:
+Use the root `dev` command for the main product stack:
 
 ```bash
-bun --bun run build
+bun run dev
 ```
 
-## Testing
+That starts:
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+- `@seal/backend`
+- `@seal/web`
+
+There is still no root `start` script.
+
+Equivalent targeted commands:
 
 ```bash
-bun --bun run test
+bunx turbo run dev --filter=@seal/backend
+bunx turbo run dev --filter=@seal/web
 ```
 
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-## Linting & Formatting
-
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
+Other useful non-default targets:
 
 ```bash
-bun --bun run lint
-bun --bun run format
-bun --bun run check
+bunx turbo run dev --filter=@seal/landing
+bunx turbo run dev --filter=@seal/mcp-server
+bunx turbo run dev --filter=@seal/transactional
 ```
 
-## Setting up Clerk
+Notes:
 
-- Set the `VITE_CLERK_PUBLISHABLE_KEY` in your `.env.local`.
+- `apps/landing` defaults to port `3001`.
+- `packages/transactional` also defaults to port `3001`.
+- `apps/mcp-server` defaults to port `5183`.
+- Playwright E2E assumes the product app is available at `http://localhost:5173`.
 
-## Setting up Convex
+## Environment Variables
 
-- Set the `VITE_CONVEX_URL` and `CONVEX_DEPLOYMENT` environment variables in your `.env.local`. (Or run `npx convex init` to set them automatically.)
-- Run `npx convex dev` to start the Convex server.
+The exact env set depends on which workspace you are running.
 
-## Shadcn
+### Product App (`apps/web`)
 
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
+Required for boot:
+
+- `VITE_CONVEX_URL`
+- `VITE_CLERK_PUBLISHABLE_KEY`
+
+Common optional vars:
+
+- `VITE_SENTRY_DSN`
+- `VITE_PUBLIC_POSTHOG_KEY`
+- `VITE_STRIPE_PUBLISHABLE_KEY`
+- `VITE_APP_URL`
+
+### Backend (`apps/backend`)
+
+Common vars used by the Convex backend include:
+
+- `CLERK_FRONTEND_API_URL`
+- `CLERK_SECRET_KEY`
+- `CLERK_WEBHOOK_SECRET`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_CONNECT_WEBHOOK_SECRET`
+- `SIGNATURE_ENCRYPTION_KEY`
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `NEXT_PUBLIC_APP_URL`
+
+Additional integration-specific vars are referenced throughout `apps/backend/convex`.
+
+### Landing / Docs (`apps/landing`)
+
+Common vars:
+
+- `SANITY_PROJECT_ID`
+- `SANITY_DATASET`
+
+The current code defaults `SANITY_DATASET` to `production`.
+
+### MCP Server (`apps/mcp-server`)
+
+Common vars:
+
+- `SEAL_API_BASE_URL`
+- `SEAL_API_KEY`
+- `SEAL_REQUEST_TIMEOUT`
+- `SEAL_DEBUG`
+- `PORT`
+
+### E2E (`apps/web`)
+
+Use [apps/web/.env.test.example](apps/web/.env.test.example) as the starting point for Playwright config.
+
+## Common Commands
+
+Run these from the repo root unless noted otherwise.
 
 ```bash
-pnpx shadcn@latest add button
+bun run dev
+bun run build
+bun run lint
+bun run format
+bun run format:check
+bun run typecheck
+bun run knip
+bun run static-analysis
+bun run test
 ```
 
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a file based router. Which means that the routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add another a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you use the `<Outlet />` component.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-
-import { Link } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  component: () => (
-    <>
-      <header>
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/about">About</Link>
-        </nav>
-      </header>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-const peopleRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/people",
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json() as Promise<{
-      results: {
-        name: string;
-      }[];
-    }>;
-  },
-  component: () => {
-    const data = peopleRoute.useLoaderData();
-    return (
-      <ul>
-        {data.results.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    );
-  },
-});
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-### React-Query
-
-React-Query is an excellent addition or alternative to route loading and integrating it into you application is a breeze.
-
-First add your dependencies:
+Target a single workspace when you want faster feedback:
 
 ```bash
-bun install @tanstack/react-query @tanstack/react-query-devtools
+bunx turbo run test --filter=@seal/backend
+bunx turbo run test --filter=@seal/web
+bunx turbo run build --filter=@seal/landing
 ```
 
-Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
+## E2E Testing
 
-```tsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-// ...
-
-const queryClient = new QueryClient();
-
-// ...
-
-if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-
-  root.render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-}
-```
-
-You can also add TanStack Query Devtools to the root route (optional).
-
-```tsx
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-
-const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <ReactQueryDevtools buttonPosition="top-right" />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-Now you can use `useQuery` to fetch your data.
-
-```tsx
-import { useQuery } from "@tanstack/react-query";
-
-import "./App.css";
-
-function App() {
-  const { data } = useQuery({
-    queryKey: ["people"],
-    queryFn: () =>
-      fetch("https://swapi.dev/api/people")
-        .then((res) => res.json())
-        .then((data) => data.results as { name: string }[]),
-    initialData: [],
-  });
-
-  return (
-    <div>
-      <ul>
-        {data.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-export default App;
-```
-
-You can find out everything you need to know on how to use React-Query in the [React-Query documentation](https://tanstack.com/query/latest/docs/framework/react/overview).
-
-## State Management
-
-Another common requirement for React applications is state management. There are many options for state management in React. TanStack Store provides a great starting point for your project.
-
-First you need to add TanStack Store as a dependency:
+Install Playwright browsers:
 
 ```bash
-bun install @tanstack/store
+bun --cwd apps/web x playwright install chromium
 ```
 
-Now let's create a simple counter in the `src/App.tsx` file as a demonstration.
+Run the test suite:
 
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store } from "@tanstack/store";
-import "./App.css";
-
-const countStore = new Store(0);
-
-function App() {
-  const count = useStore(countStore);
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>Increment - {count}</button>
-    </div>
-  );
-}
-
-export default App;
+```bash
+bun --cwd apps/web run test:e2e
 ```
 
-One of the many nice features of TanStack Store is the ability to derive state from other state. That derived state will update when the base state updates.
+Useful variants:
 
-Let's check this out by doubling the count using derived state.
-
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store, Derived } from "@tanstack/store";
-import "./App.css";
-
-const countStore = new Store(0);
-
-const doubledStore = new Derived({
-  fn: () => countStore.state * 2,
-  deps: [countStore],
-});
-doubledStore.mount();
-
-function App() {
-  const count = useStore(countStore);
-  const doubledCount = useStore(doubledStore);
-
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>Increment - {count}</button>
-      <div>Doubled - {doubledCount}</div>
-    </div>
-  );
-}
-
-export default App;
+```bash
+bun --cwd apps/web run test:e2e:ui
+bun --cwd apps/web run test:e2e:headed
+bun --cwd apps/web run test:e2e:debug
 ```
 
-We use the `Derived` class to create a new store that is derived from another store. The `Derived` class has a `mount` method that will start the derived store updating.
+More detail lives in [apps/web/e2e/README.md](apps/web/e2e/README.md).
 
-Once we've created the derived store we can use it in the `App` component just like we would any other store using the `useStore` hook.
+## Docs and API Reference
 
-You can find out everything you need to know on how to use TanStack Store in the [TanStack Store documentation](https://tanstack.com/store/latest).
+Published developer docs live in `apps/landing/content/docs`.
 
-# Demo files
+Useful landing/docs commands:
 
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
+```bash
+bun --cwd apps/landing run docs:generate
+bun --cwd apps/landing run docs:generate:api
+bun --cwd apps/landing run search:generate
+bun --cwd apps/landing run sitemap:generate
+```
 
-# Learn More
+The API reference content is generated from `apps/landing/openapi.yaml`.
 
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
+## Additional References
 
-Track status of the document
+- Contributor notes: [AGENTS.md](AGENTS.md)
+- Landing/docs guide: [apps/landing/AGENTS.md](apps/landing/AGENTS.md)
+- Web app guide: [apps/web/AGENTS.md](apps/web/AGENTS.md)
+- Backend guide: [apps/backend/convex/AGENTS.md](apps/backend/convex/AGENTS.md)
+- MCP server details: [apps/mcp-server/README.md](apps/mcp-server/README.md)

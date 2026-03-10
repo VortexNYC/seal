@@ -8,6 +8,7 @@
     "tooling/*"
   ],
   "scripts": {
+    "dev": "turbo run dev --filter=@seal/backend --filter=@seal/web",
     "build": "turbo run build",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
