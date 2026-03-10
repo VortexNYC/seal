@@ -8,7 +8,7 @@
     "tooling/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --filter=@seal/backend --filter=@seal/web",
+    "dev": "turbo run dev --filter=@seal/backend --filter=@seal/web --filter=@seal/landing",
     "build": "turbo run build",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
@@ -19,7 +19,7 @@
     "typecheck": "turbo run typecheck",
     "knip": "turbo run knip --continue",
     "knip:fix": "turbo run knip:fix --continue",
-    "static-analysis": "turbo run lint format:check typecheck knip --continue",
+    "static-analysis": "bun run check && turbo run typecheck knip --continue",
     "test": "turbo run test",
     "clean": "git clean -xdf .cache .tanstack .turbo dist node_modules",
     "clean:workspaces": "turbo run clean"
