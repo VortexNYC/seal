@@ -1,8 +1,8 @@
-@import "tailwindcss";
 @import "@seal/tokens/seal-fonts-web.css";
 @import "@seal/tokens/seal-theme-web.css";
-@plugin "@tailwindcss/typography";
 @import "tw-animate-css";
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 

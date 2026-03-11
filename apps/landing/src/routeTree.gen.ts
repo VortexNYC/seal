@@ -30,7 +30,7 @@ const StudioRoute = StudioRouteImport.update({
   id: '/studio',
   path: '/studio',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() => import('./routes/studio.lazy').then((d) => d.Route))
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
@@ -55,7 +55,7 @@ const ApiReferenceRoute = ApiReferenceRouteImport.update({
   id: '/api-reference',
   path: '/api-reference',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() => import('./routes/api-reference.lazy').then((d) => d.Route))
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',

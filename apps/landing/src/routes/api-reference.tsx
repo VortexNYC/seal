@@ -1,29 +1,7 @@
-import { ClientOnly, createFileRoute } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
-
-const ApiReferenceClient = lazy(async () => {
-  const mod = await import("~/components/api-reference-client");
-  return { default: mod.ApiReferenceClient };
-});
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/api-reference")({
-  component: ApiReferencePage,
+  head: () => ({
+    meta: [{ title: "Seal API Reference" }],
+  }),
 });
-
-function ApiReferencePage() {
-  return (
-    <ClientOnly fallback={<ApiReferenceLoadingFallback />}>
-      <Suspense fallback={<ApiReferenceLoadingFallback />}>
-        <ApiReferenceClient />
-      </Suspense>
-    </ClientOnly>
-  );
-}
-
-function ApiReferenceLoadingFallback() {
-  return (
-    <div className="flex min-h-dvh items-center justify-center bg-white text-sm text-zinc-500">
-      Loading API reference...
-    </div>
-  );
-}
