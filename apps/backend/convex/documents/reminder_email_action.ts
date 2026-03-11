@@ -9,8 +9,57 @@ import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import { internalAction, internalMutation, internalQuery } from "../_generated/server";
+import {
+  type ActionCtx,
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "../_generated/server";
 import { sendReminder } from "./email";
+
+function hasRecipientCompleted(status: Doc<"document_recipients">["status"]): boolean {
+  return status === "signed" || status === "approved" || status === "declined";
+}
+
+async function updateReminderAsFailed(
+  ctx: ActionCtx,
+  reminderId: Doc<"document_reminders">["_id"],
+  error: string,
+): Promise<void> {
+  await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
+    reminderId,
+    status: "failed",
+    failedAt: Date.now(),
+    lastError: error,
+  });
+}
+
+async function buildReminderEmailContext(
+  ctx: ActionCtx,
+  document: Doc<"documents">,
+  recipient: Doc<"document_recipients">,
+) {
+  const owner: Doc<"users"> | null = await ctx.runQuery(
+    internal.documents.reminder_email_action.getDocumentOwner,
+    { ownerId: document.ownerId },
+  );
+
+  const brandingSettings = await ctx.runQuery(
+    internal.organizations.queries.getBrandingSettingsInternal,
+    { organizationId: document.organizationId },
+  );
+
+  return {
+    senderName: owner?.name || owner?.email || "Document Owner",
+    signingUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173"}/sign/${recipient.signingToken}`,
+    emailBranding: brandingSettings.enabled
+      ? {
+          emailFromName: brandingSettings.emailFromName,
+          emailReplyTo: brandingSettings.emailReplyTo,
+        }
+      : undefined,
+  };
+}
 
 /**
  * Internal query to get reminder by ID
@@ -123,23 +172,13 @@ export const sendReminderEmail = internalAction({
     );
 
     if (!document || document.status === "deleted") {
-      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
-        reminderId: args.reminderId,
-        status: "failed",
-        failedAt: Date.now(),
-        lastError: "Document not found or deleted",
-      });
+      await updateReminderAsFailed(ctx, args.reminderId, "Document not found or deleted");
       return { success: false, error: "Document not found" };
     }
 
     // 4. Get recipient (if specific recipient)
     if (!reminder.recipientId) {
-      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
-        reminderId: args.reminderId,
-        status: "failed",
-        failedAt: Date.now(),
-        lastError: "No recipient specified for reminder",
-      });
+      await updateReminderAsFailed(ctx, args.reminderId, "No recipient specified for reminder");
       return { success: false, error: "No recipient specified" };
     }
 
@@ -149,21 +188,12 @@ export const sendReminderEmail = internalAction({
     );
 
     if (!recipient) {
-      await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
-        reminderId: args.reminderId,
-        status: "failed",
-        failedAt: Date.now(),
-        lastError: "Recipient not found",
-      });
+      await updateReminderAsFailed(ctx, args.reminderId, "Recipient not found");
       return { success: false, error: "Recipient not found" };
     }
 
     // 5. Check if recipient has already completed action
-    if (
-      recipient.status === "signed" ||
-      recipient.status === "approved" ||
-      recipient.status === "declined"
-    ) {
+    if (hasRecipientCompleted(recipient.status)) {
       await ctx.runMutation(internal.documents.reminder_email_action.updateReminderStatus, {
         reminderId: args.reminderId,
         status: "cancelled",
@@ -172,29 +202,11 @@ export const sendReminderEmail = internalAction({
       return { success: true }; // Not an error, just no longer needed
     }
 
-    // 6. Get document owner for sender name
-    const owner: Doc<"users"> | null = await ctx.runQuery(
-      internal.documents.reminder_email_action.getDocumentOwner,
-      { ownerId: document.ownerId },
+    const { senderName, signingUrl, emailBranding } = await buildReminderEmailContext(
+      ctx,
+      document,
+      recipient,
     );
-
-    const senderName = owner?.name || owner?.email || "Document Owner";
-
-    // 7. Build signing URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
-    const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
-
-    // 8. Get organization branding settings
-    const brandingSettings = await ctx.runQuery(
-      internal.organizations.queries.getBrandingSettingsInternal,
-      { organizationId: document.organizationId },
-    );
-    const emailBranding = brandingSettings.enabled
-      ? {
-          emailFromName: brandingSettings.emailFromName,
-          emailReplyTo: brandingSettings.emailReplyTo,
-        }
-      : undefined;
 
     // 9. Send the email
     const result = await sendReminder(ctx, {
@@ -264,35 +276,15 @@ export const sendReminderEmailDirect = internalAction({
     if (!recipient) return;
 
     // Skip if recipient already completed
-    if (
-      recipient.status === "signed" ||
-      recipient.status === "approved" ||
-      recipient.status === "declined"
-    ) {
+    if (hasRecipientCompleted(recipient.status)) {
       return;
     }
 
-    // Get sender information
-    const owner: Doc<"users"> | null = await ctx.runQuery(
-      internal.documents.reminder_email_action.getDocumentOwner,
-      { ownerId: document.ownerId },
+    const { senderName, signingUrl, emailBranding } = await buildReminderEmailContext(
+      ctx,
+      document,
+      recipient,
     );
-
-    const senderName = owner?.name || owner?.email || "Document Owner";
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
-    const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
-
-    // Get organization branding settings
-    const brandingSettings = await ctx.runQuery(
-      internal.organizations.queries.getBrandingSettingsInternal,
-      { organizationId: document.organizationId },
-    );
-    const emailBranding = brandingSettings.enabled
-      ? {
-          emailFromName: brandingSettings.emailFromName,
-          emailReplyTo: brandingSettings.emailReplyTo,
-        }
-      : undefined;
 
     await sendReminder(ctx, {
       to: recipient.email,

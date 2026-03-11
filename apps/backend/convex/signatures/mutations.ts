@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 
+import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { mutation } from "../_generated/server";
 import { logSignatureAction } from "../audit_logs/helpers";
@@ -22,6 +23,307 @@ import {
 
 // Signature method type
 const signatureMethodTuple = v.union(v.literal("draw"), v.literal("type"), v.literal("upload"));
+
+interface SignatureSaveInput {
+  fieldId: Id<"signature_fields">;
+  value?: string;
+  signatureImageUrl?: string;
+  signatureMethod?: "draw" | "type" | "upload";
+  ipAddress: string;
+  userAgent: string;
+}
+
+interface PreparedSignatureContext {
+  recipient: Doc<"document_recipients">;
+  field: Doc<"signature_fields">;
+  document: Doc<"documents">;
+  existingSignature: Doc<"signatures"> | null;
+}
+
+interface ComputedSignaturePayload {
+  documentHash: string;
+  encryptedImageUrl: string | undefined;
+  signatureHash: string;
+  signatureImageHash: string | undefined;
+  signedAt: number;
+}
+
+type SignatureDbCtx = Pick<MutationCtx, "db">;
+
+function ensureValueMeetsRules(field: Doc<"signature_fields">, value?: string): void {
+  if (!value || !field.validationRules) {
+    return;
+  }
+
+  const rulesValidation = validateAgainstRules(value, field.validationRules);
+  if (!rulesValidation.valid) {
+    throw new Error(rulesValidation.error || "Value does not meet validation requirements");
+  }
+}
+
+function ensureSignatureInputIsValid(
+  field: Doc<"signature_fields">,
+  input: Pick<SignatureSaveInput, "value" | "signatureImageUrl">,
+): void {
+  const signatureValidation = validateSignature(
+    field.fieldType,
+    input.value,
+    input.signatureImageUrl,
+  );
+  if (!signatureValidation.valid) {
+    throw new Error(signatureValidation.error || "Invalid field value");
+  }
+
+  ensureValueMeetsRules(field, input.value);
+}
+
+async function computeSignaturePayload(
+  recipientId: Id<"document_recipients">,
+  input: SignatureSaveInput,
+  documentHash: string,
+): Promise<ComputedSignaturePayload> {
+  const signedAt = Date.now();
+  const signatureData = input.value || input.signatureImageUrl || "";
+  const signatureHash = await generateSignatureHash(
+    signatureData,
+    recipientId,
+    input.fieldId,
+    documentHash,
+    signedAt,
+  );
+  const signatureImageHash = await generateSignatureImageHash(input.signatureImageUrl);
+  const encryptedImageUrl = await encryptSignatureData(input.signatureImageUrl, getEncryptionKey());
+
+  return {
+    documentHash,
+    encryptedImageUrl,
+    signatureHash,
+    signatureImageHash,
+    signedAt,
+  };
+}
+
+async function upsertSignatureRecord(
+  ctx: SignatureDbCtx,
+  signatureContext: PreparedSignatureContext,
+  input: SignatureSaveInput,
+  payload: ComputedSignaturePayload,
+): Promise<{ signatureId: Id<"signatures">; isUpdate: boolean }> {
+  const timestamp = Date.now();
+  const { recipient, field, document, existingSignature } = signatureContext;
+
+  if (existingSignature) {
+    await ctx.db.patch(existingSignature._id, {
+      ...(input.value !== undefined && { value: input.value }),
+      ...(input.signatureImageUrl !== undefined && {
+        signatureImageUrl: payload.encryptedImageUrl,
+      }),
+      signedAt: payload.signedAt,
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
+      signatureHash: payload.signatureHash,
+      signatureImageHash: payload.signatureImageHash,
+      documentHashAtSigning: payload.documentHash,
+      signatureMethod: input.signatureMethod,
+      updatedAt: timestamp,
+    });
+
+    await logSignatureAction(ctx, {
+      organizationId: document.organizationId,
+      recipientId: recipient._id,
+      action: "signature.updated",
+      signatureId: existingSignature._id,
+      fieldId: field._id,
+      documentId: field.documentId,
+      oldValues: {
+        value: existingSignature.value,
+      },
+      newValues: {
+        value: input.value,
+        signatureHash: payload.signatureHash,
+      },
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
+    });
+
+    return { signatureId: existingSignature._id, isUpdate: true };
+  }
+
+  const signatureId = await ctx.db.insert("signatures", {
+    fieldId: field._id,
+    recipientId: recipient._id,
+    documentId: field.documentId,
+    value: input.value,
+    signatureImageUrl: payload.encryptedImageUrl,
+    signatureHash: payload.signatureHash,
+    signatureImageHash: payload.signatureImageHash,
+    documentHashAtSigning: payload.documentHash,
+    signatureMethod: input.signatureMethod,
+    signedAt: payload.signedAt,
+    ipAddress: input.ipAddress,
+    userAgent: input.userAgent,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  });
+
+  await logSignatureAction(ctx, {
+    organizationId: document.organizationId,
+    recipientId: recipient._id,
+    action: "signature.created",
+    signatureId,
+    fieldId: field._id,
+    documentId: field.documentId,
+    newValues: {
+      value: input.value,
+      signatureHash: payload.signatureHash,
+    },
+    ipAddress: input.ipAddress,
+    userAgent: input.userAgent,
+  });
+
+  return { signatureId, isUpdate: false };
+}
+
+async function autoSubmitMainSignature(
+  ctx: SignatureDbCtx,
+  recipient: Doc<"document_recipients">,
+  document: Doc<"documents">,
+  field: Doc<"signature_fields">,
+  signatureImageUrl: string | undefined,
+): Promise<void> {
+  if (field.isMainSignature !== true || field.fieldType !== "signature") {
+    return;
+  }
+
+  const status =
+    recipient.role === "signer" ? "signed" : recipient.role === "approver" ? "approved" : "viewed";
+
+  await ctx.db.patch(recipient._id, {
+    status,
+    signatureData: signatureImageUrl,
+    signatureType: "drawn",
+    signedAt: status === "signed" ? Date.now() : undefined,
+    approvedAt: status === "approved" ? Date.now() : undefined,
+  });
+
+  if (status !== "signed" && status !== "approved") {
+    return;
+  }
+
+  await publishWebhookEvent(ctx, {
+    organizationId: document.organizationId,
+    eventType: "recipient.signed",
+    data: {
+      document_id: field.documentId,
+      recipient_id: recipient._id,
+      recipient_email: recipient.email,
+      status,
+      signed_at: new Date().toISOString(),
+    },
+  });
+}
+
+async function prepareTokenSignatureSave(
+  ctx: SignatureDbCtx,
+  signingToken: string,
+  input: Pick<SignatureSaveInput, "fieldId" | "value" | "signatureImageUrl">,
+): Promise<PreparedSignatureContext> {
+  const recipient = await findRecipientByToken(ctx, signingToken);
+  if (!recipient) {
+    throw new Error("Invalid signing token");
+  }
+
+  if (recipient.tokenExpiresAt < Date.now()) {
+    throw new Error("Signing token has expired");
+  }
+
+  const field = await ctx.db.get(input.fieldId);
+  if (!field) {
+    throw new Error("Field not found");
+  }
+  if (field.recipientId !== recipient._id) {
+    throw new Error("This field is not assigned to you");
+  }
+  if (field.documentId !== recipient.documentId) {
+    throw new Error("Field does not belong to this document");
+  }
+
+  const document = await ctx.db.get(field.documentId);
+  if (!document) {
+    throw new Error("Document not found");
+  }
+  if (document.workflowStatus === "completed") {
+    throw new Error("Cannot modify fields on completed document");
+  }
+
+  await verifyDocumentIntegrityForSigning(ctx, document);
+  ensureSignatureInputIsValid(field, input);
+
+  const existingSignature = await ctx.db
+    .query("signatures")
+    .withIndex("by_field", (q) => q.eq("fieldId", input.fieldId))
+    .first();
+
+  return { recipient, field, document, existingSignature };
+}
+
+async function prepareAuthenticatedSignatureSave(
+  ctx: SignatureDbCtx,
+  userId: Id<"users">,
+  documentId: Id<"documents">,
+  input: Pick<SignatureSaveInput, "fieldId" | "value" | "signatureImageUrl">,
+): Promise<PreparedSignatureContext> {
+  const user = await ctx.db.get(userId);
+  if (!user || !user.email) {
+    throw new Error("User not found or has no email");
+  }
+
+  const document = await ctx.db.get(documentId);
+  if (!document) {
+    throw new Error("Document not found");
+  }
+  if (document.status === "deleted") {
+    throw new Error("Document has been deleted");
+  }
+  if (document.workflowStatus === "draft" || !document.workflowStatus) {
+    throw new Error("Document must be sent before signing");
+  }
+  if (document.workflowStatus === "completed") {
+    throw new Error("Cannot modify fields on completed document");
+  }
+
+  await verifyDocumentIntegrityForSigning(ctx, document);
+
+  const recipient = await ctx.db
+    .query("document_recipients")
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))
+    .filter((q) => q.eq(q.field("email"), user.email.toLowerCase()))
+    .first();
+
+  if (!recipient) {
+    throw new Error("You are not a recipient on this document");
+  }
+
+  const field = await ctx.db.get(input.fieldId);
+  if (!field) {
+    throw new Error("Field not found");
+  }
+  if (field.recipientId !== recipient._id) {
+    throw new Error("This field is not assigned to you");
+  }
+  if (field.documentId !== documentId) {
+    throw new Error("Field does not belong to this document");
+  }
+
+  ensureSignatureInputIsValid(field, input);
+
+  const existingSignature = await ctx.db
+    .query("signatures")
+    .withIndex("by_field", (q) => q.eq("fieldId", input.fieldId))
+    .first();
+
+  return { recipient, field, document, existingSignature };
+}
 
 /**
  * Signature Mutations
@@ -325,202 +627,43 @@ export const saveFieldValue = mutation({
     userAgent: v.string(),
   },
   handler: async (ctx, args) => {
-    // 1. Validate signing token and get recipient (hash-based lookup with plaintext fallback)
-    const recipient = await findRecipientByToken(ctx, args.signingToken);
+    const signatureContext = await prepareTokenSignatureSave(ctx, args.signingToken, args);
+    const payload = await computeSignaturePayload(
+      signatureContext.recipient._id,
+      {
+        fieldId: args.fieldId,
+        value: args.value,
+        signatureImageUrl: args.signatureImageUrl,
+        signatureMethod: args.signatureMethod,
+        ipAddress: args.ipAddress,
+        userAgent: args.userAgent,
+      },
+      signatureContext.document.documentHash || "",
+    );
 
-    if (!recipient) {
-      throw new Error("Invalid signing token");
-    }
+    const result = await upsertSignatureRecord(
+      ctx,
+      signatureContext,
+      {
+        fieldId: args.fieldId,
+        value: args.value,
+        signatureImageUrl: args.signatureImageUrl,
+        signatureMethod: args.signatureMethod,
+        ipAddress: args.ipAddress,
+        userAgent: args.userAgent,
+      },
+      payload,
+    );
 
-    // 2. Check token expiration
-    if (recipient.tokenExpiresAt < Date.now()) {
-      throw new Error("Signing token has expired");
-    }
-
-    // 3. Get the field
-    const field = await ctx.db.get(args.fieldId);
-    if (!field) {
-      throw new Error("Field not found");
-    }
-
-    // 4. Verify field is assigned to this recipient
-    if (field.recipientId !== recipient._id) {
-      throw new Error("This field is not assigned to you");
-    }
-
-    // 5. Verify field belongs to the same document
-    if (field.documentId !== recipient.documentId) {
-      throw new Error("Field does not belong to this document");
-    }
-
-    // 6. Get document and verify it's not completed
-    const document = await ctx.db.get(field.documentId);
-    if (!document) {
-      throw new Error("Document not found");
-    }
-
-    if (document.workflowStatus === "completed") {
-      throw new Error("Cannot modify fields on completed document");
-    }
-
-    // 6b. Verify document integrity — block if document was modified after prior signatures
-    await verifyDocumentIntegrityForSigning(ctx, document);
-
-    // 7. Validate signature data based on field type
-    const signatureValidation = validateSignature(
-      field.fieldType,
-      args.value,
+    await autoSubmitMainSignature(
+      ctx,
+      signatureContext.recipient,
+      signatureContext.document,
+      signatureContext.field,
       args.signatureImageUrl,
     );
-    if (!signatureValidation.valid) {
-      throw new Error(signatureValidation.error || "Invalid field value");
-    }
 
-    // 8. Validate against field validation rules
-    if (args.value && field.validationRules) {
-      const rulesValidation = validateAgainstRules(args.value, field.validationRules);
-      if (!rulesValidation.valid) {
-        throw new Error(rulesValidation.error || "Value does not meet validation requirements");
-      }
-    }
-
-    // 9. Check if signature already exists
-    const existingSignature = await ctx.db
-      .query("signatures")
-      .withIndex("by_field", (q) => q.eq("fieldId", args.fieldId))
-      .first();
-
-    let signatureId: import("../_generated/dataModel").Id<"signatures">;
-
-    // SEA-108: Compute signature hash for cryptographic verification
-    const signedAt = Date.now();
-    const signatureData = args.value || args.signatureImageUrl || "";
-    const documentHash = document.documentHash || "";
-    const signatureHash = await generateSignatureHash(
-      signatureData,
-      recipient._id,
-      args.fieldId,
-      documentHash,
-      signedAt,
-    );
-
-    // Compute signature image hash for reuse detection (hash raw data before encryption)
-    const signatureImageHash = await generateSignatureImageHash(args.signatureImageUrl);
-
-    // Encrypt signature image data before storage
-    const encKey = getEncryptionKey();
-    const encryptedImageUrl = await encryptSignatureData(args.signatureImageUrl, encKey);
-
-    if (existingSignature) {
-      // Update existing signature
-      await ctx.db.patch(existingSignature._id, {
-        ...(args.value !== undefined && { value: args.value }),
-        ...(args.signatureImageUrl !== undefined && {
-          signatureImageUrl: encryptedImageUrl,
-        }),
-        signedAt,
-        ipAddress: args.ipAddress,
-        userAgent: args.userAgent,
-        // SEA-108: Update cryptographic fields
-        signatureHash,
-        signatureImageHash,
-        documentHashAtSigning: documentHash,
-        signatureMethod: args.signatureMethod,
-        updatedAt: Date.now(),
-      });
-      signatureId = existingSignature._id;
-
-      // Log update to audit trail
-      await logSignatureAction(ctx, {
-        organizationId: document.organizationId,
-        recipientId: recipient._id,
-        action: "signature.updated",
-        signatureId: existingSignature._id,
-        fieldId: args.fieldId,
-        documentId: field.documentId,
-        oldValues: {
-          value: existingSignature.value,
-        },
-        newValues: {
-          value: args.value,
-          signatureHash,
-        },
-        ipAddress: args.ipAddress,
-        userAgent: args.userAgent,
-      });
-    } else {
-      // Create new signature with cryptographic hash
-      signatureId = await ctx.db.insert("signatures", {
-        fieldId: args.fieldId,
-        recipientId: recipient._id,
-        documentId: field.documentId,
-        value: args.value,
-        signatureImageUrl: encryptedImageUrl,
-        // SEA-108: Cryptographic signature data
-        signatureHash,
-        signatureImageHash,
-        documentHashAtSigning: documentHash,
-        signatureMethod: args.signatureMethod,
-        signedAt,
-        ipAddress: args.ipAddress,
-        userAgent: args.userAgent,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-
-      // Log creation to audit trail
-      await logSignatureAction(ctx, {
-        organizationId: document.organizationId,
-        recipientId: recipient._id,
-        action: "signature.created",
-        signatureId,
-        fieldId: args.fieldId,
-        documentId: field.documentId,
-        newValues: {
-          value: args.value,
-          signatureHash,
-        },
-        ipAddress: args.ipAddress,
-        userAgent: args.userAgent,
-      });
-    }
-
-    // If this is the main signature field, auto-sign the document
-    if (field.isMainSignature === true && field.fieldType === "signature") {
-      // Determine status based on recipient role
-      const status =
-        recipient.role === "signer"
-          ? "signed"
-          : recipient.role === "approver"
-            ? "approved"
-            : "viewed";
-
-      // Update recipient status and signature data
-      await ctx.db.patch(recipient._id, {
-        status,
-        signatureData: args.signatureImageUrl,
-        signatureType: "drawn", // Assuming drawn for now, could be enhanced
-        signedAt: status === "signed" ? Date.now() : undefined,
-        approvedAt: status === "approved" ? Date.now() : undefined,
-      });
-
-      // Publish webhook event for recipient signing
-      if (status === "signed" || status === "approved") {
-        await publishWebhookEvent(ctx, {
-          organizationId: document.organizationId,
-          eventType: "recipient.signed",
-          data: {
-            document_id: field.documentId,
-            recipient_id: recipient._id,
-            recipient_email: recipient.email,
-            status,
-            signed_at: new Date().toISOString(),
-          },
-        });
-      }
-    }
-
-    return { signatureId, isUpdate: !!existingSignature };
+    return result;
   },
 });
 
@@ -543,195 +686,52 @@ export const saveFieldValueAuthenticated = authMutation({
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
 
-    // 1. Get user email for recipient matching
-    const user = await ctx.db.get(userId);
-    if (!user || !user.email) {
-      throw new Error("User not found or has no email");
-    }
-
-    const userEmail = user.email.toLowerCase();
-
-    // 2. Get the document and verify it's in a signable state
-    const document = await ctx.db.get(args.documentId);
-    if (!document) {
-      throw new Error("Document not found");
-    }
-
-    if (document.status === "deleted") {
-      throw new Error("Document has been deleted");
-    }
-
-    // Only allow signing when document is sent or in_progress (not draft or completed)
-    if (document.workflowStatus === "draft" || !document.workflowStatus) {
-      throw new Error("Document must be sent before signing");
-    }
-
-    if (document.workflowStatus === "completed") {
-      throw new Error("Cannot modify fields on completed document");
-    }
-
-    // 2b. Verify document integrity — block if document was modified after prior signatures
-    await verifyDocumentIntegrityForSigning(ctx, document);
-
-    // 3. Find recipient by document + email match
-    const recipient = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("email"), userEmail))
-      .first();
-
-    if (!recipient) {
-      throw new Error("You are not a recipient on this document");
-    }
-
-    // 4. Check if recipient has already completed signing
-    if (recipient.status === "signed" || recipient.status === "declined") {
+    const signatureContext = await prepareAuthenticatedSignatureSave(
+      ctx,
+      userId,
+      args.documentId,
+      args,
+    );
+    if (
+      signatureContext.recipient.status === "signed" ||
+      signatureContext.recipient.status === "declined"
+    ) {
       throw new Error("You have already completed your signing action");
     }
 
-    // 5. Get the field
-    const field = await ctx.db.get(args.fieldId);
-    if (!field) {
-      throw new Error("Field not found");
-    }
-
-    // 6. Verify field is assigned to this recipient
-    if (field.recipientId !== recipient._id) {
-      throw new Error("This field is not assigned to you");
-    }
-
-    // 7. Verify field belongs to the same document
-    if (field.documentId !== args.documentId) {
-      throw new Error("Field does not belong to this document");
-    }
-
-    // 8. Validate signature data based on field type
-    const signatureValidation = validateSignature(
-      field.fieldType,
-      args.value,
-      args.signatureImageUrl,
-    );
-    if (!signatureValidation.valid) {
-      throw new Error(signatureValidation.error || "Invalid field value");
-    }
-
-    // 9. Validate against field validation rules
-    if (args.value && field.validationRules) {
-      const rulesValidation = validateAgainstRules(args.value, field.validationRules);
-      if (!rulesValidation.valid) {
-        throw new Error(rulesValidation.error || "Value does not meet validation requirements");
-      }
-    }
-
-    // 10. Check if signature already exists
-    const existingSignature = await ctx.db
-      .query("signatures")
-      .withIndex("by_field", (q) => q.eq("fieldId", args.fieldId))
-      .first();
-
-    let signatureId: import("../_generated/dataModel").Id<"signatures">;
-
-    // SEA-108: Compute signature hash for cryptographic verification
-    const signedAt = Date.now();
-    const signatureData = args.value || args.signatureImageUrl || "";
-    const documentHash = document.documentHash || "";
-    const signatureHash = await generateSignatureHash(
-      signatureData,
-      recipient._id,
-      args.fieldId,
-      documentHash,
-      signedAt,
-    );
-
-    // Get IP address from args or use default for authenticated flow
     const ipAddress = args.ipAddress ?? "web-authenticated";
-
-    // Compute signature image hash for reuse detection (hash raw data before encryption)
-    const signatureImageHash = await generateSignatureImageHash(args.signatureImageUrl);
-
-    // Encrypt signature image data before storage
-    const encKey = getEncryptionKey();
-    const encryptedImageUrl = await encryptSignatureData(args.signatureImageUrl, encKey);
-
-    if (existingSignature) {
-      // Update existing signature
-      await ctx.db.patch(existingSignature._id, {
-        ...(args.value !== undefined && { value: args.value }),
-        ...(args.signatureImageUrl !== undefined && {
-          signatureImageUrl: encryptedImageUrl,
-        }),
-        signedAt,
-        ipAddress,
-        userAgent: args.userAgent,
-        signatureHash,
-        signatureImageHash,
-        documentHashAtSigning: documentHash,
-        signatureMethod: args.signatureMethod,
-        updatedAt: Date.now(),
-      });
-      signatureId = existingSignature._id;
-
-      // Log update to audit trail
-      // Cast ctx to MutationCtx since authMutation replaces auth type but db is still compatible
-      await logSignatureAction(ctx as unknown as MutationCtx, {
-        organizationId: document.organizationId,
-        recipientId: recipient._id,
-        action: "signature.updated",
-        signatureId: existingSignature._id,
+    const payload = await computeSignaturePayload(
+      signatureContext.recipient._id,
+      {
         fieldId: args.fieldId,
-        documentId: args.documentId,
-        oldValues: {
-          value: existingSignature.value,
-        },
-        newValues: {
-          value: args.value,
-          signatureHash,
-        },
-        ipAddress,
-        userAgent: args.userAgent,
-      });
-    } else {
-      // Create new signature with cryptographic hash
-      signatureId = await ctx.db.insert("signatures", {
-        fieldId: args.fieldId,
-        recipientId: recipient._id,
-        documentId: args.documentId,
         value: args.value,
-        signatureImageUrl: encryptedImageUrl,
-        signatureHash,
-        signatureImageHash,
-        documentHashAtSigning: documentHash,
+        signatureImageUrl: args.signatureImageUrl,
         signatureMethod: args.signatureMethod,
-        signedAt,
         ipAddress,
         userAgent: args.userAgent,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
+      },
+      signatureContext.document.documentHash || "",
+    );
 
-      // Log creation to audit trail
-      // Cast ctx to MutationCtx since authMutation replaces auth type but db is still compatible
-      await logSignatureAction(ctx as unknown as MutationCtx, {
-        organizationId: document.organizationId,
-        recipientId: recipient._id,
-        action: "signature.created",
-        signatureId,
+    const result = await upsertSignatureRecord(
+      ctx,
+      signatureContext,
+      {
         fieldId: args.fieldId,
-        documentId: args.documentId,
-        newValues: {
-          value: args.value,
-          signatureHash,
-        },
+        value: args.value,
+        signatureImageUrl: args.signatureImageUrl,
+        signatureMethod: args.signatureMethod,
         ipAddress,
         userAgent: args.userAgent,
-      });
-    }
+      },
+      payload,
+    );
 
     // Note: For authenticated users, we do NOT auto-sign on main signature field.
     // The user must explicitly click "Sign Document" to submit, which ensures
     // all required fields are filled before marking the document as signed.
     // This is different from token-based signing where main signature auto-submits.
 
-    return { signatureId, isUpdate: !!existingSignature };
+    return result;
   },
 });

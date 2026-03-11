@@ -6,8 +6,48 @@
 
 import { ConvexError, v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
 import { permissionMutation } from "../auth";
 import { contactStatusValidator } from "../schemas/contacts";
+
+function buildContactUpdates(
+  contact: Doc<"contacts">,
+  args: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    company?: string;
+    title?: string;
+    status?: Doc<"contacts">["status"];
+    notes?: string;
+    tags?: string[];
+    lastContactedAt?: number;
+  },
+): Record<string, string | number | string[] | undefined> {
+  const updates: Record<string, string | number | string[] | undefined> = {
+    updatedAt: Date.now(),
+  };
+
+  if (args.firstName !== undefined) updates.firstName = args.firstName;
+  if (args.lastName !== undefined) updates.lastName = args.lastName;
+  if (args.email !== undefined) updates.email = args.email.toLowerCase().trim();
+  if (args.phone !== undefined) updates.phone = args.phone;
+  if (args.company !== undefined) updates.company = args.company;
+  if (args.title !== undefined) updates.title = args.title;
+  if (args.status !== undefined) updates.status = args.status;
+  if (args.notes !== undefined) updates.notes = args.notes;
+  if (args.tags !== undefined) updates.tags = args.tags;
+  if (args.lastContactedAt !== undefined) updates.lastContactedAt = args.lastContactedAt;
+
+  if (args.firstName !== undefined || args.lastName !== undefined) {
+    const firstName = args.firstName ?? contact.firstName;
+    const lastName = args.lastName ?? contact.lastName;
+    updates.fullName = `${firstName} ${lastName}`.trim();
+  }
+
+  return updates;
+}
 
 /**
  * Create a new contact.
@@ -97,27 +137,7 @@ export const update = permissionMutation("contacts:edit")({
       throw new ConvexError("Contact not found");
     }
 
-    const updates: Record<string, string | number | string[] | undefined> = {
-      updatedAt: Date.now(),
-    };
-
-    if (args.firstName !== undefined) updates.firstName = args.firstName;
-    if (args.lastName !== undefined) updates.lastName = args.lastName;
-    if (args.email !== undefined) updates.email = args.email.toLowerCase().trim();
-    if (args.phone !== undefined) updates.phone = args.phone;
-    if (args.company !== undefined) updates.company = args.company;
-    if (args.title !== undefined) updates.title = args.title;
-    if (args.status !== undefined) updates.status = args.status;
-    if (args.notes !== undefined) updates.notes = args.notes;
-    if (args.tags !== undefined) updates.tags = args.tags;
-    if (args.lastContactedAt !== undefined) updates.lastContactedAt = args.lastContactedAt;
-
-    // Recompute fullName if either name part changed
-    if (args.firstName !== undefined || args.lastName !== undefined) {
-      const firstName = args.firstName ?? contact.firstName;
-      const lastName = args.lastName ?? contact.lastName;
-      updates.fullName = `${firstName} ${lastName}`.trim();
-    }
+    const updates = buildContactUpdates(contact, args);
 
     await ctx.db.patch(args.id, updates);
 

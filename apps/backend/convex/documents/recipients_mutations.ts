@@ -5,7 +5,8 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import { internalMutation, mutation } from "../_generated/server";
+import type { Doc } from "../_generated/dataModel";
+import { internalMutation, mutation, type MutationCtx } from "../_generated/server";
 import { logRecipientAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
 import { generateStringHash } from "../crypto/helpers";
@@ -37,6 +38,307 @@ async function generateSigningToken(): Promise<{
   const token = Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
   const tokenHash = await generateStringHash(token);
   return { token, tokenHash };
+}
+
+type RecipientStatusChangeArgs = {
+  status: Doc<"document_recipients">["status"];
+  signatureData?: string;
+  signatureType?: "drawn" | "typed" | "uploaded";
+  declineReason?: string;
+  ipAddress?: string;
+};
+
+type RecipientStatusUpdate = {
+  status: Doc<"document_recipients">["status"];
+  updatedAt: number;
+  viewedAt?: number;
+  signedAt?: number;
+  signatureData?: string;
+  signatureType?: "drawn" | "typed" | "uploaded";
+  approvedAt?: number;
+  declinedAt?: number;
+  declineReason?: string;
+  ipAddress?: string;
+};
+
+function ensureRecipientCanUpdateStatus(
+  recipient: Doc<"document_recipients">,
+  args: RecipientStatusChangeArgs,
+  terminalMessage: string,
+): void {
+  if (
+    recipient.status === "signed" ||
+    recipient.status === "approved" ||
+    recipient.status === "declined"
+  ) {
+    throw new ConvexError(terminalMessage);
+  }
+
+  if (args.status === "signed" && recipient.role !== "signer") {
+    throw new ConvexError("Only signers can have status 'signed'");
+  }
+  if (args.status === "approved" && recipient.role !== "approver") {
+    throw new ConvexError("Only approvers can have status 'approved'");
+  }
+  if (args.status === "signed" && (!args.signatureData || !args.signatureType)) {
+    throw new ConvexError("Signature data and type are required for signing");
+  }
+  if (args.status === "declined" && !args.declineReason) {
+    throw new ConvexError("Decline reason is required");
+  }
+}
+
+async function ensureRecipientPaymentsAreComplete(
+  ctx: MutationCtx,
+  recipient: Doc<"document_recipients">,
+  status: RecipientStatusChangeArgs["status"],
+): Promise<void> {
+  if (status !== "signed" && status !== "approved") {
+    return;
+  }
+
+  const paymentFields = await ctx.db
+    .query("signature_fields")
+    .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))
+    .filter((q) => q.eq(q.field("fieldType"), "payment"))
+    .collect();
+
+  for (const paymentField of paymentFields) {
+    const config = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_field", (q) => q.eq("fieldId", paymentField._id))
+      .unique();
+
+    if (config && config.paymentStatus !== "paid") {
+      throw new ConvexError({
+        code: "PAYMENT_REQUIRED",
+        message: "All payment fields must be completed before signing",
+      });
+    }
+  }
+}
+
+async function ensureSequentialRecipientIsActive(
+  ctx: MutationCtx,
+  recipient: Doc<"document_recipients">,
+  documentId: Doc<"documents">["_id"],
+  signingMode: Doc<"documents">["signingMode"] | undefined,
+  status: RecipientStatusChangeArgs["status"],
+): Promise<void> {
+  if (signingMode !== "sequential" || status === "viewed") {
+    return;
+  }
+
+  const allRecipients = await ctx.db
+    .query("document_recipients")
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))
+    .collect();
+
+  if (!isRecipientGroupActive(recipient, allRecipients)) {
+    throw new ConvexError("Previous recipients must complete their action first");
+  }
+}
+
+function buildRecipientStatusUpdate(
+  recipient: Doc<"document_recipients">,
+  args: RecipientStatusChangeArgs,
+  ipAddress?: string,
+): { updateData: RecipientStatusUpdate; viewedAt?: number } {
+  const now = Date.now();
+  const updateData: RecipientStatusUpdate = {
+    status: args.status,
+    updatedAt: now,
+  };
+
+  if (ipAddress) {
+    updateData.ipAddress = ipAddress;
+  }
+
+  switch (args.status) {
+    case "viewed":
+      if (!recipient.viewedAt) {
+        updateData.viewedAt = now;
+      }
+      break;
+    case "signed":
+      updateData.signedAt = now;
+      updateData.signatureData = args.signatureData;
+      updateData.signatureType = args.signatureType;
+      if (!recipient.viewedAt) {
+        updateData.viewedAt = now;
+      }
+      break;
+    case "approved":
+      updateData.approvedAt = now;
+      if (!recipient.viewedAt) {
+        updateData.viewedAt = now;
+      }
+      break;
+    case "declined":
+      updateData.declinedAt = now;
+      updateData.declineReason = args.declineReason;
+      if (!recipient.viewedAt) {
+        updateData.viewedAt = now;
+      }
+      break;
+  }
+
+  return { updateData, viewedAt: updateData.viewedAt };
+}
+
+function getRecipientAuditAction(status: RecipientStatusChangeArgs["status"]) {
+  if (status === "signed" || status === "approved") {
+    return "recipient.signed" as const;
+  }
+  if (status === "declined") {
+    return "recipient.declined" as const;
+  }
+  if (status === "viewed") {
+    return "recipient.viewed" as const;
+  }
+  return null;
+}
+
+async function maybeSendViewedNotification(
+  ctx: MutationCtx,
+  recipient: Doc<"document_recipients">,
+  viewedAt: number | undefined,
+): Promise<void> {
+  if (!recipient.viewedAt && viewedAt) {
+    await retrier.run(ctx, internal.documents.viewed_notification_action.sendViewedNotification, {
+      recipientId: recipient._id,
+      documentId: recipient.documentId,
+      viewedAt,
+    });
+  }
+}
+
+async function maybeStartPostSignatureWorkflow(
+  ctx: MutationCtx,
+  recipient: Doc<"document_recipients">,
+  status: RecipientStatusChangeArgs["status"],
+): Promise<void> {
+  if (isRecipientComplete(recipient.role, status)) {
+    await workflow.start(ctx, internal.workflows.document_completion.postSignatureWorkflow, {
+      recipientId: recipient._id,
+      documentId: recipient.documentId,
+    });
+  }
+}
+
+async function maybePublishRecipientWebhook(
+  ctx: MutationCtx,
+  document: Doc<"documents"> | null,
+  recipient: Doc<"document_recipients">,
+  args: RecipientStatusChangeArgs,
+): Promise<void> {
+  if (!document) {
+    return;
+  }
+
+  if (args.status === "signed" || args.status === "approved") {
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "recipient.signed",
+      data: {
+        document_id: recipient.documentId,
+        recipient_id: recipient._id,
+        recipient_email: recipient.email,
+        status: args.status,
+        signed_at: new Date().toISOString(),
+      },
+    });
+    return;
+  }
+
+  if (args.status === "declined") {
+    await publishWebhookEvent(ctx, {
+      organizationId: document.organizationId,
+      eventType: "recipient.declined",
+      data: {
+        document_id: recipient.documentId,
+        recipient_id: recipient._id,
+        recipient_email: recipient.email,
+        decline_reason: args.declineReason,
+        declined_at: new Date().toISOString(),
+      },
+    });
+  }
+}
+
+async function loadTokenRecipientStatusContext(
+  ctx: MutationCtx,
+  signingToken: string,
+): Promise<{
+  recipient: Doc<"document_recipients">;
+  document: Doc<"documents"> | null;
+}> {
+  const recipient = await findRecipientByToken(ctx, signingToken);
+  if (!recipient) {
+    throw new ConvexError("Invalid signing token");
+  }
+  if (recipient.tokenExpiresAt < Date.now()) {
+    throw new ConvexError("Signing token has expired");
+  }
+
+  const document = await ctx.db.get(recipient.documentId);
+  return { recipient, document };
+}
+
+async function applyRecipientStatusChange(
+  ctx: MutationCtx,
+  recipient: Doc<"document_recipients">,
+  document: Doc<"documents"> | null,
+  args: RecipientStatusChangeArgs,
+): Promise<number | undefined> {
+  ensureRecipientCanUpdateStatus(
+    recipient,
+    args,
+    `Cannot update status - recipient has already ${recipient.status}`,
+  );
+  await ensureRecipientPaymentsAreComplete(ctx, recipient, args.status);
+  await ensureSequentialRecipientIsActive(
+    ctx,
+    recipient,
+    recipient.documentId,
+    document?.signingMode,
+    args.status,
+  );
+
+  const { updateData, viewedAt } = buildRecipientStatusUpdate(
+    recipient,
+    args,
+    args.ipAddress ?? "0.0.0.0",
+  );
+  await ctx.db.patch(recipient._id, updateData);
+  return viewedAt;
+}
+
+async function logRecipientStatusChange(
+  ctx: MutationCtx,
+  document: Doc<"documents"> | null,
+  recipient: Doc<"document_recipients">,
+  args: RecipientStatusChangeArgs,
+): Promise<void> {
+  if (!document) {
+    return;
+  }
+
+  const auditAction = getRecipientAuditAction(args.status);
+  if (!auditAction) {
+    return;
+  }
+
+  await logRecipientAction(ctx, {
+    organizationId: document.organizationId,
+    actorType: "recipient",
+    actorId: recipient._id,
+    action: auditAction,
+    documentId: recipient.documentId,
+    recipientId: recipient._id,
+    newValues: { status: args.status },
+    ipAddress: args.ipAddress ?? "0.0.0.0",
+  });
 }
 
 /**
@@ -235,98 +537,18 @@ export const updateRecipientStatus = authMutation({
     ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // 1. Find recipient by signing token (hash-based lookup with plaintext fallback)
-    const recipient = await findRecipientByToken(ctx, args.signingToken);
-
-    if (!recipient) {
-      throw new ConvexError("Invalid signing token");
-    }
-
-    // 2. Check token expiration
-    if (recipient.tokenExpiresAt < Date.now()) {
-      throw new ConvexError("Signing token has expired");
-    }
-
-    // 3. Validate status transition
-    // Cannot change status if already in terminal state
-    if (
-      recipient.status === "signed" ||
-      recipient.status === "approved" ||
-      recipient.status === "declined"
-    ) {
-      throw new ConvexError(`Cannot update status - recipient has already ${recipient.status}`);
-    }
-
-    // 4. Validate status change is appropriate for role
-    if (args.status === "signed" && recipient.role !== "signer") {
-      throw new ConvexError("Only signers can have status 'signed'");
-    }
-    if (args.status === "approved" && recipient.role !== "approver") {
-      throw new ConvexError("Only approvers can have status 'approved'");
-    }
-
-    // 5. Validate required data
-    if (args.status === "signed") {
-      if (!args.signatureData || !args.signatureType) {
-        throw new ConvexError("Signature data and type are required for signing");
-      }
-    }
-    if (args.status === "declined" && !args.declineReason) {
-      throw new ConvexError("Decline reason is required");
-    }
-
-    // 6. Update the recipient
-    const now = Date.now();
-    const updateData: Record<string, unknown> = {
-      status: args.status,
-      updatedAt: now,
-    };
-
-    // Set appropriate timestamp
-    switch (args.status) {
-      case "viewed":
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-      case "signed":
-        updateData.signedAt = now;
-        updateData.signatureData = args.signatureData;
-        updateData.signatureType = args.signatureType;
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-      case "approved":
-        updateData.approvedAt = now;
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-      case "declined":
-        updateData.declinedAt = now;
-        updateData.declineReason = args.declineReason;
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-    }
-
-    if (args.ipAddress) {
-      updateData.ipAddress = args.ipAddress;
-    }
-
+    const { recipient } = await loadTokenRecipientStatusContext(
+      ctx as unknown as MutationCtx,
+      args.signingToken,
+    );
+    ensureRecipientCanUpdateStatus(
+      recipient,
+      args,
+      `Cannot update status - recipient has already ${recipient.status}`,
+    );
+    const { updateData, viewedAt } = buildRecipientStatusUpdate(recipient, args, args.ipAddress);
     await ctx.db.patch(recipient._id, updateData);
-
-    // Schedule viewed notification if this is the first view
-    if (!recipient.viewedAt && updateData.viewedAt) {
-      await retrier.run(ctx, internal.documents.viewed_notification_action.sendViewedNotification, {
-        recipientId: recipient._id,
-        documentId: recipient.documentId,
-        viewedAt: updateData.viewedAt as number,
-      });
-    }
-
+    await maybeSendViewedNotification(ctx as unknown as MutationCtx, recipient, viewedAt);
     return { success: true, recipientId: recipient._id };
   },
 });
@@ -347,193 +569,12 @@ export const submitRecipientSignature = mutation({
     ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // 1. Find recipient by signing token (hash-based lookup with plaintext fallback)
-    const recipient = await findRecipientByToken(ctx, args.signingToken);
-
-    if (!recipient) {
-      throw new ConvexError("Invalid signing token");
-    }
-
-    // 2. Check token expiration
-    if (recipient.tokenExpiresAt < Date.now()) {
-      throw new ConvexError("Signing token has expired");
-    }
-
-    // 3. Validate status transition
-    // Cannot change status if already in terminal state
-    if (
-      recipient.status === "signed" ||
-      recipient.status === "approved" ||
-      recipient.status === "declined"
-    ) {
-      throw new ConvexError(`Cannot update status - recipient has already ${recipient.status}`);
-    }
-
-    // 4. Validate status change is appropriate for role
-    if (args.status === "signed" && recipient.role !== "signer") {
-      throw new ConvexError("Only signers can have status 'signed'");
-    }
-    if (args.status === "approved" && recipient.role !== "approver") {
-      throw new ConvexError("Only approvers can have status 'approved'");
-    }
-
-    // 5. Validate required data
-    if (args.status === "signed") {
-      if (!args.signatureData || !args.signatureType) {
-        throw new ConvexError("Signature data and type are required for signing");
-      }
-    }
-    if (args.status === "declined" && !args.declineReason) {
-      throw new ConvexError("Decline reason is required");
-    }
-
-    // 5b. Enforce payment completion before signing/approving
-    if (args.status === "signed" || args.status === "approved") {
-      const paymentFields = await ctx.db
-        .query("signature_fields")
-        .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))
-        .filter((q) => q.eq(q.field("fieldType"), "payment"))
-        .collect();
-
-      for (const pf of paymentFields) {
-        const config = await ctx.db
-          .query("payment_field_configs")
-          .withIndex("by_field", (q) => q.eq("fieldId", pf._id))
-          .unique();
-
-        if (config && config.paymentStatus !== "paid") {
-          throw new ConvexError({
-            code: "PAYMENT_REQUIRED",
-            message: "All payment fields must be completed before signing",
-          });
-        }
-      }
-    }
-
-    // 5c. Enforce sequential signing order if document uses sequential mode
-    const document = await ctx.db.get(recipient.documentId);
-    if (document?.signingMode === "sequential" && args.status !== "viewed") {
-      const allRecipients = await ctx.db
-        .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", recipient.documentId))
-        .collect();
-
-      if (!isRecipientGroupActive(recipient, allRecipients)) {
-        throw new ConvexError("Previous recipients must complete their action first");
-      }
-    }
-
-    // 6. Update the recipient
-    const now = Date.now();
-    const updateData: Record<string, unknown> = {
-      status: args.status,
-      updatedAt: now,
-    };
-
-    // Set appropriate timestamp
-    switch (args.status) {
-      case "viewed":
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-      case "signed":
-        updateData.signedAt = now;
-        updateData.signatureData = args.signatureData;
-        updateData.signatureType = args.signatureType;
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-      case "approved":
-        updateData.approvedAt = now;
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-      case "declined":
-        updateData.declinedAt = now;
-        updateData.declineReason = args.declineReason;
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-    }
-
-    if (args.ipAddress) {
-      updateData.ipAddress = args.ipAddress;
-    }
-
-    await ctx.db.patch(recipient._id, updateData);
-
-    // 7. Audit trail
-    if (document) {
-      const auditAction =
-        args.status === "signed" || args.status === "approved"
-          ? ("recipient.signed" as const)
-          : args.status === "declined"
-            ? ("recipient.declined" as const)
-            : args.status === "viewed"
-              ? ("recipient.viewed" as const)
-              : null;
-      if (auditAction) {
-        await logRecipientAction(ctx, {
-          organizationId: document.organizationId,
-          actorType: "recipient",
-          actorId: recipient._id,
-          action: auditAction,
-          documentId: recipient.documentId,
-          recipientId: recipient._id,
-          newValues: { status: args.status },
-          ipAddress: args.ipAddress ?? "0.0.0.0",
-        });
-      }
-    }
-
-    // 8. Schedule viewed notification if this is the first view
-    if (!recipient.viewedAt && updateData.viewedAt) {
-      await retrier.run(ctx, internal.documents.viewed_notification_action.sendViewedNotification, {
-        recipientId: recipient._id,
-        documentId: recipient.documentId,
-        viewedAt: updateData.viewedAt as number,
-      });
-    }
-
-    // 9. Start post-signature workflow if recipient completed their action
-    // (signed, approved, or declined - but not just viewed)
-    if (isRecipientComplete(recipient.role, args.status)) {
-      await workflow.start(ctx, internal.workflows.document_completion.postSignatureWorkflow, {
-        recipientId: recipient._id,
-        documentId: recipient.documentId,
-      });
-    }
-
-    // 10. Publish webhook event for recipient status changes
-    if (document && (args.status === "signed" || args.status === "approved")) {
-      await publishWebhookEvent(ctx, {
-        organizationId: document.organizationId,
-        eventType: "recipient.signed",
-        data: {
-          document_id: recipient.documentId,
-          recipient_id: recipient._id,
-          recipient_email: recipient.email,
-          status: args.status,
-          signed_at: new Date().toISOString(),
-        },
-      });
-    } else if (document && args.status === "declined") {
-      await publishWebhookEvent(ctx, {
-        organizationId: document.organizationId,
-        eventType: "recipient.declined",
-        data: {
-          document_id: recipient.documentId,
-          recipient_id: recipient._id,
-          recipient_email: recipient.email,
-          decline_reason: args.declineReason,
-          declined_at: new Date().toISOString(),
-        },
-      });
-    }
+    const { recipient, document } = await loadTokenRecipientStatusContext(ctx, args.signingToken);
+    const viewedAt = await applyRecipientStatusChange(ctx, recipient, document, args);
+    await logRecipientStatusChange(ctx, document, recipient, args);
+    await maybeSendViewedNotification(ctx, recipient, viewedAt);
+    await maybeStartPostSignatureWorkflow(ctx, recipient, args.status);
+    await maybePublishRecipientWebhook(ctx, document, recipient, args);
 
     return { success: true, recipientId: recipient._id };
   },
@@ -555,16 +596,12 @@ export const submitSignatureAuthenticated = authMutation({
   },
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
-
-    // 1. Get user email for recipient matching
     const user = await ctx.db.get(userId);
     if (!user || !user.email) {
       throw new ConvexError("User not found or has no email");
     }
 
     const userEmail = user.email.toLowerCase();
-
-    // 2. Get the document and verify it's in a signable state
     const document = await ctx.db.get(args.documentId);
     if (!document) {
       throw new ConvexError("Document not found");
@@ -583,7 +620,6 @@ export const submitSignatureAuthenticated = authMutation({
       throw new ConvexError("Cannot sign a completed document");
     }
 
-    // 3. Find recipient by document + email match
     const recipient = await ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
@@ -593,153 +629,41 @@ export const submitSignatureAuthenticated = authMutation({
     if (!recipient) {
       throw new ConvexError("You are not a recipient on this document");
     }
+    ensureRecipientCanUpdateStatus(
+      recipient,
+      args,
+      `Cannot update status - you have already ${recipient.status}`,
+    );
+    await ensureRecipientPaymentsAreComplete(ctx as unknown as MutationCtx, recipient, args.status);
+    await ensureSequentialRecipientIsActive(
+      ctx as unknown as MutationCtx,
+      recipient,
+      args.documentId,
+      document.signingMode,
+      args.status,
+    );
 
-    // 4. Validate status transition
-    // Cannot change status if already in terminal state
-    if (
-      recipient.status === "signed" ||
-      recipient.status === "approved" ||
-      recipient.status === "declined"
-    ) {
-      throw new ConvexError(`Cannot update status - you have already ${recipient.status}`);
-    }
-
-    // 5. Validate status change is appropriate for role
-    if (args.status === "signed" && recipient.role !== "signer") {
-      throw new ConvexError("Only signers can have status 'signed'");
-    }
-    if (args.status === "approved" && recipient.role !== "approver") {
-      throw new ConvexError("Only approvers can have status 'approved'");
-    }
-
-    // 6. Validate required data
-    if (args.status === "signed") {
-      if (!args.signatureData || !args.signatureType) {
-        throw new ConvexError("Signature data and type are required for signing");
-      }
-    }
-    if (args.status === "declined" && !args.declineReason) {
-      throw new ConvexError("Decline reason is required");
-    }
-
-    // 6b. Enforce payment completion before signing/approving
-    if (args.status === "signed" || args.status === "approved") {
-      const paymentFields = await ctx.db
-        .query("signature_fields")
-        .withIndex("by_recipient", (q) => q.eq("recipientId", recipient._id))
-        .filter((q) => q.eq(q.field("fieldType"), "payment"))
-        .collect();
-
-      for (const pf of paymentFields) {
-        const config = await ctx.db
-          .query("payment_field_configs")
-          .withIndex("by_field", (q) => q.eq("fieldId", pf._id))
-          .unique();
-
-        if (config && config.paymentStatus !== "paid") {
-          throw new ConvexError({
-            code: "PAYMENT_REQUIRED",
-            message: "All payment fields must be completed before signing",
-          });
-        }
-      }
-    }
-
-    // 6c. Enforce sequential signing order
-    if (document.signingMode === "sequential" && args.status !== "viewed") {
-      const allRecipients = await ctx.db
-        .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect();
-
-      if (!isRecipientGroupActive(recipient, allRecipients)) {
-        throw new ConvexError("Previous recipients must complete their action first");
-      }
-    }
-
-    // 7. Update the recipient
-    const now = Date.now();
-    const updateData: Record<string, unknown> = {
-      status: args.status,
-      updatedAt: now,
-    };
-
-    // Set appropriate timestamp
-    switch (args.status) {
-      case "viewed":
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-      case "signed":
-        updateData.signedAt = now;
-        updateData.signatureData = args.signatureData;
-        updateData.signatureType = args.signatureType;
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-      case "approved":
-        updateData.approvedAt = now;
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-      case "declined":
-        updateData.declinedAt = now;
-        updateData.declineReason = args.declineReason;
-        if (!recipient.viewedAt) {
-          updateData.viewedAt = now;
-        }
-        break;
-    }
-
-    // Set IP address for audit trail
-    updateData.ipAddress = "authenticated";
+    const { updateData, viewedAt } = buildRecipientStatusUpdate(recipient, args, "authenticated");
 
     await ctx.db.patch(recipient._id, updateData);
 
-    // 8. Audit trail
-    {
-      const auditAction =
-        args.status === "signed" || args.status === "approved"
-          ? ("recipient.signed" as const)
-          : args.status === "declined"
-            ? ("recipient.declined" as const)
-            : args.status === "viewed"
-              ? ("recipient.viewed" as const)
-              : null;
-      if (auditAction) {
-        await logRecipientAction(ctx, {
-          organizationId: document.organizationId,
-          actorType: "user",
-          actorId: user.clerkId,
-          userId: user.clerkId,
-          action: auditAction,
-          documentId: args.documentId,
-          recipientId: recipient._id,
-          newValues: { status: args.status },
-          ipAddress: "web-authenticated",
-        });
-      }
-    }
-
-    // 9. Schedule viewed notification if this is the first view
-    if (!recipient.viewedAt && updateData.viewedAt) {
-      await retrier.run(ctx, internal.documents.viewed_notification_action.sendViewedNotification, {
-        recipientId: recipient._id,
+    const auditAction = getRecipientAuditAction(args.status);
+    if (auditAction) {
+      await logRecipientAction(ctx, {
+        organizationId: document.organizationId,
+        actorType: "user",
+        actorId: user.clerkId,
+        userId: user.clerkId,
+        action: auditAction,
         documentId: args.documentId,
-        viewedAt: updateData.viewedAt as number,
+        recipientId: recipient._id,
+        newValues: { status: args.status },
+        ipAddress: "web-authenticated",
       });
     }
 
-    // 10. Start post-signature workflow if recipient completed their action
-    if (isRecipientComplete(recipient.role, args.status)) {
-      await workflow.start(ctx, internal.workflows.document_completion.postSignatureWorkflow, {
-        recipientId: recipient._id,
-        documentId: args.documentId,
-      });
-    }
+    await maybeSendViewedNotification(ctx as unknown as MutationCtx, recipient, viewedAt);
+    await maybeStartPostSignatureWorkflow(ctx as unknown as MutationCtx, recipient, args.status);
 
     return { success: true, recipientId: recipient._id };
   },

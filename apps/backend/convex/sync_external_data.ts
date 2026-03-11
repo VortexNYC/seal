@@ -16,7 +16,7 @@ import Stripe from "stripe";
 
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalAction, internalMutation } from "./_generated/server";
+import { type ActionCtx, internalAction, internalMutation } from "./_generated/server";
 
 function getClerkClient() {
   const secretKey = process.env.CLERK_SECRET_KEY;
@@ -86,6 +86,136 @@ type UserForStripeLink = {
   stripeCustomerId?: string;
 };
 
+function getPrimaryEmailAddress(clerkUser: {
+  primaryEmailAddressId: string | null;
+  emailAddresses: Array<{
+    id: string;
+    emailAddress: string;
+    verification?: { status?: string | null } | null;
+  }>;
+}): { email: string; isVerified: boolean } | null {
+  const primaryEmail =
+    clerkUser.emailAddresses.find((email) => email.id === clerkUser.primaryEmailAddressId) ??
+    clerkUser.emailAddresses[0];
+  const email = primaryEmail?.emailAddress?.toLowerCase();
+
+  if (!email) {
+    return null;
+  }
+
+  return {
+    email,
+    isVerified: primaryEmail?.verification?.status === "verified",
+  };
+}
+
+async function syncClerkUserRecord(
+  ctx: ActionCtx,
+  clerkUser: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    emailAddresses: Array<{
+      id: string;
+      emailAddress: string;
+      verification?: { status?: string | null } | null;
+    }>;
+    primaryEmailAddressId: string | null;
+    imageUrl: string;
+    locale: string | null;
+  },
+): Promise<"created" | "updated" | "skipped_no_email" | "error"> {
+  const primaryEmail = getPrimaryEmailAddress(clerkUser);
+  if (!primaryEmail) {
+    return "skipped_no_email";
+  }
+
+  const firstName = clerkUser.firstName ?? "";
+  const lastName = clerkUser.lastName ?? "";
+  const fullName = `${firstName} ${lastName}`.trim() || undefined;
+
+  try {
+    const result = await ctx.runMutation(api.clerk_webhooks.syncUser, {
+      clerkId: clerkUser.id,
+      name: fullName,
+      email: primaryEmail.email,
+      avatar: clerkUser.imageUrl || undefined,
+      isEmailVerified: primaryEmail.isVerified,
+      locale: clerkUser.locale ?? undefined,
+    });
+
+    return result.isNewUser ? "created" : "updated";
+  } catch (error) {
+    console.error("[syncUsersFromClerkToConvex] Failed to sync user", {
+      clerkUserId: clerkUser.id,
+      email: primaryEmail.email,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return "error";
+  }
+}
+
+async function linkStripeCustomers(
+  ctx: ActionCtx,
+  stripe: Stripe,
+  customerLinking: StripeLinkingResult,
+): Promise<void> {
+  const users = await ctx.runMutation(
+    internal.sync_external_data.getUsersForStripeCustomerLinking,
+    {},
+  );
+
+  for (const user of users) {
+    customerLinking.checked++;
+
+    if (user.stripeCustomerId) {
+      customerLinking.alreadyLinked++;
+      continue;
+    }
+
+    try {
+      const byMetadata = await findStripeCustomerByMetadata(stripe, user.userId);
+      if (byMetadata) {
+        await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
+          userId: user.userId,
+          stripeCustomerId: byMetadata,
+        });
+        customerLinking.linkedByMetadata++;
+        continue;
+      }
+
+      const byEmail = await findStripeCustomersByEmail(stripe, user.email);
+      if (byEmail.length === 1) {
+        await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
+          userId: user.userId,
+          stripeCustomerId: byEmail[0]!,
+        });
+        customerLinking.linkedByEmail++;
+        continue;
+      }
+
+      if (byEmail.length > 1) {
+        customerLinking.ambiguousByEmail++;
+        console.warn("[syncStripeToConvex] Multiple Stripe customers for email", {
+          userId: user.userId,
+          email: user.email,
+          customerIds: byEmail,
+        });
+        continue;
+      }
+
+      customerLinking.noMatch++;
+    } catch (error) {
+      customerLinking.errors++;
+      console.error("[syncStripeToConvex] Failed customer linking", {
+        userId: user.userId,
+        email: user.email,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+}
+
 export const getUsersForStripeCustomerLinking = internalMutation({
   args: {},
   handler: async (ctx): Promise<UserForStripeLink[]> => {
@@ -130,44 +260,17 @@ export const syncUsersFromClerkToConvex = internalAction({
 
       for (const clerkUser of page.data) {
         totalFetched++;
-
-        const primaryEmail =
-          clerkUser.emailAddresses.find((email) => email.id === clerkUser.primaryEmailAddressId) ??
-          clerkUser.emailAddresses[0];
-
-        const email = primaryEmail?.emailAddress?.toLowerCase();
-        if (!email) {
-          skippedNoEmail++;
-          continue;
-        }
-
-        const firstName = clerkUser.firstName ?? "";
-        const lastName = clerkUser.lastName ?? "";
-        const fullName = `${firstName} ${lastName}`.trim() || undefined;
-
-        try {
-          const result = await ctx.runMutation(api.clerk_webhooks.syncUser, {
-            clerkId: clerkUser.id,
-            name: fullName,
-            email,
-            avatar: clerkUser.imageUrl || undefined,
-            isEmailVerified: primaryEmail?.verification?.status === "verified",
-            locale: clerkUser.locale ?? undefined,
-          });
-
+        const outcome = await syncClerkUserRecord(ctx, clerkUser);
+        if (outcome === "created") {
           synced++;
-          if (result.isNewUser) {
-            created++;
-          } else {
-            updated++;
-          }
-        } catch (error) {
+          created++;
+        } else if (outcome === "updated") {
+          synced++;
+          updated++;
+        } else if (outcome === "skipped_no_email") {
+          skippedNoEmail++;
+        } else {
           errors++;
-          console.error("[syncUsersFromClerkToConvex] Failed to sync user", {
-            clerkUserId: clerkUser.id,
-            email,
-            error: error instanceof Error ? error.message : String(error),
-          });
         }
       }
 
@@ -254,61 +357,7 @@ export const syncStripeToConvex = internalAction({
     }
 
     if (shouldLinkCustomers) {
-      const users = await ctx.runMutation(
-        internal.sync_external_data.getUsersForStripeCustomerLinking,
-        {},
-      );
-
-      for (const user of users) {
-        customerLinking.checked++;
-
-        if (user.stripeCustomerId) {
-          customerLinking.alreadyLinked++;
-          continue;
-        }
-
-        try {
-          const byMetadata = await findStripeCustomerByMetadata(stripe, user.userId);
-          if (byMetadata) {
-            await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
-              userId: user.userId,
-              stripeCustomerId: byMetadata,
-            });
-            customerLinking.linkedByMetadata++;
-            continue;
-          }
-
-          const byEmail = await findStripeCustomersByEmail(stripe, user.email);
-
-          if (byEmail.length === 1) {
-            await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
-              userId: user.userId,
-              stripeCustomerId: byEmail[0]!,
-            });
-            customerLinking.linkedByEmail++;
-            continue;
-          }
-
-          if (byEmail.length > 1) {
-            customerLinking.ambiguousByEmail++;
-            console.warn("[syncStripeToConvex] Multiple Stripe customers for email", {
-              userId: user.userId,
-              email: user.email,
-              customerIds: byEmail,
-            });
-            continue;
-          }
-
-          customerLinking.noMatch++;
-        } catch (error) {
-          customerLinking.errors++;
-          console.error("[syncStripeToConvex] Failed customer linking", {
-            userId: user.userId,
-            email: user.email,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
+      await linkStripeCustomers(ctx, stripe, customerLinking);
     }
 
     const subscriptionSync = shouldSyncSubscriptions

@@ -19,7 +19,12 @@ import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import { internalAction, internalMutation, internalQuery } from "../_generated/server";
+import {
+  type ActionCtx,
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "../_generated/server";
 
 /** Maximum delivery attempts before abandoning */
 const MAX_ATTEMPTS = 5;
@@ -38,6 +43,10 @@ const RETRY_INTERVALS = [
   30 * 60 * 1000,
   2 * 60 * 60 * 1000,
 ];
+
+type DeliveryProcessingResult = {
+  delivered: boolean;
+};
 
 /**
  * Generate HMAC-SHA256 signature for a webhook payload.
@@ -70,6 +79,203 @@ async function signPayload(
     .join("");
 
   return `v1=${hexSignature}`;
+}
+
+function getNextRetryAt(attemptCount: number): number | undefined {
+  if (attemptCount >= MAX_ATTEMPTS) {
+    return undefined;
+  }
+
+  return (
+    Date.now() + (RETRY_INTERVALS[attemptCount - 1] ?? RETRY_INTERVALS[RETRY_INTERVALS.length - 1]!)
+  );
+}
+
+async function getResponseBody(response: Response): Promise<string | undefined> {
+  try {
+    const text = await response.text();
+    return text.slice(0, 1024);
+  } catch {
+    return undefined;
+  }
+}
+
+async function markDeliveryInactiveEndpoint(
+  ctx: ActionCtx,
+  delivery: Doc<"webhook_deliveries">,
+  endpoint: Doc<"webhook_endpoints"> | null,
+  attemptCount: number,
+): Promise<DeliveryProcessingResult> {
+  await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
+    deliveryId: delivery._id,
+    status: "abandoned",
+    attemptCount,
+    errorMessage: endpoint ? "Endpoint is not active" : "Endpoint was deleted",
+  });
+
+  return { delivered: false };
+}
+
+async function markSignatureFailure(
+  ctx: ActionCtx,
+  delivery: Doc<"webhook_deliveries">,
+  attemptCount: number,
+): Promise<DeliveryProcessingResult> {
+  await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
+    deliveryId: delivery._id,
+    status: "failed",
+    attemptCount,
+    errorMessage: "Failed to generate HMAC signature",
+  });
+
+  return { delivered: false };
+}
+
+async function markHttpDeliveryResult(
+  ctx: ActionCtx,
+  delivery: Doc<"webhook_deliveries">,
+  endpoint: Doc<"webhook_endpoints">,
+  attemptCount: number,
+  response: Response,
+  responseBody: string | undefined,
+  responseTimeMs: number,
+): Promise<DeliveryProcessingResult> {
+  if (response.ok) {
+    await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
+      deliveryId: delivery._id,
+      status: "delivered",
+      attemptCount,
+      responseCode: response.status,
+      responseBody,
+      responseTimeMs,
+      deliveredAt: Date.now(),
+    });
+    await ctx.runMutation(internal.webhooks.delivery.updateEndpointStatus, {
+      endpointId: endpoint._id,
+      success: true,
+    });
+
+    return { delivered: true };
+  }
+
+  const nextRetryAt = getNextRetryAt(attemptCount);
+  await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
+    deliveryId: delivery._id,
+    status: nextRetryAt ? "pending" : "abandoned",
+    attemptCount,
+    responseCode: response.status,
+    responseBody,
+    responseTimeMs,
+    errorMessage: `HTTP ${response.status}: ${response.statusText}`,
+    nextRetryAt,
+  });
+  await ctx.runMutation(internal.webhooks.delivery.updateEndpointStatus, {
+    endpointId: endpoint._id,
+    success: false,
+  });
+
+  return { delivered: false };
+}
+
+async function markNetworkFailure(
+  ctx: ActionCtx,
+  delivery: Doc<"webhook_deliveries">,
+  endpoint: Doc<"webhook_endpoints">,
+  attemptCount: number,
+  responseTimeMs: number,
+  error: unknown,
+): Promise<DeliveryProcessingResult> {
+  const nextRetryAt = getNextRetryAt(attemptCount);
+  const errorMessage =
+    error instanceof Error
+      ? error.name === "AbortError"
+        ? `Request timed out after ${REQUEST_TIMEOUT_MS}ms`
+        : error.message
+      : "Unknown network error";
+
+  await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
+    deliveryId: delivery._id,
+    status: nextRetryAt ? "pending" : "abandoned",
+    attemptCount,
+    responseTimeMs,
+    errorMessage,
+    nextRetryAt,
+  });
+  await ctx.runMutation(internal.webhooks.delivery.updateEndpointStatus, {
+    endpointId: endpoint._id,
+    success: false,
+  });
+
+  return { delivered: false };
+}
+
+async function deliverWebhook(
+  ctx: ActionCtx,
+  delivery: Doc<"webhook_deliveries">,
+  endpoint: Doc<"webhook_endpoints">,
+  attemptCount: number,
+): Promise<DeliveryProcessingResult> {
+  const timestamp = Math.floor(Date.now() / 1000);
+  let signature: string;
+
+  try {
+    signature = await signPayload(endpoint.secret, delivery.eventId, timestamp, delivery.payload);
+  } catch {
+    return markSignatureFailure(ctx, delivery, attemptCount);
+  }
+
+  const startTime = Date.now();
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    const response = await fetch(endpoint.url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Seal-Webhooks/1.0",
+        "X-Seal-Event": delivery.eventType,
+        "X-Seal-Event-Id": delivery.eventId,
+        "X-Seal-Timestamp": String(timestamp),
+        "X-Seal-Signature": signature,
+      },
+      body: delivery.payload,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    const responseTimeMs = Date.now() - startTime;
+    const responseBody = await getResponseBody(response);
+
+    return markHttpDeliveryResult(
+      ctx,
+      delivery,
+      endpoint,
+      attemptCount,
+      response,
+      responseBody,
+      responseTimeMs,
+    );
+  } catch (error) {
+    return markNetworkFailure(ctx, delivery, endpoint, attemptCount, Date.now() - startTime, error);
+  }
+}
+
+async function processPendingDelivery(
+  ctx: ActionCtx,
+  delivery: Doc<"webhook_deliveries">,
+): Promise<DeliveryProcessingResult> {
+  const attemptCount = delivery.attemptCount + 1;
+  const endpoint = await ctx.runQuery(internal.webhooks.delivery.getEndpointById, {
+    endpointId: delivery.endpointId,
+  });
+
+  if (!endpoint || endpoint.status !== "active") {
+    return markDeliveryInactiveEndpoint(ctx, delivery, endpoint, attemptCount);
+  }
+
+  return deliverWebhook(ctx, delivery, endpoint, attemptCount);
 }
 
 /**
@@ -174,148 +380,11 @@ export const processWebhookDeliveries = internalAction({
 
     for (const delivery of pendingDeliveries) {
       processed++;
-      const attemptCount = delivery.attemptCount + 1;
-
-      // Fetch the endpoint to get its secret and URL
-      const endpoint: Doc<"webhook_endpoints"> | null = await ctx.runQuery(
-        internal.webhooks.delivery.getEndpointById,
-        { endpointId: delivery.endpointId },
-      );
-
-      // Skip if endpoint was deleted or is not active
-      if (!endpoint || endpoint.status !== "active") {
-        await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
-          deliveryId: delivery._id,
-          status: "abandoned",
-          attemptCount,
-          errorMessage: endpoint ? "Endpoint is not active" : "Endpoint was deleted",
-        });
+      const result = await processPendingDelivery(ctx, delivery);
+      if (result.delivered) {
+        delivered++;
+      } else {
         failed++;
-        continue;
-      }
-
-      const timestamp = Math.floor(Date.now() / 1000);
-      let signature: string;
-
-      try {
-        signature = await signPayload(
-          endpoint.secret,
-          delivery.eventId,
-          timestamp,
-          delivery.payload,
-        );
-      } catch {
-        await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
-          deliveryId: delivery._id,
-          status: "failed",
-          attemptCount,
-          errorMessage: "Failed to generate HMAC signature",
-        });
-        failed++;
-        continue;
-      }
-
-      // Make the HTTP request
-      const startTime = Date.now();
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-        const response = await fetch(endpoint.url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "User-Agent": "Seal-Webhooks/1.0",
-            "X-Seal-Event": delivery.eventType,
-            "X-Seal-Event-Id": delivery.eventId,
-            "X-Seal-Timestamp": String(timestamp),
-            "X-Seal-Signature": signature,
-          },
-          body: delivery.payload,
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-        const responseTimeMs = Date.now() - startTime;
-
-        // Truncate response body to 1KB
-        let responseBody: string | undefined;
-        try {
-          const text = await response.text();
-          responseBody = text.slice(0, 1024);
-        } catch {
-          // Response body not readable
-        }
-
-        if (response.ok) {
-          // Success (2xx)
-          delivered++;
-          await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
-            deliveryId: delivery._id,
-            status: "delivered",
-            attemptCount,
-            responseCode: response.status,
-            responseBody,
-            responseTimeMs,
-            deliveredAt: Date.now(),
-          });
-          await ctx.runMutation(internal.webhooks.delivery.updateEndpointStatus, {
-            endpointId: endpoint._id,
-            success: true,
-          });
-        } else {
-          // HTTP error
-          failed++;
-          const shouldAbandon = attemptCount >= MAX_ATTEMPTS;
-          const nextRetryAt = shouldAbandon
-            ? undefined
-            : Date.now() +
-              (RETRY_INTERVALS[attemptCount - 1] ?? RETRY_INTERVALS[RETRY_INTERVALS.length - 1]!);
-
-          await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
-            deliveryId: delivery._id,
-            status: shouldAbandon ? "abandoned" : "pending",
-            attemptCount,
-            responseCode: response.status,
-            responseBody,
-            responseTimeMs,
-            errorMessage: `HTTP ${response.status}: ${response.statusText}`,
-            nextRetryAt,
-          });
-          await ctx.runMutation(internal.webhooks.delivery.updateEndpointStatus, {
-            endpointId: endpoint._id,
-            success: false,
-          });
-        }
-      } catch (error) {
-        // Network error or timeout
-        failed++;
-        const responseTimeMs = Date.now() - startTime;
-        const shouldAbandon = attemptCount >= MAX_ATTEMPTS;
-        const nextRetryAt = shouldAbandon
-          ? undefined
-          : Date.now() +
-            (RETRY_INTERVALS[attemptCount - 1] ?? RETRY_INTERVALS[RETRY_INTERVALS.length - 1]!);
-
-        const errorMessage =
-          error instanceof Error
-            ? error.name === "AbortError"
-              ? `Request timed out after ${REQUEST_TIMEOUT_MS}ms`
-              : error.message
-            : "Unknown network error";
-
-        await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
-          deliveryId: delivery._id,
-          status: shouldAbandon ? "abandoned" : "pending",
-          attemptCount,
-          responseTimeMs,
-          errorMessage,
-          nextRetryAt,
-        });
-        await ctx.runMutation(internal.webhooks.delivery.updateEndpointStatus, {
-          endpointId: endpoint._id,
-          success: false,
-        });
       }
     }
 

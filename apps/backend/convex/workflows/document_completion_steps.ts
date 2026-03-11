@@ -11,7 +11,12 @@ import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import { internalAction, internalMutation, internalQuery } from "../_generated/server";
+import {
+  type ActionCtx,
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "../_generated/server";
 import {
   sendDocumentCompleted,
   sendDocumentInvitation,
@@ -19,6 +24,71 @@ import {
 } from "../documents/email";
 import { groupRecipientsByOrder } from "../documents/recipient_helpers";
 import { isRecipientComplete, isRecipientTerminal } from "../schemas/document_recipients";
+
+function getNextPendingSequentialGroup(
+  groups: Map<number, Doc<"document_recipients">[]>,
+  currentOrder: number,
+): Doc<"document_recipients">[] | null {
+  const sortedOrders = [...groups.keys()];
+
+  for (const order of sortedOrders) {
+    if (order <= currentOrder) {
+      continue;
+    }
+
+    const nextGroup = groups.get(order);
+    if (!nextGroup) {
+      continue;
+    }
+
+    const pendingRecipients = nextGroup.filter((recipient) => recipient.status === "pending");
+    if (pendingRecipients.length > 0) {
+      return pendingRecipients;
+    }
+  }
+
+  return null;
+}
+
+async function notifySequentialRecipients(
+  ctx: ActionCtx,
+  document: Doc<"documents">,
+  recipients: Doc<"document_recipients">[],
+): Promise<number> {
+  const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+    userId: document.ownerId,
+  });
+  const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+
+  const brandingSettings = await ctx.runQuery(
+    internal.organizations.queries.getBrandingSettingsInternal,
+    { organizationId: document.organizationId },
+  );
+  const emailBranding = brandingSettings.enabled
+    ? {
+        emailFromName: brandingSettings.emailFromName,
+        emailReplyTo: brandingSettings.emailReplyTo,
+      }
+    : undefined;
+
+  let notifiedCount = 0;
+  for (const recipient of recipients) {
+    const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
+    await sendDocumentInvitation(ctx, {
+      to: recipient.email,
+      recipientName: recipient.name || recipient.email,
+      documentName: document.name,
+      senderName,
+      signingUrl,
+      expiresAt: recipient.tokenExpiresAt,
+      branding: emailBranding,
+    });
+    notifiedCount++;
+  }
+
+  return notifiedCount;
+}
 
 /**
  * Step 1: Send confirmation email to the signer/approver who just completed.
@@ -99,51 +169,13 @@ export const notifyNextSequentialGroup = internalAction({
       return { notified: 0 };
     }
 
-    // Find the next group with pending recipients
-    const sortedOrders = [...groups.keys()];
-    let notifiedCount = 0;
-
-    for (const order of sortedOrders) {
-      if (order > myOrder) {
-        const nextGroup = groups.get(order)!;
-        const pendingInNextGroup = nextGroup.filter((r) => r.status === "pending");
-        if (pendingInNextGroup.length > 0) {
-          const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-            userId: document.ownerId,
-          });
-          const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
-          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
-
-          const brandingSettings = await ctx.runQuery(
-            internal.organizations.queries.getBrandingSettingsInternal,
-            { organizationId: document.organizationId },
-          );
-          const emailBranding = brandingSettings.enabled
-            ? {
-                emailFromName: brandingSettings.emailFromName,
-                emailReplyTo: brandingSettings.emailReplyTo,
-              }
-            : undefined;
-
-          for (const nextRecipient of pendingInNextGroup) {
-            const signingUrl = `${baseUrl}/sign/${nextRecipient.signingToken}`;
-            await sendDocumentInvitation(ctx, {
-              to: nextRecipient.email,
-              recipientName: nextRecipient.name || nextRecipient.email,
-              documentName: document.name,
-              senderName,
-              signingUrl,
-              expiresAt: nextRecipient.tokenExpiresAt,
-              branding: emailBranding,
-            });
-            notifiedCount++;
-          }
-          break; // Only notify one group at a time
-        }
-      }
+    const nextGroup = getNextPendingSequentialGroup(groups, myOrder);
+    if (!nextGroup) {
+      return { notified: 0 };
     }
 
-    return { notified: notifiedCount };
+    const notified = await notifySequentialRecipients(ctx, document, nextGroup);
+    return { notified };
   },
 });
 

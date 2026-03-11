@@ -17,12 +17,12 @@
  * ```
  */
 
-import { httpRouter } from "convex/server";
+import { type GenericActionCtx, httpRouter } from "convex/server";
 import Stripe from "stripe";
 import { Webhook } from "svix";
 
 import { api, internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { DataModel, Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
 import {
   API_SCOPES,
@@ -125,43 +125,337 @@ interface ClerkWebhookEvent {
   };
 }
 
+type HttpActionCtx = GenericActionCtx<DataModel>;
+
+type SvixHeaders = {
+  "svix-id": string;
+  "svix-signature": string;
+  "svix-timestamp": string;
+};
+
+type ClerkSessionAction = "user.login" | "user.logout";
+
+type ClerkEventHandler = (ctx: HttpActionCtx, data: ClerkWebhookEvent["data"]) => Promise<void>;
+
+function getClerkWebhookSecret(): string | null {
+  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error("CLERK_WEBHOOK_SECRET not configured");
+    return null;
+  }
+
+  return webhookSecret;
+}
+
+function getSvixHeaders(request: Request): SvixHeaders | null {
+  const svixId = request.headers.get("svix-id");
+  const svixTimestamp = request.headers.get("svix-timestamp");
+  const svixSignature = request.headers.get("svix-signature");
+
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    console.error("Missing svix headers");
+    return null;
+  }
+
+  return {
+    "svix-id": svixId,
+    "svix-signature": svixSignature,
+    "svix-timestamp": svixTimestamp,
+  };
+}
+
+async function verifyClerkWebhookEvent(
+  request: Request,
+  webhookSecret: string,
+  headers: SvixHeaders,
+): Promise<ClerkWebhookEvent | null> {
+  const payload = await request.text();
+  const webhook = new Webhook(webhookSecret);
+
+  try {
+    return webhook.verify(payload, headers) as ClerkWebhookEvent;
+  } catch (err) {
+    console.error("Webhook verification failed:", err);
+    return null;
+  }
+}
+
+function getClerkUserProfile(data: ClerkWebhookEvent["data"]) {
+  const firstName = data.first_name || "";
+  const lastName = data.last_name || "";
+  const fullName = `${firstName} ${lastName}`.trim();
+  const primaryEmail = data.email_addresses?.[0];
+
+  return {
+    avatar: data.image_url || undefined,
+    email: primaryEmail?.email_address || "",
+    isEmailVerified: primaryEmail?.verification?.status === "verified",
+    name: fullName || undefined,
+  };
+}
+
+async function handleClerkUserCreated(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  const profile = getClerkUserProfile(data);
+  const result = await ctx.runMutation(api.clerk_webhooks.syncUser, {
+    clerkId: data.id,
+    name: profile.name,
+    email: profile.email,
+    avatar: profile.avatar,
+    isEmailVerified: profile.isEmailVerified,
+  });
+  console.info(`[Clerk Webhook] User synced: ${data.id}`);
+
+  if (!result.isNewUser || !result.userId) {
+    return;
+  }
+
+  try {
+    await ctx.runAction(internal.stripe.subscription_actions.handleNewUserSignup, {
+      userId: result.userId,
+      email: profile.email,
+      name: profile.name,
+    });
+    console.info(`[Clerk Webhook] Stripe customer created for user: ${data.id}`);
+  } catch (err) {
+    console.error(`[Clerk Webhook] Failed to setup Stripe for user ${data.id}:`, err);
+  }
+}
+
+async function handleClerkUserUpdated(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  const profile = getClerkUserProfile(data);
+  await ctx.runMutation(api.clerk_webhooks.syncUser, {
+    clerkId: data.id,
+    name: profile.name,
+    email: profile.email,
+    avatar: profile.avatar,
+    isEmailVerified: profile.isEmailVerified,
+  });
+  console.info(`[Clerk Webhook] User synced: ${data.id}`);
+}
+
+async function handleClerkUserDeleted(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  await ctx.runMutation(api.clerk_webhooks.deleteUser, {
+    clerkId: data.id,
+  });
+  console.info(`[Clerk Webhook] User deleted: ${data.id}`);
+}
+
+async function handleClerkOrganizationSynced(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  await ctx.runMutation(api.clerk_webhooks.syncOrganization, {
+    clerkId: data.id,
+    name: data.name || "",
+    slug: data.slug || undefined,
+    logo: data.logo_url || undefined,
+    metadata: data.public_metadata ? JSON.stringify(data.public_metadata) : undefined,
+  });
+  console.info(`[Clerk Webhook] Organization synced: ${data.id}`);
+}
+
+async function handleClerkOrganizationDeleted(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  await ctx.runMutation(api.clerk_webhooks.deleteOrganization, {
+    clerkId: data.id,
+  });
+  console.info(`[Clerk Webhook] Organization deleted: ${data.id}`);
+}
+
+async function handleClerkMembershipCreated(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  if (!data.organization?.id || !data.public_user_data?.user_id) {
+    return;
+  }
+
+  await ctx.runMutation(internal.clerk_webhooks.upsertMembershipFromClerk, {
+    clerkUserId: data.public_user_data.user_id,
+    clerkOrgId: data.organization.id,
+    clerkMembershipId: data.id,
+    role: data.role || "member",
+  });
+  console.info(
+    `[Clerk Webhook] Membership created: ${data.public_user_data.user_id} -> ${data.organization.id} (${data.id})`,
+  );
+}
+
+async function handleClerkMembershipUpdated(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  if (!data.id) {
+    return;
+  }
+
+  await ctx.runMutation(internal.clerk_webhooks.syncMembershipFromClerk, {
+    clerkMembershipId: data.id,
+  });
+  console.info(`[Clerk Webhook] Membership updated: ${data.id}`);
+}
+
+async function handleClerkMembershipDeleted(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  if (!data.id) {
+    return;
+  }
+
+  await ctx.runMutation(internal.clerk_webhooks.deleteMembershipFromClerk, {
+    clerkMembershipId: data.id,
+  });
+  console.info(`[Clerk Webhook] Membership deleted: ${data.id}`);
+}
+
+async function handleClerkInvitationCreated(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  console.info(`[Clerk Webhook] Processing invitation.created`, {
+    hasOrgId: !!data.organization_id,
+    hasEmail: !!data.email_address,
+    orgId: data.organization_id,
+    email: data.email_address,
+  });
+
+  if (!data.organization_id || !data.email_address) {
+    console.warn(`[Clerk Webhook] Missing required data for invitation.created`, {
+      hasOrgId: !!data.organization_id,
+      hasEmail: !!data.email_address,
+    });
+    return;
+  }
+
+  try {
+    const result = await ctx.runMutation(internal.clerk_webhooks.handleInvitationCreated, {
+      clerkInvitationId: data.id,
+      clerkOrganizationId: data.organization_id,
+      emailAddress: data.email_address,
+      role: data.role,
+      publicMetadata: data.public_metadata,
+      createdAt: data.created_at,
+    });
+    console.info(
+      `[Clerk Webhook] Invitation created successfully: ${data.email_address} -> ${data.organization_id}`,
+      result,
+    );
+  } catch (error) {
+    console.error(`[Clerk Webhook] Error handling invitation.created:`, error);
+    throw error;
+  }
+}
+
+async function handleClerkInvitationAccepted(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  if (!data.organization_id) {
+    return;
+  }
+
+  await ctx.runMutation(internal.clerk_webhooks.handleInvitationAccepted, {
+    clerkInvitationId: data.id,
+    clerkOrganizationId: data.organization_id,
+    clerkUserId: data.public_user_data?.user_id,
+  });
+  console.info(`[Clerk Webhook] Invitation accepted: ${data.id}`);
+}
+
+async function handleClerkInvitationRevoked(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  await ctx.runMutation(internal.clerk_webhooks.handleInvitationRevoked, {
+    clerkInvitationId: data.id,
+  });
+  console.info(`[Clerk Webhook] Invitation revoked: ${data.id}`);
+}
+
+async function logClerkSessionEvent(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+  action: ClerkSessionAction,
+  logMessage: string,
+): Promise<void> {
+  if (!data.user_id) {
+    return;
+  }
+
+  await ctx.runMutation(internal.clerk_webhooks.logSessionEvent, {
+    clerkUserId: data.user_id,
+    sessionId: data.id,
+    action,
+  });
+  console.info(`${logMessage}: ${data.user_id}`);
+}
+
+const clerkWebhookHandlers: Partial<Record<ClerkWebhookEvent["type"], ClerkEventHandler>> = {
+  "user.created": handleClerkUserCreated,
+  "user.updated": handleClerkUserUpdated,
+  "user.deleted": handleClerkUserDeleted,
+  "organization.created": handleClerkOrganizationSynced,
+  "organization.updated": handleClerkOrganizationSynced,
+  "organization.deleted": handleClerkOrganizationDeleted,
+  "organizationMembership.created": handleClerkMembershipCreated,
+  "organizationMembership.updated": handleClerkMembershipUpdated,
+  "organizationMembership.deleted": handleClerkMembershipDeleted,
+  "organizationInvitation.created": handleClerkInvitationCreated,
+  "organizationInvitation.accepted": handleClerkInvitationAccepted,
+  "organizationInvitation.revoked": handleClerkInvitationRevoked,
+  "session.created": (ctx, data) =>
+    logClerkSessionEvent(ctx, data, "user.login", "[Clerk Webhook] Session logged"),
+  "session.ended": (ctx, data) =>
+    logClerkSessionEvent(ctx, data, "user.logout", "[Clerk Webhook] Session end logged"),
+  "session.removed": (ctx, data) =>
+    logClerkSessionEvent(ctx, data, "user.logout", "[Clerk Webhook] Session end logged"),
+  "session.revoked": (ctx, data) =>
+    logClerkSessionEvent(ctx, data, "user.logout", "[Clerk Webhook] Session end logged"),
+};
+
+async function handleClerkWebhookEvent(
+  ctx: HttpActionCtx,
+  event: ClerkWebhookEvent,
+): Promise<void> {
+  const handler = clerkWebhookHandlers[event.type];
+  if (!handler) {
+    console.info(`[Clerk Webhook] Unhandled event type: ${event.type}`);
+    return;
+  }
+
+  await handler(ctx, event.data);
+}
+
 const http = httpRouter();
 
 http.route({
   path: "/clerk-webhooks",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
-
+    const webhookSecret = getClerkWebhookSecret();
     if (!webhookSecret) {
-      console.error("CLERK_WEBHOOK_SECRET not configured");
       return new Response("Webhook secret not configured", { status: 500 });
     }
 
-    // Get Svix headers for webhook verification
-    const svixId = request.headers.get("svix-id");
-    const svixTimestamp = request.headers.get("svix-timestamp");
-    const svixSignature = request.headers.get("svix-signature");
-
-    if (!svixId || !svixTimestamp || !svixSignature) {
-      console.error("Missing svix headers");
+    const headers = getSvixHeaders(request);
+    if (!headers) {
       return new Response("Missing webhook headers", { status: 400 });
     }
 
-    const payload = await request.text();
-
-    // Verify webhook signature using Svix
-    const wh = new Webhook(webhookSecret);
-
-    let evt: ClerkWebhookEvent;
-    try {
-      evt = wh.verify(payload, {
-        "svix-id": svixId,
-        "svix-timestamp": svixTimestamp,
-        "svix-signature": svixSignature,
-      }) as ClerkWebhookEvent;
-    } catch (err) {
-      console.error("Webhook verification failed:", err);
+    const evt = await verifyClerkWebhookEvent(request, webhookSecret, headers);
+    if (!evt) {
       return new Response("Webhook verification failed", { status: 400 });
     }
 
@@ -169,203 +463,7 @@ http.route({
     console.info(`[Clerk Webhook] Received: ${type}`, { id: data.id });
 
     try {
-      switch (type) {
-        case "user.created": {
-          const firstName = data.first_name || "";
-          const lastName = data.last_name || "";
-          const fullName = `${firstName} ${lastName}`.trim();
-          const email = data.email_addresses?.[0]?.email_address || "";
-
-          const result = await ctx.runMutation(api.clerk_webhooks.syncUser, {
-            clerkId: data.id,
-            name: fullName || undefined,
-            email,
-            avatar: data.image_url || undefined,
-            isEmailVerified: data.email_addresses?.[0]?.verification?.status === "verified",
-          });
-          console.info(`[Clerk Webhook] User synced: ${data.id}`);
-
-          // For new users, create Stripe customer and auto-enroll to free plan
-          if (result.isNewUser && result.userId) {
-            try {
-              await ctx.runAction(internal.stripe.subscription_actions.handleNewUserSignup, {
-                userId: result.userId,
-                email,
-                name: fullName || undefined,
-              });
-              console.info(`[Clerk Webhook] Stripe customer created for user: ${data.id}`);
-            } catch (err) {
-              // Log error but don't fail the webhook - user was created successfully
-              console.error(`[Clerk Webhook] Failed to setup Stripe for user ${data.id}:`, err);
-            }
-          }
-          break;
-        }
-
-        case "user.updated": {
-          const firstName = data.first_name || "";
-          const lastName = data.last_name || "";
-          const fullName = `${firstName} ${lastName}`.trim();
-
-          await ctx.runMutation(api.clerk_webhooks.syncUser, {
-            clerkId: data.id,
-            name: fullName || undefined,
-            email: data.email_addresses?.[0]?.email_address || "",
-            avatar: data.image_url || undefined,
-            isEmailVerified: data.email_addresses?.[0]?.verification?.status === "verified",
-          });
-          console.info(`[Clerk Webhook] User synced: ${data.id}`);
-          break;
-        }
-
-        case "user.deleted":
-          await ctx.runMutation(api.clerk_webhooks.deleteUser, {
-            clerkId: data.id,
-          });
-          console.info(`[Clerk Webhook] User deleted: ${data.id}`);
-          break;
-
-        case "organization.created":
-        case "organization.updated":
-          await ctx.runMutation(api.clerk_webhooks.syncOrganization, {
-            clerkId: data.id,
-            name: data.name || "",
-            slug: data.slug || undefined,
-            logo: data.logo_url || undefined,
-            metadata: data.public_metadata ? JSON.stringify(data.public_metadata) : undefined,
-          });
-          console.info(`[Clerk Webhook] Organization synced: ${data.id}`);
-          break;
-
-        case "organization.deleted":
-          await ctx.runMutation(api.clerk_webhooks.deleteOrganization, {
-            clerkId: data.id,
-          });
-          console.info(`[Clerk Webhook] Organization deleted: ${data.id}`);
-          break;
-
-        case "organizationMembership.created":
-          // Use enhanced upsert with retry logic and clerkMembershipId tracking
-          if (data.organization?.id && data.public_user_data?.user_id) {
-            await ctx.runMutation(internal.clerk_webhooks.upsertMembershipFromClerk, {
-              clerkUserId: data.public_user_data.user_id,
-              clerkOrgId: data.organization.id,
-              clerkMembershipId: data.id, // Track the membership ID
-              role: data.role || "member",
-            });
-            console.info(
-              `[Clerk Webhook] Membership created: ${data.public_user_data.user_id} -> ${data.organization.id} (${data.id})`,
-            );
-          }
-          break;
-
-        case "organizationMembership.updated":
-          // For updates, just sync without creating new records
-          if (data.id) {
-            await ctx.runMutation(internal.clerk_webhooks.syncMembershipFromClerk, {
-              clerkMembershipId: data.id,
-            });
-            console.info(`[Clerk Webhook] Membership updated: ${data.id}`);
-          }
-          break;
-
-        case "organizationMembership.deleted":
-          // Use enhanced delete with clerkMembershipId
-          if (data.id) {
-            await ctx.runMutation(internal.clerk_webhooks.deleteMembershipFromClerk, {
-              clerkMembershipId: data.id,
-            });
-            console.info(`[Clerk Webhook] Membership deleted: ${data.id}`);
-          }
-          break;
-
-        case "organizationInvitation.created":
-          // Store invitation in database
-          console.info(`[Clerk Webhook] Processing invitation.created`, {
-            hasOrgId: !!data.organization_id,
-            hasEmail: !!data.email_address,
-            orgId: data.organization_id,
-            email: data.email_address,
-          });
-
-          if (data.organization_id && data.email_address) {
-            try {
-              const result = await ctx.runMutation(
-                internal.clerk_webhooks.handleInvitationCreated,
-                {
-                  clerkInvitationId: data.id,
-                  clerkOrganizationId: data.organization_id,
-                  emailAddress: data.email_address,
-                  role: data.role,
-                  publicMetadata: data.public_metadata,
-                  createdAt: data.created_at,
-                },
-              );
-              console.info(
-                `[Clerk Webhook] Invitation created successfully: ${data.email_address} -> ${data.organization_id}`,
-                result,
-              );
-            } catch (error) {
-              console.error(`[Clerk Webhook] Error handling invitation.created:`, error);
-              throw error;
-            }
-          } else {
-            console.warn(`[Clerk Webhook] Missing required data for invitation.created`, {
-              hasOrgId: !!data.organization_id,
-              hasEmail: !!data.email_address,
-            });
-          }
-          break;
-
-        case "organizationInvitation.accepted":
-          // Create membership when invitation is accepted
-          if (data.organization_id) {
-            await ctx.runMutation(internal.clerk_webhooks.handleInvitationAccepted, {
-              clerkInvitationId: data.id,
-              clerkOrganizationId: data.organization_id,
-              clerkUserId: data.public_user_data?.user_id,
-            });
-            console.info(`[Clerk Webhook] Invitation accepted: ${data.id}`);
-          }
-          break;
-
-        case "organizationInvitation.revoked":
-          // Remove invitation from database
-          await ctx.runMutation(internal.clerk_webhooks.handleInvitationRevoked, {
-            clerkInvitationId: data.id,
-          });
-          console.info(`[Clerk Webhook] Invitation revoked: ${data.id}`);
-          break;
-
-        case "session.created":
-          if (data.user_id) {
-            await ctx.runMutation(internal.clerk_webhooks.logSessionEvent, {
-              clerkUserId: data.user_id,
-              sessionId: data.id,
-              action: "user.login",
-            });
-            console.info(`[Clerk Webhook] Session logged: ${data.user_id}`);
-          }
-          break;
-
-        case "session.ended":
-        case "session.removed":
-        case "session.revoked":
-          if (data.user_id) {
-            await ctx.runMutation(internal.clerk_webhooks.logSessionEvent, {
-              clerkUserId: data.user_id,
-              sessionId: data.id,
-              action: "user.logout",
-            });
-            console.info(`[Clerk Webhook] Session end logged: ${data.user_id}`);
-          }
-          break;
-
-        default:
-          console.info(`[Clerk Webhook] Unhandled event type: ${type}`);
-          break;
-      }
-
+      await handleClerkWebhookEvent(ctx, evt);
       return new Response("Webhook processed successfully", { status: 200 });
     } catch (error) {
       console.error("[Clerk Webhook] Processing error:", error);

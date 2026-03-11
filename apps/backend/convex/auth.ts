@@ -99,14 +99,20 @@ export function createAuthError(
   return new AuthError(type, message || defaultMessages[type], metadata);
 }
 
-/**
- * Get authenticated user context from Convex with optimized queries
- */
-export async function getAuthContext(ctx: QueryCtx | MutationCtx): Promise<AuthContext> {
-  // 1. Get user identity and basic user record
+function throwAuthError(
+  type: keyof typeof AuthErrorType,
+  message?: string,
+  metadata?: Record<string, unknown>,
+): never {
+  throw new ConvexError(createAuthError(type, message, metadata).message);
+}
+
+async function requireAuthenticatedUser(
+  ctx: QueryCtx | MutationCtx,
+): Promise<{ user: Doc<"users"> }> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
-    throw new ConvexError(createAuthError("NO_IDENTITY").message);
+    throwAuthError("NO_IDENTITY");
   }
 
   const user = await ctx.db
@@ -115,108 +121,126 @@ export async function getAuthContext(ctx: QueryCtx | MutationCtx): Promise<AuthC
     .first();
 
   if (!user) {
-    // User doesn't exist yet - this should rarely happen now
-    // ensureMyMembership handles inline user creation
-    throw new ConvexError(
-      createAuthError("NO_USER_RECORD", "User record not found. Please try refreshing the page.", {
-        clerkId: identity.subject,
-      }).message,
-    );
+    throwAuthError("NO_USER_RECORD", "User record not found. Please try refreshing the page.", {
+      clerkId: identity.subject,
+    });
   }
 
+  return { user };
+}
+
+function requireActiveOrganizationId(user: Doc<"users">): Id<"organizations"> {
   if (!user.activeOrganizationId) {
-    // User exists but has no organization
-    // This should trigger ensureMyMembership call from frontend
-    throw new ConvexError(
-      createAuthError(
-        "NO_ORGANIZATION",
-        "Organization setup required. This will be handled automatically - please try again.",
-        {
-          userId: user._id,
-          hint: "CALL_ENSURE_MEMBERSHIP", // Hint for frontend error handling
-        },
-      ).message,
+    throwAuthError(
+      "NO_ORGANIZATION",
+      "Organization setup required. This will be handled automatically - please try again.",
+      {
+        userId: user._id,
+        hint: "CALL_ENSURE_MEMBERSHIP",
+      },
     );
   }
 
-  // 2. Single query to get member with denormalized data (major optimization)
+  return user.activeOrganizationId as Id<"organizations">;
+}
+
+async function getOrganizationMemberOrThrow(
+  ctx: QueryCtx | MutationCtx,
+  user: Doc<"users">,
+  organizationId: Id<"organizations">,
+): Promise<Doc<"organization_members">> {
   const member = await ctx.db
     .query("organization_members")
     .withIndex("by_user_organization", (q) =>
-      q
-        .eq("userId", user._id)
-        .eq("organizationId", user.activeOrganizationId as Id<"organizations">),
+      q.eq("userId", user._id).eq("organizationId", organizationId),
     )
     .first();
 
   if (!member) {
-    throw new ConvexError(
-      createAuthError("NO_MEMBER_RECORD", undefined, {
-        userId: user._id,
-        organizationId: user.activeOrganizationId,
-      }).message,
-    );
+    throwAuthError("NO_MEMBER_RECORD", undefined, {
+      userId: user._id,
+      organizationId,
+    });
   }
 
-  // 3. Get organization (could be cached in the future)
-  const organization = await ctx.db.get(user.activeOrganizationId);
+  return member;
+}
+
+async function getOrganizationOrThrow(
+  ctx: QueryCtx | MutationCtx,
+  user: Doc<"users">,
+  organizationId: Id<"organizations">,
+): Promise<Doc<"organizations">> {
+  const organization = await ctx.db.get(organizationId);
   if (!organization) {
-    throw new ConvexError(
-      createAuthError("NO_ORGANIZATION", undefined, {
-        userId: user._id,
-        organizationId: user.activeOrganizationId,
-      }).message,
-    );
+    throwAuthError("NO_ORGANIZATION", undefined, {
+      userId: user._id,
+      organizationId,
+    });
   }
+  return organization;
+}
 
-  // 4. Validate account status
+function validateMemberStatus(user: Doc<"users">, member: Doc<"organization_members">): void {
   if (!AuthUtils.isAccountValid(member)) {
-    const errorType = getStatusErrorType(member.status);
-    throw new ConvexError(
-      createAuthError(errorType, undefined, {
-        userId: user._id,
-        status: member.status,
-      }).message,
-    );
+    throwAuthError(getStatusErrorType(member.status), undefined, {
+      userId: user._id,
+      status: member.status,
+    });
   }
+}
 
-  // 5. Load subscription data (if user has an active subscription)
-  let subscription: Doc<"subscriptions"> | undefined;
-
-  const activeSubscription = await ctx.db
+async function getActiveSubscription(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<"users">,
+): Promise<Doc<"subscriptions"> | undefined> {
+  const subscription = await ctx.db
     .query("subscriptions")
-    .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+    .withIndex("by_user_id", (q) => q.eq("userId", userId))
     .filter((q) => q.eq(q.field("status"), "active"))
     .first();
 
-  if (activeSubscription) {
-    subscription = activeSubscription;
-  }
+  return subscription ?? undefined;
+}
 
-  // 6. Return optimized context with financial-specific data
+function buildAuthContext(
+  member: Doc<"organization_members">,
+  user: Doc<"users">,
+  organization: Doc<"organizations">,
+  subscription?: Doc<"subscriptions">,
+): AuthContext {
   return {
     member,
     user,
     organization,
     subscription,
-    userType: "personal" as UserType, // Default type since userType field removed
-
-    // Utility methods
+    userType: "personal" as UserType,
     hasPermission: (permission) => AuthUtils.hasPermission(member, permission),
     hasRole: (role) => AuthUtils.hasRole(member, role),
     canAccessOrganization: (orgId) => AuthUtils.canAccessOrganization(member, orgId),
-
-    // Type-specific helpers
-    isPersonalUser: () => true, // Default behavior since userType removed
-    isBusinessUser: () => false, // Default behavior since userType removed
+    isPersonalUser: () => true,
+    isBusinessUser: () => false,
     isOwner: () => AuthUtils.isOwner(member),
     isAdmin: () => AuthUtils.isAdmin(member),
-
-    // Financial-specific helpers
     canManageFinances: () => AuthUtils.canManageSubscription(member),
     canManageSubscription: () => AuthUtils.canManageSubscription(member),
     canManageMembers: () => AuthUtils.canManageMembers(member),
   };
+}
+
+/**
+ * Get authenticated user context from Convex with optimized queries
+ */
+export async function getAuthContext(ctx: QueryCtx | MutationCtx): Promise<AuthContext> {
+  const { user } = await requireAuthenticatedUser(ctx);
+  const organizationId = requireActiveOrganizationId(user);
+  const member = await getOrganizationMemberOrThrow(ctx, user, organizationId);
+  const organization = await getOrganizationOrThrow(ctx, user, organizationId);
+
+  validateMemberStatus(user, member);
+
+  const subscription = await getActiveSubscription(ctx, user._id);
+  return buildAuthContext(member, user, organization, subscription);
 }
 
 /**

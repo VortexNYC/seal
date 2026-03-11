@@ -8,8 +8,158 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
-import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+  type QueryCtx,
+} from "./_generated/server";
 import { authMutation, authQuery } from "./auth";
+
+function buildUserProfile(user: Doc<"users">) {
+  return {
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+    timezone: user.timezone,
+    locale: user.locale,
+    isEmailVerified: user.isEmailVerified,
+    lastLoginAt: user.lastLoginAt,
+    onboardingCompleted: user.onboardingCompleted,
+    onboardingCompletedAt: user.onboardingCompletedAt,
+    createdAt: user._creationTime,
+    updatedAt: user.updatedAt,
+  };
+}
+
+async function getDocumentExports(ctx: QueryCtx, userId: Id<"users">) {
+  const documents = await ctx.db
+    .query("documents")
+    .withIndex("by_owner", (q) => q.eq("ownerId", userId))
+    .collect();
+
+  return documents.map((doc) => ({
+    id: doc._id,
+    name: doc.name,
+    description: doc.description,
+    fileType: doc.fileType,
+    fileSize: doc.fileSize,
+    pageCount: doc.pageCount,
+    status: doc.status,
+    workflowStatus: doc.workflowStatus,
+    sharingMode: doc.sharingMode,
+    documentHash: doc.documentHash,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+    sentAt: doc.sentAt,
+    completedAt: doc.completedAt,
+    cancelledAt: doc.cancelledAt,
+    declinedAt: doc.declinedAt,
+    deadline: doc.deadline,
+  }));
+}
+
+async function getMembershipExports(ctx: QueryCtx, userId: Id<"users">) {
+  const memberships = await ctx.db
+    .query("organization_members")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+  const organizations = await Promise.all(
+    memberships.map((membership) => ctx.db.get(membership.organizationId)),
+  );
+
+  return memberships.map((membership, index) => ({
+    organizationName: organizations[index]?.name ?? "Unknown",
+    role: membership.role,
+    status: membership.status,
+    joinedAt: membership._creationTime,
+  }));
+}
+
+async function getSavedSignatureExports(ctx: QueryCtx, userId: Id<"users">) {
+  const savedSignatures = await ctx.db
+    .query("saved_signatures")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+
+  return savedSignatures.map((signature) => ({
+    id: signature._id,
+    name: signature.name,
+    signatureType: signature.signatureType,
+    isDefault: signature.isDefault,
+    createdAt: signature.createdAt,
+  }));
+}
+
+async function getNotificationExports(ctx: QueryCtx, userId: Id<"users">) {
+  const notifications = await ctx.db
+    .query("notifications")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+
+  return notifications.map((notification) => ({
+    id: notification._id,
+    type: notification.type,
+    read: notification.read,
+    createdAt: notification.createdAt,
+  }));
+}
+
+async function getAuditExports(ctx: QueryCtx, clerkUserId: string) {
+  const auditLogs = await ctx.db
+    .query("audit_logs")
+    .withIndex("by_user", (q) => q.eq("userId", clerkUserId))
+    .order("desc")
+    .take(1000);
+
+  return auditLogs.map((log) => ({
+    action: log.action,
+    resourceType: log.resourceType,
+    description: log.metadata?.description,
+    ipAddress: log.ipAddress,
+    timestamp: log._creationTime,
+  }));
+}
+
+async function getSubscriptionExport(ctx: QueryCtx, userId: Id<"users">) {
+  const subscription = await ctx.db
+    .query("subscriptions")
+    .withIndex("by_user_id", (q) => q.eq("userId", userId))
+    .first();
+
+  if (!subscription) {
+    return null;
+  }
+
+  return {
+    status: subscription.status,
+    externalPriceId: subscription.externalPriceId,
+    currentPeriodStart: subscription.currentPeriodStart,
+    currentPeriodEnd: subscription.currentPeriodEnd,
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+    canceledAt: subscription.canceledAt,
+    cancelReason: subscription.cancelReason,
+  };
+}
+
+async function getAccessExports(ctx: QueryCtx, userId: Id<"users">) {
+  const accessGrants = await ctx.db
+    .query("document_access")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+
+  return Promise.all(
+    accessGrants.map(async (grant) => {
+      const document = await ctx.db.get(grant.documentId);
+      return {
+        documentName: document?.name ?? "Unknown",
+        permissionLevel: grant.permissionLevel,
+        grantedAt: grant.grantedAt,
+      };
+    }),
+  );
+}
 
 /**
  * User-facing mutation to request a data export.
@@ -91,151 +241,35 @@ export const gatherUserData = internalQuery({
       throw new ConvexError("User not found");
     }
 
-    // 1. User profile
-    const profile = {
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar,
-      timezone: user.timezone,
-      locale: user.locale,
-      isEmailVerified: user.isEmailVerified,
-      lastLoginAt: user.lastLoginAt,
-      onboardingCompleted: user.onboardingCompleted,
-      onboardingCompletedAt: user.onboardingCompletedAt,
-      createdAt: user._creationTime,
-      updatedAt: user.updatedAt,
-    };
-
-    // 2. Documents owned by user
-    const documents = await ctx.db
-      .query("documents")
-      .withIndex("by_owner", (q) => q.eq("ownerId", args.userId))
-      .collect();
-
-    const documentExports = documents.map((doc) => ({
-      id: doc._id,
-      name: doc.name,
-      description: doc.description,
-      fileType: doc.fileType,
-      fileSize: doc.fileSize,
-      pageCount: doc.pageCount,
-      status: doc.status,
-      workflowStatus: doc.workflowStatus,
-      sharingMode: doc.sharingMode,
-      documentHash: doc.documentHash,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      sentAt: doc.sentAt,
-      completedAt: doc.completedAt,
-      cancelledAt: doc.cancelledAt,
-      declinedAt: doc.declinedAt,
-      deadline: doc.deadline,
-    }));
-
-    // 3. Organization memberships
-    const memberships = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
-
-    const orgIds = memberships.map((m) => m.organizationId);
-    const orgs = await Promise.all(orgIds.map((id) => ctx.db.get(id)));
-
-    const membershipExports = memberships.map((m, i) => ({
-      organizationName: orgs[i]?.name ?? "Unknown",
-      role: m.role,
-      status: m.status,
-      joinedAt: m._creationTime,
-    }));
-
-    // 4. Saved signatures
-    const savedSignatures = await ctx.db
-      .query("saved_signatures")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
-
-    const signatureExports = savedSignatures.map((sig) => ({
-      id: sig._id,
-      name: sig.name,
-      signatureType: sig.signatureType,
-      isDefault: sig.isDefault,
-      createdAt: sig.createdAt,
-    }));
-
-    // 5. Notifications
-    const notifications = await ctx.db
-      .query("notifications")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
-
-    const notificationExports = notifications.map((n) => ({
-      id: n._id,
-      type: n.type,
-      read: n.read,
-      createdAt: n.createdAt,
-    }));
-
-    // 6. Audit logs where user is the actor
-    const auditLogs = await ctx.db
-      .query("audit_logs")
-      .withIndex("by_user", (q) => q.eq("userId", user.clerkId))
-      .order("desc")
-      .take(1000);
-
-    const auditExports = auditLogs.map((log) => ({
-      action: log.action,
-      resourceType: log.resourceType,
-      description: log.metadata?.description,
-      ipAddress: log.ipAddress,
-      timestamp: log._creationTime,
-    }));
-
-    // 7. Subscription info
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
-      .first();
-
-    const subscriptionExport = subscription
-      ? {
-          status: subscription.status,
-          externalPriceId: subscription.externalPriceId,
-          currentPeriodStart: subscription.currentPeriodStart,
-          currentPeriodEnd: subscription.currentPeriodEnd,
-          cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-          canceledAt: subscription.canceledAt,
-          cancelReason: subscription.cancelReason,
-        }
-      : null;
-
-    // 8. Document access grants (documents shared with this user)
-    const accessGrants = await ctx.db
-      .query("document_access")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect();
-
-    const accessExports = await Promise.all(
-      accessGrants.map(async (a) => {
-        const doc = await ctx.db.get(a.documentId);
-        return {
-          documentName: doc?.name ?? "Unknown",
-          permissionLevel: a.permissionLevel,
-          grantedAt: a.grantedAt,
-        };
-      }),
-    );
+    const [
+      documents,
+      organizationMemberships,
+      savedSignatures,
+      notifications,
+      auditTrail,
+      subscription,
+      sharedDocuments,
+    ] = await Promise.all([
+      getDocumentExports(ctx, args.userId),
+      getMembershipExports(ctx, args.userId),
+      getSavedSignatureExports(ctx, args.userId),
+      getNotificationExports(ctx, args.userId),
+      getAuditExports(ctx, user.clerkId),
+      getSubscriptionExport(ctx, args.userId),
+      getAccessExports(ctx, args.userId),
+    ]);
 
     return {
       exportedAt: new Date().toISOString(),
       exportVersion: "1.0",
-      user: profile,
-      documents: documentExports,
-      organizationMemberships: membershipExports,
-      savedSignatures: signatureExports,
-      notifications: notificationExports,
-      auditTrail: auditExports,
-      subscription: subscriptionExport,
-      sharedDocuments: accessExports,
+      user: buildUserProfile(user),
+      documents,
+      organizationMemberships,
+      savedSignatures,
+      notifications,
+      auditTrail,
+      subscription,
+      sharedDocuments,
     };
   },
 });

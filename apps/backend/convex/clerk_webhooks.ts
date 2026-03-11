@@ -6,9 +6,127 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "./_generated/api";
-import { internalMutation, mutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { type MutationCtx, internalMutation, mutation } from "./_generated/server";
 import { logAction } from "./audit_logs/helpers";
 import type { OrganizationRole } from "./schema";
+
+type MembershipUpsertArgs = {
+  clerkUserId: string;
+  clerkOrgId: string;
+  clerkMembershipId: string;
+  role: string;
+  retryCount?: number;
+};
+
+function validateMembershipUpsertArgs(args: MembershipUpsertArgs): void {
+  if (!args.clerkUserId || !args.clerkOrgId || !args.clerkMembershipId) {
+    throw new ConvexError({
+      code: "INVALID_ARGUMENT",
+      message: "Clerk User ID, Organization ID, and Membership ID are required",
+    });
+  }
+}
+
+async function getUserForMembershipUpsert(ctx: MutationCtx, clerkUserId: string) {
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkUserId))
+    .first();
+
+  if (!user) {
+    console.warn(`⚠️ User with Clerk ID ${clerkUserId} not found for membership upsert`);
+    return null;
+  }
+
+  return user;
+}
+
+async function getOrganizationForMembershipUpsert(
+  ctx: MutationCtx,
+  args: MembershipUpsertArgs,
+  retryCount: number,
+  maxRetries: number,
+) {
+  const organization = await ctx.db
+    .query("organizations")
+    .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkOrgId))
+    .first();
+
+  if (organization) {
+    return { organization };
+  }
+
+  if (retryCount < maxRetries) {
+    console.info(
+      `⏳ Organization not found, retrying in 2 seconds (attempt ${retryCount + 1}/${maxRetries})...`,
+    );
+
+    await ctx.scheduler.runAfter(2000, internal.clerk_webhooks.upsertMembershipFromClerk, {
+      ...args,
+      retryCount: retryCount + 1,
+    });
+
+    return {
+      organization: null,
+      scheduledResult: { scheduled: true, retryCount: retryCount + 1 },
+    };
+  }
+
+  console.warn(
+    `⚠️ Organization with Clerk ID ${args.clerkOrgId} not found after ${maxRetries} retries`,
+  );
+
+  return {
+    organization: null,
+    scheduledResult: { error: "Organization not found after retries" },
+  };
+}
+
+async function getMembershipLookupData(
+  ctx: MutationCtx,
+  clerkMembershipId: string,
+  userId: Id<"users">,
+  organizationId: Id<"organizations">,
+) {
+  const [existingByClerkMembership, existingByUserOrg, existingMembers] = await Promise.all([
+    ctx.db
+      .query("organization_members")
+      .withIndex("by_clerk_membership_id", (q) => q.eq("clerkMembershipId", clerkMembershipId))
+      .first(),
+    ctx.db
+      .query("organization_members")
+      .withIndex("by_user_organization", (q) =>
+        q.eq("userId", userId).eq("organizationId", organizationId),
+      )
+      .first(),
+    ctx.db
+      .query("organization_members")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .take(1),
+  ]);
+
+  return {
+    existingByClerkMembership,
+    existingByUserOrg,
+    isFirstMember: existingMembers.length === 0,
+  };
+}
+
+function mapMembershipRole(role: string, isFirstMember: boolean): OrganizationRole {
+  if (isFirstMember) {
+    return "owner";
+  }
+
+  const clerkRole = role.toLowerCase();
+  if (clerkRole.includes("admin") || clerkRole === "org:admin") {
+    return "admin";
+  }
+  if (clerkRole.includes("member")) {
+    return "member";
+  }
+  return "viewer";
+}
 
 /**
  * Sync user from Clerk webhook
@@ -383,90 +501,30 @@ export const upsertMembershipFromClerk = internalMutation({
     retryCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    if (!args.clerkUserId || !args.clerkOrgId || !args.clerkMembershipId) {
-      throw new ConvexError({
-        code: "INVALID_ARGUMENT",
-        message: "Clerk User ID, Organization ID, and Membership ID are required",
-      });
-    }
-
+    validateMembershipUpsertArgs(args);
     const retryCount = args.retryCount || 0;
     const maxRetries = 3;
 
-    // Find user
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
-      .first();
-
+    const user = await getUserForMembershipUpsert(ctx, args.clerkUserId);
     if (!user) {
-      console.warn(`⚠️ User with Clerk ID ${args.clerkUserId} not found for membership upsert`);
       return { error: "User not found" };
     }
 
-    // Find organization
-    const organization = await ctx.db
-      .query("organizations")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkOrgId))
-      .first();
-
+    const organizationLookup = await getOrganizationForMembershipUpsert(
+      ctx,
+      args,
+      retryCount,
+      maxRetries,
+    );
+    const organization = organizationLookup.organization;
     if (!organization) {
-      if (retryCount < maxRetries) {
-        console.info(
-          `⏳ Organization not found, retrying in 2 seconds (attempt ${retryCount + 1}/${maxRetries})...`,
-        );
-
-        // Schedule a retry after 2 seconds
-        await ctx.scheduler.runAfter(2000, internal.clerk_webhooks.upsertMembershipFromClerk, {
-          ...args,
-          retryCount: retryCount + 1,
-        });
-
-        return { scheduled: true, retryCount: retryCount + 1 };
-      }
-
-      console.warn(
-        `⚠️ Organization with Clerk ID ${args.clerkOrgId} not found after ${maxRetries} retries`,
-      );
-      return { error: "Organization not found after retries" };
+      return organizationLookup.scheduledResult!;
     }
 
-    // Check if membership exists by Clerk membership ID
-    const existingByClerkMembership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_clerk_membership_id", (q) => q.eq("clerkMembershipId", args.clerkMembershipId))
-      .first();
+    const { existingByClerkMembership, existingByUserOrg, isFirstMember } =
+      await getMembershipLookupData(ctx, args.clerkMembershipId, user._id, organization._id);
 
-    // Check if membership exists by user-org combination
-    const existingByUserOrg = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", user._id).eq("organizationId", organization._id),
-      )
-      .first();
-
-    // Check if this is the first member of the organization
-    const existingMembers = await ctx.db
-      .query("organization_members")
-      .withIndex("by_organization", (q) => q.eq("organizationId", organization._id))
-      .take(1);
-
-    const isFirstMember = existingMembers.length === 0;
-
-    // Map Clerk roles to our role system
-    const clerkRole = args.role?.toLowerCase() || "";
-    let mappedRole: OrganizationRole;
-
-    if (isFirstMember) {
-      // First member is always owner
-      mappedRole = "owner";
-    } else if (clerkRole.includes("admin") || clerkRole === "org:admin") {
-      mappedRole = "admin";
-    } else if (clerkRole.includes("member")) {
-      mappedRole = "member";
-    } else {
-      mappedRole = "viewer";
-    }
+    const mappedRole = mapMembershipRole(args.role || "", isFirstMember);
 
     const membershipData = {
       userId: user._id,

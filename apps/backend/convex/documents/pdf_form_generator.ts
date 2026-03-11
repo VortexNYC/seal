@@ -7,6 +7,100 @@ interface RecipientInfo {
   email: string;
 }
 
+type PdfForm = ReturnType<PDFDocument["getForm"]>;
+
+interface FieldLayout {
+  x: number;
+  pdfY: number;
+  width: number;
+  height: number;
+}
+
+function groupFieldsByPage(
+  fields: Doc<"signature_fields">[],
+): Map<number, Doc<"signature_fields">[]> {
+  const fieldsByPage = new Map<number, Doc<"signature_fields">[]>();
+  for (const field of fields) {
+    const pageFields = fieldsByPage.get(field.page) ?? [];
+    pageFields.push(field);
+    fieldsByPage.set(field.page, pageFields);
+  }
+  return fieldsByPage;
+}
+
+function getFieldLayout(page: PDFPage, field: Doc<"signature_fields">): FieldLayout {
+  const { width: pageWidth, height: pageHeight } = page.getSize();
+  const x = (field.x / 100) * pageWidth;
+  const y = (field.y / 100) * pageHeight;
+  const width = (field.width / 100) * pageWidth;
+  const height = (field.height / 100) * pageHeight;
+  return {
+    x,
+    pdfY: pageHeight - y - height,
+    width,
+    height,
+  };
+}
+
+async function addFormField(
+  form: PdfForm,
+  page: PDFPage,
+  field: Doc<"signature_fields">,
+  layout: FieldLayout,
+  font: PDFFont,
+  recipient: RecipientInfo | undefined,
+): Promise<void> {
+  const fieldName = `${field.fieldType}_${field._id}`;
+
+  switch (field.fieldType) {
+    case "text":
+    case "date":
+      addTextField(form, page, fieldName, layout.x, layout.pdfY, layout.width, layout.height);
+      return;
+    case "checkbox":
+      addCheckboxField(form, page, fieldName, layout.x, layout.pdfY, layout.width, layout.height);
+      return;
+    case "signature":
+      await addSignaturePlaceholder(
+        page,
+        layout.x,
+        layout.pdfY,
+        layout.width,
+        layout.height,
+        font,
+        recipient,
+      );
+      return;
+    case "dropdown":
+      addDropdownField(
+        form,
+        page,
+        fieldName,
+        layout.x,
+        layout.pdfY,
+        layout.width,
+        layout.height,
+        field.properties?.options ?? [],
+      );
+      return;
+    case "radio":
+      addRadioField(
+        form,
+        page,
+        fieldName,
+        layout.x,
+        layout.pdfY,
+        layout.width,
+        layout.height,
+        field.properties?.options ?? [],
+      );
+      return;
+    case "attachment":
+      addAttachmentPlaceholder(page, layout.x, layout.pdfY, layout.width, layout.height, font);
+      return;
+  }
+}
+
 /**
  * Generate a fillable PDF with form fields based on signature field positions
  */
@@ -24,85 +118,21 @@ export async function generateFillablePdf(
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
   // Group fields by page for easier processing
-  const fieldsByPage = new Map<number, Doc<"signature_fields">[]>();
-  for (const field of fields) {
-    const pageFields = fieldsByPage.get(field.page) || [];
-    pageFields.push(field);
-    fieldsByPage.set(field.page, pageFields);
-  }
+  const fieldsByPage = groupFieldsByPage(fields);
 
   // Process each page
   for (const [pageNumber, pageFields] of fieldsByPage) {
     const page = pages[pageNumber - 1]; // Pages are 0-indexed
     if (!page) continue;
 
-    const { width: pageWidth, height: pageHeight } = page.getSize();
-
     // Add form fields for each signature field
     for (const field of pageFields) {
       const recipient = field.recipientId ? recipients.get(field.recipientId) : undefined;
       const fieldName = `${field.fieldType}_${field._id}`;
-
-      // Convert percentage coordinates back to pixels
-      const x = (field.x / 100) * pageWidth;
-      const y = (field.y / 100) * pageHeight;
-      const width = (field.width / 100) * pageWidth;
-      const height = (field.height / 100) * pageHeight;
-
-      // PDF coordinates start from bottom-left, so we need to flip Y
-      const pdfY = pageHeight - y - height;
+      const layout = getFieldLayout(page, field);
 
       try {
-        switch (field.fieldType) {
-          case "text":
-            addTextField(form, page, fieldName, x, pdfY, width, height);
-            break;
-
-          case "date":
-            addTextField(form, page, fieldName, x, pdfY, width, height);
-            break;
-
-          case "checkbox":
-            addCheckboxField(form, page, fieldName, x, pdfY, width, height);
-            break;
-
-          case "signature":
-            // For signature fields, we'll add a placeholder that can be digitally signed
-            // Note: This creates a visual placeholder, actual signing requires @signpdf/signpdf
-            await addSignaturePlaceholder(page, x, pdfY, width, height, helveticaBold, recipient);
-            break;
-
-          case "dropdown":
-            addDropdownField(
-              form,
-              page,
-              fieldName,
-              x,
-              pdfY,
-              width,
-              height,
-              field.properties?.options || [],
-            );
-            break;
-
-          case "radio":
-            addRadioField(
-              form,
-              page,
-              fieldName,
-              x,
-              pdfY,
-              width,
-              height,
-              field.properties?.options || [],
-            );
-            break;
-
-          case "attachment":
-            // Attachment fields are handled separately - draw a placeholder
-            addAttachmentPlaceholder(page, x, pdfY, width, height, helveticaBold);
-            break;
-        }
+        await addFormField(form, page, field, layout, helveticaBold, recipient);
       } catch (error) {
         console.error(`Failed to add field ${fieldName}:`, error);
       }
