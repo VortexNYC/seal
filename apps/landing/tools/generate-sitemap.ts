@@ -4,7 +4,8 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { createClient } from "@sanity/client";
-import { createServer } from "vite";
+
+import { source } from "../src/lib/docs/server-source";
 
 const SITE_URL = "https://seal.nyc";
 const OUTPUT_FILE = path.resolve("public", "sitemap.xml");
@@ -19,21 +20,8 @@ const sanity = createClient({
 async function generateSitemap(): Promise<void> {
   const today = new Date().toISOString().split("T")[0] as string;
 
-  // Load fumadocs source via Vite SSR to get docs pages
-  const server = await createServer({
-    configFile: path.resolve("vite.config.ts"),
-    server: { middlewareMode: true },
-    appType: "custom",
-    logLevel: "error",
-  });
-
   let docsPages: Array<{ url: string }> = [];
-  try {
-    const { source } = await server.ssrLoadModule("/src/lib/source.ts");
-    docsPages = source.getPages();
-  } finally {
-    await server.close();
-  }
+  docsPages = source.getPages();
 
   // Fetch Sanity content in parallel
   const [sanityPages, changelogEntries] = await Promise.all([

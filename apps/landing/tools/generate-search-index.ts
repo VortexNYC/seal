@@ -3,29 +3,17 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { createServer } from "vite";
+import { searchAPI } from "../src/lib/docs/server-source";
 
 const OUTPUT_DIR = path.resolve("public", "api");
 const OUTPUT_FILE = path.join(OUTPUT_DIR, "search.json");
 
 async function generateSearchIndex(): Promise<void> {
-  const server = await createServer({
-    configFile: path.resolve("vite.config.ts"),
-    server: { middlewareMode: true },
-    appType: "custom",
-    logLevel: "error",
-  });
+  const response = await searchAPI.staticGET();
+  const data = await response.json();
 
-  try {
-    const { searchAPI } = await server.ssrLoadModule("/src/lib/source.ts");
-    const response = await searchAPI.staticGET();
-    const data = await response.json();
-
-    await mkdir(OUTPUT_DIR, { recursive: true });
-    await writeFile(OUTPUT_FILE, JSON.stringify(data));
-  } finally {
-    await server.close();
-  }
+  await mkdir(OUTPUT_DIR, { recursive: true });
+  await writeFile(OUTPUT_FILE, JSON.stringify(data));
 }
 
 generateSearchIndex().catch((error: unknown) => {

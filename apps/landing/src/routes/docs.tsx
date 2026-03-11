@@ -3,7 +3,9 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
 
-import { source } from "~/lib/source";
+import { getDocsPageTree } from "~/lib/docs/manifest";
+
+const docsPageTree = getDocsPageTree();
 
 export const Route = createFileRoute("/docs")({
   component: DocsLayoutRoute,
@@ -30,7 +32,7 @@ function DocsLayoutRoute() {
       }}
     >
       <DocsLayout
-        tree={source.pageTree}
+        tree={docsPageTree}
         nav={{
           title: <span className="text-lg font-semibold">Seal Docs</span>,
           url: "/docs",

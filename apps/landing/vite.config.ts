@@ -14,6 +14,74 @@ import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
 
+function getManualChunkName(id: string): string | undefined {
+  if (!id.includes("node_modules")) {
+    return undefined;
+  }
+
+  if (
+    id.includes("/styled-components/")
+  ) {
+    return "vendor-styled";
+  }
+
+  if (
+    id.includes("/@scalar/") ||
+    id.includes("/swagger-") ||
+    id.includes("/swagger-client/")
+  ) {
+    return "vendor-scalar";
+  }
+
+  if (
+    id.includes("/framer-motion/") ||
+    id.includes("/motion/")
+  ) {
+    return "vendor-motion";
+  }
+
+  if (
+    id.includes("/@sanity/ui/")
+  ) {
+    return "vendor-sanity-ui";
+  }
+
+  if (
+    id.includes("/@portabletext/") ||
+    id.includes("/slate/")
+  ) {
+    return "vendor-editor";
+  }
+
+  if (
+    id.includes("/sanity/")
+  ) {
+    return "vendor-studio";
+  }
+
+  if (
+    id.includes("/@sanity/")
+  ) {
+    return "vendor-sanity";
+  }
+
+  if (
+    id.includes("/groq")
+  ) {
+    return "vendor-groq";
+  }
+
+  if (
+    id.includes("/fumadocs-") ||
+    id.includes("/shiki/") ||
+    id.includes("/refractor/")
+  ) {
+    return "vendor-docs";
+  }
+
+  return undefined;
+}
+
 export default defineConfig(async ({ command }) => ({
   server: {
     port: 3001,
@@ -76,6 +144,16 @@ export default defineConfig(async ({ command }) => ({
           },
         },
       ],
+    },
+  },
+
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          return getManualChunkName(id);
+        },
+      },
     },
   },
 }));

@@ -1,14 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { ClientOnly, createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-// Lazy-load Sanity Studio to avoid SSR issues (Studio requires browser APIs)
-const SanityStudio = lazy(() =>
-  import("sanity").then((mod) =>
-    import("../../sanity.config").then((config) => ({
-      default: () => <mod.Studio config={config.default} />,
-    })),
-  ),
-);
+const StudioClient = lazy(async () => {
+  const mod = await import("~/components/studio-client");
+  return { default: mod.StudioClient };
+});
 
 export const Route = createFileRoute("/studio")({
   component: StudioRouteComponent,
@@ -19,9 +15,11 @@ export const Route = createFileRoute("/studio")({
 
 function StudioRouteComponent() {
   return (
-    <Suspense fallback={<StudioLoadingFallback />}>
-      <SanityStudio />
-    </Suspense>
+    <ClientOnly fallback={<StudioLoadingFallback />}>
+      <Suspense fallback={<StudioLoadingFallback />}>
+        <StudioClient />
+      </Suspense>
+    </ClientOnly>
   );
 }
 

@@ -1,6 +1,10 @@
-import { ApiReferenceReact } from "@scalar/api-reference-react";
-import { createFileRoute } from "@tanstack/react-router";
-import "@scalar/api-reference-react/style.css";
+import { ClientOnly, createFileRoute } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
+
+const ApiReferenceClient = lazy(async () => {
+  const mod = await import("~/components/api-reference-client");
+  return { default: mod.ApiReferenceClient };
+});
 
 export const Route = createFileRoute("/api-reference")({
   component: ApiReferencePage,
@@ -8,24 +12,18 @@ export const Route = createFileRoute("/api-reference")({
 
 function ApiReferencePage() {
   return (
-    <ApiReferenceReact
-      configuration={{
-        url: "/openapi.yaml",
-        theme: "default",
-        layout: "modern",
-        darkMode: false,
-        hideDownloadButton: false,
-        metaData: {
-          title: "Seal API Reference",
-          description:
-            "Complete reference for the Seal REST API — documents, recipients, templates, signatures, and more.",
-          ogTitle: "Seal API Reference",
-        },
-        servers: [{ url: "https://api.seal.app/api/v1", description: "Production" }],
-        authentication: {
-          preferredSecurityScheme: "ApiKeyAuth",
-        },
-      }}
-    />
+    <ClientOnly fallback={<ApiReferenceLoadingFallback />}>
+      <Suspense fallback={<ApiReferenceLoadingFallback />}>
+        <ApiReferenceClient />
+      </Suspense>
+    </ClientOnly>
+  );
+}
+
+function ApiReferenceLoadingFallback() {
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-white text-sm text-zinc-500">
+      Loading API reference...
+    </div>
   );
 }
