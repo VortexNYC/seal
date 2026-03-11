@@ -1,47 +1,46 @@
 import { expect, test } from "@playwright/test";
 
+import { ApiReferencePage } from "../pages/api-reference-page";
 import { HomePage } from "../pages/home-page";
 import { trackBrowserErrors } from "../utils/browser-assertions";
 
 test.describe("landing public routes", () => {
   test("footer links resolve to legal, docs, and changelog routes", async ({ page }) => {
     const homePage = new HomePage(page);
-    const visitFooterLink = async (name: "Docs" | "API" | "Changelog" | "Terms" | "Privacy"): Promise<void> => {
-      const href = await homePage.footerLink(name).getAttribute("href");
-      expect(href).toBeTruthy();
-      const targetPage = await page.context().newPage();
-      await targetPage.goto(href!);
-      return targetPage;
+    const visitFooterLink = async (
+      name: "Docs" | "API" | "Changelog" | "Terms" | "Privacy",
+      assertion: () => Promise<void>,
+    ): Promise<void> => {
+      await homePage.goto();
+      await homePage.footerLink(name).scrollIntoViewIfNeeded();
+      await homePage.footerLink(name).click();
+      await assertion();
     };
 
-    await page.goto("/");
-    await expect(page.getByTestId("site-footer")).toBeVisible();
+    await visitFooterLink("Docs", async () => {
+      await expect(page).toHaveURL(/\/docs$/);
+      await expect(page.locator("body")).toContainText("Seal Docs");
+    });
 
-    await homePage.footerLink("Docs").scrollIntoViewIfNeeded();
-    const docsPage = await visitFooterLink("Docs");
-    await expect(docsPage).toHaveURL(/\/docs$/);
-    await expect(docsPage.locator("body")).toContainText("Seal Docs");
-    await docsPage.close();
+    await visitFooterLink("API", async () => {
+      await expect(page).toHaveURL(/\/docs\/api-reference$/);
+      await expect(page.getByRole("heading", { name: /api reference/i }).first()).toBeVisible();
+    });
 
-    const apiPage = await visitFooterLink("API");
-    await expect(apiPage).toHaveURL(/\/docs\/api-reference$/);
-    await expect(apiPage.getByRole("heading", { name: /api reference/i }).first()).toBeVisible();
-    await apiPage.close();
+    await visitFooterLink("Changelog", async () => {
+      await expect(page).toHaveURL(/\/changelog$/);
+      await expect(page.getByRole("heading", { level: 1, name: /changelog/i })).toBeVisible();
+    });
 
-    const changelogPage = await visitFooterLink("Changelog");
-    await expect(changelogPage).toHaveURL(/\/changelog$/);
-    await expect(changelogPage.getByRole("heading", { level: 1, name: /changelog/i })).toBeVisible();
-    await changelogPage.close();
+    await visitFooterLink("Terms", async () => {
+      await expect(page).toHaveURL(/\/terms-of-service$/);
+      await expect(page.getByRole("heading", { level: 1, name: /terms of service/i })).toBeVisible();
+    });
 
-    const termsPage = await visitFooterLink("Terms");
-    await expect(termsPage).toHaveURL(/\/terms-of-service$/);
-    await expect(termsPage.getByRole("heading", { level: 1, name: /terms of service/i })).toBeVisible();
-    await termsPage.close();
-
-    const privacyPage = await visitFooterLink("Privacy");
-    await expect(privacyPage).toHaveURL(/\/privacy-policy$/);
-    await expect(privacyPage.getByRole("heading", { level: 1, name: /privacy policy/i })).toBeVisible();
-    await privacyPage.close();
+    await visitFooterLink("Privacy", async () => {
+      await expect(page).toHaveURL(/\/privacy-policy$/);
+      await expect(page.getByRole("heading", { level: 1, name: /privacy policy/i })).toBeVisible();
+    });
   });
 
   test("representative public routes render without blocking errors", async ({ browser }) => {
@@ -67,7 +66,7 @@ test.describe("landing public routes", () => {
       {
         path: "/api-reference",
         assert: async (page: Parameters<typeof trackBrowserErrors>[0]) => {
-          await expect(page.getByText(/loading api reference|seal api reference/i).first()).toBeVisible();
+          await new ApiReferencePage(page).waitForReady();
         },
       },
       {

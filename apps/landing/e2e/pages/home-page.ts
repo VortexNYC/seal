@@ -46,6 +46,10 @@ export class HomePage {
     return this.page.getByTestId("desktop-nav").getByRole("link", { exact: true, name });
   }
 
+  desktopNav(): Locator {
+    return this.page.getByTestId("desktop-nav");
+  }
+
   mobileMenuButton(): Locator {
     return this.page.getByTestId("mobile-menu-button");
   }
@@ -60,5 +64,29 @@ export class HomePage {
 
   footerLink(name: string): Locator {
     return this.page.getByTestId("site-footer").getByRole("link", { exact: true, name });
+  }
+
+  footerInner(): Locator {
+    return this.page.getByTestId("site-footer-inner");
+  }
+
+  footerBrand(): Locator {
+    return this.page.getByTestId("site-footer-brand");
+  }
+
+  footerLinks(): Locator {
+    return this.page.getByTestId("site-footer-links");
+  }
+
+  pricingCards(): Locator {
+    return this.page.getByTestId("pricing-grid").locator(":scope > *");
+  }
+
+  developersCopy(): Locator {
+    return this.page.getByTestId("developers-copy");
+  }
+
+  developersCodePanel(): Locator {
+    return this.page.getByTestId("developers-code-panel");
   }
 }

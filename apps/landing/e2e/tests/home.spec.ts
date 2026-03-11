@@ -66,18 +66,14 @@ test.describe("landing homepage", () => {
     const homePage = new HomePage(page);
     await homePage.goto();
 
-    await homePage.mobileMenuButton().evaluate((node) => {
-      (node as HTMLButtonElement).click();
-    });
+    await homePage.mobileMenuButton().tap();
     await expect(homePage.mobileNav()).toBeVisible();
     await expect(homePage.mobileMenuLink("Docs")).toBeVisible();
 
     await homePage.mobileMenuLink("Pricing").click();
     await expect(homePage.pricingSection()).toBeInViewport();
 
-    await homePage.mobileMenuButton().evaluate((node) => {
-      (node as HTMLButtonElement).click();
-    });
+    await homePage.mobileMenuButton().tap();
     await Promise.all([page.waitForURL(/\/integrations$/), homePage.mobileMenuLink("Integrations").click()]);
     await expect(page).toHaveURL(/\/integrations$/);
     await expect(page.getByRole("heading", { level: 1, name: /built to connect/i })).toBeVisible();
