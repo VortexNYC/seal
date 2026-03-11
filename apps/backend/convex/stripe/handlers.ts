@@ -667,24 +667,6 @@ export const handlePaymentFailed = internalMutation({
 });
 
 /**
- * Handle checkout.session.completed event
- * Currently a no-op placeholder for future one-time purchase handling.
- */
-export const handleCheckoutCompleted = internalMutation({
-  args: { session: v.any() },
-  handler: async (_ctx, args: { session: Stripe.Checkout.Session }) => {
-    const session = args.session;
-
-    // Only handle payment mode (one-time purchases)
-    if (session.mode !== "payment") {
-      return;
-    }
-
-    console.warn(`Checkout session ${session.id} completed (mode: payment)`);
-  },
-});
-
-/**
  * Helper: Get subscriptions that need status checking
  */
 export const getSubscriptionsToCheck = internalMutation({

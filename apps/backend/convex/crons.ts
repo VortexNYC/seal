@@ -32,6 +32,13 @@ crons.daily(
   internal.stripe.webhook_idempotency.cleanupOldEvents,
 );
 
+// Verify subscription states are in sync with Stripe (catches missed webhooks)
+crons.daily(
+  "check-stripe-subscription-status",
+  { hourUTC: 6, minuteUTC: 0 },
+  internal.stripe.handlers.checkSubscriptionStatus,
+);
+
 // Clean up expired download tokens weekly
 crons.weekly(
   "cleanup-expired-download-tokens",
