@@ -8,6 +8,7 @@
 
 import { v } from "convex/values";
 
+import type { Doc, Id } from "../../_generated/dataModel";
 import { internalQuery } from "../../_generated/server";
 
 /**
@@ -43,6 +44,46 @@ export interface ApiSignature {
   authentication_method?: string;
   /** Whether authentication was verified */
   authentication_verified?: boolean;
+}
+
+type ApiDocument = Doc<"documents">;
+type SignatureDoc = Doc<"signatures">;
+type RecipientDoc = Doc<"document_recipients">;
+type FieldDoc = Doc<"signature_fields">;
+
+function isAccessibleDocument(
+  document: ApiDocument | null,
+  organizationId: Id<"organizations">,
+): document is ApiDocument {
+  return Boolean(
+    document && document.status !== "deleted" && document.organizationId === organizationId,
+  );
+}
+
+function buildApiSignature(
+  signature: SignatureDoc,
+  recipient: RecipientDoc | null,
+  field: FieldDoc | null,
+): ApiSignature {
+  return {
+    id: signature._id,
+    field_id: signature.fieldId,
+    field_type: field?.fieldType ?? "unknown",
+    field_label: field?.label,
+    recipient: {
+      id: signature.recipientId,
+      email: recipient?.email ?? "",
+      name: recipient?.name ?? "",
+      role: recipient?.role ?? "signer",
+    },
+    value: signature.value,
+    signature_method: signature.signatureMethod,
+    signed_at: new Date(signature.signedAt).toISOString(),
+    ip_address: signature.ipAddress,
+    user_agent: signature.userAgent,
+    authentication_method: signature.authenticationData?.method,
+    authentication_verified: signature.authenticationData?.verified,
+  };
 }
 
 /**
@@ -158,10 +199,7 @@ export const getSignature = internalQuery({
   handler: async (ctx, args): Promise<ApiSignature | null> => {
     // Verify document exists and belongs to the organization
     const document = await ctx.db.get(args.documentId);
-    if (!document || document.status === "deleted") {
-      return null;
-    }
-    if (document.organizationId !== args.organizationId) {
+    if (!isAccessibleDocument(document, args.organizationId)) {
       return null;
     }
 
@@ -175,25 +213,7 @@ export const getSignature = internalQuery({
     const recipient = await ctx.db.get(sig.recipientId);
     const field = await ctx.db.get(sig.fieldId);
 
-    return {
-      id: sig._id,
-      field_id: sig.fieldId,
-      field_type: field?.fieldType ?? "unknown",
-      field_label: field?.label,
-      recipient: {
-        id: sig.recipientId,
-        email: recipient?.email ?? "",
-        name: recipient?.name ?? "",
-        role: recipient?.role ?? "signer",
-      },
-      value: sig.value,
-      signature_method: sig.signatureMethod,
-      signed_at: new Date(sig.signedAt).toISOString(),
-      ip_address: sig.ipAddress,
-      user_agent: sig.userAgent,
-      authentication_method: sig.authenticationData?.method,
-      authentication_verified: sig.authenticationData?.verified,
-    };
+    return buildApiSignature(sig, recipient, field);
   },
 });
 

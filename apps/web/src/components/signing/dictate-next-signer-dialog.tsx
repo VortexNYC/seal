@@ -74,7 +74,6 @@ export function DictateNextSignerDialog({
               placeholder="Jane Smith"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              autoFocus
               required
             />
           </div>

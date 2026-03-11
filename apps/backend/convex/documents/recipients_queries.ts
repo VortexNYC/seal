@@ -4,7 +4,8 @@
 
 import { ConvexError, v } from "convex/values";
 
-import { query } from "../_generated/server";
+import type { Doc } from "../_generated/dataModel";
+import { query, type QueryCtx } from "../_generated/server";
 import { authQuery } from "../auth";
 import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
 import { isRecipientComplete, isRecipientTerminal } from "../schemas/document_recipients";
@@ -13,6 +14,120 @@ import {
   groupRecipientsByOrder,
   isRecipientGroupActive,
 } from "./recipient_helpers";
+
+function getSequentialProgress(recipients: Doc<"document_recipients">[]): {
+  currentGroup: number;
+  totalGroups: number;
+} {
+  const groups = groupRecipientsByOrder(recipients);
+  const sortedOrders = [...groups.keys()];
+  let currentGroup = 0;
+
+  for (let index = 0; index < sortedOrders.length; index++) {
+    const group = groups.get(sortedOrders[index]);
+    if (!group) {
+      continue;
+    }
+    if (!group.every((recipient) => isRecipientTerminal(recipient.status))) {
+      currentGroup = index;
+      break;
+    }
+    if (index === sortedOrders.length - 1) {
+      currentGroup = index;
+    }
+  }
+
+  return {
+    currentGroup: currentGroup + 1,
+    totalGroups: sortedOrders.length,
+  };
+}
+
+async function getSequentialSigningState(
+  ctx: QueryCtx,
+  document: Doc<"documents">,
+  recipient: Doc<"document_recipients">,
+): Promise<{
+  waitingForPreviousGroup: boolean;
+  sequentialProgress?: { currentGroup: number; totalGroups: number };
+}> {
+  if (document.signingMode !== "sequential") {
+    return {
+      waitingForPreviousGroup: false,
+      sequentialProgress: undefined,
+    };
+  }
+
+  const allRecipients = await ctx.db
+    .query("document_recipients")
+    .withIndex("by_document", (q) => q.eq("documentId", recipient.documentId))
+    .collect();
+
+  return {
+    waitingForPreviousGroup: !isRecipientGroupActive(recipient, allRecipients),
+    sequentialProgress: getSequentialProgress(allRecipients),
+  };
+}
+
+function buildRecipientTokenResponse(
+  ownerName: string,
+  recipient: Doc<"document_recipients">,
+  document: Doc<"documents">,
+  organization: Doc<"organizations"> | null,
+  sequentialState: Awaited<ReturnType<typeof getSequentialSigningState>>,
+) {
+  const branding = organization?.brandingSettings?.enabled
+    ? organization.brandingSettings
+    : undefined;
+
+  return {
+    ownerName,
+    recipient: {
+      _id: recipient._id,
+      documentId: recipient.documentId,
+      email: recipient.email,
+      name: recipient.name,
+      role: recipient.role,
+      status: recipient.status,
+      viewedAt: recipient.viewedAt,
+      signedAt: recipient.signedAt,
+      approvedAt: recipient.approvedAt,
+      declinedAt: recipient.declinedAt,
+      signatureData: recipient.signatureData,
+      signatureType: recipient.signatureType,
+      esignConsentAt: recipient.esignConsentAt,
+      expiresAt: recipient.expiresAt,
+      awaitingDictation: recipient.awaitingDictation,
+    },
+    document: {
+      _id: document._id,
+      name: document.name,
+      description: document.description,
+      fileType: document.fileType,
+      storageId: document.storageId,
+      workflowStatus: document.workflowStatus,
+      signingMode: document.signingMode,
+      redirectUrl: document.redirectUrl,
+    },
+    waitingForPreviousGroup: sequentialState.waitingForPreviousGroup,
+    sequentialProgress: sequentialState.sequentialProgress,
+    branding: branding
+      ? {
+          logoUrl: branding.logoUrl,
+          brandColor: branding.brandColor,
+          accentColor: branding.accentColor,
+          hideSealBranding: branding.hideSealBranding,
+          customFooterText: branding.customFooterText,
+        }
+      : undefined,
+    signingSettings: organization?.signingSettings
+      ? {
+          allowedSignatureTypes: organization.signingSettings.allowedSignatureTypes,
+          esignConsentText: organization.signingSettings.esignConsentText,
+        }
+      : undefined,
+  };
+}
 
 /**
  * Get all recipients for a document
@@ -126,97 +241,15 @@ export const getRecipientByToken = query({
     const owner = await ctx.db.get(document.ownerId);
     const ownerName = owner?.name || owner?.email || "the sender";
 
-    // 3b. Get organization branding settings
     const organization = document.organizationId ? await ctx.db.get(document.organizationId) : null;
-    const branding = organization?.brandingSettings?.enabled
-      ? organization.brandingSettings
-      : undefined;
-
-    // 4. Check sequential signing state
-    let waitingForPreviousGroup = false;
-    let sequentialProgress: { currentGroup: number; totalGroups: number } | undefined;
-
-    if (document.signingMode === "sequential") {
-      const allRecipients = await ctx.db
-        .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", recipient.documentId))
-        .collect();
-
-      waitingForPreviousGroup = !isRecipientGroupActive(recipient, allRecipients);
-
-      // Calculate progress info for the waiting UI
-      const groups = groupRecipientsByOrder(allRecipients);
-      const sortedOrders = [...groups.keys()];
-      let currentGroup = 0;
-      for (let i = 0; i < sortedOrders.length; i++) {
-        const group = groups.get(sortedOrders[i])!;
-        if (!group.every((r) => isRecipientTerminal(r.status))) {
-          currentGroup = i;
-          break;
-        }
-        // If all groups are complete, current is the last one
-        if (i === sortedOrders.length - 1) {
-          currentGroup = i;
-        }
-      }
-
-      sequentialProgress = {
-        currentGroup: currentGroup + 1, // 1-indexed for display
-        totalGroups: sortedOrders.length,
-      };
-    }
-
-    // 5. Return sanitized recipient and document info
-    return {
+    const sequentialState = await getSequentialSigningState(ctx, document, recipient);
+    return buildRecipientTokenResponse(
       ownerName,
-      recipient: {
-        _id: recipient._id,
-        documentId: recipient.documentId,
-        email: recipient.email,
-        name: recipient.name,
-        role: recipient.role,
-        status: recipient.status,
-        viewedAt: recipient.viewedAt,
-        signedAt: recipient.signedAt,
-        approvedAt: recipient.approvedAt,
-        declinedAt: recipient.declinedAt,
-        signatureData: recipient.signatureData,
-        signatureType: recipient.signatureType,
-        esignConsentAt: recipient.esignConsentAt,
-        expiresAt: recipient.expiresAt,
-        awaitingDictation: recipient.awaitingDictation,
-      },
-      document: {
-        _id: document._id,
-        name: document.name,
-        description: document.description,
-        fileType: document.fileType,
-        storageId: document.storageId,
-        workflowStatus: document.workflowStatus,
-        signingMode: document.signingMode,
-        redirectUrl: document.redirectUrl,
-      },
-      // Sequential signing state
-      waitingForPreviousGroup,
-      sequentialProgress,
-      // Organization branding (only if enabled)
-      branding: branding
-        ? {
-            logoUrl: branding.logoUrl,
-            brandColor: branding.brandColor,
-            accentColor: branding.accentColor,
-            hideSealBranding: branding.hideSealBranding,
-            customFooterText: branding.customFooterText,
-          }
-        : undefined,
-      // Organization signing settings (for signature type filtering, consent text)
-      signingSettings: organization?.signingSettings
-        ? {
-            allowedSignatureTypes: organization.signingSettings.allowedSignatureTypes,
-            esignConsentText: organization.signingSettings.esignConsentText,
-          }
-        : undefined,
-    };
+      recipient,
+      document,
+      organization,
+      sequentialState,
+    );
   },
 });
 

@@ -28,14 +28,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Lint
-        run: bun --bun run lint
-
-      - name: Format check
-        run: bun --bun run format:check
-
-      - name: Typecheck
-        run: bun --bun run typecheck
+      # Avoid `bun --bun run` here: forcing scripts through Bun's Node shim makes
+      # workspace `oxfmt --check` fail with DataCloneError, while the normal
+      # root verification command passes locally and in CI.
+      - name: Static analysis
+        run: bun run static-analysis
 
   test-backend:
     name: Backend Tests

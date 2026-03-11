@@ -100,7 +100,6 @@ export function SaveAsTemplateDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter template name..."
-              autoFocus
             />
           </div>
 

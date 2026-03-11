@@ -51,6 +51,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -1079,9 +1080,14 @@ function ExportPanel() {
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1.5">
-            <label className="text-muted-foreground text-xs font-medium">Status</label>
+            <Label
+              htmlFor="analytics-export-status"
+              className="text-muted-foreground text-xs font-medium"
+            >
+              Status
+            </Label>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as ExportStatus)}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger id="analytics-export-status" className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1097,9 +1103,14 @@ function ExportPanel() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-muted-foreground text-xs font-medium">Period</label>
+            <Label
+              htmlFor="analytics-export-period"
+              className="text-muted-foreground text-xs font-medium"
+            >
+              Period
+            </Label>
             <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as ExportPeriod)}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger id="analytics-export-period" className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

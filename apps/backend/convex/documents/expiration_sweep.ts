@@ -10,12 +10,97 @@
 import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import { internalAction, internalMutation } from "../_generated/server";
+import type { Doc } from "../_generated/dataModel";
+import { internalAction, internalMutation, type MutationCtx } from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
 import { isRecipientTerminal } from "../schemas/document_recipients";
 import { sendDocumentExpiredNotification } from "./email";
 
 const BATCH_LIMIT = 100;
+
+function isRecipientReadyToExpire(recipient: Doc<"document_recipients">, now: number): boolean {
+  return (
+    (recipient.status === "pending" || recipient.status === "viewed") &&
+    recipient.expiresAt !== undefined &&
+    recipient.expiresAt < now &&
+    recipient.expirationNotifiedAt === undefined
+  );
+}
+
+async function expireRecipient(
+  ctx: MutationCtx,
+  document: Doc<"documents">,
+  recipient: Doc<"document_recipients">,
+  now: number,
+): Promise<void> {
+  await ctx.db.patch(recipient._id, {
+    status: "expired",
+    expirationNotifiedAt: now,
+  });
+
+  await logAction(ctx, {
+    organizationId: document.organizationId,
+    actorType: "system",
+    action: "recipient.expired",
+    resourceType: "recipient",
+    resourceId: recipient._id,
+    documentId: document._id,
+    recipientId: recipient._id,
+    newValues: { status: "expired", expiresAt: recipient.expiresAt },
+    metadata: {
+      description: "Recipient expired due to document deadline",
+      source: "cron",
+    },
+    ipAddress: "0.0.0.0",
+  });
+}
+
+async function maybeExpireDocument(
+  ctx: MutationCtx,
+  document: Doc<"documents">,
+  now: number,
+): Promise<boolean> {
+  const updatedRecipients = await ctx.db
+    .query("document_recipients")
+    .withIndex("by_document", (q) => q.eq("documentId", document._id))
+    .collect();
+
+  const allTerminal =
+    updatedRecipients.length > 0 &&
+    updatedRecipients.every((recipient) => isRecipientTerminal(recipient.status));
+  const hasExpired = updatedRecipients.some((recipient) => recipient.status === "expired");
+
+  if (!allTerminal || !hasExpired) {
+    return false;
+  }
+
+  await ctx.db.patch(document._id, {
+    workflowStatus: "expired",
+    expiredAt: now,
+  });
+
+  await logAction(ctx, {
+    organizationId: document.organizationId,
+    actorType: "system",
+    action: "document.expired",
+    resourceType: "document",
+    resourceId: document._id,
+    documentId: document._id,
+    newValues: { workflowStatus: "expired", expiredAt: now },
+    metadata: {
+      description:
+        "Document expired — all recipients are in terminal state with at least one expired",
+      source: "cron",
+    },
+    ipAddress: "0.0.0.0",
+  });
+
+  await ctx.scheduler.runAfter(0, internal.documents.expiration_sweep.notifyDocumentExpired, {
+    documentId: document._id,
+  });
+
+  return true;
+}
 
 /**
  * Sweep expired recipients and transition documents.
@@ -53,13 +138,7 @@ export const sweepExpiredRecipients = internalMutation({
         .collect();
 
       // Find recipients that need to be expired
-      const toExpire = recipients.filter(
-        (r) =>
-          (r.status === "pending" || r.status === "viewed") &&
-          r.expiresAt !== undefined &&
-          r.expiresAt < now &&
-          r.expirationNotifiedAt === undefined,
-      );
+      const toExpire = recipients.filter((recipient) => isRecipientReadyToExpire(recipient, now));
 
       if (toExpire.length === 0) continue;
 
@@ -67,71 +146,11 @@ export const sweepExpiredRecipients = internalMutation({
       for (const recipient of toExpire) {
         if (recipientsExpired >= BATCH_LIMIT) break;
 
-        await ctx.db.patch(recipient._id, {
-          status: "expired",
-          expirationNotifiedAt: now,
-        });
-
-        // Log recipient.expired audit event
-        await logAction(ctx, {
-          organizationId: doc.organizationId,
-          actorType: "system",
-          action: "recipient.expired",
-          resourceType: "recipient",
-          resourceId: recipient._id,
-          documentId: doc._id,
-          recipientId: recipient._id,
-          newValues: { status: "expired", expiresAt: recipient.expiresAt },
-          metadata: {
-            description: "Recipient expired due to document deadline",
-            source: "cron",
-          },
-          ipAddress: "0.0.0.0",
-        });
-
+        await expireRecipient(ctx, doc, recipient, now);
         recipientsExpired++;
       }
 
-      // Re-check all recipients after expiring (some may have been updated above)
-      const updatedRecipients = await ctx.db
-        .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", doc._id))
-        .collect();
-
-      const allTerminal =
-        updatedRecipients.length > 0 &&
-        updatedRecipients.every((r) => isRecipientTerminal(r.status));
-      const hasExpired = updatedRecipients.some((r) => r.status === "expired");
-
-      if (allTerminal && hasExpired) {
-        // Transition document to expired
-        await ctx.db.patch(doc._id, {
-          workflowStatus: "expired",
-          expiredAt: now,
-        });
-
-        // Log document.expired audit event
-        await logAction(ctx, {
-          organizationId: doc.organizationId,
-          actorType: "system",
-          action: "document.expired",
-          resourceType: "document",
-          resourceId: doc._id,
-          documentId: doc._id,
-          newValues: { workflowStatus: "expired", expiredAt: now },
-          metadata: {
-            description:
-              "Document expired — all recipients are in terminal state with at least one expired",
-            source: "cron",
-          },
-          ipAddress: "0.0.0.0",
-        });
-
-        // Schedule notification email to owner
-        await ctx.scheduler.runAfter(0, internal.documents.expiration_sweep.notifyDocumentExpired, {
-          documentId: doc._id,
-        });
-
+      if (await maybeExpireDocument(ctx, doc, now)) {
         documentsExpired++;
       }
     }

@@ -45,6 +45,102 @@ async function hashSecret(secret: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+type EndpointUpdateArgs = {
+  name?: string;
+  url?: string;
+  events?: string[];
+  description?: string;
+  status?: "active" | "paused" | "disabled";
+};
+
+function createValidationError(message: string): ConvexError<Record<string, string>> {
+  return new ConvexError({
+    code: "VALIDATION_ERROR",
+    message,
+  });
+}
+
+function applyNameUpdate(updates: Record<string, unknown>, name: string | undefined): void {
+  if (name === undefined) {
+    return;
+  }
+  if (name.trim().length === 0) {
+    throw createValidationError("Name is required");
+  }
+  if (name.length > 100) {
+    throw createValidationError("Name must be 100 characters or less");
+  }
+  updates.name = name.trim();
+}
+
+function applyUrlUpdate(updates: Record<string, unknown>, urlValue: string | undefined): void {
+  if (urlValue === undefined) {
+    return;
+  }
+
+  try {
+    const url = new URL(urlValue);
+    if (url.protocol !== "https:") {
+      throw createValidationError("Webhook URL must use HTTPS");
+    }
+  } catch (error) {
+    if (error instanceof ConvexError) {
+      throw error;
+    }
+    throw createValidationError("Invalid URL format");
+  }
+
+  updates.url = urlValue;
+}
+
+function applyEventsUpdate(updates: Record<string, unknown>, events: string[] | undefined): void {
+  if (events === undefined) {
+    return;
+  }
+
+  const validEvents = new Set<string>(WEBHOOK_EVENT_TYPES);
+  for (const event of events) {
+    if (!validEvents.has(event)) {
+      throw createValidationError(`Invalid event type: ${event}`);
+    }
+  }
+
+  updates.events = events;
+}
+
+function applyOptionalEndpointUpdates(
+  updates: Record<string, unknown>,
+  endpointStatus: "active" | "paused" | "disabled",
+  args: EndpointUpdateArgs,
+): void {
+  if (args.description !== undefined) {
+    updates.description = args.description;
+  }
+
+  if (args.status !== undefined) {
+    updates.status = args.status;
+    if (args.status === "active" && endpointStatus === "disabled") {
+      updates.failureCount = 0;
+    }
+  }
+}
+
+function buildEndpointUpdates(
+  endpointStatus: "active" | "paused" | "disabled",
+  args: EndpointUpdateArgs,
+): Record<string, unknown> {
+  const updates: Record<string, unknown> = {
+    updatedAt: Date.now(),
+  };
+
+  applyNameUpdate(updates, args.name);
+  applyUrlUpdate(updates, args.url);
+  applyEventsUpdate(updates, args.events);
+  applyOptionalEndpointUpdates(updates, endpointStatus, args);
+
+  return updates;
+}
+
 /**
  * Creates a new webhook endpoint.
  *
@@ -191,73 +287,7 @@ export const updateEndpoint = permissionMutation("settings:integrations")({
       });
     }
 
-    const updates: Partial<typeof endpoint> = {
-      updatedAt: Date.now(),
-    };
-
-    // Validate and apply name
-    if (args.name !== undefined) {
-      if (args.name.trim().length === 0) {
-        throw new ConvexError({
-          code: "VALIDATION_ERROR",
-          message: "Name is required",
-        });
-      }
-      if (args.name.length > 100) {
-        throw new ConvexError({
-          code: "VALIDATION_ERROR",
-          message: "Name must be 100 characters or less",
-        });
-      }
-      updates.name = args.name.trim();
-    }
-
-    // Validate and apply URL
-    if (args.url !== undefined) {
-      try {
-        const url = new URL(args.url);
-        if (url.protocol !== "https:") {
-          throw new ConvexError({
-            code: "VALIDATION_ERROR",
-            message: "Webhook URL must use HTTPS",
-          });
-        }
-      } catch {
-        throw new ConvexError({
-          code: "VALIDATION_ERROR",
-          message: "Invalid URL format",
-        });
-      }
-      updates.url = args.url;
-    }
-
-    // Validate and apply events
-    if (args.events !== undefined) {
-      const validEvents = new Set<string>(WEBHOOK_EVENT_TYPES);
-      for (const event of args.events) {
-        if (!validEvents.has(event)) {
-          throw new ConvexError({
-            code: "VALIDATION_ERROR",
-            message: `Invalid event type: ${event}`,
-          });
-        }
-      }
-      updates.events = args.events;
-    }
-
-    // Apply description
-    if (args.description !== undefined) {
-      updates.description = args.description;
-    }
-
-    // Apply status
-    if (args.status !== undefined) {
-      updates.status = args.status;
-      // Reset failure count when manually re-enabling
-      if (args.status === "active" && endpoint.status === "disabled") {
-        updates.failureCount = 0;
-      }
-    }
+    const updates = buildEndpointUpdates(endpoint.status, args);
 
     await ctx.db.patch(args.endpointId, updates);
 

@@ -2,6 +2,10 @@
   "name": "@seal/react",
   "version": "0.1.0",
   "description": "React SDK for embedding Seal signing experiences",
+  "license": "MIT",
+  "files": [
+    "src"
+  ],
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -11,9 +15,15 @@
       "types": "./src/index.ts"
     }
   },
-  "files": ["src"],
+  "scripts": {
+    "lint": "oxlint -A eslint/complexity",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "typecheck": "bunx tsc -p tsconfig.json --noEmit",
+    "knip": "knip",
+    "knip:fix": "knip --fix --allow-remove-files"
+  },
   "peerDependencies": {
     "react": ">=18.0.0"
-  },
-  "license": "MIT"
+  }
 }

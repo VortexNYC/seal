@@ -237,36 +237,40 @@ function TreeNodeItem({
 
   return (
     <>
-      <button
-        type="button"
+      <div
         className={cn(
           "flex w-full items-center gap-1 rounded-sm px-2 py-1.5 text-sm",
           isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
         )}
         style={{ paddingLeft: `${(depth + 1) * 12 + 8}px` }}
-        onClick={() => onSelect(node.folder._id)}
       >
         {/* Expand/collapse chevron */}
         {hasChildren ? (
-          <span
-            role="button"
-            tabIndex={-1}
+          <button
+            type="button"
             className="hover:bg-accent shrink-0 rounded-sm p-0.5"
             onClick={(e) => {
               e.stopPropagation();
               onToggleExpand(node.folder._id);
             }}
+            aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
           >
             <ChevronRight
               className={cn("size-3.5 transition-transform", isExpanded && "rotate-90")}
             />
-          </span>
+          </button>
         ) : (
           <span className="size-4.5 shrink-0" />
         )}
-        <FolderIcon className="size-4 shrink-0" />
-        <span className="truncate">{node.folder.name}</span>
-      </button>
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-1 text-left"
+          onClick={() => onSelect(node.folder._id)}
+        >
+          <FolderIcon className="size-4 shrink-0" />
+          <span className="truncate">{node.folder.name}</span>
+        </button>
+      </div>
 
       {/* Render children if expanded */}
       {hasChildren && isExpanded && (

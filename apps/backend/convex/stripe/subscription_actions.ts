@@ -10,7 +10,8 @@ import { v } from "convex/values";
 import Stripe from "stripe";
 
 import { internal } from "../_generated/api";
-import { internalAction, internalMutation } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
+import { internalAction, internalMutation, type ActionCtx } from "../_generated/server";
 import { getOrCreateStripeCustomer } from "./helpers";
 
 function initializeStripe(): Stripe {
@@ -194,6 +195,134 @@ export type HandleNewUserSignupResult = {
   enrollmentResult: SubscribeUserToDefaultPlanResult;
 };
 
+async function getOrCreateCustomerId(
+  ctx: ActionCtx,
+  stripe: Stripe,
+  userId: Id<"users">,
+  user: Doc<"users">,
+): Promise<string> {
+  if (user.stripeCustomerId) {
+    return user.stripeCustomerId;
+  }
+
+  const stripeCustomerId = await getOrCreateStripeCustomer(
+    stripe,
+    userId,
+    user.email,
+    user.name || user.email,
+    undefined,
+  );
+
+  await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
+    userId,
+    stripeCustomerId,
+  });
+
+  return stripeCustomerId;
+}
+
+async function findExistingStripeSubscription(
+  stripe: Stripe,
+  userId: Id<"users">,
+  stripeCustomerId: string,
+): Promise<{ subscriptionId: string; stripePriceId: string } | null> {
+  try {
+    const stripeSubscriptions = await stripe.subscriptions.list({
+      customer: stripeCustomerId,
+      limit: 10,
+    });
+
+    const existingSubscription = stripeSubscriptions.data.find(
+      (subscription) =>
+        subscription.status !== "canceled" && subscription.status !== "incomplete_expired",
+    );
+
+    return existingSubscription
+      ? {
+          subscriptionId: existingSubscription.id,
+          stripePriceId: existingSubscription.items.data[0]?.price?.id ?? "unknown_price_id",
+        }
+      : null;
+  } catch (error) {
+    console.error("Failed to check Stripe subscriptions", {
+      userId,
+      stripeCustomerId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+async function createDefaultPlanSubscription(
+  ctx: ActionCtx,
+  stripe: Stripe,
+  userId: Id<"users">,
+  stripeCustomerId: string,
+  lookupKey: string,
+  stripePriceId: string,
+): Promise<SubscribeUserToDefaultPlanResult> {
+  const hourWindow = Math.floor(Date.now() / (1000 * 60 * 60));
+  const idempotencyKey = `sub_default_${stripeCustomerId}_${hourWindow}`;
+
+  try {
+    const subscription = await stripe.subscriptions.create(
+      {
+        customer: stripeCustomerId,
+        items: [{ price: stripePriceId }],
+        metadata: {
+          userId,
+          lookupKey,
+          source: "auto_enroll",
+        },
+        collection_method: "charge_automatically",
+      },
+      {
+        idempotencyKey,
+      },
+    );
+
+    const firstItem = subscription.items.data[0];
+    const currentPeriodStart = firstItem?.current_period_start
+      ? firstItem.current_period_start * 1000
+      : Date.now();
+    const currentPeriodEnd = firstItem?.current_period_end
+      ? firstItem.current_period_end * 1000
+      : Date.now() + 30 * 24 * 60 * 60 * 1000;
+
+    await ctx.runMutation(internal.stripe.subscription_actions.createSubscriptionRecord, {
+      userId,
+      stripeCustomerId,
+      stripeSubscriptionId: subscription.id,
+      stripePriceId,
+      status: subscription.status,
+      currentPeriodStart,
+      currentPeriodEnd,
+    });
+
+    console.warn(
+      `Auto-enrolled user ${userId} to plan ${lookupKey} with subscription ${subscription.id}`,
+    );
+
+    return {
+      status: "subscription_created",
+      stripeSubscriptionId: subscription.id,
+      stripeCustomerId,
+      stripePriceId,
+    };
+  } catch (error) {
+    console.error("Failed to create subscription in Stripe", {
+      userId,
+      stripeCustomerId,
+      lookupKey,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      status: "error",
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 /**
  * Subscribe a user to the default free plan
  *
@@ -245,49 +374,23 @@ export const subscribeUserToDefaultPlan = internalAction({
     }
 
     // Get or create Stripe customer
-    let stripeCustomerId = user.stripeCustomerId;
-
-    if (!stripeCustomerId) {
-      stripeCustomerId = await getOrCreateStripeCustomer(
-        stripe,
-        userId,
-        user.email,
-        user.name || user.email,
-        undefined,
-      );
-
-      // Save customer ID to user
-      await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
-        userId,
-        stripeCustomerId,
-      });
-    }
+    const stripeCustomerId = await getOrCreateCustomerId(ctx, stripe, userId, user);
 
     // Check 2: Check Stripe for existing subscriptions (race condition protection)
-    try {
-      const stripeSubscriptions = await stripe.subscriptions.list({
-        customer: stripeCustomerId,
-        limit: 10,
-      });
-
-      const existingSub = stripeSubscriptions.data.find(
-        (sub) => sub.status !== "canceled" && sub.status !== "incomplete_expired",
+    const stripeSubscription = await findExistingStripeSubscription(
+      stripe,
+      userId,
+      stripeCustomerId,
+    );
+    if (stripeSubscription) {
+      console.warn(
+        `Found existing Stripe subscription ${stripeSubscription.subscriptionId} for user ${userId}`,
       );
-
-      if (existingSub) {
-        console.warn(`Found existing Stripe subscription ${existingSub.id} for user ${userId}`);
-        return {
-          status: "already_subscribed",
-          subscriptionId: existingSub.id,
-          stripePriceId: existingSub.items.data[0]?.price?.id ?? "unknown_price_id",
-        };
-      }
-    } catch (err) {
-      console.error("Failed to check Stripe subscriptions", {
-        userId,
-        stripeCustomerId,
-        error: err instanceof Error ? err.message : String(err),
-      });
+      return {
+        status: "already_subscribed",
+        subscriptionId: stripeSubscription.subscriptionId,
+        stripePriceId: stripeSubscription.stripePriceId,
+      };
     }
 
     // Get the default plan price
@@ -304,70 +407,14 @@ export const subscribeUserToDefaultPlan = internalAction({
       };
     }
 
-    const { price } = priceData;
-    // Create subscription in Stripe with idempotency key
-    const hourWindow = Math.floor(Date.now() / (1000 * 60 * 60));
-    const idempotencyKey = `sub_default_${stripeCustomerId}_${hourWindow}`;
-
-    try {
-      const subscription = await stripe.subscriptions.create(
-        {
-          customer: stripeCustomerId,
-          items: [{ price: price.externalPriceId }],
-          metadata: {
-            userId,
-            lookupKey,
-            source: "auto_enroll",
-          },
-          collection_method: "charge_automatically",
-        },
-        {
-          idempotencyKey,
-        },
-      );
-
-      // Get period dates from subscription item
-      const firstItem = subscription.items.data[0];
-      const currentPeriodStart = firstItem?.current_period_start
-        ? firstItem.current_period_start * 1000
-        : Date.now();
-      const currentPeriodEnd = firstItem?.current_period_end
-        ? firstItem.current_period_end * 1000
-        : Date.now() + 30 * 24 * 60 * 60 * 1000;
-
-      // Create subscription record in Convex
-      await ctx.runMutation(internal.stripe.subscription_actions.createSubscriptionRecord, {
-        userId,
-        stripeCustomerId,
-        stripeSubscriptionId: subscription.id,
-        stripePriceId: price.externalPriceId,
-        status: subscription.status,
-        currentPeriodStart,
-        currentPeriodEnd,
-      });
-
-      console.warn(
-        `Auto-enrolled user ${userId} to plan ${lookupKey} with subscription ${subscription.id}`,
-      );
-
-      return {
-        status: "subscription_created",
-        stripeSubscriptionId: subscription.id,
-        stripeCustomerId,
-        stripePriceId: price.externalPriceId,
-      };
-    } catch (err) {
-      console.error("Failed to create subscription in Stripe", {
-        userId,
-        stripeCustomerId,
-        lookupKey,
-        error: err instanceof Error ? err.message : String(err),
-      });
-      return {
-        status: "error",
-        error: err instanceof Error ? err.message : String(err),
-      };
-    }
+    return await createDefaultPlanSubscription(
+      ctx,
+      stripe,
+      userId,
+      stripeCustomerId,
+      lookupKey,
+      priceData.price.externalPriceId,
+    );
   },
 });
 

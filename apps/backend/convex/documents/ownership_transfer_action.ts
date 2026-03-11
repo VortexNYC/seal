@@ -1,7 +1,6 @@
+import { renderOwnershipTransferred } from "@seal/transactional";
 import { v } from "convex/values";
 import { Resend } from "resend";
-
-import { renderOwnershipTransferred } from "@seal/transactional";
 
 import { internalAction } from "../_generated/server";
 import { resendComponent } from "../emails/resend_component";

@@ -214,7 +214,7 @@ export function ShareDocumentDialog({
 
                   {/* Sharing Mode Selection */}
                   <div className="space-y-3">
-                    <label className="text-foreground text-sm font-medium">General access</label>
+                    <p className="text-foreground text-sm font-medium">General access</p>
                     <div className="grid grid-cols-3 gap-2">
                       {(Object.keys(SHARING_MODE_INFO) as SharingMode[]).map((mode) => {
                         const info = SHARING_MODE_INFO[mode];
@@ -275,7 +275,7 @@ export function ShareDocumentDialog({
                   {/* Add Team Member */}
                   {documentAccess.sharingMode === "specific" && (
                     <div className="space-y-3">
-                      <label className="text-foreground text-sm font-medium">Add people</label>
+                      <p className="text-foreground text-sm font-medium">Add people</p>
                       <div className="flex gap-2">
                         <Select
                           value={selectedMemberId ?? ""}
@@ -334,9 +334,7 @@ export function ShareDocumentDialog({
 
                   {/* People with Access */}
                   <div className="space-y-3">
-                    <label className="text-foreground text-sm font-medium">
-                      People with access
-                    </label>
+                    <p className="text-foreground text-sm font-medium">People with access</p>
                     <div className="space-y-2" data-testid="access-list">
                       {/* Document Owner */}
                       <div

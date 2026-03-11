@@ -166,12 +166,7 @@ export const getDocumentTrends = permissionQuery("documents:view")({
   handler: async (ctx, args) => {
     const organizationId = ctx.auth.organization._id;
     const scope = ctx.auth.isAdmin() ? (args.scope ?? "team") : "personal";
-
-    // Determine date range: explicit startDate/endDate takes precedence over days
-    const now = Date.now();
-    const endDate = args.endDate ?? now;
-    const days = args.days ?? 30;
-    const startDate = args.startDate ?? endDate - days * 24 * 60 * 60 * 1000;
+    const { startDate, endDate } = getTrendRange(args);
 
     // Get documents created in the time range
     let documents = await ctx.db
@@ -195,38 +190,7 @@ export const getDocumentTrends = permissionQuery("documents:view")({
       (d) => d.workflowStatus === "completed" && d.updatedAt && d.updatedAt >= startDate,
     );
 
-    // Group by day — calculate actual number of days in range
-    const dailyStats = new Map<string, { created: number; completed: number }>();
-    const rangeDays = Math.ceil((endDate - startDate) / (24 * 60 * 60 * 1000));
-
-    // Initialize all days with 0
-    for (let i = 0; i <= rangeDays; i++) {
-      const date = new Date(startDate + i * 24 * 60 * 60 * 1000);
-      const dateKey = date.toISOString().split("T")[0] ?? "";
-      if (dateKey) {
-        dailyStats.set(dateKey, { created: 0, completed: 0 });
-      }
-    }
-
-    // Count created documents
-    for (const doc of documents) {
-      const dateKey = new Date(doc.createdAt).toISOString().split("T")[0] ?? "";
-      const existing = dailyStats.get(dateKey);
-      if (existing) {
-        existing.created++;
-      }
-    }
-
-    // Count completed documents
-    for (const doc of completedDocs) {
-      if (doc.updatedAt) {
-        const dateKey = new Date(doc.updatedAt).toISOString().split("T")[0] ?? "";
-        const existing = dailyStats.get(dateKey);
-        if (existing) {
-          existing.completed++;
-        }
-      }
-    }
+    const dailyStats = buildDailyTrendStats(startDate, endDate, documents, completedDocs);
 
     // Convert to array and sort by date
     const trend = Array.from(dailyStats.entries())
@@ -240,6 +204,58 @@ export const getDocumentTrends = permissionQuery("documents:view")({
     return trend;
   },
 });
+
+function getTrendRange(args: { days?: number; startDate?: number; endDate?: number }): {
+  startDate: number;
+  endDate: number;
+} {
+  const now = Date.now();
+  const endDate = args.endDate ?? now;
+  const days = args.days ?? 30;
+  const startDate = args.startDate ?? endDate - days * 24 * 60 * 60 * 1000;
+  return { startDate, endDate };
+}
+
+function getDateKey(timestamp: number): string {
+  return new Date(timestamp).toISOString().split("T")[0] ?? "";
+}
+
+function buildDailyTrendStats(
+  startDate: number,
+  endDate: number,
+  documents: Array<{ createdAt: number }>,
+  completedDocs: Array<{ updatedAt?: number }>,
+): Map<string, { created: number; completed: number }> {
+  const dailyStats = new Map<string, { created: number; completed: number }>();
+  const rangeDays = Math.ceil((endDate - startDate) / (24 * 60 * 60 * 1000));
+
+  for (let i = 0; i <= rangeDays; i++) {
+    const dateKey = getDateKey(startDate + i * 24 * 60 * 60 * 1000);
+    if (dateKey) {
+      dailyStats.set(dateKey, { created: 0, completed: 0 });
+    }
+  }
+
+  for (const doc of documents) {
+    const existing = dailyStats.get(getDateKey(doc.createdAt));
+    if (existing) {
+      existing.created++;
+    }
+  }
+
+  for (const doc of completedDocs) {
+    if (!doc.updatedAt) {
+      continue;
+    }
+
+    const existing = dailyStats.get(getDateKey(doc.updatedAt));
+    if (existing) {
+      existing.completed++;
+    }
+  }
+
+  return dailyStats;
+}
 
 /**
  * Get recent activity/audit logs for the dashboard

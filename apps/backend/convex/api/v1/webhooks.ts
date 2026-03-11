@@ -42,6 +42,111 @@ export interface ApiWebhookEndpoint {
   };
 }
 
+type UpdateEndpointArgs = {
+  name?: string;
+  url?: string;
+  events?: string[];
+  description?: string;
+  status?: "active" | "paused" | "disabled";
+};
+
+type UpdateEndpointResult = { success: boolean; error?: string };
+
+function applyEndpointNameUpdate(
+  updates: Record<string, unknown>,
+  name: string | undefined,
+): string | null {
+  if (name === undefined) {
+    return null;
+  }
+  if (name.trim().length === 0) {
+    return "Name is required";
+  }
+  if (name.length > 100) {
+    return "Name must be 100 characters or less";
+  }
+  updates.name = name.trim();
+  return null;
+}
+
+function applyEndpointUrlUpdate(
+  updates: Record<string, unknown>,
+  urlValue: string | undefined,
+): string | null {
+  if (urlValue === undefined) {
+    return null;
+  }
+
+  try {
+    const url = new URL(urlValue);
+    if (url.protocol !== "https:") {
+      return "Webhook URL must use HTTPS";
+    }
+  } catch {
+    return "Invalid URL format";
+  }
+
+  updates.url = urlValue;
+  return null;
+}
+
+function applyEndpointEventsUpdate(
+  updates: Record<string, unknown>,
+  events: string[] | undefined,
+): string | null {
+  if (events === undefined) {
+    return null;
+  }
+
+  const validEvents = new Set<string>(WEBHOOK_EVENT_TYPES);
+  for (const event of events) {
+    if (!validEvents.has(event)) {
+      return `Invalid event type: ${event}`;
+    }
+  }
+
+  updates.events = events;
+  return null;
+}
+
+function applyEndpointOptionalUpdates(
+  updates: Record<string, unknown>,
+  endpointStatus: "active" | "paused" | "disabled",
+  args: UpdateEndpointArgs,
+): void {
+  if (args.description !== undefined) {
+    updates.description = args.description;
+  }
+
+  if (args.status !== undefined) {
+    updates.status = args.status;
+    if (args.status === "active" && endpointStatus === "disabled") {
+      updates.failureCount = 0;
+    }
+  }
+}
+
+function buildEndpointUpdates(
+  endpointStatus: "active" | "paused" | "disabled",
+  args: UpdateEndpointArgs,
+): { updates: Record<string, unknown>; error?: string } {
+  const updates: Record<string, unknown> = {
+    updatedAt: Date.now(),
+  };
+
+  const error =
+    applyEndpointNameUpdate(updates, args.name) ??
+    applyEndpointUrlUpdate(updates, args.url) ??
+    applyEndpointEventsUpdate(updates, args.events);
+
+  if (error) {
+    return { updates, error };
+  }
+
+  applyEndpointOptionalUpdates(updates, endpointStatus, args);
+  return { updates };
+}
+
 /**
  * Internal query to list webhook endpoints for API.
  *
@@ -289,7 +394,7 @@ export const updateEndpoint = internalMutation({
     description: v.optional(v.string()),
     status: v.optional(v.union(v.literal("active"), v.literal("paused"), v.literal("disabled"))),
   },
-  handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
+  handler: async (ctx, args): Promise<UpdateEndpointResult> => {
     const endpoint = await ctx.db.get(args.endpointId);
 
     if (!endpoint) {
@@ -300,59 +405,9 @@ export const updateEndpoint = internalMutation({
       return { success: false, error: "Webhook endpoint not found" };
     }
 
-    const updates: Record<string, unknown> = {
-      updatedAt: Date.now(),
-    };
-
-    // Validate and apply name
-    if (args.name !== undefined) {
-      if (args.name.trim().length === 0) {
-        return { success: false, error: "Name is required" };
-      }
-      if (args.name.length > 100) {
-        return {
-          success: false,
-          error: "Name must be 100 characters or less",
-        };
-      }
-      updates.name = args.name.trim();
-    }
-
-    // Validate and apply URL
-    if (args.url !== undefined) {
-      try {
-        const url = new URL(args.url);
-        if (url.protocol !== "https:") {
-          return { success: false, error: "Webhook URL must use HTTPS" };
-        }
-      } catch {
-        return { success: false, error: "Invalid URL format" };
-      }
-      updates.url = args.url;
-    }
-
-    // Validate and apply events
-    if (args.events !== undefined) {
-      const validEvents = new Set<string>(WEBHOOK_EVENT_TYPES);
-      for (const event of args.events) {
-        if (!validEvents.has(event)) {
-          return { success: false, error: `Invalid event type: ${event}` };
-        }
-      }
-      updates.events = args.events;
-    }
-
-    // Apply description
-    if (args.description !== undefined) {
-      updates.description = args.description;
-    }
-
-    // Apply status
-    if (args.status !== undefined) {
-      updates.status = args.status;
-      if (args.status === "active" && endpoint.status === "disabled") {
-        updates.failureCount = 0;
-      }
+    const { updates, error } = buildEndpointUpdates(endpoint.status, args);
+    if (error) {
+      return { success: false, error };
     }
 
     await ctx.db.patch(args.endpointId, updates);

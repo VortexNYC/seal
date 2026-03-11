@@ -6,8 +6,6 @@
  * correlation. The raw Resend SDK is instantiated per-call to support org branding.
  */
 
-import { Resend } from "resend";
-
 import {
   renderDocumentCompleted,
   renderDocumentExpirationAlert,
@@ -20,6 +18,7 @@ import {
   renderTeamInvitation,
   renderWelcome,
 } from "@seal/transactional";
+import { Resend } from "resend";
 
 import type { ActionCtx } from "../_generated/server";
 import { resendComponent } from "../emails/resend_component";

@@ -13,6 +13,16 @@ const MIN_AMOUNT_CENTS = 50;
 /** Maximum payment amount: $999,999.99 */
 const MAX_AMOUNT_CENTS = 99_999_999;
 
+type PaymentConfig = {
+  paymentType: PaymentType;
+  items: Array<{ id: string; description: string; quantity: number; unitPrice: number }>;
+  totalAmountCents: number;
+  allowedPaymentMethods: string[];
+  recurringConfig?: { intervalCount: number; endCondition: string; endAfterCount?: number };
+  installmentsConfig?: { count: number };
+  depositBalanceConfig?: { depositPercent: number; balanceDueDays: number };
+};
+
 /**
  * Compute the total amount in cents from line items.
  */
@@ -26,22 +36,21 @@ export function computeTotalAmountCents(
  * Validate a payment configuration before persisting.
  * Returns an error string if invalid, or null if valid.
  */
-export function validatePaymentConfig(config: {
-  paymentType: PaymentType;
-  items: Array<{ id: string; description: string; quantity: number; unitPrice: number }>;
-  totalAmountCents: number;
-  allowedPaymentMethods: string[];
-  recurringConfig?: { intervalCount: number; endCondition: string; endAfterCount?: number };
-  installmentsConfig?: { count: number };
-  depositBalanceConfig?: { depositPercent: number; balanceDueDays: number };
-}): string | null {
-  // Must have at least one line item
-  if (config.items.length === 0) {
+export function validatePaymentConfig(config: PaymentConfig): string | null {
+  return (
+    validateLineItems(config.items) ??
+    validateTotalAmount(config.totalAmountCents) ??
+    validatePaymentMethods(config.allowedPaymentMethods) ??
+    validateTypeSpecificConfig(config)
+  );
+}
+
+function validateLineItems(items: PaymentConfig["items"]): string | null {
+  if (items.length === 0) {
     return "At least one line item is required";
   }
 
-  // Validate each line item
-  for (const item of config.items) {
+  for (const item of items) {
     if (!item.description.trim()) {
       return "Each line item must have a description";
     }
@@ -53,59 +62,77 @@ export function validatePaymentConfig(config: {
     }
   }
 
-  // Validate total amount
-  if (config.totalAmountCents < MIN_AMOUNT_CENTS) {
+  return null;
+}
+
+function validateTotalAmount(totalAmountCents: number): string | null {
+  if (totalAmountCents < MIN_AMOUNT_CENTS) {
     return `Total amount must be at least $${(MIN_AMOUNT_CENTS / 100).toFixed(2)}`;
   }
-  if (config.totalAmountCents > MAX_AMOUNT_CENTS) {
+  if (totalAmountCents > MAX_AMOUNT_CENTS) {
     return `Total amount cannot exceed $${(MAX_AMOUNT_CENTS / 100).toLocaleString()}`;
   }
+  return null;
+}
 
-  // Must have at least one payment method
-  if (config.allowedPaymentMethods.length === 0) {
+function validatePaymentMethods(allowedPaymentMethods: string[]): string | null {
+  if (allowedPaymentMethods.length === 0) {
     return "At least one payment method must be selected";
   }
+  return null;
+}
 
-  // Validate type-specific configs
-  if (config.paymentType === "recurring") {
-    if (!config.recurringConfig) {
-      return "Recurring configuration is required for recurring payments";
-    }
-    if (config.recurringConfig.intervalCount < 1) {
-      return "Recurring interval count must be at least 1";
-    }
-    if (
-      config.recurringConfig.endCondition === "after_count" &&
-      (!config.recurringConfig.endAfterCount || config.recurringConfig.endAfterCount < 1)
-    ) {
-      return "End after count must be at least 1";
-    }
+function validateTypeSpecificConfig(config: PaymentConfig): string | null {
+  switch (config.paymentType) {
+    case "recurring":
+      return validateRecurringConfig(config.recurringConfig);
+    case "installments":
+      return validateInstallmentsConfig(config.installmentsConfig);
+    case "deposit_balance":
+      return validateDepositBalanceConfig(config.depositBalanceConfig);
+    default:
+      return null;
   }
+}
 
-  if (config.paymentType === "installments") {
-    if (!config.installmentsConfig) {
-      return "Installments configuration is required for installment payments";
-    }
-    if (config.installmentsConfig.count < 2) {
-      return "Number of installments must be at least 2";
-    }
+function validateRecurringConfig(config: PaymentConfig["recurringConfig"]): string | null {
+  if (!config) {
+    return "Recurring configuration is required for recurring payments";
   }
-
-  if (config.paymentType === "deposit_balance") {
-    if (!config.depositBalanceConfig) {
-      return "Deposit/balance configuration is required";
-    }
-    if (
-      config.depositBalanceConfig.depositPercent <= 0 ||
-      config.depositBalanceConfig.depositPercent >= 100
-    ) {
-      return "Deposit percentage must be between 1 and 99";
-    }
-    if (config.depositBalanceConfig.balanceDueDays < 1) {
-      return "Balance due days must be at least 1";
-    }
+  if (config.intervalCount < 1) {
+    return "Recurring interval count must be at least 1";
   }
+  if (
+    config.endCondition === "after_count" &&
+    (!config.endAfterCount || config.endAfterCount < 1)
+  ) {
+    return "End after count must be at least 1";
+  }
+  return null;
+}
 
+function validateInstallmentsConfig(config: PaymentConfig["installmentsConfig"]): string | null {
+  if (!config) {
+    return "Installments configuration is required for installment payments";
+  }
+  if (config.count < 2) {
+    return "Number of installments must be at least 2";
+  }
+  return null;
+}
+
+function validateDepositBalanceConfig(
+  config: PaymentConfig["depositBalanceConfig"],
+): string | null {
+  if (!config) {
+    return "Deposit/balance configuration is required";
+  }
+  if (config.depositPercent <= 0 || config.depositPercent >= 100) {
+    return "Deposit percentage must be between 1 and 99";
+  }
+  if (config.balanceDueDays < 1) {
+    return "Balance due days must be at least 1";
+  }
   return null;
 }
 

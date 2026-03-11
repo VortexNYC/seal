@@ -9,7 +9,8 @@ import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 
 import { components, internal } from "../_generated/api";
-import { internalAction, internalMutation } from "../_generated/server";
+import type { Id } from "../_generated/dataModel";
+import { type ActionCtx, internalAction, internalMutation } from "../_generated/server";
 import { authMutation, authQuery } from "../auth/wrappers";
 import { sealAgent, SYSTEM_INSTRUCTIONS } from "./agent";
 import { aiRateLimiter } from "./rateLimiting";
@@ -27,6 +28,159 @@ function buildSystemPrompt(documentId?: string, documentName?: string): string {
 ## Current Document Context
 You are currently viewing the document "${documentName ?? "Untitled"}" (ID: ${documentId}).
 When using tools that require a documentId parameter, use "${documentId}" unless the user explicitly asks about a different document.`;
+}
+
+type GenerateResponseArgs = {
+  threadId: string;
+  promptMessageId: string;
+  organizationId: Id<"organizations">;
+  userId: string;
+  documentId?: Id<"documents">;
+  internalUserId?: Id<"users">;
+};
+
+async function getDocumentNameForPrompt(
+  ctx: ActionCtx,
+  documentId: GenerateResponseArgs["documentId"],
+): Promise<string | undefined> {
+  if (!documentId) {
+    return undefined;
+  }
+
+  const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
+    documentId,
+  });
+
+  return document?.name;
+}
+
+function createSealContext(ctx: ActionCtx, args: GenerateResponseArgs): SealAICtx {
+  return {
+    ...ctx,
+    organizationId: args.organizationId,
+    userId: args.userId,
+    documentId: args.documentId,
+  } as SealAICtx;
+}
+
+async function logChatUsage(
+  ctx: ActionCtx,
+  args: GenerateResponseArgs,
+  totalTokens: number,
+): Promise<void> {
+  if (!args.internalUserId || totalTokens <= 0) {
+    return;
+  }
+
+  try {
+    await ctx.runMutation(internal.ai.usage.logAiUsage, {
+      organizationId: args.organizationId,
+      userId: args.internalUserId,
+      action: "chat" as const,
+      tokensUsed: totalTokens,
+      durationMs: 0,
+      documentId: args.documentId,
+      modelUsed: "gemini-3-flash",
+    });
+  } catch (usageError) {
+    console.error("[AI Chat] Failed to log usage:", usageError);
+  }
+}
+
+async function executeResponseGeneration(
+  ctx: ActionCtx,
+  args: GenerateResponseArgs,
+  sealCtx: SealAICtx,
+  documentName?: string,
+): Promise<number> {
+  let stepCount = 0;
+  const completedTools: string[] = [];
+  let totalTokens = 0;
+
+  const result = await sealAgent.streamText(
+    sealCtx,
+    {
+      threadId: args.threadId,
+      userId: args.userId,
+    },
+    {
+      system: buildSystemPrompt(args.documentId, documentName),
+      promptMessageId: args.promptMessageId,
+      providerOptions: {
+        google: { thinkingConfig: { thinkingLevel: "low" } },
+      },
+      onStepFinish: async (step) => {
+        stepCount++;
+        if (step.toolCalls) {
+          for (const call of step.toolCalls) {
+            completedTools.push(call.toolName);
+          }
+        }
+        totalTokens += step.usage?.totalTokens ?? 0;
+
+        await ctx.runMutation(internal.ai.progress.update, {
+          threadId: args.threadId,
+          step: stepCount,
+          completedTools,
+          tokensUsed: totalTokens,
+        });
+      },
+    },
+    {
+      saveStreamDeltas: true,
+    },
+  );
+
+  await result.text;
+  const usage = await result.usage;
+  totalTokens += usage?.totalTokens ?? 0;
+
+  await ctx.runMutation(internal.ai.progress.complete, {
+    threadId: args.threadId,
+    totalTokens,
+  });
+
+  await logChatUsage(ctx, args, totalTokens);
+  return totalTokens;
+}
+
+async function handleResponseGenerationError(
+  ctx: ActionCtx,
+  args: GenerateResponseArgs,
+  sealCtx: SealAICtx,
+  error: unknown,
+): Promise<never> {
+  const isAbort = error instanceof Error && error.name === "AbortError";
+  const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+
+  if (isAbort) {
+    await ctx.runMutation(internal.ai.progress.abort, {
+      threadId: args.threadId,
+      reason: "Stream aborted",
+    });
+    throw error;
+  }
+
+  try {
+    await sealAgent.saveMessage(sealCtx, {
+      threadId: args.threadId,
+      userId: args.userId,
+      message: {
+        role: "assistant",
+        content: `I encountered an error: ${errorMessage}. Please try again.`,
+      },
+      skipEmbeddings: true,
+    });
+  } catch {
+    console.error("Failed to save error message to thread");
+  }
+
+  await ctx.runMutation(internal.ai.progress.fail, {
+    threadId: args.threadId,
+    error: errorMessage,
+  });
+
+  throw error;
 }
 
 // ---------------------------------------------------------------------------
@@ -196,129 +350,18 @@ export const generateResponseAsync = internalAction({
     internalUserId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
-    // Start progress tracking
     await ctx.runMutation(internal.ai.progress.start, {
       threadId: args.threadId,
       totalSteps: 3,
     });
 
-    // Fetch document name for dynamic system prompt
-    let documentName: string | undefined;
-    if (args.documentId) {
-      const doc = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-        documentId: args.documentId,
-      });
-      documentName = doc?.name;
-    }
-
-    const sealCtx = {
-      ...ctx,
-      organizationId: args.organizationId,
-      userId: args.userId,
-      documentId: args.documentId,
-    } as SealAICtx;
-
-    let stepCount = 0;
-    const completedTools: string[] = [];
-    let totalTokens = 0;
+    const documentName = await getDocumentNameForPrompt(ctx, args.documentId);
+    const sealCtx = createSealContext(ctx, args);
 
     try {
-      const result = await sealAgent.streamText(
-        sealCtx,
-        {
-          threadId: args.threadId,
-          userId: args.userId,
-        },
-        {
-          system: buildSystemPrompt(args.documentId, documentName),
-          promptMessageId: args.promptMessageId,
-          providerOptions: {
-            google: { thinkingConfig: { thinkingLevel: "low" } },
-          },
-          onStepFinish: async (step) => {
-            stepCount++;
-            if (step.toolCalls) {
-              for (const call of step.toolCalls) {
-                completedTools.push(call.toolName);
-              }
-            }
-            totalTokens += step.usage?.totalTokens ?? 0;
-
-            await ctx.runMutation(internal.ai.progress.update, {
-              threadId: args.threadId,
-              step: stepCount,
-              completedTools,
-              tokensUsed: totalTokens,
-            });
-          },
-        },
-        {
-          saveStreamDeltas: true,
-        },
-      );
-
-      // Consume the stream fully, then get final usage
-      await result.text;
-      const usage = await result.usage;
-      totalTokens += usage?.totalTokens ?? 0;
-
-      // Mark progress complete
-      await ctx.runMutation(internal.ai.progress.complete, {
-        threadId: args.threadId,
-        totalTokens,
-      });
-
-      // Log chat usage for cost tracking
-      if (args.internalUserId && totalTokens > 0) {
-        try {
-          await ctx.runMutation(internal.ai.usage.logAiUsage, {
-            organizationId: args.organizationId,
-            userId: args.internalUserId,
-            action: "chat" as const,
-            tokensUsed: totalTokens,
-            durationMs: 0, // streaming — no single duration
-            documentId: args.documentId,
-            modelUsed: "gemini-3-flash",
-          });
-        } catch (usageError) {
-          console.error("[AI Chat] Failed to log usage:", usageError);
-        }
-      }
+      await executeResponseGeneration(ctx, args, sealCtx, documentName);
     } catch (error) {
-      // Distinguish user abort from system failure (Plasma pattern)
-      const isAbort = error instanceof Error && error.name === "AbortError";
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-
-      if (isAbort) {
-        await ctx.runMutation(internal.ai.progress.abort, {
-          threadId: args.threadId,
-          reason: "Stream aborted",
-        });
-      } else {
-        // Save error as assistant message so user sees it in chat
-        try {
-          await sealAgent.saveMessage(sealCtx, {
-            threadId: args.threadId,
-            userId: args.userId,
-            message: {
-              role: "assistant",
-              content: `I encountered an error: ${errorMessage}. Please try again.`,
-            },
-            skipEmbeddings: true,
-          });
-        } catch {
-          // Don't let error-save failure mask the original error
-          console.error("Failed to save error message to thread");
-        }
-
-        await ctx.runMutation(internal.ai.progress.fail, {
-          threadId: args.threadId,
-          error: errorMessage,
-        });
-      }
-
-      // Re-throw so Convex's scheduler logs it
-      throw error;
+      await handleResponseGenerationError(ctx, args, sealCtx, error);
     }
   },
 });

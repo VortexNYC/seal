@@ -5,15 +5,15 @@
   "scripts": {
     "dev": "convex dev",
     "deploy": "convex deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "oxlint",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "typecheck": "bunx @typescript/native-preview -p convex/tsconfig.json --noEmit",
     "knip": "knip",
     "knip:fix": "knip --fix --allow-remove-files",
-    "clean": "git clean -xdf .cache .tanstack .turbo node_modules convex/_generated"
+    "clean": "git clean -xdf .cache .turbo node_modules convex/_generated"
   },
   "dependencies": {
     "@clerk/backend": "^2.29.4",

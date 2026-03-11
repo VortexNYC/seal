@@ -5,8 +5,8 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
-import { internalMutation } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
+import { internalMutation, type MutationCtx } from "../_generated/server";
 import type { DatabaseReader } from "../_generated/server";
 import { enqueueAiPipeline } from "../ai/workpool";
 import { logDocumentAction } from "../audit_logs/helpers";
@@ -24,10 +24,126 @@ import {
   verifyDocumentOwnership,
 } from "./workflow_helpers";
 
+type DocumentMutationDbCtx = Pick<MutationCtx, "db">;
+
 /** Check if the org has AI auto-analyze enabled (defaults to true). */
 async function shouldAutoAnalyze(db: DatabaseReader, organizationId: Id<"organizations">) {
   const org = await db.get(organizationId);
   return org?.aiSettings?.aiAutoAnalyze !== false;
+}
+
+async function hasEditDocumentAccess(
+  ctx: DocumentMutationDbCtx,
+  document: Doc<"documents">,
+  userId: Id<"users">,
+): Promise<boolean> {
+  if (document.ownerId === userId) {
+    return true;
+  }
+
+  const access = await ctx.db
+    .query("document_access")
+    .withIndex("by_document_user", (q) => q.eq("documentId", document._id).eq("userId", userId))
+    .first();
+
+  return (
+    access !== null && (access.permissionLevel === "edit" || access.permissionLevel === "manage")
+  );
+}
+
+function validateRedirectUrl(redirectUrl: string | null | undefined): void {
+  if (!redirectUrl) {
+    return;
+  }
+
+  try {
+    const parsed = new URL(redirectUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new ConvexError("Redirect URL must use http or https protocol");
+    }
+  } catch {
+    throw new ConvexError("Redirect URL must be a valid URL");
+  }
+
+  if (redirectUrl.length > 2048) {
+    throw new ConvexError("Redirect URL must be 2048 characters or less");
+  }
+}
+
+function buildDocumentMetadataPatch(args: {
+  name?: string;
+  description?: string;
+  redirectUrl?: string | null;
+  allowDictateNextSigner?: boolean;
+}) {
+  const updateData: {
+    name?: string;
+    description?: string;
+    redirectUrl?: string;
+    allowDictateNextSigner?: boolean;
+    updatedAt: number;
+  } = {
+    updatedAt: Date.now(),
+  };
+
+  if (args.name !== undefined) {
+    updateData.name = args.name;
+  }
+  if (args.description !== undefined) {
+    updateData.description = args.description;
+  }
+  if (args.redirectUrl !== undefined) {
+    updateData.redirectUrl = args.redirectUrl === null ? undefined : args.redirectUrl;
+  }
+  if (args.allowDictateNextSigner !== undefined) {
+    updateData.allowDictateNextSigner = args.allowDictateNextSigner;
+  }
+
+  return updateData;
+}
+
+async function assertTransferOwnershipAllowed(
+  ctx: DocumentMutationDbCtx,
+  document: Doc<"documents">,
+  callerId: Id<"users">,
+  newOwnerId: Id<"users">,
+  isAdmin: boolean,
+  isOwner: boolean,
+): Promise<Doc<"users">> {
+  if (document.ownerId !== callerId && !isAdmin && !isOwner) {
+    throw new ConvexError("Only the document owner or an admin can transfer ownership");
+  }
+
+  const org = await ctx.db.get(document.organizationId);
+  if (!org?.delegateOwnership) {
+    throw new ConvexError("Document ownership transfer is not enabled for this organization");
+  }
+
+  const newOwner = await ctx.db.get(newOwnerId);
+  if (!newOwner) {
+    throw new ConvexError("Target user not found");
+  }
+
+  const membership = await ctx.db
+    .query("organization_members")
+    .withIndex("by_user_organization", (q) =>
+      q.eq("userId", newOwnerId).eq("organizationId", document.organizationId),
+    )
+    .unique();
+  if (!membership) {
+    throw new ConvexError("Target user is not a member of this organization");
+  }
+
+  if (document.ownerId === newOwnerId) {
+    throw new ConvexError("Target user is already the document owner");
+  }
+
+  const status = document.workflowStatus ?? "draft";
+  if (status === "sent" || status === "in_progress") {
+    throw new ConvexError("Cannot transfer ownership of a document that is currently being signed");
+  }
+
+  return newOwner;
 }
 
 /**
@@ -235,66 +351,13 @@ export const updateDocument = permissionMutation("documents:edit")({
       });
     }
 
-    // 3. Check if user has edit access (owner or has "edit"/"manage" permission)
-    let hasEditAccess = false;
-    if (document.ownerId !== userId) {
-      const access = await ctx.db
-        .query("document_access")
-        .withIndex("by_document_user", (q) =>
-          q.eq("documentId", args.documentId).eq("userId", userId),
-        )
-        .first();
-
-      hasEditAccess =
-        access !== null &&
-        (access.permissionLevel === "edit" || access.permissionLevel === "manage");
-    }
-
-    if (!hasEditAccess && document.ownerId !== userId) {
+    if (!(await hasEditDocumentAccess(ctx, document, userId))) {
       throw new ConvexError("You don't have permission to edit this document");
     }
 
-    // 3. Validate redirectUrl if provided
-    if (args.redirectUrl) {
-      try {
-        const parsed = new URL(args.redirectUrl);
-        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-          throw new ConvexError("Redirect URL must use http or https protocol");
-        }
-      } catch {
-        throw new ConvexError("Redirect URL must be a valid URL");
-      }
-      if (args.redirectUrl.length > 2048) {
-        throw new ConvexError("Redirect URL must be 2048 characters or less");
-      }
-    }
+    validateRedirectUrl(args.redirectUrl);
 
-    // 4. Update the document
-    const updateData: {
-      name?: string;
-      description?: string;
-      redirectUrl?: string;
-      allowDictateNextSigner?: boolean;
-      updatedAt: number;
-    } = {
-      updatedAt: Date.now(),
-    };
-
-    if (args.name !== undefined) {
-      updateData.name = args.name;
-    }
-    if (args.description !== undefined) {
-      updateData.description = args.description;
-    }
-    if (args.redirectUrl !== undefined) {
-      // null means "clear the field" — patch with undefined to remove it from the document
-      updateData.redirectUrl = args.redirectUrl === null ? undefined : args.redirectUrl;
-    }
-    if (args.allowDictateNextSigner !== undefined) {
-      updateData.allowDictateNextSigner = args.allowDictateNextSigner;
-    }
-
-    await ctx.db.patch(args.documentId, updateData);
+    await ctx.db.patch(args.documentId, buildDocumentMetadataPatch(args));
 
     return { success: true };
   },
@@ -834,44 +897,14 @@ export const transferDocumentOwnership = permissionMutation("documents:edit")({
       throw new ConvexError("Document not found");
     }
 
-    // Only the document owner or an org admin/owner can transfer
-    if (document.ownerId !== callerId && !isAdmin && !isOwner) {
-      throw new ConvexError("Only the document owner or an admin can transfer ownership");
-    }
-
-    // Org must have delegate ownership enabled
-    const org = await ctx.db.get(document.organizationId);
-    if (!org?.delegateOwnership) {
-      throw new ConvexError("Document ownership transfer is not enabled for this organization");
-    }
-
-    // New owner must be a member of the same org
-    const newOwner = await ctx.db.get(args.newOwnerId);
-    if (!newOwner) {
-      throw new ConvexError("Target user not found");
-    }
-    const membership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", args.newOwnerId).eq("organizationId", document.organizationId),
-      )
-      .unique();
-    if (!membership) {
-      throw new ConvexError("Target user is not a member of this organization");
-    }
-
-    // Cannot transfer to the current owner
-    if (document.ownerId === args.newOwnerId) {
-      throw new ConvexError("Target user is already the document owner");
-    }
-
-    // Only allow transfer on non-active-signing documents
-    const status = document.workflowStatus ?? "draft";
-    if (status === "sent" || status === "in_progress") {
-      throw new ConvexError(
-        "Cannot transfer ownership of a document that is currently being signed",
-      );
-    }
+    const newOwner = await assertTransferOwnershipAllowed(
+      ctx,
+      document,
+      callerId,
+      args.newOwnerId,
+      isAdmin,
+      isOwner,
+    );
 
     await ctx.db.patch(args.documentId, {
       ownerId: args.newOwnerId,

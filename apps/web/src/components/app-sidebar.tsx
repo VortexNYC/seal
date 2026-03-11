@@ -30,7 +30,6 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Switch } from "@/components/ui/switch";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
@@ -486,29 +485,29 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
           <SidebarMenuItem>
             <div className="flex items-center justify-between px-2">
               <NotificationsPopover slug={slug} />
-              <SidebarMenuButton asChild className="ml-2 flex-1 justify-between">
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={handleThemeToggle}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleThemeToggle();
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
-                    <span className="group-data-[collapsible=icon]:hidden">Dark mode</span>
-                  </div>
-                  <Switch
-                    checked={isDark}
-                    className="group-data-[collapsible=icon]:hidden"
-                    aria-label="Toggle dark mode"
-                    tabIndex={-1}
-                  />
+              <SidebarMenuButton
+                className="ml-2 flex-1 justify-between"
+                onClick={handleThemeToggle}
+                aria-pressed={isDark}
+              >
+                <div className="flex items-center gap-2">
+                  {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
+                  <span className="group-data-[collapsible=icon]:hidden">Dark mode</span>
                 </div>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "group-data-[collapsible=icon]:hidden inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
+                    isDark ? "bg-primary border-primary justify-end" : "bg-muted border-border",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "bg-background block h-4 w-4 rounded-full shadow-sm transition-transform",
+                      isDark ? "-translate-x-0.5" : "translate-x-0.5",
+                    )}
+                  />
+                </span>
               </SidebarMenuButton>
             </div>
           </SidebarMenuItem>

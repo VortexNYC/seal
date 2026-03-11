@@ -514,17 +514,7 @@ function DocumentsList({
                     <TableRow
                       key={doc._id}
                       className="hover:bg-muted/50 cursor-pointer"
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`Open document ${doc.name}`}
                       onClick={() => handleOpenDocument(doc._id)}
-                      onKeyDown={(event) => {
-                        if (event.target !== event.currentTarget) return;
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          handleOpenDocument(doc._id);
-                        }
-                      }}
                     >
                       <TableCell>
                         <DocumentThumbnail
@@ -597,11 +587,15 @@ function DocumentsList({
                               onClick={(e) => e.stopPropagation()}
                             >
                               <MoreVerticalIcon className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            {((doc.workflowStatus ?? "draft") === "draft" ||
-                              (doc.workflowStatus ?? "draft") === "expired") && (
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem onClick={() => handleOpenDocument(doc._id)}>
+                            <FileTextIcon className="mr-2 h-4 w-4" />
+                            Open
+                          </DropdownMenuItem>
+                          {((doc.workflowStatus ?? "draft") === "draft" ||
+                            (doc.workflowStatus ?? "draft") === "expired") && (
                               <DropdownMenuItem onClick={() => handleSendDocument(doc._id)}>
                                 <SendIcon className="mr-2 h-4 w-4" />
                                 {(doc.workflowStatus ?? "draft") === "expired"
@@ -659,16 +653,6 @@ function DocumentsList({
                 <Card
                   key={doc._id}
                   className="cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Open document ${doc.name}`}
-                  onKeyDown={(event) => {
-                    if (event.target !== event.currentTarget) return;
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      handleOpenDocument(doc._id);
-                    }
-                  }}
                   onClick={() => handleOpenDocument(doc._id)}
                 >
                   <div className="bg-muted flex h-32 w-full items-center justify-center overflow-hidden border-b">
@@ -705,6 +689,10 @@ function DocumentsList({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem onClick={() => handleOpenDocument(doc._id)}>
+                            <FileTextIcon className="mr-2 h-4 w-4" />
+                            Open
+                          </DropdownMenuItem>
                           {(doc.workflowStatus ?? "draft") === "draft" && (
                             <DropdownMenuItem onClick={() => handleSendDocument(doc._id)}>
                               <SendIcon className="mr-2 h-4 w-4" />

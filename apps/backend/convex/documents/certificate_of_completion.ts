@@ -12,7 +12,7 @@
  */
 
 import { ConvexError, v } from "convex/values";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, type PDFFont, type PDFPage, StandardFonts, rgb } from "pdf-lib";
 import { encode as encodeQr } from "uqr";
 
 import { internal } from "../_generated/api";
@@ -36,51 +36,49 @@ interface CertificateData {
   verifyBaseUrl: string;
 }
 
-/**
- * Generate the certificate PDF bytes
- */
-async function generateCertificatePdf(data: CertificateData): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
-  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+interface CertificatePageState {
+  pdfDoc: PDFDocument;
+  page: PDFPage;
+  y: number;
+  helvetica: PDFFont;
+  helveticaBold: PDFFont;
+}
 
-  let page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  let y = PAGE_HEIGHT - MARGIN;
+function addNewPageIfNeeded(state: CertificatePageState, requiredSpace: number): void {
+  if (state.y - requiredSpace < MARGIN) {
+    state.page = state.pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    state.y = PAGE_HEIGHT - MARGIN;
+  }
+}
 
-  const addNewPageIfNeeded = (requiredSpace: number) => {
-    if (y - requiredSpace < MARGIN) {
-      page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-      y = PAGE_HEIGHT - MARGIN;
-    }
-  };
-
-  // --- Header ---
-  page.drawText("CERTIFICATE OF COMPLETION", {
+function drawHeader(state: CertificatePageState): void {
+  state.page.drawText("CERTIFICATE OF COMPLETION", {
     x: MARGIN,
-    y,
+    y: state.y,
     size: 18,
-    font: helveticaBold,
+    font: state.helveticaBold,
     color: rgb(0.1, 0.1, 0.1),
   });
-  y -= 30;
+  state.y -= 30;
 
-  page.drawLine({
-    start: { x: MARGIN, y },
-    end: { x: PAGE_WIDTH - MARGIN, y },
+  state.page.drawLine({
+    start: { x: MARGIN, y: state.y },
+    end: { x: PAGE_WIDTH - MARGIN, y: state.y },
     thickness: 2,
-    color: rgb(0.16, 0.5, 0.35), // Seal brand green
+    color: rgb(0.16, 0.5, 0.35),
   });
-  y -= 25;
+  state.y -= 25;
+}
 
-  // --- Document Details ---
-  page.drawText("Document Details", {
+function drawDocumentDetails(state: CertificatePageState, data: CertificateData): void {
+  state.page.drawText("Document Details", {
     x: MARGIN,
-    y,
+    y: state.y,
     size: 13,
-    font: helveticaBold,
+    font: state.helveticaBold,
     color: rgb(0.2, 0.2, 0.2),
   });
-  y -= 20;
+  state.y -= 20;
 
   const details = [
     ["Document Name:", data.document.name],
@@ -101,233 +99,242 @@ async function generateCertificatePdf(data: CertificateData): Promise<Uint8Array
   ];
 
   for (const [label, value] of details) {
-    addNewPageIfNeeded(16);
-    page.drawText(label, {
+    addNewPageIfNeeded(state, 16);
+    state.page.drawText(label, {
       x: MARGIN,
-      y,
+      y: state.y,
       size: 9,
-      font: helveticaBold,
+      font: state.helveticaBold,
       color: rgb(0.3, 0.3, 0.3),
     });
-    page.drawText(String(value), {
+    state.page.drawText(String(value), {
       x: MARGIN + 160,
-      y,
+      y: state.y,
       size: 9,
-      font: helvetica,
+      font: state.helvetica,
       color: rgb(0.2, 0.2, 0.2),
       maxWidth: CONTENT_WIDTH - 160,
     });
-    y -= 16;
+    state.y -= 16;
   }
 
-  y -= 15;
+  state.y -= 15;
+}
 
-  // --- Signers ---
-  addNewPageIfNeeded(40);
-  page.drawText("Signers & Recipients", {
+function drawRecipientsSection(
+  state: CertificatePageState,
+  recipients: Doc<"document_recipients">[],
+): void {
+  addNewPageIfNeeded(state, 40);
+  state.page.drawText("Signers & Recipients", {
     x: MARGIN,
-    y,
+    y: state.y,
     size: 13,
-    font: helveticaBold,
+    font: state.helveticaBold,
     color: rgb(0.2, 0.2, 0.2),
   });
-  y -= 20;
+  state.y -= 20;
 
-  for (const recipient of data.recipients) {
-    addNewPageIfNeeded(70);
+  for (const recipient of recipients) {
+    addNewPageIfNeeded(state, 70);
 
-    page.drawText(`${recipient.name || recipient.email}`, {
+    state.page.drawText(`${recipient.name || recipient.email}`, {
       x: MARGIN,
-      y,
+      y: state.y,
       size: 10,
-      font: helveticaBold,
+      font: state.helveticaBold,
       color: rgb(0.15, 0.15, 0.15),
     });
-    y -= 14;
+    state.y -= 14;
 
-    page.drawText(`Email: ${recipient.email}`, {
-      x: MARGIN + 10,
-      y,
-      size: 9,
-      font: helvetica,
-      color: rgb(0.3, 0.3, 0.3),
-    });
-    y -= 13;
+    const details = [
+      `Email: ${recipient.email}`,
+      `Role: ${recipient.role.charAt(0).toUpperCase() + recipient.role.slice(1)}`,
+      `Status: ${recipient.status}`,
+    ];
 
-    page.drawText(`Role: ${recipient.role.charAt(0).toUpperCase() + recipient.role.slice(1)}`, {
-      x: MARGIN + 10,
-      y,
-      size: 9,
-      font: helvetica,
-      color: rgb(0.3, 0.3, 0.3),
-    });
-    y -= 13;
-
-    page.drawText(`Status: ${recipient.status}`, {
-      x: MARGIN + 10,
-      y,
-      size: 9,
-      font: helvetica,
-      color: rgb(0.3, 0.3, 0.3),
-    });
-    y -= 13;
+    for (const detail of details) {
+      state.page.drawText(detail, {
+        x: MARGIN + 10,
+        y: state.y,
+        size: 9,
+        font: state.helvetica,
+        color: rgb(0.3, 0.3, 0.3),
+      });
+      state.y -= 13;
+    }
 
     const completedAt = recipient.signedAt || recipient.approvedAt || recipient.viewedAt;
     if (completedAt) {
-      page.drawText(
+      state.page.drawText(
         `Completed: ${new Date(completedAt).toLocaleString("en-US", { timeZone: "UTC" })} UTC`,
         {
           x: MARGIN + 10,
-          y,
+          y: state.y,
           size: 9,
-          font: helvetica,
+          font: state.helvetica,
           color: rgb(0.3, 0.3, 0.3),
         },
       );
-      y -= 13;
+      state.y -= 13;
     }
 
-    y -= 8;
+    state.y -= 8;
   }
 
-  y -= 10;
+  state.y -= 10;
+}
 
-  // --- Audit Timeline ---
-  addNewPageIfNeeded(40);
-  page.drawText("Audit Trail Timeline", {
+function drawAuditTrail(state: CertificatePageState, auditLogs: Doc<"audit_logs">[]): void {
+  addNewPageIfNeeded(state, 40);
+  state.page.drawText("Audit Trail Timeline", {
     x: MARGIN,
-    y,
+    y: state.y,
     size: 13,
-    font: helveticaBold,
+    font: state.helveticaBold,
     color: rgb(0.2, 0.2, 0.2),
   });
-  y -= 20;
+  state.y -= 20;
 
-  // Sort audit logs chronologically
-  const sortedLogs = [...data.auditLogs].sort((a, b) => a.createdAt - b.createdAt);
+  const sortedLogs = [...auditLogs].sort((left, right) => left.createdAt - right.createdAt);
 
   for (const log of sortedLogs) {
-    addNewPageIfNeeded(28);
+    addNewPageIfNeeded(state, 28);
 
     const timestamp = new Date(log.createdAt).toLocaleString("en-US", { timeZone: "UTC" });
-    const actionLabel = log.action.replace(/\./g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const actionLabel = log.action
+      .replace(/\./g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
 
-    page.drawText(`${timestamp} UTC`, {
+    state.page.drawText(`${timestamp} UTC`, {
       x: MARGIN,
-      y,
+      y: state.y,
       size: 8,
-      font: helvetica,
+      font: state.helvetica,
       color: rgb(0.4, 0.4, 0.4),
     });
 
-    page.drawText(actionLabel, {
+    state.page.drawText(actionLabel, {
       x: MARGIN + 160,
-      y,
+      y: state.y,
       size: 8,
-      font: helveticaBold,
+      font: state.helveticaBold,
       color: rgb(0.2, 0.2, 0.2),
     });
 
     if (log.ipAddress && log.ipAddress !== "unknown") {
-      page.drawText(`IP: ${log.ipAddress}`, {
+      state.page.drawText(`IP: ${log.ipAddress}`, {
         x: MARGIN + 350,
-        y,
+        y: state.y,
         size: 7,
-        font: helvetica,
+        font: state.helvetica,
         color: rgb(0.5, 0.5, 0.5),
       });
     }
 
-    y -= 14;
+    state.y -= 14;
   }
 
-  y -= 20;
+  state.y -= 20;
+}
 
-  // --- Footer ---
-  addNewPageIfNeeded(60);
-  page.drawLine({
-    start: { x: MARGIN, y },
-    end: { x: PAGE_WIDTH - MARGIN, y },
+function drawFooter(state: CertificatePageState): void {
+  addNewPageIfNeeded(state, 60);
+  state.page.drawLine({
+    start: { x: MARGIN, y: state.y },
+    end: { x: PAGE_WIDTH - MARGIN, y: state.y },
     thickness: 1,
     color: rgb(0.7, 0.7, 0.7),
   });
-  y -= 20;
+  state.y -= 20;
 
-  page.drawText("This certificate was automatically generated by Seal.", {
-    x: MARGIN,
-    y,
-    size: 8,
-    font: helvetica,
-    color: rgb(0.5, 0.5, 0.5),
-  });
-  y -= 12;
-
-  page.drawText(`Generated: ${new Date().toLocaleString("en-US", { timeZone: "UTC" })} UTC`, {
-    x: MARGIN,
-    y,
-    size: 8,
-    font: helvetica,
-    color: rgb(0.5, 0.5, 0.5),
-  });
-  y -= 12;
-
-  page.drawText(
+  const footerLines = [
+    "This certificate was automatically generated by Seal.",
+    `Generated: ${new Date().toLocaleString("en-US", { timeZone: "UTC" })} UTC`,
     "Verify document integrity by comparing the Document Hash above with the original document.",
-    {
+  ];
+
+  footerLines.forEach((line, index) => {
+    state.page.drawText(line, {
       x: MARGIN,
-      y,
-      size: 7,
-      font: helvetica,
-      color: rgb(0.6, 0.6, 0.6),
-    },
-  );
-
-  // --- QR Code (bottom-right corner of first page) ---
-  if (data.qrToken) {
-    const verifyUrl = `${data.verifyBaseUrl}/verify/${data.qrToken}`;
-    const qr = encodeQr(verifyUrl, { ecc: "Q" });
-    const firstPage = pdfDoc.getPage(0);
-    const moduleSize = QR_SIZE / qr.size;
-    // Quiet zone: 4 modules of white padding
-    const quietZone = 4 * moduleSize;
-    const totalSize = QR_SIZE + quietZone * 2;
-    const qrX = PAGE_WIDTH - MARGIN - totalSize;
-    const qrY = MARGIN + 12; // caption height offset
-
-    // White background (quiet zone)
-    firstPage.drawRectangle({
-      x: qrX,
-      y: qrY,
-      width: totalSize,
-      height: totalSize,
-      color: rgb(1, 1, 1),
+      y: state.y,
+      size: index === 2 ? 7 : 8,
+      font: state.helvetica,
+      color: index === 2 ? rgb(0.6, 0.6, 0.6) : rgb(0.5, 0.5, 0.5),
     });
+    state.y -= 12;
+  });
+}
 
-    // Draw QR modules
-    for (let row = 0; row < qr.size; row++) {
-      for (let col = 0; col < qr.size; col++) {
-        if (qr.data[row * qr.size + col]) {
-          firstPage.drawRectangle({
-            x: qrX + quietZone + col * moduleSize,
-            y: qrY + quietZone + (qr.size - 1 - row) * moduleSize, // flip Y axis (PDF origin is bottom-left)
-            width: moduleSize,
-            height: moduleSize,
-            color: rgb(0, 0, 0),
-          });
-        }
-      }
-    }
-
-    // Caption below QR
-    const captionWidth = helvetica.widthOfTextAtSize(QR_CAPTION, 7);
-    firstPage.drawText(QR_CAPTION, {
-      x: qrX + (totalSize - captionWidth) / 2,
-      y: MARGIN,
-      size: 7,
-      font: helvetica,
-      color: rgb(0.4, 0.4, 0.4),
-    });
+function drawQrCode(pdfDoc: PDFDocument, helvetica: PDFFont, data: CertificateData): void {
+  if (!data.qrToken) {
+    return;
   }
+
+  const verifyUrl = `${data.verifyBaseUrl}/verify/${data.qrToken}`;
+  const qr = encodeQr(verifyUrl, { ecc: "Q" });
+  const firstPage = pdfDoc.getPage(0);
+  const moduleSize = QR_SIZE / qr.size;
+  const quietZone = 4 * moduleSize;
+  const totalSize = QR_SIZE + quietZone * 2;
+  const qrX = PAGE_WIDTH - MARGIN - totalSize;
+  const qrY = MARGIN + 12;
+
+  firstPage.drawRectangle({
+    x: qrX,
+    y: qrY,
+    width: totalSize,
+    height: totalSize,
+    color: rgb(1, 1, 1),
+  });
+
+  for (let row = 0; row < qr.size; row++) {
+    for (let col = 0; col < qr.size; col++) {
+      if (!qr.data[row * qr.size + col]) {
+        continue;
+      }
+
+      firstPage.drawRectangle({
+        x: qrX + quietZone + col * moduleSize,
+        y: qrY + quietZone + (qr.size - 1 - row) * moduleSize,
+        width: moduleSize,
+        height: moduleSize,
+        color: rgb(0, 0, 0),
+      });
+    }
+  }
+
+  const captionWidth = helvetica.widthOfTextAtSize(QR_CAPTION, 7);
+  firstPage.drawText(QR_CAPTION, {
+    x: qrX + (totalSize - captionWidth) / 2,
+    y: MARGIN,
+    size: 7,
+    font: helvetica,
+    color: rgb(0.4, 0.4, 0.4),
+  });
+}
+
+/**
+ * Generate the certificate PDF bytes
+ */
+async function generateCertificatePdf(data: CertificateData): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const state: CertificatePageState = {
+    pdfDoc,
+    page: pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]),
+    y: PAGE_HEIGHT - MARGIN,
+    helvetica,
+    helveticaBold,
+  };
+
+  drawHeader(state);
+  drawDocumentDetails(state, data);
+  drawRecipientsSection(state, data.recipients);
+  drawAuditTrail(state, data.auditLogs);
+  drawFooter(state);
+  drawQrCode(pdfDoc, helvetica, data);
 
   return pdfDoc.save();
 }

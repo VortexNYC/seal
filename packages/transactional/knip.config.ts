@@ -3,10 +3,6 @@ import type { KnipConfig } from "knip";
 const config: KnipConfig = {
   entry: ["src/emails/**/*.tsx"],
   project: ["src/**/*.tsx"],
-  ignore: [
-    // React Email generated files
-    ".react-email/**",
-  ],
   ignoreDependencies: [
     // React Email core dependencies (used at runtime)
     "react-email",

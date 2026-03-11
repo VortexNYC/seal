@@ -1,3 +1,4 @@
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import {
   ActivityIcon,
   ChevronDownIcon,
@@ -18,13 +19,13 @@ import {
 import type { ActivityEvent, ActivityEventType } from "@/lib/document-activity";
 import { formatDate, formatFileSize, formatRelativeTime, getInitials } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { AIInsightsPanel, useDocumentAnnotations } from "./ai-annotation-overlays";
+import { AIInsightsPanel } from "./ai-annotation-overlays";
+import type { useDocumentAnnotations } from "./ai-annotation-overlays";
 import { AIChatPanel } from "./ai-chat-panel";
 import { DocumentProgressRing } from "./document-progress-ring";
 import { DocumentStatusHero } from "./document-status-hero";

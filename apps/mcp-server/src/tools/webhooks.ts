@@ -21,11 +21,18 @@ import {
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
 
-/**
- * Registers all webhook management tools with the MCP server.
- */
-export function registerWebhookTools(server: McpServer, client: SealApiClient): void {
-  // List webhooks
+function createToolResponse(payload: unknown) {
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: JSON.stringify(payload, null, 2),
+      },
+    ],
+  };
+}
+
+function registerListWebhooksTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_list_webhooks",
     "List all webhook endpoints configured for your organization. Returns endpoint details including delivery statistics.",
@@ -34,18 +41,12 @@ export function registerWebhookTools(server: McpServer, client: SealApiClient): 
       const authToken = getAuthToken(extra);
       const response = await client.get<ApiWebhookEndpoint[]>("/webhooks", {}, authToken);
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Get webhook
+function registerGetWebhookTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_get_webhook",
     "Get details for a specific webhook endpoint including its delivery statistics and subscription settings.",
@@ -55,18 +56,12 @@ export function registerWebhookTools(server: McpServer, client: SealApiClient): 
       const authToken = getAuthToken(extra);
       const response = await client.get<ApiWebhookEndpoint>("/webhooks/get", { id }, authToken);
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Create webhook
+function registerCreateWebhookTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_create_webhook",
     "Create a new webhook endpoint. Returns the endpoint details including the signing secret — save it securely as it is only shown once.",
@@ -81,18 +76,12 @@ export function registerWebhookTools(server: McpServer, client: SealApiClient): 
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Update webhook
+function registerUpdateWebhookTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_update_webhook",
     "Update a webhook endpoint's configuration. You can change the URL, subscribed events, status, or description. Only provide fields you want to change.",
@@ -107,18 +96,12 @@ export function registerWebhookTools(server: McpServer, client: SealApiClient): 
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Delete webhook
+function registerDeleteWebhookTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_delete_webhook",
     "Permanently delete a webhook endpoint and all its delivery history. This action cannot be undone.",
@@ -132,18 +115,12 @@ export function registerWebhookTools(server: McpServer, client: SealApiClient): 
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Rotate webhook secret
+function registerRotateWebhookSecretTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_rotate_webhook_secret",
     "Rotate the signing secret for a webhook endpoint. Returns the new secret — save it securely and update your server immediately as the old secret stops working right away.",
@@ -158,18 +135,12 @@ export function registerWebhookTools(server: McpServer, client: SealApiClient): 
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // List webhook event types
+function registerListWebhookEventTypesTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_list_webhook_event_types",
     "List all available webhook event types with descriptions. Use this to discover which events you can subscribe to when creating or updating a webhook.",
@@ -182,14 +153,20 @@ export function registerWebhookTools(server: McpServer, client: SealApiClient): 
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
+
+/**
+ * Registers all webhook management tools with the MCP server.
+ */
+export function registerWebhookTools(server: McpServer, client: SealApiClient): void {
+  registerListWebhooksTool(server, client);
+  registerGetWebhookTool(server, client);
+  registerCreateWebhookTool(server, client);
+  registerUpdateWebhookTool(server, client);
+  registerDeleteWebhookTool(server, client);
+  registerRotateWebhookSecretTool(server, client);
+  registerListWebhookEventTypesTool(server, client);
 }

@@ -25,11 +25,18 @@ import {
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
 
-/**
- * Registers all template-related tools with the MCP server.
- */
-export function registerTemplateTools(server: McpServer, client: SealApiClient): void {
-  // List templates
+function createToolResponse(payload: unknown) {
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: JSON.stringify(payload, null, 2),
+      },
+    ],
+  };
+}
+
+function registerListTemplatesTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_list_templates",
     "List all document templates in your workspace. Templates are reusable document layouts with pre-placed signature fields. Filter by status (active or archived) to find templates ready for use. Use seal_use_template to create a new document from any template returned here.",
@@ -43,18 +50,12 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Get template
+function registerGetTemplateTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_get_template",
     "Get detailed information about a specific template.",
@@ -68,18 +69,12 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Get template fields
+function registerGetTemplateFieldsTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_get_template_fields",
     "Get all field definitions for a template. Fields define where signatures and data entry points are located.",
@@ -93,18 +88,12 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Create template
+function registerCreateTemplateTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_create_template",
     "Create a new template from an existing document. The document's fields will be copied to the template.",
@@ -114,27 +103,17 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
       const authToken = getAuthToken(extra);
       const response = await client.post<{ id: string }>(
         "/templates",
-        {
-          document_id,
-          name,
-          description,
-        },
+        { document_id, name, description },
         undefined,
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Update template
+function registerUpdateTemplateTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_update_template",
     "Update template metadata.",
@@ -149,18 +128,12 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Delete template
+function registerDeleteTemplateTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_delete_template",
     "Delete a template. This is a soft delete - the template will be marked as deleted but not removed.",
@@ -174,18 +147,12 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Use template
+function registerUseTemplateTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_use_template",
     "Create a new document from a template. The new document will have the same fields and layout as the template.",
@@ -200,14 +167,20 @@ export function registerTemplateTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
+
+/**
+ * Registers all template-related tools with the MCP server.
+ */
+export function registerTemplateTools(server: McpServer, client: SealApiClient): void {
+  registerListTemplatesTool(server, client);
+  registerGetTemplateTool(server, client);
+  registerGetTemplateFieldsTool(server, client);
+  registerCreateTemplateTool(server, client);
+  registerUpdateTemplateTool(server, client);
+  registerDeleteTemplateTool(server, client);
+  registerUseTemplateTool(server, client);
 }
