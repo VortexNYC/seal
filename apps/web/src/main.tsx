@@ -34,9 +34,31 @@ if (!CLERK_URL) {
 if (shouldInitSentry) {
   Sentry.init({
     dsn: SENTRY_DSN,
-    // Setting this option to true will send default PII data to Sentry.
-    // For example, automatic IP address collection on events
+    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || "production",
+    release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
     sendDefaultPii: true,
+    beforeSend(event) {
+      // Strip document content and signature data from breadcrumbs
+      if (event.breadcrumbs) {
+        for (const crumb of event.breadcrumbs) {
+          if (crumb.data) {
+            delete crumb.data.pdfContent;
+            delete crumb.data.signatureData;
+            delete crumb.data.documentContent;
+          }
+        }
+      }
+      return event;
+    },
+    ignoreErrors: [
+      // Browser extensions and noise
+      "ResizeObserver loop",
+      "Non-Error promise rejection",
+      // Network errors users can retry
+      "Failed to fetch",
+      "Load failed",
+      "NetworkError",
+    ],
   });
 }
 
