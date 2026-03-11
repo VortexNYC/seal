@@ -116,10 +116,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { pathname } = useLocation();
-  const isFullscreen =
-    pathname.startsWith("/studio") ||
-    pathname.startsWith("/docs") ||
-    pathname.startsWith("/api-reference");
+  const isFullscreen = pathname.startsWith("/docs") || pathname.startsWith("/api-reference");
 
   return (
     <RootDocument>

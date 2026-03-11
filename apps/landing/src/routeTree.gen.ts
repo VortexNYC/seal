@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
-import { Route as StudioRouteImport } from './routes/studio'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as IntegrationsRouteImport } from './routes/integrations'
 import { Route as DocsRouteImport } from './routes/docs'
@@ -26,11 +25,6 @@ const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
   path: '/terms-of-service',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StudioRoute = StudioRouteImport.update({
-  id: '/studio',
-  path: '/studio',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/studio.lazy').then((d) => d.Route))
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
@@ -84,7 +78,6 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRouteWithChildren
   '/integrations': typeof IntegrationsRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
-  '/studio': typeof StudioRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
   '/docs/$': typeof DocsSplatRoute
@@ -97,7 +90,6 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRouteWithChildren
   '/integrations': typeof IntegrationsRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
-  '/studio': typeof StudioRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
   '/docs/$': typeof DocsSplatRoute
@@ -111,7 +103,6 @@ export interface FileRoutesById {
   '/docs': typeof DocsRouteWithChildren
   '/integrations': typeof IntegrationsRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
-  '/studio': typeof StudioRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
   '/docs/$': typeof DocsSplatRoute
@@ -126,7 +117,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/integrations'
     | '/privacy-policy'
-    | '/studio'
     | '/terms-of-service'
     | '/changelog/$slug'
     | '/docs/$'
@@ -139,7 +129,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/integrations'
     | '/privacy-policy'
-    | '/studio'
     | '/terms-of-service'
     | '/changelog/$slug'
     | '/docs/$'
@@ -152,7 +141,6 @@ export interface FileRouteTypes {
     | '/docs'
     | '/integrations'
     | '/privacy-policy'
-    | '/studio'
     | '/terms-of-service'
     | '/changelog/$slug'
     | '/docs/$'
@@ -166,7 +154,6 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRouteWithChildren
   IntegrationsRoute: typeof IntegrationsRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
-  StudioRoute: typeof StudioRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
   PagesSlugRoute: typeof PagesSlugRoute
 }
@@ -178,13 +165,6 @@ declare module '@tanstack/react-router' {
       path: '/terms-of-service'
       fullPath: '/terms-of-service'
       preLoaderRoute: typeof TermsOfServiceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/studio': {
-      id: '/studio'
-      path: '/studio'
-      fullPath: '/studio'
-      preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy-policy': {
@@ -282,7 +262,6 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRouteWithChildren,
   IntegrationsRoute: IntegrationsRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
-  StudioRoute: StudioRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
   PagesSlugRoute: PagesSlugRoute,
 }
