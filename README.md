@@ -144,12 +144,14 @@ Install Playwright browsers:
 
 ```bash
 bun --cwd apps/web x playwright install chromium
+bun --cwd apps/landing x playwright install chromium firefox webkit
 ```
 
 Run the test suite:
 
 ```bash
 bun --cwd apps/web run test:e2e
+bun --cwd apps/landing run test:e2e
 ```
 
 Useful variants:
@@ -158,9 +160,12 @@ Useful variants:
 bun --cwd apps/web run test:e2e:ui
 bun --cwd apps/web run test:e2e:headed
 bun --cwd apps/web run test:e2e:debug
+bun --cwd apps/landing run test:e2e:ui
+bun --cwd apps/landing run test:e2e:headed
+bun --cwd apps/landing run test:e2e:debug
 ```
 
-More detail lives in [apps/web/e2e/README.md](apps/web/e2e/README.md).
+More detail lives in [apps/web/e2e/README.md](apps/web/e2e/README.md) and [apps/landing/e2e/README.md](apps/landing/e2e/README.md).
 
 ## Docs and API Reference
 
@@ -169,10 +174,10 @@ Published developer docs live in `apps/landing/content/docs`.
 Useful landing/docs commands:
 
 ```bash
-bun --cwd apps/landing run docs:generate
+bun --cwd apps/landing run content:prepare
 bun --cwd apps/landing run docs:generate:api
-bun --cwd apps/landing run search:generate
-bun --cwd apps/landing run sitemap:generate
+bun --cwd apps/landing run content:search
+bun --cwd apps/landing run content:sitemap
 ```
 
 The API reference content is generated from `apps/landing/openapi.yaml`.

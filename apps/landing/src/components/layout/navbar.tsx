@@ -56,7 +56,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="flex items-center gap-1 max-md:hidden" data-testid="desktop-nav">
           {navItems.map((item) => (
             <Link
               className={cn(
@@ -73,7 +73,7 @@ export function Navbar() {
         </nav>
 
         {/* Desktop CTA */}
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="flex items-center gap-3 max-md:hidden">
           <Button asChild className="text-muted-foreground hover:text-foreground" variant="ghost">
             <a href={`${APP_URL}/sign-in`}>Sign in</a>
           </Button>
@@ -93,6 +93,7 @@ export function Navbar() {
           aria-expanded={mobileOpen}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           className="text-foreground flex size-11 items-center justify-center rounded-md md:hidden"
+          data-testid="mobile-menu-button"
           onClick={() => setMobileOpen(!mobileOpen)}
           type="button"
         >
@@ -102,7 +103,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <nav className="bg-background border-border border-t px-6 pt-4 pb-6 md:hidden">
+        <nav className="bg-background border-border border-t px-6 pt-4 pb-6 md:hidden" data-testid="mobile-nav">
           <div className="flex flex-col gap-1">
             {navItems.map((item) => (
               <Link
