@@ -7,13 +7,21 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-/**
- * Registers all prompt templates with the MCP server.
- */
-export function registerAllPrompts(server: McpServer): void {
-  // ---------------------------------------------------------------------------
-  // Send Document
-  // ---------------------------------------------------------------------------
+function createPromptMessages(text: string) {
+  return {
+    messages: [
+      {
+        role: "user" as const,
+        content: {
+          type: "text" as const,
+          text,
+        },
+      },
+    ],
+  };
+}
+
+function registerSendDocumentPrompt(server: McpServer): void {
   server.prompt(
     "send-document",
     "Guide through the complete workflow to upload a PDF and send it for signing — from file upload to notifying recipients.",
@@ -33,13 +41,7 @@ export function registerAllPrompts(server: McpServer): void {
         ? ` The user expects roughly ${recipient_count} signer(s).`
         : "";
 
-      return {
-        messages: [
-          {
-            role: "user" as const,
-            content: {
-              type: "text" as const,
-              text: `I want to send a document${docDesc} for signing.${recipientHint}
+      return createPromptMessages(`I want to send a document${docDesc} for signing.${recipientHint}
 
 Please guide me through the full workflow:
 1. Upload the PDF file (use seal_upload_file for local files or seal_upload_file_content for base64)
@@ -47,17 +49,12 @@ Please guide me through the full workflow:
 3. Add recipients with seal_add_recipient or seal_add_recipients_bulk
 4. Send it with seal_send_document
 
-Ask me for the file path or content, then for recipient details (name, email, and role: signer/approver/viewer). Walk me through each step.`,
-            },
-          },
-        ],
-      };
+Ask me for the file path or content, then for recipient details (name, email, and role: signer/approver/viewer). Walk me through each step.`);
     },
   );
+}
 
-  // ---------------------------------------------------------------------------
-  // Check Signing Status
-  // ---------------------------------------------------------------------------
+function registerCheckSigningStatusPrompt(server: McpServer): void {
   server.prompt(
     "check-signing-status",
     "Check the current signing status of documents — who has signed, who is pending, and whether to send reminders.",
@@ -70,29 +67,18 @@ Ask me for the file path or content, then for recipient details (name, email, an
     ({ document_title }) => {
       const docHint = document_title ? ` specifically looking for "${document_title}"` : "";
 
-      return {
-        messages: [
-          {
-            role: "user" as const,
-            content: {
-              type: "text" as const,
-              text: `I want to check the signing status of my documents${docHint}.
+      return createPromptMessages(`I want to check the signing status of my documents${docHint}.
 
 Please:
 1. Use seal_list_documents to find the relevant document(s) — filter by status if helpful (sent, in_progress)
 2. Use seal_get_document with include_recipients=true to see who has signed and who is pending
 3. Summarize the status clearly: who signed, who hasn't, and the overall completion state
-4. If there are pending recipients, ask whether I want to send reminders using seal_send_reminder`,
-            },
-          },
-        ],
-      };
+4. If there are pending recipients, ask whether I want to send reminders using seal_send_reminder`);
     },
   );
+}
 
-  // ---------------------------------------------------------------------------
-  // Use Template
-  // ---------------------------------------------------------------------------
+function registerUseTemplatePrompt(server: McpServer): void {
   server.prompt(
     "use-template",
     "Create and send a document from a saved template — find the template, create the document, add recipients, and send.",
@@ -104,13 +90,7 @@ Please:
         ? ` I'm looking for a template called "${template_name}".`
         : "";
 
-      return {
-        messages: [
-          {
-            role: "user" as const,
-            content: {
-              type: "text" as const,
-              text: `I want to send a document using one of my saved templates.${templateHint}
+      return createPromptMessages(`I want to send a document using one of my saved templates.${templateHint}
 
 Please:
 1. Use seal_list_templates to show available templates
@@ -119,17 +99,12 @@ Please:
 4. Add recipients with seal_add_recipient or seal_add_recipients_bulk — match recipients to the template's defined signing roles
 5. Send with seal_send_document
 
-Walk me through each step.`,
-            },
-          },
-        ],
-      };
+Walk me through each step.`);
     },
   );
+}
 
-  // ---------------------------------------------------------------------------
-  // Verify Signed Document
-  // ---------------------------------------------------------------------------
+function registerVerifyDocumentPrompt(server: McpServer): void {
   server.prompt(
     "verify-document",
     "Verify the cryptographic integrity of a signed document, review the full audit trail, and get the download URL.",
@@ -141,30 +116,19 @@ Walk me through each step.`,
         ? ` The document ID is: ${document_id}.`
         : " I'll need to find the document first.";
 
-      return {
-        messages: [
-          {
-            role: "user" as const,
-            content: {
-              type: "text" as const,
-              text: `I want to verify a signed document and get its audit trail.${idHint}
+      return createPromptMessages(`I want to verify a signed document and get its audit trail.${idHint}
 
 Please:
 1. If no document ID given, use seal_list_documents filtered to status=completed to find it
 2. Run seal_verify_document to check cryptographic integrity of all signatures
 3. Use seal_get_audit_trail to show the full activity history (who viewed, signed, and when)
 4. Use seal_download_document to provide the download URL for the signed PDF
-5. Give me a clear summary: is the document tamper-proof? Who signed, when, and from where?`,
-            },
-          },
-        ],
-      };
+5. Give me a clear summary: is the document tamper-proof? Who signed, when, and from where?`);
     },
   );
+}
 
-  // ---------------------------------------------------------------------------
-  // Set Up Webhooks
-  // ---------------------------------------------------------------------------
+function registerSetupWebhooksPrompt(server: McpServer): void {
   server.prompt(
     "setup-webhooks",
     "Set up a webhook endpoint to receive real-time notifications for Seal events like document completions and signatures.",
@@ -179,13 +143,7 @@ Please:
         ? ` My endpoint URL is: ${endpoint_url}.`
         : " I'll need to provide the endpoint URL.";
 
-      return {
-        messages: [
-          {
-            role: "user" as const,
-            content: {
-              type: "text" as const,
-              text: `I want to set up webhooks to get notified about Seal events.${urlHint}
+      return createPromptMessages(`I want to set up webhooks to get notified about Seal events.${urlHint}
 
 Please:
 1. Use seal_list_webhook_event_types to show all available events with descriptions
@@ -193,17 +151,12 @@ Please:
 3. Create the webhook with seal_create_webhook — the signing secret will only be shown once, so I'll need to save it
 4. Confirm the setup with seal_get_webhook and show the delivery stats
 
-Important: After setup, tell me how to verify incoming webhooks — I'll need to check the X-Seal-Signature header using HMAC-SHA256 with my signing secret.`,
-            },
-          },
-        ],
-      };
+Important: After setup, tell me how to verify incoming webhooks — I'll need to check the X-Seal-Signature header using HMAC-SHA256 with my signing secret.`);
     },
   );
+}
 
-  // ---------------------------------------------------------------------------
-  // Void / Cancel Document
-  // ---------------------------------------------------------------------------
+function registerVoidDocumentPrompt(server: McpServer): void {
   server.prompt(
     "void-document",
     "Cancel a sent document and notify all recipients that it has been voided.",
@@ -213,13 +166,7 @@ Important: After setup, tell me how to verify incoming webhooks — I'll need to
     ({ document_title }) => {
       const hint = document_title ? ` for "${document_title}"` : "";
 
-      return {
-        messages: [
-          {
-            role: "user" as const,
-            content: {
-              type: "text" as const,
-              text: `I need to cancel/void a document${hint} and stop the signing process.
+      return createPromptMessages(`I need to cancel/void a document${hint} and stop the signing process.
 
 Please:
 1. Use seal_list_documents to find the document — filter by status=sent or status=in_progress
@@ -227,11 +174,19 @@ Please:
 3. Ask for a reason to include in the void notification (all recipients will be emailed)
 4. Call seal_void_document with the reason
 
-Note: Completed documents cannot be voided. Drafts should be deleted with seal_delete_document instead.`,
-            },
-          },
-        ],
-      };
+Note: Completed documents cannot be voided. Drafts should be deleted with seal_delete_document instead.`);
     },
   );
+}
+
+/**
+ * Registers all prompt templates with the MCP server.
+ */
+export function registerAllPrompts(server: McpServer): void {
+  registerSendDocumentPrompt(server);
+  registerCheckSigningStatusPrompt(server);
+  registerUseTemplatePrompt(server);
+  registerVerifyDocumentPrompt(server);
+  registerSetupWebhooksPrompt(server);
+  registerVoidDocumentPrompt(server);
 }

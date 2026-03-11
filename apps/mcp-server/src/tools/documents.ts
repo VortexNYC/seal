@@ -26,11 +26,18 @@ import {
 import type { SealApiClient } from "../client";
 import { getAuthToken } from "../utils/auth";
 
-/**
- * Registers all document-related tools with the MCP server.
- */
-export function registerDocumentTools(server: McpServer, client: SealApiClient): void {
-  // List documents
+function createToolResponse(payload: unknown) {
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: JSON.stringify(payload, null, 2),
+      },
+    ],
+  };
+}
+
+function registerListDocumentsTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_list_documents",
     "List documents in your Seal workspace with pagination and optional filtering. Filter by status, search by title, or narrow by creation date range.",
@@ -45,18 +52,12 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Get document
+function registerGetDocumentTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_get_document",
     "Get detailed information about a specific document including recipients and download URL.",
@@ -66,25 +67,16 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
       const authToken = getAuthToken(extra);
       const response = await client.get<ApiDocument>(
         "/documents/get",
-        {
-          id,
-          include_recipients,
-        },
+        { id, include_recipients },
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Create document
+function registerCreateDocumentTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_create_document",
     "Create a new document in draft status. Requires a storage ID from a previously uploaded file.",
@@ -108,18 +100,12 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Update document
+function registerUpdateDocumentTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_update_document",
     "Update document metadata. Only works for documents in draft status.",
@@ -138,18 +124,12 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Delete document
+function registerDeleteDocumentTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_delete_document",
     "Delete a document. Only draft documents can be deleted. Use void_document for sent documents.",
@@ -163,18 +143,12 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Send document
+function registerSendDocumentTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_send_document",
     "Send a document for signing. The document must be in draft status and have at least one recipient.",
@@ -189,18 +163,12 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Void document
+function registerVoidDocumentTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_void_document",
     "Void/cancel a document. Cannot void completed documents. All recipients will be notified.",
@@ -215,18 +183,12 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
         authToken,
       );
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
 
-  // Download document
+function registerDownloadDocumentTool(server: McpServer, client: SealApiClient): void {
   server.tool(
     "seal_download_document",
     "Get the download URL for a document. Returns the signed PDF if available, otherwise the original.",
@@ -234,22 +196,23 @@ export function registerDocumentTools(server: McpServer, client: SealApiClient):
     async (args, extra) => {
       const { id } = args as DocumentIdInput;
       const authToken = getAuthToken(extra);
-      const response = await client.get<{ url: string }>(
-        "/documents/download",
-        {
-          id,
-        },
-        authToken,
-      );
+      const response = await client.get<{ url: string }>("/documents/download", { id }, authToken);
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
-      };
+      return createToolResponse(response);
     },
   );
+}
+
+/**
+ * Registers all document-related tools with the MCP server.
+ */
+export function registerDocumentTools(server: McpServer, client: SealApiClient): void {
+  registerListDocumentsTool(server, client);
+  registerGetDocumentTool(server, client);
+  registerCreateDocumentTool(server, client);
+  registerUpdateDocumentTool(server, client);
+  registerDeleteDocumentTool(server, client);
+  registerSendDocumentTool(server, client);
+  registerVoidDocumentTool(server, client);
+  registerDownloadDocumentTool(server, client);
 }

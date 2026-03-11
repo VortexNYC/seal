@@ -5,8 +5,32 @@ import type { ApiError } from "@seal/backend/convex/validations/api";
 import type { Config } from "./config";
 import { logger } from "./utils/logger";
 
+type RequestQueryValue = string | number | boolean | undefined;
+
+interface RequestOptions {
+  query?: Record<string, RequestQueryValue>;
+  body?: Record<string, unknown>;
+  authToken?: string;
+  /** Override the default timeout for this request (in ms) */
+  timeout?: number;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getStringValue(
+  record: Record<string, unknown>,
+  keys: readonly string[],
+): string | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string") {
+      return value;
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -100,138 +124,140 @@ export class SealApiClient {
     });
   }
 
+  private buildUrl(path: string, query?: Record<string, RequestQueryValue>): URL {
+    const url = new URL(`${this.baseUrl}${path}`);
+    if (!query) {
+      return url;
+    }
+
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined) {
+        url.searchParams.set(key, String(value));
+      }
+    }
+
+    return url;
+  }
+
+  private createJsonRequestInit(
+    method: string,
+    authToken: string,
+    body: Record<string, unknown> | undefined,
+    signal: AbortSignal,
+  ): RequestInit {
+    return {
+      method,
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal,
+    };
+  }
+
+  private createFallbackApiError(response: Response): ApiError {
+    return {
+      type: "API_ERROR",
+      status: response.status,
+      title: response.statusText || "Request failed",
+    };
+  }
+
+  private parseApiErrorBody(json: Record<string, unknown>, response: Response): ApiError {
+    return {
+      type: getStringValue(json, ["type", "code"]) ?? "UNKNOWN_ERROR",
+      status: typeof json.status === "number" ? json.status : response.status,
+      title: getStringValue(json, ["title", "message", "detail"]) ?? response.statusText,
+      details: isRecord(json.details)
+        ? json.details
+        : isRecord(json.errors)
+          ? json.errors
+          : undefined,
+    };
+  }
+
+  private async getApiError(response: Response): Promise<ApiError> {
+    try {
+      const json = (await response.json()) as Record<string, unknown>;
+      return this.parseApiErrorBody(json, response);
+    } catch {
+      return this.createFallbackApiError(response);
+    }
+  }
+
+  private throwApiError(error: ApiError): never {
+    switch (error.status) {
+      case 400:
+        throw new ValidationError(error.title, error.details);
+      case 404:
+        throw new NotFoundError(error.title);
+      case 429:
+        throw new RateLimitError(error.title);
+      default:
+        throw new SealApiError(error);
+    }
+  }
+
+  private normalizeRequestError(error: unknown): never {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new SealApiError({
+        type: "TIMEOUT",
+        status: 408,
+        title: "Request timed out",
+      });
+    }
+
+    if (error instanceof SealApiError) {
+      throw error;
+    }
+
+    throw new SealApiError({
+      type: "NETWORK_ERROR",
+      status: 0,
+      title: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+
   /**
    * Options for API requests.
    */
-  private async request<T>(
-    method: string,
-    path: string,
-    options?: {
-      query?: Record<string, string | number | boolean | undefined>;
-      body?: Record<string, unknown>;
-      authToken?: string;
-      /** Override the default timeout for this request (in ms) */
-      timeout?: number;
-    },
-  ): Promise<T> {
-    // Build URL with query parameters
-    const url = new URL(`${this.baseUrl}${path}`);
-    if (options?.query) {
-      for (const [key, value] of Object.entries(options.query)) {
-        if (value !== undefined) {
-          url.searchParams.set(key, String(value));
-        }
-      }
-    }
+  private async request<T>(method: string, path: string, options?: RequestOptions): Promise<T> {
+    const url = this.buildUrl(path, options?.query);
 
     if (this.debug) {
       logger.debug(`${method} ${url.toString()}`);
     }
 
-    // Create abort controller for timeout (use per-request timeout if provided)
     const requestTimeout = options?.timeout ?? this.timeout;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
 
     try {
-      const authToken = this.resolveAuthToken(options?.authToken);
-      const response = await fetch(url.toString(), {
-        method,
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: options?.body ? JSON.stringify(options.body) : undefined,
-        signal: controller.signal,
-      });
+      const response = await fetch(
+        url.toString(),
+        this.createJsonRequestInit(
+          method,
+          this.resolveAuthToken(options?.authToken),
+          options?.body,
+          controller.signal,
+        ),
+      );
 
-      clearTimeout(timeoutId);
-
-      // Handle non-2xx responses
       if (!response.ok) {
-        let errorBody: ApiError;
-        try {
-          const json = (await response.json()) as Record<string, unknown>;
-          const type =
-            typeof json.type === "string"
-              ? json.type
-              : typeof json.code === "string"
-                ? json.code
-                : "UNKNOWN_ERROR";
-          const status = typeof json.status === "number" ? json.status : response.status;
-          const title =
-            typeof json.title === "string"
-              ? json.title
-              : typeof json.message === "string"
-                ? json.message
-                : typeof json.detail === "string"
-                  ? json.detail
-                  : response.statusText;
-          const details = isRecord(json.details)
-            ? json.details
-            : isRecord(json.errors)
-              ? json.errors
-              : undefined;
-          // Handle RFC 7807 error format from Convex API
-          errorBody = {
-            type,
-            status,
-            title,
-            details,
-          };
-        } catch {
-          // If JSON parsing fails, create error from response
-          errorBody = {
-            type: "API_ERROR",
-            status: response.status,
-            title: response.statusText || "Request failed",
-          };
-        }
-
-        // Throw specific error types based on status code
-        if (errorBody.status === 404) {
-          throw new NotFoundError(errorBody.title);
-        }
-        if (errorBody.status === 400) {
-          throw new ValidationError(errorBody.title, errorBody.details);
-        }
-        if (errorBody.status === 429) {
-          throw new RateLimitError(errorBody.title);
-        }
-
-        throw new SealApiError(errorBody);
+        this.throwApiError(await this.getApiError(response));
       }
 
-      // Handle 204 No Content
       if (response.status === 204) {
         return {} as T;
       }
 
       return (await response.json()) as T;
     } catch (error) {
+      return this.normalizeRequestError(error);
+    } finally {
       clearTimeout(timeoutId);
-
-      // Handle timeout
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new SealApiError({
-          type: "TIMEOUT",
-          status: 408,
-          title: "Request timed out",
-        });
-      }
-
-      // Re-throw API errors
-      if (error instanceof SealApiError) {
-        throw error;
-      }
-
-      // Wrap unexpected errors
-      throw new SealApiError({
-        type: "NETWORK_ERROR",
-        status: 0,
-        title: error instanceof Error ? error.message : "Unknown error",
-      });
     }
   }
 
@@ -244,7 +270,7 @@ export class SealApiClient {
    */
   async get<T>(
     path: string,
-    query?: Record<string, string | number | boolean | undefined>,
+    query?: Record<string, RequestQueryValue>,
     authToken?: string,
     timeout?: number,
   ): Promise<T> {
@@ -262,7 +288,7 @@ export class SealApiClient {
   async post<T>(
     path: string,
     body?: Record<string, unknown>,
-    query?: Record<string, string | number | boolean | undefined>,
+    query?: Record<string, RequestQueryValue>,
     authToken?: string,
     timeout?: number,
   ): Promise<T> {
@@ -280,7 +306,7 @@ export class SealApiClient {
   async put<T>(
     path: string,
     body?: Record<string, unknown>,
-    query?: Record<string, string | number | boolean | undefined>,
+    query?: Record<string, RequestQueryValue>,
     authToken?: string,
     timeout?: number,
   ): Promise<T> {
@@ -313,7 +339,7 @@ export class SealApiClient {
    */
   async delete<T>(
     path: string,
-    query?: Record<string, string | number | boolean | undefined>,
+    query?: Record<string, RequestQueryValue>,
     authToken?: string,
     timeout?: number,
   ): Promise<T> {
