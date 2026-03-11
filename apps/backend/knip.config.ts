@@ -3,10 +3,6 @@ import type { KnipConfig } from "knip";
 const config: KnipConfig = {
   entry: ["convex/**/*.ts"],
   project: ["convex/**/*.ts"],
-  ignore: [
-    // Convex generated files
-    "convex/_generated/**",
-  ],
   ignoreDependencies: [
     // Workspace dependencies
     "@seal/transactional",
@@ -17,7 +13,7 @@ const config: KnipConfig = {
     "@signpdf/signpdf",
     "node-forge",
   ],
-  ignoreBinaries: ["oxlint", "oxfmt", "knip", "convex", "tsc", "vitest"],
+  ignoreBinaries: ["oxlint", "oxfmt", "knip", "convex", "vitest"],
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };
