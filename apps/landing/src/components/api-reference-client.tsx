@@ -1,7 +1,14 @@
-import { ApiReferenceReact } from "@scalar/api-reference-react";
 import type { ReactElement } from "react";
+import { lazy } from "react";
 
-import "@scalar/api-reference-react/style.css";
+const ApiReferenceReact = lazy(async () => {
+  const [mod] = await Promise.all([
+    import("@scalar/api-reference-react"),
+    import("@scalar/api-reference-react/style.css"),
+  ]);
+
+  return { default: mod.ApiReferenceReact };
+});
 
 export function ApiReferenceClient(): ReactElement {
   return (
