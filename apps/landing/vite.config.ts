@@ -14,23 +14,22 @@ import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
 
+function matchesPackage(id: string, pkg: string): boolean {
+  return id.includes(`/node_modules/${pkg}/`) || id.endsWith(`/node_modules/${pkg}`);
+}
+
 function getManualChunkName(id: string): string | undefined {
   if (!id.includes("node_modules")) {
     return undefined;
   }
 
   if (
-    id.includes("/@scalar/") ||
-    id.includes("/swagger-") ||
-    id.includes("/swagger-client/")
-  ) {
-    return "vendor-scalar";
-  }
-
-  if (
-    id.includes("/fumadocs-") ||
-    id.includes("/shiki/") ||
-    id.includes("/refractor/")
+    matchesPackage(id, "fumadocs-core") ||
+    matchesPackage(id, "fumadocs-mdx") ||
+    matchesPackage(id, "fumadocs-openapi") ||
+    matchesPackage(id, "fumadocs-ui") ||
+    id.includes("/node_modules/shiki/") ||
+    id.includes("/node_modules/refractor/")
   ) {
     return "vendor-docs";
   }
