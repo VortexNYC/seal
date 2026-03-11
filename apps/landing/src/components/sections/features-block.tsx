@@ -2,7 +2,7 @@ import { CreditCard, FileSignature, Workflow } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 import { FadeIn } from "~/components/ui/fade-in";
-import type { FeaturesSectionBlock } from "~/lib/sanity/queries";
+import type { FeaturesSectionBlock } from "~/lib/content/types";
 
 const GRID_LAYOUTS: Record<string, string> = {
   "grid-2": "sm:grid-cols-2",

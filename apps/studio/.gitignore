@@ -1,8 +1,0 @@
-/node_modules
-/dist
-/.sanity
-/.vercel
-.DS_Store
-*.log
-*.local
-*.tsbuildinfo

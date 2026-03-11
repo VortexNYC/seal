@@ -1,6 +1,6 @@
 import { Info, TriangleAlert } from "lucide-react";
 
-import type { LegalDisclaimerBlock } from "~/lib/sanity/queries";
+import type { LegalDisclaimerBlock } from "~/lib/content/types";
 
 export function LegalDisclaimerBlockComponent({ block }: { block: LegalDisclaimerBlock }) {
   const isWarning = block.style === "warning";

@@ -2,7 +2,7 @@ import { ArrowRight, Check } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
-import type { PricingSectionBlock } from "~/lib/sanity/queries";
+import type { PricingSectionBlock } from "~/lib/content/types";
 
 const APP_URL = "https://app.seal.co";
 
@@ -25,7 +25,7 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
 
         <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-3">
           {block.tiers.map((tier) => (
-            <div className="group relative" key={tier._id}>
+            <div className="group relative" key={tier.id}>
               <div
                 className={`border-border relative h-full rounded-2xl border p-8 lg:p-10 ${
                   tier.highlighted ? "bg-primary/5 border-primary/30" : "bg-card"

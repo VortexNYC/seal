@@ -72,7 +72,7 @@ seal/
 - Large single-file route components exist in `apps/web/src/routes/` (avoid expanding unless refactoring).
 - MCP server returns text payloads via tools/resources and logs to stderr only.
 - Product/planning docs in `docs/` are mostly archival; published developer docs live in `apps/landing/content/docs/`.
-- The landing site blends Fumadocs MDX, TanStack Start routes, and Sanity-managed content.
+- The landing site blends Fumadocs MDX, TanStack Start routes, and repo-managed content modules.
 
 ## COMMANDS
 

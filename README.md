@@ -7,7 +7,7 @@ Seal is a Bun + Turborepo monorepo for the Seal document-signing platform. It co
 | Path | Purpose | Stack |
 | --- | --- | --- |
 | `apps/web` | Main product app | React 19, TanStack Router, Vite, Clerk, Convex |
-| `apps/landing` | Marketing site and published developer docs | TanStack Start, Fumadocs, Sanity |
+| `apps/landing` | Marketing site and published developer docs | TanStack Start, Fumadocs, local content |
 | `apps/backend` | Convex backend, REST API, webhooks, jobs | Convex, TypeScript |
 | `apps/mcp-server` | MCP server for Seal tools/resources | Bun, Express, MCP SDK |
 | `packages/transactional` | Transactional email templates | React Email |
@@ -20,7 +20,6 @@ Seal is a Bun + Turborepo monorepo for the Seal document-signing platform. It co
 - Bun `1.3.0` or newer
 - A Convex deployment for backend-backed local work
 - Clerk credentials for authenticated flows
-- Optional: Sanity credentials for landing/CMS work
 - Optional: Stripe, Resend, and other integration secrets for billing/email flows
 
 Install dependencies once from the repo root:
@@ -100,15 +99,6 @@ Common vars used by the Convex backend include:
 - `NEXT_PUBLIC_APP_URL`
 
 Additional integration-specific vars are referenced throughout `apps/backend/convex`.
-
-### Landing / Docs (`apps/landing`)
-
-Common vars:
-
-- `SANITY_PROJECT_ID`
-- `SANITY_DATASET`
-
-The current code defaults `SANITY_DATASET` to `production`.
 
 ### MCP Server (`apps/mcp-server`)
 

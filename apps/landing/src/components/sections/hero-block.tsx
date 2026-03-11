@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
-import { urlFor } from "~/lib/sanity/image";
-import type { HeroBlock } from "~/lib/sanity/queries";
+import type { HeroBlock } from "~/lib/content/types";
 
 const APP_URL = "https://app.seal.co";
 
@@ -54,16 +53,16 @@ export function HeroBlockComponent({ block }: { block: HeroBlock }) {
           </FadeIn>
         )}
 
-        {block.image?.asset && (
+        {block.image && (
           <FadeIn delay={0.3}>
             <div className="border-border mt-16 w-full max-w-4xl overflow-hidden rounded-2xl border shadow-lg">
               <img
                 alt={block.image.alt || block.headline}
                 className="h-auto w-full"
-                height={600}
+                height={block.image.height || 600}
                 loading="eager"
-                src={urlFor(block.image).width(1200).height(600).url()}
-                width={1200}
+                src={block.image.src}
+                width={block.image.width || 1200}
               />
             </div>
           </FadeIn>

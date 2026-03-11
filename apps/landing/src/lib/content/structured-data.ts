@@ -1,13 +1,9 @@
-import type { Page } from "./queries";
+import type { LandingPage } from "./types";
 
-/**
- * Generate JSON-LD structured data based on page content blocks.
- * - faqSection blocks produce FAQPage schema
- */
-export function generateJsonLd(page: Page): object[] {
+export function generateJsonLd(page: LandingPage): object[] {
   const schemas: object[] = [];
 
-  for (const block of page.content || []) {
+  for (const block of page.content) {
     if (block._type === "faqSection" && block.faqs.length > 0) {
       schemas.push({
         "@context": "https://schema.org",

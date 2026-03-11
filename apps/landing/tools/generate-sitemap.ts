@@ -3,71 +3,42 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { createClient } from "@sanity/client";
-import { apiVersion, dataset, projectId } from "@seal/sanity-config";
-
+import { getChangelogEntries } from "../src/lib/changelog/manifest";
+import { getAllPageSlugs } from "../src/lib/content/pages";
 import { source } from "../src/lib/docs/server-source";
 
 const SITE_URL = "https://seal.nyc";
 const OUTPUT_FILE = path.resolve("public", "sitemap.xml");
 
-const sanity = createClient({
-  projectId,
-  dataset,
-  apiVersion,
-  useCdn: false,
-});
-
 async function generateSitemap(): Promise<void> {
   const today = new Date().toISOString().split("T")[0] as string;
-
-  let docsPages: Array<{ url: string }> = [];
-  docsPages = source.getPages();
-
-  // Fetch Sanity content in parallel
-  const [sanityPages, changelogEntries] = await Promise.all([
-    sanity
-      .fetch<Array<{ slug: string; _updatedAt: string }>>(
-        `*[_type == "page" && defined(slug.current)] { "slug": slug.current, _updatedAt }`,
-      )
-      .catch(() => []),
-    sanity
-      .fetch<Array<{ slug: { current: string }; releaseDate: string }>>(
-        `*[_type == "changelog"] | order(releaseDate desc) { slug, releaseDate }`,
-      )
-      .catch(() => []),
-  ]);
+  const docsPages = source.getPages();
+  const landingPages = getAllPageSlugs();
+  const changelogEntries = getChangelogEntries();
 
   const urls: Array<{ path: string; lastmod: string; changefreq: string; priority: string }> = [];
 
-  // Static routes
   urls.push({ path: "/", lastmod: today, changefreq: "weekly", priority: "1.0" });
   urls.push({ path: "/changelog", lastmod: today, changefreq: "weekly", priority: "0.7" });
 
-  // Sanity CMS pages
-  for (const page of sanityPages) {
+  for (const page of landingPages) {
     urls.push({
       path: `/pages/${page.slug}`,
-      lastmod: page._updatedAt?.split("T")[0] ?? today,
+      lastmod: page.updatedAt ?? today,
       changefreq: "monthly",
       priority: "0.6",
     });
   }
 
-  // Changelog entries
   for (const entry of changelogEntries) {
-    const slug = entry.slug?.current;
-    if (slug) {
-      urls.push({
-        path: `/changelog/${slug}`,
-        lastmod: entry.releaseDate ?? today,
-        changefreq: "monthly",
-        priority: "0.5",
-      });
-    }
+    urls.push({
+      path: `/changelog/${entry.slug}`,
+      lastmod: entry.releaseDate || today,
+      changefreq: "monthly",
+      priority: "0.5",
+    });
   }
 
-  // Fumadocs pages
   for (const page of docsPages) {
     urls.push({ path: page.url, lastmod: today, changefreq: "weekly", priority: "0.8" });
   }

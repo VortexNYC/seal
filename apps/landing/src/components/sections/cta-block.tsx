@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
-import type { CtaSectionBlock } from "~/lib/sanity/queries";
+import type { CtaSectionBlock } from "~/lib/content/types";
 
 const APP_URL = "https://app.seal.co";
 
