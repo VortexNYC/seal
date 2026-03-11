@@ -14,9 +14,12 @@ export function Footer() {
 
   return (
     <footer className="border-border border-t px-6 py-10" data-testid="site-footer">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 sm:flex-row sm:justify-between">
+      <div
+        className="mx-auto flex max-w-6xl flex-col items-center gap-6 sm:flex-row sm:justify-between"
+        data-testid="site-footer-inner"
+      >
         {/* Logo + copyright */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5" data-testid="site-footer-brand">
           <img
             alt=""
             className="size-6 object-contain"
@@ -28,7 +31,7 @@ export function Footer() {
         </div>
 
         {/* Links */}
-        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2" data-testid="site-footer-links">
           {footerLinks.map((link) =>
             link.external ? (
               <a

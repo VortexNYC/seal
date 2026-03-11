@@ -134,7 +134,7 @@ export function StaticPricing() {
         </FadeIn>
 
         {/* Two-tier grid */}
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2" data-testid="pricing-grid">
           {plans.map((plan, i) => (
             <FadeIn delay={i * 0.1} key={plan.name}>
               <div
