@@ -4,6 +4,7 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { createClient } from "@sanity/client";
+import { apiVersion, dataset, projectId } from "@seal/sanity-config";
 
 import { source } from "../src/lib/docs/server-source";
 
@@ -11,9 +12,9 @@ const SITE_URL = "https://seal.nyc";
 const OUTPUT_FILE = path.resolve("public", "sitemap.xml");
 
 const sanity = createClient({
-  projectId: process.env.SANITY_PROJECT_ID || "rjlh373b",
-  dataset: process.env.SANITY_DATASET || "production",
-  apiVersion: "2024-01-01",
+  projectId,
+  dataset,
+  apiVersion,
   useCdn: false,
 });
 
