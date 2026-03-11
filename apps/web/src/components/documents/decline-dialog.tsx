@@ -55,7 +55,6 @@ export function DeclineDialog({ open, onOpenChange, onDecline, isSubmitting }: D
             rows={4}
             className="resize-none"
             aria-describedby="decline-reason-help"
-            autoFocus={open}
           />
           <p id="decline-reason-help" className="text-muted-foreground text-xs">
             Please provide a short reason so the sender understands why you declined.

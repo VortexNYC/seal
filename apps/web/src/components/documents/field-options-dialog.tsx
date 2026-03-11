@@ -7,7 +7,7 @@ import {
   PlusIcon,
   XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -106,6 +106,7 @@ export function FieldOptionsDialog({
 
   // Ref for focusing new inputs
   const newInputRef = useRef<HTMLInputElement | null>(null);
+  const defaultOptionToggleId = useId();
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -297,8 +298,9 @@ export function FieldOptionsDialog({
                 <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide uppercase">
                   Default Selection
                 </div>
-                <label className="flex cursor-pointer items-start gap-2.5">
+                <div className="flex items-start gap-2.5">
                   <input
+                    id={defaultOptionToggleId}
                     type="checkbox"
                     checked={!!defaultOptionId}
                     onChange={(e) => {
@@ -310,15 +312,15 @@ export function FieldOptionsDialog({
                     }}
                     className="border-border text-foreground mt-0.5 h-4 w-4 rounded focus:ring-offset-0"
                   />
-                  <div className="flex-1">
+                  <label htmlFor={defaultOptionToggleId} className="flex-1 cursor-pointer">
                     <div className="text-foreground text-sm font-medium">
                       Pre-select first option
                     </div>
                     <div className="text-muted-foreground mt-0.5 text-xs">
                       Recipients will see this option already selected
                     </div>
-                  </div>
-                </label>
+                  </label>
+                </div>
               </div>
             )}
           </div>

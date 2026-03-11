@@ -124,7 +124,7 @@ export function InviteMemberDialog({
                 <FormItem>
                   <FormLabel>Email address</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="colleague@example.com" autoFocus {...field} />
+                    <Input type="email" placeholder="colleague@example.com" {...field} />
                   </FormControl>
                   <FormDescription>
                     We'll send them an invitation to join your workspace

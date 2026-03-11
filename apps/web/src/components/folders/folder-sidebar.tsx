@@ -360,10 +360,7 @@ function FolderTreeNode({
     <div>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <button
-            type="button"
-            onClick={handleClick}
-            onDoubleClick={handleDoubleClick}
+          <div
             className={cn(
               "flex w-full items-center gap-1 rounded-md py-1.5 text-sm",
               "hover:bg-accent hover:text-accent-foreground",
@@ -372,50 +369,51 @@ function FolderTreeNode({
             style={{ paddingLeft: `${paddingLeft}px`, paddingRight: "8px" }}
           >
             {/* Expand/collapse chevron (always shown since children are lazy-loaded) */}
-            <span
-              role="button"
-              tabIndex={-1}
+            <button
+              type="button"
               onClick={handleToggleExpand}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setIsExpanded((prev) => !prev);
-                }
-              }}
               className="text-muted-foreground hover:text-foreground flex shrink-0 items-center justify-center rounded p-0.5"
+              aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
             >
               {isExpanded ? (
                 <ChevronDown className="size-3.5" />
               ) : (
                 <ChevronRight className="size-3.5" />
               )}
-            </span>
+            </button>
 
-            {/* Folder icon */}
-            {isExpanded ? (
-              <FolderOpen className="text-muted-foreground size-4 shrink-0" />
-            ) : (
-              <FolderIcon className="text-muted-foreground size-4 shrink-0" />
-            )}
+            <button
+              type="button"
+              onClick={handleClick}
+              onDoubleClick={handleDoubleClick}
+              className="flex min-w-0 flex-1 items-center gap-1 text-left"
+            >
+              {/* Folder icon */}
+              {isExpanded ? (
+                <FolderOpen className="text-muted-foreground size-4 shrink-0" />
+              ) : (
+                <FolderIcon className="text-muted-foreground size-4 shrink-0" />
+              )}
 
-            {/* Name or inline rename input */}
-            {isRenaming ? (
-              <Input
-                ref={renameInputRef}
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onKeyDown={handleRenameKeyDown}
-                onBlur={() => void handleRename()}
-                onClick={(e) => e.stopPropagation()}
-                className="h-6 text-sm"
-              />
-            ) : (
-              <span className="truncate">{name}</span>
-            )}
+              {/* Name or inline rename input */}
+              {isRenaming ? (
+                <Input
+                  ref={renameInputRef}
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={handleRenameKeyDown}
+                  onBlur={() => void handleRename()}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-6 text-sm"
+                />
+              ) : (
+                <span className="truncate">{name}</span>
+              )}
 
-            {/* Pin indicator */}
-            {pinned && <Pin className="text-muted-foreground ml-auto size-3 shrink-0" />}
-          </button>
+              {/* Pin indicator */}
+              {pinned && <Pin className="text-muted-foreground ml-auto size-3 shrink-0" />}
+            </button>
+          </div>
         </ContextMenuTrigger>
 
         <ContextMenuContent>
