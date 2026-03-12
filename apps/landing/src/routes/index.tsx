@@ -6,7 +6,7 @@ import { staticFaqs, StaticFaq } from "~/components/sections/faq-block";
 import { StaticFeatures } from "~/components/sections/features-block";
 import { StaticHero } from "~/components/sections/hero-block";
 import { StaticPricing } from "~/components/sections/pricing-block";
-import { StaticSocialProof } from "~/components/sections/social-proof-block";
+import { StaticTrust } from "~/components/sections/trust-block";
 
 const faqJsonLd = JSON.stringify({
   "@context": "https://schema.org",
@@ -69,7 +69,7 @@ function Home() {
     <>
       <StaticHero />
       <StaticFeatures />
-      <StaticSocialProof />
+      <StaticTrust />
       <StaticDevelopers />
       <StaticPricing />
       <StaticFaq />

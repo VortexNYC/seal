@@ -13,8 +13,8 @@ test.describe("landing homepage", () => {
     await homePage.goto();
 
     await expect(homePage.heroHeading()).toBeVisible();
-    await expect(page.getByRole("heading", { name: /three things, done exceptionally well/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /simple pricing, no surprises/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /three things the old tools can.t do/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /simple, honest pricing/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: /questions\? answers\./i })).toBeVisible();
 
     const startFreeCount = await homePage.startFreeLinks().count();

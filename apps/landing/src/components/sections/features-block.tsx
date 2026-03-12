@@ -1,5 +1,5 @@
-import { ArrowRight, Check, Circle } from "lucide-react";
-import type { ComponentType, SVGProps } from "react";
+import { ArrowRight, Check, Circle, FileText } from "lucide-react";
+import type { ComponentType, ReactElement, SVGProps } from "react";
 
 import { FadeIn } from "~/components/ui/fade-in";
 import type { FeaturesSectionBlock } from "~/lib/content/types";
@@ -11,9 +11,7 @@ function AiReviewMockup() {
       <div className="border-border flex items-center justify-between border-b px-5 py-3">
         <div className="flex items-center gap-2">
           <div className="bg-primary/15 flex size-5 items-center justify-center rounded">
-            <svg aria-hidden="true" className="text-primary size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} />
-            </svg>
+            <FileText aria-hidden="true" className="text-primary size-3" />
           </div>
           <span className="text-foreground text-sm font-medium">Series A Term Sheet — Vantage.pdf</span>
         </div>
@@ -74,23 +72,18 @@ function SigningMockup() {
         </span>
       </div>
       <div className="p-6">
-        {/* Document preview placeholder */}
         <div className="bg-muted/50 mb-4 rounded-lg p-6">
           <div className="space-y-2">
             <div className="bg-muted h-2.5 w-4/5 rounded" />
             <div className="bg-muted h-2.5 w-full rounded" />
             <div className="bg-muted h-2.5 w-3/4 rounded" />
           </div>
-          {/* Signature field */}
           <div className="border-primary/30 bg-primary/5 mt-6 flex items-center justify-between rounded-lg border p-3">
-            <div className="flex items-center gap-2">
-              <span className="font-serif text-foreground/70 text-lg italic">✓ Sarah Chen</span>
-            </div>
+            <span className="font-serif text-foreground/70 text-lg italic">✓ Sarah Chen</span>
             <span className="bg-success text-success-foreground rounded px-2 py-0.5 text-xs font-semibold uppercase">
               Signed
             </span>
           </div>
-          {/* Date field */}
           <div className="border-border bg-card mt-2 flex items-center justify-between rounded-lg border p-3">
             <span className="text-foreground text-sm">Mar 3, 2026</span>
             <span className="text-muted-foreground text-xs uppercase">Auto</span>
@@ -127,7 +120,7 @@ function AuditTrailMockup() {
           Completed
         </span>
       </div>
-      <div className="divide-y">
+      <div className="divide-y divide-border">
         {events.map((event) => (
           <div className="flex items-start justify-between px-5 py-3" key={event.title}>
             <div className="flex items-start gap-2.5">
@@ -152,7 +145,7 @@ function AuditTrailMockup() {
       </div>
       <div className="border-border border-t px-5 py-3">
         <p className="text-muted-foreground text-xs">
-          📋 Certificate ID: SL-2026-83F2A · SHA-256: a3f8c…
+          Certificate ID: SL-2026-83F2A · SHA-256: a3f8c…
         </p>
       </div>
     </div>
@@ -166,7 +159,7 @@ interface FeatureSection {
   headline: string;
   description: string;
   bullets?: string[];
-  mockup: () => JSX.Element;
+  mockup: () => ReactElement;
   reversed?: boolean;
 }
 
@@ -214,14 +207,10 @@ export function StaticFeatures() {
       <div className="mx-auto max-w-6xl">
         {/* Section header */}
         <FadeIn>
-          <div className="mb-24 text-center">
-            <div className="mb-4 flex items-center justify-center gap-3">
-              <div className="bg-primary h-px w-8" />
-              <span className="text-primary text-xs font-semibold tracking-[0.15em] uppercase">
-                What Seal actually does
-              </span>
-              <div className="bg-primary h-px w-8" />
-            </div>
+          <div className="mb-24 max-w-2xl">
+            <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">
+              What Seal actually does
+            </p>
             <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
               Three things the old tools can&apos;t do.
             </h2>
@@ -259,24 +248,6 @@ export function StaticFeatures() {
                       ))}
                     </ul>
                   )}
-
-                  {/* Stats for signing section */}
-                  {section.number === "02" && (
-                    <div className="border-border mt-8 flex gap-10 border-t pt-6">
-                      <div>
-                        <p className="text-foreground font-serif text-3xl">42s</p>
-                        <p className="text-muted-foreground text-[11px] font-medium tracking-[0.12em] uppercase">
-                          Avg. sign time
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-foreground font-serif text-3xl">0</p>
-                        <p className="text-muted-foreground text-[11px] font-medium tracking-[0.12em] uppercase">
-                          Apps required
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </FadeIn>
 
@@ -292,7 +263,7 @@ export function StaticFeatures() {
   );
 }
 
-/* ── Legacy CMS-driven component ───────────────────────────────────────── */
+/* ── CMS-driven component (used by page-builder.tsx) ─────────────────── */
 const GRID_LAYOUTS: Record<string, string> = {
   "grid-2": "sm:grid-cols-2",
   alternating: "sm:grid-cols-1 max-w-3xl",

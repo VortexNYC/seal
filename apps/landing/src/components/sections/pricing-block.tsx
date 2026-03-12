@@ -6,7 +6,7 @@ import { FadeIn } from "~/components/ui/fade-in";
 import { cn } from "~/utils/cn";
 import type { PricingSectionBlock } from "~/lib/content/types";
 
-const APP_URL = "https://app.seal.co";
+import { APP_URL } from "~/lib/constants";
 
 interface Plan {
   name: string;
@@ -21,50 +21,39 @@ interface Plan {
 
 const plans: Plan[] = [
   {
-    name: "Starter",
+    name: "Free",
     price: { monthly: "$0", annual: "$0" },
-    period: "/mo",
-    subtitle: "3 documents/month forever free",
+    period: "forever",
+    subtitle: "For individuals getting started",
     features: [
-      { text: "3 documents / month", included: true },
-      { text: "Legally binding eSignatures", included: true },
-      { text: "Audit trail", included: true },
+      { text: "5 documents per month", included: true },
+      { text: "Unlimited recipients", included: true },
+      { text: "Email notifications", included: true },
+      { text: "Full audit trail", included: true },
+      { text: "PDF download", included: true },
       { text: "Team workspace", included: false },
       { text: "API access", included: false },
     ],
-    cta: "Get started free",
+    cta: "Start Free",
     ctaLink: `${APP_URL}/sign-up`,
   },
   {
     name: "Pro",
-    price: { monthly: "$29", annual: "$23" },
+    price: { monthly: "$15", annual: "$12" },
     period: "/mo",
-    subtitle: "Up to 5 users, unlimited documents",
+    subtitle: "For teams that move fast",
     features: [
       { text: "Unlimited documents", included: true },
-      { text: "Team workspace (5 seats)", included: true },
-      { text: "Templates library", included: true },
+      { text: "Team workspaces", included: true },
       { text: "Custom branding", included: true },
+      { text: "Reusable templates", included: true },
+      { text: "Payments — one-time, recurring, installments", included: true },
+      { text: "REST API access", included: true },
       { text: "Priority support", included: true },
     ],
-    cta: "Start free trial",
+    cta: "Start Pro Trial",
     ctaLink: `${APP_URL}/sign-up?plan=pro`,
     highlighted: true,
-  },
-  {
-    name: "Enterprise",
-    price: { monthly: "Custom", annual: "Custom" },
-    period: "",
-    subtitle: "For teams that need full control",
-    features: [
-      { text: "Unlimited seats", included: true },
-      { text: "SSO / SAML", included: true },
-      { text: "Dedicated SLA", included: true },
-      { text: "Full API access", included: true },
-      { text: "Custom contract", included: true },
-    ],
-    cta: "Talk to sales",
-    ctaLink: "mailto:sales@seal.co",
   },
 ];
 
@@ -77,13 +66,9 @@ export function StaticPricing() {
         {/* Header */}
         <FadeIn>
           <div className="mb-12 text-center">
-            <div className="mb-4 flex items-center justify-center gap-3">
-              <div className="bg-primary h-px w-8" />
-              <span className="text-primary text-xs font-semibold tracking-[0.15em] uppercase">
-                Pricing
-              </span>
-              <div className="bg-primary h-px w-8" />
-            </div>
+            <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">
+              Pricing
+            </p>
             <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
               Simple, honest pricing.
             </h2>
@@ -99,7 +84,7 @@ export function StaticPricing() {
             <div className="bg-muted inline-flex items-center gap-1 rounded-full p-1">
               <button
                 className={cn(
-                  "rounded-full px-5 py-2 text-sm font-medium transition-colors",
+                  "rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   !annual
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -111,7 +96,7 @@ export function StaticPricing() {
               </button>
               <button
                 className={cn(
-                  "rounded-full px-5 py-2 text-sm font-medium transition-colors",
+                  "rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   annual
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -129,7 +114,7 @@ export function StaticPricing() {
         </FadeIn>
 
         {/* Pricing cards */}
-        <div className="grid gap-6 lg:grid-cols-3" data-testid="pricing-grid">
+        <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-2" data-testid="pricing-grid">
           {plans.map((plan, i) => (
             <FadeIn delay={i * 0.08} key={plan.name}>
               <div
@@ -208,6 +193,18 @@ export function StaticPricing() {
             </FadeIn>
           ))}
         </div>
+
+        {/* Enterprise line */}
+        <FadeIn delay={0.2}>
+          <div className="border-border mx-auto mt-8 max-w-4xl rounded-xl border p-6 text-center">
+            <p className="text-foreground text-sm font-medium">
+              Need SSO, advanced compliance, or custom integrations?{" "}
+              <a className="text-primary hover:underline" href="mailto:sales@seal.co">
+                Talk to us
+              </a>
+            </p>
+          </div>
+        </FadeIn>
       </div>
     </section>
   );

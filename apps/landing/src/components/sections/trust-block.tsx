@@ -1,4 +1,4 @@
-import { FileCheck, Gauge, Hash, Lock, Shield, Users } from "lucide-react";
+import { FileCheck, Lock, Shield, Zap } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 import { FadeIn } from "~/components/ui/fade-in";
@@ -14,33 +14,25 @@ const trustItems: TrustItem[] = [
     icon: Shield,
     title: "ESIGN & UETA compliant",
     description:
-      "Legally binding electronic signatures with full consent workflows and disclosure records.",
+      "Legally binding electronic signatures with full consent workflows and disclosure records. Valid in all 50 US states.",
   },
   {
     icon: FileCheck,
     title: "Complete audit trails",
-    description: "Every view, signature, and action logged with timestamps and IP addresses.",
+    description:
+      "Every view, signature, and action logged with timestamps, IP addresses, and SHA-256 document hashes.",
   },
   {
     icon: Lock,
-    title: "Encrypted in transit",
-    description: "All data protected with TLS encryption between your browser and our servers.",
-  },
-  {
-    icon: Hash,
-    title: "Integrity verification",
-    description: "SHA-256 hashing ensures documents and signatures are tamper-proof after signing.",
-  },
-  {
-    icon: Users,
-    title: "Role-based access",
-    description: "Granular workspace permissions with owner, admin, and member roles for teams.",
-  },
-  {
-    icon: Gauge,
-    title: "API rate limiting",
+    title: "Encrypted end-to-end",
     description:
-      "Built-in sliding window rate limiting protects against abuse and unauthorized access.",
+      "TLS in transit, encrypted at rest. Tamper-evident hashing ensures documents can't be modified after signing.",
+  },
+  {
+    icon: Zap,
+    title: "Built for speed",
+    description:
+      "Average signing time under 60 seconds. No app downloads. No account required for signers. Just a link.",
   },
 ];
 
@@ -52,10 +44,10 @@ export function StaticTrust() {
         <FadeIn>
           <div className="mb-20 max-w-2xl">
             <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">
-              Security & compliance
+              Trust & Security
             </p>
             <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
-              Built for documents that matter
+              Built for documents that matter.
             </h2>
             <p className="text-muted-foreground mt-6 text-lg text-pretty">
               When you&apos;re handling legally binding contracts, security isn&apos;t optional.
@@ -66,7 +58,7 @@ export function StaticTrust() {
 
         {/* Trust grid */}
         <FadeIn delay={0.15}>
-          <div className="border-border bg-border grid gap-px overflow-hidden rounded-2xl border sm:grid-cols-2 lg:grid-cols-3">
+          <div className="border-border bg-border grid gap-px overflow-hidden rounded-2xl border sm:grid-cols-2">
             {trustItems.map((item) => (
               <div className="bg-card p-8 sm:p-10" key={item.title}>
                 <item.icon aria-hidden="true" className="text-primary mb-5 size-6" />
@@ -79,7 +71,7 @@ export function StaticTrust() {
           </div>
         </FadeIn>
 
-        {/* Powered by Stripe */}
+        {/* Stripe badge */}
         <FadeIn delay={0.25}>
           <div className="mt-12 flex items-center justify-center gap-3">
             <span className="text-muted-foreground text-sm">Payments powered by</span>

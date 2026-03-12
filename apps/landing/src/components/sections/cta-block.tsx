@@ -4,7 +4,7 @@ import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 import type { CtaSectionBlock } from "~/lib/content/types";
 
-const APP_URL = "https://app.seal.co";
+import { APP_URL } from "~/lib/constants";
 
 export function StaticCta() {
   return (
