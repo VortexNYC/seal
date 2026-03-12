@@ -3,6 +3,7 @@ import { ArrowRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
+import { APP_URL } from "~/lib/constants";
 import { cn } from "~/utils/cn";
 
 const navItems = [
@@ -11,8 +12,6 @@ const navItems = [
   { label: "Docs", href: "/docs" },
   { label: "Changelog", href: "/changelog" },
 ];
-
-const APP_URL = "https://app.seal.co";
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
