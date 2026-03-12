@@ -290,28 +290,48 @@ Key pillars:
 
 ---
 
-## Recommended Priorities (Updated per Codex challenge)
+## Build Roadmap (Finalized 2026-03-12)
 
-### Ship Now (Next 2 Weeks)
-1. **Collaborative redlining + comments + version history** — The single biggest product disqualifier. If Seal loses before signature, everything downstream (payments, AI, pricing) is irrelevant. This is P0.
-2. **Landing page update** — Sharpen positioning with corrected claims. Stop overstating. Start using "signer-first" framing.
-3. **Developer docs polish** — We have the API at Pro ($15/mo). Agree gates theirs to Enterprise. This is a real advantage — make it visible.
+Each feature ships as its own branch/PR. No breaking main. Surgical.
 
-### Build Next (Next Month)
-4. **Auto-invoice on signature** — When a document with payment fields is completed, auto-generate and send the Stripe invoice. Neutralizes Agree's cleanest downstream value prop.
-5. **Payment reminder emails** — Basic dunning: "Your payment of $X is overdue." 3 emails, then stop. Not an AI agent — just cron + email.
-6. **QuickBooks integration** — The #1 integration SMBs ask for. Sync invoices + payments.
+### Phase 1 — XS: This Week
+| # | Feature | Size | Notes |
+|---|---------|------|-------|
+| 1 | **Slack notifications** | XS | Pre-built webhook template. Config page + Slack incoming webhook URL. |
+| 2 | **Developer docs polish** | XS | Content work. OpenAPI spec + docs pages exist, need polish + examples. API at Pro = advantage over Agree (Enterprise-gated). |
 
-### Build Later (Next Quarter)
-7. **Basic CRM sync** — After winning the document workflow.
-8. **Basic accounting sync** — Xero, beyond QuickBooks.
-9. **Revenue dashboard** — Simple view: total collected, outstanding, overdue. Not ARR/MRR (that's enterprise).
-10. **Slack webhook template** — Pre-built Slack integration via existing webhook system.
+### Phase 2 — S: Next Week
+| # | Feature | Size | Notes |
+|---|---------|------|-------|
+| 3 | **Auto-invoice on signature** | S | document.completed → Stripe invoice from payment fields. Convex mutation. We're 80% there. |
+| 4 | **Payment recovery / dunning** | S | 3-email overdue sequence. Convex cron + Resend. Not an AI agent — just automation. |
+| 5 | **Recurring invoice scheduling** | S | Convex cron → invoice generation per contract schedule. We have Stripe recurring, need invoice layer. |
+| 6 | **Revenue dashboard** | S | Aggregate existing invoice/payment data. Query + render. Data already exists. |
+| 7 | **Collection analytics** | S | Aging dashboard, stalled invoice detection. Extension of revenue dashboard. |
+
+### Phase 3 — M: Week 3-4
+| # | Feature | Size | Notes |
+|---|---------|------|-------|
+| 8 | **Clause library** | M | New table, CRUD UI, insert-into-template flow. |
+| 9 | **Version history** | M | Document snapshots, diff UI. New table + storage. |
+
+### Phase 4 — L/XL: Week 5-8
+| # | Feature | Size | Notes |
+|---|---------|------|-------|
+| 10 | **Real-time collaboration** | L | Inline comments, @mentions, notification plumbing. Convex real-time is built for this. |
+| 11 | **Redlining / collaborative negotiation** | XL | Full tracked-changes editor. Biggest product gap, needs architecture. |
+
+### Phase 5 — Integrations: After
+| # | Feature | Size | Notes |
+|---|---------|------|-------|
+| 12 | **QuickBooks sync** | M | #1 SMB integration. OAuth + invoice/payment sync. |
+| 13 | **HubSpot sync** | M | Contact/deal bidirectional sync. |
+| 14 | **Xero/NetSuite/Sage** | L | Each is separate. NetSuite is painful. |
 
 ### Don't Build (Agree's Territory, Not Ours)
 - Recovery AI agents (overkill for SMBs)
 - Usage-based billing (enterprise feature)
-- CRM bidirectional sync (our users don't have Salesforce)
+- CRM bidirectional sync with Salesforce (our users don't have it)
 - Cash flow forecasting (our users check their bank account)
 - Concentration risk analysis (enterprise reporting)
 
