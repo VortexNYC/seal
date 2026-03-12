@@ -245,10 +245,36 @@ export const updatePaymentStatusFromWebhook = internalMutation({
       return null;
     }
 
+    const now = Date.now();
+
     await ctx.db.patch(config._id, {
       paymentStatus: args.paymentStatus,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
+
+    // Sync status to document_invoices
+    const invoiceRecord = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .first();
+
+    if (invoiceRecord) {
+      const statusMap: Record<string, "open" | "paid" | "void" | "uncollectible"> = {
+        awaiting: "open",
+        paid: "paid",
+        failed: "uncollectible",
+        cancelled: "void",
+      };
+      const invoiceStatus = statusMap[args.paymentStatus];
+      if (invoiceStatus) {
+        await ctx.db.patch(invoiceRecord._id, {
+          status: invoiceStatus,
+          ...(invoiceStatus === "paid" && { paidAt: now }),
+          ...(invoiceStatus === "void" && { voidedAt: now }),
+          updatedAt: now,
+        });
+      }
+    }
 
     return { configId: config._id, documentId: config.documentId };
   },
@@ -288,6 +314,7 @@ export const updatePaymentStatusFromSubscriptionWebhook = internalMutation({
 /**
  * Internal mutation to store Stripe IDs back on a payment config
  * after Stripe objects are created during the send flow.
+ * Also creates a document_invoices record for revenue tracking.
  */
 export const storeStripeIds = internalMutation({
   args: {
@@ -297,12 +324,18 @@ export const storeStripeIds = internalMutation({
     stripeSubscriptionId: v.optional(v.string()),
     stripePaymentIntentId: v.optional(v.string()),
     hostedInvoiceUrl: v.optional(v.string()),
+    // Fields for document_invoices record
+    stripeAccountId: v.optional(v.string()),
+    customerEmail: v.optional(v.string()),
+    customerName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const config = await ctx.db.get(args.configId);
     if (!config) {
       throw new ConvexError("Payment config not found");
     }
+
+    const now = Date.now();
 
     await ctx.db.patch(args.configId, {
       paymentStatus: args.paymentStatus,
@@ -314,7 +347,34 @@ export const storeStripeIds = internalMutation({
         stripePaymentIntentId: args.stripePaymentIntentId,
       }),
       ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
+
+    // Create document_invoices record for revenue tracking
+    if (args.stripeInvoiceId && args.stripeAccountId && args.customerEmail) {
+      // Check if record already exists (idempotent)
+      const existing = await ctx.db
+        .query("document_invoices")
+        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId!))
+        .first();
+
+      if (!existing) {
+        await ctx.db.insert("document_invoices", {
+          documentId: config.documentId,
+          organizationId: config.organizationId,
+          stripeAccountId: args.stripeAccountId,
+          stripeInvoiceId: args.stripeInvoiceId,
+          status: "open",
+          customerEmail: args.customerEmail,
+          customerName: args.customerName,
+          amountDue: config.totalAmountCents,
+          currency: config.currency,
+          hostedInvoiceUrl: args.hostedInvoiceUrl,
+          finalizedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
   },
 });

@@ -394,6 +394,9 @@ async function createOneTimeInvoice(
       paymentStatus: "awaiting",
       stripeInvoiceId: finalizedInvoice.id,
       hostedInvoiceUrl: finalizedInvoice.hosted_invoice_url ?? undefined,
+      stripeAccountId,
+      customerEmail: recipientEmail,
+      customerName: recipientName,
     });
 
     return {
@@ -501,6 +504,9 @@ async function createDepositBalanceInvoices(
       stripeInvoiceId: finalizedDeposit.id,
       stripePaymentIntentId: balanceInvoice.id,
       hostedInvoiceUrl: finalizedDeposit.hosted_invoice_url ?? undefined,
+      stripeAccountId,
+      customerEmail: recipientEmail,
+      customerName: recipientName,
     });
 
     return {
@@ -593,6 +599,7 @@ async function storeSubscriptionIds(
   subscriptionId: string,
   firstInvoiceId: string | undefined,
   hostedInvoiceUrl: string | null,
+  invoiceTracking?: { stripeAccountId: string; customerEmail: string; customerName?: string },
 ): Promise<PaymentInvoiceResult> {
   await ctx.runMutation(internal.payment_fields.mutations.storeStripeIds, {
     configId,
@@ -600,6 +607,9 @@ async function storeSubscriptionIds(
     stripeSubscriptionId: subscriptionId,
     stripeInvoiceId: firstInvoiceId,
     hostedInvoiceUrl: hostedInvoiceUrl ?? undefined,
+    stripeAccountId: invoiceTracking?.stripeAccountId,
+    customerEmail: invoiceTracking?.customerEmail,
+    customerName: invoiceTracking?.customerName,
   });
 
   return {
@@ -662,6 +672,8 @@ async function createCustomFirstInstallment(
   metadata: Record<string, string>,
   platformFeePercent: number,
   stripePaymentMethods: Stripe.InvoiceCreateParams.PaymentSettings.PaymentMethodType[],
+  customerEmail: string,
+  customerName?: string,
 ): Promise<PaymentInvoiceResult> {
   const firstAmount = installmentsConfig.firstPaymentAmount!;
   const remainingCount = installmentsConfig.count - 1;
@@ -697,6 +709,9 @@ async function createCustomFirstInstallment(
     stripeInvoiceId: firstInvoice.id,
     stripeSubscriptionId: subscriptionId,
     hostedInvoiceUrl: firstInvoice.hosted_invoice_url ?? undefined,
+    stripeAccountId,
+    customerEmail,
+    customerName,
   });
 
   return {
@@ -774,6 +789,7 @@ async function createRecurringSubscription(
       subscriptionId,
       invoiceDetails.firstInvoiceId,
       invoiceDetails.hostedInvoiceUrl,
+      { stripeAccountId, customerEmail: recipientEmail, customerName: recipientName },
     );
   }
 
@@ -797,6 +813,7 @@ async function createRecurringSubscription(
     subscriptionId,
     invoiceDetails.firstInvoiceId,
     invoiceDetails.hostedInvoiceUrl,
+    { stripeAccountId, customerEmail: recipientEmail, customerName: recipientName },
   );
 }
 
@@ -843,6 +860,8 @@ async function createInstallmentSubscription(
       commonMetadata,
       platformFeePercent,
       stripePaymentMethods,
+      recipientEmail,
+      recipientName,
     );
   }
 
@@ -870,6 +889,7 @@ async function createInstallmentSubscription(
     subscriptionId,
     invoiceDetails.firstInvoiceId,
     invoiceDetails.hostedInvoiceUrl,
+    { stripeAccountId, customerEmail: recipientEmail, customerName: recipientName },
   );
 }
 
