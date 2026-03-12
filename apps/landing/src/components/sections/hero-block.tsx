@@ -1,11 +1,212 @@
-import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowRight, Circle, Play } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
-import type { HeroBlock } from "~/lib/content/types";
 
 const APP_URL = "https://app.seal.co";
+
+/** AI review card mockup shown in the hero */
+function AiReviewCard() {
+  return (
+    <div className="border-border bg-card w-full max-w-md overflow-hidden rounded-xl border shadow-lg">
+      {/* Header */}
+      <div className="border-border flex items-center justify-between border-b px-5 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <div className="bg-primary/15 flex size-6 items-center justify-center rounded">
+            <svg
+              aria-hidden="true"
+              className="text-primary size-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+              />
+            </svg>
+          </div>
+          <span className="text-foreground text-sm font-medium">
+            Series A Term Sheet — Vantage.pdf
+          </span>
+        </div>
+        <span className="bg-success/15 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
+          <Circle aria-hidden="true" className="size-1.5 fill-current" />
+          AI reviewing…
+        </span>
+      </div>
+
+      {/* Issues */}
+      <div className="space-y-3 p-4">
+        {/* Critical */}
+        <div className="bg-destructive/8 border-destructive/20 rounded-lg border p-4">
+          <div className="mb-1 flex items-start gap-2">
+            <Circle
+              aria-hidden="true"
+              className="text-destructive mt-0.5 size-2.5 shrink-0 fill-current"
+            />
+            <span className="text-foreground text-sm font-medium">
+              Missing co-founder signature block — Page 6
+            </span>
+          </div>
+          <p className="text-muted-foreground pl-[18px] text-xs leading-relaxed">
+            Term sheets with multiple founders require all signatures. This document only captures
+            one.
+          </p>
+          <p className="text-primary mt-2 pl-[18px] text-xs font-medium">Fix this →</p>
+        </div>
+
+        {/* Warning */}
+        <div className="bg-warning/8 border-warning/20 rounded-lg border p-4">
+          <div className="flex items-start gap-2">
+            <Circle
+              aria-hidden="true"
+              className="text-warning mt-0.5 size-2.5 shrink-0 fill-current"
+            />
+            <div>
+              <span className="text-foreground text-sm font-medium">
+                Unusual liquidation preference — §4.3
+              </span>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                3× non-participating preference. Market standard is 1×. Significantly
+                investor-favorable.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Pass */}
+        <div className="bg-success/8 border-success/20 rounded-lg border p-4">
+          <div className="flex items-start gap-2">
+            <Circle
+              aria-hidden="true"
+              className="text-success mt-0.5 size-2.5 shrink-0 fill-current"
+            />
+            <div>
+              <span className="text-foreground text-sm font-medium">
+                Pro-rata rights — standard
+              </span>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                Participation rights look market-standard. No flags.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="border-border flex items-center justify-between border-t px-5 py-3">
+        <span className="text-muted-foreground text-xs">2 issues · 1 passed · Page 6 of 8</span>
+        <Button size="sm" className="group h-8 text-xs">
+          Review & send
+          <ArrowRight aria-hidden="true" className="ml-1 size-3 transition-transform group-hover:translate-x-0.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+const stats = [
+  { value: "24k+", label: "DOCUMENTS SIGNED" },
+  { value: "4.9", label: "RATING ON G2", icon: "★" },
+  { value: "87%", label: "FASTER TURNAROUND" },
+];
+
+export function StaticHero() {
+  return (
+    <section className="relative overflow-hidden px-6 pt-28 pb-0 sm:pt-36">
+      <div className="mx-auto max-w-6xl">
+        {/* Two-column layout */}
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          {/* Left — Copy */}
+          <div>
+            {/* Eyebrow */}
+            <FadeIn>
+              <div className="mb-6 flex items-center gap-3">
+                <div className="bg-primary h-px w-8" />
+                <span className="text-primary text-xs font-semibold tracking-[0.15em] uppercase">
+                  The DocuSign Alternative
+                </span>
+              </div>
+            </FadeIn>
+
+            {/* Headline */}
+            <FadeIn delay={0.05}>
+              <h1 className="text-foreground font-serif text-[clamp(2.5rem,6vw,4.5rem)] leading-[1.05] font-normal tracking-tight">
+                DocuSign doesn&apos;t read your contracts.{" "}
+                <span className="text-primary italic">We do.</span>
+              </h1>
+            </FadeIn>
+
+            {/* Subtitle */}
+            <FadeIn delay={0.1}>
+              <p className="text-muted-foreground mt-6 max-w-lg text-lg leading-relaxed text-pretty">
+                Seal is the first e-signature platform with AI built in from day one. We catch the
+                clauses your lawyer would — before you ever hit send.
+              </p>
+            </FadeIn>
+
+            {/* CTAs */}
+            <FadeIn delay={0.15}>
+              <div className="mt-8 flex items-center gap-5">
+                <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
+                  <a href={`${APP_URL}/sign-up`}>
+                    Request access
+                    <ArrowRight
+                      aria-hidden="true"
+                      className="ml-2 size-4 transition-transform group-hover:translate-x-0.5"
+                    />
+                  </a>
+                </Button>
+                <a
+                  className="text-muted-foreground hover:text-foreground group inline-flex items-center gap-2 text-sm font-medium transition-colors"
+                  href="#features"
+                >
+                  <span className="border-border flex size-9 items-center justify-center rounded-full border transition-colors group-hover:border-current">
+                    <Play aria-hidden="true" className="size-3.5 fill-current" />
+                  </span>
+                  Watch it catch a clause
+                </a>
+              </div>
+            </FadeIn>
+          </div>
+
+          {/* Right — AI Review Card */}
+          <FadeIn delay={0.2}>
+            <div className="flex justify-center lg:justify-end">
+              <AiReviewCard />
+            </div>
+          </FadeIn>
+        </div>
+
+        {/* Stats bar */}
+        <FadeIn delay={0.3}>
+          <div className="border-border mt-20 grid grid-cols-3 divide-x border-t">
+            {stats.map((stat) => (
+              <div className="py-8 text-center" key={stat.label}>
+                <p className="text-foreground font-serif text-3xl tracking-tight sm:text-4xl">
+                  {stat.value}
+                  {stat.icon && (
+                    <span className="text-primary ml-1 text-2xl">{stat.icon}</span>
+                  )}
+                </p>
+                <p className="text-muted-foreground mt-1 text-[11px] font-medium tracking-[0.12em] uppercase">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+/* ── Legacy CMS-driven component (kept for backward compat) ──────────── */
+// biome-ignore lint/suspicious/noRedundantUseStrict: needed
+import type { HeroBlock } from "~/lib/content/types";
 
 export function HeroBlockComponent({ block }: { block: HeroBlock }) {
   return (
@@ -16,7 +217,6 @@ export function HeroBlockComponent({ block }: { block: HeroBlock }) {
             {block.headline}
           </h1>
         </FadeIn>
-
         {block.subheadline && (
           <FadeIn delay={0.1}>
             <p className="text-muted-foreground mb-12 max-w-2xl text-xl text-pretty sm:text-2xl">
@@ -24,7 +224,6 @@ export function HeroBlockComponent({ block }: { block: HeroBlock }) {
             </p>
           </FadeIn>
         )}
-
         {(block.primaryCta || block.secondaryCta) && (
           <FadeIn delay={0.2}>
             <div className="flex flex-col gap-4 sm:flex-row">
@@ -52,197 +251,6 @@ export function HeroBlockComponent({ block }: { block: HeroBlock }) {
             </div>
           </FadeIn>
         )}
-
-        {block.image && (
-          <FadeIn delay={0.3}>
-            <div className="border-border mt-16 w-full max-w-4xl overflow-hidden rounded-2xl border shadow-lg">
-              <img
-                alt={block.image.alt || block.headline}
-                className="h-auto w-full"
-                height={block.image.height || 600}
-                loading="eager"
-                src={block.image.src}
-                width={block.image.width || 1200}
-              />
-            </div>
-          </FadeIn>
-        )}
-      </div>
-    </section>
-  );
-}
-
-type MediaState = "video" | "image" | "skeleton";
-
-function useMediaSlot(): MediaState {
-  const [state, setState] = useState<MediaState>("skeleton");
-
-  useEffect(() => {
-    const video = new Image();
-    video.src = "/videos/hero-demo.mp4";
-
-    // Check video first by trying to load it as a fetch HEAD request
-    fetch("/videos/hero-demo.mp4", { method: "HEAD" })
-      .then((res) => {
-        if (res.ok) {
-          setState("video");
-          return;
-        }
-        // Try image fallback
-        return fetch("/images/hero-screenshot.webp", { method: "HEAD" });
-      })
-      .then((res) => {
-        if (res && res.ok) setState("image");
-      })
-      .catch(() => {
-        // Stay on skeleton
-      });
-  }, []);
-
-  return state;
-}
-
-function HeroMedia() {
-  const mediaState = useMediaSlot();
-
-  if (mediaState === "video") {
-    return (
-      <video
-        autoPlay
-        className="h-auto w-full"
-        loop
-        muted
-        playsInline
-        poster="/images/hero-screenshot.webp"
-      >
-        <source src="/videos/hero-demo.mp4" type="video/mp4" />
-      </video>
-    );
-  }
-
-  if (mediaState === "image") {
-    return (
-      <img
-        alt="Seal document editor showing a contract with signature fields and recipient list"
-        className="h-auto w-full"
-        height={600}
-        loading="eager"
-        src="/images/hero-screenshot.webp"
-        width={1200}
-      />
-    );
-  }
-
-  // Skeleton fallback
-  return (
-    <div className="grid gap-6 p-6 md:grid-cols-3">
-      <div className="space-y-3 md:col-span-2">
-        <div className="bg-muted h-5 w-2/3 rounded" />
-        <div className="bg-muted/60 h-3.5 w-full rounded" />
-        <div className="bg-muted/60 h-3.5 w-5/6 rounded" />
-        <div className="bg-muted/40 mt-6 h-3.5 w-full rounded" />
-        <div className="bg-muted/40 h-3.5 w-4/5 rounded" />
-        <div className="mt-8 flex gap-3">
-          <div className="bg-primary/15 border-primary/30 h-10 w-28 rounded-lg border" />
-          <div className="bg-muted h-10 w-20 rounded-lg" />
-        </div>
-      </div>
-      <div className="space-y-3">
-        <div className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-          Recipients
-        </div>
-        {["Signer 1", "Signer 2", "CC: Legal"].map((name) => (
-          <div className="border-border bg-muted/50 rounded-lg border p-3" key={name}>
-            <div className="flex items-center justify-between">
-              <span className="text-foreground/70 text-sm">{name}</span>
-              <span className="bg-primary/15 text-primary rounded px-2 py-0.5 text-xs font-medium">
-                Pending
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function StaticHero() {
-  return (
-    <section className="relative flex min-h-[90dvh] flex-col items-center justify-center overflow-hidden px-6 pt-16">
-      {/* Floating decorative elements */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div
-          className="animate-float-slow absolute top-[18%] left-[8%] size-3 rounded-full opacity-20"
-          style={{ backgroundColor: "var(--primary)", animationDelay: "0s" }}
-        />
-        <div
-          className="animate-float absolute top-[25%] right-[12%] size-2 rounded-full opacity-15"
-          style={{ backgroundColor: "var(--primary)", animationDelay: "1s" }}
-        />
-        <div
-          className="animate-float-slow absolute bottom-[35%] left-[15%] size-2.5 rounded-full opacity-10"
-          style={{ backgroundColor: "var(--primary)", animationDelay: "2s" }}
-        />
-        <div
-          className="animate-float absolute top-[40%] right-[8%] size-1.5 rounded-full opacity-20"
-          style={{ backgroundColor: "var(--primary)", animationDelay: "0.5s" }}
-        />
-        <div
-          className="animate-float-slow absolute right-[20%] bottom-[25%] size-3.5 rounded-full opacity-10"
-          style={{ backgroundColor: "var(--primary)", animationDelay: "3s" }}
-        />
-      </div>
-
-      <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
-        {/* Headline */}
-        <FadeIn>
-          <h1 className="text-foreground font-serif text-[clamp(2.75rem,8vw,5.5rem)] leading-[1.05] font-normal tracking-tight text-balance">
-            Sign documents. <span className="text-primary">Collect payments.</span>{" "}
-            <span className="text-muted-foreground italic">Let AI handle the rest.</span>
-          </h1>
-        </FadeIn>
-
-        {/* Subtitle */}
-        <FadeIn delay={0.15}>
-          <p className="text-muted-foreground mt-8 max-w-xl text-lg text-pretty sm:text-xl">
-            The intelligent document platform with built-in payments and recurring billing, AI field
-            detection, and a full REST API.
-          </p>
-        </FadeIn>
-
-        {/* Single CTA */}
-        <FadeIn delay={0.3}>
-          <div className="mt-10">
-            <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
-              <a href={`${APP_URL}/sign-up`}>
-                Start Free
-                <ArrowRight
-                  aria-hidden="true"
-                  className="ml-2 size-4 transition-transform group-hover:translate-x-0.5"
-                />
-              </a>
-            </Button>
-          </div>
-        </FadeIn>
-
-        {/* Product mockup with media slot */}
-        <FadeIn delay={0.4}>
-          <div className="relative mt-20 w-full max-w-3xl">
-            <div className="border-border bg-card overflow-hidden rounded-xl border shadow-xl">
-              {/* Browser chrome */}
-              <div className="border-border flex items-center gap-2 border-b px-4 py-3">
-                <div aria-hidden="true" className="flex gap-1.5">
-                  <div className="bg-border size-3 rounded-full" />
-                  <div className="bg-border size-3 rounded-full" />
-                  <div className="bg-border size-3 rounded-full" />
-                </div>
-                <div className="bg-muted ml-4 h-6 flex-1 rounded-md" />
-              </div>
-              {/* Media slot: video → image → skeleton fallback */}
-              <HeroMedia />
-            </div>
-          </div>
-        </FadeIn>
       </div>
     </section>
   );

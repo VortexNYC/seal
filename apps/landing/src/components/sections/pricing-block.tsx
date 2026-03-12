@@ -1,11 +1,219 @@
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Minus } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
+import { cn } from "~/utils/cn";
 import type { PricingSectionBlock } from "~/lib/content/types";
 
 const APP_URL = "https://app.seal.co";
 
+interface Plan {
+  name: string;
+  price: { monthly: string; annual: string };
+  period: string;
+  subtitle: string;
+  features: Array<{ text: string; included: boolean }>;
+  cta: string;
+  ctaLink: string;
+  highlighted?: boolean;
+}
+
+const plans: Plan[] = [
+  {
+    name: "Starter",
+    price: { monthly: "$0", annual: "$0" },
+    period: "/mo",
+    subtitle: "3 documents/month forever free",
+    features: [
+      { text: "3 documents / month", included: true },
+      { text: "Legally binding eSignatures", included: true },
+      { text: "Audit trail", included: true },
+      { text: "Team workspace", included: false },
+      { text: "API access", included: false },
+    ],
+    cta: "Get started free",
+    ctaLink: `${APP_URL}/sign-up`,
+  },
+  {
+    name: "Pro",
+    price: { monthly: "$29", annual: "$23" },
+    period: "/mo",
+    subtitle: "Up to 5 users, unlimited documents",
+    features: [
+      { text: "Unlimited documents", included: true },
+      { text: "Team workspace (5 seats)", included: true },
+      { text: "Templates library", included: true },
+      { text: "Custom branding", included: true },
+      { text: "Priority support", included: true },
+    ],
+    cta: "Start free trial",
+    ctaLink: `${APP_URL}/sign-up?plan=pro`,
+    highlighted: true,
+  },
+  {
+    name: "Enterprise",
+    price: { monthly: "Custom", annual: "Custom" },
+    period: "",
+    subtitle: "For teams that need full control",
+    features: [
+      { text: "Unlimited seats", included: true },
+      { text: "SSO / SAML", included: true },
+      { text: "Dedicated SLA", included: true },
+      { text: "Full API access", included: true },
+      { text: "Custom contract", included: true },
+    ],
+    cta: "Talk to sales",
+    ctaLink: "mailto:sales@seal.co",
+  },
+];
+
+export function StaticPricing() {
+  const [annual, setAnnual] = useState(false);
+
+  return (
+    <section className="px-6 py-32 sm:py-40" id="pricing">
+      <div className="mx-auto max-w-6xl">
+        {/* Header */}
+        <FadeIn>
+          <div className="mb-12 text-center">
+            <div className="mb-4 flex items-center justify-center gap-3">
+              <div className="bg-primary h-px w-8" />
+              <span className="text-primary text-xs font-semibold tracking-[0.15em] uppercase">
+                Pricing
+              </span>
+              <div className="bg-primary h-px w-8" />
+            </div>
+            <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
+              Simple, honest pricing.
+            </h2>
+            <p className="text-muted-foreground mt-4 text-lg">
+              No per-envelope surprises. No seat minimums. Just documents, signed.
+            </p>
+          </div>
+        </FadeIn>
+
+        {/* Billing toggle */}
+        <FadeIn delay={0.05}>
+          <div className="mb-12 flex items-center justify-center gap-1">
+            <div className="bg-muted inline-flex items-center gap-1 rounded-full p-1">
+              <button
+                className={cn(
+                  "rounded-full px-5 py-2 text-sm font-medium transition-colors",
+                  !annual
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setAnnual(false)}
+                type="button"
+              >
+                Monthly
+              </button>
+              <button
+                className={cn(
+                  "rounded-full px-5 py-2 text-sm font-medium transition-colors",
+                  annual
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setAnnual(true)}
+                type="button"
+              >
+                Annual
+                <span className="bg-primary/15 text-primary ml-2 rounded-full px-2 py-0.5 text-xs font-semibold">
+                  Save 20%
+                </span>
+              </button>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* Pricing cards */}
+        <div className="grid gap-6 lg:grid-cols-3" data-testid="pricing-grid">
+          {plans.map((plan, i) => (
+            <FadeIn delay={i * 0.08} key={plan.name}>
+              <div
+                className={cn(
+                  "relative flex h-full flex-col rounded-2xl border p-8 sm:p-10",
+                  plan.highlighted
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-border bg-card",
+                )}
+              >
+                {plan.highlighted && (
+                  <div className="bg-card text-foreground absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-wider shadow-sm">
+                    Most Popular
+                  </div>
+                )}
+
+                {/* Plan name */}
+                <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-[0.12em] uppercase">
+                  {plan.name}
+                </p>
+
+                {/* Price */}
+                <div className="mb-1">
+                  <span className="text-foreground font-serif text-5xl tracking-tight">
+                    {annual ? plan.price.annual : plan.price.monthly}
+                  </span>
+                  {plan.period && (
+                    <span className="text-muted-foreground ml-1 text-sm">{plan.period}</span>
+                  )}
+                </div>
+                <p className="text-muted-foreground mb-8 text-sm">{plan.subtitle}</p>
+
+                {/* Divider */}
+                <div className="border-border mb-8 border-t" />
+
+                {/* Features */}
+                <ul className="mb-10 flex-1 space-y-3">
+                  {plan.features.map((feature) => (
+                    <li className="flex items-center gap-3" key={feature.text}>
+                      {feature.included ? (
+                        <Check aria-hidden="true" className="text-primary size-4 shrink-0" />
+                      ) : (
+                        <Minus
+                          aria-hidden="true"
+                          className="text-muted-foreground/40 size-4 shrink-0"
+                        />
+                      )}
+                      <span
+                        className={cn(
+                          "text-sm",
+                          feature.included ? "text-foreground" : "text-muted-foreground/60",
+                        )}
+                      >
+                        {feature.text}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA */}
+                <Button
+                  asChild
+                  className="group h-11 w-full text-sm font-medium"
+                  size="lg"
+                  variant={plan.highlighted ? "default" : "outline"}
+                >
+                  <a href={plan.ctaLink}>
+                    {plan.cta}
+                    <ArrowRight
+                      aria-hidden="true"
+                      className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
+                    />
+                  </a>
+                </Button>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Legacy CMS-driven component ───────────────────────────────────────── */
 export function PricingBlockComponent({ block }: { block: PricingSectionBlock }) {
   return (
     <section className="relative py-24 sm:py-32" id="pricing">
@@ -22,7 +230,6 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
             )}
           </div>
         )}
-
         <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-3">
           {block.tiers.map((tier) => (
             <div className="group relative" key={tier.id}>
@@ -35,7 +242,6 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
                   <h3 className="text-foreground mb-2 text-2xl font-bold">{tier.name}</h3>
                   {tier.description && <p className="text-muted-foreground">{tier.description}</p>}
                 </div>
-
                 <div className="mb-8">
                   <span className="text-foreground text-5xl font-bold tracking-tight">
                     ${tier.price}
@@ -44,7 +250,6 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
                     /{tier.billingPeriod === "yearly" ? "yr" : "mo"}
                   </span>
                 </div>
-
                 <ul className="mb-10 space-y-3">
                   {tier.features.map((feature) => (
                     <li className="flex items-center gap-3" key={feature}>
@@ -53,7 +258,6 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
                     </li>
                   ))}
                 </ul>
-
                 {tier.ctaLink && (
                   <Button
                     asChild
@@ -74,125 +278,6 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
             </div>
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
-
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    description: "For individuals getting started",
-    features: [
-      "5 documents per month",
-      "Unlimited recipients",
-      "Email notifications",
-      "Full audit trail",
-      "PDF download",
-    ],
-    cta: "Start Free",
-    ctaLink: `${APP_URL}/sign-up`,
-    highlighted: false,
-  },
-  {
-    name: "Pro",
-    price: "$15",
-    period: "/mo",
-    description: "For teams that move fast",
-    features: [
-      "Unlimited documents",
-      "Team workspaces",
-      "Custom branding",
-      "Reusable templates",
-      "Payments — one-time, recurring, installments",
-      "Auto-generated Stripe invoices",
-      "REST API access",
-      "Priority support",
-    ],
-    cta: "Start Pro Trial",
-    ctaLink: `${APP_URL}/sign-up?plan=pro`,
-    highlighted: true,
-  },
-];
-
-export function StaticPricing() {
-  return (
-    <section className="px-6 py-32 sm:py-40" id="pricing">
-      <div className="mx-auto max-w-4xl">
-        {/* Header */}
-        <FadeIn>
-          <div className="mb-16 text-center">
-            <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
-              Simple pricing, no surprises
-            </h2>
-            <p className="text-muted-foreground mt-4 text-lg text-pretty">
-              No per-signature charges. No hidden fees.
-            </p>
-          </div>
-        </FadeIn>
-
-        {/* Two-tier grid */}
-        <div className="grid gap-6 sm:grid-cols-2" data-testid="pricing-grid">
-          {plans.map((plan, i) => (
-            <FadeIn delay={i * 0.1} key={plan.name}>
-              <div
-                className={`border-border h-full rounded-2xl border p-8 sm:p-10 ${
-                  plan.highlighted ? "bg-primary/5 border-primary/20" : "bg-card"
-                }`}
-              >
-                <div className="mb-8">
-                  <h3 className="text-foreground mb-1 text-xl font-semibold">{plan.name}</h3>
-                  <p className="text-muted-foreground text-sm">{plan.description}</p>
-                </div>
-
-                <div className="mb-8">
-                  <span className="text-foreground text-5xl font-bold tracking-tight">
-                    {plan.price}
-                  </span>
-                  <span className="text-muted-foreground text-sm">{plan.period}</span>
-                </div>
-
-                <ul className="mb-10 space-y-3">
-                  {plan.features.map((feature) => (
-                    <li className="flex items-center gap-3" key={feature}>
-                      <Check aria-hidden="true" className="text-primary size-4 shrink-0" />
-                      <span className="text-muted-foreground text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button
-                  asChild
-                  className="group h-11 w-full text-sm font-medium"
-                  size="lg"
-                  variant={plan.highlighted ? "default" : "outline"}
-                >
-                  <a href={plan.ctaLink}>
-                    {plan.cta}
-                    <ArrowRight
-                      aria-hidden="true"
-                      className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
-                    />
-                  </a>
-                </Button>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
-
-        {/* Enterprise line */}
-        <FadeIn delay={0.2}>
-          <div className="border-border mt-8 rounded-xl border p-6 text-center">
-            <p className="text-foreground text-sm font-medium">
-              Need SSO, advanced compliance, or custom integrations?{" "}
-              <a className="text-primary hover:underline" href="mailto:sales@seal.co">
-                Talk to us
-              </a>
-            </p>
-          </div>
-        </FadeIn>
       </div>
     </section>
   );
