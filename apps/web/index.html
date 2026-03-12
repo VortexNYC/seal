@@ -66,6 +66,11 @@
     <link rel="dns-prefetch" href="https://clerk.com" />
     <link rel="dns-prefetch" href="https://us.i.posthog.com" />
 
+    <!-- Jam.dev bug reporting -->
+    <meta name="jam:team" content="%VITE_JAM_TEAM_ID%" />
+    <script type="module" src="https://js.jam.dev/capture.js"></script>
+    <script type="module" src="https://js.jam.dev/recorder.js"></script>
+
     <!-- Preload critical logo for LCP optimization -->
     <link
       rel="preload"

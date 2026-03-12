@@ -34,6 +34,7 @@ import {
   documentsTable,
 } from "./schemas/documents";
 import { downloadTokensTable } from "./schemas/download_tokens";
+import { feedbackTable } from "./schemas/feedback";
 import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
 import {
   mcpOauthClientsTable,
@@ -212,6 +213,9 @@ export default defineSchema({
   // Webhooks
   webhook_endpoints: webhookEndpoints,
   webhook_deliveries: webhookDeliveries,
+
+  // Feedback
+  feedback: feedbackTable,
 
   // Data exports (GDPR/CCPA compliance)
   data_exports: dataExportsTable,

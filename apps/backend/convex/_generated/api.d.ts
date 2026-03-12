@@ -117,6 +117,7 @@ import type * as documents_workflow_helpers from "../documents/workflow_helpers.
 import type * as documents_workflow_mutations from "../documents/workflow_mutations.js";
 import type * as emails_resend_component from "../emails/resend_component.js";
 import type * as emails_user_email_actions from "../emails/user_email_actions.js";
+import type * as feedback_mutations from "../feedback/mutations.js";
 import type * as fix_user_org from "../fix_user_org.js";
 import type * as folders_mutations from "../folders/mutations.js";
 import type * as folders_queries from "../folders/queries.js";
@@ -160,6 +161,7 @@ import type * as schemas_document_versions from "../schemas/document_versions.js
 import type * as schemas_document_workflow_status from "../schemas/document_workflow_status.js";
 import type * as schemas_documents from "../schemas/documents.js";
 import type * as schemas_download_tokens from "../schemas/download_tokens.js";
+import type * as schemas_feedback from "../schemas/feedback.js";
 import type * as schemas_folders from "../schemas/folders.js";
 import type * as schemas_mcp_oauth from "../schemas/mcp_oauth.js";
 import type * as schemas_notifications from "../schemas/notifications.js";
@@ -351,6 +353,7 @@ declare const fullApi: ApiFromModules<{
   "documents/workflow_mutations": typeof documents_workflow_mutations;
   "emails/resend_component": typeof emails_resend_component;
   "emails/user_email_actions": typeof emails_user_email_actions;
+  "feedback/mutations": typeof feedback_mutations;
   fix_user_org: typeof fix_user_org;
   "folders/mutations": typeof folders_mutations;
   "folders/queries": typeof folders_queries;
@@ -394,6 +397,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/document_workflow_status": typeof schemas_document_workflow_status;
   "schemas/documents": typeof schemas_documents;
   "schemas/download_tokens": typeof schemas_download_tokens;
+  "schemas/feedback": typeof schemas_feedback;
   "schemas/folders": typeof schemas_folders;
   "schemas/mcp_oauth": typeof schemas_mcp_oauth;
   "schemas/notifications": typeof schemas_notifications;

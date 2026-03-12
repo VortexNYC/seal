@@ -48,28 +48,6 @@ interface SignatureProperties {
   fieldCount?: number;
 }
 
-interface TeamProperties {
-  memberId?: string;
-  role?: string;
-  inviteCount?: number;
-}
-
-interface SettingsProperties {
-  section?: string;
-  field?: string;
-}
-
-interface SearchProperties {
-  query?: string;
-  resultCount?: number;
-  filters?: Record<string, string | boolean>;
-}
-
-interface WebhookProperties {
-  endpointId?: string;
-  eventTypes?: string[];
-}
-
 export function useAnalytics() {
   const posthog = usePostHog();
   const identifiedUserRef = useRef<string | null>(null);
@@ -125,6 +103,8 @@ export function useAnalytics() {
     identifiedOrgRef.current = null;
   }, [posthog]);
 
+  // --- Tracked events (only methods with active call sites) ---
+
   const documentUploaded = useCallback(
     (properties?: DocumentProperties) => {
       posthog?.capture("document_uploaded", properties);
@@ -156,32 +136,6 @@ export function useAnalytics() {
   const documentDownloaded = useCallback(
     (properties?: DocumentProperties) => {
       posthog?.capture("document_downloaded", properties);
-    },
-    [posthog],
-  );
-
-  const documentShared = useCallback(
-    (
-      properties?: DocumentProperties & {
-        sharingMode?: string;
-        sharedWith?: number;
-      },
-    ) => {
-      posthog?.capture("document_shared", properties);
-    },
-    [posthog],
-  );
-
-  const documentViewed = useCallback(
-    (properties?: DocumentProperties) => {
-      posthog?.capture("document_viewed", properties);
-    },
-    [posthog],
-  );
-
-  const templateCreated = useCallback(
-    (properties?: TemplateProperties) => {
-      posthog?.capture("template_created", properties);
     },
     [posthog],
   );
@@ -221,122 +175,6 @@ export function useAnalytics() {
     [posthog],
   );
 
-  const signatureFieldFilled = useCallback(
-    (properties?: SignatureProperties) => {
-      posthog?.capture("signature_field_filled", properties);
-    },
-    [posthog],
-  );
-
-  const teamMemberInvited = useCallback(
-    (properties?: TeamProperties) => {
-      posthog?.capture("team_member_invited", properties);
-    },
-    [posthog],
-  );
-
-  const teamMemberRoleChanged = useCallback(
-    (properties?: TeamProperties & { previousRole?: string }) => {
-      posthog?.capture("team_member_role_changed", properties);
-    },
-    [posthog],
-  );
-
-  const teamMemberRemoved = useCallback(
-    (properties?: TeamProperties) => {
-      posthog?.capture("team_member_removed", properties);
-    },
-    [posthog],
-  );
-
-  const settingsUpdated = useCallback(
-    (properties?: SettingsProperties) => {
-      posthog?.capture("settings_updated", properties);
-    },
-    [posthog],
-  );
-
-  const profileUpdated = useCallback(
-    (properties?: { fields?: string[] }) => {
-      posthog?.capture("profile_updated", properties);
-    },
-    [posthog],
-  );
-
-  const notificationPreferencesUpdated = useCallback(
-    (properties?: { channel?: string; enabled?: boolean }) => {
-      posthog?.capture("notification_preferences_updated", properties);
-    },
-    [posthog],
-  );
-
-  const searchPerformed = useCallback(
-    (properties?: SearchProperties) => {
-      posthog?.capture("search_performed", properties);
-    },
-    [posthog],
-  );
-
-  const filterApplied = useCallback(
-    (properties?: { filterType?: string; filterValue?: string }) => {
-      posthog?.capture("filter_applied", properties);
-    },
-    [posthog],
-  );
-
-  const webhookCreated = useCallback(
-    (properties?: WebhookProperties) => {
-      posthog?.capture("webhook_created", properties);
-    },
-    [posthog],
-  );
-
-  const webhookTested = useCallback(
-    (properties?: WebhookProperties & { success?: boolean }) => {
-      posthog?.capture("webhook_tested", properties);
-    },
-    [posthog],
-  );
-
-  const billingPageViewed = useCallback(() => {
-    posthog?.capture("billing_page_viewed");
-  }, [posthog]);
-
-  const upgradeInitiated = useCallback(
-    (properties?: { currentPlan?: string; targetPlan?: string }) => {
-      posthog?.capture("upgrade_initiated", properties);
-    },
-    [posthog],
-  );
-
-  const apiKeyCreated = useCallback(
-    (properties?: { keyName?: string }) => {
-      posthog?.capture("api_key_created", properties);
-    },
-    [posthog],
-  );
-
-  const apiKeyRevoked = useCallback(
-    (properties?: { keyName?: string }) => {
-      posthog?.capture("api_key_revoked", properties);
-    },
-    [posthog],
-  );
-
-  const integrationConnected = useCallback(
-    (properties?: { integrationName?: string }) => {
-      posthog?.capture("integration_connected", properties);
-    },
-    [posthog],
-  );
-
-  const integrationDisconnected = useCallback(
-    (properties?: { integrationName?: string }) => {
-      posthog?.capture("integration_disconnected", properties);
-    },
-    [posthog],
-  );
-
   const capture = useCallback(
     (eventName: string, properties?: Record<string, unknown>) => {
       posthog?.capture(eventName, properties);
@@ -351,31 +189,11 @@ export function useAnalytics() {
       documentCancelled,
       documentDeleted,
       documentDownloaded,
-      documentShared,
-      documentViewed,
-      templateCreated,
       templateUsed,
       templateEdited,
       templateDeleted,
       signatureCompleted,
       signatureDeclined,
-      signatureFieldFilled,
-      teamMemberInvited,
-      teamMemberRoleChanged,
-      teamMemberRemoved,
-      settingsUpdated,
-      profileUpdated,
-      notificationPreferencesUpdated,
-      searchPerformed,
-      filterApplied,
-      webhookCreated,
-      webhookTested,
-      billingPageViewed,
-      upgradeInitiated,
-      apiKeyCreated,
-      apiKeyRevoked,
-      integrationConnected,
-      integrationDisconnected,
     },
     identify,
     group,

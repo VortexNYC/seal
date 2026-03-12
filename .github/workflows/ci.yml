@@ -129,3 +129,8 @@ jobs:
         env:
           VITE_CONVEX_URL: "https://placeholder.convex.cloud"
           VITE_CLERK_PUBLISHABLE_KEY: "pk_test_placeholder"
+          VITE_SENTRY_RELEASE: ${{ github.sha }}
+          VITE_SENTRY_ENVIRONMENT: "production"
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: "plasma-vh"
+          SENTRY_PROJECT: "seal"
