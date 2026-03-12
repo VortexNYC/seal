@@ -112,6 +112,13 @@ export const webhookEndpoints = defineTable({
   status: v.union(v.literal("active"), v.literal("paused"), v.literal("disabled")),
 
   /**
+   * Payload format for delivery.
+   * - "json": Standard JSON payload with HMAC signing (default)
+   * - "slack": Slack Block Kit message format (no HMAC)
+   */
+  format: v.optional(v.union(v.literal("json"), v.literal("slack"))),
+
+  /**
    * Optional description for this endpoint.
    */
   description: v.optional(v.string()),

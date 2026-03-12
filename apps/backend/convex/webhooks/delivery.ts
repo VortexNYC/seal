@@ -25,6 +25,7 @@ import {
   internalMutation,
   internalQuery,
 } from "../_generated/server";
+import { formatSlackMessage } from "./slack_formatter";
 
 /** Maximum delivery attempts before abandoning */
 const MAX_ATTEMPTS = 5;
@@ -209,7 +210,7 @@ async function markNetworkFailure(
   return { delivered: false };
 }
 
-async function deliverWebhook(
+async function deliverJsonWebhook(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
   endpoint: Doc<"webhook_endpoints">,
@@ -260,6 +261,68 @@ async function deliverWebhook(
   } catch (error) {
     return markNetworkFailure(ctx, delivery, endpoint, attemptCount, Date.now() - startTime, error);
   }
+}
+
+async function deliverSlackWebhook(
+  ctx: ActionCtx,
+  delivery: Doc<"webhook_deliveries">,
+  endpoint: Doc<"webhook_endpoints">,
+  attemptCount: number,
+): Promise<DeliveryProcessingResult> {
+  const parsed = JSON.parse(delivery.payload) as {
+    id: string;
+    type: string;
+    api_version: string;
+    created_at: string;
+    organization_id: string;
+    data: Record<string, unknown>;
+  };
+  const slackBody = JSON.stringify(formatSlackMessage(parsed));
+
+  const startTime = Date.now();
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    const response = await fetch(endpoint.url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Seal-Webhooks/1.0",
+      },
+      body: slackBody,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    const responseTimeMs = Date.now() - startTime;
+    const responseBody = await getResponseBody(response);
+
+    return markHttpDeliveryResult(
+      ctx,
+      delivery,
+      endpoint,
+      attemptCount,
+      response,
+      responseBody,
+      responseTimeMs,
+    );
+  } catch (error) {
+    return markNetworkFailure(ctx, delivery, endpoint, attemptCount, Date.now() - startTime, error);
+  }
+}
+
+async function deliverWebhook(
+  ctx: ActionCtx,
+  delivery: Doc<"webhook_deliveries">,
+  endpoint: Doc<"webhook_endpoints">,
+  attemptCount: number,
+): Promise<DeliveryProcessingResult> {
+  if (endpoint.format === "slack") {
+    return deliverSlackWebhook(ctx, delivery, endpoint, attemptCount);
+  }
+  return deliverJsonWebhook(ctx, delivery, endpoint, attemptCount);
 }
 
 async function processPendingDelivery(
