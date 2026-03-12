@@ -11,12 +11,14 @@ import { ConvexError } from "convex/values";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";
+import { FeedbackButton } from "@/components/feedback-button";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PostHogIdentify } from "@/components/posthog-identify";
 import { RouteErrorComponent } from "@/components/route-error-component";
 import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout-skeleton";
 import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { useJamMetadata } from "@/hooks/use-jam-metadata";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -80,6 +82,8 @@ function WorkspaceLayout() {
     slug: organization.slug,
   };
 
+  useJamMetadata();
+
   return (
     <SidebarProvider>
       <PostHogIdentify organization={orgData} />
@@ -91,6 +95,7 @@ function WorkspaceLayout() {
         </main>
       </div>
       <CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
+      <FeedbackButton />
     </SidebarProvider>
   );
 }
