@@ -56,9 +56,11 @@ All webhook payloads follow this structure:
 
 ```json
 {
-  "id": "evt_abc123",
+  "id": "evt_1710288000_a1b2c3d4",
   "type": "document.completed",
-  "created_at": "2024-01-27T12:00:00Z",
+  "api_version": "2025-01-01",
+  "created_at": "2026-03-12T12:00:00Z",
+  "organization_id": "org_abc123",
   "data": {
     "document_id": "doc_xyz789",
     "title": "Service Agreement",
@@ -73,10 +75,12 @@ All webhook payloads follow this structure:
 
 | Field        | Type   | Description                             |
 | ------------ | ------ | --------------------------------------- |
-| `id`         | string | Unique event identifier                 |
-| `type`       | string | Event type (e.g., "document.completed") |
-| `created_at` | string | ISO 8601 timestamp when event occurred  |
-| `data`       | object | Event-specific data payload             |
+| `id`              | string | Unique event identifier (`evt_{timestamp}_{random}`) |
+| `type`            | string | Event type (e.g., `document.completed`)              |
+| `api_version`     | string | API version for this payload (`2025-01-01`)          |
+| `created_at`      | string | ISO 8601 timestamp when event occurred               |
+| `organization_id` | string | Organization that owns this event                    |
+| `data`            | object | Event-specific data payload                          |
 
 ## Quick Start
 
@@ -106,12 +110,15 @@ import { createHmac } from "crypto";
 
 app.post("/webhooks/seal", async (req, res) => {
   // Verify signature
-  const signature = req.headers["seal-signature"];
+  const signature = req.headers["x-seal-signature"];
+  const eventId = req.headers["x-seal-event-id"];
+  const timestamp = req.headers["x-seal-timestamp"];
   const payload = JSON.stringify(req.body);
 
-  const expectedSignature = createHmac("sha256", process.env.WEBHOOK_SECRET)
-    .update(payload)
-    .digest("hex");
+  const signedContent = `${eventId}.${timestamp}.${payload}`;
+  const expectedSignature = `v1=${createHmac("sha256", process.env.WEBHOOK_SECRET)
+    .update(signedContent)
+    .digest("hex")}`;
 
   if (signature !== expectedSignature) {
     return res.status(401).send("Invalid signature");
@@ -152,10 +159,11 @@ app.post("/webhooks/seal", async (req, res) => {
 
 If your endpoint doesn't respond with 200 OK, Seal will retry delivery:
 
-- **Retry Schedule**: 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours
-- **Maximum Attempts**: 5 retries over 24 hours
+- **Retry Schedule**: 30 seconds, 2 minutes, 10 minutes, 30 minutes, 2 hours
+- **Maximum Attempts**: 5 total attempts
 - **Exponential Backoff**: Increasing delays between retries
 - **Abandonment**: After 5 failed attempts, delivery is abandoned
+- **Auto-Disable**: After 10 consecutive endpoint failures, the endpoint is automatically disabled
 
 ## Testing Webhooks
 
