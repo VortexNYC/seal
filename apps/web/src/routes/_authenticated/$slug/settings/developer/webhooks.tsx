@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  Hash,
   Pause,
   Play,
   Plus,
@@ -121,14 +122,24 @@ function WebhooksPage() {
     );
   }
 
+  const slackEndpoints = endpoints.filter((e) => e.format === "slack");
+  const jsonEndpoints = endpoints.filter((e) => e.format !== "slack");
+
   return (
     <PageWrapper
       title="Webhooks"
       description="Receive real-time notifications when events happen in Seal"
     >
       <div className="space-y-6">
+        <SlackNotificationsSection
+          endpoints={slackEndpoints}
+          eventTypes={eventTypes}
+          isPro={isPro}
+          isLoadingPlan={isLoadingPlan}
+        />
+
         <WebhookEndpointsSection
-          endpoints={endpoints}
+          endpoints={jsonEndpoints}
           eventTypes={eventTypes}
           isPro={isPro}
           isLoadingPlan={isLoadingPlan}
@@ -139,6 +150,294 @@ function WebhooksPage() {
         <WebhookDocumentation />
       </div>
     </PageWrapper>
+  );
+}
+
+interface SlackNotificationsSectionProps {
+  endpoints: WebhookEndpointWithStats[];
+  eventTypes: { type: string; category: string; description: string }[];
+  isPro: boolean;
+  isLoadingPlan: boolean;
+}
+
+function SlackNotificationsSection({
+  endpoints,
+  eventTypes,
+  isPro,
+  isLoadingPlan,
+}: SlackNotificationsSectionProps) {
+  const [isCreating, setIsCreating] = useState(false);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Hash className="text-ai-accent h-5 w-5" />
+            <CardTitle>Slack Notifications</CardTitle>
+          </div>
+          {isPro ? (
+            <CreateSlackDialog
+              open={isCreating}
+              onOpenChange={setIsCreating}
+              eventTypes={eventTypes}
+            />
+          ) : (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                Pro
+              </Badge>
+              <Button size="sm" variant="outline" disabled>
+                <Plus className="mr-1 h-4 w-4" />
+                Connect Slack
+              </Button>
+            </div>
+          )}
+        </div>
+        <CardDescription>
+          Get notified in Slack when documents are signed, sent, or completed
+          {!isPro && !isLoadingPlan && (
+            <span className="text-warning mt-1 block">Slack notifications require a Pro plan.</span>
+          )}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {endpoints.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="bg-muted flex h-16 w-16 items-center justify-center rounded-2xl border">
+              <Hash className="text-muted-foreground h-8 w-8" />
+            </div>
+            <p className="mt-6 font-mono">Connect a Slack channel</p>
+            <p className="text-muted-foreground mt-1 max-w-sm text-sm">
+              Paste a Slack Incoming Webhook URL to start receiving event notifications in your
+              channel.
+            </p>
+            <Button
+              onClick={() => setIsCreating(true)}
+              className="bg-ai-accent hover:bg-ai-accent/90 mt-4 text-white"
+              disabled={!isPro}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Connect Slack
+            </Button>
+            {!isPro && !isLoadingPlan && (
+              <p className="text-warning mt-2 text-sm">Requires a Pro plan</p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {endpoints.map((endpoint) => (
+              <WebhookEndpointRow key={endpoint._id} endpoint={endpoint} />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+interface CreateSlackDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  eventTypes: { type: string; category: string; description: string }[];
+}
+
+function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialogProps) {
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const createSlackEndpoint = useMutation(api.webhooks.mutations.createSlackEndpoint);
+
+  const handleCreate = async () => {
+    if (!name.trim()) {
+      toast.error("Please enter a name");
+      return;
+    }
+    if (!url.trim()) {
+      toast.error("Please paste your Slack webhook URL");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await createSlackEndpoint({
+        name: name.trim(),
+        url: url.trim(),
+        events: selectedEvents,
+      });
+      toast.success("Slack channel connected");
+      handleClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to connect Slack");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setName("");
+    setUrl("");
+    setSelectedEvents([]);
+    setIsSubmitting(false);
+    onOpenChange(false);
+  };
+
+  const toggleEvent = (eventType: string) => {
+    setSelectedEvents((prev) =>
+      prev.includes(eventType) ? prev.filter((e) => e !== eventType) : [...prev, eventType],
+    );
+  };
+
+  const toggleCategory = (category: string) => {
+    const categoryEvents = eventTypes.filter((e) => e.category === category).map((e) => e.type);
+    const allSelected = categoryEvents.every((e) => selectedEvents.includes(e));
+    if (allSelected) {
+      setSelectedEvents((prev) => prev.filter((e) => !categoryEvents.includes(e)));
+    } else {
+      setSelectedEvents((prev) => [...new Set([...prev, ...categoryEvents])]);
+    }
+  };
+
+  const eventsByCategory = eventTypes.reduce(
+    (acc, event) => {
+      if (!acc[event.category]) acc[event.category] = [];
+      acc[event.category].push(event);
+      return acc;
+    },
+    {} as Record<string, typeof eventTypes>,
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="bg-ai-accent hover:bg-ai-accent/90 text-white">
+          <Plus className="mr-1 h-4 w-4" />
+          Connect Slack
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Connect Slack Channel</DialogTitle>
+          <DialogDescription>
+            Paste a Slack Incoming Webhook URL to send event notifications to your channel.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="slack-name">Name</Label>
+            <Input
+              id="slack-name"
+              placeholder="e.g., #contracts-alerts"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="slack-url">Webhook URL</Label>
+            <Input
+              id="slack-url"
+              placeholder="https://hooks.slack.com/services/T.../B.../..."
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="font-mono"
+            />
+            <p className="text-muted-foreground text-xs">
+              Create one at{" "}
+              <a
+                href="https://api.slack.com/messaging/webhooks"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-ai-accent hover:underline"
+              >
+                api.slack.com/messaging/webhooks
+              </a>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Events to notify</Label>
+              {selectedEvents.length > 0 && (
+                <Badge variant="secondary" className="text-ai-accent">
+                  {selectedEvents.length} selected
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground text-xs">Leave empty to receive all events</p>
+            <div className="bg-muted/30 max-h-48 space-y-4 overflow-y-auto rounded-lg border p-3">
+              {Object.entries(eventsByCategory).map(([category, events]) => {
+                const categorySelected = events.every((e) => selectedEvents.includes(e.type));
+                const categoryPartial =
+                  !categorySelected && events.some((e) => selectedEvents.includes(e.type));
+
+                return (
+                  <div key={category}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <Checkbox
+                        id={`slack-category-${category}`}
+                        checked={categorySelected}
+                        ref={(el) => {
+                          if (el) {
+                            (el as HTMLButtonElement).dataset.state = categoryPartial
+                              ? "indeterminate"
+                              : undefined;
+                          }
+                        }}
+                        onCheckedChange={() => toggleCategory(category)}
+                        className="data-[state=checked]:border-ai-accent data-[state=checked]:bg-ai-accent"
+                      />
+                      <Label
+                        htmlFor={`slack-category-${category}`}
+                        className="cursor-pointer font-medium"
+                      >
+                        {category}
+                      </Label>
+                    </div>
+                    <div className="ml-6 space-y-1">
+                      {events.map((event) => (
+                        <div key={event.type} className="flex items-start gap-2">
+                          <Checkbox
+                            id={`slack-${event.type}`}
+                            checked={selectedEvents.includes(event.type)}
+                            onCheckedChange={() => toggleEvent(event.type)}
+                            className="data-[state=checked]:border-ai-accent data-[state=checked]:bg-ai-accent mt-0.5"
+                          />
+                          <Label
+                            htmlFor={`slack-${event.type}`}
+                            className="cursor-pointer text-sm font-normal"
+                          >
+                            <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
+                              {event.type}
+                            </code>
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={isSubmitting}
+              className="bg-ai-accent hover:bg-ai-accent/90 text-white"
+            >
+              {isSubmitting ? "Connecting..." : "Connect Channel"}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -620,6 +919,11 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
                 <Badge variant="secondary" className={config.badge}>
                   {endpoint.status}
                 </Badge>
+                {endpoint.format === "slack" && (
+                  <Badge variant="outline" className="text-xs">
+                    Slack
+                  </Badge>
+                )}
               </div>
               <div className="truncate font-mono text-sm">
                 <span className="text-muted-foreground">{protocol}</span>
@@ -700,59 +1004,61 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
         <CollapsibleContent>
           <Separator />
           <div className="space-y-6 p-4 pl-5">
-            <div className="space-y-2">
-              <Label>Signing Secret</Label>
-              <div className="flex items-center gap-2">
-                <div className="bg-muted/50 flex flex-1 items-center gap-2 rounded-lg border px-3 py-2">
-                  <code
-                    className={cn(
-                      "font-mono text-sm transition-[filter,color] duration-300",
-                      showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm",
-                    )}
-                  >
-                    {showSecret ? `${endpoint.secretPrefix}...` : "whsec_••••••••••••••••"}
-                  </code>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label={showSecret ? "Hide signing secret" : "Show signing secret"}
-                  onClick={() => setShowSecret(!showSecret)}
-                >
-                  {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      title="Rotate secret"
-                      aria-label="Rotate signing secret"
+            {endpoint.format !== "slack" && (
+              <div className="space-y-2">
+                <Label>Signing Secret</Label>
+                <div className="flex items-center gap-2">
+                  <div className="bg-muted/50 flex flex-1 items-center gap-2 rounded-lg border px-3 py-2">
+                    <code
+                      className={cn(
+                        "font-mono text-sm transition-[filter,color] duration-300",
+                        showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm",
+                      )}
                     >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Rotate Secret</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will generate a new signing secret. The old secret will be invalidated
-                        immediately. Make sure to update your integration.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleRotateSecret}
-                        className="bg-warning hover:bg-warning/90 text-white"
+                      {showSecret ? `${endpoint.secretPrefix}...` : "whsec_••••••••••••••••"}
+                    </code>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label={showSecret ? "Hide signing secret" : "Show signing secret"}
+                    onClick={() => setShowSecret(!showSecret)}
+                  >
+                    {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        title="Rotate secret"
+                        aria-label="Rotate signing secret"
                       >
-                        Rotate Secret
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Rotate Secret</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will generate a new signing secret. The old secret will be invalidated
+                          immediately. Make sure to update your integration.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleRotateSecret}
+                          className="bg-warning hover:bg-warning/90 text-white"
+                        >
+                          Rotate Secret
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="space-y-2">
               <Label>Subscribed Events</Label>

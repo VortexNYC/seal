@@ -35,7 +35,7 @@ function assignRecipient(
   signers: Doc<"document_recipients">[],
 ): Doc<"document_recipients">["_id"] | undefined {
   if (signers.length === 0) return undefined;
-  if (signers.length === 1) return signers[0]._id;
+  if (signers.length === 1) return signers[0]!._id;
 
   const label = field.label.toLowerCase();
 
@@ -46,7 +46,7 @@ function assignRecipient(
       return signer._id;
     }
     // Also match email prefix (before @)
-    const emailPrefix = signer.email.split("@")[0].toLowerCase();
+    const emailPrefix = signer.email.split("@")[0]!.toLowerCase();
     if (emailPrefix.length > 2 && label.includes(emailPrefix)) {
       return signer._id;
     }
@@ -66,7 +66,7 @@ function assignRecipient(
 
   for (const [pattern, index] of ordinalPatterns) {
     if (pattern.test(label) && index < signers.length) {
-      return signers[index]._id;
+      return signers[index]!._id;
     }
   }
 

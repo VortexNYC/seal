@@ -384,6 +384,118 @@ export const deleteEndpoint = permissionMutation("settings:integrations")({
 });
 
 /**
+ * Creates a Slack webhook endpoint.
+ *
+ * Simplified flow for Slack Incoming Webhooks — no HMAC secret needed.
+ * The URL must be a Slack webhook URL (https://hooks.slack.com/).
+ *
+ * @param name - User-friendly name for the endpoint
+ * @param url - Slack Incoming Webhook URL
+ * @param events - Event types to subscribe to (empty = all)
+ * @param description - Optional description
+ * @returns The created endpoint
+ * @permission settings:integrations
+ */
+export const createSlackEndpoint = permissionMutation("settings:integrations")({
+  args: {
+    name: v.string(),
+    url: v.string(),
+    events: v.array(v.string()),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (args.name.trim().length === 0) {
+      throw new ConvexError({
+        code: "VALIDATION_ERROR",
+        message: "Name is required",
+      });
+    }
+
+    if (args.name.length > 100) {
+      throw new ConvexError({
+        code: "VALIDATION_ERROR",
+        message: "Name must be 100 characters or less",
+      });
+    }
+
+    // Validate Slack webhook URL
+    try {
+      const url = new URL(args.url);
+      if (url.protocol !== "https:") {
+        throw new ConvexError({
+          code: "VALIDATION_ERROR",
+          message: "Slack webhook URL must use HTTPS",
+        });
+      }
+      if (!url.hostname.endsWith("slack.com")) {
+        throw new ConvexError({
+          code: "VALIDATION_ERROR",
+          message: "URL must be a Slack webhook (hooks.slack.com)",
+        });
+      }
+    } catch (error) {
+      if (error instanceof ConvexError) throw error;
+      throw new ConvexError({
+        code: "VALIDATION_ERROR",
+        message: "Invalid URL format",
+      });
+    }
+
+    // Validate events
+    const validEvents = new Set<string>(WEBHOOK_EVENT_TYPES);
+    for (const event of args.events) {
+      if (!validEvents.has(event)) {
+        throw new ConvexError({
+          code: "VALIDATION_ERROR",
+          message: `Invalid event type: ${event}`,
+        });
+      }
+    }
+
+    await ensureProFeature(ctx.db, ctx.auth.userId, "Slack notifications");
+
+    // Check endpoint limit (shared with regular webhooks)
+    const existingEndpoints = await ctx.db
+      .query("webhook_endpoints")
+      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
+      .collect();
+
+    if (existingEndpoints.length >= 10) {
+      throw new ConvexError({
+        code: "LIMIT_EXCEEDED",
+        message: "Maximum of 10 webhook endpoints per organization",
+      });
+    }
+
+    // Slack endpoints don't need HMAC secrets, but schema requires them.
+    // Generate a placeholder that will never be used for signing.
+    const placeholder = `whsec_slack_${generateSecret(16)}`;
+    const secretHash = await hashSecret(placeholder);
+
+    const now = Date.now();
+
+    const endpointId = await ctx.db.insert("webhook_endpoints", {
+      organizationId: ctx.auth.organizationId,
+      name: args.name.trim(),
+      url: args.url,
+      secretHash,
+      secret: placeholder,
+      secretPrefix: placeholder.slice(0, 12),
+      events: args.events,
+      status: "active",
+      format: "slack",
+      description: args.description,
+      failureCount: 0,
+      createdBy: ctx.auth.userId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { endpointId };
+  },
+});
+
+/**
  * Tests a webhook endpoint by sending a test event.
  *
  * @param endpointId - The endpoint to test
