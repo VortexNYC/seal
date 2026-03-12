@@ -52,6 +52,7 @@ function WorkspaceErrorComponent(props: ErrorComponentProps) {
 function WorkspaceLayout() {
   const { slug } = Route.useParams();
   const { open: cmdKOpen, setOpen: setCmdKOpen } = useCommandPalette();
+  useJamMetadata();
 
   const organization = useQuery(api.organizations.queries.getOrganization, {
     slug,
@@ -81,8 +82,6 @@ function WorkspaceLayout() {
     name: organization.name,
     slug: organization.slug,
   };
-
-  useJamMetadata();
 
   return (
     <SidebarProvider>

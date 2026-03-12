@@ -76,7 +76,6 @@ export function FeedbackButton() {
                 rows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                autoFocus
               />
               <Button
                 size="sm"
