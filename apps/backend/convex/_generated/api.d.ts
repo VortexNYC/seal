@@ -135,6 +135,8 @@ import type * as organizations_actions from "../organizations/actions.js";
 import type * as organizations_helpers from "../organizations/helpers.js";
 import type * as organizations_mutations from "../organizations/mutations.js";
 import type * as organizations_queries from "../organizations/queries.js";
+import type * as payment_fields_dunning from "../payment_fields/dunning.js";
+import type * as payment_fields_dunning_email_action from "../payment_fields/dunning_email_action.js";
 import type * as payment_fields_helpers from "../payment_fields/helpers.js";
 import type * as payment_fields_mutations from "../payment_fields/mutations.js";
 import type * as payment_fields_queries from "../payment_fields/queries.js";
@@ -372,6 +374,8 @@ declare const fullApi: ApiFromModules<{
   "organizations/helpers": typeof organizations_helpers;
   "organizations/mutations": typeof organizations_mutations;
   "organizations/queries": typeof organizations_queries;
+  "payment_fields/dunning": typeof payment_fields_dunning;
+  "payment_fields/dunning_email_action": typeof payment_fields_dunning_email_action;
   "payment_fields/helpers": typeof payment_fields_helpers;
   "payment_fields/mutations": typeof payment_fields_mutations;
   "payment_fields/queries": typeof payment_fields_queries;
