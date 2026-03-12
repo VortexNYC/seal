@@ -570,8 +570,22 @@ function getAuditAndBillingRules(
   | "subscription_prices"
   | "stripe_accounts"
   | "stripe_webhook_events"
+  | "feedback"
 > {
   return {
+    feedback: {
+      read: async (_queryCtx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (rlsCtx.orgId !== doc.organizationId) return false;
+        return rlsCtx.isAdmin || doc.userId === rlsCtx.userId;
+      },
+      modify: async (_queryCtx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+    },
     audit_logs: {
       read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;

@@ -1,7 +1,10 @@
+import { useLocation } from "@tanstack/react-router";
+import { useMutation } from "convex/react";
 import { Bug, Lightbulb, MessageSquare, X } from "lucide-react";
 import { useState } from "react";
 
 import { startJamRecording } from "@/lib/jam";
+import { api } from "@seal/backend/convex/_generated/api";
 
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -14,6 +17,8 @@ export function FeedbackButton() {
   const [mode, setMode] = useState<Mode>("idle");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const submitFeedback = useMutation(api.feedback.mutations.submit);
+  const location = useLocation();
 
   function handleReportBug() {
     setOpen(false);
@@ -23,8 +28,11 @@ export function FeedbackButton() {
 
   async function handleSubmitSuggestion() {
     if (!message.trim()) return;
-    // TODO: Wire to Convex feedback.submit mutation when table exists
-    console.info("[Feedback] Suggestion submitted:", message.trim());
+    await submitFeedback({
+      type: "suggestion",
+      message: message.trim(),
+      route: location.pathname,
+    });
     setSubmitted(true);
     setTimeout(() => {
       setOpen(false);
