@@ -5,7 +5,7 @@ description: Verify webhook authenticity using HMAC-SHA256 signatures
 
 # Signature Verification
 
-All webhook requests from Seal include an HMAC-SHA256 signature in the `Seal-Signature` header. Always verify this signature to ensure the request is authentic and hasn't been tampered with.
+All webhook requests from Seal include an HMAC-SHA256 signature in the `X-Seal-Signature` header. Always verify this signature to ensure the request is authentic and hasn't been tampered with.
 
 ## Why Verify Signatures?
 
@@ -22,10 +22,11 @@ Without signature verification, anyone who knows your webhook URL could send fak
 
 ## How Signatures Work
 
-1. Seal generates an HMAC-SHA256 hash of the request body using your webhook secret
-2. The hash is sent in the `Seal-Signature` header
-3. Your server generates the same hash using the same secret
-4. If the hashes match, the request is authentic
+1. Seal constructs a signed content string: `{eventId}.{timestamp}.{payload}`
+2. Seal generates an HMAC-SHA256 hash of that string using your webhook secret
+3. The signature is sent as `v1={hex}` in the `X-Seal-Signature` header, along with `X-Seal-Event-Id` and `X-Seal-Timestamp` headers
+4. Your server reconstructs the same signed content and generates the hash
+5. If the signatures match, the request is authentic
 
 ## Verification Implementation
 
@@ -34,29 +35,33 @@ Without signature verification, anyone who knows your webhook URL could send fak
 ```typescript
 import { createHmac, timingSafeEqual } from "crypto";
 
-function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
-  // Generate expected signature
-  const expectedSignature = createHmac("sha256", secret).update(payload).digest("hex");
+function verifyWebhookSignature(
+  payload: string,
+  signature: string,
+  eventId: string,
+  timestamp: string,
+  secret: string,
+): boolean {
+  const signedContent = `${eventId}.${timestamp}.${payload}`;
+  const expectedSignature = `v1=${createHmac("sha256", secret)
+    .update(signedContent)
+    .digest("hex")}`;
 
-  // Convert to buffers for timing-safe comparison
-  const signatureBuffer = Buffer.from(signature, "hex");
-  const expectedBuffer = Buffer.from(expectedSignature, "hex");
-
-  // Check length first (prevents timing attacks)
-  if (signatureBuffer.length !== expectedBuffer.length) {
+  if (signature.length !== expectedSignature.length) {
     return false;
   }
 
-  // Timing-safe comparison
-  return timingSafeEqual(signatureBuffer, expectedBuffer);
+  return timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
 }
 
 // Usage in Express
 app.post("/webhooks/seal", express.raw({ type: "application/json" }), (req, res) => {
-  const signature = req.headers["seal-signature"] as string;
+  const signature = req.headers["x-seal-signature"] as string;
+  const eventId = req.headers["x-seal-event-id"] as string;
+  const timestamp = req.headers["x-seal-timestamp"] as string;
   const payload = req.body.toString("utf8");
 
-  if (!verifyWebhookSignature(payload, signature, process.env.WEBHOOK_SECRET!)) {
+  if (!verifyWebhookSignature(payload, signature, eventId, timestamp, process.env.WEBHOOK_SECRET!)) {
     return res.status(401).send("Invalid signature");
   }
 
@@ -74,31 +79,35 @@ app.post("/webhooks/seal", express.raw({ type: "application/json" }), (req, res)
 import hmac
 import hashlib
 
-def verify_webhook_signature(payload: str, signature: str, secret: str) -> bool:
+def verify_webhook_signature(
+    payload: str, signature: str, event_id: str, timestamp: str, secret: str
+) -> bool:
     """Verify webhook signature using HMAC-SHA256."""
-    expected_signature = hmac.new(
+    signed_content = f"{event_id}.{timestamp}.{payload}"
+    expected_signature = "v1=" + hmac.new(
         secret.encode('utf-8'),
-        payload.encode('utf-8'),
+        signed_content.encode('utf-8'),
         hashlib.sha256
     ).hexdigest()
 
-    # Timing-safe comparison
     return hmac.compare_digest(signature, expected_signature)
 
 # Usage in Flask
 from flask import Flask, request
+import os
 
 app = Flask(__name__)
 
 @app.route('/webhooks/seal', methods=['POST'])
 def handle_webhook():
-    signature = request.headers.get('Seal-Signature')
+    signature = request.headers.get('X-Seal-Signature')
+    event_id = request.headers.get('X-Seal-Event-Id')
+    timestamp = request.headers.get('X-Seal-Timestamp')
     payload = request.get_data(as_text=True)
 
-    if not verify_webhook_signature(payload, signature, os.environ['WEBHOOK_SECRET']):
+    if not verify_webhook_signature(payload, signature, event_id, timestamp, os.environ['WEBHOOK_SECRET']):
         return 'Invalid signature', 401
 
-    # Process event
     event = request.get_json()
     # ...
 
@@ -120,12 +129,12 @@ import (
     "os"
 )
 
-func verifyWebhookSignature(payload, signature, secret string) bool {
+func verifyWebhookSignature(payload, signature, eventID, timestamp, secret string) bool {
+    signedContent := eventID + "." + timestamp + "." + payload
     mac := hmac.New(sha256.New, []byte(secret))
-    mac.Write([]byte(payload))
-    expectedSignature := hex.EncodeToString(mac.Sum(nil))
+    mac.Write([]byte(signedContent))
+    expectedSignature := "v1=" + hex.EncodeToString(mac.Sum(nil))
 
-    // Timing-safe comparison
     return subtle.ConstantTimeCompare(
         []byte(signature),
         []byte(expectedSignature),
@@ -133,7 +142,9 @@ func verifyWebhookSignature(payload, signature, secret string) bool {
 }
 
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
-    signature := r.Header.Get("Seal-Signature")
+    signature := r.Header.Get("X-Seal-Signature")
+    eventID := r.Header.Get("X-Seal-Event-Id")
+    timestamp := r.Header.Get("X-Seal-Timestamp")
 
     body, err := io.ReadAll(r.Body)
     if err != nil {
@@ -141,7 +152,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    if !verifyWebhookSignature(string(body), signature, os.Getenv("WEBHOOK_SECRET")) {
+    if !verifyWebhookSignature(string(body), signature, eventID, timestamp, os.Getenv("WEBHOOK_SECRET")) {
         http.Error(w, "Invalid signature", http.StatusUnauthorized)
         return
     }
@@ -192,13 +203,15 @@ return signature === expectedSignature;
 Always check if the signature header exists:
 
 ```typescript
-const signature = req.headers["seal-signature"];
+const signature = req.headers["x-seal-signature"];
+const eventId = req.headers["x-seal-event-id"];
+const timestamp = req.headers["x-seal-timestamp"];
 
-if (!signature) {
-  return res.status(401).send("Missing signature");
+if (!signature || !eventId || !timestamp) {
+  return res.status(401).send("Missing required webhook headers");
 }
 
-if (!verifyWebhookSignature(payload, signature, secret)) {
+if (!verifyWebhookSignature(payload, signature, eventId, timestamp, secret)) {
   return res.status(401).send("Invalid signature");
 }
 ```
@@ -219,16 +232,20 @@ const payload = JSON.stringify({
 
 const secret = "whsec_test_secret";
 
-const signature = createHmac("sha256", secret).update(payload).digest("hex");
+const eventId = "evt_test123";
+const timestamp = Math.floor(Date.now() / 1000).toString();
+const signedContent = `${eventId}.${timestamp}.${payload}`;
+const signature = `v1=${createHmac("sha256", secret).update(signedContent).digest("hex")}`;
 
 console.log("Signature:", signature);
 
-// Send test request
 fetch("http://localhost:3000/webhooks/seal", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "Seal-Signature": signature,
+    "X-Seal-Signature": signature,
+    "X-Seal-Event-Id": eventId,
+    "X-Seal-Timestamp": timestamp,
   },
   body: payload,
 });
@@ -238,8 +255,10 @@ fetch("http://localhost:3000/webhooks/seal", {
 
 ```bash
 # Expected signature for test payload
-echo -n '{"id":"evt_test123","type":"document.completed","created_at":"2024-01-27T12:00:00Z","data":{"document_id":"doc_xyz789"}}' | \
+# Signature is computed on: {eventId}.{timestamp}.{payload}
+echo -n 'evt_test123.1710288000.{"id":"evt_test123","type":"document.completed","api_version":"2025-01-01","created_at":"2026-03-12T12:00:00Z","organization_id":"org_abc123","data":{"document_id":"doc_xyz789"}}' | \
   openssl dgst -sha256 -hmac 'whsec_test_secret' -hex
+# Prefix the result with "v1=" to get the full signature
 ```
 
 ## Common Pitfalls
@@ -277,17 +296,20 @@ const secret = process.env.WEBHOOK_SECRET; // whsec_xxx
 When rotating secrets, support both old and new secrets temporarily:
 
 ```typescript
-function verifyWithFallback(payload: string, signature: string): boolean {
+function verifyWithFallback(
+  payload: string,
+  signature: string,
+  eventId: string,
+  timestamp: string,
+): boolean {
   const currentSecret = process.env.WEBHOOK_SECRET!;
   const previousSecret = process.env.WEBHOOK_SECRET_OLD;
 
-  // Try current secret first
-  if (verifyWebhookSignature(payload, signature, currentSecret)) {
+  if (verifyWebhookSignature(payload, signature, eventId, timestamp, currentSecret)) {
     return true;
   }
 
-  // Fall back to previous secret during rotation
-  if (previousSecret && verifyWebhookSignature(payload, signature, previousSecret)) {
+  if (previousSecret && verifyWebhookSignature(payload, signature, eventId, timestamp, previousSecret)) {
     console.warn("Webhook verified with old secret - update sender");
     return true;
   }
@@ -313,19 +335,29 @@ function verifyWithFallback(payload: string, signature: string): boolean {
 1. **Check Secret**: Ensure you're using the correct webhook secret (not API key)
 2. **Check Encoding**: Verify you're using UTF-8 encoding
 3. **Check Body**: Ensure you're using the raw request body
-4. **Check Header**: Verify the header name is `Seal-Signature` (case-sensitive)
+4. **Check Header**: Verify you're reading `X-Seal-Signature`, `X-Seal-Event-Id`, and `X-Seal-Timestamp`
 5. **Test Locally**: Generate a test signature and verify it works
 
 ### Debug Signature Mismatch
 
 ```typescript
-function debugSignature(payload: string, receivedSignature: string, secret: string) {
-  const expectedSignature = createHmac("sha256", secret).update(payload).digest("hex");
+function debugSignature(
+  payload: string,
+  receivedSignature: string,
+  eventId: string,
+  timestamp: string,
+  secret: string,
+) {
+  const signedContent = `${eventId}.${timestamp}.${payload}`;
+  const expectedSignature = `v1=${createHmac("sha256", secret)
+    .update(signedContent)
+    .digest("hex")}`;
 
   console.log("Received signature:", receivedSignature);
   console.log("Expected signature:", expectedSignature);
+  console.log("Event ID:", eventId);
+  console.log("Timestamp:", timestamp);
   console.log("Payload length:", payload.length);
-  console.log("Payload preview:", payload.substring(0, 100));
   console.log("Secret prefix:", secret.substring(0, 10) + "...");
 }
 ```
