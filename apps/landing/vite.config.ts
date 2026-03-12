@@ -40,6 +40,18 @@ function getManualChunkName(id: string): string | undefined {
 export default defineConfig(async ({ command }) => ({
   server: {
     port: 3001,
+    proxy: {
+      "/ingest/static": {
+        target: "https://us-assets.i.posthog.com",
+        changeOrigin: true,
+        rewrite: (pathStr: string) => pathStr.replace(/^\/ingest\/static/, "/static"),
+      },
+      "/ingest": {
+        target: "https://us.i.posthog.com",
+        changeOrigin: true,
+        rewrite: (pathStr: string) => pathStr.replace(/^\/ingest/, ""),
+      },
+    },
   },
   plugins: [
     // Polyfill node:path → path-browserify in client builds only.

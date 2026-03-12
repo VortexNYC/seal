@@ -1,10 +1,11 @@
 /// <reference types="vite/client" />
 import { createRootRoute, HeadContent, Outlet, Scripts, useLocation } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 
 import appCss from "~/app/globals.css?url";
 import { Footer } from "~/components/layout/footer";
 import { Navbar } from "~/components/layout/navbar";
+import { initPostHog } from "~/lib/posthog";
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -117,6 +118,10 @@ export const Route = createRootRoute({
 function RootComponent() {
   const { pathname } = useLocation();
   const isFullscreen = pathname.startsWith("/docs") || pathname.startsWith("/api-reference");
+
+  useEffect(() => {
+    initPostHog();
+  }, []);
 
   return (
     <RootDocument>
