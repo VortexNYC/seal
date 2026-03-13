@@ -281,5 +281,41 @@ describe("revenue analytics queries", () => {
       expect(result.recoveredAmount).toBe(30000);
       expect(result.recoveryRate).toBe(100);
     });
+
+    test("excludes voided/deleted invoices from unrecovered stats", async () => {
+      const { internal } = await import("../../_generated/api");
+
+      // Recovered: dunning cancelled because customer paid
+      await insertInvoice({
+        status: "paid",
+        amountDue: 20000,
+        dunningStatus: "cancelled",
+      });
+
+      // Voided invoice with completed dunning — should NOT count as unrecovered
+      await insertInvoice({
+        status: "void",
+        amountDue: 15000,
+        dunningStatus: "completed",
+      });
+
+      // Deleted invoice with cancelled dunning — should NOT count as unrecovered
+      await insertInvoice({
+        status: "deleted",
+        amountDue: 10000,
+        dunningStatus: "cancelled",
+      });
+
+      const result = await t.query(
+        internal.stripe.revenue_queries.getCollectionStatsInternal,
+        { organizationId },
+      );
+
+      expect(result.recoveredCount).toBe(1);
+      expect(result.recoveredAmount).toBe(20000);
+      expect(result.unrecoveredCount).toBe(0);
+      expect(result.unrecoveredAmount).toBe(0);
+      expect(result.recoveryRate).toBe(100);
+    });
   });
 });

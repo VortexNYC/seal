@@ -273,7 +273,8 @@ export const getCollectionStats = memberQuery({
         if (inv.status === "paid") {
           recoveredAmount += inv.amountDue;
           recoveredCount += 1;
-        } else {
+        } else if (inv.status !== "void" && inv.status !== "deleted") {
+          // Void/deleted invoices are intentionally written off — not failed recovery
           unrecoveredAmount += inv.amountDue;
           unrecoveredCount += 1;
         }
@@ -283,7 +284,7 @@ export const getCollectionStats = memberQuery({
         if (inv.status === "paid") {
           recoveredAmount += inv.amountDue;
           recoveredCount += 1;
-        } else {
+        } else if (inv.status !== "void" && inv.status !== "deleted") {
           unrecoveredAmount += inv.amountDue;
           unrecoveredCount += 1;
         }
@@ -402,7 +403,7 @@ export const getCollectionStatsInternal = internalQuery({
         if (inv.status === "paid") {
           recoveredAmount += inv.amountDue;
           recoveredCount += 1;
-        } else {
+        } else if (inv.status !== "void" && inv.status !== "deleted") {
           unrecoveredAmount += inv.amountDue;
           unrecoveredCount += 1;
         }
@@ -411,7 +412,7 @@ export const getCollectionStatsInternal = internalQuery({
         if (inv.status === "paid") {
           recoveredAmount += inv.amountDue;
           recoveredCount += 1;
-        } else {
+        } else if (inv.status !== "void" && inv.status !== "deleted") {
           unrecoveredAmount += inv.amountDue;
           unrecoveredCount += 1;
         }
