@@ -61,6 +61,7 @@ describe("revenue analytics queries", () => {
     paidAt?: number;
     dunningStatus?: "none" | "active" | "completed" | "cancelled";
     dunningStep?: number;
+    lastDunningEmailAt?: number;
   }) {
     const now = Date.now();
     return await t.run(async (ctx) => {
@@ -79,6 +80,7 @@ describe("revenue analytics queries", () => {
         paidAt: overrides.paidAt,
         dunningStatus: overrides.dunningStatus,
         dunningStep: overrides.dunningStep,
+        lastDunningEmailAt: overrides.lastDunningEmailAt,
       });
     });
   }
@@ -316,6 +318,196 @@ describe("revenue analytics queries", () => {
       expect(result.unrecoveredCount).toBe(0);
       expect(result.unrecoveredAmount).toBe(0);
       expect(result.recoveryRate).toBe(100);
+    });
+  });
+
+  describe("getStalledInvoicesInternal", () => {
+    test("returns empty when no invoices", async () => {
+      const { internal } = await import("../../_generated/api");
+      const result = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId },
+      );
+
+      expect(result.count).toBe(0);
+      expect(result.invoices).toHaveLength(0);
+    });
+
+    test("detects open invoice with no dunning past threshold", async () => {
+      const { internal } = await import("../../_generated/api");
+      const now = Date.now();
+
+      // 45-day-old open invoice, no dunning
+      await insertInvoice({
+        status: "open",
+        amountDue: 25000,
+        finalizedAt: now - 45 * DAY_MS,
+      });
+
+      const result = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId },
+      );
+
+      expect(result.count).toBe(1);
+      expect(result.invoices[0]!.amountDue).toBe(25000);
+      expect(result.invoices[0]!.ageDays).toBe(45);
+      expect(result.invoices[0]!.dunningStatus).toBe("none");
+    });
+
+    test("excludes invoices under threshold", async () => {
+      const { internal } = await import("../../_generated/api");
+      const now = Date.now();
+
+      // 10-day-old open invoice — under 30-day default threshold
+      await insertInvoice({
+        status: "open",
+        amountDue: 5000,
+        finalizedAt: now - 10 * DAY_MS,
+      });
+
+      const result = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId },
+      );
+
+      expect(result.count).toBe(0);
+    });
+
+    test("detects invoice with completed dunning still open", async () => {
+      const { internal } = await import("../../_generated/api");
+      const now = Date.now();
+
+      // Dunning completed (all 3 emails sent) but still open
+      await insertInvoice({
+        status: "open",
+        amountDue: 30000,
+        finalizedAt: now - 60 * DAY_MS,
+        dunningStatus: "completed",
+        lastDunningEmailAt: now - 20 * DAY_MS,
+      });
+
+      const result = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId },
+      );
+
+      expect(result.count).toBe(1);
+      expect(result.invoices[0]!.dunningStatus).toBe("completed");
+    });
+
+    test("detects active dunning stuck for 7+ days", async () => {
+      const { internal } = await import("../../_generated/api");
+      const now = Date.now();
+
+      // Active dunning but last email was 10 days ago — stuck
+      await insertInvoice({
+        status: "open",
+        amountDue: 15000,
+        finalizedAt: now - 40 * DAY_MS,
+        dunningStatus: "active",
+        lastDunningEmailAt: now - 10 * DAY_MS,
+      });
+
+      const result = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId },
+      );
+
+      expect(result.count).toBe(1);
+      expect(result.invoices[0]!.dunningStatus).toBe("active");
+    });
+
+    test("excludes active dunning with recent email", async () => {
+      const { internal } = await import("../../_generated/api");
+      const now = Date.now();
+
+      // Active dunning, email sent 2 days ago — not stalled
+      await insertInvoice({
+        status: "open",
+        amountDue: 15000,
+        finalizedAt: now - 35 * DAY_MS,
+        dunningStatus: "active",
+        lastDunningEmailAt: now - 2 * DAY_MS,
+      });
+
+      const result = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId },
+      );
+
+      expect(result.count).toBe(0);
+    });
+
+    test("excludes paid invoices", async () => {
+      const { internal } = await import("../../_generated/api");
+      const now = Date.now();
+
+      await insertInvoice({
+        status: "paid",
+        amountDue: 50000,
+        finalizedAt: now - 90 * DAY_MS,
+        paidAt: now - 5 * DAY_MS,
+      });
+
+      const result = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId },
+      );
+
+      expect(result.count).toBe(0);
+    });
+
+    test("respects custom threshold", async () => {
+      const { internal } = await import("../../_generated/api");
+      const now = Date.now();
+
+      // 20-day-old invoice — stalled at 15-day threshold, not at default 30
+      await insertInvoice({
+        status: "open",
+        amountDue: 8000,
+        finalizedAt: now - 20 * DAY_MS,
+      });
+
+      const under30 = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId, stalledThresholdDays: 30 },
+      );
+      expect(under30.count).toBe(0);
+
+      const under15 = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId, stalledThresholdDays: 15 },
+      );
+      expect(under15.count).toBe(1);
+    });
+
+    test("sorts by age descending and calculates totals", async () => {
+      const { internal } = await import("../../_generated/api");
+      const now = Date.now();
+
+      await insertInvoice({
+        status: "open",
+        amountDue: 10000,
+        finalizedAt: now - 35 * DAY_MS,
+      });
+
+      await insertInvoice({
+        status: "open",
+        amountDue: 20000,
+        finalizedAt: now - 90 * DAY_MS,
+      });
+
+      const result = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId },
+      );
+
+      expect(result.count).toBe(2);
+      expect(result.totalAmount).toBe(30000);
+      // Oldest first
+      expect(result.invoices[0]!.ageDays).toBe(90);
+      expect(result.invoices[1]!.ageDays).toBe(35);
     });
   });
 });

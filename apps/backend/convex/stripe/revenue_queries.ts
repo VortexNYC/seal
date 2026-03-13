@@ -371,6 +371,169 @@ export const getAgingAnalyticsInternal = internalQuery({
 });
 
 /**
+ * Stalled invoices: open invoices with no recent dunning activity.
+ * "Stalled" = open for N+ days AND (no dunning started OR last dunning email was 7+ days ago
+ * with dunning not active). These need manual attention.
+ */
+export const getStalledInvoices = memberQuery({
+  args: {
+    slug: v.string(),
+    stalledThresholdDays: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (ctx.auth.organization.slug !== args.slug) {
+      throw new ConvexError("Organization mismatch");
+    }
+
+    const orgId = ctx.auth.organization._id;
+    const now = Date.now();
+    const thresholdDays = args.stalledThresholdDays ?? 30;
+    const thresholdMs = thresholdDays * DAY_MS;
+    const dunningInactivityMs = 7 * DAY_MS;
+
+    const invoices = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
+      .collect();
+
+    const stalled: Array<{
+      _id: string;
+      documentId: string;
+      customerEmail: string;
+      customerName?: string;
+      amountDue: number;
+      currency: string;
+      ageDays: number;
+      daysSinceLastActivity: number;
+      dunningStatus: string;
+      hostedInvoiceUrl?: string;
+    }> = [];
+
+    for (const inv of invoices) {
+      if (inv.status !== "open") continue;
+
+      const invoiceAge = now - (inv.finalizedAt ?? inv.createdAt);
+      if (invoiceAge < thresholdMs) continue;
+
+      const ageDays = Math.floor(invoiceAge / DAY_MS);
+
+      // Determine last meaningful activity timestamp
+      const lastActivity = inv.lastDunningEmailAt ?? inv.finalizedAt ?? inv.createdAt;
+      const daysSinceLastActivity = Math.floor((now - lastActivity) / DAY_MS);
+
+      // Stalled if: no dunning at all, OR dunning completed/cancelled without payment,
+      // OR active dunning but last email was 7+ days ago (stuck in sequence)
+      const noDunning = !inv.dunningStatus || inv.dunningStatus === "none";
+      const dunningEnded =
+        inv.dunningStatus === "completed" || inv.dunningStatus === "cancelled";
+      const dunningStuck =
+        inv.dunningStatus === "active" && (now - lastActivity) >= dunningInactivityMs;
+
+      if (noDunning || dunningEnded || dunningStuck) {
+        stalled.push({
+          _id: inv._id,
+          documentId: inv.documentId,
+          customerEmail: inv.customerEmail,
+          customerName: inv.customerName,
+          amountDue: inv.amountDue,
+          currency: inv.currency,
+          ageDays,
+          daysSinceLastActivity,
+          dunningStatus: inv.dunningStatus ?? "none",
+          hostedInvoiceUrl: inv.hostedInvoiceUrl,
+        });
+      }
+    }
+
+    // Sort by age descending — oldest stalled invoices first
+    stalled.sort((a, b) => b.ageDays - a.ageDays);
+
+    return {
+      invoices: stalled,
+      count: stalled.length,
+      totalAmount: stalled.reduce((sum, inv) => sum + inv.amountDue, 0),
+      currency: invoices[0]?.currency ?? "usd",
+    };
+  },
+});
+
+/**
+ * Internal query variant of getStalledInvoices for testing without auth.
+ */
+export const getStalledInvoicesInternal = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    stalledThresholdDays: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const thresholdDays = args.stalledThresholdDays ?? 30;
+    const thresholdMs = thresholdDays * DAY_MS;
+    const dunningInactivityMs = 7 * DAY_MS;
+
+    const invoices = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .collect();
+
+    const stalled: Array<{
+      _id: string;
+      documentId: string;
+      customerEmail: string;
+      customerName?: string;
+      amountDue: number;
+      currency: string;
+      ageDays: number;
+      daysSinceLastActivity: number;
+      dunningStatus: string;
+      hostedInvoiceUrl?: string;
+    }> = [];
+
+    for (const inv of invoices) {
+      if (inv.status !== "open") continue;
+
+      const invoiceAge = now - (inv.finalizedAt ?? inv.createdAt);
+      if (invoiceAge < thresholdMs) continue;
+
+      const ageDays = Math.floor(invoiceAge / DAY_MS);
+
+      const lastActivity = inv.lastDunningEmailAt ?? inv.finalizedAt ?? inv.createdAt;
+      const daysSinceLastActivity = Math.floor((now - lastActivity) / DAY_MS);
+
+      const noDunning = !inv.dunningStatus || inv.dunningStatus === "none";
+      const dunningEnded =
+        inv.dunningStatus === "completed" || inv.dunningStatus === "cancelled";
+      const dunningStuck =
+        inv.dunningStatus === "active" && (now - lastActivity) >= dunningInactivityMs;
+
+      if (noDunning || dunningEnded || dunningStuck) {
+        stalled.push({
+          _id: inv._id,
+          documentId: inv.documentId,
+          customerEmail: inv.customerEmail,
+          customerName: inv.customerName,
+          amountDue: inv.amountDue,
+          currency: inv.currency,
+          ageDays,
+          daysSinceLastActivity,
+          dunningStatus: inv.dunningStatus ?? "none",
+          hostedInvoiceUrl: inv.hostedInvoiceUrl,
+        });
+      }
+    }
+
+    stalled.sort((a, b) => b.ageDays - a.ageDays);
+
+    return {
+      invoices: stalled,
+      count: stalled.length,
+      totalAmount: stalled.reduce((sum, inv) => sum + inv.amountDue, 0),
+      currency: invoices[0]?.currency ?? "usd",
+    };
+  },
+});
+
+/**
  * Internal query variant of getCollectionStats for testing without auth.
  */
 export const getCollectionStatsInternal = internalQuery({
