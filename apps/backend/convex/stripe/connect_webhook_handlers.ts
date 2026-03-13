@@ -93,7 +93,7 @@ async function updatePaymentFieldFromInvoice(
   ctx: HttpActionCtx,
   invoice: Stripe.Invoice,
   paymentStatus: PaymentStatus,
-): Promise<{ configId: string; documentId: string; invoiceRecordId?: string } | null> {
+): Promise<{ configId?: string; documentId?: string; invoiceRecordId?: string } | null> {
   const result = await ctx.runMutation(
     internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
     {
@@ -113,6 +113,80 @@ async function updatePaymentFieldFromInvoice(
   }
 
   return result;
+}
+
+/**
+ * Upsert a document_invoices record for a subscription invoice.
+ * Called on invoice.created and invoice.finalized for recurring billing.
+ * Skips non-subscription invoices (one-time invoices are handled by storeStripeIds).
+ */
+async function syncRecurringInvoice(
+  ctx: HttpActionCtx,
+  invoice: Stripe.Invoice,
+  stripeAccountId: string,
+): Promise<void> {
+  // In newer Stripe API versions, subscription lives under parent.subscription_details
+  const subDetails = invoice.parent?.subscription_details;
+  const subscriptionId =
+    typeof subDetails?.subscription === "string"
+      ? subDetails.subscription
+      : subDetails?.subscription?.id;
+
+  if (!subscriptionId) {
+    // Not a subscription invoice — skip (one-time invoices handled elsewhere)
+    return;
+  }
+
+  // Map Stripe invoice status to our status
+  const statusMap: Record<string, "draft" | "open" | "paid" | "void" | "uncollectible"> = {
+    draft: "draft",
+    open: "open",
+    paid: "paid",
+    void: "void",
+    uncollectible: "uncollectible",
+  };
+
+  const status = statusMap[invoice.status ?? ""] ?? "draft";
+
+  await ctx.runMutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
+    stripeInvoiceId: invoice.id,
+    stripeSubscriptionId: subscriptionId,
+    stripeCustomerId:
+      typeof invoice.customer === "string"
+        ? invoice.customer
+        : (invoice.customer?.id ?? undefined),
+    stripeAccountId,
+    status,
+    customerEmail: invoice.customer_email ?? "",
+    customerName: invoice.customer_name ?? undefined,
+    amountDue: invoice.amount_due,
+    currency: invoice.currency,
+    hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
+    invoicePdf: invoice.invoice_pdf ?? undefined,
+  });
+
+  console.info("Recurring invoice synced", {
+    operation: "stripeConnect.recurringInvoiceSync",
+    stripeInvoiceId: invoice.id,
+    stripeSubscriptionId: subscriptionId,
+    status,
+  });
+}
+
+async function handleInvoiceCreated(
+  ctx: HttpActionCtx,
+  invoice: Stripe.Invoice,
+  stripeAccountId: string,
+): Promise<void> {
+  await syncRecurringInvoice(ctx, invoice, stripeAccountId);
+}
+
+async function handleInvoiceFinalized(
+  ctx: HttpActionCtx,
+  invoice: Stripe.Invoice,
+  stripeAccountId: string,
+): Promise<void> {
+  await syncRecurringInvoice(ctx, invoice, stripeAccountId);
 }
 
 async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
@@ -356,6 +430,20 @@ export async function processStripeConnectWebhookEvent(
       break;
     case "capability.updated":
       await handleCapabilityUpdated(ctx, event.data.object as Stripe.Capability);
+      break;
+    case "invoice.created":
+      await handleInvoiceCreated(
+        ctx,
+        event.data.object as Stripe.Invoice,
+        event.account ?? "",
+      );
+      break;
+    case "invoice.finalized":
+      await handleInvoiceFinalized(
+        ctx,
+        event.data.object as Stripe.Invoice,
+        event.account ?? "",
+      );
       break;
     case "invoice.paid":
       await handleInvoicePaid(ctx, event.data.object as Stripe.Invoice);

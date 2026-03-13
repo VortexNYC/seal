@@ -23,6 +23,7 @@ export const documentInvoicesTable = defineTable({
   stripeAccountId: v.string(),
   stripeInvoiceId: v.string(),
   stripeCustomerId: v.optional(v.string()),
+  stripeSubscriptionId: v.optional(v.string()),
   status: documentInvoiceStatusTuple,
   customerEmail: v.string(),
   customerName: v.optional(v.string()),
@@ -47,4 +48,5 @@ export const documentInvoicesTable = defineTable({
   .index("by_document", ["documentId"])
   .index("by_stripe_invoice", ["stripeInvoiceId"])
   .index("by_organization", ["organizationId"])
+  .index("by_stripe_subscription", ["stripeSubscriptionId"])
   .index("by_dunning_status", ["dunningStatus", "nextDunningAt"]);
