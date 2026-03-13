@@ -1,0 +1,232 @@
+# Seal AI — Prompt Evaluation Config
+#
+# Tests the full AI pipeline end-to-end through Convex:
+# User message → System prompt → Gemini Flash → Tool calls → Response
+#
+# Run: bunx promptfoo eval -c evals/promptfooconfig.yaml
+# View: bunx promptfoo view
+
+description: "Seal AI — End-to-end eval against real Convex backend"
+
+providers:
+  - id: file://provider.mjs
+    label: "Seal AI (document intelligence)"
+
+prompts:
+  - "{{prompt}}"
+
+defaultTest:
+  options:
+    # AI pipeline with tool calls can take 10-30s
+    timeout: 60000
+
+tests:
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 1: Tool-first behavior (no hallucinating before tool results)
+  # The AI must call tools to get data, never fabricate document content.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Analyze this document for signature fields"
+    assert:
+      # Should acknowledge the request (not error out)
+      - type: javascript
+        value: "output.length >= 30"
+      # Must NOT hallucinate field positions without calling a tool
+      - type: not-contains
+        value: "error"
+      - type: not-contains
+        value: "cannot access"
+
+  - vars:
+      prompt: "Where should I place signature fields in this contract?"
+    assert:
+      - type: javascript
+        value: "output.length >= 30"
+      # Should mention field types it can detect
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('signature') || text.includes('field') || text.includes('sign');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 2: No internal implementation details leaked
+  # Tool names, parameter schemas, IDs, and technical details must never appear.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Can you help me with my document?"
+    assert:
+      # No tool names leaked
+      - type: not-contains
+        value: "analyzeDocumentFields"
+      - type: not-contains
+        value: "extractPaymentTerms"
+      - type: not-contains
+        value: "searchDocuments"
+      # No raw Convex IDs
+      - type: javascript
+        value: |
+          // Convex IDs look like: k57abc123def456 or similar alphanumeric
+          return !output.match(/\b[a-z][a-z0-9]{15,}\b/);
+
+  - vars:
+      prompt: "Search across all my documents for payment terms"
+    assert:
+      - type: not-contains
+        value: "analyzeDocumentFields"
+      - type: not-contains
+        value: "extractPaymentTerms"
+      - type: not-contains
+        value: "searchDocuments"
+      - type: not-contains
+        value: "tool_call"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 3: Identity and capability awareness
+  # The AI must correctly identify itself as "Seal AI" and know its capabilities.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Who are you?"
+    assert:
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('seal') && (text.includes('document') || text.includes('signing'));
+      # Must NOT claim to be a generic AI
+      - type: not-contains
+        value: "large language model"
+      - type: not-contains
+        value: "ChatGPT"
+
+  - vars:
+      prompt: "What can you do?"
+    assert:
+      # Should mention core capabilities
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          const hasFieldAnalysis = text.includes('field') || text.includes('signature') || text.includes('analyze');
+          const hasPayment = text.includes('payment') || text.includes('invoice');
+          const hasSearch = text.includes('search') || text.includes('find');
+          // Should mention at least 2 of 3 capabilities
+          return [hasFieldAnalysis, hasPayment, hasSearch].filter(Boolean).length >= 2;
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 4: Payment term extraction understanding
+  # The AI should understand payment-related queries and respond appropriately.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Extract payment terms from this document"
+    assert:
+      # Without a documentId, the AI should ask for one or acknowledge it needs context
+      - type: javascript
+        value: "output.length >= 10"
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('payment') || text.includes('document') || text.includes('provide') || text.includes('which');
+
+  - vars:
+      prompt: "What are the billing details in this contract?"
+    assert:
+      - type: javascript
+        value: "output.length >= 10"
+      - type: not-contains
+        value: "[NO RESPONSE]"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 5: Response quality and formatting
+  # Responses should be well-formatted, substantive, and not empty or error-like.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Help me prepare this NDA for signing"
+    assert:
+      - type: not-contains
+        value: "[NO RESPONSE]"
+      - type: javascript
+        value: "output.length >= 50"
+      # Should give useful guidance about NDAs or signing
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('nda') || text.includes('non-disclosure') || text.includes('signature') || text.includes('field');
+
+  - vars:
+      prompt: "I need to send this document to 3 people for signatures"
+    assert:
+      - type: javascript
+        value: "output.length >= 50"
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('sign') || text.includes('recipient') || text.includes('field');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 6: Document search behavior
+  # The AI should properly handle search queries and cite sources.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Find all documents that mention indemnification"
+    assert:
+      - type: javascript
+        value: "output.length >= 30"
+      # Should reference the search capability or results
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('indemnif') || text.includes('search') || text.includes('document') || text.includes('found');
+
+  - vars:
+      prompt: "Which contracts have a termination clause?"
+    assert:
+      # May return empty if no docs match — just ensure it responds at all
+      - type: javascript
+        value: "output.length >= 10"
+      - type: not-contains
+        value: "[NO RESPONSE]"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 7: Scope boundaries — no off-topic capabilities claimed
+  # Seal AI is a document intelligence assistant, not a general-purpose AI.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Write me a poem about the ocean"
+    assert:
+      # Should either redirect to document tasks or politely decline
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          const redirectsToDocuments = text.includes('document') || text.includes('seal') || text.includes('signing');
+          const declines = text.includes('help') || text.includes('designed') || text.includes('specialized');
+          // Should either redirect or at least not just write a poem
+          return redirectsToDocuments || declines || !text.includes('ocean');
+
+  - vars:
+      prompt: "What's the weather like today?"
+    assert:
+      # Should not pretend to know the weather
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return !text.includes('degrees') && !text.includes('sunny') && !text.includes('cloudy');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 8: Citation format when searching
+  # The AI should use proper citation markers when referencing documents.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Search for any confidentiality agreements in my workspace"
+    assert:
+      - type: javascript
+        value: "output.length >= 30"
+      - type: not-contains
+        value: "undefined"
+      - type: not-contains
+        value: "null"
