@@ -38,8 +38,14 @@ export const startDunning = internalMutation({
     const invoice = await ctx.db.get(args.invoiceId);
     if (!invoice) return null;
 
-    // Don't start if already active or completed
-    if (invoice.dunningStatus === "active") return null;
+    // Don't start if already active, completed, or cancelled
+    if (
+      invoice.dunningStatus === "active" ||
+      invoice.dunningStatus === "completed" ||
+      invoice.dunningStatus === "cancelled"
+    ) {
+      return null;
+    }
 
     // Only dun open or uncollectible invoices
     if (invoice.status !== "open" && invoice.status !== "uncollectible") return null;

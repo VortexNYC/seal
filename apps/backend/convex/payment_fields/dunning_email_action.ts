@@ -19,6 +19,14 @@ function getResendSdk(): Resend {
   return new Resend(process.env.RESEND_API_KEY);
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function formatCurrency(amountCents: number, currency: string): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -88,9 +96,9 @@ function renderDunningHtml(
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-      <p style="color: ${urgencyColor}; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">${content.heading}</p>
-      <p>Hi ${customerName},</p>
-      <p>${content.message}</p>
+      <p style="color: ${urgencyColor}; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">${escapeHtml(content.heading)}</p>
+      <p>Hi ${escapeHtml(customerName)},</p>
+      <p>${escapeHtml(content.message)}</p>
       ${buttonHtml}
       <p style="color: #6b7280; font-size: 14px;">If you've already made this payment, please disregard this message.</p>
       <br/>
@@ -133,6 +141,11 @@ export const sendDunningEmail = internalAction({
     // Bail if dunning was cancelled or invoice was paid
     if (invoice.dunningStatus !== "active") {
       return { success: true }; // Not an error, just no longer needed
+    }
+
+    // Bail if this step is stale (invoice already advanced past it)
+    if (invoice.dunningStep !== args.step) {
+      return { success: true }; // Already advanced, skip duplicate
     }
 
     if (invoice.status === "paid" || invoice.status === "void") {

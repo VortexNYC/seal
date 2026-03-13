@@ -127,6 +127,50 @@ describe("dunning (payment recovery)", () => {
     expect(invoice!.dunningStatus).toBeUndefined();
   });
 
+  test("startDunning does not restart completed dunning", async () => {
+    const { internal } = await import("../../_generated/api");
+
+    // Start and complete the full sequence
+    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.advanceDunningStep, {
+      invoiceId,
+      completedStep: 0,
+    });
+    await t.mutation(internal.payment_fields.dunning.advanceDunningStep, {
+      invoiceId,
+      completedStep: 1,
+    });
+    await t.mutation(internal.payment_fields.dunning.advanceDunningStep, {
+      invoiceId,
+      completedStep: 2,
+    });
+
+    // Try to restart — should be blocked
+    const result = await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    expect(result).toBeNull();
+
+    const invoice = await t.run(async (ctx) => {
+      return await ctx.db.get(invoiceId);
+    });
+    expect(invoice!.dunningStatus).toBe("completed");
+  });
+
+  test("startDunning does not restart cancelled dunning", async () => {
+    const { internal } = await import("../../_generated/api");
+
+    await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    await t.mutation(internal.payment_fields.dunning.cancelDunning, { invoiceId });
+
+    // Try to restart — should be blocked
+    const result = await t.mutation(internal.payment_fields.dunning.startDunning, { invoiceId });
+    expect(result).toBeNull();
+
+    const invoice = await t.run(async (ctx) => {
+      return await ctx.db.get(invoiceId);
+    });
+    expect(invoice!.dunningStatus).toBe("cancelled");
+  });
+
   test("cancelDunning stops active dunning", async () => {
     const { internal } = await import("../../_generated/api");
 
