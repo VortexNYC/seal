@@ -298,4 +298,85 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoiceIds = invoices.map((i) => i.stripeInvoiceId).sort();
     expect(invoiceIds).toEqual(["in_cycle2", "in_cycle3"]);
   });
+
+  test("P1: cycle 2+ invoices get paid via updatePaymentStatusFromWebhook", async () => {
+    const { internal } = await import("../../_generated/api");
+
+    // Create cycle 2 invoice via upsertRecurringInvoice
+    await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
+      stripeInvoiceId: "in_cycle2_paid",
+      stripeSubscriptionId: "sub_recurring_123",
+      stripeAccountId: "acct_test_001",
+      status: "open",
+      customerEmail: "customer@example.com",
+      amountDue: 10000,
+      currency: "usd",
+    });
+
+    // Simulate invoice.paid webhook — config lookup won't match (config has in_initial_123)
+    // but document_invoices lookup should match
+    const result = await t.mutation(
+      internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
+      {
+        stripeInvoiceId: "in_cycle2_paid",
+        paymentStatus: "paid",
+      },
+    );
+
+    expect(result).not.toBeNull();
+    expect(result!.invoiceRecordId).toBeDefined();
+    expect(result!.documentId).toBe(documentId);
+
+    const invoices = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("document_invoices")
+        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_cycle2_paid"))
+        .collect();
+    });
+
+    expect(invoices[0]!.status).toBe("paid");
+    expect(invoices[0]!.paidAt).toBeDefined();
+  });
+
+  test("P2: replayed create/finalize does not regress terminal status", async () => {
+    const { internal } = await import("../../_generated/api");
+
+    // Create invoice and mark it paid
+    await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
+      stripeInvoiceId: "in_regress_test",
+      stripeSubscriptionId: "sub_recurring_123",
+      stripeAccountId: "acct_test_001",
+      status: "open",
+      customerEmail: "customer@example.com",
+      amountDue: 10000,
+      currency: "usd",
+    });
+
+    // Mark as paid via webhook
+    await t.mutation(internal.payment_fields.mutations.updatePaymentStatusFromWebhook, {
+      stripeInvoiceId: "in_regress_test",
+      paymentStatus: "paid",
+    });
+
+    // Replay invoice.created or invoice.finalized (Stripe retried the event)
+    await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
+      stripeInvoiceId: "in_regress_test",
+      stripeSubscriptionId: "sub_recurring_123",
+      stripeAccountId: "acct_test_001",
+      status: "draft",
+      customerEmail: "customer@example.com",
+      amountDue: 10000,
+      currency: "usd",
+    });
+
+    const invoices = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("document_invoices")
+        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_regress_test"))
+        .collect();
+    });
+
+    // Status should remain "paid", not regressed to "draft"
+    expect(invoices[0]!.status).toBe("paid");
+  });
 });

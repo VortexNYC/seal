@@ -236,35 +236,35 @@ export const updatePaymentStatusFromWebhook = internalMutation({
     paymentStatus: paymentStatusTuple,
   },
   handler: async (ctx, args) => {
+    const now = Date.now();
+
+    const statusMap: Record<string, "open" | "paid" | "void" | "uncollectible"> = {
+      awaiting: "open",
+      paid: "paid",
+      failed: "uncollectible",
+      cancelled: "void",
+    };
+
     const config = await ctx.db
       .query("payment_field_configs")
       .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
       .first();
 
-    if (!config) {
-      return null;
-    }
-
-    const now = Date.now();
-
-    await ctx.db.patch(config._id, {
-      paymentStatus: args.paymentStatus,
-      updatedAt: now,
-    });
-
-    // Sync status to document_invoices
+    // Always look up document_invoices — cycle 2+ invoices may exist here
+    // even when config doesn't match (config stores the initial invoice ID)
     const invoiceRecord = await ctx.db
       .query("document_invoices")
       .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
       .first();
 
+    if (config) {
+      await ctx.db.patch(config._id, {
+        paymentStatus: args.paymentStatus,
+        updatedAt: now,
+      });
+    }
+
     if (invoiceRecord) {
-      const statusMap: Record<string, "open" | "paid" | "void" | "uncollectible"> = {
-        awaiting: "open",
-        paid: "paid",
-        failed: "uncollectible",
-        cancelled: "void",
-      };
       const invoiceStatus = statusMap[args.paymentStatus];
       if (invoiceStatus) {
         await ctx.db.patch(invoiceRecord._id, {
@@ -273,13 +273,17 @@ export const updatePaymentStatusFromWebhook = internalMutation({
           ...(invoiceStatus === "void" && { voidedAt: now }),
           updatedAt: now,
         });
-
       }
     }
 
+    // Return null only if neither config nor invoice record was found
+    if (!config && !invoiceRecord) {
+      return null;
+    }
+
     return {
-      configId: config._id,
-      documentId: config.documentId,
+      configId: config?._id,
+      documentId: config?.documentId ?? invoiceRecord?.documentId,
       invoiceRecordId: invoiceRecord?._id,
     };
   },
@@ -438,6 +442,12 @@ export const upsertRecurringInvoice = internalMutation({
       .first();
 
     if (existing) {
+      // Never regress terminal statuses (paid, void, uncollectible) on replayed events
+      const terminalStatuses = new Set(["paid", "void", "uncollectible"]);
+      if (terminalStatuses.has(existing.status)) {
+        return { invoiceId: existing._id, created: false };
+      }
+
       // Update existing record with latest data from Stripe
       await ctx.db.patch(existing._id, {
         status: args.status,

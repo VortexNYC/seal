@@ -93,7 +93,7 @@ async function updatePaymentFieldFromInvoice(
   ctx: HttpActionCtx,
   invoice: Stripe.Invoice,
   paymentStatus: PaymentStatus,
-): Promise<{ configId: string; documentId: string; invoiceRecordId?: string } | null> {
+): Promise<{ configId?: string; documentId?: string; invoiceRecordId?: string } | null> {
   const result = await ctx.runMutation(
     internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
     {
