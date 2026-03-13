@@ -62,6 +62,7 @@ describe("revenue analytics queries", () => {
     dunningStatus?: "none" | "active" | "completed" | "cancelled";
     dunningStep?: number;
     lastDunningEmailAt?: number;
+    nextDunningAt?: number;
   }) {
     const now = Date.now();
     return await t.run(async (ctx) => {
@@ -81,6 +82,7 @@ describe("revenue analytics queries", () => {
         dunningStatus: overrides.dunningStatus,
         dunningStep: overrides.dunningStep,
         lastDunningEmailAt: overrides.lastDunningEmailAt,
+        nextDunningAt: overrides.nextDunningAt,
       });
     });
   }
@@ -396,17 +398,39 @@ describe("revenue analytics queries", () => {
       expect(result.invoices[0]!.dunningStatus).toBe("completed");
     });
 
-    test("detects active dunning stuck for 7+ days", async () => {
+    test("excludes freshly completed dunning from stalled", async () => {
       const { internal } = await import("../../_generated/api");
       const now = Date.now();
 
-      // Active dunning but last email was 10 days ago — stuck
+      // Dunning just completed 2 days ago — not stalled yet, give time for payment
+      await insertInvoice({
+        status: "open",
+        amountDue: 30000,
+        finalizedAt: now - 45 * DAY_MS,
+        dunningStatus: "completed",
+        lastDunningEmailAt: now - 2 * DAY_MS,
+      });
+
+      const result = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId },
+      );
+
+      expect(result.count).toBe(0);
+    });
+
+    test("detects active dunning with overdue nextDunningAt", async () => {
+      const { internal } = await import("../../_generated/api");
+      const now = Date.now();
+
+      // Active dunning — nextDunningAt was 10 days ago, never processed (stuck)
       await insertInvoice({
         status: "open",
         amountDue: 15000,
         finalizedAt: now - 40 * DAY_MS,
         dunningStatus: "active",
-        lastDunningEmailAt: now - 10 * DAY_MS,
+        lastDunningEmailAt: now - 20 * DAY_MS,
+        nextDunningAt: now - 10 * DAY_MS,
       });
 
       const result = await t.query(
@@ -418,11 +442,33 @@ describe("revenue analytics queries", () => {
       expect(result.invoices[0]!.dunningStatus).toBe("active");
     });
 
-    test("excludes active dunning with recent email", async () => {
+    test("excludes active dunning with future nextDunningAt", async () => {
       const { internal } = await import("../../_generated/api");
       const now = Date.now();
 
-      // Active dunning, email sent 2 days ago — not stalled
+      // Active dunning — next email scheduled for tomorrow, on track
+      await insertInvoice({
+        status: "open",
+        amountDue: 15000,
+        finalizedAt: now - 35 * DAY_MS,
+        dunningStatus: "active",
+        lastDunningEmailAt: now - 2 * DAY_MS,
+        nextDunningAt: now + 1 * DAY_MS,
+      });
+
+      const result = await t.query(
+        internal.stripe.revenue_queries.getStalledInvoicesInternal,
+        { organizationId },
+      );
+
+      expect(result.count).toBe(0);
+    });
+
+    test("excludes active dunning with no nextDunningAt", async () => {
+      const { internal } = await import("../../_generated/api");
+      const now = Date.now();
+
+      // Active dunning but no nextDunningAt set — just started, not stuck yet
       await insertInvoice({
         status: "open",
         amountDue: 15000,
