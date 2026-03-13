@@ -292,3 +292,59 @@ tests:
         value: |
           const text = output.toLowerCase();
           return text.includes('indemnif') || text.includes('search') || text.includes('found') || text.includes('document');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 10: Factuality against known dev data (ground truth)
+  # These validate the AI returns accurate info about known test documents.
+  # Dev database has: 3 sample-document.pdf files with GDPR Art. 13 content.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "How many documents are in my workspace?"
+    assert:
+      # Should report 3 documents (known dev data)
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('3') || text.includes('three');
+      # Should mention sample-document.pdf
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('sample-document') || text.includes('sample document');
+
+  - vars:
+      prompt: "Search for GDPR in my documents"
+    assert:
+      # Should find GDPR content (all 3 docs have it)
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('gdpr') || text.includes('data protection') || text.includes('art. 13') || text.includes('article 13');
+      # Should include citation markers
+      - type: javascript
+        value: "output.includes('<<cite:')"
+      # Should reference sample-document.pdf
+      - type: contains
+        value: "sample-document.pdf"
+
+  - vars:
+      prompt: "Do any of my documents mention Article 13?"
+    assert:
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('article 13') || text.includes('art. 13') || text.includes('gdpr');
+      - type: javascript
+        value: "output.length >= 50"
+
+  - vars:
+      prompt: "Search for passport delivery in my workspace"
+    assert:
+      # Dev data contains passport-related content
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('passport') || text.includes('found') || text.includes('document');
+      - type: javascript
+        value: "output.length >= 30"
