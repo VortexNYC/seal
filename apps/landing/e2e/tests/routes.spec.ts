@@ -8,7 +8,7 @@ test.describe("landing public routes", () => {
   test("footer links resolve to legal, docs, and changelog routes", async ({ page }) => {
     const homePage = new HomePage(page);
     const visitFooterLink = async (
-      name: "Docs" | "API" | "Changelog" | "Terms" | "Privacy",
+      name: "Templates" | "Changelog" | "Terms" | "Privacy",
       assertion: () => Promise<void>,
     ): Promise<void> => {
       await homePage.goto();
@@ -17,14 +17,9 @@ test.describe("landing public routes", () => {
       await assertion();
     };
 
-    await visitFooterLink("Docs", async () => {
+    await visitFooterLink("Templates", async () => {
       await expect(page).toHaveURL(/\/docs$/);
       await expect(page.locator("body")).toContainText("Seal Docs");
-    });
-
-    await visitFooterLink("API", async () => {
-      await expect(page).toHaveURL(/\/docs\/api-reference$/);
-      await expect(page.getByRole("heading", { name: /api reference/i }).first()).toBeVisible();
     });
 
     await visitFooterLink("Changelog", async () => {
@@ -34,7 +29,9 @@ test.describe("landing public routes", () => {
 
     await visitFooterLink("Terms", async () => {
       await expect(page).toHaveURL(/\/terms-of-service$/);
-      await expect(page.getByRole("heading", { level: 1, name: /terms of service/i })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { level: 1, name: /terms of service/i }),
+      ).toBeVisible();
     });
 
     await visitFooterLink("Privacy", async () => {
@@ -48,7 +45,9 @@ test.describe("landing public routes", () => {
       {
         path: "/integrations",
         assert: async (page: Parameters<typeof trackBrowserErrors>[0]) => {
-          await expect(page.getByRole("heading", { level: 1, name: /built to connect/i })).toBeVisible();
+          await expect(
+            page.getByRole("heading", { level: 1, name: /built to connect/i }),
+          ).toBeVisible();
         },
       },
       {
@@ -60,7 +59,9 @@ test.describe("landing public routes", () => {
       {
         path: "/docs/getting-started",
         assert: async (page: Parameters<typeof trackBrowserErrors>[0]) => {
-          await expect(page.getByRole("heading", { name: /getting started/i }).first()).toBeVisible();
+          await expect(
+            page.getByRole("heading", { name: /getting started/i }).first(),
+          ).toBeVisible();
         },
       },
       {
@@ -72,13 +73,17 @@ test.describe("landing public routes", () => {
       {
         path: "/privacy-policy",
         assert: async (page: Parameters<typeof trackBrowserErrors>[0]) => {
-          await expect(page.getByRole("heading", { level: 1, name: /privacy policy/i })).toBeVisible();
+          await expect(
+            page.getByRole("heading", { level: 1, name: /privacy policy/i }),
+          ).toBeVisible();
         },
       },
       {
         path: "/terms-of-service",
         assert: async (page: Parameters<typeof trackBrowserErrors>[0]) => {
-          await expect(page.getByRole("heading", { level: 1, name: /terms of service/i })).toBeVisible();
+          await expect(
+            page.getByRole("heading", { level: 1, name: /terms of service/i }),
+          ).toBeVisible();
         },
       },
     ] as const;

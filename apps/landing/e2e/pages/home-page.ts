@@ -16,14 +16,17 @@ export class HomePage {
 
   async waitForReady(): Promise<void> {
     await expect(
-      this.page.getByRole("heading", { level: 1, name: /sign documents\./i }),
+      this.page.getByRole("heading", { level: 1, name: /docusign doesn.t read your contracts/i }),
     ).toBeVisible();
     await expect(this.page.getByRole("navigation").first()).toBeVisible();
     await expect(this.page.getByRole("contentinfo")).toBeVisible();
   }
 
   heroHeading(): Locator {
-    return this.page.getByRole("heading", { level: 1, name: /sign documents\./i });
+    return this.page.getByRole("heading", {
+      level: 1,
+      name: /docusign doesn.t read your contracts/i,
+    });
   }
 
   startFreeLinks(): Locator {
@@ -76,6 +79,10 @@ export class HomePage {
 
   footerLinks(): Locator {
     return this.page.getByTestId("site-footer-links");
+  }
+
+  footerGridColumns(): Locator {
+    return this.page.getByTestId("site-footer-inner").locator(":scope > *");
   }
 
   pricingCards(): Locator {
