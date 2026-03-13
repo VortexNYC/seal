@@ -273,10 +273,15 @@ export const updatePaymentStatusFromWebhook = internalMutation({
           ...(invoiceStatus === "void" && { voidedAt: now }),
           updatedAt: now,
         });
+
       }
     }
 
-    return { configId: config._id, documentId: config.documentId };
+    return {
+      configId: config._id,
+      documentId: config.documentId,
+      invoiceRecordId: invoiceRecord?._id,
+    };
   },
 });
 

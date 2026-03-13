@@ -93,7 +93,7 @@ async function updatePaymentFieldFromInvoice(
   ctx: HttpActionCtx,
   invoice: Stripe.Invoice,
   paymentStatus: PaymentStatus,
-): Promise<{ configId: string; documentId: string } | null> {
+): Promise<{ configId: string; documentId: string; invoiceRecordId?: string } | null> {
   const result = await ctx.runMutation(
     internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
     {
@@ -126,6 +126,13 @@ async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): P
   // Update payment_field_configs (new system)
   const result = await updatePaymentFieldFromInvoice(ctx, invoice, "paid");
 
+  // Cancel any active dunning sequence
+  if (result?.invoiceRecordId) {
+    await ctx.runMutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+    });
+  }
+
   // If a payment config was updated, check if the document can now complete
   if (result?.documentId) {
     await ctx.runMutation(internal.documents.workflow_mutations.checkPaymentCompletionAndFinalize, {
@@ -144,12 +151,33 @@ async function handleInvoicePaymentFailed(
   });
 
   // Update payment_field_configs (new system)
-  await updatePaymentFieldFromInvoice(ctx, invoice, "failed");
+  const result = await updatePaymentFieldFromInvoice(ctx, invoice, "failed");
+
+  // Start dunning sequence and send immediate first email
+  if (result?.invoiceRecordId) {
+    const dunningResult = await ctx.runMutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+    });
+
+    if (dunningResult?.started) {
+      await ctx.runAction(internal.payment_fields.dunning_email_action.sendDunningEmail, {
+        invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+        step: 0,
+      });
+    }
+  }
 }
 
 async function handleInvoiceVoided(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
   // Update payment_field_configs (new system)
-  await updatePaymentFieldFromInvoice(ctx, invoice, "cancelled");
+  const result = await updatePaymentFieldFromInvoice(ctx, invoice, "cancelled");
+
+  // Cancel any active dunning sequence
+  if (result?.invoiceRecordId) {
+    await ctx.runMutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+    });
+  }
 }
 
 async function handleInvoiceMarkedUncollectible(
@@ -157,12 +185,26 @@ async function handleInvoiceMarkedUncollectible(
   invoice: Stripe.Invoice,
 ): Promise<void> {
   // Update payment_field_configs (new system)
-  await updatePaymentFieldFromInvoice(ctx, invoice, "failed");
+  const result = await updatePaymentFieldFromInvoice(ctx, invoice, "failed");
+
+  // Cancel dunning — invoice is already written off
+  if (result?.invoiceRecordId) {
+    await ctx.runMutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+    });
+  }
 }
 
 async function handleInvoiceDeleted(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
   // Update payment_field_configs (new system)
-  await updatePaymentFieldFromInvoice(ctx, invoice, "cancelled");
+  const result = await updatePaymentFieldFromInvoice(ctx, invoice, "cancelled");
+
+  // Cancel dunning — invoice no longer exists
+  if (result?.invoiceRecordId) {
+    await ctx.runMutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+    });
+  }
 }
 
 /**

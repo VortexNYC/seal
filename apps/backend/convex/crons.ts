@@ -88,4 +88,11 @@ crons.interval(
   internal.documents.expiration_sweep.sweepExpiredRecipients,
 );
 
+// Process dunning (payment recovery) emails daily at 11am UTC
+crons.daily(
+  "process-dunning-emails",
+  { hourUTC: 11, minuteUTC: 0 },
+  internal.payment_fields.dunning.processDunningEmails,
+);
+
 export default crons;
