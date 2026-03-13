@@ -230,3 +230,65 @@ tests:
         value: "undefined"
       - type: not-contains
         value: "null"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 9: Semantic response quality
+  # Deep assertions checking guidance quality, capability awareness, and tone.
+  # (When a grading LLM key is available, upgrade these to llm-rubric.)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "I just uploaded a contract, what should I do next?"
+    assert:
+      - type: javascript
+        value: "output.length >= 50"
+      # Should mention field detection/analysis as a next step
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          const mentionsAnalysis = text.includes('analyz') || text.includes('field') || text.includes('detect');
+          const mentionsSigning = text.includes('sign') || text.includes('recipient');
+          return mentionsAnalysis || mentionsSigning;
+      # Should be actionable, not just a help page dump
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('step') || text.includes('first') || text.includes('next') || text.includes('can ');
+
+  - vars:
+      prompt: "I'm not sure where to put the date fields on this agreement"
+    assert:
+      - type: javascript
+        value: "output.length >= 50"
+      # Should offer to analyze the document for date field placement
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('date') && (text.includes('analyz') || text.includes('detect') || text.includes('place') || text.includes('field'));
+      # Should NOT say "I can't help" — date fields are a core capability
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return !text.includes("can't help") && !text.includes("unable to assist");
+
+  - vars:
+      prompt: "We have a multi-party agreement with 5 signers. Can you help set it up?"
+    assert:
+      - type: javascript
+        value: "output.length >= 50"
+      # Should acknowledge multi-signer scenario
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return (text.includes('signer') || text.includes('recipient') || text.includes('signature')) && (text.includes('field') || text.includes('place') || text.includes('analyz'));
+
+  - vars:
+      prompt: "Compare the indemnification clauses across my contracts"
+    assert:
+      - type: javascript
+        value: "output.length >= 30"
+      # Should reference searching or results
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('indemnif') || text.includes('search') || text.includes('found') || text.includes('document');
