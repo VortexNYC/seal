@@ -369,6 +369,8 @@ export const storeStripeIds = internalMutation({
           organizationId: config.organizationId,
           stripeAccountId: args.stripeAccountId,
           stripeInvoiceId: args.stripeInvoiceId,
+          stripeSubscriptionId: args.stripeSubscriptionId,
+          stripeCustomerId: undefined,
           status: "open",
           customerEmail: args.customerEmail,
           customerName: args.customerName,
@@ -381,5 +383,93 @@ export const storeStripeIds = internalMutation({
         });
       }
     }
+  },
+});
+
+/**
+ * Internal mutation to upsert a document_invoices record from a Stripe
+ * subscription invoice webhook (invoice.created / invoice.finalized).
+ *
+ * For recurring payments, Stripe generates new invoices each billing cycle.
+ * This mutation links those subsequent invoices back to the original document
+ * by looking up the payment_field_config via stripeSubscriptionId.
+ *
+ * Idempotent — won't create duplicates for the same stripeInvoiceId.
+ */
+export const upsertRecurringInvoice = internalMutation({
+  args: {
+    stripeInvoiceId: v.string(),
+    stripeSubscriptionId: v.string(),
+    stripeCustomerId: v.optional(v.string()),
+    stripeAccountId: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("open"),
+      v.literal("paid"),
+      v.literal("void"),
+      v.literal("uncollectible"),
+    ),
+    customerEmail: v.string(),
+    customerName: v.optional(v.string()),
+    amountDue: v.number(),
+    currency: v.string(),
+    hostedInvoiceUrl: v.optional(v.string()),
+    invoicePdf: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Look up payment_field_config by subscription to get documentId/organizationId
+    const config = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_stripe_subscription", (q) =>
+        q.eq("stripeSubscriptionId", args.stripeSubscriptionId),
+      )
+      .first();
+
+    if (!config) {
+      return null;
+    }
+
+    const now = Date.now();
+
+    // Check if record already exists (idempotent)
+    const existing = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .first();
+
+    if (existing) {
+      // Update existing record with latest data from Stripe
+      await ctx.db.patch(existing._id, {
+        status: args.status,
+        amountDue: args.amountDue,
+        hostedInvoiceUrl: args.hostedInvoiceUrl,
+        invoicePdf: args.invoicePdf,
+        ...(args.status === "open" && !existing.finalizedAt && { finalizedAt: now }),
+        updatedAt: now,
+      });
+      return { invoiceId: existing._id, created: false };
+    }
+
+    // Create new document_invoices record
+    const invoiceId = await ctx.db.insert("document_invoices", {
+      documentId: config.documentId,
+      organizationId: config.organizationId,
+      stripeAccountId: args.stripeAccountId,
+      stripeInvoiceId: args.stripeInvoiceId,
+      stripeSubscriptionId: args.stripeSubscriptionId,
+      stripeCustomerId: args.stripeCustomerId,
+      status: args.status,
+      customerEmail: args.customerEmail,
+      customerName: args.customerName,
+      amountDue: args.amountDue,
+      currency: args.currency,
+      hostedInvoiceUrl: args.hostedInvoiceUrl,
+      invoicePdf: args.invoicePdf,
+      ...(args.status === "open" && { finalizedAt: now }),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { invoiceId, created: true };
   },
 });
