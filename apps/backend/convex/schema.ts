@@ -8,6 +8,7 @@ import {
 } from "./schemas/ai_document_annotations";
 import { aiFieldSuggestionsTable } from "./schemas/ai_field_suggestions";
 import { aiProgressTable } from "./schemas/ai_progress";
+import { aiRoutingLogsTable } from "./schemas/ai_routing_logs";
 import { aiThreadsTable } from "./schemas/ai_threads";
 import { aiUsageLogTable } from "./schemas/ai_usage_log";
 import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
@@ -225,6 +226,7 @@ export default defineSchema({
   ai_document_annotations: aiDocumentAnnotationsTable,
   ai_threads: aiThreadsTable,
   ai_progress: aiProgressTable,
+  ai_routing_logs: aiRoutingLogsTable,
   ai_usage_log: aiUsageLogTable,
 
   // MCP OAuth

@@ -2814,18 +2814,40 @@ http.route({
       });
     }
 
-    const body = (await request.json()) as { prompt?: string; documentId?: string };
-    if (!body.prompt) {
-      return new Response(JSON.stringify({ error: "prompt is required" }), {
+    const body = (await request.json()) as { prompt?: string; messages?: string[]; documentId?: string };
+    const messages = body.messages ?? (body.prompt ? [body.prompt] : []);
+    if (messages.length === 0) {
+      return new Response(JSON.stringify({ error: "prompt or messages is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
     const result = await ctx.runAction(internal.ai.eval.runEval, {
-      prompt: body.prompt,
+      messages,
       documentId: body.documentId,
     });
+
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+http.route({
+  path: "/dev/reset-eval-state",
+  method: "POST",
+  handler: httpAction(async (ctx) => {
+    const clerkSecret = process.env.CLERK_SECRET_KEY;
+    if (!clerkSecret || !clerkSecret.startsWith("sk_test_")) {
+      return new Response(JSON.stringify({ error: "Only available in dev" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const result = await ctx.runMutation(internal.ai.eval.resetEvalState, {});
 
     return new Response(JSON.stringify(result), {
       status: 200,

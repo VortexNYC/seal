@@ -10,9 +10,9 @@ import { ConvexError, v } from "convex/values";
 
 import { components, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { type ActionCtx, internalAction, internalMutation } from "../_generated/server";
+import { type ActionCtx, internalAction, internalMutation, internalQuery } from "../_generated/server";
 import { authMutation, authQuery } from "../auth/wrappers";
-import { sealAgent, SYSTEM_INSTRUCTIONS } from "./agent";
+import { sealAgent, sealAgentTier1, sealAgentTier3, SYSTEM_INSTRUCTIONS, classifyLocally, detectCascadeFailure } from "./agent";
 import { aiRateLimiter } from "./rateLimiting";
 import type { SealAICtx } from "./types";
 
@@ -33,6 +33,7 @@ When using tools that require a documentId parameter, use "${documentId}" unless
 type GenerateResponseArgs = {
   threadId: string;
   promptMessageId: string;
+  prompt?: string;
   organizationId: Id<"organizations">;
   userId: string;
   documentId?: Id<"documents">;
@@ -87,24 +88,26 @@ async function logChatUsage(
   }
 }
 
-async function executeResponseGeneration(
+/** Stream a response using the given agent (Tier 2 or Tier 3). */
+async function streamWithAgent(
+  agent: typeof sealAgent,
   ctx: ActionCtx,
   args: GenerateResponseArgs,
   sealCtx: SealAICtx,
-  documentName?: string,
+  system: string,
 ): Promise<number> {
   let stepCount = 0;
   const completedTools: string[] = [];
   let totalTokens = 0;
 
-  const result = await sealAgent.streamText(
+  const result = await agent.streamText(
     sealCtx,
     {
       threadId: args.threadId,
       userId: args.userId,
     },
     {
-      system: buildSystemPrompt(args.documentId, documentName),
+      system,
       promptMessageId: args.promptMessageId,
       providerOptions: {
         google: { thinkingConfig: { thinkingLevel: "low" } },
@@ -134,6 +137,62 @@ async function executeResponseGeneration(
   await result.text;
   const usage = await result.usage;
   totalTokens += usage?.totalTokens ?? 0;
+  return totalTokens;
+}
+
+async function executeResponseGeneration(
+  ctx: ActionCtx,
+  args: GenerateResponseArgs,
+  sealCtx: SealAICtx,
+  documentName?: string,
+): Promise<number> {
+  const system = buildSystemPrompt(args.documentId, documentName);
+  const tier = classifyLocally(args.prompt ?? "");
+  console.info(`[SealAI] Route → ${tier}`);
+
+  let totalTokens = 0;
+  let tierUsed = 2;
+  let wasFallback = false;
+
+  if (tier === "TIER_3") {
+    // Expert query → Pro model
+    totalTokens = await streamWithAgent(sealAgentTier3, ctx, args, sealCtx, system);
+    tierUsed = 3;
+  } else if (tier === "TIER_2") {
+    // Write intent → Flash (full tools)
+    totalTokens = await streamWithAgent(sealAgent, ctx, args, sealCtx, system);
+    tierUsed = 2;
+  } else {
+    // TIER_1: Flash-Lite with saveMessages: "none" + quality check
+    let tier1Result: { text?: string; toolCalls?: { toolName: string }[] } | null = null;
+    try {
+      tier1Result = await sealAgentTier1.generateText(
+        sealCtx,
+        { threadId: args.threadId, userId: args.userId },
+        // @ts-expect-error TS2345 deep type instantiation — saveMessages is valid at runtime
+        { promptMessageId: args.promptMessageId, system, saveMessages: "none", providerOptions: { google: { thinkingConfig: { thinkingLevel: "low" } } } },
+      );
+    } catch {
+      console.warn("[SealAI] TIER_1 errored — falling back to TIER_2");
+    }
+
+    const failure = tier1Result ? detectCascadeFailure(tier1Result) : "error";
+    if (!failure && tier1Result) {
+      // Tier 1 passed quality check — save the response manually
+      await sealAgent.saveMessage(sealCtx, {
+        threadId: args.threadId,
+        userId: args.userId,
+        message: { role: "assistant", content: tier1Result.text ?? "" },
+      });
+      tierUsed = 1;
+    } else {
+      // Tier 1 failed — fall back to Tier 2 streaming
+      console.warn(`[SealAI] TIER_1 failed (${failure}) — falling back to TIER_2`);
+      totalTokens = await streamWithAgent(sealAgent, ctx, args, sealCtx, system);
+      tierUsed = 2;
+      wasFallback = true;
+    }
+  }
 
   await ctx.runMutation(internal.ai.progress.complete, {
     threadId: args.threadId,
@@ -141,6 +200,18 @@ async function executeResponseGeneration(
   });
 
   await logChatUsage(ctx, args, totalTokens);
+
+  // Log routing telemetry (non-critical)
+  try {
+    await ctx.runMutation(internal.ai.threads.logRouting, {
+      threadId: args.threadId,
+      tier: tierUsed,
+      wasFallback,
+    });
+  } catch {
+    // Don't let logging failure break the response
+  }
+
   return totalTokens;
 }
 
@@ -305,6 +376,10 @@ export const sendMessage = authMutation({
       key: userId.toString(),
       throws: true,
     });
+    await aiRateLimiter.limit(ctx, "orgSendMessage", {
+      key: ctx.auth.organizationId.toString(),
+      throws: true,
+    });
     await aiRateLimiter.limit(ctx, "globalSendMessage", { throws: true });
 
     // Save the user message to the thread
@@ -326,6 +401,7 @@ export const sendMessage = authMutation({
     await ctx.scheduler.runAfter(0, internal.ai.threads.generateResponseAsync, {
       threadId: args.threadId,
       promptMessageId: messageId,
+      prompt: args.prompt,
       organizationId: threadMapping.organizationId,
       userId: userId.toString(),
       documentId: threadMapping.documentId,
@@ -344,6 +420,7 @@ export const generateResponseAsync = internalAction({
   args: {
     threadId: v.string(),
     promptMessageId: v.string(),
+    prompt: v.optional(v.string()),
     organizationId: v.id("organizations"),
     userId: v.string(),
     documentId: v.optional(v.id("documents")),
@@ -490,5 +567,45 @@ export const saveThreadMapping = internalMutation({
       userId: args.userId,
       createdAt: Date.now(),
     });
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Routing telemetry
+// ---------------------------------------------------------------------------
+
+export const logRouting = internalMutation({
+  args: {
+    threadId: v.string(),
+    tier: v.number(),
+    wasFallback: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("ai_routing_logs", {
+      threadId: args.threadId,
+      tier: args.tier,
+      wasFallback: args.wasFallback,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+export const getRoutingDistribution = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const logs = await ctx.db.query("ai_routing_logs").order("desc").take(1000);
+    const tier1 = logs.filter((l) => l.tier === 1).length;
+    const tier2Direct = logs.filter((l) => l.tier === 2 && !l.wasFallback).length;
+    const tier2Fallback = logs.filter((l) => l.tier === 2 && l.wasFallback).length;
+    const tier3 = logs.filter((l) => l.tier === 3).length;
+    const tier1Total = tier1 + tier2Fallback;
+    return {
+      tier1Success: tier1,
+      tier2Direct,
+      tier2Fallback,
+      tier3,
+      total: logs.length,
+      tier1SuccessRate: tier1Total > 0 ? Math.round((tier1 / tier1Total) * 100) : null,
+    };
   },
 });

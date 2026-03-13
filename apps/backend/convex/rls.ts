@@ -753,6 +753,7 @@ function getExportAndAiRules(
   | "ai_progress"
   | "ai_field_suggestions"
   | "ai_document_annotations"
+  | "ai_routing_logs"
   | "ai_usage_log"
 > {
   return {
@@ -781,6 +782,10 @@ function getExportAndAiRules(
         Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
       modify: async (_queryCtx, doc) =>
         Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+    },
+    ai_routing_logs: {
+      read: async () => Boolean(rlsCtx?.isSuperAdmin),
+      modify: async () => false,
     },
     ai_usage_log: {
       read: async (_queryCtx, doc) =>

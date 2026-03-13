@@ -8,8 +8,10 @@
  * Search: Hybrid semantic + keyword search returns ranked excerpts with citations.
  */
 
+import { ActionCache, type ActionCacheConfig } from "@convex-dev/action-cache";
 import { RAG } from "@convex-dev/rag";
 import { gateway } from "ai";
+import type { FunctionReference } from "convex/server";
 import { v } from "convex/values";
 
 import { components, internal } from "../_generated/api";
@@ -328,6 +330,35 @@ export const hybridSearchDocuments = internalAction({
     return buildSearchResults(filtered, limit);
   },
 });
+
+// =============================================================================
+// SEARCH CACHE — avoids re-embedding identical queries within a session
+// =============================================================================
+
+type SearchAction = FunctionReference<
+  "action",
+  "internal",
+  {
+    organizationId: Id<"organizations">;
+    query: string;
+    limit?: number;
+    workflowStatus?: string;
+    dateFrom?: number;
+    dateTo?: number;
+  },
+  SearchResult[]
+>;
+
+/** Cache for search queries — keyed on org + query + filters, 1-hour TTL.
+ *  Same user asking "find GDPR" twice in a session hits cache on second call. */
+export const searchCache: ActionCache<SearchAction> = new ActionCache(
+  components.actionCache,
+  {
+    action: internal.ai.search.hybridSearchDocuments,
+    name: "documentSearch-v1",
+    ttl: 60 * 60 * 1000, // 1 hour
+  } as ActionCacheConfig<SearchAction>,
+);
 
 // =============================================================================
 // HELPER QUERIES/MUTATIONS

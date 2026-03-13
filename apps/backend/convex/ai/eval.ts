@@ -1,10 +1,11 @@
 /**
  * AI Eval — DEV-only endpoint for promptfoo testing.
  *
- * Creates a fresh thread, sends a user message through the full AI pipeline
- * (system prompt + tools + Gemini Flash), and returns the assistant response.
+ * Creates a fresh thread, sends one or more user messages through the full AI
+ * pipeline (system prompt + tools + routing), and returns the final assistant
+ * response. Multi-turn evals send each message in sequence on the same thread.
  *
- * This runs the REAL pipeline: same system prompt, same tools, same model.
+ * This runs the REAL pipeline: same system prompt, same tools, same routing.
  * The only difference from production is that auth is bypassed (uses a
  * hardcoded test user/org) so promptfoo can call it headlessly.
  */
@@ -13,26 +14,95 @@ import { v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { internalAction } from "../_generated/server";
-import { sealAgent, SYSTEM_INSTRUCTIONS } from "./agent";
+import type { ActionCtx } from "../_generated/server";
+import { internalAction, internalMutation } from "../_generated/server";
+import { sealAgent, sealAgentTier1, sealAgentTier3, SYSTEM_INSTRUCTIONS, classifyLocally, detectCascadeFailure } from "./agent";
 import type { SealAICtx } from "./types";
 
 type EvalResult = {
   response: string;
   toolCalls: string[];
+  tierUsed: number;
   threadId: string;
   durationMs: number;
 };
 
+type ExecResult = { text?: string; toolCalls?: { toolName: string }[] };
+
+const tier1Opts = { providerOptions: { google: { thinkingConfig: { thinkingLevel: "low" } } } };
+
+/** Process a single message through the tiered routing pipeline. */
+async function processEvalMessage(
+  ctx: ActionCtx,
+  sealCtx: SealAICtx,
+  threadId: string,
+  messageId: string,
+  prompt: string,
+  systemPrompt: string,
+): Promise<{ result: ExecResult; tierUsed: number }> {
+  const tier = classifyLocally(prompt);
+  console.info(`[SealAI eval] Route → ${tier} for: "${prompt.slice(0, 60)}"`);
+
+  if (tier === "TIER_3") {
+    const result = await sealAgentTier3.generateText(
+      sealCtx,
+      { threadId },
+      // @ts-expect-error TS2345 deep type instantiation
+      { promptMessageId: messageId, system: systemPrompt, saveMessages: "all" },
+    );
+    return { result, tierUsed: 3 };
+  }
+
+  if (tier === "TIER_2") {
+    const result = await sealAgent.generateText(
+      sealCtx,
+      { threadId },
+      // @ts-expect-error TS2345 deep type instantiation
+      { promptMessageId: messageId, system: systemPrompt, saveMessages: "all" },
+    );
+    return { result, tierUsed: 2 };
+  }
+
+  // TIER_1: Flash-Lite with quality check + fallback
+  let tier1: ExecResult | null = null;
+  try {
+    tier1 = await sealAgentTier1.generateText(
+      sealCtx,
+      { threadId },
+      // @ts-expect-error TS2345 deep type instantiation
+      { promptMessageId: messageId, system: systemPrompt, saveMessages: "none", ...tier1Opts },
+    );
+  } catch {
+    console.warn("[SealAI eval] TIER_1 errored — falling back to TIER_2");
+  }
+
+  const failure = tier1 ? detectCascadeFailure(tier1) : "error";
+  if (!failure && tier1) {
+    await sealAgent.saveMessage(ctx, {
+      threadId,
+      message: { role: "assistant", content: tier1.text ?? "" },
+    });
+    return { result: tier1, tierUsed: 1 };
+  }
+
+  console.warn(`[SealAI eval] TIER_1 failed (${failure}) — falling back to TIER_2`);
+  const result = await sealAgent.generateText(
+    sealCtx,
+    { threadId },
+    // @ts-expect-error TS2345 deep type instantiation
+    { promptMessageId: messageId, system: systemPrompt, saveMessages: "all" },
+  );
+  return { result, tierUsed: 2 };
+}
+
 export const runEval = internalAction({
   args: {
-    prompt: v.string(),
+    messages: v.array(v.string()),
     documentId: v.optional(v.string()),
   },
-  handler: async (ctx, { prompt, documentId }): Promise<EvalResult> => {
+  handler: async (ctx, { messages, documentId }): Promise<EvalResult> => {
     const start = Date.now();
 
-    // Look up a test organization — use the first org in the system
     const testOrg: { organizationId: string; userId: string } | null = await ctx.runQuery(
       internal.ai.eval_helpers.getTestOrganization,
     );
@@ -40,31 +110,22 @@ export const runEval = internalAction({
       return {
         response: "[EVAL ERROR] No test organization found. Seed the dev database first.",
         toolCalls: [],
+        tierUsed: 0,
         threadId: "",
         durationMs: Date.now() - start,
       };
     }
 
-    // 1. Create a fresh thread for this eval
     const thread: { threadId: string } = await sealAgent.createThread(ctx, {
       userId: testOrg.userId,
-      title: `[eval] ${prompt.slice(0, 50)}`,
+      title: `[eval] ${(messages[0] ?? "").slice(0, 50)}`,
     });
 
-    // 2. Save user message
-    const msg: { messageId: string } = await sealAgent.saveMessage(ctx, {
-      threadId: thread.threadId,
-      prompt,
-      skipEmbeddings: true,
-    });
-
-    // 3. Build system prompt with optional document context
     let systemPrompt = SYSTEM_INSTRUCTIONS;
     if (documentId) {
       systemPrompt += `\n\n## Current Document Context\nYou are currently viewing a document (ID: ${documentId}). When using tools that require a documentId parameter, use "${documentId}" unless the user explicitly asks about a different document.`;
     }
 
-    // 4. Build the SealAICtx
     const sealCtx: SealAICtx = {
       ...ctx,
       organizationId: testOrg.organizationId as Id<"organizations">,
@@ -72,26 +133,55 @@ export const runEval = internalAction({
       documentId: documentId as Id<"documents"> | undefined,
     } as SealAICtx;
 
-    // 5. Run the FULL pipeline (system prompt + tools + model)
-    const result: { text?: string; toolCalls?: { toolName: string }[] } =
-      await sealAgent.generateText(
-        sealCtx,
-        { threadId: thread.threadId, userId: testOrg.userId },
-        {
-          promptMessageId: msg.messageId,
-          system: systemPrompt,
-        },
-      );
+    let result: ExecResult = {};
+    let tierUsed = 1;
 
-    // 6. Extract response and tool usage
-    const response: string = result.text ?? "[NO RESPONSE]";
-    const toolCalls: string[] = (result.toolCalls ?? []).map((tc) => tc.toolName);
+    for (const prompt of messages) {
+      const { messageId } = await sealAgent.saveMessage(ctx, {
+        threadId: thread.threadId,
+        prompt,
+        skipEmbeddings: true,
+      });
+
+      const step = await processEvalMessage(ctx, sealCtx, thread.threadId, messageId, prompt, systemPrompt);
+      result = step.result;
+      tierUsed = step.tierUsed;
+    }
 
     return {
-      response,
-      toolCalls,
+      response: result.text ?? "[NO RESPONSE]",
+      toolCalls: (result.toolCalls ?? []).map((tc) => tc.toolName),
+      tierUsed,
       threadId: thread.threadId,
       durationMs: Date.now() - start,
     };
+  },
+});
+
+// ── Eval state reset ────────────────────────────────────────────────────────
+// Cleans up artifacts from prior eval runs to prevent contamination.
+// Deletes eval threads (title starts with "[eval]") and recent routing logs.
+
+export const resetEvalState = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    let deleted = 0;
+
+    const threads = await ctx.db.query("ai_threads").collect();
+    for (const t of threads) {
+      if (t.threadId && t.threadId.startsWith?.("[eval]")) {
+        await ctx.db.delete(t._id);
+        deleted++;
+      }
+    }
+
+    const logs = await ctx.db.query("ai_routing_logs").order("desc").take(500);
+    for (const log of logs) {
+      await ctx.db.delete(log._id);
+      deleted++;
+    }
+
+    console.info(`[SealAI eval] Reset complete — deleted ${deleted} artifacts`);
+    return { deleted };
   },
 });
