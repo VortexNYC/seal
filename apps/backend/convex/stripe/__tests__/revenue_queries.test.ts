@@ -90,10 +90,9 @@ describe("revenue analytics queries", () => {
   describe("getAgingAnalyticsInternal", () => {
     test("returns empty stats with no invoices", async () => {
       const { internal } = await import("../../_generated/api");
-      const result = await t.query(
-        internal.stripe.revenue_queries.getAgingAnalyticsInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getAgingAnalyticsInternal, {
+        organizationId,
+      });
 
       expect(result.dso).toBe(0);
       expect(result.totalOutstanding).toBe(0);
@@ -112,10 +111,9 @@ describe("revenue analytics queries", () => {
         finalizedAt: now - 5 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getAgingAnalyticsInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getAgingAnalyticsInternal, {
+        organizationId,
+      });
 
       expect(result.outstandingCount).toBe(1);
       expect(result.buckets.current).toBe(10000);
@@ -155,10 +153,9 @@ describe("revenue analytics queries", () => {
         finalizedAt: now - 120 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getAgingAnalyticsInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getAgingAnalyticsInternal, {
+        organizationId,
+      });
 
       expect(result.outstandingCount).toBe(4);
       expect(result.buckets.current).toBe(5000);
@@ -191,10 +188,9 @@ describe("revenue analytics queries", () => {
         finalizedAt: now - 5 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getAgingAnalyticsInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getAgingAnalyticsInternal, {
+        organizationId,
+      });
 
       expect(result.outstandingCount).toBe(1);
       expect(result.totalOutstanding).toBe(10000);
@@ -208,10 +204,9 @@ describe("revenue analytics queries", () => {
       // Add a non-dunning invoice
       await insertInvoice({ status: "paid", amountDue: 10000 });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getCollectionStatsInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getCollectionStatsInternal, {
+        organizationId,
+      });
 
       expect(result.activeDunning).toBe(0);
       expect(result.recoveryRate).toBe(0);
@@ -227,10 +222,9 @@ describe("revenue analytics queries", () => {
         dunningStep: 1,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getCollectionStatsInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getCollectionStatsInternal, {
+        organizationId,
+      });
 
       expect(result.activeDunning).toBe(1);
       expect(result.totalOverdueAmount).toBe(10000);
@@ -253,10 +247,9 @@ describe("revenue analytics queries", () => {
         dunningStatus: "completed",
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getCollectionStatsInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getCollectionStatsInternal, {
+        organizationId,
+      });
 
       expect(result.recoveredCount).toBe(1);
       expect(result.recoveredAmount).toBe(20000);
@@ -275,10 +268,9 @@ describe("revenue analytics queries", () => {
         dunningStatus: "completed",
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getCollectionStatsInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getCollectionStatsInternal, {
+        organizationId,
+      });
 
       expect(result.completedDunning).toBe(1);
       expect(result.recoveredCount).toBe(1);
@@ -310,10 +302,9 @@ describe("revenue analytics queries", () => {
         dunningStatus: "cancelled",
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getCollectionStatsInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getCollectionStatsInternal, {
+        organizationId,
+      });
 
       expect(result.recoveredCount).toBe(1);
       expect(result.recoveredAmount).toBe(20000);
@@ -326,10 +317,9 @@ describe("revenue analytics queries", () => {
   describe("getStalledInvoicesInternal", () => {
     test("returns empty when no invoices", async () => {
       const { internal } = await import("../../_generated/api");
-      const result = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+      });
 
       expect(result.count).toBe(0);
       expect(result.invoices).toHaveLength(0);
@@ -346,10 +336,9 @@ describe("revenue analytics queries", () => {
         finalizedAt: now - 45 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+      });
 
       expect(result.count).toBe(1);
       expect(result.invoices[0]!.amountDue).toBe(25000);
@@ -368,10 +357,9 @@ describe("revenue analytics queries", () => {
         finalizedAt: now - 10 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+      });
 
       expect(result.count).toBe(0);
     });
@@ -389,10 +377,9 @@ describe("revenue analytics queries", () => {
         lastDunningEmailAt: now - 20 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+      });
 
       expect(result.count).toBe(1);
       expect(result.invoices[0]!.dunningStatus).toBe("completed");
@@ -411,10 +398,9 @@ describe("revenue analytics queries", () => {
         lastDunningEmailAt: now - 2 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+      });
 
       expect(result.count).toBe(0);
     });
@@ -433,10 +419,9 @@ describe("revenue analytics queries", () => {
         nextDunningAt: now - 10 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+      });
 
       expect(result.count).toBe(1);
       expect(result.invoices[0]!.dunningStatus).toBe("active");
@@ -456,10 +441,9 @@ describe("revenue analytics queries", () => {
         nextDunningAt: now + 1 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+      });
 
       expect(result.count).toBe(0);
     });
@@ -477,10 +461,9 @@ describe("revenue analytics queries", () => {
         lastDunningEmailAt: now - 2 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+      });
 
       expect(result.count).toBe(0);
     });
@@ -496,10 +479,9 @@ describe("revenue analytics queries", () => {
         paidAt: now - 5 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+      });
 
       expect(result.count).toBe(0);
     });
@@ -515,16 +497,16 @@ describe("revenue analytics queries", () => {
         finalizedAt: now - 20 * DAY_MS,
       });
 
-      const under30 = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId, stalledThresholdDays: 30 },
-      );
+      const under30 = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+        stalledThresholdDays: 30,
+      });
       expect(under30.count).toBe(0);
 
-      const under15 = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId, stalledThresholdDays: 15 },
-      );
+      const under15 = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+        stalledThresholdDays: 15,
+      });
       expect(under15.count).toBe(1);
     });
 
@@ -544,10 +526,9 @@ describe("revenue analytics queries", () => {
         finalizedAt: now - 90 * DAY_MS,
       });
 
-      const result = await t.query(
-        internal.stripe.revenue_queries.getStalledInvoicesInternal,
-        { organizationId },
-      );
+      const result = await t.query(internal.stripe.revenue_queries.getStalledInvoicesInternal, {
+        organizationId,
+      });
 
       expect(result.count).toBe(2);
       expect(result.totalAmount).toBe(30000);

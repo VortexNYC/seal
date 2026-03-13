@@ -123,13 +123,17 @@ function classifyDunningInvoice(inv: {
 }
 
 /** Check if an open invoice is stalled (needs manual attention). */
-function isInvoiceStalled(inv: {
-  dunningStatus?: string;
-  lastDunningEmailAt?: number;
-  nextDunningAt?: number;
-  finalizedAt?: number;
-  createdAt: number;
-}, now: number, dunningInactivityMs: number): boolean {
+function isInvoiceStalled(
+  inv: {
+    dunningStatus?: string;
+    lastDunningEmailAt?: number;
+    nextDunningAt?: number;
+    finalizedAt?: number;
+    createdAt: number;
+  },
+  now: number,
+  dunningInactivityMs: number,
+): boolean {
   const noDunning = !inv.dunningStatus || inv.dunningStatus === "none";
   if (noDunning) return true;
 
@@ -137,7 +141,7 @@ function isInvoiceStalled(inv: {
 
   // Ended dunning is stalled only if last activity was long enough ago
   if (inv.dunningStatus === "completed" || inv.dunningStatus === "cancelled") {
-    return (now - lastActivity) >= dunningInactivityMs;
+    return now - lastActivity >= dunningInactivityMs;
   }
 
   // Active dunning is stuck when nextDunningAt is overdue past grace period
@@ -212,7 +216,9 @@ function findStalledInvoices(
 }
 
 /** Compute collection/dunning stats from a list of invoices. */
-function computeCollectionStats(invoices: Array<{ status: string; dunningStatus?: string; amountDue: number }>) {
+function computeCollectionStats(
+  invoices: Array<{ status: string; dunningStatus?: string; amountDue: number }>,
+) {
   let activeDunning = 0;
   let completedDunning = 0;
   let cancelledDunning = 0;

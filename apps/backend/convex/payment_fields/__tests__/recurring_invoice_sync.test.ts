@@ -99,20 +99,17 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
   test("creates document_invoices record for a new subscription invoice", async () => {
     const { internal } = await import("../../_generated/api");
 
-    const result = await t.mutation(
-      internal.payment_fields.mutations.upsertRecurringInvoice,
-      {
-        stripeInvoiceId: "in_cycle2_456",
-        stripeSubscriptionId: "sub_recurring_123",
-        stripeCustomerId: "cus_test_789",
-        stripeAccountId: "acct_test_001",
-        status: "draft",
-        customerEmail: "customer@example.com",
-        customerName: "Jane Doe",
-        amountDue: 10000,
-        currency: "usd",
-      },
-    );
+    const result = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
+      stripeInvoiceId: "in_cycle2_456",
+      stripeSubscriptionId: "sub_recurring_123",
+      stripeCustomerId: "cus_test_789",
+      stripeAccountId: "acct_test_001",
+      status: "draft",
+      customerEmail: "customer@example.com",
+      customerName: "Jane Doe",
+      amountDue: 10000,
+      currency: "usd",
+    });
 
     expect(result).not.toBeNull();
     expect(result!.created).toBe(true);
@@ -149,14 +146,8 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
       currency: "usd",
     };
 
-    const first = await t.mutation(
-      internal.payment_fields.mutations.upsertRecurringInvoice,
-      args,
-    );
-    const second = await t.mutation(
-      internal.payment_fields.mutations.upsertRecurringInvoice,
-      args,
-    );
+    const first = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, args);
+    const second = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, args);
 
     expect(first!.created).toBe(true);
     expect(second!.created).toBe(false);
@@ -164,9 +155,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) =>
-          q.eq("stripeInvoiceId", "in_idempotent_test"),
-        )
+        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_idempotent_test"))
         .collect();
     });
 
@@ -203,9 +192,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
     const invoices = await t.run(async (ctx) => {
       return await ctx.db
         .query("document_invoices")
-        .withIndex("by_stripe_invoice", (q) =>
-          q.eq("stripeInvoiceId", "in_finalize_test"),
-        )
+        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", "in_finalize_test"))
         .collect();
     });
 
@@ -219,18 +206,15 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
   test("returns null for unknown subscription", async () => {
     const { internal } = await import("../../_generated/api");
 
-    const result = await t.mutation(
-      internal.payment_fields.mutations.upsertRecurringInvoice,
-      {
-        stripeInvoiceId: "in_unknown_sub",
-        stripeSubscriptionId: "sub_nonexistent_999",
-        stripeAccountId: "acct_test_001",
-        status: "open",
-        customerEmail: "nobody@example.com",
-        amountDue: 5000,
-        currency: "usd",
-      },
-    );
+    const result = await t.mutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
+      stripeInvoiceId: "in_unknown_sub",
+      stripeSubscriptionId: "sub_nonexistent_999",
+      stripeAccountId: "acct_test_001",
+      status: "open",
+      customerEmail: "nobody@example.com",
+      amountDue: 5000,
+      currency: "usd",
+    });
 
     expect(result).toBeNull();
   });
