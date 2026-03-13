@@ -84,11 +84,7 @@ function renderDunningHtml(
   paymentUrl: string | undefined,
 ): string {
   const urgencyColor =
-    content.urgency === "high"
-      ? "#dc2626"
-      : content.urgency === "medium"
-        ? "#d97706"
-        : "#6b7280";
+    content.urgency === "high" ? "#dc2626" : content.urgency === "medium" ? "#d97706" : "#6b7280";
 
   const buttonHtml = paymentUrl
     ? `<p style="margin: 24px 0;"><a href="${paymentUrl}" style="display: inline-block; padding: 12px 24px; background-color: #A63D2F; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">Pay Now</a></p>`

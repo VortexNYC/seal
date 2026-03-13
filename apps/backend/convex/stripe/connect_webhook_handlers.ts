@@ -152,9 +152,7 @@ async function syncRecurringInvoice(
     stripeInvoiceId: invoice.id,
     stripeSubscriptionId: subscriptionId,
     stripeCustomerId:
-      typeof invoice.customer === "string"
-        ? invoice.customer
-        : (invoice.customer?.id ?? undefined),
+      typeof invoice.customer === "string" ? invoice.customer : (invoice.customer?.id ?? undefined),
     stripeAccountId,
     status,
     customerEmail: invoice.customer_email ?? "",
@@ -432,18 +430,10 @@ export async function processStripeConnectWebhookEvent(
       await handleCapabilityUpdated(ctx, event.data.object as Stripe.Capability);
       break;
     case "invoice.created":
-      await handleInvoiceCreated(
-        ctx,
-        event.data.object as Stripe.Invoice,
-        event.account ?? "",
-      );
+      await handleInvoiceCreated(ctx, event.data.object as Stripe.Invoice, event.account ?? "");
       break;
     case "invoice.finalized":
-      await handleInvoiceFinalized(
-        ctx,
-        event.data.object as Stripe.Invoice,
-        event.account ?? "",
-      );
+      await handleInvoiceFinalized(ctx, event.data.object as Stripe.Invoice, event.account ?? "");
       break;
     case "invoice.paid":
       await handleInvoicePaid(ctx, event.data.object as Stripe.Invoice);

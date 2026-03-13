@@ -10,7 +10,9 @@ import {
 } from "../utils/responsive-assertions";
 
 test.describe("landing responsive layouts", () => {
-  test("homepage adapts shell and section layouts across breakpoints", async ({ page }, testInfo) => {
+  test("homepage adapts shell and section layouts across breakpoints", async ({
+    page,
+  }, testInfo) => {
     const viewportKind = getViewportKind(testInfo);
     const homePage = new HomePage(page);
 
@@ -22,14 +24,14 @@ test.describe("landing responsive layouts", () => {
       await expect(homePage.desktopNav()).toBeHidden();
       await expectStacked(homePage.pricingCards().nth(0), homePage.pricingCards().nth(1));
       await expectStacked(homePage.developersCopy(), homePage.developersCodePanel());
-      await expectStacked(homePage.footerBrand(), homePage.footerLinks());
+      await expectStacked(homePage.footerGridColumns().nth(0), homePage.footerGridColumns().nth(1));
       return;
     }
 
     await expect(homePage.mobileMenuButton()).toBeHidden();
     await expect(homePage.desktopNav()).toBeVisible();
     await expectInline(homePage.pricingCards().nth(0), homePage.pricingCards().nth(1));
-    await expectInline(homePage.footerBrand(), homePage.footerLinks());
+    await expectInline(homePage.footerGridColumns().nth(0), homePage.footerGridColumns().nth(1));
 
     if (viewportKind === "tablet") {
       await expectStacked(homePage.developersCopy(), homePage.developersCodePanel());
@@ -39,7 +41,9 @@ test.describe("landing responsive layouts", () => {
     await expectInline(homePage.developersCopy(), homePage.developersCodePanel());
   });
 
-  test("representative routes stay usable without horizontal overflow", async ({ page }, testInfo) => {
+  test("representative routes stay usable without horizontal overflow", async ({
+    page,
+  }, testInfo) => {
     const viewportKind = getViewportKind(testInfo);
 
     await page.goto("/integrations");
@@ -62,7 +66,9 @@ test.describe("landing responsive layouts", () => {
     }
 
     await page.goto("/docs");
-    await expect(page.getByRole("heading", { name: /developer documentation/i }).first()).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /developer documentation/i }).first(),
+    ).toBeVisible();
     await assertNoHorizontalOverflow(page);
 
     if (viewportKind === "mobile") {
