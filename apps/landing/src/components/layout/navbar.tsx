@@ -140,7 +140,7 @@ export function Navbar() {
             <SignedIn>
               <Button asChild className="group w-full" size="lg">
                 <a href={`${APP_URL}/app`}>
-                  Go to Dashboard
+                  Open App
                   <ArrowRight
                     aria-hidden="true"
                     className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
@@ -159,7 +159,7 @@ function SignedInCta() {
   return (
     <Button asChild className="group">
       <a href={`${APP_URL}/app`}>
-        Dashboard
+        Open App
         <ArrowRight
           aria-hidden="true"
           className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
