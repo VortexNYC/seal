@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut, useUser } from "@clerk/clerk-react";
+import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -156,13 +156,10 @@ export function Navbar() {
 }
 
 function SignedInCta() {
-  const { user } = useUser();
-  const firstName = user?.firstName ?? "Dashboard";
-
   return (
     <Button asChild className="group">
       <a href={`${APP_URL}/app`}>
-        {firstName}
+        Dashboard
         <ArrowRight
           aria-hidden="true"
           className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
