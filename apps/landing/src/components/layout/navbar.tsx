@@ -1,3 +1,4 @@
+import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -73,18 +74,23 @@ export function Navbar() {
 
         {/* Desktop CTA */}
         <div className="flex items-center gap-3 max-md:hidden">
-          <Button asChild className="text-muted-foreground hover:text-foreground" variant="ghost">
-            <a href={`${APP_URL}/sign-in`}>Sign in</a>
-          </Button>
-          <Button asChild className="group">
-            <a href={`${APP_URL}/sign-up`}>
-              Start Free
-              <ArrowRight
-                aria-hidden="true"
-                className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
-              />
-            </a>
-          </Button>
+          <SignedOut>
+            <Button asChild className="text-muted-foreground hover:text-foreground" variant="ghost">
+              <a href={`${APP_URL}/sign-in`}>Sign in</a>
+            </Button>
+            <Button asChild className="group">
+              <a href={`${APP_URL}/sign-up`}>
+                Start Free
+                <ArrowRight
+                  aria-hidden="true"
+                  className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
+                />
+              </a>
+            </Button>
+          </SignedOut>
+          <SignedIn>
+            <SignedInCta />
+          </SignedIn>
         </div>
 
         {/* Mobile toggle */}
@@ -117,21 +123,48 @@ export function Navbar() {
             ))}
           </div>
           <div className="mt-4 flex flex-col gap-2 border-t pt-4">
-            <Button asChild variant="outline" size="lg" className="w-full">
-              <a href={`${APP_URL}/sign-in`}>Sign in</a>
-            </Button>
-            <Button asChild className="group w-full" size="lg">
-              <a href={`${APP_URL}/sign-up`}>
-                Start Free
-                <ArrowRight
-                  aria-hidden="true"
-                  className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
-                />
-              </a>
-            </Button>
+            <SignedOut>
+              <Button asChild variant="outline" size="lg" className="w-full">
+                <a href={`${APP_URL}/sign-in`}>Sign in</a>
+              </Button>
+              <Button asChild className="group w-full" size="lg">
+                <a href={`${APP_URL}/sign-up`}>
+                  Start Free
+                  <ArrowRight
+                    aria-hidden="true"
+                    className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
+                  />
+                </a>
+              </Button>
+            </SignedOut>
+            <SignedIn>
+              <Button asChild className="group w-full" size="lg">
+                <a href={`${APP_URL}/app`}>
+                  Open App
+                  <ArrowRight
+                    aria-hidden="true"
+                    className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
+                  />
+                </a>
+              </Button>
+            </SignedIn>
           </div>
         </nav>
       )}
     </header>
+  );
+}
+
+function SignedInCta() {
+  return (
+    <Button asChild className="group">
+      <a href={`${APP_URL}/app`}>
+        Open App
+        <ArrowRight
+          aria-hidden="true"
+          className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
+        />
+      </a>
+    </Button>
   );
 }
