@@ -16,7 +16,14 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { internalAction, internalMutation } from "../_generated/server";
-import { sealAgent, sealAgentTier1, sealAgentTier3, SYSTEM_INSTRUCTIONS, classifyLocally, detectCascadeFailure } from "./agent";
+import {
+  sealAgent,
+  sealAgentTier1,
+  sealAgentTier3,
+  SYSTEM_INSTRUCTIONS,
+  classifyLocally,
+  detectCascadeFailure,
+} from "./agent";
 import type { SealAICtx } from "./types";
 
 type EvalResult = {
@@ -47,8 +54,8 @@ async function processEvalMessage(
     const result = await sealAgentTier3.generateText(
       sealCtx,
       { threadId },
-      // @ts-expect-error TS2345 deep type instantiation
-      { promptMessageId: messageId, system: systemPrompt, saveMessages: "all" },
+      { promptMessageId: messageId, system: systemPrompt },
+      { storageOptions: { saveMessages: "all" } },
     );
     return { result, tierUsed: 3 };
   }
@@ -57,8 +64,8 @@ async function processEvalMessage(
     const result = await sealAgent.generateText(
       sealCtx,
       { threadId },
-      // @ts-expect-error TS2345 deep type instantiation
-      { promptMessageId: messageId, system: systemPrompt, saveMessages: "all" },
+      { promptMessageId: messageId, system: systemPrompt },
+      { storageOptions: { saveMessages: "all" } },
     );
     return { result, tierUsed: 2 };
   }
@@ -69,8 +76,8 @@ async function processEvalMessage(
     tier1 = await sealAgentTier1.generateText(
       sealCtx,
       { threadId },
-      // @ts-expect-error TS2345 deep type instantiation
-      { promptMessageId: messageId, system: systemPrompt, saveMessages: "none", ...tier1Opts },
+      { promptMessageId: messageId, system: systemPrompt, ...tier1Opts },
+      { storageOptions: { saveMessages: "none" } },
     );
   } catch {
     console.warn("[SealAI eval] TIER_1 errored — falling back to TIER_2");
@@ -89,8 +96,8 @@ async function processEvalMessage(
   const result = await sealAgent.generateText(
     sealCtx,
     { threadId },
-    // @ts-expect-error TS2345 deep type instantiation
-    { promptMessageId: messageId, system: systemPrompt, saveMessages: "all" },
+    { promptMessageId: messageId, system: systemPrompt },
+    { storageOptions: { saveMessages: "all" } },
   );
   return { result, tierUsed: 2 };
 }
@@ -143,7 +150,14 @@ export const runEval = internalAction({
         skipEmbeddings: true,
       });
 
-      const step = await processEvalMessage(ctx, sealCtx, thread.threadId, messageId, prompt, systemPrompt);
+      const step = await processEvalMessage(
+        ctx,
+        sealCtx,
+        thread.threadId,
+        messageId,
+        prompt,
+        systemPrompt,
+      );
       result = step.result;
       tierUsed = step.tierUsed;
     }

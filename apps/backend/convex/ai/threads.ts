@@ -10,9 +10,21 @@ import { ConvexError, v } from "convex/values";
 
 import { components, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { type ActionCtx, internalAction, internalMutation, internalQuery } from "../_generated/server";
+import {
+  type ActionCtx,
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "../_generated/server";
 import { authMutation, authQuery } from "../auth/wrappers";
-import { sealAgent, sealAgentTier1, sealAgentTier3, SYSTEM_INSTRUCTIONS, classifyLocally, detectCascadeFailure } from "./agent";
+import {
+  sealAgent,
+  sealAgentTier1,
+  sealAgentTier3,
+  SYSTEM_INSTRUCTIONS,
+  classifyLocally,
+  detectCascadeFailure,
+} from "./agent";
 import { aiRateLimiter } from "./rateLimiting";
 import type { SealAICtx } from "./types";
 
@@ -169,8 +181,12 @@ async function executeResponseGeneration(
       tier1Result = await sealAgentTier1.generateText(
         sealCtx,
         { threadId: args.threadId, userId: args.userId },
-        // @ts-expect-error TS2345 deep type instantiation — saveMessages is valid at runtime
-        { promptMessageId: args.promptMessageId, system, saveMessages: "none", providerOptions: { google: { thinkingConfig: { thinkingLevel: "low" } } } },
+        {
+          promptMessageId: args.promptMessageId,
+          system,
+          providerOptions: { google: { thinkingConfig: { thinkingLevel: "low" } } },
+        },
+        { storageOptions: { saveMessages: "none" } },
       );
     } catch {
       console.warn("[SealAI] TIER_1 errored — falling back to TIER_2");
