@@ -40,7 +40,7 @@ export function PageWrapper({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 scroll-pb-24 flex-col overflow-auto overscroll-contain sm:scroll-pb-28",
+        "bg-muted dark:bg-background flex h-full min-h-0 scroll-pb-24 flex-col overflow-auto overscroll-contain sm:scroll-pb-28",
         className,
       )}
     >

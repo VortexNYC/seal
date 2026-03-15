@@ -141,11 +141,7 @@ function WorkspaceHome(): React.ReactElement | null {
   const greeting = getGreeting();
 
   return (
-    <PageWrapper
-      title="Dashboard"
-      headerActions={<ExportDataDialog />}
-      className="bg-muted dark:bg-background"
-    >
+    <PageWrapper title="Dashboard" headerActions={<ExportDataDialog />}>
       <div className="space-y-6">
         {/* Greeting */}
         <div
