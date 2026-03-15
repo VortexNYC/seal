@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 interface PageAction {
   label: string;
@@ -21,6 +22,8 @@ interface PageWrapperProps {
   actions?: PageAction[];
   /** SEA-132: Custom header actions (e.g., export dialog) */
   headerActions?: ReactNode;
+  /** Optional extra classes applied to the outermost container (affects header + content) */
+  className?: string;
 }
 
 export function PageWrapper({
@@ -30,12 +33,18 @@ export function PageWrapper({
   action,
   actions,
   headerActions,
+  className,
 }: PageWrapperProps) {
   const allActions = action ? [action, ...(actions || [])] : actions || [];
 
   return (
-    <div className="flex h-full min-h-0 scroll-pb-24 flex-col overflow-auto overscroll-contain sm:scroll-pb-28">
-      <div className="bg-background sticky top-0 z-10 border-b">
+    <div
+      className={cn(
+        "flex h-full min-h-0 scroll-pb-24 flex-col overflow-auto overscroll-contain sm:scroll-pb-28",
+        className,
+      )}
+    >
+      <div className="sticky top-0 z-10 border-b bg-inherit">
         <div className="flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-4 sm:px-6 sm:py-0">
           <div className="flex min-w-0 flex-1 items-center gap-4">
             <SidebarTrigger />
