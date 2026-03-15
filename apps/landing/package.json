@@ -11,7 +11,7 @@
     "docs:generate:api": "bun run tools/generate-api-docs.ts",
     "content:search": "bunx vite-node ./tools/generate-search-index.ts",
     "content:sitemap": "bunx vite-node ./tools/generate-sitemap.ts",
-    "build:app": "vite build",
+    "build:app": "node --max-old-space-size=6144 ../../node_modules/vite/bin/vite.js build",
     "build": "bun run content:prepare && bun run content:search && bun run content:sitemap && bun run build:app",
     "preview": "vite preview",
     "start": "node .output/server/index.mjs",

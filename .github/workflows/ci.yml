@@ -133,6 +133,7 @@ jobs:
           VITE_CLERK_PUBLISHABLE_KEY: "pk_test_placeholder"
           VITE_SENTRY_RELEASE: ${{ github.sha }}
           VITE_SENTRY_ENVIRONMENT: "production"
+          NODE_OPTIONS: "--max-old-space-size=6144"
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: "plasma-vh"
           SENTRY_PROJECT: "seal"

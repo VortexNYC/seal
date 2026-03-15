@@ -97,64 +97,62 @@ const docsOutputPath = path.join(root, ".source", "docs-manifest.json");
 const changelogOutputPath = path.join(root, ".source", "changelog-manifest.json");
 
 async function generateDocsManifest(): Promise<void> {
-  const pages = Object.fromEntries(
-    source.getPages().map((page) => {
-      const data = page.data as DocsPageData;
-      const key = page.slugs.join("/");
+  const pages: Record<string, DocsManifestPage> = {};
 
-      return [
-        key,
-        {
-          description: data.description,
-          lastModified: data.lastModified?.toISOString(),
-          path: page.path,
-          slugs: page.slugs,
-          title: data.title,
-          toc: data.toc.map((item) => ({
-            depth: item.depth,
-            title: serializeTocTitle(item.title),
-            url: item.url,
-          })),
-          url: page.url,
-        } satisfies DocsManifestPage,
-      ];
-    }),
-  );
+  for (const page of source.getPages()) {
+    const data = page.data as DocsPageData;
+    const key = page.slugs.join("/");
+    const toc = data.toc.map((item) => ({
+      depth: item.depth,
+      title: serializeTocTitle(item.title),
+      url: item.url,
+    }));
 
-  const manifest: DocsManifest = {
-    pageTree: await source.serializePageTree(source.pageTree),
-    pages,
-  };
+    pages[key] = {
+      description: data.description,
+      lastModified: data.lastModified?.toISOString(),
+      path: page.path,
+      slugs: page.slugs,
+      title: data.title,
+      toc,
+      url: page.url,
+    };
+  }
+
+  const pageTree = await source.serializePageTree(source.pageTree);
+  const manifest: DocsManifest = { pageTree, pages };
 
   await fs.mkdir(path.dirname(docsOutputPath), { recursive: true });
   await fs.writeFile(docsOutputPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 }
 
 async function generateChangelogManifest(): Promise<void> {
-  const entries = (changelog as unknown as ChangelogCollectionEntry[])
-    .map((entry) => {
-      const [slug] = entry.slugs;
+  const entries: ChangelogManifestEntry[] = [];
 
-      if (!slug) {
-        throw new Error(`Missing changelog slug for ${entry.path}`);
-      }
+  for (const entry of changelog as unknown as ChangelogCollectionEntry[]) {
+    const [slug] = entry.slugs;
 
-      return {
-        breakingChanges: entry.breakingChanges ?? [],
-        coverImage: entry.coverImage,
-        features: entry.features ?? [],
-        fixes: entry.fixes ?? [],
-        improvements: entry.improvements ?? [],
-        path: entry.path,
-        releaseDate: entry.releaseDate,
-        slug,
-        summary: entry.summary ?? entry.description,
-        title: entry.title,
-        url: entry.url,
-        version: entry.version,
-      } satisfies ChangelogManifestEntry;
-    })
-    .sort((a, b) => b.releaseDate.localeCompare(a.releaseDate));
+    if (!slug) {
+      throw new Error(`Missing changelog slug for ${entry.path}`);
+    }
+
+    entries.push({
+      breakingChanges: entry.breakingChanges ?? [],
+      coverImage: entry.coverImage,
+      features: entry.features ?? [],
+      fixes: entry.fixes ?? [],
+      improvements: entry.improvements ?? [],
+      path: entry.path,
+      releaseDate: entry.releaseDate,
+      slug,
+      summary: entry.summary ?? entry.description,
+      title: entry.title,
+      url: entry.url,
+      version: entry.version,
+    });
+  }
+
+  entries.sort((a, b) => b.releaseDate.localeCompare(a.releaseDate));
 
   const manifest: ChangelogManifest = {
     entries,
