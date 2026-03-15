@@ -54,7 +54,7 @@ export class DashboardPage {
 
   async goto(slug: string): Promise<void> {
     await this.page.goto(`/${slug}/home`);
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async getTotalDocuments(): Promise<number> {
