@@ -47,6 +47,8 @@
     "@seal/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
+    "baseline-browser-mapping": "^2.10.8",
+    "browserslist": "^4.28.1",
     "knip": "^5.85.0",
     "oxfmt": "^0.37.0",
     "oxlint": "^1.52.0",
