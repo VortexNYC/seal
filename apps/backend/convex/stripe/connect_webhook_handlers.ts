@@ -18,6 +18,33 @@ import type { PaymentStatus } from "../schemas/payment_field_configs";
 import { mapStripeCapabilities, mapStripeRequirements } from "./connect_helpers";
 
 type HttpActionCtx = GenericActionCtx<DataModel>;
+type RecurringInvoiceStatus = "draft" | "open" | "paid" | "void" | "uncollectible";
+type StripeConnectWebhookHandler = (ctx: HttpActionCtx, event: Stripe.Event) => Promise<void>;
+
+const recurringInvoiceStatusMap: Record<string, RecurringInvoiceStatus> = {
+  draft: "draft",
+  open: "open",
+  paid: "paid",
+  void: "void",
+  uncollectible: "uncollectible",
+};
+
+function getRecurringInvoiceSubscriptionId(invoice: Stripe.Invoice): string | undefined {
+  const subDetails = invoice.parent?.subscription_details;
+  return typeof subDetails?.subscription === "string"
+    ? subDetails.subscription
+    : subDetails?.subscription?.id;
+}
+
+function getRecurringInvoiceStatus(invoice: Stripe.Invoice): RecurringInvoiceStatus {
+  return recurringInvoiceStatusMap[invoice.status ?? ""] ?? "draft";
+}
+
+function getInvoiceCustomerId(invoice: Stripe.Invoice): string | undefined {
+  return typeof invoice.customer === "string"
+    ? invoice.customer
+    : (invoice.customer?.id ?? undefined);
+}
 
 async function resolveOrganizationId(
   ctx: HttpActionCtx,
@@ -125,34 +152,18 @@ async function syncRecurringInvoice(
   invoice: Stripe.Invoice,
   stripeAccountId: string,
 ): Promise<void> {
-  // In newer Stripe API versions, subscription lives under parent.subscription_details
-  const subDetails = invoice.parent?.subscription_details;
-  const subscriptionId =
-    typeof subDetails?.subscription === "string"
-      ? subDetails.subscription
-      : subDetails?.subscription?.id;
-
+  const subscriptionId = getRecurringInvoiceSubscriptionId(invoice);
   if (!subscriptionId) {
     // Not a subscription invoice — skip (one-time invoices handled elsewhere)
     return;
   }
 
-  // Map Stripe invoice status to our status
-  const statusMap: Record<string, "draft" | "open" | "paid" | "void" | "uncollectible"> = {
-    draft: "draft",
-    open: "open",
-    paid: "paid",
-    void: "void",
-    uncollectible: "uncollectible",
-  };
-
-  const status = statusMap[invoice.status ?? ""] ?? "draft";
+  const status = getRecurringInvoiceStatus(invoice);
 
   await ctx.runMutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
     stripeInvoiceId: invoice.id,
     stripeSubscriptionId: subscriptionId,
-    stripeCustomerId:
-      typeof invoice.customer === "string" ? invoice.customer : (invoice.customer?.id ?? undefined),
+    stripeCustomerId: getInvoiceCustomerId(invoice),
     stripeAccountId,
     status,
     customerEmail: invoice.customer_email ?? "",
@@ -402,6 +413,48 @@ async function handlePayoutFailed(ctx: HttpActionCtx, payout: Stripe.Payout): Pr
   }
 }
 
+const stripeConnectWebhookHandlers: Record<string, StripeConnectWebhookHandler> = {
+  "account.updated": async (ctx, event) => {
+    await handleAccountUpdated(ctx, event.data.object as Stripe.Account);
+  },
+  "capability.updated": async (ctx, event) => {
+    await handleCapabilityUpdated(ctx, event.data.object as Stripe.Capability);
+  },
+  "invoice.created": async (ctx, event) => {
+    await handleInvoiceCreated(ctx, event.data.object as Stripe.Invoice, event.account ?? "");
+  },
+  "invoice.finalized": async (ctx, event) => {
+    await handleInvoiceFinalized(ctx, event.data.object as Stripe.Invoice, event.account ?? "");
+  },
+  "invoice.paid": async (ctx, event) => {
+    await handleInvoicePaid(ctx, event.data.object as Stripe.Invoice);
+  },
+  "invoice.payment_failed": async (ctx, event) => {
+    await handleInvoicePaymentFailed(ctx, event.data.object as Stripe.Invoice);
+  },
+  "invoice.voided": async (ctx, event) => {
+    await handleInvoiceVoided(ctx, event.data.object as Stripe.Invoice);
+  },
+  "invoice.marked_uncollectible": async (ctx, event) => {
+    await handleInvoiceMarkedUncollectible(ctx, event.data.object as Stripe.Invoice);
+  },
+  "invoice.deleted": async (ctx, event) => {
+    await handleInvoiceDeleted(ctx, event.data.object as Stripe.Invoice);
+  },
+  "customer.subscription.updated": async (ctx, event) => {
+    await handleSubscriptionUpdated(ctx, event.data.object as Stripe.Subscription);
+  },
+  "customer.subscription.deleted": async (ctx, event) => {
+    await handleSubscriptionDeleted(ctx, event.data.object as Stripe.Subscription);
+  },
+  "payout.paid": async (ctx, event) => {
+    await handlePayoutPaid(ctx, event.data.object as Stripe.Payout);
+  },
+  "payout.failed": async (ctx, event) => {
+    await handlePayoutFailed(ctx, event.data.object as Stripe.Payout);
+  },
+};
+
 export async function processStripeConnectWebhookEvent(
   ctx: HttpActionCtx,
   event: Stripe.Event,
@@ -421,56 +474,17 @@ export async function processStripeConnectWebhookEvent(
     return;
   }
 
-  // Handle Connect-specific events and invoice lifecycle events.
-  switch (event.type) {
-    case "account.updated":
-      await handleAccountUpdated(ctx, event.data.object as Stripe.Account);
-      break;
-    case "capability.updated":
-      await handleCapabilityUpdated(ctx, event.data.object as Stripe.Capability);
-      break;
-    case "invoice.created":
-      await handleInvoiceCreated(ctx, event.data.object as Stripe.Invoice, event.account ?? "");
-      break;
-    case "invoice.finalized":
-      await handleInvoiceFinalized(ctx, event.data.object as Stripe.Invoice, event.account ?? "");
-      break;
-    case "invoice.paid":
-      await handleInvoicePaid(ctx, event.data.object as Stripe.Invoice);
-      break;
-    case "invoice.payment_failed":
-      await handleInvoicePaymentFailed(ctx, event.data.object as Stripe.Invoice);
-      break;
-    case "invoice.voided":
-      await handleInvoiceVoided(ctx, event.data.object as Stripe.Invoice);
-      break;
-    case "invoice.marked_uncollectible":
-      await handleInvoiceMarkedUncollectible(ctx, event.data.object as Stripe.Invoice);
-      break;
-    case "invoice.deleted":
-      await handleInvoiceDeleted(ctx, event.data.object as Stripe.Invoice);
-      break;
-    case "customer.subscription.updated":
-      await handleSubscriptionUpdated(ctx, event.data.object as Stripe.Subscription);
-      break;
-    case "customer.subscription.deleted":
-      await handleSubscriptionDeleted(ctx, event.data.object as Stripe.Subscription);
-      break;
-    case "payout.paid":
-      await handlePayoutPaid(ctx, event.data.object as Stripe.Payout);
-      break;
-    case "payout.failed":
-      await handlePayoutFailed(ctx, event.data.object as Stripe.Payout);
-      break;
-    default:
-      // Unknown event type - log but don't fail
-      console.info("Unhandled Connect webhook event type", {
-        operation: "stripeConnect.webhookUnhandled",
-        eventType: event.type,
-        eventId: event.id,
-      });
-      return; // Don't mark as processed since we didn't handle it
+  const handler = stripeConnectWebhookHandlers[event.type];
+  if (!handler) {
+    console.info("Unhandled Connect webhook event type", {
+      operation: "stripeConnect.webhookUnhandled",
+      eventType: event.type,
+      eventId: event.id,
+    });
+    return;
   }
+
+  await handler(ctx, event);
 
   // Mark event as processed for idempotency
   await ctx.runMutation(internal.stripe.webhook_idempotency.markEventProcessed, {
