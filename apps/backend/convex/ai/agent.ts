@@ -21,14 +21,17 @@ const ALL_TOOLS = { analyzeDocumentFields, extractPaymentTerms, searchDocuments 
 // Shared by threads.ts and eval.ts. Single source of truth for tier routing.
 
 /** Write-intent verbs → skip Flash-Lite, go straight to Tier 2 (Flash). */
-export const WRITE_INTENT = /\b(analyze|extract|detect|place|configure|set\s*up|prepare|send|add|identify\s*field|find\s*field|suggest\s*field)\b/i;
+export const WRITE_INTENT =
+  /\b(analyze|extract|detect|place|configure|set\s*up|prepare|send|add|identify\s*field|find\s*field|suggest\s*field)\b/i;
 
 /** Expert/strategy phrases → go straight to Tier 3 (Pro). */
-export const EXPERT_INTENT = /\b(compare\s+across|cross[\s-]document|compliance\s+audit|legal\s+review|multi[\s-]party|complex\s+agreement|which\s+(?:contracts?|documents?)\s+have|identify\s+difference|risk\s+assessment|due\s+diligence)\b/i;
+export const EXPERT_INTENT =
+  /\b(compare\s+across|cross[\s-]document|compliance\s+audit|legal\s+review|multi[\s-]party|complex\s+agreement|which\s+(?:contracts?|documents?)\s+have|identify\s+difference|risk\s+assessment|due\s+diligence)\b/i;
 
 /** Short affirmative confirmations → Tier 2, likely confirming a pending write op.
  *  Whole-message match prevents "yes, what's in my doc?" from routing to Tier 2. */
-export const CONFIRM_INTENT = /^(yes|yeah|yep|yup|ok|okay|sure|confirm|go ahead|do it|sounds good|correct|right|proceed|please do|that works|that's right|absolutely|definitely)[\s!.,]*$/i;
+export const CONFIRM_INTENT =
+  /^(yes|yeah|yep|yup|ok|okay|sure|confirm|go ahead|do it|sounds good|correct|right|proceed|please do|that works|that's right|absolutely|definitely)[\s!.,]*$/i;
 
 export function classifyLocally(message: string): "TIER_1" | "TIER_2" | "TIER_3" {
   if (EXPERT_INTENT.test(message)) return "TIER_3";

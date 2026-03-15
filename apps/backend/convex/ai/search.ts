@@ -351,14 +351,11 @@ type SearchAction = FunctionReference<
 
 /** Cache for search queries — keyed on org + query + filters, 1-hour TTL.
  *  Same user asking "find GDPR" twice in a session hits cache on second call. */
-export const searchCache: ActionCache<SearchAction> = new ActionCache(
-  components.actionCache,
-  {
-    action: internal.ai.search.hybridSearchDocuments,
-    name: "documentSearch-v1",
-    ttl: 60 * 60 * 1000, // 1 hour
-  } as ActionCacheConfig<SearchAction>,
-);
+export const searchCache: ActionCache<SearchAction> = new ActionCache(components.actionCache, {
+  action: internal.ai.search.hybridSearchDocuments,
+  name: "documentSearch-v1",
+  ttl: 60 * 60 * 1000, // 1 hour
+} as ActionCacheConfig<SearchAction>);
 
 // =============================================================================
 // HELPER QUERIES/MUTATIONS

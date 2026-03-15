@@ -13,8 +13,10 @@ import { v } from "convex/values";
 
 import { internalAction } from "../_generated/server";
 import { getModel } from "./model";
-import { PaymentExtractionSchema, type PaymentExtractionResult } from "./tools/paymentExtractionSchema";
-
+import {
+  PaymentExtractionSchema,
+  type PaymentExtractionResult,
+} from "./tools/paymentExtractionSchema";
 
 const PAYMENT_EXTRACTION_PROMPT = `You are analyzing a PDF document for a document signing platform. Your job is to extract all payment-related terms and structure them into a payment configuration.
 

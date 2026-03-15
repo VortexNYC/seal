@@ -2814,7 +2814,11 @@ http.route({
       });
     }
 
-    const body = (await request.json()) as { prompt?: string; messages?: string[]; documentId?: string };
+    const body = (await request.json()) as {
+      prompt?: string;
+      messages?: string[];
+      documentId?: string;
+    };
     const messages = body.messages ?? (body.prompt ? [body.prompt] : []);
     if (messages.length === 0) {
       return new Response(JSON.stringify({ error: "prompt or messages is required" }), {
