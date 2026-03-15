@@ -66,6 +66,7 @@ seal/
 - Hand-edit generated API reference docs under `apps/landing/content/docs/api-reference/`; update `apps/landing/openapi.yaml` and regenerate instead.
 - Use CSS-class selectors in E2E tests.
 - Commit secrets or `.env*` files.
+- Run `git push --force` or `git push --force-with-lease` without explicit user approval in the current thread. If a branch needs to be updated from `main` and the user did not explicitly request a rebase, prefer merging `main` into the branch.
 
 ## UNIQUE STYLES
 
