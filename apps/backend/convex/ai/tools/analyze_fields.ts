@@ -15,50 +15,61 @@ export const analyzeDocumentFields = createTool({
       .describe("The Convex document ID (uses current document if omitted)"),
   }),
   handler: async (ctx: SealAICtx, args): Promise<string> => {
-    const docId = (args.documentId ?? ctx.documentId) as Id<"documents"> | undefined;
-    if (!docId) throw new Error("No document ID provided and no current document context");
+    try {
+      const docId = (args.documentId ?? ctx.documentId) as Id<"documents"> | undefined;
+      if (!docId) throw new Error("No document ID provided and no current document context");
 
-    const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-      documentId: docId,
-    });
-    if (!document) throw new Error("Document not found");
+      // Rate limit expensive Gemini vision call (20 ops/min per org)
+      await ctx.runMutation(internal.ai.rateLimiting.checkExpensiveOperationLimit, {
+        organizationId: ctx.organizationId.toString(),
+      });
 
-    // Use cached Gemini analysis — same PDF (storageId) returns cached result
-    const result = (await fieldAnalysisCache.fetch(ctx, {
-      storageId: document.storageId as Id<"_storage">,
-    })) as FieldAnalysisResult;
+      const document = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
+        documentId: docId,
+      });
+      if (!document) throw new Error("Document not found");
 
-    await ctx.runMutation(internal.ai.mutations.saveFieldSuggestions, {
-      documentId: docId,
-      organizationId: ctx.organizationId,
-      fields: result.fields,
-      modelUsed: "gemini-3-flash",
-      tokensUsed: result.tokensUsed,
-      processingTimeMs: result.processingTimeMs,
-    });
+      // Use cached Gemini analysis — same PDF (storageId) returns cached result
+      const result = (await fieldAnalysisCache.fetch(ctx, {
+        storageId: document.storageId as Id<"_storage">,
+      })) as FieldAnalysisResult;
 
-    // Save document annotations (redlining) if present
-    if (result.annotations && result.annotations.length > 0) {
-      await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
+      await ctx.runMutation(internal.ai.mutations.saveFieldSuggestions, {
         documentId: docId,
         organizationId: ctx.organizationId,
-        annotations: result.annotations,
+        fields: result.fields,
         modelUsed: "gemini-3-flash",
         tokensUsed: result.tokensUsed,
         processingTimeMs: result.processingTimeMs,
       });
+
+      // Save document annotations (redlining) if present
+      if (result.annotations && result.annotations.length > 0) {
+        await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
+          documentId: docId,
+          organizationId: ctx.organizationId,
+          annotations: result.annotations,
+          modelUsed: "gemini-3-flash",
+          tokensUsed: result.tokensUsed,
+          processingTimeMs: result.processingTimeMs,
+        });
+      }
+
+      const paymentCount = result.fields.filter((f) => f.fieldType === "payment").length;
+      const paymentNote =
+        paymentCount > 0
+          ? ` (includes ${paymentCount} payment field(s) — payment terms will be auto-extracted when applied)`
+          : "";
+      const annotationNote =
+        result.annotations && result.annotations.length > 0
+          ? ` Also found ${result.annotations.length} key clauses for document insights.`
+          : "";
+
+      return `Found ${result.fields.length} fields across the document.${paymentNote}${annotationNote}`;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      console.error("[SealAI Tool Error] analyzeDocumentFields:", msg);
+      return `Error analyzing document: ${msg}`;
     }
-
-    const paymentCount = result.fields.filter((f) => f.fieldType === "payment").length;
-    const paymentNote =
-      paymentCount > 0
-        ? ` (includes ${paymentCount} payment field(s) — payment terms will be auto-extracted when applied)`
-        : "";
-    const annotationNote =
-      result.annotations && result.annotations.length > 0
-        ? ` Also found ${result.annotations.length} key clauses for document insights.`
-        : "";
-
-    return `Found ${result.fields.length} fields across the document.${paymentNote}${annotationNote}`;
   },
 });

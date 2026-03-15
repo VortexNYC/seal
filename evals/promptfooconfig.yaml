@@ -1,0 +1,542 @@
+# Seal AI — Prompt Evaluation Config
+#
+# Tests the full AI pipeline end-to-end through Convex:
+# User message → System prompt → Gemini Flash → Tool calls → Response
+#
+# Run: bunx promptfoo eval -c evals/promptfooconfig.yaml
+# View: bunx promptfoo view
+
+description: "Seal AI — End-to-end eval against real Convex backend"
+
+providers:
+  - id: file://provider.mjs
+    label: "Seal AI (document intelligence)"
+
+prompts:
+  - "{{prompt}}"
+
+defaultTest:
+  options:
+    # AI pipeline with tool calls can take 10-30s
+    timeout: 60000
+    # Route llm-rubric grading through the same Vercel AI Gateway we use in production
+    # instead of relying on Google ADC (which requires gcloud auth refresh)
+    provider:
+      id: openai:chat:google/gemini-3-flash
+      config:
+        apiBaseUrl: https://ai-gateway.vercel.sh/v1
+        max_tokens: 4096
+
+tests:
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 1: Tool-first behavior (no hallucinating before tool results)
+  # The AI must call tools to get data, never fabricate document content.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Analyze this document for signature fields"
+    assert:
+      # Should acknowledge the request (not error out)
+      - type: javascript
+        value: "output.length >= 30"
+      # Must NOT hallucinate field positions without calling a tool
+      - type: not-contains
+        value: "error"
+      - type: not-contains
+        value: "cannot access"
+
+  - vars:
+      prompt: "Where should I place signature fields in this contract?"
+    assert:
+      - type: javascript
+        value: "output.length >= 30"
+      # Should mention field types it can detect
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('signature') || text.includes('field') || text.includes('sign');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 2: No internal implementation details leaked
+  # Tool names, parameter schemas, IDs, and technical details must never appear.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Can you help me with my document?"
+    assert:
+      # No tool names leaked
+      - type: not-contains
+        value: "analyzeDocumentFields"
+      - type: not-contains
+        value: "extractPaymentTerms"
+      - type: not-contains
+        value: "searchDocuments"
+      # No raw Convex IDs
+      - type: javascript
+        value: |
+          // Convex IDs look like: k57abc123def456 or similar alphanumeric
+          return !output.match(/\b[a-z][a-z0-9]{15,}\b/);
+
+  - vars:
+      prompt: "Search across all my documents for payment terms"
+    assert:
+      - type: not-contains
+        value: "analyzeDocumentFields"
+      - type: not-contains
+        value: "extractPaymentTerms"
+      - type: not-contains
+        value: "searchDocuments"
+      - type: not-contains
+        value: "tool_call"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 3: Identity and capability awareness
+  # The AI must correctly identify itself as "Seal AI" and know its capabilities.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Who are you?"
+    assert:
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('seal') && (text.includes('document') || text.includes('signing'));
+      # Must NOT claim to be a generic AI
+      - type: not-contains
+        value: "large language model"
+      - type: not-contains
+        value: "ChatGPT"
+
+  - vars:
+      prompt: "What can you do?"
+    assert:
+      # Should mention core capabilities
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          const hasFieldAnalysis = text.includes('field') || text.includes('signature') || text.includes('analyze');
+          const hasPayment = text.includes('payment') || text.includes('invoice');
+          const hasSearch = text.includes('search') || text.includes('find');
+          // Should mention at least 2 of 3 capabilities
+          return [hasFieldAnalysis, hasPayment, hasSearch].filter(Boolean).length >= 2;
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 4: Payment term extraction understanding
+  # The AI should understand payment-related queries and respond appropriately.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Extract payment terms from this document"
+    assert:
+      # Without a documentId, the AI should ask for one or acknowledge it needs context
+      - type: javascript
+        value: "output.length >= 10"
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('payment') || text.includes('document') || text.includes('provide') || text.includes('which');
+
+  - vars:
+      prompt: "What are the billing details in this contract?"
+    assert:
+      - type: javascript
+        value: "output.length >= 10"
+      - type: not-contains
+        value: "[NO RESPONSE]"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 5: Response quality and formatting
+  # Responses should be well-formatted, substantive, and not empty or error-like.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Help me prepare this NDA for signing"
+    assert:
+      - type: not-contains
+        value: "[NO RESPONSE]"
+      - type: javascript
+        value: "output.length >= 50"
+      # Should give useful guidance about NDAs or signing
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('nda') || text.includes('non-disclosure') || text.includes('signature') || text.includes('field');
+
+  - vars:
+      prompt: "I need to send this document to 3 people for signatures"
+    assert:
+      - type: javascript
+        value: "output.length >= 50"
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('sign') || text.includes('recipient') || text.includes('field');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 6: Document search behavior
+  # The AI should properly handle search queries and cite sources.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Find all documents that mention indemnification"
+    assert:
+      - type: javascript
+        value: "output.length >= 30"
+      # Should reference the search capability or results
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('indemnif') || text.includes('search') || text.includes('document') || text.includes('found');
+
+  - vars:
+      prompt: "Which contracts have a termination clause?"
+    assert:
+      # May return empty if no docs match — just ensure it responds at all
+      - type: javascript
+        value: "output.length >= 10"
+      - type: not-contains
+        value: "[NO RESPONSE]"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 7: Scope boundaries — no off-topic capabilities claimed
+  # Seal AI is a document intelligence assistant, not a general-purpose AI.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Write me a poem about the ocean"
+    assert:
+      # Should either redirect to document tasks or politely decline
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          const redirectsToDocuments = text.includes('document') || text.includes('seal') || text.includes('signing');
+          const declines = text.includes('help') || text.includes('designed') || text.includes('specialized');
+          // Should either redirect or at least not just write a poem
+          return redirectsToDocuments || declines || !text.includes('ocean');
+
+  - vars:
+      prompt: "What's the weather like today?"
+    assert:
+      # Should not pretend to know the weather
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return !text.includes('degrees') && !text.includes('sunny') && !text.includes('cloudy');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 8: Citation format when searching
+  # The AI should use proper citation markers when referencing documents.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Search for any confidentiality agreements in my workspace"
+    assert:
+      - type: javascript
+        value: "output.length >= 30"
+      - type: not-contains
+        value: "undefined"
+      - type: not-contains
+        value: "null"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 9: Model-graded quality (llm-rubric)
+  # Uses an LLM judge to evaluate response quality beyond pattern matching.
+  # Catches subtle issues: wrong tone, misleading framing, unhelpful responses.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "I just uploaded a contract, what should I do next?"
+    assert:
+      - type: llm-rubric
+        value: |
+          The response should proactively guide the user through next steps for a newly uploaded contract. It must mention field analysis/detection as a concrete action (not just "I can help"). It should feel like a knowledgeable assistant walking someone through a workflow — mentioning specific steps like analyzing for signature fields, adding recipients, or reviewing the document. A failing response would be vague ("let me know how I can help"), list capabilities without recommending a specific next action, or dump a help page. The tone should be confident and action-oriented.
+      - type: javascript
+        value: "output.length >= 50"
+
+  - vars:
+      prompt: "I'm not sure where to put the date fields on this agreement"
+    assert:
+      - type: llm-rubric
+        value: |
+          The response should offer to analyze the document for date field placement. It must acknowledge the user's uncertainty and provide actionable guidance — either offering to run field detection or explaining common date field placement patterns in agreements. It must NOT say "I can't help" or "unable to assist" since date fields are a core capability. A failing response would be vague, dismissive, or fail to connect the user's question to the field detection capability.
+      - type: javascript
+        value: "output.length >= 50"
+
+  - vars:
+      prompt: "We have a multi-party agreement with 5 signers. Can you help set it up?"
+    assert:
+      - type: llm-rubric
+        value: |
+          The response should acknowledge the multi-party signing scenario and provide specific guidance. It must mention signature fields, recipients, or signer setup. A good response explains how to set up fields for multiple signers or offers to analyze the document to suggest field placements for each signer. A failing response would ignore the "5 signers" detail, give generic single-signer advice, or be vague about the multi-party aspect.
+      - type: javascript
+        value: "output.length >= 50"
+
+  - vars:
+      prompt: "Compare the indemnification clauses across my contracts"
+    assert:
+      - type: llm-rubric
+        value: |
+          The response should either search for indemnification clauses across the workspace and present findings, or explain that it will search and ask for clarification. If search results are returned, the response must reference specific documents by name and compare or summarize the findings. A failing response would fabricate clause content without searching, or give generic legal advice without referencing actual documents.
+      - type: javascript
+        value: "output.length >= 30"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 10: Factuality against known dev data (ground truth)
+  # These validate the AI returns accurate info about known test documents.
+  # Dev database has: 3 sample-document.pdf files with GDPR Art. 13 content.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "How many documents are in my workspace?"
+    assert:
+      # Should report 3 documents (known dev data)
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('3') || text.includes('three');
+      # Should mention document names or at least reference having found them
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('sample-document') || text.includes('sample document') || text.includes('found') || text.includes('workspace');
+
+  - vars:
+      prompt: "Search for GDPR in my documents"
+    assert:
+      # Should find GDPR content (all 3 docs have it)
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('gdpr') || text.includes('data protection') || text.includes('art. 13') || text.includes('article 13');
+      # Should include citation markers
+      - type: javascript
+        value: "output.includes('<<cite:')"
+      # Should reference sample-document.pdf
+      - type: contains
+        value: "sample-document.pdf"
+
+  - vars:
+      prompt: "Do any of my documents mention Article 13?"
+    assert:
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('article 13') || text.includes('art. 13') || text.includes('gdpr');
+      - type: javascript
+        value: "output.length >= 50"
+
+  - vars:
+      prompt: "Search for passport delivery in my workspace"
+    assert:
+      # Dev data contains passport-related content
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('passport') || text.includes('found') || text.includes('document');
+      - type: javascript
+        value: "output.length >= 30"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 11: Expert intent routing (Tier 3)
+  # Complex queries that should route to the Pro model via EXPERT_INTENT.
+  # These test cross-document comparison and compliance-level analysis.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Do a compliance audit of all my documents for GDPR data protection requirements"
+    assert:
+      - type: llm-rubric
+        value: |
+          The response should demonstrate expert-level analysis of GDPR compliance across multiple documents. It must search for and reference actual document content, not give generic GDPR advice. A good response would identify specific clauses, flag gaps, and reference documents by name with citations. A failing response would be generic legal advice without searching the workspace.
+      - type: javascript
+        value: "output.length >= 100"
+
+  - vars:
+      prompt: "Compare across all my documents and identify which ones have data protection clauses"
+    assert:
+      - type: llm-rubric
+        value: |
+          The response should compare documents in the workspace and identify which ones contain data protection clauses. It must reference specific documents by name and cite relevant sections. A failing response would give a generic answer without actually searching, or would only check one document instead of comparing across all.
+      - type: javascript
+        value: "output.length >= 50"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 12: Follow-up suggestion chips
+  # Verifies the AI includes actionable follow-up suggestions after responses.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "What can you do?"
+    assert:
+      - type: javascript
+        value: |
+          // Should include follow-up suggestion chips (💬 prefix)
+          return output.includes('💬');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 13: Error recovery and data fallback
+  # AI must pivot when search returns nothing, never give up without trying.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Find all documents about quantum computing in my workspace"
+    assert:
+      # No documents match — AI should report "not found" gracefully, not error
+      - type: javascript
+        value: "output.length >= 30"
+      # Should NOT claim it found quantum computing documents
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return !text.includes('here are the quantum') && !text.includes('found the following quantum');
+      # Should suggest alternative actions or broader search
+      - type: llm-rubric
+        value: |
+          The response should acknowledge no matching documents were found and either suggest broadening the search, trying different terms, or offer to help with other document tasks. A failing response would give up with just "not found" or hallucinate content about quantum computing documents.
+
+  - vars:
+      prompt: "Extract payment terms from this document"
+    assert:
+      # Without documentId, should ask for clarification — not crash or give empty response
+      - type: javascript
+        value: "output.length >= 30"
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('which') || text.includes('specify') || text.includes('document') || text.includes('select');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 14: Multi-turn context retention
+  # The AI must maintain context across messages in the same thread.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "multi-turn"
+      conversationJson: '["Search for GDPR in my documents", "How many results did you find?"]'
+    assert:
+      # Second message should reference the prior search results
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('3') || text.includes('three') || text.includes('found') || text.includes('result') || text.includes('document');
+      - type: javascript
+        value: "output.length >= 20"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 15: Vague/open-ended queries
+  # AI must pull data and respond usefully, not refuse with "need more info."
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "What's in my workspace?"
+    assert:
+      # Should search and report actual documents, not ask for clarification
+      - type: llm-rubric
+        value: |
+          The response should proactively search the workspace and report what documents are available, including names and basic details. A failing response would ask the user to be more specific or say "I need more information" without trying a search first. The AI should always try to pull data before asking for clarification.
+      - type: javascript
+        value: "output.length >= 50"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 16: Tier routing boundaries
+  # Validates that local classifier routes queries to the correct model tier.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "What is a signature field?"
+    assert:
+      # Simple read-only question — should route to Tier 1 (cheapest)
+      # Verify it still gives a useful answer (not degraded by cheap model)
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('signature') && text.includes('field');
+      - type: javascript
+        value: "output.length >= 30"
+
+  - vars:
+      prompt: "Analyze this document and detect all form fields"
+    assert:
+      # "analyze" + "detect" = WRITE_INTENT → should route to Tier 2
+      # Should acknowledge the analysis request (not just define terms)
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('analy') || text.includes('field') || text.includes('document');
+      - type: javascript
+        value: "output.length >= 30"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 17: Tool error graceful recovery
+  # When a tool throws, the AI must explain the issue and offer alternatives.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Analyze signature fields on document abc123invalid"
+    assert:
+      # Invalid documentId — tool will throw. AI should explain gracefully.
+      - type: javascript
+        value: "output.length >= 30"
+      # Must NOT dump raw error stack
+      - type: javascript
+        value: |
+          const hasStack = output.includes('at ') && output.includes('.ts:');
+          return !hasStack;
+      # Should guide the user to provide a valid document
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('document') || text.includes('not found') || text.includes('provide') || text.includes('try') || text.includes('which');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 18: Multi-turn context with search refinement
+  # User refines their search — AI must use new terms, not stale context.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "multi-turn"
+      conversationJson: '["Search for indemnification in my documents", "Actually, search for data protection instead"]'
+    assert:
+      # Second response should be about data protection, not indemnification
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('data protection') || text.includes('gdpr') || text.includes('privacy');
+      - type: javascript
+        value: "output.length >= 30"
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 19: Citation accuracy
+  # When citing documents, the AI must reference real search results.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Search for Article 13 and cite the relevant documents"
+    assert:
+      # Should include citation markers
+      - type: javascript
+        value: "output.includes('<<cite:')"
+      # Citations should reference sample-document.pdf (known dev data)
+      - type: contains
+        value: "sample-document.pdf"
+      # Should not cite nonexistent documents
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return !text.includes('contract-a.pdf') && !text.includes('agreement-b.pdf');
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BUG CLASS 20: Response conciseness for simple questions
+  # Simple factual answers should be tight, not over-explained.
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - vars:
+      prompt: "Do I have any documents?"
+    assert:
+      # Should give a direct answer with document count, not a wall of text
+      - type: javascript
+        value: |
+          const text = output.toLowerCase();
+          return text.includes('3') || text.includes('three') || text.includes('yes');
+      - type: javascript
+        value: "output.length >= 10 && output.length < 2000"

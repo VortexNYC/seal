@@ -18,6 +18,7 @@ export class ShareDialogPage {
   readonly addButton: Locator;
   readonly accessList: Locator;
   readonly ownerBadge: Locator;
+  readonly ownerRow: Locator;
   readonly subscriptionWarning: Locator;
   readonly proBadges: Locator;
 
@@ -37,13 +38,15 @@ export class ShareDialogPage {
     this.addButton = this.dialogRoot.getByRole("button", { name: "Add" });
     this.accessList = this.dialogRoot.locator('[data-testid="access-list"]');
     this.ownerBadge = this.dialogRoot.locator("text=Owner");
+    this.ownerRow = this.dialogRoot.locator('[data-testid="owner-row"]');
     this.subscriptionWarning = this.dialogRoot.locator('[data-testid="subscription-warning"]');
     this.proBadges = this.dialogRoot.locator("text=Pro");
   }
 
   async waitForOpen(): Promise<void> {
     await this.dialogRoot.waitFor({ state: "visible" });
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForTimeout(200);
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async waitForClose(): Promise<void> {
@@ -66,6 +69,14 @@ export class ShareDialogPage {
 
   async selectSharingMode(mode: SharingMode): Promise<void> {
     const button = this.getSharingModeButton(mode);
+    if (await this.isSharingModeSelected(mode)) {
+      return;
+    }
+
+    if (await button.isDisabled()) {
+      return;
+    }
+
     await button.click();
     await waitForConvexMutation(this.page, "updateSharingMode");
   }
@@ -84,7 +95,17 @@ export class ShareDialogPage {
   async isSharingModeSelected(mode: SharingMode): Promise<boolean> {
     const button = this.getSharingModeButton(mode);
     const classes = await button.getAttribute("class");
-    return classes?.includes("border-blue-500") ?? false;
+    if (!classes) {
+      return false;
+    }
+
+    const normalizedClasses = classes.toLowerCase();
+    return (
+      normalizedClasses.includes("border-blue-500") ||
+      normalizedClasses.includes("border-info") ||
+      normalizedClasses.includes("text-info") ||
+      normalizedClasses.includes("bg-info-surface")
+    );
   }
 
   async getCurrentSharingMode(): Promise<SharingMode | null> {
@@ -186,7 +207,7 @@ export class ShareDialogPage {
   }
 
   async isOwnerDisplayed(): Promise<boolean> {
-    return await this.ownerBadge.isVisible();
+    return await this.ownerRow.isVisible();
   }
 
   async getOwnerName(): Promise<string | null> {

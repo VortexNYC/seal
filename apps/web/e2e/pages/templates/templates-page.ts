@@ -17,7 +17,7 @@ export class TemplatesPage {
 
   async goto(slug: string): Promise<void> {
     await this.page.goto(`/${slug}/templates`);
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async createTemplate(name: string, pdfPath: string): Promise<void> {
@@ -37,7 +37,7 @@ export class TemplatesPage {
 
   async openTemplate(templateName: string): Promise<void> {
     await this.page.getByRole("link", { name: templateName }).click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async useTemplate(templateName: string): Promise<void> {

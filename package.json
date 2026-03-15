@@ -34,7 +34,14 @@
     "knip:fix": "turbo run knip:fix --continue --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/react --filter=@seal/transactional --filter=@seal/web",
     "static-analysis": "bun run lint && bun run format:check && bun run typecheck && bun run knip",
     "test": "turbo run test --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/web",
-    "clean": "bunx turbo run clean --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/web && git clean -xdf .cache .turbo dist node_modules"
+    "clean": "bunx turbo run clean --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/web && git clean -xdf .cache .turbo dist node_modules",
+    "eval": "cd evals && npx promptfoo eval",
+    "eval:redteam": "cd evals && npx promptfoo eval -c redteam.yaml",
+    "eval:all": "cd evals && npx promptfoo eval && npx promptfoo eval -c redteam.yaml",
+    "eval:view": "npx promptfoo view"
+  },
+  "dependencies": {
+    "posthog-js": "^1.360.1"
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
@@ -43,6 +50,7 @@
     "knip": "^5.85.0",
     "oxfmt": "^0.37.0",
     "oxlint": "^1.52.0",
+    "promptfoo": "^0.121.2",
     "turbo": "^2.8.15",
     "typescript": "catalog:"
   },
@@ -54,8 +62,5 @@
     "unplugin": "2.1.2",
     "vite": "^7.3.1"
   },
-  "packageManager": "bun@1.3.0",
-  "dependencies": {
-    "posthog-js": "^1.360.1"
-  }
+  "packageManager": "bun@1.3.0"
 }

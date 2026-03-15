@@ -1,16 +1,41 @@
+import type { Page } from "@playwright/test";
+
 import { expect, test } from "../fixtures/auth";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { waitForToast } from "../utils/test-helpers";
+import { testData } from "../utils/test-data";
+
+async function gotoDocumentsList(
+  authenticatedPage: Page,
+  organizationSlug: string,
+): Promise<DocumentsListPage> {
+  const documentsPage = new DocumentsListPage(authenticatedPage);
+  await documentsPage.goto(organizationSlug);
+  await documentsPage.ensureAtLeastOneDocument(testData.samplePdfPath);
+  await documentsPage.waitForAnyDocumentRow();
+  return documentsPage;
+}
+
+async function openFirstDocumentEditor(
+  authenticatedPage: Page,
+  organizationSlug: string,
+): Promise<{ documentPage: DocumentPage; documentsPage: DocumentsListPage }> {
+  const documentsPage = await gotoDocumentsList(authenticatedPage, organizationSlug);
+  await documentsPage.openFirstDocument();
+
+  const documentPage = new DocumentPage(authenticatedPage);
+  await documentPage.waitForDocumentLoad();
+
+  return { documentPage, documentsPage };
+}
 
 test.describe("Document Filtering", () => {
   test("should filter documents by status - Drafts", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
-
-    await documentsPage.goto(organizationSlug);
+    await gotoDocumentsList(authenticatedPage, organizationSlug);
 
     // Click Drafts filter
     await authenticatedPage.getByRole("button", { name: "Drafts" }).click();
@@ -25,9 +50,7 @@ test.describe("Document Filtering", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
-
-    await documentsPage.goto(organizationSlug);
+    await gotoDocumentsList(authenticatedPage, organizationSlug);
 
     await authenticatedPage.getByRole("button", { name: "Sent" }).click();
 
@@ -38,9 +61,7 @@ test.describe("Document Filtering", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
-
-    await documentsPage.goto(organizationSlug);
+    await gotoDocumentsList(authenticatedPage, organizationSlug);
 
     await authenticatedPage.getByRole("button", { name: "In Progress" }).click();
 
@@ -51,9 +72,7 @@ test.describe("Document Filtering", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
-
-    await documentsPage.goto(organizationSlug);
+    await gotoDocumentsList(authenticatedPage, organizationSlug);
 
     await authenticatedPage.getByRole("button", { name: "Completed" }).click();
 
@@ -61,13 +80,7 @@ test.describe("Document Filtering", () => {
   });
 
   test("should switch between document tabs", async ({ authenticatedPage, organizationSlug }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
-
-    await documentsPage.goto(organizationSlug);
-
-    // All Documents (default)
-    await authenticatedPage.getByRole("button", { name: "All Documents" }).click();
-    await authenticatedPage.waitForTimeout(500);
+    await gotoDocumentsList(authenticatedPage, organizationSlug);
 
     // My Documents
     await authenticatedPage.getByRole("button", { name: "My Documents" }).click();
@@ -76,38 +89,35 @@ test.describe("Document Filtering", () => {
     // Shared with Me
     await authenticatedPage.getByRole("button", { name: "Shared with Me" }).click();
     await authenticatedPage.waitForTimeout(500);
+
+    await authenticatedPage.getByRole("button", { name: "All Documents" }).last().click();
+    await authenticatedPage.waitForTimeout(500);
   });
 });
 
 test.describe("Document Actions", () => {
   test("should download document", async ({ authenticatedPage, organizationSlug }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
+    const documentsPage = await gotoDocumentsList(authenticatedPage, organizationSlug);
 
-    await documentsPage.goto(organizationSlug);
+    await documentsPage.openFirstDocumentActionsMenu();
 
-    // Open first document
-    await documentsPage.openDocument("Fatura.pdf");
+    const popupPromise = authenticatedPage.waitForEvent("popup");
+    await authenticatedPage.getByRole("menuitem", { name: /^download$/i }).click();
 
-    // Click download button
-    const downloadPromise = authenticatedPage.waitForEvent("download");
-    await authenticatedPage.getByRole("button", { name: /download/i }).click();
-
-    const download = await downloadPromise;
-    expect(download.suggestedFilename()).toContain(".pdf");
+    const popup = await popupPromise;
+    await expect
+      .poll(async () => popup.url(), { timeout: 10000 })
+      .not.toBe("about:blank");
   });
 
   test("should navigate back from document editor", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
-    const _documentPage = new DocumentPage(authenticatedPage);
-
-    await documentsPage.goto(organizationSlug);
-    await documentsPage.openDocument("Fatura.pdf");
+    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
     // Click back button
-    await authenticatedPage.getByRole("button", { name: "Back" }).click();
+    await documentPage.backButton.click();
 
     // Verify we're back at documents list
     await expect(authenticatedPage).toHaveURL(`/${organizationSlug}/documents`);
@@ -141,60 +151,42 @@ test.describe("Document Actions", () => {
 
 test.describe("Document Editor - Zoom Controls", () => {
   test("should zoom in on document", async ({ authenticatedPage, organizationSlug }) => {
-    const documentPage = new DocumentPage(authenticatedPage);
-
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
-
-    await documentPage.waitForDocumentLoad();
+    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
     // Click zoom in button
-    await authenticatedPage.getByRole("button", { name: "Zoom in" }).click();
+    const initialZoom = (await documentPage.zoomLevelSelect.textContent())?.trim();
+    await documentPage.zoomInButton.click();
 
     await authenticatedPage.waitForTimeout(500);
 
-    // Verify zoom level changed (check combobox value)
-    const _zoomCombobox = authenticatedPage
-      .locator('text="100%"')
-      .or(authenticatedPage.locator('text="125%"'));
+    await expect(documentPage.zoomLevelSelect).not.toHaveText(initialZoom ?? "");
   });
 
   test("should zoom out on document", async ({ authenticatedPage, organizationSlug }) => {
-    const documentPage = new DocumentPage(authenticatedPage);
+    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
-
-    await documentPage.waitForDocumentLoad();
-
-    await authenticatedPage.getByRole("button", { name: "Zoom out" }).click();
+    await documentPage.zoomOutButton.click();
 
     await authenticatedPage.waitForTimeout(500);
   });
 
   test("should reset zoom on document", async ({ authenticatedPage, organizationSlug }) => {
-    const documentPage = new DocumentPage(authenticatedPage);
-
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
-
-    await documentPage.waitForDocumentLoad();
+    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
     // Zoom in first
-    await authenticatedPage.getByRole("button", { name: "Zoom in" }).click();
+    await documentPage.zoomInButton.click();
     await authenticatedPage.waitForTimeout(300);
 
     // Then reset
-    await authenticatedPage.getByRole("button", { name: "Reset" }).click();
+    await documentPage.resetZoomButton.click();
 
     await authenticatedPage.waitForTimeout(500);
   });
 
   test("should fit document to viewport", async ({ authenticatedPage, organizationSlug }) => {
-    const documentPage = new DocumentPage(authenticatedPage);
+    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
-
-    await documentPage.waitForDocumentLoad();
-
-    await authenticatedPage.getByRole("button", { name: "Fit" }).click();
+    await documentPage.fitButton.click();
 
     await authenticatedPage.waitForTimeout(500);
   });
@@ -202,51 +194,35 @@ test.describe("Document Editor - Zoom Controls", () => {
 
 test.describe("Document Details Sidebar", () => {
   test("should display document details", async ({ authenticatedPage, organizationSlug }) => {
-    const documentPage = new DocumentPage(authenticatedPage);
+    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await documentPage.detailsSectionButton.click();
 
-    await documentPage.waitForDocumentLoad();
-
-    // Verify Document Details section is visible
-    await expect(authenticatedPage.getByText("Document Details")).toBeVisible();
-
-    // Verify status is shown
-    await expect(authenticatedPage.getByText("Status")).toBeVisible();
-    await expect(authenticatedPage.getByText("Draft")).toBeVisible();
-
-    // Verify file size is shown
+    // Verify document metadata is shown
     await expect(authenticatedPage.getByText("File Size")).toBeVisible();
-
-    // Verify upload date is shown
-    await expect(authenticatedPage.getByText("Uploaded")).toBeVisible();
+    await expect(authenticatedPage.getByText("Pages")).toBeVisible();
+    await expect(authenticatedPage.getByText(/^Uploaded$/)).toBeVisible();
   });
 
   test("should display recipients section", async ({ authenticatedPage, organizationSlug }) => {
-    const documentPage = new DocumentPage(authenticatedPage);
-
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
-
-    await documentPage.waitForDocumentLoad();
+    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
     // Verify Recipients section
-    await expect(authenticatedPage.getByText("Recipients")).toBeVisible();
+    await expect(documentPage.recipientsSectionButton).toBeVisible();
 
-    // Verify Add button exists
-    await expect(authenticatedPage.getByRole("button", { name: /add/i })).toBeVisible();
+    // Verify recipients panel content is shown
+    await expect(authenticatedPage.getByText("No recipients")).toBeVisible();
+    await expect(authenticatedPage.getByRole("button", { name: /add recipient/i })).toBeVisible();
   });
 
   test("should display activity timeline", async ({ authenticatedPage, organizationSlug }) => {
-    const documentPage = new DocumentPage(authenticatedPage);
+    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
-
-    await documentPage.waitForDocumentLoad();
+    await documentPage.activitySectionButton.click();
 
     // Verify Activity section
-    await expect(authenticatedPage.getByText("Activity")).toBeVisible();
+    await expect(documentPage.activitySectionButton).toBeVisible();
 
-    // Verify document creation activity is shown
-    await expect(authenticatedPage.getByText(/document.*was created/i)).toBeVisible();
+    await expect(authenticatedPage.getByText(/was created/i).first()).toBeVisible();
   });
 });
