@@ -102,6 +102,8 @@ jobs:
         # Bun's Node shim, while the normal workspace script execution works
         # locally and in CI-compatible environments.
         run: cd apps/landing && bun run test:e2e
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
 
   build:
     name: Build
