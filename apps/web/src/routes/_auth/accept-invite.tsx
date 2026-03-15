@@ -9,12 +9,16 @@
 import { SignIn, useAuth } from "@clerk/clerk-react";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 
+import { useTheme } from "@/components/theme-provider";
+import { getClerkAuthAppearance } from "@/lib/clerk-auth-theme";
+
 export const Route = createFileRoute("/_auth/accept-invite")({
   component: AcceptInviteRoute,
 });
 
 function AcceptInviteRoute() {
   const { isSignedIn, isLoaded } = useAuth();
+  const { resolvedTheme } = useTheme();
 
   // Wait for Clerk to load
   if (!isLoaded) {
@@ -34,5 +38,11 @@ function AcceptInviteRoute() {
   // Render embedded SignIn so the invitation token present in the URL
   // is preserved and processed by Clerk. This avoids losing the token
   // via a redirect to a different path.
-  return <SignIn routing="virtual" signUpUrl="/sign-up" />;
+  return (
+    <SignIn
+      routing="virtual"
+      signUpUrl="/sign-up"
+      appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
+    />
+  );
 }

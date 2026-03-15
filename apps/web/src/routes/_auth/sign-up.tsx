@@ -1,6 +1,8 @@
 import { SignUp } from "@clerk/clerk-react";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { useTheme } from "@/components/theme-provider";
+import { getClerkAuthAppearance } from "@/lib/clerk-auth-theme";
 import { getCanonicalUrl, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/sign-up")({
@@ -17,21 +19,12 @@ export const Route = createFileRoute("/_auth/sign-up")({
 });
 
 function RouteComponent() {
+  const { resolvedTheme } = useTheme();
+
   return (
     <SignUp
       routing="virtual"
-      appearance={{
-        elements: {
-          logoBox: {
-            height: "80px",
-            marginBottom: "16px",
-          },
-          logoImage: {
-            height: "80px",
-            width: "auto",
-          },
-        },
-      }}
+      appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
     />
   );
 }
