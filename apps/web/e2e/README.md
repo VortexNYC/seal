@@ -74,7 +74,7 @@ Create `.env.test` file (see `.env.test.example`):
 
 ```bash
 TEST_USER_EMAIL=test@seal-test.com
-TEST_USER_PASSWORD=TestPassword123!
+TEST_EMAIL_CODE=424242
 VITE_CONVEX_URL=https://test-deployment.convex.cloud
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 PLAYWRIGHT_BASE_URL=http://localhost:5173
@@ -206,14 +206,14 @@ Tests run automatically on:
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 
-See `.github/workflows/e2e-tests.yml` for CI configuration.
+See `.github/workflows/ci.yml` for CI configuration.
 
 ### Required Secrets
 
 Configure these in GitHub repository settings:
 
 - `TEST_USER_EMAIL`
-- `TEST_USER_PASSWORD`
+- `TEST_EMAIL_CODE`
 - `VITE_CONVEX_URL_TEST`
 - `VITE_CLERK_PUBLISHABLE_KEY_TEST`
 
