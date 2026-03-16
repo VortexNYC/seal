@@ -1,8 +1,8 @@
 /**
  * DashboardSkeleton Component
  *
- * Loading skeleton specifically for the dashboard/home page.
- * Matches the layout of stats cards and recent activity section.
+ * Loading skeleton for the dashboard/home page.
+ * Matches the updated layout: greeting → stats → chart/breakdown → documents.
  *
  * @example
  * ```tsx
@@ -18,15 +18,17 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { CardSkeleton } from "@/components/skeletons/card-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function DashboardSkeleton() {
+export function DashboardSkeleton(): React.ReactElement {
   return (
     <PageWrapper title="Dashboard">
       <div className="space-y-6" role="status" aria-label="Loading dashboard">
+        {/* Greeting skeleton */}
         <div>
-          <Skeleton className="mb-2 h-9 w-[200px]" />
-          <Skeleton className="h-5 w-[300px]" />
+          <Skeleton className="mb-2 h-9 w-[280px]" />
+          <Skeleton className="h-5 w-[220px]" />
         </div>
 
+        {/* Stats cards skeleton */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <CardSkeleton showDescription={false} />
           <CardSkeleton showDescription={false} />
@@ -34,7 +36,13 @@ export function DashboardSkeleton() {
           <CardSkeleton showDescription={false} />
         </div>
 
-        <CardSkeleton showDescription showFooter={false} />
+        {/* Chart + breakdown skeleton */}
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <CardSkeleton showDescription showFooter={false} />
+          </div>
+          <CardSkeleton showDescription showFooter={false} />
+        </div>
       </div>
     </PageWrapper>
   );

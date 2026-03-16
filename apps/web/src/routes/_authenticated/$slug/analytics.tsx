@@ -6,6 +6,7 @@
  */
 
 import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
@@ -46,7 +47,7 @@ import {
 } from "recharts";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
+import { AnalyticsSkeleton, AnalyticsTabSkeleton } from "@/components/skeletons/analytics-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -65,11 +66,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/analytics")({
   component: AnalyticsPage,
-  pendingComponent: DashboardSkeleton,
+  pendingComponent: AnalyticsSkeleton,
   head: () => ({
     meta: [
       { title: pageSEO.analytics.title },
@@ -99,11 +99,7 @@ function AnalyticsPage() {
   const effectiveScope = isAdmin ? scope : "personal";
 
   if (!stats) {
-    return (
-      <PageWrapper title="Analytics">
-        <DashboardSkeleton />
-      </PageWrapper>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   return (
@@ -1165,7 +1161,7 @@ function EmailEngagementTab() {
   });
 
   if (!engagement) {
-    return <DashboardSkeleton />;
+    return <AnalyticsTabSkeleton />;
   }
 
   if (engagement.total === 0) {
@@ -1293,7 +1289,7 @@ function RecipientTimingTab() {
   const timing = useQuery(api.dashboard.analytics_queries.getRecipientTimingStats, { days: 30 });
 
   if (!timing) {
-    return <DashboardSkeleton />;
+    return <AnalyticsTabSkeleton />;
   }
 
   if (timing.sampleSize === 0) {
@@ -1395,7 +1391,7 @@ function TemplatePerformanceTab() {
   const templates = useQuery(api.dashboard.analytics_queries.getTemplatePerformance, { days: 90 });
 
   if (!templates || isLoadingPlan) {
-    return <DashboardSkeleton />;
+    return <AnalyticsTabSkeleton />;
   }
 
   if (!isPro) {

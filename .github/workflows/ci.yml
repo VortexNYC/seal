@@ -76,6 +76,39 @@ jobs:
       - name: Run frontend tests
         run: cd apps/web && bun --bun run test
 
+  test-web-e2e:
+    name: Web E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: cd apps/web && bunx playwright install --with-deps chromium firefox webkit
+
+      - name: Run web E2E tests
+        # Avoid `bun --bun run` here: Playwright's config loader fails under
+        # Bun's Node shim, while the normal workspace script execution works
+        # locally and in CI-compatible environments.
+        run: cd apps/web && bun run test:e2e
+        env:
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_EMAIL_CODE: ${{ secrets.TEST_EMAIL_CODE }}
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL_TEST }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
   test-landing-e2e:
     name: Landing E2E
     runs-on: ubuntu-latest
@@ -109,7 +142,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [quality, test-backend, test-frontend, test-landing-e2e]
+    needs: [quality, test-backend, test-frontend, test-web-e2e, test-landing-e2e]
 
     steps:
       - name: Checkout

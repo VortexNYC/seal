@@ -82,7 +82,6 @@
     "react-hook-form": "^7.71.2",
     "react-konva": "^19.2.1",
     "react-pdf": "^10.3.0",
-    "react-resizable-panels": "^4",
     "react-signature-canvas": "^1.1.0-alpha.2",
     "react-zoom-pan-pinch": "^3.7.0",
     "recharts": "^3.7.0",
