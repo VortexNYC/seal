@@ -300,6 +300,85 @@ The sandbox was set up under a prior model. The personal/business product split,
 25. Update `handleSubscriptionUpdated` — detect `past_due` status, show grace period banner
 26. Wire `handleSubscriptionDeleted` to trigger full downgrade cascade (suspend webhooks/API, freeze templates/branding, downgrade sharing)
 
+---
+
+## Frontend UX Spec
+
+### Principle
+The product should feel complete at every tier, not like a crippled version begging to upgrade. Gated features are visible but softly locked. No banners, no pop-ups, no repeated CTAs.
+
+### Shared Component: `<FeatureGate>`
+
+One component used across all gated surfaces. Checks org tier, either renders children or renders a locked overlay.
+
+```tsx
+<FeatureGate tier="pro" feature="Custom branding" description="Add your logo and colors to signing pages.">
+  <BrandingSettingsForm />
+</FeatureGate>
+```
+
+**Locked state renders:**
+- A card at the top with lock icon, feature name, one-line description, and "Start free trial" button
+- Children render below at `opacity-50 pointer-events-none` — user sees a preview of the feature but can't interact
+- "Start free trial" links to billing page checkout flow
+
+### Sidebar Navigation
+All items visible regardless of tier. Pro-only sections (Branding, API Keys, Webhooks) show a small lock icon next to the label in `text-muted-foreground`. Clicking still navigates to the page — `<FeatureGate>` handles the rest.
+
+### Gated Settings Pages
+
+**Branding, API Keys, Webhooks, MCP:** Page loads normally. `<FeatureGate>` wraps the content. Locked state shows the single upgrade card + grayed-out preview of controls below.
+
+**Template creation:** "Save as Template" button stays visible. On hover for Free users: tooltip "Available on Professional plan." No modal, no redirect.
+
+**Team settings (seat limit):** Free users see themselves as the only member. "Invite" button disabled with tooltip: "Upgrade to invite team members."
+
+### Billing Page (`settings/billing.tsx`)
+
+The ONE place with a full tier comparison. Three cards:
+
+```
+┌─────────────┐  ┌──────────────────┐  ┌─────────────┐
+│ Free        │  │ Professional     │  │ Enterprise  │
+│ (Current)   │  │                  │  │             │
+│             │  │ $19/seat/mo      │  │ Contact us  │
+│ 1 seat      │  │ or $180/seat/yr  │  │             │
+│ Unlimited   │  │                  │  │ 20+ seats   │
+│ docs & sigs │  │ Everything in    │  │ SSO/SAML    │
+│ Audit trail │  │ Free, plus:      │  │ Custom rates│
+│ Payments    │  │ Templates        │  │             │
+│ (4.5%+30¢)  │  │ Branding         │  │             │
+│             │  │ API/MCP/Webhooks │  │             │
+│             │  │ Up to 20 seats   │  │             │
+│             │  │ Lower rates (4%) │  │             │
+│             │  │                  │  │             │
+│             │  │ [Start 14-day    │  │ [Contact    │
+│             │  │  free trial]     │  │  sales]     │
+└─────────────┘  └──────────────────┘  └─────────────┘
+```
+
+- No annual/monthly toggle on this page — that choice happens in Stripe Checkout after clicking "Start free trial"
+- For Pro orgs: show current seat count, next billing date, payment method, and "Manage billing" (opens Stripe Portal for payment updates)
+- Cancellation: "Cancel plan" button with multi-step confirmation that validates preconditions (seat count ≤ 1 for downgrade to Free)
+
+### Dashboard / Home
+No upgrade banners. No "you're on Free!" callouts. Dashboard feels like a complete product.
+
+### One-Time Proactive Prompt
+After 7+ days on Free AND 3+ documents created, show a single dismissable notification (toast or inbox-style): "Professional includes templates, custom branding, and API access. Try it free for 14 days." Shown once. Dismissable. Never again. Track dismissal in user metadata.
+
+### Downgrade States
+
+**Suspended webhooks/API keys:** Rows render with `opacity-50` and a "Suspended" badge (`Badge variant="outline"` in muted color). No delete buttons shown — keys are preserved for re-upgrade. The `<FeatureGate>` card appears at the top of the page.
+
+**Frozen templates:** Template cards render with a lock overlay icon. Clicking shows tooltip: "Upgrade to Professional to use templates." Templates are not deleted — they're visually frozen.
+
+**Paused branding:** Branding settings page shows current saved config at `opacity-50` with the `<FeatureGate>` card. Config is preserved — upgrading restores it immediately.
+
+**Past-due (grace period):** A single warning bar at the top of the billing page only (not app-wide): "Your payment failed. Update your payment method to keep Professional features." Links to Stripe Portal for payment update. Not shown on any other page.
+
+---
+
 ### Phase 5: Display + Polish
 
 27. Update `settings/billing.tsx` — 3 tiers, correct features, seat count management, annual toggle, cancellation flow (validates preconditions)
