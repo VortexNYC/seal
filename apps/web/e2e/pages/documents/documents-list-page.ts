@@ -25,7 +25,7 @@ export class DocumentsListPage {
     await this.page.goto(`/${slug}/documents`, { waitUntil: "domcontentloaded" });
   }
 
-  async createDocument(pdfPath: string): Promise<void> {
+  async createDocument(pdfPath: string): Promise<string> {
     const existingCount = await this.getDocumentRowCount();
 
     await this.createDocumentButton.click();
@@ -52,20 +52,29 @@ export class DocumentsListPage {
 
     const start = Date.now();
     const timeout = 30000;
+    let rowDetectedWithName = false;
     while (Date.now() - start < timeout) {
       const isFileVisible = await this.page.getByText(fileName).isVisible().catch(() => false);
-      if (isFileVisible) return;
+      if (isFileVisible) {
+        rowDetectedWithName = true;
+        break;
+      }
 
       const latestCount = await this.getDocumentRowCount();
-      if (existingCount === 0 && latestCount > existingCount) return;
-      if (existingCount > 0 && latestCount > existingCount) return;
+      if (latestCount > existingCount) {
+        break;
+      }
       await this.page.waitForTimeout(250);
     }
 
-    await this.waitForAnyDocumentRow(30000).catch(() => {
-      // Keep the behavior explicit if rows still do not appear.
-      throw new Error("Timed out waiting for document row to appear after upload.");
-    });
+    if (!rowDetectedWithName) {
+      await this.waitForAnyDocumentRow(30000).catch(() => {
+        // Keep the behavior explicit if rows still do not appear.
+        throw new Error("Timed out waiting for document row to appear after upload.");
+      });
+    }
+
+    return fileName;
   }
 
   async ensureAtLeastOneDocument(pdfPath: string): Promise<void> {
