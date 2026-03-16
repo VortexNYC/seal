@@ -71,7 +71,7 @@ export const getUserForSubscription = internalMutation({
     // Check for existing active subscription
     const existingSubscription = await ctx.db
       .query("subscriptions")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
+      .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", user?.stripeCustomerId ?? ""))
       .filter((q) => q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "trialing")))
       .first();
 
@@ -156,7 +156,6 @@ export const createSubscriptionRecord = internalMutation({
 
     const subscriptionId = await ctx.db.insert("subscriptions", {
       organizationId: orgId,
-      userId: args.userId,
       externalCustomerId: args.stripeCustomerId,
       externalSubscriptionId: args.stripeSubscriptionId,
       externalPriceId: args.stripePriceId,

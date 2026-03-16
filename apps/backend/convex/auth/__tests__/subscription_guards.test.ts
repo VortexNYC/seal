@@ -12,7 +12,6 @@ import {
 describe("subscription_guards", () => {
   let t: ReturnType<typeof createTestContext>;
   let organizationId: Id<"organizations">;
-  let userId: Id<"users">;
 
   beforeEach(async () => {
     t = createTestContext();
@@ -25,18 +24,6 @@ describe("subscription_guards", () => {
         isActive: true,
         timezone: "UTC",
         updatedAt: Date.now(),
-      });
-    });
-
-    userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        email: "user@test.com",
-        name: "Test User",
-        clerkId: "clerk_test_user",
-        isEmailVerified: true,
-        timezone: "UTC",
-        locale: "en-US",
-        activeOrganizationId: organizationId,
       });
     });
   });
@@ -87,7 +74,6 @@ describe("subscription_guards", () => {
     await t.run(async (ctx) => {
       await ctx.db.insert("subscriptions", {
         organizationId,
-        userId,
         externalCustomerId: "cus_test_123",
         externalSubscriptionId: "sub_test_123",
         externalPriceId: "price_test_123",
@@ -244,7 +230,6 @@ describe("subscription_guards", () => {
       await t.run(async (ctx) => {
         await ctx.db.insert("subscriptions", {
           organizationId,
-          userId,
           externalCustomerId: "cus_no_tier",
           externalSubscriptionId: "sub_no_tier",
           externalPriceId: "price_no_tier",

@@ -57,9 +57,12 @@ export const getUsersWithStripeCustomers = internalMutation({
         continue;
       }
 
+      // TODO: rewrite for org-scoped subscriptions
+      // The old user-scoped by_user_id index has been removed.
+      // This sync script needs to query by org or by external customer ID instead.
       const subscriptions = await ctx.db
         .query("subscriptions")
-        .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+        .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", user.stripeCustomerId!))
         .collect();
 
       results.push({

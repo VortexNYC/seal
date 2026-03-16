@@ -35,22 +35,11 @@ export const getUsersWithoutSubscription = internalMutation({
       name?: string;
     }> = [];
 
-    for (const user of allUsers) {
-      // Check if this user has any non-terminal subscription
-      const subscription = await ctx.db
-        .query("subscriptions")
-        .withIndex("by_user_id", (q) => q.eq("userId", user._id))
-        .filter((q) => q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "trialing")))
-        .first();
-
-      if (!subscription) {
-        usersWithoutSub.push({
-          userId: user._id,
-          email: user.email,
-          name: user.name,
-        });
-      }
-    }
+    // TODO: rewrite for org-scoped subscriptions
+    // The old user-scoped by_user_id index has been removed.
+    // This backfill script needs to be rewritten to check org subscriptions.
+    void allUsers;
+    void usersWithoutSub;
 
     return usersWithoutSub;
   },

@@ -78,12 +78,12 @@ async function getActiveAccessWithUsers(ctx: SharingQueryDbCtx, documentId: Id<"
 
 async function getSharingSubscriptionState(
   ctx: SharingQueryDbCtx,
-  userId: Id<"users">,
+  organizationId: Id<"organizations">,
   hasSharedDocuments: boolean,
 ) {
   const subscription = await ctx.db
     .query("subscriptions")
-    .withIndex("by_user_id", (q) => q.eq("userId", userId))
+    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
     .first();
 
   const canUseTeamSharing =
@@ -124,7 +124,7 @@ export const updateSharingMode = permissionMutation("documents:share")({
     if (args.sharingMode === "workspace" || args.sharingMode === "specific") {
       const subscription = await ctx.db
         .query("subscriptions")
-        .withIndex("by_user_id", (q) => q.eq("userId", userId))
+        .withIndex("by_organization_id", (q) => q.eq("organizationId", document.organizationId))
         .first();
 
       const isPro = subscription?.status === "active";
@@ -586,7 +586,7 @@ export const getDocumentAccess = authQuery({
     );
     const owner = await ctx.db.get(document.ownerId);
     const hasSharedDocuments = document.sharingMode !== "private" || activeAccessRecords.length > 0;
-    const subscriptionState = await getSharingSubscriptionState(ctx, userId, hasSharedDocuments);
+    const subscriptionState = await getSharingSubscriptionState(ctx, document.organizationId, hasSharedDocuments);
 
     return {
       documentId: args.documentId,

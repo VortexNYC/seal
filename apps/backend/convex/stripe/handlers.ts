@@ -109,7 +109,7 @@ function extractSubscriptionData(subscription: Stripe.Subscription) {
       typeof subscription.latest_invoice === "string"
         ? subscription.latest_invoice
         : subscription.latest_invoice?.id,
-    userId: subscription.metadata?.userId as Id<"users">,
+    organizationId: subscription.metadata?.organizationId as Id<"organizations"> | undefined,
     priceId: firstItem.price.id,
     currentPeriodStart: currentPeriodStart * 1000, // Convert to ms
     currentPeriodEnd: currentPeriodEnd * 1000, // Convert to ms
@@ -147,7 +147,7 @@ function extractInvoiceData(invoice: Stripe.Invoice) {
 export const cancelOldStripeSubscriptions = internalAction({
   args: {
     subscriptionIds: v.array(v.string()),
-    userId: v.string(),
+    organizationId: v.string(),
   },
   handler: async (_ctx, args) => {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -163,11 +163,11 @@ export const cancelOldStripeSubscriptions = internalAction({
     for (const subscriptionId of args.subscriptionIds) {
       try {
         await stripe.subscriptions.cancel(subscriptionId);
-        console.warn(`Cancelled old Stripe subscription ${subscriptionId} for user ${args.userId}`);
+        console.warn(`Cancelled old Stripe subscription ${subscriptionId} for org ${args.organizationId}`);
       } catch (err) {
         console.error(`Failed to cancel Stripe subscription ${subscriptionId}`, {
           error: err instanceof Error ? err.message : String(err),
-          userId: args.userId,
+          organizationId: args.organizationId,
         });
       }
     }
@@ -181,7 +181,7 @@ function logTrialConversionIfNeeded(
   existingStatus: SubscriptionStatus,
   subscription: {
     id: string;
-    userId: Id<"users"> | undefined;
+    organizationId: Id<"organizations"> | undefined;
     customer: string;
     status: SubscriptionStatus;
     trialStart: number | undefined;
@@ -207,7 +207,7 @@ function logTrialConversionIfNeeded(
         event: "trial_converted",
         operation: "handleSubscriptionUpdated",
         stripeSubscriptionId: subscription.id,
-        userId: subscription.userId,
+        organizationId: subscription.organizationId,
         customerId: subscription.customer,
         trialStart: subscription.trialStart,
         trialEnd: subscription.trialEnd,
@@ -226,7 +226,7 @@ function logTrialConversionIfNeeded(
         event: "trial_not_converted",
         operation: "handleSubscriptionUpdated",
         stripeSubscriptionId: subscription.id,
-        userId: subscription.userId,
+        organizationId: subscription.organizationId,
         customerId: subscription.customer,
         trialStart: subscription.trialStart,
         trialEnd: subscription.trialEnd,
@@ -238,16 +238,16 @@ function logTrialConversionIfNeeded(
 }
 
 /**
- * Helper: Cancel other active subscriptions for a user
+ * Helper: Cancel other active subscriptions for an organization
  */
 async function cancelOtherSubscriptions(
   ctx: MutationCtx,
-  userId: Id<"users">,
+  organizationId: Id<"organizations">,
   now: number,
 ): Promise<void> {
   const otherActiveSubscriptions = await ctx.db
     .query("subscriptions")
-    .withIndex("by_user_id", (q) => q.eq("userId", userId))
+    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
     .filter((q) => q.eq(q.field("status"), "active"))
     .collect();
 
@@ -258,7 +258,7 @@ async function cancelOtherSubscriptions(
   const oldSubscriptionIds = otherActiveSubscriptions.map((sub) => sub.externalSubscriptionId);
 
   console.warn(
-    `Found ${otherActiveSubscriptions.length} old active subscription(s) for user ${userId}, canceling them`,
+    `Found ${otherActiveSubscriptions.length} old active subscription(s) for org ${organizationId}, canceling them`,
   );
 
   // Cancel old subscriptions in Convex first
@@ -272,7 +272,7 @@ async function cancelOtherSubscriptions(
   // Schedule cancellation in Stripe (via action)
   await ctx.scheduler.runAfter(0, internal.stripe.handlers.cancelOldStripeSubscriptions, {
     subscriptionIds: oldSubscriptionIds,
-    userId,
+    organizationId,
   });
 }
 
@@ -289,35 +289,34 @@ function getRetryDelayMs(retryCount: number): number {
 }
 
 /**
- * Resolve user from subscription metadata or Stripe customer ID.
+ * Resolve organization from subscription metadata or Stripe customer ID.
  *
- * Strategy 1: Direct userId from subscription metadata
- * Strategy 2: Stripe customer ID lookup on users table
+ * Strategy 1: Direct organizationId from subscription metadata
+ * Strategy 2: Stripe customer ID lookup on organizations table
  * Strategy 3: Stripe customer ID lookup on existing subscriptions table
  */
-async function resolveUserForSubscription(
+async function resolveOrgForSubscription(
   ctx: MutationCtx,
-  metadataUserId: Id<"users"> | undefined,
+  metadataOrgId: Id<"organizations"> | undefined,
   stripeCustomerId: string,
-): Promise<Id<"users"> | null> {
+): Promise<Id<"organizations"> | null> {
   // Strategy 1: Direct metadata lookup
-  if (metadataUserId) {
-    const user = await ctx.db.get(metadataUserId);
-    if (user) {
-      return user._id;
+  if (metadataOrgId) {
+    const org = await ctx.db.get(metadataOrgId);
+    if (org) {
+      return org._id;
     }
-    console.warn(`userId ${metadataUserId} from metadata not found in users table`);
+    console.warn(`organizationId ${metadataOrgId} from metadata not found in organizations table`);
   }
 
-  // Strategy 2: Look up user by stripeCustomerId
-  const allUsers = await ctx.db.query("users").collect();
-  const matchedUser = allUsers.find((u) => u.stripeCustomerId === stripeCustomerId);
-  if (matchedUser) {
-    console.warn(
-      `Resolved userId ${matchedUser._id} from Stripe customer ${stripeCustomerId} (metadata lookup failed)`,
-    );
-    return matchedUser._id;
-  }
+  // TODO: rewrite for org-scoped subscriptions (Phase 0C)
+  // Strategy 2 requires stripeCustomerId on the organizations table,
+  // which hasn't been added yet. Skipping until Phase 0C.
+  // const allOrgs = await ctx.db.query("organizations").collect();
+  // const matchedOrg = allOrgs.find((o) => o.stripeCustomerId === stripeCustomerId);
+  // if (matchedOrg) {
+  //   return matchedOrg._id;
+  // }
 
   // Strategy 3: Look up via existing subscriptions for this customer
   const existingSub = await ctx.db
@@ -326,9 +325,9 @@ async function resolveUserForSubscription(
     .first();
   if (existingSub) {
     console.warn(
-      `Resolved userId ${existingSub.userId} from existing subscription for customer ${stripeCustomerId}`,
+      `Resolved organizationId ${existingSub.organizationId} from existing subscription for customer ${stripeCustomerId}`,
     );
-    return existingSub.userId ?? null;
+    return existingSub.organizationId;
   }
 
   return null;
@@ -343,18 +342,18 @@ export const handleSubscriptionCreated = internalMutation({
     const subscription = extractSubscriptionData(args.subscription);
     const retryCount = args.retryCount ?? 0;
 
-    // Resolve userId with multi-strategy fallback
-    const resolvedUserId = await resolveUserForSubscription(
+    // Resolve organizationId with multi-strategy fallback
+    const resolvedOrgId = await resolveOrgForSubscription(
       ctx,
-      subscription.userId,
+      subscription.organizationId,
       subscription.customer,
     );
 
-    if (!resolvedUserId) {
+    if (!resolvedOrgId) {
       if (retryCount < MAX_SUBSCRIPTION_RETRY_ATTEMPTS) {
         const delayMs = getRetryDelayMs(retryCount);
         console.warn(
-          `User not found for subscription ${subscription.id} (customer ${subscription.customer}), scheduling retry ${retryCount + 1}/${MAX_SUBSCRIPTION_RETRY_ATTEMPTS} in ${delayMs / 1000}s`,
+          `Organization not found for subscription ${subscription.id} (customer ${subscription.customer}), scheduling retry ${retryCount + 1}/${MAX_SUBSCRIPTION_RETRY_ATTEMPTS} in ${delayMs / 1000}s`,
         );
         await ctx.scheduler.runAfter(delayMs, internal.stripe.handlers.handleSubscriptionCreated, {
           subscription: args.subscription,
@@ -363,11 +362,9 @@ export const handleSubscriptionCreated = internalMutation({
         return;
       }
       throw new Error(
-        `User not found for subscription ${subscription.id} (customer ${subscription.customer}) after ${MAX_SUBSCRIPTION_RETRY_ATTEMPTS} retries`,
+        `Organization not found for subscription ${subscription.id} (customer ${subscription.customer}) after ${MAX_SUBSCRIPTION_RETRY_ATTEMPTS} retries`,
       );
     }
-
-    subscription.userId = resolvedUserId;
 
     const now = Date.now();
 
@@ -398,19 +395,11 @@ export const handleSubscriptionCreated = internalMutation({
       return;
     }
 
-    // Cancel any other active subscriptions for this user
-    await cancelOtherSubscriptions(ctx, subscription.userId, now);
-
-    // Resolve organizationId from user's active org (will be replaced with direct org lookup in Phase 0C)
-    const subUser = subscription.userId ? await ctx.db.get(subscription.userId) : null;
-    const orgId = subUser?.activeOrganizationId;
-    if (!orgId) {
-      throw new Error(`Cannot create subscription: no organizationId for user ${subscription.userId}`);
-    }
+    // Cancel any other active subscriptions for this org
+    await cancelOtherSubscriptions(ctx, resolvedOrgId, now);
 
     await ctx.db.insert("subscriptions", {
-      organizationId: orgId,
-      userId: subscription.userId,
+      organizationId: resolvedOrgId,
       externalCustomerId: subscription.customer,
       externalSubscriptionId: subscription.id,
       externalPriceId: subscription.priceId,
@@ -427,7 +416,7 @@ export const handleSubscriptionCreated = internalMutation({
       updatedAt: now,
     });
 
-    console.warn(`Created subscription for user ${subscription.userId}: ${subscription.id}`);
+    console.warn(`Created subscription for org ${resolvedOrgId}: ${subscription.id}`);
   },
 });
 
@@ -452,7 +441,7 @@ export const handleSubscriptionUpdated = internalMutation({
       console.error("Subscription not found for update", {
         operation: "handleSubscriptionUpdated",
         stripeSubscriptionId: subscription.id,
-        userId: subscription.userId,
+        organizationId: subscription.organizationId,
         stripePriceId: subscription.priceId,
         status: subscription.status,
         currentPeriodStart: subscription.currentPeriodStart,
@@ -498,11 +487,9 @@ export const handleSubscriptionUpdated = internalMutation({
       subscription.status === "incomplete_expired" ||
       subscription.status === "unpaid";
 
-    if (wasActive && isNowInactive && existingSubscription.userId) {
-      await ctx.scheduler.runAfter(0, internal.documents.sharing_cleanup.downgradeUserSharing, {
-        userId: existingSubscription.userId,
-        reason: `subscription_${subscription.status}`,
-      });
+    if (wasActive && isNowInactive) {
+      // TODO Phase 4: trigger org-scoped downgrade cascade
+      console.warn(`Subscription ${subscription.id} became inactive for org ${existingSubscription.organizationId}`);
     }
 
     console.warn(`Updated subscription: ${subscription.id}`);
@@ -529,7 +516,7 @@ export const handleSubscriptionDeleted = internalMutation({
       console.error("Subscription not found for deletion", {
         operation: "handleSubscriptionDeleted",
         stripeSubscriptionId: subscription.id,
-        userId: subscription.userId,
+        organizationId: subscription.organizationId,
         stripePriceId: subscription.priceId,
         status: subscription.status,
         timestamp: Date.now(),
@@ -547,12 +534,8 @@ export const handleSubscriptionDeleted = internalMutation({
       updatedAt: now,
     });
 
-    if (existingSubscription.userId) {
-      await ctx.scheduler.runAfter(0, internal.documents.sharing_cleanup.downgradeUserSharing, {
-        userId: existingSubscription.userId,
-        reason: "subscription_canceled",
-      });
-    }
+    // TODO Phase 4: trigger org-scoped downgrade cascade
+    console.warn(`Subscription canceled for org ${existingSubscription.organizationId}`);
 
     console.warn(
       JSON.stringify({
@@ -560,7 +543,7 @@ export const handleSubscriptionDeleted = internalMutation({
         event: "subscription_canceled",
         operation: "handleSubscriptionDeleted",
         stripeSubscriptionId: subscription.id,
-        userId: subscription.userId,
+        organizationId: subscription.organizationId,
         customerId: subscription.customer,
         cancelReason: subscription.cancelReason,
         canceledAt: subscription.canceledAt || now,

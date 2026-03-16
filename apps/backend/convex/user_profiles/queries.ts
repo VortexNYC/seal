@@ -115,10 +115,11 @@ export const getUsageStatistics = authQuery({
         doc.workflowStatus === "completed",
     );
 
-    // Get user's subscription for plan limits
+    // Get org's subscription for plan limits
+    const organizationId = ctx.auth.organization._id;
     const subscription = await ctx.db
       .query("subscriptions")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
+      .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
       .first();
 
     const isPro = subscription?.status === "active";
