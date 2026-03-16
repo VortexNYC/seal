@@ -119,6 +119,7 @@ export const getPriceByLookupKey = internalMutation({
  */
 export const createSubscriptionRecord = internalMutation({
   args: {
+    organizationId: v.optional(v.id("organizations")),
     userId: v.id("users"),
     stripeCustomerId: v.string(),
     stripeSubscriptionId: v.string(),
@@ -143,7 +144,18 @@ export const createSubscriptionRecord = internalMutation({
       return existing._id;
     }
 
+    // Resolve organizationId: prefer explicit arg, fall back to user's active org
+    let orgId = args.organizationId;
+    if (!orgId) {
+      const user = await ctx.db.get(args.userId);
+      orgId = user?.activeOrganizationId;
+    }
+    if (!orgId) {
+      throw new Error(`Cannot create subscription: no organizationId for user ${args.userId}`);
+    }
+
     const subscriptionId = await ctx.db.insert("subscriptions", {
+      organizationId: orgId,
       userId: args.userId,
       externalCustomerId: args.stripeCustomerId,
       externalSubscriptionId: args.stripeSubscriptionId,

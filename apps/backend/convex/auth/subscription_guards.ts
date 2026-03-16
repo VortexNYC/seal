@@ -4,6 +4,8 @@
  * Plain helper functions for enforcing subscription plan limits.
  * These are NOT Convex functions — they accept `ctx.db` directly
  * and are meant to be called inside mutations/queries.
+ *
+ * All lookups are scoped to the ORGANIZATION, not the user.
  */
 
 import { ConvexError } from "convex/values";
@@ -42,23 +44,26 @@ export const PLAN_LIMITS = {
   },
 } as const;
 
+export type TierPlan = "free" | "pro" | "enterprise";
+
 /**
- * Determine the user's current subscription plan.
+ * Determine an organization's current subscription plan.
  *
- * Treats `"active"` and `"trialing"` statuses as Pro.
+ * Treats `"active"` and `"trialing"` statuses as paid tiers.
+ * Falls back to `"free"` when no active subscription exists.
  */
 export async function getSubscriptionPlan(
   db: DatabaseReader,
-  userId: Id<"users">,
-): Promise<{ isPro: boolean; plan: "free" | "pro" }> {
+  organizationId: Id<"organizations">,
+): Promise<{ isPro: boolean; isEnterprise: boolean; plan: TierPlan }> {
   const subscription = await db
     .query("subscriptions")
-    .withIndex("by_user_id", (q) => q.eq("userId", userId))
+    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
     .order("desc")
     .first();
 
   if (!subscription || (subscription.status !== "active" && subscription.status !== "trialing")) {
-    return { isPro: false, plan: "free" };
+    return { isPro: false, isEnterprise: false, plan: "free" };
   }
 
   // Resolve the tier by joining through price → product
@@ -78,24 +83,28 @@ export async function getSubscriptionPlan(
     tier = product?.metadata?.tier;
   }
 
-  const isPro = tier === "pro";
-  return { isPro, plan: isPro ? "pro" : "free" };
+  if (tier === "enterprise") {
+    return { isPro: true, isEnterprise: true, plan: "enterprise" };
+  }
+  if (tier === "pro") {
+    return { isPro: true, isEnterprise: false, plan: "pro" };
+  }
+  return { isPro: false, isEnterprise: false, plan: "free" };
 }
 
 /**
- * Throw if the user is not on a Pro plan.
+ * Throw if the organization is not on a Pro (or higher) plan.
  *
  * Error message intentionally contains "Pro plan" and "upgrade"
  * so `parseConvexError()` classifies it as a subscription error.
  */
 export async function ensureProFeature(
   db: DatabaseReader,
-  userId: Id<"users">,
+  organizationId: Id<"organizations">,
   featureName: string,
 ): Promise<void> {
-  const { isPro } = await getSubscriptionPlan(db, userId);
+  const { isPro } = await getSubscriptionPlan(db, organizationId);
   if (!isPro) {
     throw new ConvexError(`${featureName} requires a Pro plan. Please upgrade to continue.`);
   }
 }
-

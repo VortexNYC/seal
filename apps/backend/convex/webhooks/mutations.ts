@@ -202,7 +202,7 @@ export const createEndpoint = permissionMutation("settings:integrations")({
     }
 
     // Check Pro plan requirement for webhooks
-    await ensureProFeature(ctx.db, ctx.auth.userId, "Webhook endpoints");
+    await ensureProFeature(ctx.db, ctx.auth.organizationId, "Webhook endpoints");
 
     // Check endpoint limit (max 10 per organization)
     const existingEndpoints = await ctx.db
@@ -452,7 +452,7 @@ export const createSlackEndpoint = permissionMutation("settings:integrations")({
       }
     }
 
-    await ensureProFeature(ctx.db, ctx.auth.userId, "Slack notifications");
+    await ensureProFeature(ctx.db, ctx.auth.organizationId, "Slack notifications");
 
     // Check endpoint limit (shared with regular webhooks)
     const existingEndpoints = await ctx.db

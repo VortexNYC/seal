@@ -6,7 +6,7 @@ import { api } from "@seal/backend/convex/_generated/api";
  * Hook for checking subscription plan limits in the UI.
  *
  * Wraps `getSubscriptionDetails` and provides convenient helpers
- * for conditionally rendering Pro-only features.
+ * for conditionally rendering tier-gated features.
  */
 export function useSubscriptionLimits() {
   const subscription = useQuery(api.stripe.queries.getSubscriptionDetails);
@@ -14,11 +14,14 @@ export function useSubscriptionLimits() {
   const isLoading = subscription === undefined;
 
   const tier = subscription?.tier ?? "free";
+  const isActive = subscription?.status === "active" || subscription?.status === "trialing";
 
-  const isPro = subscription?.status === "active" && tier === "pro";
+  const isPro = isActive && (tier === "pro" || tier === "enterprise");
+  const isEnterprise = isActive && tier === "enterprise";
 
   return {
     isPro,
+    isEnterprise,
     isLoading,
     tier,
     subscription,

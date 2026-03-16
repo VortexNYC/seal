@@ -86,6 +86,7 @@ describe("subscription_guards", () => {
 
     await t.run(async (ctx) => {
       await ctx.db.insert("subscriptions", {
+        organizationId,
         userId,
         externalCustomerId: "cus_test_123",
         externalSubscriptionId: "sub_test_123",
@@ -142,72 +143,72 @@ describe("subscription_guards", () => {
   describe("getSubscriptionPlan", () => {
     test("returns free plan when user has no subscription", async () => {
       const result = await t.run(async (ctx) => {
-        return await getSubscriptionPlan(ctx.db, userId);
+        return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, plan: "free" });
+      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
     });
 
     test("returns pro plan for active subscription with pro tier product", async () => {
       await seedProSubscription();
 
       const result = await t.run(async (ctx) => {
-        return await getSubscriptionPlan(ctx.db, userId);
+        return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: true, plan: "pro" });
+      expect(result).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
     });
 
     test("returns pro plan for trialing subscription", async () => {
       await seedProSubscription({ subscriptionStatus: "trialing" });
 
       const result = await t.run(async (ctx) => {
-        return await getSubscriptionPlan(ctx.db, userId);
+        return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: true, plan: "pro" });
+      expect(result).toEqual({ isPro: true, isEnterprise: false, plan: "pro" });
     });
 
     test("returns free plan for canceled subscription", async () => {
       await seedProSubscription({ subscriptionStatus: "canceled" });
 
       const result = await t.run(async (ctx) => {
-        return await getSubscriptionPlan(ctx.db, userId);
+        return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, plan: "free" });
+      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
     });
 
     test("returns free plan for past_due subscription", async () => {
       await seedProSubscription({ subscriptionStatus: "past_due" });
 
       const result = await t.run(async (ctx) => {
-        return await getSubscriptionPlan(ctx.db, userId);
+        return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, plan: "free" });
+      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
     });
 
     test("returns free plan for incomplete subscription", async () => {
       await seedProSubscription({ subscriptionStatus: "incomplete" });
 
       const result = await t.run(async (ctx) => {
-        return await getSubscriptionPlan(ctx.db, userId);
+        return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, plan: "free" });
+      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
     });
 
     test("returns free plan for unpaid subscription", async () => {
       await seedProSubscription({ subscriptionStatus: "unpaid" });
 
       const result = await t.run(async (ctx) => {
-        return await getSubscriptionPlan(ctx.db, userId);
+        return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, plan: "free" });
+      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
     });
 
     test("returns free plan when product tier is not pro", async () => {
       await seedProSubscription({ tier: "basic" });
 
       const result = await t.run(async (ctx) => {
-        return await getSubscriptionPlan(ctx.db, userId);
+        return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, plan: "free" });
+      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
     });
 
     test("returns free plan when product has no metadata tier", async () => {
@@ -242,6 +243,7 @@ describe("subscription_guards", () => {
 
       await t.run(async (ctx) => {
         await ctx.db.insert("subscriptions", {
+          organizationId,
           userId,
           externalCustomerId: "cus_no_tier",
           externalSubscriptionId: "sub_no_tier",
@@ -256,9 +258,9 @@ describe("subscription_guards", () => {
       });
 
       const result = await t.run(async (ctx) => {
-        return await getSubscriptionPlan(ctx.db, userId);
+        return await getSubscriptionPlan(ctx.db, organizationId);
       });
-      expect(result).toEqual({ isPro: false, plan: "free" });
+      expect(result).toEqual({ isPro: false, isEnterprise: false, plan: "free" });
     });
   });
 
@@ -271,14 +273,14 @@ describe("subscription_guards", () => {
 
       await t.run(async (ctx) => {
         await expect(
-          ensureProFeature(ctx.db, userId, "Workspace sharing"),
+          ensureProFeature(ctx.db, organizationId, "Workspace sharing"),
         ).resolves.toBeUndefined();
       });
     });
 
     test("throws ConvexError with Pro plan keyword for free user", async () => {
       await t.run(async (ctx) => {
-        await expect(ensureProFeature(ctx.db, userId, "Workspace sharing")).rejects.toThrow(
+        await expect(ensureProFeature(ctx.db, organizationId, "Workspace sharing")).rejects.toThrow(
           ConvexError,
         );
       });
@@ -287,7 +289,7 @@ describe("subscription_guards", () => {
     test("error message contains feature name and upgrade keyword", async () => {
       try {
         await t.run(async (ctx) => {
-          await ensureProFeature(ctx.db, userId, "Custom branding");
+          await ensureProFeature(ctx.db, organizationId, "Custom branding");
         });
         // Should not reach here
         expect.unreachable("Expected ensureProFeature to throw");

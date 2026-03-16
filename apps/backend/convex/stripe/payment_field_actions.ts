@@ -1096,9 +1096,9 @@ export const createStripeObjectsForPaymentFields = internalAction({
       throw new ConvexError("Stripe account is not enabled for charges");
     }
 
-    const subscriptionStatus: { isPro: boolean; plan: "free" | "pro" } = await ctx.runQuery(
+    const subscriptionStatus = await ctx.runQuery(
       internal.auth.subscription_helpers.checkProFeature,
-      { userId: args.userId },
+      { organizationId: args.organizationId },
     );
 
     const recipients: Doc<"document_recipients">[] = await ctx.runQuery(

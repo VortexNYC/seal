@@ -328,7 +328,7 @@ async function resolveUserForSubscription(
     console.warn(
       `Resolved userId ${existingSub.userId} from existing subscription for customer ${stripeCustomerId}`,
     );
-    return existingSub.userId;
+    return existingSub.userId ?? null;
   }
 
   return null;
@@ -401,7 +401,15 @@ export const handleSubscriptionCreated = internalMutation({
     // Cancel any other active subscriptions for this user
     await cancelOtherSubscriptions(ctx, subscription.userId, now);
 
+    // Resolve organizationId from user's active org (will be replaced with direct org lookup in Phase 0C)
+    const subUser = subscription.userId ? await ctx.db.get(subscription.userId) : null;
+    const orgId = subUser?.activeOrganizationId;
+    if (!orgId) {
+      throw new Error(`Cannot create subscription: no organizationId for user ${subscription.userId}`);
+    }
+
     await ctx.db.insert("subscriptions", {
+      organizationId: orgId,
       userId: subscription.userId,
       externalCustomerId: subscription.customer,
       externalSubscriptionId: subscription.id,

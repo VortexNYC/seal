@@ -1,6 +1,6 @@
 /**
  * SUBSCRIPTIONS TABLE
- * Stripe subscription data for users.
+ * Stripe subscription data for organizations.
  * Synced via Stripe webhooks.
  */
 
@@ -19,7 +19,8 @@ export const subscriptionStatus = v.union(
 export type SubscriptionStatus = Infer<typeof subscriptionStatus>;
 
 export const subscriptionsTable = defineTable({
-  userId: v.id("users"),
+  organizationId: v.id("organizations"),
+  userId: v.optional(v.id("users")), // Legacy — kept for backward compat during migration
 
   externalCustomerId: v.string(), // Stripe customer ID
   externalSubscriptionId: v.string(), // Stripe subscription ID
@@ -44,7 +45,8 @@ export const subscriptionsTable = defineTable({
   createdAt: v.number(),
   updatedAt: v.number(),
 })
-  .index("by_user_id", ["userId"])
+  .index("by_organization_id", ["organizationId"])
+  .index("by_user_id", ["userId"]) // Legacy index — kept for migration
   .index("by_external_customer_id", ["externalCustomerId"])
   .index("by_external_subscription_id", ["externalSubscriptionId"])
   .index("by_status", ["status"]);

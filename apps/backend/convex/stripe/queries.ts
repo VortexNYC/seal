@@ -91,10 +91,10 @@ async function buildAvailablePlan(ctx: StripeQueryDbCtx, product: Doc<"subscript
   };
 }
 
-async function getCurrentSubscription(ctx: StripeQueryDbCtx, userId: Id<"users">) {
+async function getCurrentSubscription(ctx: StripeQueryDbCtx, organizationId: Id<"organizations">) {
   return await ctx.db
     .query("subscriptions")
-    .withIndex("by_user_id", (q) => q.eq("userId", userId))
+    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
     .order("desc")
     .first();
 }
@@ -135,7 +135,7 @@ function buildSubscriptionPriceDetails(price: Doc<"subscription_prices"> | null)
 }
 
 /**
- * Get the current user's subscription details including plan metadata.
+ * Get the current organization's subscription details including plan metadata.
  *
  * Joins subscriptions → subscription_prices → subscription_products
  * to resolve tier, features, and credit information.
@@ -143,8 +143,8 @@ function buildSubscriptionPriceDetails(price: Doc<"subscription_prices"> | null)
 export const getSubscriptionDetails = authQuery({
   args: {},
   handler: async (ctx) => {
-    const userId = ctx.auth.userId;
-    const subscription = await getCurrentSubscription(ctx, userId);
+    const organizationId = ctx.auth.organizationId;
+    const subscription = await getCurrentSubscription(ctx, organizationId);
 
     if (!subscription) {
       return null;

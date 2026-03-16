@@ -29,6 +29,7 @@ describe("useSubscriptionLimits", () => {
     expect(result.current.isLoading).toBe(false);
     expect(result.current.tier).toBe("free");
     expect(result.current.isPro).toBe(false);
+    expect(result.current.isEnterprise).toBe(false);
   });
 
   test("returns isPro: true when status is active and tier is pro", () => {
@@ -37,8 +38,27 @@ describe("useSubscriptionLimits", () => {
     const { result } = renderHook(() => useSubscriptionLimits());
 
     expect(result.current.isPro).toBe(true);
+    expect(result.current.isEnterprise).toBe(false);
     expect(result.current.tier).toBe("pro");
     expect(result.current.isLoading).toBe(false);
+  });
+
+  test("returns isPro: true and isEnterprise: true for enterprise tier", () => {
+    mockUseQuery.mockReturnValue({ status: "active", tier: "enterprise" });
+
+    const { result } = renderHook(() => useSubscriptionLimits());
+
+    expect(result.current.isPro).toBe(true);
+    expect(result.current.isEnterprise).toBe(true);
+    expect(result.current.tier).toBe("enterprise");
+  });
+
+  test("returns isPro: true for trialing subscription", () => {
+    mockUseQuery.mockReturnValue({ status: "trialing", tier: "pro" });
+
+    const { result } = renderHook(() => useSubscriptionLimits());
+
+    expect(result.current.isPro).toBe(true);
   });
 
   test("returns isPro: false when status is active but tier is free", () => {

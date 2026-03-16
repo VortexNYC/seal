@@ -27,7 +27,7 @@ export const saveAsTemplate = permissionMutation("templates:create")({
     const now = Date.now();
 
     // 0. Templates require Pro plan
-    await ensureProFeature(ctx.db, userId, "Templates");
+    await ensureProFeature(ctx.db, organizationId, "Templates");
 
     // 1. Get the source document
     const document = await ctx.db.get(args.documentId);
