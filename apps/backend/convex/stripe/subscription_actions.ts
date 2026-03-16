@@ -42,13 +42,13 @@ function getDefaultPlanLookupKey(): string | undefined {
 /**
  * Update user's Stripe customer ID
  */
-export const updateUserStripeCustomerId = internalMutation({
+export const updateOrgStripeCustomerId = internalMutation({
   args: {
-    userId: v.id("users"),
+    organizationId: v.id("organizations"),
     stripeCustomerId: v.string(),
   },
-  handler: async (ctx, { userId, stripeCustomerId }) => {
-    await ctx.db.patch(userId, {
+  handler: async (ctx, { organizationId, stripeCustomerId }) => {
+    await ctx.db.patch(organizationId, {
       stripeCustomerId,
       updatedAt: Date.now(),
     });
@@ -71,7 +71,7 @@ export const getUserForSubscription = internalMutation({
     // Check for existing active subscription
     const existingSubscription = await ctx.db
       .query("subscriptions")
-      .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", user?.stripeCustomerId ?? ""))
+      .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", ""))
       .filter((q) => q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "trialing")))
       .first();
 
@@ -206,30 +206,14 @@ export type HandleNewUserSignupResult = {
   enrollmentResult: SubscribeUserToDefaultPlanResult;
 };
 
+// Legacy auto-enrollment function — disabled after migration to org-scoped customer resolution
 async function getOrCreateCustomerId(
-  ctx: ActionCtx,
-  stripe: Stripe,
-  userId: Id<"users">,
-  user: Doc<"users">,
+  _ctx: ActionCtx,
+  _stripe: Stripe,
+  _userId: Id<"users">,
+  _user: Doc<"users">,
 ): Promise<string> {
-  if (user.stripeCustomerId) {
-    return user.stripeCustomerId;
-  }
-
-  const stripeCustomerId = await getOrCreateStripeCustomer(
-    stripe,
-    userId,
-    user.email,
-    user.name || user.email,
-    undefined,
-  );
-
-  await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
-    userId,
-    stripeCustomerId,
-  });
-
-  return stripeCustomerId;
+  throw new Error("Legacy: use org-scoped customer resolution");
 }
 
 async function findExistingStripeSubscription(
@@ -455,8 +439,8 @@ export const handleNewUserSignup = internalAction({
       );
 
       // Save customer ID to user
-      await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
-        userId,
+      await ctx.runMutation(internal.stripe.subscription_actions.updateOrgStripeCustomerId, {
+        organizationId: "" as Id<"organizations">, // TODO: resolve org from user context
         stripeCustomerId,
       });
 

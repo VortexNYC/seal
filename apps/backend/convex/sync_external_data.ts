@@ -83,7 +83,6 @@ interface CombinedSyncResult {
 type UserForStripeLink = {
   userId: Id<"users">;
   email: string;
-  stripeCustomerId?: string;
 };
 
 function getPrimaryEmailAddress(clerkUser: {
@@ -168,15 +167,14 @@ async function linkStripeCustomers(
   for (const user of users) {
     customerLinking.checked++;
 
-    if (user.stripeCustomerId) {
-      customerLinking.alreadyLinked++;
-      continue;
-    }
+    // TODO: check org-level stripeCustomerId instead of user-level
+    // For now, skip the alreadyLinked check since user no longer has stripeCustomerId
 
     try {
       const byMetadata = await findStripeCustomerByMetadata(stripe, user.userId);
       if (byMetadata) {
-        await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
+        // TODO: resolve organizationId from user context for org-scoped linking
+        console.warn("[syncStripeToConvex] Skipping metadata link — needs org-scoped migration", {
           userId: user.userId,
           stripeCustomerId: byMetadata,
         });
@@ -186,7 +184,8 @@ async function linkStripeCustomers(
 
       const byEmail = await findStripeCustomersByEmail(stripe, user.email);
       if (byEmail.length === 1) {
-        await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
+        // TODO: resolve organizationId from user context for org-scoped linking
+        console.warn("[syncStripeToConvex] Skipping email link — needs org-scoped migration", {
           userId: user.userId,
           stripeCustomerId: byEmail[0]!,
         });
@@ -223,7 +222,6 @@ export const getUsersForStripeCustomerLinking = internalMutation({
     return users.map((user) => ({
       userId: user._id,
       email: user.email,
-      stripeCustomerId: user.stripeCustomerId,
     }));
   },
 });

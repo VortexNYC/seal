@@ -309,14 +309,15 @@ async function resolveOrgForSubscription(
     console.warn(`organizationId ${metadataOrgId} from metadata not found in organizations table`);
   }
 
-  // TODO: rewrite for org-scoped subscriptions (Phase 0C)
-  // Strategy 2 requires stripeCustomerId on the organizations table,
-  // which hasn't been added yet. Skipping until Phase 0C.
-  // const allOrgs = await ctx.db.query("organizations").collect();
-  // const matchedOrg = allOrgs.find((o) => o.stripeCustomerId === stripeCustomerId);
-  // if (matchedOrg) {
-  //   return matchedOrg._id;
-  // }
+  // Strategy 2: Look up org by stripeCustomerId
+  const allOrgs = await ctx.db.query("organizations").collect();
+  const matchedOrg = allOrgs.find((o) => o.stripeCustomerId === stripeCustomerId);
+  if (matchedOrg) {
+    console.warn(
+      `Resolved organizationId ${matchedOrg._id} from Stripe customer ${stripeCustomerId}`,
+    );
+    return matchedOrg._id;
+  }
 
   // Strategy 3: Look up via existing subscriptions for this customer
   const existingSub = await ctx.db

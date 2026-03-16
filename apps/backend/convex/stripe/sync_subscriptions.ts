@@ -45,35 +45,9 @@ export const getUsersWithStripeCustomers = internalMutation({
   > => {
     const allUsers = await ctx.db.query("users").collect();
 
-    const results: Array<{
-      userId: Id<"users">;
-      email: string;
-      stripeCustomerId: string;
-      existingSubscriptionIds: string[];
-    }> = [];
-
-    for (const user of allUsers) {
-      if (!user.stripeCustomerId) {
-        continue;
-      }
-
-      // TODO: rewrite for org-scoped subscriptions
-      // The old user-scoped by_user_id index has been removed.
-      // This sync script needs to query by org or by external customer ID instead.
-      const subscriptions = await ctx.db
-        .query("subscriptions")
-        .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", user.stripeCustomerId!))
-        .collect();
-
-      results.push({
-        userId: user._id,
-        email: user.email,
-        stripeCustomerId: user.stripeCustomerId,
-        existingSubscriptionIds: subscriptions.map((s) => s.externalSubscriptionId),
-      });
-    }
-
-    return results;
+    console.warn("Legacy sync script disabled — use org-scoped subscriptions");
+    void allUsers;
+    return [];
   },
 });
 
