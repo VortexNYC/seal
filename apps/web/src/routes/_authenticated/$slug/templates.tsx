@@ -8,9 +8,11 @@
  */
 
 import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -18,6 +20,7 @@ import {
   ChevronRightIcon,
   CopyIcon,
   FileTextIcon,
+  FolderIcon,
   FolderInputIcon,
   FolderOpenIcon,
   LayoutGridIcon,
@@ -30,8 +33,8 @@ import {
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
 import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
-import { FolderSidebar } from "@/components/folders/folder-sidebar";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { PageWrapper } from "@/components/page-wrapper";
 import { TemplatesSkeleton } from "@/components/skeletons";
@@ -45,6 +48,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -64,7 +68,6 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import {
   Table,
   TableBody,
@@ -76,8 +79,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { pageSEO } from "@/lib/seo";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/templates")({
   component: TemplatesPage,
@@ -99,6 +100,7 @@ type SortField = "name" | "createdAt" | "useCount";
 type SortDirection = "asc" | "desc";
 
 interface TemplatesListProps {
+  organizationId: Id<"organizations">;
   viewMode: ViewMode;
   sortField: SortField;
   sortDirection: SortDirection;
@@ -109,9 +111,11 @@ interface TemplatesListProps {
   onEditTemplate: (template: Doc<"templates">) => void;
   onDeleteTemplate: (template: Doc<"templates">) => void;
   onMoveToFolder: (templateId: Id<"templates">) => void;
+  onFolderNavigate: (folderId?: Id<"folders">) => void;
 }
 
 function TemplatesList({
+  organizationId,
   viewMode,
   sortField,
   sortDirection,
@@ -122,6 +126,7 @@ function TemplatesList({
   onEditTemplate,
   onDeleteTemplate,
   onMoveToFolder,
+  onFolderNavigate,
 }: TemplatesListProps) {
   const { slug } = Route.useParams();
   const router = useRouter();
@@ -136,6 +141,13 @@ function TemplatesList({
       rootOnly: !folderId,
     }),
   );
+
+  // Query subfolders at the current level for inline folder rows
+  const subfolders = useQuery(api.folders.queries.listFolders, {
+    organizationId,
+    type: "template" as const,
+    parentId: folderId,
+  });
 
   // Filter by search query
   const filteredTemplates = useMemo(() => {
@@ -212,7 +224,7 @@ function TemplatesList({
   return (
     <>
       {/* SEA-140: Enhanced empty state with helpful CTAs */}
-      {sortedTemplates.length === 0 ? (
+      {sortedTemplates.length === 0 && (!subfolders || subfolders.length === 0) ? (
         searchQuery ? (
           <EmptyState
             icon={SearchIcon}
@@ -259,6 +271,36 @@ function TemplatesList({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {/* Folder rows (shown above templates, not paginated) */}
+                  {!searchQuery.trim() &&
+                    subfolders?.map((folder) => (
+                      <TableRow
+                        key={folder._id}
+                        className="hover:bg-muted/50 cursor-pointer"
+                        onClick={() => onFolderNavigate(folder._id)}
+                      >
+                        <TableCell>
+                          <div className="bg-muted border-border flex h-20 w-16 items-center justify-center rounded border">
+                            <FolderIcon className="text-muted-foreground h-5 w-5" />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <p className="font-medium">{folder.name}</p>
+                          <p className="text-muted-foreground text-xs">Folder</p>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <p>{formatDate(folder.createdAt)}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            Folder
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right" />
+                      </TableRow>
+                    ))}
                   {paginatedTemplates.map((template) => (
                     <TableRow key={template._id} className="hover:bg-muted/50">
                       <TableCell>
@@ -341,6 +383,26 @@ function TemplatesList({
           ) : (
             /* Grid View */
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {/* Folder cards (shown above templates when not searching) */}
+              {!searchQuery.trim() &&
+                subfolders?.map((folder) => (
+                  <Card
+                    key={folder._id}
+                    className="hover:bg-secondary cursor-pointer transition-colors duration-200"
+                    onClick={() => onFolderNavigate(folder._id)}
+                  >
+                    <div className="bg-muted/50 flex h-32 w-full items-center justify-center border-b">
+                      <FolderIcon className="text-muted-foreground h-12 w-12" />
+                    </div>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <FolderIcon className="h-4 w-4 shrink-0" />
+                        <span className="line-clamp-2">{folder.name}</span>
+                      </CardTitle>
+                      <CardDescription>Folder</CardDescription>
+                    </CardHeader>
+                  </Card>
+                ))}
               {paginatedTemplates.map((template) => (
                 <Card
                   key={template._id}
@@ -664,121 +726,105 @@ function TemplatesPage() {
   );
 
   return (
-    <PageWrapper title="Templates">
-      <ResizablePanelGroup orientation="horizontal" className="min-h-[600px]">
-        <ResizablePanel defaultSize={20} minSize={15} maxSize={35} collapsible>
-          <FolderSidebar
-            organizationId={organization._id}
-            type="template"
-            activeFolderId={folderId}
-            onFolderSelect={handleFolderSelect}
-          />
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={80}>
-          <div className="space-y-6 pl-4">
-            {/* Folder breadcrumbs when inside a folder */}
-            {folderId && (
-              <FolderBreadcrumbs
-                folderId={folderId}
-                type="template"
-                onNavigate={handleFolderSelect}
-              />
-            )}
+    <PageWrapper
+      title="Templates"
+      headerActions={<CreateFolderDialog type="template" parentId={folderId} />}
+      headerCenter={
+        <FolderBreadcrumbs folderId={folderId} type="template" onNavigate={handleFolderSelect} />
+      }
+    >
+      <div className="space-y-6">
+        {/* Search and View Controls */}
+        <div className="bg-card/60 flex flex-wrap items-center justify-between gap-4 rounded-lg border p-3">
+          {/* Search */}
+          <div className="relative max-w-sm flex-1">
+            <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input
+              placeholder="Search templates..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
 
-            {/* Search and View Controls */}
-            <div className="bg-card/60 flex flex-wrap items-center justify-between gap-4 rounded-lg border p-3">
-              {/* Search */}
-              <div className="relative max-w-sm flex-1">
-                <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  placeholder="Search templates..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+          {/* View mode toggle */}
+          <div className="bg-background flex items-center gap-1 rounded-md border">
+            <Button
+              variant={viewMode === "table" ? "default" : "ghost"}
+              size="icon"
+              className="h-9 w-9"
+              aria-label="Table view"
+              onClick={() => setViewMode("table")}
+            >
+              <LayoutListIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="icon"
+              className="h-9 w-9"
+              aria-label="Grid view"
+              onClick={() => setViewMode("grid")}
+            >
+              <LayoutGridIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-              {/* View mode toggle */}
-              <div className="bg-background flex items-center gap-1 rounded-md border">
-                <Button
-                  variant={viewMode === "table" ? "default" : "ghost"}
-                  size="icon"
-                  className="h-9 w-9"
-                  aria-label="Table view"
-                  onClick={() => setViewMode("table")}
-                >
-                  <LayoutListIcon className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  size="icon"
-                  className="h-9 w-9"
-                  aria-label="Grid view"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <LayoutGridIcon className="h-4 w-4" />
-                </Button>
+        {/* Info card */}
+        <Card className="border-dashed">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <FileTextIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
+              <div>
+                <p className="text-sm font-medium">Templates save time on recurring documents</p>
+                <p className="text-muted-foreground text-sm">
+                  To create a template, prepare a document with signature fields, then click "Save
+                  as Template" from the document actions menu.
+                </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Info card */}
-            <Card className="border-dashed">
-              <CardContent className="py-4">
-                <div className="flex items-start gap-3">
-                  <FileTextIcon className="text-muted-foreground mt-0.5 h-5 w-5" />
-                  <div>
-                    <p className="text-sm font-medium">
-                      Templates save time on recurring documents
-                    </p>
-                    <p className="text-muted-foreground text-sm">
-                      To create a template, prepare a document with signature fields, then click
-                      "Save as Template" from the document actions menu.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Templates List */}
-            <Suspense
-              key={`${refreshKey}-${folderId ?? "root"}`}
-              fallback={
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <Card key={i} className="animate-pulse">
-                      <div className="bg-muted h-32" />
-                      <CardHeader>
-                        <div className="bg-muted h-4 w-3/4 rounded" />
-                        <div className="bg-muted mt-2 h-3 w-1/2 rounded" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <div className="bg-muted h-3 rounded" />
-                          <div className="bg-muted h-3 rounded" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              }
-            >
-              <TemplatesList
-                viewMode={viewMode}
-                sortField={sortField}
-                sortDirection={sortDirection}
-                searchQuery={searchQuery}
-                folderId={folderId}
-                onSortChange={handleSortChange}
-                onUseTemplate={handleUseTemplate}
-                onEditTemplate={handleEditTemplate}
-                onDeleteTemplate={handleDeleteTemplate}
-                onMoveToFolder={handleMoveToFolder}
-              />
-            </Suspense>
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+        {/* Templates List */}
+        <Suspense
+          key={`${refreshKey}-${folderId ?? "root"}`}
+          fallback={
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <div className="bg-muted h-32" />
+                  <CardHeader>
+                    <div className="bg-muted h-4 w-3/4 rounded" />
+                    <div className="bg-muted mt-2 h-3 w-1/2 rounded" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="bg-muted h-3 rounded" />
+                      <div className="bg-muted h-3 rounded" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          }
+        >
+          <TemplatesList
+            organizationId={organization._id}
+            viewMode={viewMode}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            searchQuery={searchQuery}
+            folderId={folderId}
+            onSortChange={handleSortChange}
+            onUseTemplate={handleUseTemplate}
+            onEditTemplate={handleEditTemplate}
+            onDeleteTemplate={handleDeleteTemplate}
+            onMoveToFolder={handleMoveToFolder}
+            onFolderNavigate={handleFolderSelect}
+          />
+        </Suspense>
+      </div>
 
       {/* Use Template Dialog */}
       <Dialog
