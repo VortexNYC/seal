@@ -310,7 +310,7 @@ export const createWorkspace = authMutation({
       type: args.type,
       logo: args.logo,
       metadata: args.metadata,
-      currency: args.currency || "BRL",
+      currency: args.currency || "USD",
       currencyKind: args.currencyKind || "normal",
       timezone: args.timezone || "UTC",
     });

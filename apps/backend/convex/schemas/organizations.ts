@@ -62,7 +62,7 @@ export const organizationsTable = defineTable({
   type: organizationTypeTuple,
   logo: v.optional(v.string()),
   metadata: v.optional(v.string()),
-  currency: v.optional(v.string()), // default "BRL"
+  currency: v.optional(v.string()), // default "USD"
   currencyKind: v.optional(v.string()), // default "normal"
   timezone: v.string(), // default "UTC"
   isActive: v.boolean(),

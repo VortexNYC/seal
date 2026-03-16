@@ -256,7 +256,7 @@ export const syncOrganization = mutation({
       type: "company" as const, // Default to company type for Clerk organizations
       logo: args.logo || undefined,
       metadata: args.metadata || undefined,
-      currency: "BRL", // Default currency
+      currency: "USD", // Default currency
       currencyKind: "normal" as const,
       timezone: "UTC", // Default timezone
       isActive: true,

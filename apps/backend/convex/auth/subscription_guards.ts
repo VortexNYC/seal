@@ -12,16 +12,33 @@ import type { Id } from "../_generated/dataModel";
 import type { DatabaseReader } from "../_generated/server";
 
 /**
- * Plan limits for Free and Pro tiers
+ * Feature flags per tier.
+ * Documents, signatures, and storage are unlimited on all tiers.
  */
 export const PLAN_LIMITS = {
   free: {
-    documentsPerMonth: 10,
-    storageBytes: 100 * 1024 * 1024, // 100 MB
+    maxSeats: 1,
+    templates: false,
+    branding: false,
+    api: false,
+    webhooks: false,
+    sso: false,
   },
   pro: {
-    documentsPerMonth: 500,
-    storageBytes: 10 * 1024 * 1024 * 1024, // 10 GB
+    maxSeats: 20,
+    templates: true,
+    branding: true,
+    api: true,
+    webhooks: true,
+    sso: false,
+  },
+  enterprise: {
+    maxSeats: Infinity,
+    templates: true,
+    branding: true,
+    api: true,
+    webhooks: true,
+    sso: true,
   },
 } as const;
 
@@ -82,64 +99,3 @@ export async function ensureProFeature(
   }
 }
 
-/**
- * Throw if the user has reached their monthly document creation limit.
- */
-export async function ensureDocumentLimit(db: DatabaseReader, userId: Id<"users">): Promise<void> {
-  const { isPro } = await getSubscriptionPlan(db, userId);
-  const limit = isPro ? PLAN_LIMITS.pro.documentsPerMonth : PLAN_LIMITS.free.documentsPerMonth;
-
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfMonthTimestamp = startOfMonth.getTime();
-
-  const documents = await db
-    .query("documents")
-    .withIndex("by_owner", (q) => q.eq("ownerId", userId))
-    .collect();
-
-  const documentsThisMonth = documents.filter(
-    (doc) => doc.status !== "deleted" && doc.createdAt >= startOfMonthTimestamp,
-  );
-
-  if (documentsThisMonth.length >= limit) {
-    throw new ConvexError(
-      `You've reached your monthly document limit (${documentsThisMonth.length}/${limit}). ` +
-        (isPro
-          ? "Please contact support to increase your limit."
-          : "Please upgrade to the Pro plan for up to 500 documents per month."),
-    );
-  }
-}
-
-/**
- * Throw if adding `additionalBytes` would exceed the user's storage limit.
- */
-export async function ensureStorageLimit(
-  db: DatabaseReader,
-  userId: Id<"users">,
-  additionalBytes: number,
-): Promise<void> {
-  const { isPro } = await getSubscriptionPlan(db, userId);
-  const limit = isPro ? PLAN_LIMITS.pro.storageBytes : PLAN_LIMITS.free.storageBytes;
-
-  const documents = await db
-    .query("documents")
-    .withIndex("by_owner", (q) => q.eq("ownerId", userId))
-    .collect();
-
-  const totalBytes = documents
-    .filter((doc) => doc.status !== "deleted")
-    .reduce((sum, doc) => sum + (doc.fileSize || 0), 0);
-
-  if (totalBytes + additionalBytes > limit) {
-    const usedMB = Math.round(totalBytes / (1024 * 1024));
-    const limitMB = Math.round(limit / (1024 * 1024));
-    throw new ConvexError(
-      `Storage limit exceeded (${usedMB} MB / ${limitMB} MB used). ` +
-        (isPro
-          ? "Please contact support to increase your storage."
-          : "Please upgrade to the Pro plan for up to 10 GB of storage."),
-    );
-  }
-}

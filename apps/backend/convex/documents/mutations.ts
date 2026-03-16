@@ -11,7 +11,6 @@ import type { DatabaseReader } from "../_generated/server";
 import { enqueueAiPipeline } from "../ai/workpool";
 import { logDocumentAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
-import { ensureDocumentLimit, ensureStorageLimit } from "../auth/subscription_guards";
 import { retrier } from "../retrier";
 import { expirationPeriodToMs } from "./send_document_action";
 import { validateFile } from "./upload_config";
@@ -199,11 +198,7 @@ export const createDocument = permissionMutation("documents:create")({
       throw new ConvexError("Your organization membership is not active");
     }
 
-    // 3. Check subscription limits
-    await ensureDocumentLimit(ctx.db, userId);
-    await ensureStorageLimit(ctx.db, userId, args.fileSize);
-
-    // 4. Create the document record (default to private sharing)
+    // 3. Create the document record (default to private sharing)
     const documentId = await ctx.db.insert("documents", {
       organizationId: args.organizationId,
       ownerId: userId,

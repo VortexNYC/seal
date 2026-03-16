@@ -8,7 +8,7 @@ import { ConvexError, v } from "convex/values";
 
 import { internalMutation } from "../_generated/server";
 import { permissionMutation } from "../auth";
-import { ensureDocumentLimit, ensureProFeature } from "../auth/subscription_guards";
+import { ensureProFeature } from "../auth/subscription_guards";
 
 /**
  * Save a document as a template
@@ -103,9 +103,6 @@ export const createFromTemplate = permissionMutation("documents:create")({
     const userId = ctx.auth.user._id;
     const organizationId = ctx.auth.organization._id;
     const now = Date.now();
-
-    // 0. Check document creation limit
-    await ensureDocumentLimit(ctx.db, userId);
 
     // 1. Get the template
     const template = await ctx.db.get(args.templateId);
