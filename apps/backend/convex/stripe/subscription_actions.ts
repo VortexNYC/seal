@@ -236,3 +236,61 @@ export const handleNewOrgCreated = internalAction({
     }
   },
 });
+
+/**
+ * Sync the org's active member count to Stripe subscription quantity.
+ *
+ * Called when members are added/removed to keep per-seat billing accurate.
+ * Finds the org's active subscription and updates the item quantity.
+ */
+export const syncSeatCount = internalAction({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, { organizationId }) => {
+    const stripe = initializeStripe();
+
+    // Get org's Stripe customer ID
+    const org = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
+      organizationId,
+    });
+    if (!org?.stripeCustomerId) {
+      console.warn(`Org ${organizationId} has no Stripe customer, skipping seat sync`);
+      return;
+    }
+
+    // Get active member count
+    const memberCount: number = await ctx.runQuery(
+      internal.organizations.helpers.getActiveMemberCount,
+      { organizationId },
+    );
+    const quantity = Math.max(memberCount, 1);
+
+    // Find the active Stripe subscription for this customer
+    const subscriptions = await stripe.subscriptions.list({
+      customer: org.stripeCustomerId,
+      status: "active",
+      limit: 1,
+    });
+
+    const subscription = subscriptions.data[0];
+    if (!subscription) {
+      console.warn(`No active Stripe subscription for org ${organizationId}, skipping seat sync`);
+      return;
+    }
+
+    const item = subscription.items.data[0];
+    if (!item) {
+      console.warn(`No subscription items for org ${organizationId}, skipping seat sync`);
+      return;
+    }
+
+    // Only update if quantity changed
+    if (item.quantity === quantity) {
+      return;
+    }
+
+    await stripe.subscriptionItems.update(item.id, { quantity });
+    console.warn(`Updated seat count for org ${organizationId}: ${item.quantity} → ${quantity}`);
+  },
+});

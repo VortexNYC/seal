@@ -108,3 +108,81 @@ export async function ensureProFeature(
     throw new ConvexError(`${featureName} requires a Pro plan. Please upgrade to continue.`);
   }
 }
+
+/**
+ * Throw if adding another member would exceed the org's seat limit.
+ */
+export async function ensureSeatLimit(
+  db: DatabaseReader,
+  organizationId: Id<"organizations">,
+): Promise<void> {
+  const { plan } = await getSubscriptionPlan(db, organizationId);
+  const limits = PLAN_LIMITS[plan];
+
+  const members = await db
+    .query("organization_members")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .filter((q) => q.eq(q.field("status"), "active"))
+    .collect();
+
+  if (members.length >= limits.maxSeats) {
+    throw new ConvexError(
+      `You've reached the seat limit for your plan (${members.length}/${limits.maxSeats}). ` +
+        (plan === "free"
+          ? "Upgrade to Professional to add team members."
+          : plan === "pro"
+            ? "Upgrade to Enterprise for more than 20 seats."
+            : "Contact support to increase your seat limit."),
+    );
+  }
+}
+
+/**
+ * Seal's platform fee rates per tier.
+ * ACH is passthrough at cost — Seal takes $0 margin on ACH.
+ */
+const SEAL_FEE_RATES = {
+  free: { cardPercent: 0.045, cardFixedCents: 30 },
+  pro: { cardPercent: 0.04, cardFixedCents: 30 },
+  enterprise: { cardPercent: 0.04, cardFixedCents: 30 }, // Default — overridden by customPaymentRates
+} as const;
+
+/**
+ * Calculate Seal's application fee for a card payment.
+ * Returns 0 for ACH (passthrough at cost).
+ */
+export function calculateApplicationFee(
+  amountCents: number,
+  plan: TierPlan,
+  isAch: boolean,
+  customRates?: { cardRate: number; cardFixed: number },
+): number {
+  if (isAch) return 0;
+
+  if (customRates) {
+    return Math.round(amountCents * customRates.cardRate + customRates.cardFixed);
+  }
+
+  const rates = SEAL_FEE_RATES[plan];
+  return Math.round(amountCents * rates.cardPercent + rates.cardFixedCents);
+}
+
+/**
+ * Get the application fee for a payment, resolving the org's tier.
+ */
+export async function getApplicationFee(
+  db: DatabaseReader,
+  organizationId: Id<"organizations">,
+  amountCents: number,
+  isAch: boolean,
+): Promise<number> {
+  const { plan } = await getSubscriptionPlan(db, organizationId);
+
+  // Check for enterprise custom rates
+  const org = await db.get(organizationId);
+  const customRates = plan === "enterprise"
+    ? (org as { customPaymentRates?: { cardRate: number; cardFixed: number } })?.customPaymentRates
+    : undefined;
+
+  return calculateApplicationFee(amountCents, plan, isAch, customRates);
+}
