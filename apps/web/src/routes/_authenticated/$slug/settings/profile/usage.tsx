@@ -64,7 +64,7 @@ function UsageSettings() {
               <div>
                 <p className="text-warning font-medium">Approaching usage limits</p>
                 <p className="text-warning text-sm">
-                  Upgrade to Pro for higher limits and more features
+                  Upgrade to Professional for higher limits and more features
                 </p>
               </div>
             </div>

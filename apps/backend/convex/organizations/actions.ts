@@ -60,7 +60,7 @@ export const clerkInvite = action({
     });
     if (!isPro) {
       throw new ConvexError(
-        "Inviting team members requires a Pro plan. Please upgrade to continue.",
+        "Inviting team members requires a Professional plan. Please upgrade to continue.",
       );
     }
 

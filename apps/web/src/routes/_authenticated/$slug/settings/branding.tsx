@@ -11,8 +11,8 @@ import { Building2Icon, ImageIcon, PaletteIcon, Save, Trash2Icon, UploadIcon } f
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { FeatureGate } from "@/components/feature-gate";
 import { PageWrapper } from "@/components/page-wrapper";
-import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { FormSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,6 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/branding")(
 
 function BrandingSettings() {
   const { slug } = Route.useParams();
-  const { canBrand: _canBrand, isLoading: _subscriptionLoading } = useSubscriptionLimits();
 
   const organization = useQuery(api.organizations.queries.getOrganization, {
     slug,
@@ -182,6 +181,11 @@ function BrandingSettings() {
 
   return (
     <PageWrapper title="Branding">
+      <FeatureGate
+        tier="pro"
+        feature="Custom branding"
+        description="Add your logo and colors to signing pages and emails."
+      >
       <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
         {/* Master Switch */}
         <Card className="md:col-span-2">
@@ -449,6 +453,7 @@ function BrandingSettings() {
           </Button>
         </div>
       </form>
+      </FeatureGate>
     </PageWrapper>
   );
 }

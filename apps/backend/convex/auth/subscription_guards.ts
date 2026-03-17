@@ -95,7 +95,7 @@ export async function getSubscriptionPlan(
 /**
  * Throw if the organization is not on a Pro (or higher) plan.
  *
- * Error message intentionally contains "Pro plan" and "upgrade"
+ * Error message intentionally contains "Professional plan" and "upgrade"
  * so `parseConvexError()` classifies it as a subscription error.
  */
 export async function ensureProFeature(
@@ -105,7 +105,7 @@ export async function ensureProFeature(
 ): Promise<void> {
   const { isPro } = await getSubscriptionPlan(db, organizationId);
   if (!isPro) {
-    throw new ConvexError(`${featureName} requires a Pro plan. Please upgrade to continue.`);
+    throw new ConvexError(`${featureName} requires a Professional plan. Please upgrade to continue.`);
   }
 }
 

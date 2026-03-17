@@ -263,7 +263,7 @@ describe("subscription_guards", () => {
       });
     });
 
-    test("throws ConvexError with Pro plan keyword for free user", async () => {
+    test("throws ConvexError with Professional plan keyword for free user", async () => {
       await t.run(async (ctx) => {
         await expect(ensureProFeature(ctx.db, organizationId, "Workspace sharing")).rejects.toThrow(
           ConvexError,
@@ -282,7 +282,7 @@ describe("subscription_guards", () => {
         expect(error).toBeInstanceOf(ConvexError);
         const message = (error as ConvexError<string>).data;
         expect(message).toContain("Custom branding");
-        expect(message).toContain("Pro plan");
+        expect(message).toContain("Professional plan");
         expect(message).toContain("upgrade");
       }
     });

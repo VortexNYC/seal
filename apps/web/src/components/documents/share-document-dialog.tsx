@@ -267,7 +267,7 @@ export function ShareDocumentDialog({
                     </div>
                     <p className="text-muted-foreground text-xs">
                       {!documentAccess.canUseTeamSharing && documentAccess.sharingMode === "private"
-                        ? "Upgrade to Pro to share with your team"
+                        ? "Upgrade to Professional to share with your team"
                         : SHARING_MODE_INFO[documentAccess.sharingMode].description}
                     </p>
                   </div>

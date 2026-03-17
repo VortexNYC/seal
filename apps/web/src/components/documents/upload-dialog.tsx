@@ -348,7 +348,7 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
               <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
                 You've reached your monthly document limit.{" "}
                 {usageStats.plan === "free" && (
-                  <span>Upgrade to Pro for up to 500 documents per month.</span>
+                  <span>Upgrade to Professional for up to 500 documents per month.</span>
                 )}
               </div>
             )}

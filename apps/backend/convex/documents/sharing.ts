@@ -131,7 +131,7 @@ export const updateSharingMode = permissionMutation("documents:share")({
 
       if (!isPro) {
         throw new ConvexError(
-          "Team sharing features require a Pro plan. Please upgrade to share documents with your team.",
+          "Team sharing features require a Professional plan. Please upgrade to share documents with your team.",
         );
       }
     }

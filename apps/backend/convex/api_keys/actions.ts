@@ -83,7 +83,7 @@ export const createClerkApiKey = action({
       organizationId: user.activeOrganizationId,
     });
     if (!isPro) {
-      throw new ConvexError("API access requires a Pro plan. Please upgrade to continue.");
+      throw new ConvexError("API access requires a Professional plan. Please upgrade to continue.");
     }
 
     try {

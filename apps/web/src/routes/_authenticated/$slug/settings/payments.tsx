@@ -242,7 +242,7 @@ function PaymentsSettingsPage() {
             <CardHeader>
               <CardTitle>Platform Fee</CardTitle>
               <CardDescription>
-                Seal charges a 0.25% platform fee on Pro plans for each invoice payment. Choose who
+                Seal charges a 0.25% platform fee on Professional plans for each invoice payment. Choose who
                 pays this fee.
               </CardDescription>
             </CardHeader>
