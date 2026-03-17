@@ -58,13 +58,13 @@ export async function getOrCreateStripeCustomer(
       }
     }
   } catch (err) {
-    console.error("Stripe customer search failed, will attempt to create", {
+    console.error("Stripe customer search failed — aborting to prevent duplicate creation", {
       operation: "getOrCreateStripeCustomer.search",
       organizationId,
       email,
       error: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined,
     });
+    throw err;
   }
 
   // 3. No existing customer found - create new one

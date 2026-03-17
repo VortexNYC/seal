@@ -3,21 +3,24 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
+import { calculateApplicationFee } from "../subscription_guards";
 import {
   PLAN_LIMITS,
   ensureProFeature,
+  ensureSeatLimit,
   getSubscriptionPlan,
 } from "../subscription_guards";
 
 describe("subscription_guards", () => {
   let t: ReturnType<typeof createTestContext>;
   let organizationId: Id<"organizations">;
+  let testUserId: Id<"users">;
 
   beforeEach(async () => {
     t = createTestContext();
 
-    organizationId = await t.run(async (ctx) => {
-      return await ctx.db.insert("organizations", {
+    const ids = await t.run(async (ctx) => {
+      const orgId = await ctx.db.insert("organizations", {
         name: "Test Org",
         slug: "test-org",
         type: "company",
@@ -25,7 +28,17 @@ describe("subscription_guards", () => {
         timezone: "UTC",
         updatedAt: Date.now(),
       });
+      const userId = await ctx.db.insert("users", {
+        clerkId: "clerk_test_1",
+        email: "test@seal.nyc",
+        isEmailVerified: true,
+        timezone: "UTC",
+        locale: "en-US",
+      });
+      return { orgId, userId };
     });
+    organizationId = ids.orgId;
+    testUserId = ids.userId;
   });
 
   /** Helper: seed a full pro subscription chain (product -> price -> subscription) */
@@ -285,6 +298,82 @@ describe("subscription_guards", () => {
         expect(message).toContain("Professional plan");
         expect(message).toContain("upgrade");
       }
+    });
+  });
+
+  // ensureSeatLimit
+  describe("ensureSeatLimit", () => {
+    test("free org with 0 members does not throw", async () => {
+      await t.run(async (ctx) => {
+        await ensureSeatLimit(ctx.db, organizationId);
+      });
+    });
+
+    test("free org with 1 active member throws", async () => {
+      await t.run(async (ctx) => {
+        await ctx.db.insert("organization_members", {
+          organizationId,
+          userId: testUserId,
+          role: "member",
+          status: "active",
+          isPrimary: false,
+        });
+      });
+
+      try {
+        await t.run(async (ctx) => {
+          await ensureSeatLimit(ctx.db, organizationId);
+        });
+        expect.unreachable("Expected ensureSeatLimit to throw");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ConvexError);
+        const message = (error as ConvexError<string>).data;
+        expect(message).toContain("seat limit");
+        expect(message).toContain("Upgrade to Professional");
+      }
+    });
+
+    test("inactive members do not count toward seat limit", async () => {
+      await t.run(async (ctx) => {
+        await ctx.db.insert("organization_members", {
+          organizationId,
+          userId: testUserId,
+          role: "member",
+          status: "inactive",
+          isPrimary: false,
+        });
+      });
+
+      await t.run(async (ctx) => {
+        await ensureSeatLimit(ctx.db, organizationId);
+      });
+    });
+  });
+
+  // calculateApplicationFee
+  describe("calculateApplicationFee", () => {
+    test("ACH always returns 0 regardless of plan", () => {
+      expect(calculateApplicationFee(10000, "free", true)).toBe(0);
+      expect(calculateApplicationFee(10000, "pro", true)).toBe(0);
+      expect(calculateApplicationFee(10000, "enterprise", true)).toBe(0);
+    });
+
+    test("free tier card: 4.5% + 30¢", () => {
+      expect(calculateApplicationFee(10000, "free", false)).toBe(480);
+    });
+
+    test("pro tier card: 4% + 30¢", () => {
+      expect(calculateApplicationFee(10000, "pro", false)).toBe(430);
+    });
+
+    test("custom rates override tier defaults", () => {
+      expect(
+        calculateApplicationFee(10000, "enterprise", false, { cardRate: 0.03, cardFixed: 25 }),
+      ).toBe(325);
+    });
+
+    test("zero amount returns only fixed fee", () => {
+      expect(calculateApplicationFee(0, "free", false)).toBe(30);
     });
   });
 

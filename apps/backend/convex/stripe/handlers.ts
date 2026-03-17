@@ -55,24 +55,31 @@ export const cancelOldStripeSubscriptions = internalAction({
   handler: async (_ctx, args) => {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
-      console.error("STRIPE_SECRET_KEY not configured for canceling old subscriptions");
-      return;
+      throw new Error("STRIPE_SECRET_KEY not configured — cannot cancel old subscriptions");
     }
 
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2025-12-15.clover",
     });
 
+    const failures: string[] = [];
     for (const subscriptionId of args.subscriptionIds) {
       try {
         await stripe.subscriptions.cancel(subscriptionId);
         console.warn(`Cancelled old Stripe subscription ${subscriptionId} for org ${args.organizationId}`);
       } catch (err) {
+        failures.push(subscriptionId);
         console.error(`Failed to cancel Stripe subscription ${subscriptionId}`, {
           error: err instanceof Error ? err.message : String(err),
           organizationId: args.organizationId,
         });
       }
+    }
+
+    if (failures.length > 0) {
+      throw new Error(
+        `Failed to cancel ${failures.length}/${args.subscriptionIds.length} Stripe subscriptions: ${failures.join(", ")}`,
+      );
     }
   },
 });

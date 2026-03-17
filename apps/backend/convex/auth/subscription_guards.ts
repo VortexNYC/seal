@@ -44,13 +44,38 @@ export async function getSubscriptionPlan(
     .first();
 
   let tier: string | undefined;
-  if (price) {
+  if (!price) {
+    console.error(
+      JSON.stringify({
+        topic: "subscription_guards",
+        event: "price_not_found",
+        severity: "critical",
+        organizationId,
+        externalPriceId: subscription.externalPriceId,
+        subscriptionStatus: subscription.status,
+        timestamp: Date.now(),
+      }),
+    );
+  } else {
     const product = await db
       .query("subscription_products")
       .withIndex("by_external_product_id", (q) =>
         q.eq("externalProductId", price.externalProductId),
       )
       .first();
+    if (!product) {
+      console.error(
+        JSON.stringify({
+          topic: "subscription_guards",
+          event: "product_not_found",
+          severity: "critical",
+          organizationId,
+          externalProductId: price.externalProductId,
+          externalPriceId: subscription.externalPriceId,
+          timestamp: Date.now(),
+        }),
+      );
+    }
     tier = product?.metadata?.tier;
   }
 
