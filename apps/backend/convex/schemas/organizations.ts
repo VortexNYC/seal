@@ -104,4 +104,5 @@ export const organizationsTable = defineTable({
   .index("by_type", ["type"])
   .index("by_active", ["isActive"])
   .index("by_clerk_id", ["clerkId"])
+  .index("by_stripe_customer_id", ["stripeCustomerId"])
   .index("by_status", ["status"]);

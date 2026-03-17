@@ -89,6 +89,22 @@ export async function getSubscriptionPlan(
   if (tier === "pro") {
     return { isPro: true, isEnterprise: false, plan: "pro" };
   }
+
+  // Active subscription but unrecognized tier — likely missing product metadata
+  if (tier !== undefined) {
+    console.error(
+      JSON.stringify({
+        topic: "subscription_guards",
+        event: "unrecognized_tier_metadata",
+        severity: "critical",
+        organizationId,
+        tier,
+        subscriptionId: subscription.externalSubscriptionId,
+        priceId: subscription.externalPriceId,
+        timestamp: Date.now(),
+      }),
+    );
+  }
   return { isPro: false, isEnterprise: false, plan: "free" };
 }
 

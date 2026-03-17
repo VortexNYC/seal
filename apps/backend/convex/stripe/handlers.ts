@@ -309,9 +309,11 @@ async function resolveOrgForSubscription(
     console.warn(`organizationId ${metadataOrgId} from metadata not found in organizations table`);
   }
 
-  // Strategy 2: Look up org by stripeCustomerId
-  const allOrgs = await ctx.db.query("organizations").collect();
-  const matchedOrg = allOrgs.find((o) => o.stripeCustomerId === stripeCustomerId);
+  // Strategy 2: Look up org by stripeCustomerId (indexed)
+  const matchedOrg = await ctx.db
+    .query("organizations")
+    .withIndex("by_stripe_customer_id", (q) => q.eq("stripeCustomerId", stripeCustomerId))
+    .first();
   if (matchedOrg) {
     console.warn(
       `Resolved organizationId ${matchedOrg._id} from Stripe customer ${stripeCustomerId}`,
@@ -484,6 +486,7 @@ export const handleSubscriptionUpdated = internalMutation({
     const wasActive =
       existingSubscription.status === "active" || existingSubscription.status === "trialing";
     const isNowInactive =
+      subscription.status === "canceled" ||
       subscription.status === "past_due" ||
       subscription.status === "incomplete_expired" ||
       subscription.status === "unpaid";

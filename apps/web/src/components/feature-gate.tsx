@@ -17,7 +17,8 @@ export function FeatureGate({ tier, feature, description, children }: FeatureGat
   const { isPro, isEnterprise, isLoading } = useSubscriptionLimits();
   const { slug } = useParams({ strict: false });
 
-  if (isLoading) return <>{children}</>;
+  // Show locked state while loading to prevent flash of unlocked content
+  if (isLoading) return <div className="pointer-events-none opacity-50">{children}</div>;
 
   const hasAccess = tier === "pro" ? isPro : isEnterprise;
 
