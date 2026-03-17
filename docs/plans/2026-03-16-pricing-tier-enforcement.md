@@ -196,13 +196,16 @@ The sandbox was set up under a prior model. The personal/business product split,
 - `prod_TqXDkP7USs2UGA` (Pro Plan - Business)
 - All 4 associated prices
 
-**Create in Stripe:**
+**Created in Stripe (2026-03-16):**
 
-| Product | Metadata | Prices |
-|---------|----------|--------|
-| Seal Free | `{ tier: "free" }` | $0/mo (lookup: `free:monthly:v2`) |
-| Seal Professional | `{ tier: "pro" }` | $19/seat/mo monthly (lookup: `pro:monthly:v2`), $15/seat/mo annual commitment (lookup: `pro:yearly:v2`). **14-day free trial** on both prices. |
-| Seal Enterprise | `{ tier: "enterprise" }` | Custom per customer — no public price, created manually per deal |
+| Product | ID | Metadata | Prices |
+|---------|-----|----------|--------|
+| Seal Free | `prod_UA8jeoy4gTXdbh` | `{ tier: "free" }` | `price_1TBoSdIlmpJUPMjL2HE52QRf` — $0/mo (lookup: `free:monthly:v2`) |
+| Seal Professional | `prod_UA8kjCwPSZCnzr` | `{ tier: "pro" }` | `price_1TBoSuIlmpJUPMjL0AOT54o3` — $19/seat/mo (lookup: `pro:monthly:v2`, 14-day trial), `price_1TBoSuIlmpJUPMjLjYBqRIXJ` — $180/seat/yr (lookup: `pro:yearly:v2`, 14-day trial) |
+| Seal Enterprise | `prod_UA8kC2CUjjy1Ad` | `{ tier: "enterprise" }` | Custom per customer — no public price |
+
+**Portal config:** `bpc_1TBoT8IlmpJUPMjLH4CkX5oh` — cancel disabled, payment update + invoice history enabled.
+**Env var:** `DEFAULT_PLAN_LOOKUP_KEY=free:monthly:v2` set in dev.
 
 **Per-seat billing:** Stripe `quantity` on subscription item = seat count. When members are added/removed, update the subscription quantity. Stripe prorates automatically.
 
