@@ -13,38 +13,7 @@ import { ConvexError } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { DatabaseReader } from "../_generated/server";
 
-/**
- * Feature flags per tier.
- * Documents, signatures, and storage are unlimited on all tiers.
- */
-export const PLAN_LIMITS = {
-  free: {
-    maxSeats: 1,
-    templates: false,
-    branding: false,
-    api: false,
-    webhooks: false,
-    sso: false,
-  },
-  pro: {
-    maxSeats: 20,
-    templates: true,
-    branding: true,
-    api: true,
-    webhooks: true,
-    sso: false,
-  },
-  enterprise: {
-    maxSeats: Infinity,
-    templates: true,
-    branding: true,
-    api: true,
-    webhooks: true,
-    sso: true,
-  },
-} as const;
-
-export type TierPlan = "free" | "pro" | "enterprise";
+export { PLAN_LIMITS, type TierPlan } from "./plan_limits";
 
 /**
  * Determine an organization's current subscription plan.
