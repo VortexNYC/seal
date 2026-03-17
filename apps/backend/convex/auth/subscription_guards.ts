@@ -13,7 +13,9 @@ import { ConvexError } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { DatabaseReader } from "../_generated/server";
 
-export { PLAN_LIMITS, type TierPlan } from "./plan_limits";
+import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
+
+export { PLAN_LIMITS, type TierPlan };
 
 /**
  * Determine an organization's current subscription plan.
