@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
@@ -85,7 +84,7 @@ function getStatusIcon(status: ConnectionStatus) {
 function PaymentsSettingsPage() {
   const { slug } = Route.useParams();
 
-  const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
+  // Payments are available on all tiers — no plan gating needed
 
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
 
@@ -165,9 +164,6 @@ function PaymentsSettingsPage() {
         <p className="text-muted-foreground text-sm">
           Connect Stripe to accept payments through documents. Only workspace owners and admins can
           manage payment settings.
-          {!isPro && !isLoadingPlan && (
-            <span className="text-warning mt-1 block">Stripe Connect requires a Pro plan.</span>
-          )}
         </p>
 
         <Card>
@@ -177,23 +173,16 @@ function PaymentsSettingsPage() {
                 Stripe Connection
                 {isRefreshing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isPro ? (
-                  getStatusIcon(status)
                 ) : (
-                  getStatusIcon("not_connected")
+                  getStatusIcon(status)
                 )}
               </span>
               <span className="text-sm font-medium">
-                {isRefreshing ? "Refreshing…" : isPro ? getStatusLabel(status) : "Pro Required"}
+                {isRefreshing ? "Refreshing…" : getStatusLabel(status)}
               </span>
             </CardTitle>
             <CardDescription>
               Manage onboarding status, required actions, and connection health.
-              {!isPro && !isLoadingPlan && (
-                <span className="text-warning mt-1 block">
-                  Upgrade to Pro to connect Stripe and accept payments.
-                </span>
-              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -205,7 +194,7 @@ function PaymentsSettingsPage() {
             )}
 
             {/* Not connected + no Stripe account yet → create account button */}
-            {status === "not_connected" && isPro && !hasStripeAccount && (
+            {status === "not_connected" && !hasStripeAccount && (
               <div className="space-y-3">
                 <p className="text-sm">
                   No Stripe account connected. Create a Stripe account to start accepting payments
@@ -224,7 +213,6 @@ function PaymentsSettingsPage() {
 
             {/* Stripe account exists but not fully onboarded → show embedded onboarding */}
             {(status === "not_connected" || status === "pending" || status === "restricted") &&
-              isPro &&
               hasStripeAccount &&
               orgId && (
                 <StripeConnectProvider organizationId={orgId}>
@@ -237,21 +225,8 @@ function PaymentsSettingsPage() {
                 </StripeConnectProvider>
               )}
 
-            {/* Not on Pro plan */}
-            {status === "not_connected" && !isPro && !isLoadingPlan && (
-              <div className="space-y-3">
-                <p className="text-sm">
-                  Stripe Connect is available on the Pro plan. Upgrade to accept payments through
-                  your documents.
-                </p>
-                <Button asChild>
-                  <a href={`/${slug}/settings/billing`}>Upgrade to Pro</a>
-                </Button>
-              </div>
-            )}
-
             {/* Connected → show account management inline */}
-            {status === "connected" && isPro && orgId && (
+            {status === "connected" && orgId && (
               <StripeConnectProvider organizationId={orgId}>
                 <div className="space-y-4">
                   <ConnectNotificationBanner />
@@ -262,7 +237,7 @@ function PaymentsSettingsPage() {
           </CardContent>
         </Card>
 
-        {status === "connected" && isPro && connectedAccount?.account && (
+        {status === "connected" && connectedAccount?.account && (
           <Card>
             <CardHeader>
               <CardTitle>Platform Fee</CardTitle>
