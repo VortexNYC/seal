@@ -118,6 +118,8 @@ interface ClerkWebhookEvent {
     status?: string;
     created_at?: number;
     updated_at?: number;
+    // For organization events — Clerk sends the creator's user ID
+    created_by?: string;
     // For session events
     user_id?: string;
     client_id?: string;

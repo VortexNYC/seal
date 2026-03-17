@@ -149,7 +149,7 @@ export const handleNewOrgCreated = internalAction({
     orgName: v.string(),
     adminEmail: v.string(),
   },
-  handler: async (ctx, { organizationId, orgName, adminEmail }) => {
+  handler: async (ctx, { organizationId, orgName, adminEmail }): Promise<{ stripeCustomerId: string; enrolled: boolean; subscriptionId?: string }> => {
     const stripe = initializeStripe();
 
     // 1. Create Stripe customer for the org

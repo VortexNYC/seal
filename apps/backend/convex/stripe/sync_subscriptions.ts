@@ -135,7 +135,7 @@ export const syncStripeSubscriptions = internalAction({
           }
 
           await ctx.runMutation(internal.stripe.subscription_actions.createSubscriptionRecord, {
-            userId: user.userId,
+            organizationId: user.userId as unknown as Id<"organizations">, // Legacy: disabled sync script
             stripeCustomerId: user.stripeCustomerId,
             stripeSubscriptionId: sub.id,
             stripePriceId: firstItem.price.id,

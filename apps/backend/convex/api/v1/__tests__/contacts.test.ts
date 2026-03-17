@@ -216,7 +216,7 @@ describe("api/v1/contacts", () => {
       });
 
       expect(page2.contacts).toHaveLength(2);
-      const page1Ids = new Set(page1.contacts.map((c) => c.id));
+      const page1Ids = new Set(page1.contacts.map((c: (typeof page1.contacts)[number]) => c.id));
       for (const c of page2.contacts) {
         expect(page1Ids.has(c.id)).toBe(false);
       }
