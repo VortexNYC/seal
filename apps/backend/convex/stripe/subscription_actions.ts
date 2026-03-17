@@ -1,17 +1,17 @@
 /**
  * Stripe Subscription Actions
  *
- * Actions for managing Stripe subscriptions, including:
- * - Creating Stripe customers for new users
- * - Auto-enrolling users to the default free plan
+ * Actions for managing Stripe subscriptions at the organization level:
+ * - Creating Stripe customers for new organizations
+ * - Auto-enrolling organizations to the default free plan
+ * - Managing subscription records
  */
 
 import { v } from "convex/values";
 import Stripe from "stripe";
 
 import { internal } from "../_generated/api";
-import type { Doc, Id } from "../_generated/dataModel";
-import { internalAction, internalMutation, type ActionCtx } from "../_generated/server";
+import { internalAction, internalMutation } from "../_generated/server";
 import { getOrCreateStripeCustomer } from "./helpers";
 
 function initializeStripe(): Stripe {
@@ -25,22 +25,18 @@ function initializeStripe(): Stripe {
 }
 
 /**
- * Check if auto-enroll is enabled via environment variable
- */
-function isAutoEnrollEnabled(): boolean {
-  const autoEnroll = process.env.AUTO_ENROLL_FREE_PLAN_ON_SIGNUP;
-  return Boolean(autoEnroll && ["1", "true", "TRUE", "yes", "on"].includes(autoEnroll));
-}
-
-/**
  * Get the default plan lookup key from environment
  */
 function getDefaultPlanLookupKey(): string | undefined {
   return process.env.DEFAULT_PLAN_LOOKUP_KEY;
 }
 
+// =====================
+// INTERNAL MUTATIONS
+// =====================
+
 /**
- * Update user's Stripe customer ID
+ * Update organization's Stripe customer ID
  */
 export const updateOrgStripeCustomerId = internalMutation({
   args: {
@@ -52,33 +48,6 @@ export const updateOrgStripeCustomerId = internalMutation({
       stripeCustomerId,
       updatedAt: Date.now(),
     });
-  },
-});
-
-/**
- * Get user data for subscription creation
- */
-export const getUserForSubscription = internalMutation({
-  args: {
-    userId: v.id("users"),
-  },
-  handler: async (ctx, { userId }) => {
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      return null;
-    }
-
-    // Check for existing active subscription
-    const existingSubscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", ""))
-      .filter((q) => q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "trialing")))
-      .first();
-
-    return {
-      user,
-      existingSubscription,
-    };
   },
 });
 
@@ -99,7 +68,6 @@ export const getPriceByLookupKey = internalMutation({
       return null;
     }
 
-    // Get product to retrieve metadata
     const product = await ctx.db
       .query("subscription_products")
       .withIndex("by_external_product_id", (q) =>
@@ -107,10 +75,7 @@ export const getPriceByLookupKey = internalMutation({
       )
       .first();
 
-    return {
-      price,
-      product,
-    };
+    return { price, product };
   },
 });
 
@@ -119,8 +84,7 @@ export const getPriceByLookupKey = internalMutation({
  */
 export const createSubscriptionRecord = internalMutation({
   args: {
-    organizationId: v.optional(v.id("organizations")),
-    userId: v.id("users"),
+    organizationId: v.id("organizations"),
     stripeCustomerId: v.string(),
     stripeSubscriptionId: v.string(),
     stripePriceId: v.string(),
@@ -144,18 +108,8 @@ export const createSubscriptionRecord = internalMutation({
       return existing._id;
     }
 
-    // Resolve organizationId: prefer explicit arg, fall back to user's active org
-    let orgId = args.organizationId;
-    if (!orgId) {
-      const user = await ctx.db.get(args.userId);
-      orgId = user?.activeOrganizationId;
-    }
-    if (!orgId) {
-      throw new Error(`Cannot create subscription: no organizationId for user ${args.userId}`);
-    }
-
     const subscriptionId = await ctx.db.insert("subscriptions", {
-      organizationId: orgId,
+      organizationId: args.organizationId,
       externalCustomerId: args.stripeCustomerId,
       externalSubscriptionId: args.stripeSubscriptionId,
       externalPriceId: args.stripePriceId,
@@ -174,323 +128,111 @@ export const createSubscriptionRecord = internalMutation({
       updatedAt: now,
     });
 
-    console.warn(`Created subscription ${args.stripeSubscriptionId} for user ${args.userId}`);
-
+    console.warn(`Created subscription ${args.stripeSubscriptionId} for org ${args.organizationId}`);
     return subscriptionId;
   },
 });
 
-export type SubscribeUserToDefaultPlanResult =
-  | {
-      status: "already_subscribed";
-      subscriptionId: string;
-      stripePriceId: string;
-    }
-  | {
-      status: "subscription_created";
-      stripeSubscriptionId: string;
-      stripeCustomerId: string;
-      stripePriceId: string;
-    }
-  | {
-      status: "skipped";
-      reason: string;
-    }
-  | {
-      status: "error";
-      error: string;
-    };
-
-export type HandleNewUserSignupResult = {
-  stripeCustomerId: string;
-  enrollmentResult: SubscribeUserToDefaultPlanResult;
-};
-
-// Legacy auto-enrollment function — disabled after migration to org-scoped customer resolution
-async function getOrCreateCustomerId(
-  _ctx: ActionCtx,
-  _stripe: Stripe,
-  _userId: Id<"users">,
-  _user: Doc<"users">,
-): Promise<string> {
-  throw new Error("Legacy: use org-scoped customer resolution");
-}
-
-async function findExistingStripeSubscription(
-  stripe: Stripe,
-  userId: Id<"users">,
-  stripeCustomerId: string,
-): Promise<{ subscriptionId: string; stripePriceId: string } | null> {
-  try {
-    const stripeSubscriptions = await stripe.subscriptions.list({
-      customer: stripeCustomerId,
-      limit: 10,
-    });
-
-    const existingSubscription = stripeSubscriptions.data.find(
-      (subscription) =>
-        subscription.status !== "canceled" && subscription.status !== "incomplete_expired",
-    );
-
-    return existingSubscription
-      ? {
-          subscriptionId: existingSubscription.id,
-          stripePriceId: existingSubscription.items.data[0]?.price?.id ?? "unknown_price_id",
-        }
-      : null;
-  } catch (error) {
-    console.error("Failed to check Stripe subscriptions", {
-      userId,
-      stripeCustomerId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return null;
-  }
-}
-
-async function createDefaultPlanSubscription(
-  ctx: ActionCtx,
-  stripe: Stripe,
-  userId: Id<"users">,
-  stripeCustomerId: string,
-  lookupKey: string,
-  stripePriceId: string,
-): Promise<SubscribeUserToDefaultPlanResult> {
-  const hourWindow = Math.floor(Date.now() / (1000 * 60 * 60));
-  const idempotencyKey = `sub_default_${stripeCustomerId}_${hourWindow}`;
-
-  try {
-    const subscription = await stripe.subscriptions.create(
-      {
-        customer: stripeCustomerId,
-        items: [{ price: stripePriceId }],
-        metadata: {
-          userId,
-          lookupKey,
-          source: "auto_enroll",
-        },
-        collection_method: "charge_automatically",
-      },
-      {
-        idempotencyKey,
-      },
-    );
-
-    const firstItem = subscription.items.data[0];
-    const currentPeriodStart = firstItem?.current_period_start
-      ? firstItem.current_period_start * 1000
-      : Date.now();
-    const currentPeriodEnd = firstItem?.current_period_end
-      ? firstItem.current_period_end * 1000
-      : Date.now() + 30 * 24 * 60 * 60 * 1000;
-
-    await ctx.runMutation(internal.stripe.subscription_actions.createSubscriptionRecord, {
-      userId,
-      stripeCustomerId,
-      stripeSubscriptionId: subscription.id,
-      stripePriceId,
-      status: subscription.status,
-      currentPeriodStart,
-      currentPeriodEnd,
-    });
-
-    console.warn(
-      `Auto-enrolled user ${userId} to plan ${lookupKey} with subscription ${subscription.id}`,
-    );
-
-    return {
-      status: "subscription_created",
-      stripeSubscriptionId: subscription.id,
-      stripeCustomerId,
-      stripePriceId,
-    };
-  } catch (error) {
-    console.error("Failed to create subscription in Stripe", {
-      userId,
-      stripeCustomerId,
-      lookupKey,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return {
-      status: "error",
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
+// =====================
+// INTERNAL ACTIONS
+// =====================
 
 /**
- * Subscribe a user to the default free plan
+ * Handle new organization creation — creates Stripe customer and enrolls to Free plan.
  *
- * This action:
- * 1. Creates a Stripe customer if needed
- * 2. Checks for existing subscriptions (both in Convex and Stripe)
- * 3. Creates a subscription to the default plan
- * 4. Records the subscription in Convex
+ * Called from the Clerk webhook handler (syncOrganization) when a new org is created.
+ * Creates a Stripe customer for the org (no card required) and subscribes to the Free plan.
  */
-export const subscribeUserToDefaultPlan = internalAction({
+export const handleNewOrgCreated = internalAction({
   args: {
-    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+    orgName: v.string(),
+    adminEmail: v.string(),
   },
-  handler: async (ctx, { userId }): Promise<SubscribeUserToDefaultPlanResult> => {
-    const lookupKey = getDefaultPlanLookupKey();
-    if (!lookupKey) {
-      console.warn("DEFAULT_PLAN_LOOKUP_KEY not configured, skipping auto-enrollment");
-      return {
-        status: "skipped",
-        reason: "DEFAULT_PLAN_LOOKUP_KEY not configured",
-      };
-    }
-
+  handler: async (ctx, { organizationId, orgName, adminEmail }) => {
     const stripe = initializeStripe();
 
-    // Get user data and check for existing subscription
-    const data = await ctx.runMutation(
-      internal.stripe.subscription_actions.getUserForSubscription,
-      { userId },
-    );
-
-    if (!data || !data.user) {
-      console.error(`User ${userId} not found for auto-enrollment`);
-      return { status: "error", error: "User not found" };
-    }
-
-    const { user, existingSubscription } = data;
-
-    // Check 1: If Convex already has an active subscription, return it
-    if (existingSubscription) {
-      console.warn(
-        `User ${userId} already has subscription ${existingSubscription.externalSubscriptionId}`,
-      );
-      return {
-        status: "already_subscribed",
-        subscriptionId: existingSubscription.externalSubscriptionId,
-        stripePriceId: existingSubscription.externalPriceId,
-      };
-    }
-
-    // Get or create Stripe customer
-    const stripeCustomerId = await getOrCreateCustomerId(ctx, stripe, userId, user);
-
-    // Check 2: Check Stripe for existing subscriptions (race condition protection)
-    const stripeSubscription = await findExistingStripeSubscription(
+    // 1. Create Stripe customer for the org
+    const stripeCustomerId = await getOrCreateStripeCustomer(
       stripe,
-      userId,
-      stripeCustomerId,
+      organizationId,
+      adminEmail,
+      orgName,
+      undefined,
     );
-    if (stripeSubscription) {
-      console.warn(
-        `Found existing Stripe subscription ${stripeSubscription.subscriptionId} for user ${userId}`,
-      );
-      return {
-        status: "already_subscribed",
-        subscriptionId: stripeSubscription.subscriptionId,
-        stripePriceId: stripeSubscription.stripePriceId,
-      };
+
+    // 2. Save customer ID to org
+    await ctx.runMutation(internal.stripe.subscription_actions.updateOrgStripeCustomerId, {
+      organizationId,
+      stripeCustomerId,
+    });
+
+    console.warn(`Created Stripe customer ${stripeCustomerId} for org ${organizationId}`);
+
+    // 3. Auto-enroll to free plan
+    const lookupKey = getDefaultPlanLookupKey();
+    if (!lookupKey) {
+      console.warn("DEFAULT_PLAN_LOOKUP_KEY not configured, skipping free plan enrollment");
+      return { stripeCustomerId, enrolled: false };
     }
 
-    // Get the default plan price
+    // Check for existing subscription
+    const existingSub = await ctx.runQuery(
+      internal.auth.subscription_helpers.checkProFeature,
+      { organizationId },
+    );
+    if (existingSub.plan !== "free" || existingSub.isPro) {
+      console.warn(`Org ${organizationId} already has a paid subscription, skipping enrollment`);
+      return { stripeCustomerId, enrolled: false };
+    }
+
+    // Get the free plan price
     const priceData = await ctx.runMutation(
       internal.stripe.subscription_actions.getPriceByLookupKey,
       { lookupKey },
     );
 
-    if (!priceData || !priceData.price) {
-      console.error(`Price not found for lookup key ${lookupKey}`);
-      return {
-        status: "error",
-        error: `Price not found for lookup key ${lookupKey}`,
-      };
+    if (!priceData?.price) {
+      console.warn(`Price not found for lookup key ${lookupKey}, skipping enrollment`);
+      return { stripeCustomerId, enrolled: false };
     }
 
-    return await createDefaultPlanSubscription(
-      ctx,
-      stripe,
-      userId,
-      stripeCustomerId,
-      lookupKey,
-      priceData.price.externalPriceId,
-    );
-  },
-});
-
-/**
- * Handle new user signup - creates Stripe customer and optionally enrolls to free plan
- *
- * This is called from the Clerk webhook handler after user creation.
- */
-export const handleNewUserSignup = internalAction({
-  args: {
-    userId: v.id("users"),
-    email: v.string(),
-    name: v.optional(v.string()),
-  },
-  handler: async (ctx, { userId, email, name }): Promise<HandleNewUserSignupResult> => {
-    const stripe = initializeStripe();
-
-    // Create Stripe customer
-    let stripeCustomerId: string;
+    // Create the free subscription
     try {
-      stripeCustomerId = await getOrCreateStripeCustomer(
-        stripe,
-        userId,
-        email,
-        name || email,
-        undefined,
-      );
-
-      // Save customer ID to user
-      await ctx.runMutation(internal.stripe.subscription_actions.updateOrgStripeCustomerId, {
-        organizationId: "" as Id<"organizations">, // TODO: resolve org from user context
-        stripeCustomerId,
+      const subscription = await stripe.subscriptions.create({
+        customer: stripeCustomerId,
+        items: [{ price: priceData.price.externalPriceId, quantity: 1 }],
+        metadata: { organizationId, lookupKey },
+        collection_method: "charge_automatically",
       });
 
-      console.warn(`Created Stripe customer ${stripeCustomerId} for user ${userId}`);
+      // Save subscription record
+      const firstItem = subscription.items.data[0];
+      const periodStart = firstItem?.current_period_start
+        ? firstItem.current_period_start * 1000
+        : Date.now();
+      const periodEnd = firstItem?.current_period_end
+        ? firstItem.current_period_end * 1000
+        : Date.now() + 30 * 24 * 60 * 60 * 1000;
+
+      await ctx.runMutation(internal.stripe.subscription_actions.createSubscriptionRecord, {
+        organizationId,
+        stripeCustomerId,
+        stripeSubscriptionId: subscription.id,
+        stripePriceId: priceData.price.externalPriceId,
+        status: subscription.status,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+      });
+
+      console.warn(`Auto-enrolled org ${organizationId} to plan ${lookupKey}`);
+      return { stripeCustomerId, enrolled: true, subscriptionId: subscription.id };
     } catch (err) {
-      console.error("Failed to create Stripe customer", {
-        userId,
-        email,
+      console.error("Failed to auto-enroll org to free plan", {
+        organizationId,
         error: err instanceof Error ? err.message : String(err),
       });
-      throw err;
+      return { stripeCustomerId, enrolled: false };
     }
-
-    // Auto-enroll to free plan if enabled
-    if (isAutoEnrollEnabled()) {
-      try {
-        const result = await ctx.runAction(
-          internal.stripe.subscription_actions.subscribeUserToDefaultPlan,
-          { userId },
-        );
-
-        if (result.status === "error") {
-          console.error("Auto-enrollment failed", {
-            userId,
-            error: result.error,
-          });
-        } else {
-          console.warn(`Auto-enrollment result for user ${userId}:`, result);
-        }
-
-        return { stripeCustomerId, enrollmentResult: result };
-      } catch (err) {
-        console.error("Auto-enrollment failed with exception", {
-          userId,
-          error: err instanceof Error ? err.message : String(err),
-        });
-        // Don't throw - customer was created successfully
-        return {
-          stripeCustomerId,
-          enrollmentResult: {
-            status: "error",
-            error: err instanceof Error ? err.message : String(err),
-          },
-        };
-      }
-    }
-
-    return {
-      stripeCustomerId,
-      enrollmentResult: { status: "skipped", reason: "Auto-enroll disabled" },
-    };
   },
 });
