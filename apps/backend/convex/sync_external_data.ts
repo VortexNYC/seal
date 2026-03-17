@@ -66,13 +66,6 @@ interface StripeSyncResult {
     skippedInactive: number;
     errors: number;
   };
-  backfill: {
-    total: number;
-    created: number;
-    alreadySubscribed: number;
-    skipped: number;
-    errors: number;
-  } | null;
 }
 
 interface CombinedSyncResult {
@@ -323,20 +316,17 @@ async function findStripeCustomersByEmail(stripe: Stripe, email: string): Promis
  * 1. Optionally sync product/price catalog
  * 2. Link Convex users to Stripe customers (metadata first, then email fallback)
  * 3. Reconcile Stripe subscriptions into Convex
- * 4. Optionally backfill free subscriptions
  */
 export const syncStripeToConvex = internalAction({
   args: {
     syncCatalog: v.optional(v.boolean()),
     linkCustomers: v.optional(v.boolean()),
     syncSubscriptions: v.optional(v.boolean()),
-    runBackfillFreeSubscriptions: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<StripeSyncResult> => {
     const shouldSyncCatalog = args.syncCatalog ?? true;
     const shouldLinkCustomers = args.linkCustomers ?? true;
     const shouldSyncSubscriptions = args.syncSubscriptions ?? true;
-    const shouldRunBackfill = args.runBackfillFreeSubscriptions ?? false;
 
     const stripe = getStripeClient();
 
@@ -368,15 +358,10 @@ export const syncStripeToConvex = internalAction({
           errors: 0,
         };
 
-    const backfill = shouldRunBackfill
-      ? await ctx.runAction(internal.stripe.backfill_subscriptions.backfillFreeSubscriptions, {})
-      : null;
-
     const result: StripeSyncResult = {
       catalogSynced: shouldSyncCatalog,
       customerLinking,
       subscriptionSync,
-      backfill,
     };
 
     console.warn("[syncStripeToConvex] complete", result);
@@ -395,7 +380,6 @@ export const syncClerkThenStripeToConvex = internalAction({
     syncCatalog: v.optional(v.boolean()),
     linkCustomers: v.optional(v.boolean()),
     syncSubscriptions: v.optional(v.boolean()),
-    runBackfillFreeSubscriptions: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<CombinedSyncResult> => {
     const clerk = await ctx.runAction(internal.sync_external_data.syncUsersFromClerkToConvex, {
@@ -406,7 +390,6 @@ export const syncClerkThenStripeToConvex = internalAction({
       syncCatalog: args.syncCatalog,
       linkCustomers: args.linkCustomers,
       syncSubscriptions: args.syncSubscriptions,
-      runBackfillFreeSubscriptions: args.runBackfillFreeSubscriptions,
     });
 
     const result: CombinedSyncResult = { clerk, stripe };

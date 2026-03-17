@@ -7,23 +7,16 @@
 import type Stripe from "stripe";
 
 /**
- * Get or create a Stripe customer for a user
+ * Get or create a Stripe customer for an organization.
  *
- * This function prevents duplicate customer creation by:
- * 1. Checking if user already has a stripeCustomerId
- * 2. Searching Stripe for existing customers with the same email
+ * Prevents duplicate customer creation by:
+ * 1. Checking if org already has a stripeCustomerId
+ * 2. Searching Stripe for existing customers by email + organizationId metadata
  * 3. Only creating a new customer if none exists
- *
- * @param stripe - Stripe client instance
- * @param userId - Auth0 user ID
- * @param email - User's email address
- * @param name - User's display name
- * @param existingStripeCustomerId - Optional existing customer ID from user record
- * @returns Stripe customer ID
  */
 export async function getOrCreateStripeCustomer(
   stripe: Stripe,
-  userId: string,
+  organizationId: string,
   email: string,
   name: string,
   existingStripeCustomerId?: string,
@@ -34,14 +27,14 @@ export async function getOrCreateStripeCustomer(
       const customer = await stripe.customers.retrieve(existingStripeCustomerId);
       if (!customer.deleted) {
         console.warn(
-          `Using existing Stripe customer ${existingStripeCustomerId} for user ${userId}`,
+          `Using existing Stripe customer ${existingStripeCustomerId} for user ${organizationId}`,
         );
         return existingStripeCustomerId;
       }
     } catch (err) {
       console.error("Failed to retrieve existing Stripe customer, will search/create", {
         operation: "getOrCreateStripeCustomer.retrieve",
-        userId,
+        organizationId,
         stripeCustomerId: existingStripeCustomerId,
         error: err instanceof Error ? err.message : String(err),
       });
@@ -51,7 +44,7 @@ export async function getOrCreateStripeCustomer(
   // 2. Search for existing customers by email
   try {
     const searchResults = await stripe.customers.search({
-      query: `email:'${email.replace(/'/g, "\\'")}' AND metadata['userId']:'${userId.replace(/'/g, "\\'")}'`,
+      query: `email:'${email.replace(/'/g, "\\'")}' AND metadata['organizationId']:'${organizationId.replace(/'/g, "\\'")}'`,
       limit: 1,
     });
 
@@ -59,7 +52,7 @@ export async function getOrCreateStripeCustomer(
       const existingCustomer = searchResults.data[0];
       if (existingCustomer) {
         console.warn(
-          `Found existing Stripe customer ${existingCustomer.id} for user ${userId}, reusing instead of creating duplicate`,
+          `Found existing Stripe customer ${existingCustomer.id} for user ${organizationId}, reusing instead of creating duplicate`,
         );
         return existingCustomer.id;
       }
@@ -67,7 +60,7 @@ export async function getOrCreateStripeCustomer(
   } catch (err) {
     console.error("Stripe customer search failed, will attempt to create", {
       operation: "getOrCreateStripeCustomer.search",
-      userId,
+      organizationId,
       email,
       error: err instanceof Error ? err.message : String(err),
       stack: err instanceof Error ? err.stack : undefined,
@@ -76,26 +69,20 @@ export async function getOrCreateStripeCustomer(
 
   // 3. No existing customer found - create new one
   try {
-    const idempotencyKey = `customer:create:${userId}`;
-    const customer = await stripe.customers.create(
-      {
-        email,
-        name,
-        metadata: {
-          userId,
-        },
+    const customer = await stripe.customers.create({
+      email,
+      name,
+      metadata: {
+        organizationId,
       },
-      {
-        idempotencyKey,
-      },
-    );
+    });
 
-    console.warn(`Created new Stripe customer ${customer.id} for user ${userId}`);
+    console.warn(`Created new Stripe customer ${customer.id} for user ${organizationId}`);
     return customer.id;
   } catch (err) {
     console.error("Stripe customer creation failed", {
       operation: "getOrCreateStripeCustomer.create",
-      userId,
+      organizationId,
       email,
       name,
       error: err instanceof Error ? err.message : String(err),

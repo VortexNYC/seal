@@ -2,8 +2,7 @@
  * Sync Stripe Subscriptions
  *
  * Reconciliation script to sync active Stripe subscriptions into Convex.
- * Handles cases where webhook delivery failed (e.g., missing metadata)
- * and Convex doesn't have the subscription record.
+ * Queries organizations (not users) for stripeCustomerId.
  *
  * Usage:
  *   npx convex run stripe/sync_subscriptions:syncStripeSubscriptions
@@ -28,26 +27,41 @@ function initializeStripe(): Stripe {
 }
 
 /**
- * Get all users who have a Stripe customer ID, along with their
- * existing Convex subscription external IDs for dedup.
+ * Get all organizations with a Stripe customer ID, plus their
+ * existing Convex subscription IDs for dedup.
  */
-export const getUsersWithStripeCustomers = internalMutation({
+export const getOrgsWithStripeCustomers = internalMutation({
   args: {},
   handler: async (
     ctx,
   ): Promise<
     Array<{
-      userId: Id<"users">;
-      email: string;
+      organizationId: Id<"organizations">;
+      name: string;
       stripeCustomerId: string;
       existingSubscriptionIds: string[];
     }>
   > => {
-    const allUsers = await ctx.db.query("users").collect();
+    const allOrgs = await ctx.db.query("organizations").collect();
 
-    console.warn("Legacy sync script disabled — use org-scoped subscriptions");
-    void allUsers;
-    return [];
+    const results = [];
+    for (const org of allOrgs) {
+      if (!org.stripeCustomerId) continue;
+
+      const subs = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_organization_id", (q) => q.eq("organizationId", org._id))
+        .collect();
+
+      results.push({
+        organizationId: org._id,
+        name: org.name || "",
+        stripeCustomerId: org.stripeCustomerId,
+        existingSubscriptionIds: subs.map((s) => s.externalSubscriptionId),
+      });
+    }
+
+    return results;
   },
 });
 
@@ -60,12 +74,11 @@ interface SyncResult {
 }
 
 /**
- * Sync active Stripe subscriptions into Convex for all users.
+ * Sync active Stripe subscriptions into Convex for all organizations.
  *
- * For each user with a Stripe customer ID:
+ * For each org with a Stripe customer ID:
  * 1. Lists their Stripe subscriptions
  * 2. For any active/trialing subscription not in Convex, creates the record
- * 3. Updates subscription metadata with userId if missing (prevents future webhook failures)
  *
  * Safe to run multiple times — fully idempotent.
  */
@@ -74,50 +87,36 @@ export const syncStripeSubscriptions = internalAction({
   handler: async (ctx): Promise<SyncResult> => {
     const stripe = initializeStripe();
 
-    const users = await ctx.runMutation(
-      internal.stripe.sync_subscriptions.getUsersWithStripeCustomers,
+    const orgs = await ctx.runMutation(
+      internal.stripe.sync_subscriptions.getOrgsWithStripeCustomers,
       {},
     );
 
-    console.warn(`Found ${users.length} users with Stripe customer IDs`);
+    console.warn(`Found ${orgs.length} organizations with Stripe customer IDs`);
 
     let synced = 0;
     let alreadyInConvex = 0;
     let skippedInactive = 0;
     let errors = 0;
 
-    for (const user of users) {
+    for (const org of orgs) {
       try {
         const stripeSubscriptions = await stripe.subscriptions.list({
-          customer: user.stripeCustomerId,
+          customer: org.stripeCustomerId,
           limit: 100,
         });
 
         for (const sub of stripeSubscriptions.data) {
-          // Skip terminal statuses
           if (sub.status === "canceled" || sub.status === "incomplete_expired") {
             skippedInactive++;
             continue;
           }
 
-          // Already in Convex?
-          if (user.existingSubscriptionIds.includes(sub.id)) {
+          if (org.existingSubscriptionIds.includes(sub.id)) {
             alreadyInConvex++;
             continue;
           }
 
-          // Ensure subscription has userId in metadata (fix for future webhooks)
-          if (!sub.metadata?.userId) {
-            await stripe.subscriptions.update(sub.id, {
-              metadata: {
-                ...sub.metadata,
-                userId: user.userId,
-              },
-            });
-            console.warn(`[FIX] Added userId metadata to Stripe subscription ${sub.id}`);
-          }
-
-          // Get price ID from first item
           const firstItem = sub.items.data[0];
           if (!firstItem) {
             console.error(`[ERROR] Subscription ${sub.id} has no items, skipping`);
@@ -135,8 +134,8 @@ export const syncStripeSubscriptions = internalAction({
           }
 
           await ctx.runMutation(internal.stripe.subscription_actions.createSubscriptionRecord, {
-            organizationId: user.userId as unknown as Id<"organizations">, // Legacy: disabled sync script
-            stripeCustomerId: user.stripeCustomerId,
+            organizationId: org.organizationId,
+            stripeCustomerId: org.stripeCustomerId,
             stripeSubscriptionId: sub.id,
             stripePriceId: firstItem.price.id,
             status: sub.status,
@@ -146,20 +145,20 @@ export const syncStripeSubscriptions = internalAction({
 
           synced++;
           console.warn(
-            `[SYNCED] ${user.email}: subscription ${sub.id} (${sub.status}, price: ${firstItem.price.id})`,
+            `[SYNCED] ${org.name}: subscription ${sub.id} (${sub.status}, price: ${firstItem.price.id})`,
           );
         }
       } catch (err) {
         errors++;
         console.error(
-          `[ERROR] Failed to sync ${user.email} (${user.stripeCustomerId}):`,
+          `[ERROR] Failed to sync ${org.name} (${org.stripeCustomerId}):`,
           err instanceof Error ? err.message : String(err),
         );
       }
     }
 
     const summary: SyncResult = {
-      total: users.length,
+      total: orgs.length,
       synced,
       alreadyInConvex,
       skippedInactive,

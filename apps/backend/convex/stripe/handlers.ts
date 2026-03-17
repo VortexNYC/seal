@@ -489,8 +489,22 @@ export const handleSubscriptionUpdated = internalMutation({
       subscription.status === "unpaid";
 
     if (wasActive && isNowInactive) {
-      // TODO Phase 4: trigger org-scoped downgrade cascade
-      console.warn(`Subscription ${subscription.id} became inactive for org ${existingSubscription.organizationId}`);
+      await ctx.scheduler.runAfter(
+        0,
+        internal.webhooks.delivery.abandonPendingDeliveriesForOrg,
+        { organizationId: existingSubscription.organizationId },
+      );
+      console.warn(
+        JSON.stringify({
+          topic: "subscription_lifecycle",
+          event: "downgrade_cascade_triggered",
+          organizationId: existingSubscription.organizationId,
+          stripeSubscriptionId: subscription.id,
+          previousStatus: existingSubscription.status,
+          newStatus: subscription.status,
+          timestamp: Date.now(),
+        }),
+      );
     }
 
     // Explicit past_due detection — features remain active during grace period
@@ -553,12 +567,16 @@ export const handleSubscriptionDeleted = internalMutation({
       updatedAt: now,
     });
 
-    // Downgrade cascade detection — log what should be triggered
-    // TODO: Cascade should trigger: suspend webhooks, freeze templates/branding, downgrade sharing
+    // Downgrade cascade: abandon pending webhook deliveries
+    await ctx.scheduler.runAfter(
+      0,
+      internal.webhooks.delivery.abandonPendingDeliveriesForOrg,
+      { organizationId: existingSubscription.organizationId },
+    );
     console.warn(
       JSON.stringify({
         topic: "subscription_lifecycle",
-        event: "downgrade_cascade",
+        event: "downgrade_cascade_triggered",
         operation: "handleSubscriptionDeleted",
         organizationId: existingSubscription.organizationId,
         stripeSubscriptionId: subscription.id,
@@ -568,7 +586,6 @@ export const handleSubscriptionDeleted = internalMutation({
         timestamp: now,
       }),
     );
-    console.warn(`Subscription canceled for org ${existingSubscription.organizationId}`);
 
     console.warn(
       JSON.stringify({

@@ -506,6 +506,32 @@ export const getEndpointById = internalQuery({
  * Get an organization's subscription tier (internal query for the delivery action).
  * Returns "free" | "pro" | "enterprise".
  */
+/**
+ * Abandon all pending webhook deliveries for an organization.
+ * Called during downgrade cascade when org loses webhook access.
+ */
+export const abandonPendingDeliveriesForOrg = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args): Promise<number> => {
+    const pending = await ctx.db
+      .query("webhook_deliveries")
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+
+    for (const delivery of pending) {
+      await ctx.db.patch(delivery._id, {
+        status: "abandoned",
+        errorMessage: "Webhooks suspended — organization downgraded to Free tier",
+      });
+    }
+
+    return pending.length;
+  },
+});
+
 export const getOrgTier = internalQuery({
   args: {
     organizationId: v.id("organizations"),

@@ -1,3 +1,4 @@
+import { Link, useParams } from "@tanstack/react-router";
 import { LockIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -14,6 +15,7 @@ interface FeatureGateProps {
 
 export function FeatureGate({ tier, feature, description, children }: FeatureGateProps) {
   const { isPro, isEnterprise, isLoading } = useSubscriptionLimits();
+  const { slug } = useParams({ strict: false });
 
   if (isLoading) return <>{children}</>;
 
@@ -34,9 +36,9 @@ export function FeatureGate({ tier, feature, description, children }: FeatureGat
             </p>
             <p className="text-muted-foreground text-sm">{description}</p>
             <Button variant="outline" size="sm" className="mt-2" asChild>
-              <a href="settings/billing">
+              <Link to="/$slug/settings/billing" params={{ slug: slug! }}>
                 {tier === "pro" ? "Start free trial" : "Contact sales"}
-              </a>
+              </Link>
             </Button>
           </div>
         </CardContent>
