@@ -19,7 +19,7 @@ export class TeamSettingsPage {
 
   async goto(slug: string): Promise<void> {
     await this.page.goto(`/${slug}/settings/team`);
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async inviteMember(email: string, role: "Owner" | "Admin" | "Member"): Promise<void> {
@@ -61,6 +61,6 @@ export class TeamSettingsPage {
   async viewMemberDetails(email: string): Promise<void> {
     const memberRow = this.page.locator(`[data-member-email="${email}"]`);
     await memberRow.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 }

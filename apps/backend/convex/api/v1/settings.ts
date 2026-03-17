@@ -7,7 +7,13 @@
  */
 import { v } from "convex/values";
 
-import { internalMutation, internalQuery } from "../../_generated/server";
+import type { Doc } from "../../_generated/dataModel";
+import {
+  type MutationCtx,
+  internalMutation,
+  internalQuery,
+  type QueryCtx,
+} from "../../_generated/server";
 
 /** API representation of organization settings */
 export interface ApiSettings {
@@ -50,50 +56,6 @@ export interface ApiSettings {
     session_timeout_minutes: number | null;
   };
 }
-
-/**
- * Internal query to read current organization settings.
- *
- * @internal
- */
-export const getSettings = internalQuery({
-  args: {
-    userId: v.id("users"),
-    organizationId: v.id("organizations"),
-  },
-  handler: async (ctx, args): Promise<ApiSettings> => {
-    const org = await ctx.db.get(args.organizationId);
-    if (!org) throw new Error("Organization not found");
-
-    return {
-      signing: {
-        allowed_signature_types: (org.signingSettings?.allowedSignatureTypes ?? [
-          "draw",
-          "type",
-          "upload",
-        ]) as ("draw" | "type" | "upload")[],
-        default_deadline_days: org.signingSettings?.defaultDeadlineDays ?? 30,
-        esign_consent_text: org.signingSettings?.esignConsentText ?? null,
-      },
-      notifications: {
-        reminder_schedule: org.notificationSettings?.reminderSchedule ?? [3, 7, 14],
-        expiration_alert_days: org.notificationSettings?.expirationAlertDays ?? 3,
-        send_completion_email: org.notificationSettings?.sendCompletionEmail ?? true,
-        send_viewed_notification: org.notificationSettings?.sendViewedNotification ?? true,
-      },
-      ai: {
-        enabled: org.aiSettings?.aiEnabled ?? false,
-        auto_analyze: org.aiSettings?.aiAutoAnalyze ?? false,
-      },
-      security: {
-        ip_allowlist: org.securitySettings?.ipAllowlist ?? [],
-        allow_api_access: org.securitySettings?.allowApiAccess ?? true,
-        require_mfa: org.securitySettings?.requireMfa ?? false,
-        session_timeout_minutes: org.securitySettings?.sessionTimeoutMinutes ?? null,
-      },
-    };
-  },
-});
 
 /**
  * Partial signing settings update shape
@@ -143,6 +105,134 @@ export interface UpdateSettingsInput {
   security?: SecurityUpdate;
 }
 
+type OrganizationDoc = Doc<"organizations">;
+type SignatureType = ApiSettings["signing"]["allowed_signature_types"][number];
+
+const DEFAULT_SIGNATURE_TYPES: SignatureType[] = ["draw", "type", "upload"];
+const DEFAULT_REMINDER_SCHEDULE = [3, 7, 14];
+
+async function getOrganizationOrThrow(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: OrganizationDoc["_id"],
+): Promise<OrganizationDoc> {
+  const organization = await ctx.db.get(organizationId);
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+  return organization;
+}
+
+function buildApiSettings(org: OrganizationDoc): ApiSettings {
+  return {
+    signing: buildSigningResponse(org),
+    notifications: buildNotificationResponse(org),
+    ai: buildAiResponse(org),
+    security: buildSecurityResponse(org),
+  };
+}
+
+function buildSigningResponse(org: OrganizationDoc): ApiSettings["signing"] {
+  return {
+    allowed_signature_types:
+      (org.signingSettings?.allowedSignatureTypes as SignatureType[] | undefined) ??
+      DEFAULT_SIGNATURE_TYPES,
+    default_deadline_days: org.signingSettings?.defaultDeadlineDays ?? 30,
+    esign_consent_text: org.signingSettings?.esignConsentText ?? null,
+  };
+}
+
+function buildNotificationResponse(org: OrganizationDoc): ApiSettings["notifications"] {
+  return {
+    reminder_schedule: org.notificationSettings?.reminderSchedule ?? DEFAULT_REMINDER_SCHEDULE,
+    expiration_alert_days: org.notificationSettings?.expirationAlertDays ?? 3,
+    send_completion_email: org.notificationSettings?.sendCompletionEmail ?? true,
+    send_viewed_notification: org.notificationSettings?.sendViewedNotification ?? true,
+  };
+}
+
+function buildAiResponse(org: OrganizationDoc): ApiSettings["ai"] {
+  return {
+    enabled: org.aiSettings?.aiEnabled ?? false,
+    auto_analyze: org.aiSettings?.aiAutoAnalyze ?? false,
+  };
+}
+
+function buildSecurityResponse(org: OrganizationDoc): ApiSettings["security"] {
+  return {
+    ip_allowlist: org.securitySettings?.ipAllowlist ?? [],
+    allow_api_access: org.securitySettings?.allowApiAccess ?? true,
+    require_mfa: org.securitySettings?.requireMfa ?? false,
+    session_timeout_minutes: org.securitySettings?.sessionTimeoutMinutes ?? null,
+  };
+}
+
+function buildSigningSettings(org: OrganizationDoc, update: SigningUpdate) {
+  return {
+    defaultAuthMethod: org.signingSettings?.defaultAuthMethod ?? "email",
+    allowedSignatureTypes:
+      update.allowed_signature_types ??
+      org.signingSettings?.allowedSignatureTypes ??
+      DEFAULT_SIGNATURE_TYPES,
+    defaultDeadlineDays:
+      update.default_deadline_days ?? org.signingSettings?.defaultDeadlineDays ?? 30,
+    esignConsentText:
+      update.esign_consent_text !== undefined
+        ? (update.esign_consent_text ?? undefined)
+        : org.signingSettings?.esignConsentText,
+  };
+}
+
+function buildNotificationSettings(org: OrganizationDoc, update: NotificationUpdate) {
+  return {
+    reminderSchedule:
+      update.reminder_schedule ??
+      org.notificationSettings?.reminderSchedule ??
+      DEFAULT_REMINDER_SCHEDULE,
+    expirationAlertDays:
+      update.expiration_alert_days ?? org.notificationSettings?.expirationAlertDays ?? 3,
+    sendCompletionEmail:
+      update.send_completion_email ?? org.notificationSettings?.sendCompletionEmail ?? true,
+    sendViewedNotification:
+      update.send_viewed_notification ?? org.notificationSettings?.sendViewedNotification ?? true,
+  };
+}
+
+function buildAiSettings(org: OrganizationDoc, update: AiUpdate) {
+  return {
+    aiEnabled: update.enabled ?? org.aiSettings?.aiEnabled ?? false,
+    aiAutoAnalyze: update.auto_analyze ?? org.aiSettings?.aiAutoAnalyze ?? false,
+    aiShowRedlinesToSigners: org.aiSettings?.aiShowRedlinesToSigners ?? false,
+  };
+}
+
+function buildSecuritySettings(org: OrganizationDoc, update: SecurityUpdate) {
+  return {
+    allowApiAccess: update.allow_api_access ?? org.securitySettings?.allowApiAccess ?? true,
+    ipAllowlist: update.ip_allowlist ?? org.securitySettings?.ipAllowlist ?? [],
+    requireMfa: update.require_mfa ?? org.securitySettings?.requireMfa ?? false,
+    sessionTimeoutMinutes:
+      update.session_timeout_minutes !== undefined
+        ? (update.session_timeout_minutes ?? undefined)
+        : org.securitySettings?.sessionTimeoutMinutes,
+  };
+}
+
+/**
+ * Internal query to read current organization settings.
+ *
+ * @internal
+ */
+export const getSettings = internalQuery({
+  args: {
+    userId: v.id("users"),
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args): Promise<ApiSettings> => {
+    const organization = await getOrganizationOrThrow(ctx, args.organizationId);
+    return buildApiSettings(organization);
+  },
+});
+
 /**
  * Internal mutation to update organization settings.
  *
@@ -185,71 +275,23 @@ export const updateSettings = internalMutation({
     ),
   },
   handler: async (ctx, args): Promise<{ success: boolean }> => {
-    const org = await ctx.db.get(args.organizationId);
-    if (!org) throw new Error("Organization not found");
+    const organization = await getOrganizationOrThrow(ctx, args.organizationId);
 
-    if (args.signing) {
-      await ctx.db.patch(args.organizationId, {
-        signingSettings: {
-          defaultAuthMethod: org.signingSettings?.defaultAuthMethod ?? "email",
-          allowedSignatureTypes:
-            args.signing.allowed_signature_types ??
-            org.signingSettings?.allowedSignatureTypes ??
-            (["draw", "type", "upload"] as const),
-          defaultDeadlineDays:
-            args.signing.default_deadline_days ?? org.signingSettings?.defaultDeadlineDays ?? 30,
-          esignConsentText:
-            args.signing.esign_consent_text !== undefined
-              ? (args.signing.esign_consent_text ?? undefined)
-              : org.signingSettings?.esignConsentText,
-        },
-      });
-    }
+    const patches = [
+      args.signing ? { signingSettings: buildSigningSettings(organization, args.signing) } : null,
+      args.notifications
+        ? { notificationSettings: buildNotificationSettings(organization, args.notifications) }
+        : null,
+      args.ai ? { aiSettings: buildAiSettings(organization, args.ai) } : null,
+      args.security
+        ? { securitySettings: buildSecuritySettings(organization, args.security) }
+        : null,
+    ];
 
-    if (args.notifications) {
-      await ctx.db.patch(args.organizationId, {
-        notificationSettings: {
-          reminderSchedule: args.notifications.reminder_schedule ??
-            org.notificationSettings?.reminderSchedule ?? [3, 7, 14],
-          expirationAlertDays:
-            args.notifications.expiration_alert_days ??
-            org.notificationSettings?.expirationAlertDays ??
-            3,
-          sendCompletionEmail:
-            args.notifications.send_completion_email ??
-            org.notificationSettings?.sendCompletionEmail ??
-            true,
-          sendViewedNotification:
-            args.notifications.send_viewed_notification ??
-            org.notificationSettings?.sendViewedNotification ??
-            true,
-        },
-      });
-    }
-
-    if (args.ai) {
-      await ctx.db.patch(args.organizationId, {
-        aiSettings: {
-          aiEnabled: args.ai.enabled ?? org.aiSettings?.aiEnabled ?? false,
-          aiAutoAnalyze: args.ai.auto_analyze ?? org.aiSettings?.aiAutoAnalyze ?? false,
-          aiShowRedlinesToSigners: org.aiSettings?.aiShowRedlinesToSigners ?? false,
-        },
-      });
-    }
-
-    if (args.security) {
-      await ctx.db.patch(args.organizationId, {
-        securitySettings: {
-          allowApiAccess:
-            args.security.allow_api_access ?? org.securitySettings?.allowApiAccess ?? true,
-          ipAllowlist: args.security.ip_allowlist ?? org.securitySettings?.ipAllowlist ?? [],
-          requireMfa: args.security.require_mfa ?? org.securitySettings?.requireMfa ?? false,
-          sessionTimeoutMinutes:
-            args.security.session_timeout_minutes !== undefined
-              ? (args.security.session_timeout_minutes ?? undefined)
-              : org.securitySettings?.sessionTimeoutMinutes,
-        },
-      });
+    for (const patch of patches) {
+      if (patch) {
+        await ctx.db.patch(args.organizationId, patch);
+      }
     }
 
     return { success: true };

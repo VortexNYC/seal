@@ -18,6 +18,33 @@ import type { PaymentStatus } from "../schemas/payment_field_configs";
 import { mapStripeCapabilities, mapStripeRequirements } from "./connect_helpers";
 
 type HttpActionCtx = GenericActionCtx<DataModel>;
+type RecurringInvoiceStatus = "draft" | "open" | "paid" | "void" | "uncollectible";
+type StripeConnectWebhookHandler = (ctx: HttpActionCtx, event: Stripe.Event) => Promise<void>;
+
+const recurringInvoiceStatusMap: Record<string, RecurringInvoiceStatus> = {
+  draft: "draft",
+  open: "open",
+  paid: "paid",
+  void: "void",
+  uncollectible: "uncollectible",
+};
+
+function getRecurringInvoiceSubscriptionId(invoice: Stripe.Invoice): string | undefined {
+  const subDetails = invoice.parent?.subscription_details;
+  return typeof subDetails?.subscription === "string"
+    ? subDetails.subscription
+    : subDetails?.subscription?.id;
+}
+
+function getRecurringInvoiceStatus(invoice: Stripe.Invoice): RecurringInvoiceStatus {
+  return recurringInvoiceStatusMap[invoice.status ?? ""] ?? "draft";
+}
+
+function getInvoiceCustomerId(invoice: Stripe.Invoice): string | undefined {
+  return typeof invoice.customer === "string"
+    ? invoice.customer
+    : (invoice.customer?.id ?? undefined);
+}
 
 async function resolveOrganizationId(
   ctx: HttpActionCtx,
@@ -93,7 +120,7 @@ async function updatePaymentFieldFromInvoice(
   ctx: HttpActionCtx,
   invoice: Stripe.Invoice,
   paymentStatus: PaymentStatus,
-): Promise<{ configId: string; documentId: string } | null> {
+): Promise<{ configId?: string; documentId?: string; invoiceRecordId?: string } | null> {
   const result = await ctx.runMutation(
     internal.payment_fields.mutations.updatePaymentStatusFromWebhook,
     {
@@ -115,6 +142,62 @@ async function updatePaymentFieldFromInvoice(
   return result;
 }
 
+/**
+ * Upsert a document_invoices record for a subscription invoice.
+ * Called on invoice.created and invoice.finalized for recurring billing.
+ * Skips non-subscription invoices (one-time invoices are handled by storeStripeIds).
+ */
+async function syncRecurringInvoice(
+  ctx: HttpActionCtx,
+  invoice: Stripe.Invoice,
+  stripeAccountId: string,
+): Promise<void> {
+  const subscriptionId = getRecurringInvoiceSubscriptionId(invoice);
+  if (!subscriptionId) {
+    // Not a subscription invoice — skip (one-time invoices handled elsewhere)
+    return;
+  }
+
+  const status = getRecurringInvoiceStatus(invoice);
+
+  await ctx.runMutation(internal.payment_fields.mutations.upsertRecurringInvoice, {
+    stripeInvoiceId: invoice.id,
+    stripeSubscriptionId: subscriptionId,
+    stripeCustomerId: getInvoiceCustomerId(invoice),
+    stripeAccountId,
+    status,
+    customerEmail: invoice.customer_email ?? "",
+    customerName: invoice.customer_name ?? undefined,
+    amountDue: invoice.amount_due,
+    currency: invoice.currency,
+    hostedInvoiceUrl: invoice.hosted_invoice_url ?? undefined,
+    invoicePdf: invoice.invoice_pdf ?? undefined,
+  });
+
+  console.info("Recurring invoice synced", {
+    operation: "stripeConnect.recurringInvoiceSync",
+    stripeInvoiceId: invoice.id,
+    stripeSubscriptionId: subscriptionId,
+    status,
+  });
+}
+
+async function handleInvoiceCreated(
+  ctx: HttpActionCtx,
+  invoice: Stripe.Invoice,
+  stripeAccountId: string,
+): Promise<void> {
+  await syncRecurringInvoice(ctx, invoice, stripeAccountId);
+}
+
+async function handleInvoiceFinalized(
+  ctx: HttpActionCtx,
+  invoice: Stripe.Invoice,
+  stripeAccountId: string,
+): Promise<void> {
+  await syncRecurringInvoice(ctx, invoice, stripeAccountId);
+}
+
 async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
   console.info("Processing invoice.paid webhook", {
     operation: "stripeConnect.invoicePaid",
@@ -125,6 +208,13 @@ async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): P
 
   // Update payment_field_configs (new system)
   const result = await updatePaymentFieldFromInvoice(ctx, invoice, "paid");
+
+  // Cancel any active dunning sequence
+  if (result?.invoiceRecordId) {
+    await ctx.runMutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+    });
+  }
 
   // If a payment config was updated, check if the document can now complete
   if (result?.documentId) {
@@ -144,12 +234,33 @@ async function handleInvoicePaymentFailed(
   });
 
   // Update payment_field_configs (new system)
-  await updatePaymentFieldFromInvoice(ctx, invoice, "failed");
+  const result = await updatePaymentFieldFromInvoice(ctx, invoice, "failed");
+
+  // Start dunning sequence and send immediate first email
+  if (result?.invoiceRecordId) {
+    const dunningResult = await ctx.runMutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+    });
+
+    if (dunningResult?.started) {
+      await ctx.runAction(internal.payment_fields.dunning_email_action.sendDunningEmail, {
+        invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+        step: 0,
+      });
+    }
+  }
 }
 
 async function handleInvoiceVoided(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
   // Update payment_field_configs (new system)
-  await updatePaymentFieldFromInvoice(ctx, invoice, "cancelled");
+  const result = await updatePaymentFieldFromInvoice(ctx, invoice, "cancelled");
+
+  // Cancel any active dunning sequence
+  if (result?.invoiceRecordId) {
+    await ctx.runMutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+    });
+  }
 }
 
 async function handleInvoiceMarkedUncollectible(
@@ -157,12 +268,26 @@ async function handleInvoiceMarkedUncollectible(
   invoice: Stripe.Invoice,
 ): Promise<void> {
   // Update payment_field_configs (new system)
-  await updatePaymentFieldFromInvoice(ctx, invoice, "failed");
+  const result = await updatePaymentFieldFromInvoice(ctx, invoice, "failed");
+
+  // Cancel dunning — invoice is already written off
+  if (result?.invoiceRecordId) {
+    await ctx.runMutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+    });
+  }
 }
 
 async function handleInvoiceDeleted(ctx: HttpActionCtx, invoice: Stripe.Invoice): Promise<void> {
   // Update payment_field_configs (new system)
-  await updatePaymentFieldFromInvoice(ctx, invoice, "cancelled");
+  const result = await updatePaymentFieldFromInvoice(ctx, invoice, "cancelled");
+
+  // Cancel dunning — invoice no longer exists
+  if (result?.invoiceRecordId) {
+    await ctx.runMutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId: result.invoiceRecordId as Id<"document_invoices">,
+    });
+  }
 }
 
 /**
@@ -288,6 +413,48 @@ async function handlePayoutFailed(ctx: HttpActionCtx, payout: Stripe.Payout): Pr
   }
 }
 
+const stripeConnectWebhookHandlers: Record<string, StripeConnectWebhookHandler> = {
+  "account.updated": async (ctx, event) => {
+    await handleAccountUpdated(ctx, event.data.object as Stripe.Account);
+  },
+  "capability.updated": async (ctx, event) => {
+    await handleCapabilityUpdated(ctx, event.data.object as Stripe.Capability);
+  },
+  "invoice.created": async (ctx, event) => {
+    await handleInvoiceCreated(ctx, event.data.object as Stripe.Invoice, event.account ?? "");
+  },
+  "invoice.finalized": async (ctx, event) => {
+    await handleInvoiceFinalized(ctx, event.data.object as Stripe.Invoice, event.account ?? "");
+  },
+  "invoice.paid": async (ctx, event) => {
+    await handleInvoicePaid(ctx, event.data.object as Stripe.Invoice);
+  },
+  "invoice.payment_failed": async (ctx, event) => {
+    await handleInvoicePaymentFailed(ctx, event.data.object as Stripe.Invoice);
+  },
+  "invoice.voided": async (ctx, event) => {
+    await handleInvoiceVoided(ctx, event.data.object as Stripe.Invoice);
+  },
+  "invoice.marked_uncollectible": async (ctx, event) => {
+    await handleInvoiceMarkedUncollectible(ctx, event.data.object as Stripe.Invoice);
+  },
+  "invoice.deleted": async (ctx, event) => {
+    await handleInvoiceDeleted(ctx, event.data.object as Stripe.Invoice);
+  },
+  "customer.subscription.updated": async (ctx, event) => {
+    await handleSubscriptionUpdated(ctx, event.data.object as Stripe.Subscription);
+  },
+  "customer.subscription.deleted": async (ctx, event) => {
+    await handleSubscriptionDeleted(ctx, event.data.object as Stripe.Subscription);
+  },
+  "payout.paid": async (ctx, event) => {
+    await handlePayoutPaid(ctx, event.data.object as Stripe.Payout);
+  },
+  "payout.failed": async (ctx, event) => {
+    await handlePayoutFailed(ctx, event.data.object as Stripe.Payout);
+  },
+};
+
 export async function processStripeConnectWebhookEvent(
   ctx: HttpActionCtx,
   event: Stripe.Event,
@@ -307,50 +474,17 @@ export async function processStripeConnectWebhookEvent(
     return;
   }
 
-  // Handle Connect-specific events and invoice lifecycle events.
-  switch (event.type) {
-    case "account.updated":
-      await handleAccountUpdated(ctx, event.data.object as Stripe.Account);
-      break;
-    case "capability.updated":
-      await handleCapabilityUpdated(ctx, event.data.object as Stripe.Capability);
-      break;
-    case "invoice.paid":
-      await handleInvoicePaid(ctx, event.data.object as Stripe.Invoice);
-      break;
-    case "invoice.payment_failed":
-      await handleInvoicePaymentFailed(ctx, event.data.object as Stripe.Invoice);
-      break;
-    case "invoice.voided":
-      await handleInvoiceVoided(ctx, event.data.object as Stripe.Invoice);
-      break;
-    case "invoice.marked_uncollectible":
-      await handleInvoiceMarkedUncollectible(ctx, event.data.object as Stripe.Invoice);
-      break;
-    case "invoice.deleted":
-      await handleInvoiceDeleted(ctx, event.data.object as Stripe.Invoice);
-      break;
-    case "customer.subscription.updated":
-      await handleSubscriptionUpdated(ctx, event.data.object as Stripe.Subscription);
-      break;
-    case "customer.subscription.deleted":
-      await handleSubscriptionDeleted(ctx, event.data.object as Stripe.Subscription);
-      break;
-    case "payout.paid":
-      await handlePayoutPaid(ctx, event.data.object as Stripe.Payout);
-      break;
-    case "payout.failed":
-      await handlePayoutFailed(ctx, event.data.object as Stripe.Payout);
-      break;
-    default:
-      // Unknown event type - log but don't fail
-      console.info("Unhandled Connect webhook event type", {
-        operation: "stripeConnect.webhookUnhandled",
-        eventType: event.type,
-        eventId: event.id,
-      });
-      return; // Don't mark as processed since we didn't handle it
+  const handler = stripeConnectWebhookHandlers[event.type];
+  if (!handler) {
+    console.info("Unhandled Connect webhook event type", {
+      operation: "stripeConnect.webhookUnhandled",
+      eventType: event.type,
+      eventId: event.id,
+    });
+    return;
   }
+
+  await handler(ctx, event);
 
   // Mark event as processed for idempotency
   await ctx.runMutation(internal.stripe.webhook_idempotency.markEventProcessed, {

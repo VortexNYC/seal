@@ -8,8 +8,10 @@
  * Search: Hybrid semantic + keyword search returns ranked excerpts with citations.
  */
 
+import { ActionCache, type ActionCacheConfig } from "@convex-dev/action-cache";
 import { RAG } from "@convex-dev/rag";
 import { gateway } from "ai";
+import type { FunctionReference } from "convex/server";
 import { v } from "convex/values";
 
 import { components, internal } from "../_generated/api";
@@ -202,6 +204,80 @@ export type SearchResult = {
   score: number;
 };
 
+type RagSearchEntry = {
+  key?: string;
+  metadata?: { pageNumber?: number; documentName?: string };
+  title?: string;
+  text: string;
+};
+
+function hasSearchFilters(args: {
+  workflowStatus?: string;
+  dateFrom?: number;
+  dateTo?: number;
+}): boolean {
+  return Boolean(
+    (args.workflowStatus && args.workflowStatus !== "all") || args.dateFrom || args.dateTo,
+  );
+}
+
+function extractDocumentIds(entries: RagSearchEntry[]): Id<"documents">[] {
+  const ids = new Set(
+    entries.map((entry) => entry.key?.split(":")[1]).filter((id): id is string => Boolean(id)),
+  );
+
+  return [...ids] as unknown as Id<"documents">[];
+}
+
+function matchesSearchFilters(
+  document: Doc<"documents">,
+  args: {
+    workflowStatus?: string;
+    dateFrom?: number;
+    dateTo?: number;
+  },
+): boolean {
+  if (
+    args.workflowStatus &&
+    args.workflowStatus !== "all" &&
+    document.workflowStatus !== args.workflowStatus
+  ) {
+    return false;
+  }
+  if (args.dateFrom && document.createdAt < args.dateFrom) {
+    return false;
+  }
+  if (args.dateTo && document.createdAt > args.dateTo) {
+    return false;
+  }
+  return true;
+}
+
+function buildSearchResults(entries: RagSearchEntry[], limit: number): SearchResult[] {
+  const results: SearchResult[] = [];
+
+  for (const entry of entries) {
+    if (results.length >= limit) {
+      break;
+    }
+
+    const parts = entry.key?.split(":") ?? [];
+    const documentId = parts[1] ?? "";
+    const pageNumber = parts[3] ? Number.parseInt(parts[3], 10) : 0;
+    const metadata = entry.metadata;
+
+    results.push({
+      documentId,
+      documentName: metadata?.documentName ?? entry.title ?? "Unknown Document",
+      pageNumber: metadata?.pageNumber ?? pageNumber,
+      excerpt: entry.text.slice(0, 500),
+      score: 0,
+    });
+  }
+
+  return results;
+}
+
 /**
  * Hybrid search across all workspace documents.
  *
@@ -229,67 +305,57 @@ export const hybridSearchDocuments = internalAction({
       filters: [{ name: "status", value: "active" }],
     });
 
-    // Post-filter by workflow status and date range if specified
-    const needsFilter =
-      (args.workflowStatus && args.workflowStatus !== "all") || args.dateFrom || args.dateTo;
-
-    let filtered = entries;
-    if (needsFilter) {
-      // Extract unique document IDs from results
-      const docIdStrings = [
-        ...new Set(entries.map((e) => e.key?.split(":")[1]).filter((id): id is string => !!id)),
-      ];
-
-      const docIds = docIdStrings as unknown as Id<"documents">[];
+    let filtered = entries as RagSearchEntry[];
+    if (hasSearchFilters(args)) {
       const docs = await ctx.runQuery(internal.ai.search.getDocumentsByIds, {
-        documentIds: docIds,
+        documentIds: extractDocumentIds(filtered),
       });
+      const docMap = new Map(docs.map((document: Doc<"documents">) => [document._id.toString(), document]));
 
-      const docMap = new Map(docs.map((d) => [d._id.toString(), d]));
-
-      filtered = entries.filter((e) => {
-        const docId = e.key?.split(":")[1];
-        if (!docId) return false;
-        const doc = docMap.get(docId);
-        if (!doc) return false;
-
-        if (
-          args.workflowStatus &&
-          args.workflowStatus !== "all" &&
-          doc.workflowStatus !== args.workflowStatus
-        )
+      filtered = filtered.filter((entry) => {
+        const documentId = entry.key?.split(":")[1];
+        if (!documentId) {
           return false;
-        if (args.dateFrom && doc.createdAt < args.dateFrom) return false;
-        if (args.dateTo && doc.createdAt > args.dateTo) return false;
+        }
 
-        return true;
+        const document = docMap.get(documentId);
+        if (!document) {
+          return false;
+        }
+
+        return matchesSearchFilters(document, args);
       });
     }
 
-    // Build result set
-    const results: SearchResult[] = [];
-    for (const entry of filtered) {
-      if (results.length >= limit) break;
-
-      // Parse key: "doc:{documentId}:page:{pageNumber}"
-      const parts = entry.key?.split(":") ?? [];
-      const docId = parts[1] ?? "";
-      const pageNum = parts[3] ? Number.parseInt(parts[3], 10) : 0;
-
-      const metadata = entry.metadata as { pageNumber?: number; documentName?: string } | undefined;
-
-      results.push({
-        documentId: docId,
-        documentName: metadata?.documentName ?? entry.title ?? "Unknown Document",
-        pageNumber: metadata?.pageNumber ?? pageNum,
-        excerpt: entry.text.slice(0, 500),
-        score: 0,
-      });
-    }
-
-    return results;
+    return buildSearchResults(filtered, limit);
   },
 });
+
+// =============================================================================
+// SEARCH CACHE — avoids re-embedding identical queries within a session
+// =============================================================================
+
+type SearchAction = FunctionReference<
+  "action",
+  "internal",
+  {
+    organizationId: Id<"organizations">;
+    query: string;
+    limit?: number;
+    workflowStatus?: string;
+    dateFrom?: number;
+    dateTo?: number;
+  },
+  SearchResult[]
+>;
+
+/** Cache for search queries — keyed on org + query + filters, 1-hour TTL.
+ *  Same user asking "find GDPR" twice in a session hits cache on second call. */
+export const searchCache: ActionCache<SearchAction> = new ActionCache(components.actionCache, {
+  action: internal.ai.search.hybridSearchDocuments,
+  name: "documentSearch-v1",
+  ttl: 60 * 60 * 1000, // 1 hour
+} as ActionCacheConfig<SearchAction>);
 
 // =============================================================================
 // HELPER QUERIES/MUTATIONS

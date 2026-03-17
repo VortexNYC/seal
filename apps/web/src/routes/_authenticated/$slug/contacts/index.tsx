@@ -294,17 +294,7 @@ function ContactsTableContent({
                 key={contact._id}
                 className="hover:bg-muted/50 cursor-pointer"
                 data-state={selectedIds.has(contact._id) ? "selected" : undefined}
-                role="button"
-                tabIndex={0}
-                aria-label={`Open contact ${contact.fullName}`}
                 onClick={() => handleOpenContact(contact._id)}
-                onKeyDown={(event) => {
-                  if (event.target !== event.currentTarget) return;
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    handleOpenContact(contact._id);
-                  }
-                }}
               >
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
@@ -342,6 +332,9 @@ function ContactsTableContent({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem onClick={() => handleOpenContact(contact._id)}>
+                        Open
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setEditContact(contact)}>
                         <PencilIcon className="mr-2 h-4 w-4" />
                         Edit
@@ -533,7 +526,7 @@ function ContactsPage() {
     >
       <div className="space-y-6">
         {/* Search Input */}
-        <div className="relative rounded-lg border bg-card/60 px-2 py-2">
+        <div className="bg-card/60 relative rounded-lg border px-2 py-2">
           <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             type="text"

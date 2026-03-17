@@ -6,6 +6,16 @@ export class DocumentPage {
   readonly page: Page;
   readonly documentTitle: Locator;
   readonly documentCanvas: Locator;
+  readonly documentPreview: Locator;
+  readonly backButton: Locator;
+  readonly zoomInButton: Locator;
+  readonly zoomOutButton: Locator;
+  readonly zoomLevelSelect: Locator;
+  readonly resetZoomButton: Locator;
+  readonly fitButton: Locator;
+  readonly recipientsSectionButton: Locator;
+  readonly detailsSectionButton: Locator;
+  readonly activitySectionButton: Locator;
   readonly addFieldButton: Locator;
   readonly sendButton: Locator;
   readonly fieldTypeDropdown: Locator;
@@ -14,14 +24,23 @@ export class DocumentPage {
     this.page = page;
     this.documentTitle = page.locator('[data-testid="document-title"]');
     this.documentCanvas = page.locator("canvas");
+    this.documentPreview = page.getByText("Document Preview");
+    this.backButton = page.getByRole("button", { name: /^Back$/ });
+    this.zoomInButton = page.getByRole("button", { name: "Zoom in" });
+    this.zoomOutButton = page.getByRole("button", { name: "Zoom out" });
+    this.zoomLevelSelect = page.getByRole("combobox").first();
+    this.resetZoomButton = page.getByRole("button", { name: "Reset" });
+    this.fitButton = page.getByRole("button", { name: "Fit" });
+    this.recipientsSectionButton = page.getByRole("button", { name: /^Recipients/ });
+    this.detailsSectionButton = page.getByRole("button", { name: /^Details$/ });
+    this.activitySectionButton = page.getByRole("button", { name: /^Activity/ });
     this.addFieldButton = page.getByRole("button", { name: /add field/i });
     this.sendButton = page.getByRole("button", { name: /send/i });
     this.fieldTypeDropdown = page.locator('[data-testid="field-type-select"]');
   }
 
   async goto(slug: string, documentId: string): Promise<void> {
-    await this.page.goto(`/${slug}/documents/${documentId}`);
-    await this.page.waitForLoadState("networkidle");
+    await this.page.goto(`/${slug}/documents/${documentId}`, { waitUntil: "domcontentloaded" });
   }
 
   async addSignatureField(x: number, y: number): Promise<void> {
@@ -47,8 +66,8 @@ export class DocumentPage {
   }
 
   async waitForDocumentLoad(): Promise<void> {
-    // Wait for PDF to render
+    await this.documentPreview.waitFor({ state: "visible", timeout: 30000 });
     await this.documentCanvas.waitFor({ state: "visible" });
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 }

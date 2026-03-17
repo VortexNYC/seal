@@ -5,6 +5,8 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
+import type { QueryCtx } from "../_generated/server";
 import { authQuery, permissionMutation } from "../auth";
 import {
   ACCESS_ERRORS,
@@ -14,6 +16,89 @@ import {
   requireOwnership,
 } from "../auth/access_control";
 import { createNotification } from "../notifications";
+
+type SharingQueryDbCtx = Pick<QueryCtx, "db">;
+
+async function canViewSharedDocument(
+  ctx: SharingQueryDbCtx,
+  document: Doc<"documents">,
+  userId: Id<"users">,
+): Promise<boolean> {
+  if (document.ownerId === userId) {
+    return true;
+  }
+
+  if (document.sharingMode === "workspace") {
+    const member = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user_organization", (q) =>
+        q.eq("userId", userId).eq("organizationId", document.organizationId),
+      )
+      .first();
+
+    if (member !== null && member.status === "active") {
+      return true;
+    }
+  }
+
+  const access = await ctx.db
+    .query("document_access")
+    .withIndex("by_document_user", (q) => q.eq("documentId", document._id).eq("userId", userId))
+    .first();
+
+  return access !== null && access.revokedAt === undefined;
+}
+
+async function getActiveAccessWithUsers(ctx: SharingQueryDbCtx, documentId: Id<"documents">) {
+  const accessRecords = await ctx.db
+    .query("document_access")
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))
+    .collect();
+
+  const activeAccessRecords = accessRecords.filter((record) => record.revokedAt === undefined);
+
+  const sharedWith = await Promise.all(
+    activeAccessRecords.map(async (access) => {
+      const user = await ctx.db.get(access.userId);
+      const grantedByUser = await ctx.db.get(access.grantedBy);
+      return {
+        _id: access._id,
+        userId: access.userId,
+        userName: user?.name ?? null,
+        userEmail: user?.email ?? "Unknown",
+        permissionLevel: access.permissionLevel,
+        grantedAt: access.grantedAt,
+        grantedBy: grantedByUser?.name ?? "Unknown",
+      };
+    }),
+  );
+
+  return { activeAccessRecords, sharedWith };
+}
+
+async function getSharingSubscriptionState(
+  ctx: SharingQueryDbCtx,
+  organizationId: Id<"organizations">,
+  hasSharedDocuments: boolean,
+) {
+  const subscription = await ctx.db
+    .query("subscriptions")
+    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
+    .first();
+
+  const canUseTeamSharing =
+    subscription?.status === "active" || subscription?.status === "trialing";
+  const subscriptionWarning =
+    subscription?.status === "past_due" && hasSharedDocuments
+      ? "Your subscription payment is past due. Document sharing may be disabled soon."
+      : null;
+
+  return {
+    canUseTeamSharing,
+    subscriptionStatus: subscription?.status ?? null,
+    subscriptionWarning,
+  };
+}
 
 /**
  * Update sharing mode for a document
@@ -39,14 +124,14 @@ export const updateSharingMode = permissionMutation("documents:share")({
     if (args.sharingMode === "workspace" || args.sharingMode === "specific") {
       const subscription = await ctx.db
         .query("subscriptions")
-        .withIndex("by_user_id", (q) => q.eq("userId", userId))
+        .withIndex("by_organization_id", (q) => q.eq("organizationId", document.organizationId))
         .first();
 
       const isPro = subscription?.status === "active";
 
       if (!isPro) {
         throw new ConvexError(
-          "Team sharing features require a Pro plan. Please upgrade to share documents with your team.",
+          "Team sharing features require a Professional plan. Please upgrade to share documents with your team.",
         );
       }
     }
@@ -486,79 +571,22 @@ export const getDocumentAccess = authQuery({
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
 
-    // 1. Get the document
     const document = await ctx.db.get(args.documentId);
     if (!document || document.status === "deleted") {
       return null;
     }
 
-    // 2. Check if user can view this document (owner, has access, or workspace-shared)
-    let canView = document.ownerId === userId;
-
-    if (!canView && document.sharingMode === "workspace") {
-      // Check if user is in the same organization
-      const member = await ctx.db
-        .query("organization_members")
-        .withIndex("by_user_organization", (q) =>
-          q.eq("userId", userId).eq("organizationId", document.organizationId),
-        )
-        .first();
-      canView = member !== null && member.status === "active";
-    }
-
-    if (!canView) {
-      // Check direct access
-      const access = await ctx.db
-        .query("document_access")
-        .withIndex("by_document_user", (q) =>
-          q.eq("documentId", args.documentId).eq("userId", userId),
-        )
-        .first();
-      canView = access !== null && access.revokedAt === undefined;
-    }
-
-    if (!canView) {
+    if (!(await canViewSharedDocument(ctx, document, userId))) {
       return null;
     }
 
-    // 3. Get all active access records
-    const accessRecords = await ctx.db
-      .query("document_access")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
-
-    const activeAccessRecords = accessRecords.filter((a) => a.revokedAt === undefined);
-
-    // 4. Get owner info
-    const owner = await ctx.db.get(document.ownerId);
-
-    // 5. Get user details for each access record
-    const accessWithUsers = await Promise.all(
-      activeAccessRecords.map(async (access) => {
-        const user = await ctx.db.get(access.userId);
-        const grantedByUser = await ctx.db.get(access.grantedBy);
-        return {
-          _id: access._id,
-          userId: access.userId,
-          userName: user?.name ?? null,
-          userEmail: user?.email ?? "Unknown",
-          permissionLevel: access.permissionLevel,
-          grantedAt: access.grantedAt,
-          grantedBy: grantedByUser?.name ?? "Unknown",
-        };
-      }),
+    const { activeAccessRecords, sharedWith } = await getActiveAccessWithUsers(
+      ctx,
+      args.documentId,
     );
-
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .first();
-
-    const isPro = subscription?.status === "active";
-    const isTrialing = subscription?.status === "trialing";
-    const isPastDue = subscription?.status === "past_due";
-
+    const owner = await ctx.db.get(document.ownerId);
     const hasSharedDocuments = document.sharingMode !== "private" || activeAccessRecords.length > 0;
+    const subscriptionState = await getSharingSubscriptionState(ctx, document.organizationId, hasSharedDocuments);
 
     return {
       documentId: args.documentId,
@@ -569,13 +597,8 @@ export const getDocumentAccess = authQuery({
         name: owner?.name ?? null,
         email: owner?.email ?? "Unknown",
       },
-      sharedWith: accessWithUsers,
-      canUseTeamSharing: isPro || isTrialing,
-      subscriptionStatus: subscription?.status ?? null,
-      subscriptionWarning:
-        isPastDue && hasSharedDocuments
-          ? "Your subscription payment is past due. Document sharing may be disabled soon."
-          : null,
+      sharedWith,
+      ...subscriptionState,
     };
   },
 });

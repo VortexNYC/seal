@@ -129,7 +129,7 @@ function SecuritySettings() {
         {!isOwner && (
           <Card className="border-warning/30 bg-warning-surface md:col-span-2">
             <CardContent className="pt-6">
-              <p className="text-sm text-warning">
+              <p className="text-warning text-sm">
                 Security settings can only be modified by organization owners. Contact your
                 organization owner to make changes.
               </p>

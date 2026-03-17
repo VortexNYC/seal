@@ -15,7 +15,6 @@ import { DefaultCatchBoundary } from "./components/default-catch-boundary";
 import Loader from "./components/loader";
 import { NotFound } from "./components/not-found";
 import { ThemeProvider, useTheme } from "./components/theme-provider";
-import { initWebVitals } from "./lib/web-vitals";
 import { routeTree } from "./routeTree.gen";
 import "./styles.css";
 
@@ -29,15 +28,6 @@ if (!CONVEX_URL) {
 }
 if (!CLERK_URL) {
   throw new Error("missing VITE_CLERK_PUBLISHABLE_KEY envar");
-}
-
-if (shouldInitSentry) {
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    // Setting this option to true will send default PII data to Sentry.
-    // For example, automatic IP address collection on events
-    sendDefaultPii: true,
-  });
 }
 
 const convex = new ConvexReactClient(CONVEX_URL);
@@ -77,6 +67,41 @@ const router = createRouter({
   },
 });
 
+// Sentry — init after router is created so we can pass it to the tracing integration
+if (shouldInitSentry) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || "production",
+    release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
+    sendDefaultPii: true,
+    integrations: [
+      Sentry.tanstackRouterBrowserTracingIntegration(router),
+    ],
+    tracesSampleRate: 0.2,
+    tracePropagationTargets: [/^\//, /convex\.cloud/],
+    beforeSend(event) {
+      // Strip document content and signature data from breadcrumbs
+      if (event.breadcrumbs) {
+        for (const crumb of event.breadcrumbs) {
+          if (crumb.data) {
+            delete crumb.data.pdfContent;
+            delete crumb.data.signatureData;
+            delete crumb.data.documentContent;
+          }
+        }
+      }
+      return event;
+    },
+    ignoreErrors: [
+      "ResizeObserver loop",
+      "Non-Error promise rejection",
+      "Failed to fetch",
+      "Load failed",
+      "NetworkError",
+    ],
+  });
+}
+
 declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
@@ -93,28 +118,33 @@ const POSTHOG_KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY as string;
 
 if (POSTHOG_KEY) {
   posthog.init(POSTHOG_KEY, {
-    // Use reverse proxy to bypass ad blockers (configured in vite.config.ts and vercel.json)
+    defaults: "2026-01-30",
     api_host: "/ingest",
     ui_host: "https://us.i.posthog.com",
-    capture_pageview: true,
-    capture_pageleave: true,
+    person_profiles: "identified_only",
+    secure_cookie: true,
+    enable_heatmaps: true,
+    enable_recording_console_log: true,
+    capture_performance: true,
+    session_recording: {
+      maskAllInputs: true,
+      maskTextSelector: "[data-ph-mask]",
+    },
     debug: import.meta.env.MODE === "development",
   });
 }
 
 if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
+  const root = ReactDOM.createRoot(rootElement, {
+    onUncaughtError: Sentry.reactErrorHandler(),
+    onCaughtError: Sentry.reactErrorHandler(),
+    onRecoverableError: Sentry.reactErrorHandler(),
+  });
   root.render(
     <PostHogProvider client={posthog}>
       <RouterProvider router={router} />
     </PostHogProvider>,
   );
-
-  // Initialize Core Web Vitals tracking after render
-  // This reports LCP, INP, CLS, FCP, TTFB to PostHog
-  initWebVitals().catch((error) => {
-    console.warn("Failed to initialize web vitals:", error);
-  });
 }
 
 function ThemedClerkProvider({ children }: { children: React.ReactNode }) {

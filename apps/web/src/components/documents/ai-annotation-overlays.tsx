@@ -173,7 +173,7 @@ function HighlightOverlay({
       <TooltipContent
         side="top"
         sideOffset={4}
-        className="max-w-xs border border-border bg-popover px-3 py-2 shadow-lg"
+        className="border-border bg-popover max-w-xs border px-3 py-2 shadow-lg"
       >
         <div className="mb-0.5 flex items-center gap-1.5">
           <config.icon className={cn("h-3 w-3", config.textColor)} />
@@ -183,7 +183,7 @@ function HighlightOverlay({
             {config.label}
           </span>
         </div>
-        <p className="text-xs leading-relaxed text-popover-foreground">{annotation.summary}</p>
+        <p className="text-popover-foreground text-xs leading-relaxed">{annotation.summary}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -290,7 +290,7 @@ export function AIInsightsPanel({
               type="button"
               onClick={() => onPageJump(annotation.page)}
               aria-label={`${config.label} insight on page ${annotation.page}: ${annotation.summary}`}
-              className="flex items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted"
+              className="hover:bg-muted flex items-start gap-2 rounded-lg px-2 py-1.5 text-left transition-colors"
             >
               <span
                 className={cn(
@@ -300,9 +300,9 @@ export function AIInsightsPanel({
                 )}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-xs leading-snug text-foreground">{annotation.summary}</p>
+                <p className="text-foreground text-xs leading-snug">{annotation.summary}</p>
               </div>
-              <span className="text-muted-foreground shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+              <span className="text-muted-foreground bg-muted shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium">
                 p.{annotation.page}
               </span>
             </button>
@@ -315,7 +315,7 @@ export function AIInsightsPanel({
         <AlertDialogTrigger asChild>
           <button
             type="button"
-            className="text-muted-foreground/60 text-[11px] transition-colors hover:text-muted-foreground"
+            className="text-muted-foreground/60 hover:text-muted-foreground text-[11px] transition-colors"
           >
             Dismiss all insights
           </button>

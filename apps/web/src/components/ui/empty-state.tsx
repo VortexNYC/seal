@@ -11,6 +11,7 @@ import type { VariantProps } from "class-variance-authority";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+
 import { Button, type buttonVariants } from "./button";
 import { Card, CardContent } from "./card";
 
@@ -62,7 +63,9 @@ export function EmptyState({
         <Icon className="text-muted-foreground h-8 w-8" />
       </div>
       <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
-      <p className="text-muted-foreground mt-2 max-w-md px-2 text-sm leading-relaxed">{description}</p>
+      <p className="text-muted-foreground mt-2 max-w-md px-2 text-sm leading-relaxed">
+        {description}
+      </p>
       {(action || secondaryAction) && (
         <div className="mt-6 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
           {action && (

@@ -72,9 +72,7 @@ describe("hasAllPermissions", () => {
   });
 
   it("returns false when user is missing one", () => {
-    expect(
-      hasAllPermissions(["documents:view"], ["documents:view", "documents:edit"]),
-    ).toBe(false);
+    expect(hasAllPermissions(["documents:view"], ["documents:view", "documents:edit"])).toBe(false);
   });
 
   it("domain wildcard satisfies all permissions in that domain", () => {

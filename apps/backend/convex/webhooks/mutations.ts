@@ -45,6 +45,102 @@ async function hashSecret(secret: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+type EndpointUpdateArgs = {
+  name?: string;
+  url?: string;
+  events?: string[];
+  description?: string;
+  status?: "active" | "paused" | "disabled";
+};
+
+function createValidationError(message: string): ConvexError<Record<string, string>> {
+  return new ConvexError({
+    code: "VALIDATION_ERROR",
+    message,
+  });
+}
+
+function applyNameUpdate(updates: Record<string, unknown>, name: string | undefined): void {
+  if (name === undefined) {
+    return;
+  }
+  if (name.trim().length === 0) {
+    throw createValidationError("Name is required");
+  }
+  if (name.length > 100) {
+    throw createValidationError("Name must be 100 characters or less");
+  }
+  updates.name = name.trim();
+}
+
+function applyUrlUpdate(updates: Record<string, unknown>, urlValue: string | undefined): void {
+  if (urlValue === undefined) {
+    return;
+  }
+
+  try {
+    const url = new URL(urlValue);
+    if (url.protocol !== "https:") {
+      throw createValidationError("Webhook URL must use HTTPS");
+    }
+  } catch (error) {
+    if (error instanceof ConvexError) {
+      throw error;
+    }
+    throw createValidationError("Invalid URL format");
+  }
+
+  updates.url = urlValue;
+}
+
+function applyEventsUpdate(updates: Record<string, unknown>, events: string[] | undefined): void {
+  if (events === undefined) {
+    return;
+  }
+
+  const validEvents = new Set<string>(WEBHOOK_EVENT_TYPES);
+  for (const event of events) {
+    if (!validEvents.has(event)) {
+      throw createValidationError(`Invalid event type: ${event}`);
+    }
+  }
+
+  updates.events = events;
+}
+
+function applyOptionalEndpointUpdates(
+  updates: Record<string, unknown>,
+  endpointStatus: "active" | "paused" | "disabled",
+  args: EndpointUpdateArgs,
+): void {
+  if (args.description !== undefined) {
+    updates.description = args.description;
+  }
+
+  if (args.status !== undefined) {
+    updates.status = args.status;
+    if (args.status === "active" && endpointStatus === "disabled") {
+      updates.failureCount = 0;
+    }
+  }
+}
+
+function buildEndpointUpdates(
+  endpointStatus: "active" | "paused" | "disabled",
+  args: EndpointUpdateArgs,
+): Record<string, unknown> {
+  const updates: Record<string, unknown> = {
+    updatedAt: Date.now(),
+  };
+
+  applyNameUpdate(updates, args.name);
+  applyUrlUpdate(updates, args.url);
+  applyEventsUpdate(updates, args.events);
+  applyOptionalEndpointUpdates(updates, endpointStatus, args);
+
+  return updates;
+}
+
 /**
  * Creates a new webhook endpoint.
  *
@@ -106,7 +202,7 @@ export const createEndpoint = permissionMutation("settings:integrations")({
     }
 
     // Check Pro plan requirement for webhooks
-    await ensureProFeature(ctx.db, ctx.auth.userId, "Webhook endpoints");
+    await ensureProFeature(ctx.db, ctx.auth.organizationId, "Webhook endpoints");
 
     // Check endpoint limit (max 10 per organization)
     const existingEndpoints = await ctx.db
@@ -191,73 +287,7 @@ export const updateEndpoint = permissionMutation("settings:integrations")({
       });
     }
 
-    const updates: Partial<typeof endpoint> = {
-      updatedAt: Date.now(),
-    };
-
-    // Validate and apply name
-    if (args.name !== undefined) {
-      if (args.name.trim().length === 0) {
-        throw new ConvexError({
-          code: "VALIDATION_ERROR",
-          message: "Name is required",
-        });
-      }
-      if (args.name.length > 100) {
-        throw new ConvexError({
-          code: "VALIDATION_ERROR",
-          message: "Name must be 100 characters or less",
-        });
-      }
-      updates.name = args.name.trim();
-    }
-
-    // Validate and apply URL
-    if (args.url !== undefined) {
-      try {
-        const url = new URL(args.url);
-        if (url.protocol !== "https:") {
-          throw new ConvexError({
-            code: "VALIDATION_ERROR",
-            message: "Webhook URL must use HTTPS",
-          });
-        }
-      } catch {
-        throw new ConvexError({
-          code: "VALIDATION_ERROR",
-          message: "Invalid URL format",
-        });
-      }
-      updates.url = args.url;
-    }
-
-    // Validate and apply events
-    if (args.events !== undefined) {
-      const validEvents = new Set<string>(WEBHOOK_EVENT_TYPES);
-      for (const event of args.events) {
-        if (!validEvents.has(event)) {
-          throw new ConvexError({
-            code: "VALIDATION_ERROR",
-            message: `Invalid event type: ${event}`,
-          });
-        }
-      }
-      updates.events = args.events;
-    }
-
-    // Apply description
-    if (args.description !== undefined) {
-      updates.description = args.description;
-    }
-
-    // Apply status
-    if (args.status !== undefined) {
-      updates.status = args.status;
-      // Reset failure count when manually re-enabling
-      if (args.status === "active" && endpoint.status === "disabled") {
-        updates.failureCount = 0;
-      }
-    }
+    const updates = buildEndpointUpdates(endpoint.status, args);
 
     await ctx.db.patch(args.endpointId, updates);
 
@@ -350,6 +380,118 @@ export const deleteEndpoint = permissionMutation("settings:integrations")({
     await ctx.db.delete(args.endpointId);
 
     return { success: true };
+  },
+});
+
+/**
+ * Creates a Slack webhook endpoint.
+ *
+ * Simplified flow for Slack Incoming Webhooks — no HMAC secret needed.
+ * The URL must be a Slack webhook URL (https://hooks.slack.com/).
+ *
+ * @param name - User-friendly name for the endpoint
+ * @param url - Slack Incoming Webhook URL
+ * @param events - Event types to subscribe to (empty = all)
+ * @param description - Optional description
+ * @returns The created endpoint
+ * @permission settings:integrations
+ */
+export const createSlackEndpoint = permissionMutation("settings:integrations")({
+  args: {
+    name: v.string(),
+    url: v.string(),
+    events: v.array(v.string()),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (args.name.trim().length === 0) {
+      throw new ConvexError({
+        code: "VALIDATION_ERROR",
+        message: "Name is required",
+      });
+    }
+
+    if (args.name.length > 100) {
+      throw new ConvexError({
+        code: "VALIDATION_ERROR",
+        message: "Name must be 100 characters or less",
+      });
+    }
+
+    // Validate Slack webhook URL
+    try {
+      const url = new URL(args.url);
+      if (url.protocol !== "https:") {
+        throw new ConvexError({
+          code: "VALIDATION_ERROR",
+          message: "Slack webhook URL must use HTTPS",
+        });
+      }
+      if (!url.hostname.endsWith("slack.com")) {
+        throw new ConvexError({
+          code: "VALIDATION_ERROR",
+          message: "URL must be a Slack webhook (hooks.slack.com)",
+        });
+      }
+    } catch (error) {
+      if (error instanceof ConvexError) throw error;
+      throw new ConvexError({
+        code: "VALIDATION_ERROR",
+        message: "Invalid URL format",
+      });
+    }
+
+    // Validate events
+    const validEvents = new Set<string>(WEBHOOK_EVENT_TYPES);
+    for (const event of args.events) {
+      if (!validEvents.has(event)) {
+        throw new ConvexError({
+          code: "VALIDATION_ERROR",
+          message: `Invalid event type: ${event}`,
+        });
+      }
+    }
+
+    await ensureProFeature(ctx.db, ctx.auth.organizationId, "Slack notifications");
+
+    // Check endpoint limit (shared with regular webhooks)
+    const existingEndpoints = await ctx.db
+      .query("webhook_endpoints")
+      .withIndex("by_organization", (q) => q.eq("organizationId", ctx.auth.organizationId))
+      .collect();
+
+    if (existingEndpoints.length >= 10) {
+      throw new ConvexError({
+        code: "LIMIT_EXCEEDED",
+        message: "Maximum of 10 webhook endpoints per organization",
+      });
+    }
+
+    // Slack endpoints don't need HMAC secrets, but schema requires them.
+    // Generate a placeholder that will never be used for signing.
+    const placeholder = `whsec_slack_${generateSecret(16)}`;
+    const secretHash = await hashSecret(placeholder);
+
+    const now = Date.now();
+
+    const endpointId = await ctx.db.insert("webhook_endpoints", {
+      organizationId: ctx.auth.organizationId,
+      name: args.name.trim(),
+      url: args.url,
+      secretHash,
+      secret: placeholder,
+      secretPrefix: placeholder.slice(0, 12),
+      events: args.events,
+      status: "active",
+      format: "slack",
+      description: args.description,
+      failureCount: 0,
+      createdBy: ctx.auth.userId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { endpointId };
   },
 });
 

@@ -1,6 +1,6 @@
 import { Check, X } from "lucide-react";
 
-import type { ComparisonTableBlock } from "~/lib/sanity/queries";
+import type { ComparisonTableBlock } from "~/lib/content/types";
 
 export function ComparisonTableBlockComponent({ block }: { block: ComparisonTableBlock }) {
   const allFeatureKeys = Object.keys(block.sealFeatures);

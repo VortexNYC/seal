@@ -3,6 +3,16 @@
   "buildCommand": "cd ../.. && bun run turbo build --filter=@seal/landing",
   "installCommand": "cd ../.. && bun install",
   "framework": null,
+  "rewrites": [
+    {
+      "source": "/ingest/static/:path*",
+      "destination": "https://us-assets.i.posthog.com/static/:path*"
+    },
+    {
+      "source": "/ingest/:path*",
+      "destination": "https://us.i.posthog.com/:path*"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -1,17 +1,18 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Bug, Calendar, Rocket, Sparkles, Tag, TriangleAlert } from "lucide-react";
+import { Suspense } from "react";
 
-import { Badge } from "~/components/ui/badge";
-import { urlFor } from "~/lib/sanity/image";
+import { renderChangelogContent } from "~/lib/changelog/client-loader";
 import {
-  type ChangelogEntryFull,
   type ChangelogFeature,
+  type ChangelogManifestEntry,
   getChangelogEntry,
-} from "~/lib/sanity/queries";
+} from "~/lib/changelog/manifest";
+import { Badge } from "~/components/ui/badge";
 
 export const Route = createFileRoute("/changelog/$slug")({
   head: ({ loaderData }) => {
-    const data = loaderData as { entry: ChangelogEntryFull } | undefined;
+    const data = loaderData as { entry: ChangelogManifestEntry } | undefined;
     return {
       meta: [
         {
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/changelog/$slug")({
   },
   // @ts-expect-error — TanStack Router generic inference limitation with $slug param routes
   loader: async ({ params }) => {
-    const entry = await getChangelogEntry(params.slug);
+    const entry = getChangelogEntry(params.slug);
     if (!entry) {
       throw notFound();
     }
@@ -38,13 +39,12 @@ export const Route = createFileRoute("/changelog/$slug")({
 });
 
 function ChangelogDetailPage() {
-  const { entry } = Route.useLoaderData() as { entry: ChangelogEntryFull };
+  const { entry } = Route.useLoaderData() as { entry: ChangelogManifestEntry };
 
   return (
     <div className="bg-background min-h-dvh py-24 sm:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          {/* Back link */}
           <div className="mb-8">
             <Link
               className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 transition-colors"
@@ -55,7 +55,6 @@ function ChangelogDetailPage() {
             </Link>
           </div>
 
-          {/* Header */}
           <header className="mb-12">
             <div className="mb-4 flex flex-wrap items-center gap-3">
               <Badge className="border-primary/30 text-primary" variant="outline">
@@ -76,24 +75,28 @@ function ChangelogDetailPage() {
               {entry.title}
             </h1>
 
-            {entry.summary && <p className="text-muted-foreground text-xl text-pretty">{entry.summary}</p>}
+            {entry.summary && (
+              <p className="text-muted-foreground text-xl text-pretty">{entry.summary}</p>
+            )}
           </header>
 
-          {/* Cover image */}
-          {entry.coverImage?.asset && (
-            <div className="mb-12 overflow-hidden rounded-2xl border border-border">
+          {entry.description && !entry.summary && (
+            <p className="text-muted-foreground mb-12 text-lg text-pretty">{entry.description}</p>
+          )}
+
+          {entry.coverImage && (
+            <div className="border-border mb-12 overflow-hidden rounded-2xl border">
               <img
                 alt={entry.coverImage.alt || entry.title}
                 className="h-auto w-full"
-                height={600}
-                src={urlFor(entry.coverImage).width(1200).height(600).url()}
-                width={1200}
+                height={entry.coverImage.height || 600}
+                src={entry.coverImage.src}
+                width={entry.coverImage.width || 1200}
               />
             </div>
           )}
 
-          {/* New Features */}
-          {entry.features && entry.features.length > 0 && (
+          {entry.features.length > 0 && (
             <section className="mb-12">
               <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
                 <Sparkles className="text-primary size-6" />
@@ -102,22 +105,22 @@ function ChangelogDetailPage() {
               <div className="space-y-6">
                 {entry.features.map((feature: ChangelogFeature) => (
                   <div
-                    className="rounded-xl border border-border bg-muted/50 p-6"
+                    className="border-border bg-muted/50 rounded-xl border p-6"
                     key={`feature-${feature.title}`}
                   >
                     <h3 className="text-foreground mb-2 text-lg font-semibold">{feature.title}</h3>
                     {feature.description && (
                       <p className="text-muted-foreground text-pretty">{feature.description}</p>
                     )}
-                    {feature.image?.asset && (
-                      <div className="mt-4 overflow-hidden rounded-lg border border-border">
+                    {feature.image && (
+                      <div className="border-border mt-4 overflow-hidden rounded-lg border">
                         <img
                           alt={feature.image.alt || feature.title}
                           className="h-auto w-full"
-                          height={400}
+                          height={feature.image.height || 400}
                           loading="lazy"
-                          src={urlFor(feature.image).width(800).height(400).url()}
-                          width={800}
+                          src={feature.image.src}
+                          width={feature.image.width || 800}
                         />
                       </div>
                     )}
@@ -127,8 +130,7 @@ function ChangelogDetailPage() {
             </section>
           )}
 
-          {/* Improvements */}
-          {entry.improvements && entry.improvements.length > 0 && (
+          {entry.improvements.length > 0 && (
             <section className="mb-12">
               <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
                 <Rocket className="size-6 text-green-600 dark:text-green-400" />
@@ -148,8 +150,7 @@ function ChangelogDetailPage() {
             </section>
           )}
 
-          {/* Bug Fixes */}
-          {entry.fixes && entry.fixes.length > 0 && (
+          {entry.fixes.length > 0 && (
             <section className="mb-12">
               <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
                 <Bug className="size-6 text-orange-600 dark:text-orange-400" />
@@ -169,14 +170,13 @@ function ChangelogDetailPage() {
             </section>
           )}
 
-          {/* Breaking Changes */}
-          {entry.breakingChanges && entry.breakingChanges.length > 0 && (
+          {entry.breakingChanges.length > 0 && (
             <section className="mb-12">
               <h2 className="text-foreground mb-6 flex items-center gap-2 text-2xl font-bold">
                 <TriangleAlert className="size-6 text-red-600 dark:text-red-400" />
                 Breaking Changes
               </h2>
-              <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6">
+              <div className="border-destructive/30 bg-destructive/10 rounded-xl border p-6">
                 <ul className="space-y-3">
                   {entry.breakingChanges.map((item: string) => (
                     <li
@@ -191,6 +191,10 @@ function ChangelogDetailPage() {
               </div>
             </section>
           )}
+
+          <section className="prose prose-neutral dark:prose-invert max-w-none">
+            <Suspense fallback={null}>{renderChangelogContent(entry.path)}</Suspense>
+          </section>
         </div>
       </div>
     </div>

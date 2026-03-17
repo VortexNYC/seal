@@ -14,9 +14,44 @@ import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
 
+function matchesPackage(id: string, pkg: string): boolean {
+  return id.includes(`/node_modules/${pkg}/`) || id.endsWith(`/node_modules/${pkg}`);
+}
+
+function getManualChunkName(id: string): string | undefined {
+  if (!id.includes("node_modules")) {
+    return undefined;
+  }
+
+  if (
+    matchesPackage(id, "fumadocs-core") ||
+    matchesPackage(id, "fumadocs-mdx") ||
+    matchesPackage(id, "fumadocs-openapi") ||
+    matchesPackage(id, "fumadocs-ui") ||
+    id.includes("/node_modules/shiki/") ||
+    id.includes("/node_modules/refractor/")
+  ) {
+    return "vendor-docs";
+  }
+
+  return undefined;
+}
+
 export default defineConfig(async ({ command }) => ({
   server: {
     port: 3001,
+    proxy: {
+      "/ingest/static": {
+        target: "https://us-assets.i.posthog.com",
+        changeOrigin: true,
+        rewrite: (pathStr: string) => pathStr.replace(/^\/ingest\/static/, "/static"),
+      },
+      "/ingest": {
+        target: "https://us.i.posthog.com",
+        changeOrigin: true,
+        rewrite: (pathStr: string) => pathStr.replace(/^\/ingest/, ""),
+      },
+    },
   },
   plugins: [
     // Polyfill node:path → path-browserify in client builds only.
@@ -76,6 +111,16 @@ export default defineConfig(async ({ command }) => ({
           },
         },
       ],
+    },
+  },
+
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          return getManualChunkName(id);
+        },
+      },
     },
   },
 }));

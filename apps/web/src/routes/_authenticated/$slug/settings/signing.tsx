@@ -152,7 +152,7 @@ function SigningSettings() {
                 value={formData.defaultDeadlineDays}
                 disabled={isSubmitting}
                 onChange={(e) =>
-                setFormData({ ...formData, defaultDeadlineDays: Number(e.target.value) })
+                  setFormData({ ...formData, defaultDeadlineDays: Number(e.target.value) })
                 }
                 className="w-24"
               />

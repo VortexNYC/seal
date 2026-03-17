@@ -9,12 +9,167 @@
 
 import { ConvexError, v } from "convex/values";
 
-import { internalQuery, query } from "../_generated/server";
+import type { Doc } from "../_generated/dataModel";
+import { internalQuery, query, type QueryCtx } from "../_generated/server";
 import { adminQuery, authQuery } from "../auth";
 import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
 import { generateSignatureCertificate } from "../crypto/helpers";
 import { findRecipientByToken } from "../documents/recipient_helpers";
 import { auditActionTuple } from "../schemas/audit_logs";
+
+type AuditExportDocument = Doc<"documents">;
+type AuditExportRecipients = Doc<"document_recipients">[];
+type AuditExportFields = Doc<"signature_fields">[];
+type AuditExportSignatures = Doc<"signatures">[];
+type AuditExportLogs = Doc<"audit_logs">[];
+type AuditExportSignatureCertificate = ReturnType<typeof generateSignatureCertificate>;
+
+async function getAuditExportData(
+  ctx: { db: QueryCtx["db"] },
+  documentId: AuditExportDocument["_id"],
+): Promise<{
+  signatures: AuditExportSignatures;
+  recipients: AuditExportRecipients;
+  fields: AuditExportFields;
+  auditLogs: AuditExportLogs;
+}> {
+  const [signatures, recipients, fields, auditLogs] = await Promise.all([
+    ctx.db
+      .query("signatures")
+      .withIndex("by_document", (q) => q.eq("documentId", documentId))
+      .collect(),
+    ctx.db
+      .query("document_recipients")
+      .withIndex("by_document", (q) => q.eq("documentId", documentId))
+      .collect(),
+    ctx.db
+      .query("signature_fields")
+      .withIndex("by_document", (q) => q.eq("documentId", documentId))
+      .collect(),
+    ctx.db
+      .query("audit_logs")
+      .withIndex("by_document_created", (q) => q.eq("documentId", documentId))
+      .order("desc")
+      .collect(),
+  ]);
+
+  return { signatures, recipients, fields, auditLogs };
+}
+
+function toIsoString(timestamp: number): string {
+  return new Date(timestamp).toISOString();
+}
+
+function buildSignatureCertificates(
+  document: AuditExportDocument,
+  signatures: AuditExportSignatures,
+  recipients: AuditExportRecipients,
+): AuditExportSignatureCertificate[] {
+  const recipientsById = new Map(recipients.map((recipient) => [recipient._id, recipient]));
+
+  return signatures.map((signature) => {
+    const recipient = recipientsById.get(signature.recipientId);
+    return generateSignatureCertificate(
+      {
+        signatureHash: signature.signatureHash,
+        documentHashAtSigning: signature.documentHashAtSigning,
+        signedAt: signature.signedAt,
+        ipAddress: signature.ipAddress,
+        userAgent: signature.userAgent,
+        signatureMethod: signature.signatureMethod,
+      },
+      {
+        name: recipient?.name,
+        email: recipient?.email ?? "unknown",
+      },
+      {
+        name: document.name,
+        documentHash: document.documentHash,
+      },
+    );
+  });
+}
+
+function buildAuditExport(
+  userId: Doc<"users">["_id"],
+  document: AuditExportDocument,
+  recipients: AuditExportRecipients,
+  fields: AuditExportFields,
+  signatures: AuditExportSignatures,
+  auditLogs: AuditExportLogs,
+  signatureCertificates: AuditExportSignatureCertificate[],
+) {
+  return {
+    exportVersion: "1.0",
+    exportedAt: new Date().toISOString(),
+    exportedBy: userId,
+    document: {
+      id: document._id,
+      name: document.name,
+      description: document.description,
+      fileType: document.fileType,
+      fileSize: document.fileSize,
+      pageCount: document.pageCount,
+      createdAt: toIsoString(document.createdAt),
+      updatedAt: toIsoString(document.updatedAt),
+      workflowStatus: document.workflowStatus,
+      documentHash: document.documentHash,
+      integrityStatus: document.documentHash ? "hash_available" : "no_hash_computed",
+    },
+    recipients: recipients.map((recipient) => ({
+      id: recipient._id,
+      name: recipient.name,
+      email: recipient.email,
+      role: recipient.role,
+      status: recipient.status,
+      signedAt: recipient.signedAt ? toIsoString(recipient.signedAt) : null,
+      viewedAt: recipient.viewedAt ? toIsoString(recipient.viewedAt) : null,
+      declinedAt: recipient.declinedAt ? toIsoString(recipient.declinedAt) : null,
+    })),
+    fields: fields.map((field) => ({
+      id: field._id,
+      fieldType: field.fieldType,
+      isRequired: field.isRequired,
+      page: field.page,
+      recipientId: field.recipientId,
+      signed: signatures.some((signature) => signature.fieldId === field._id),
+    })),
+    signatures: signatures.map((signature) => ({
+      id: signature._id,
+      fieldId: signature.fieldId,
+      recipientId: signature.recipientId,
+      signedAt: toIsoString(signature.signedAt),
+      signatureMethod: signature.signatureMethod,
+      signatureHash: signature.signatureHash,
+      documentHashAtSigning: signature.documentHashAtSigning,
+      ipAddress: signature.ipAddress,
+      userAgent: signature.userAgent,
+    })),
+    signatureCertificates,
+    auditTrail: auditLogs.map((log) => ({
+      id: log._id,
+      action: log.action,
+      actorType: log.actorType,
+      actorId: log.actorId,
+      resourceType: log.resourceType,
+      resourceId: log.resourceId,
+      timestamp: toIsoString(log.createdAt),
+      ipAddress: log.ipAddress,
+      userAgent: log.userAgent,
+      metadata: log.metadata,
+    })),
+    summary: {
+      totalRecipients: recipients.length,
+      signedRecipients: recipients.filter((recipient) => recipient.status === "signed").length,
+      totalFields: fields.length,
+      requiredFields: fields.filter((field) => field.isRequired).length,
+      completedFields: signatures.length,
+      auditLogEntries: auditLogs.length,
+      completionPercentage:
+        fields.length > 0 ? Math.round((signatures.length / fields.length) * 100) : 0,
+    },
+  };
+}
 
 /**
  * Get audit trail for a document (authenticated)
@@ -117,130 +272,21 @@ export const exportDocumentAuditTrail = authQuery({
       throw new ConvexError("Only the document owner can export audit trail");
     }
 
-    // 3. Get all related data
-    const [signatures, recipients, fields, auditLogs] = await Promise.all([
-      ctx.db
-        .query("signatures")
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect(),
-      ctx.db
-        .query("document_recipients")
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect(),
-      ctx.db
-        .query("signature_fields")
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect(),
-      ctx.db
-        .query("audit_logs")
-        .withIndex("by_document_created", (q) => q.eq("documentId", args.documentId))
-        .order("desc")
-        .collect(),
-    ]);
+    const { signatures, recipients, fields, auditLogs } = await getAuditExportData(
+      ctx,
+      args.documentId,
+    );
+    const signatureCertificates = buildSignatureCertificates(document, signatures, recipients);
 
-    // 4. Generate signature certificates
-    const signatureCertificates = signatures.map((signature) => {
-      const recipient = recipients.find((r) => r._id === signature.recipientId);
-      return generateSignatureCertificate(
-        {
-          signatureHash: signature.signatureHash,
-          documentHashAtSigning: signature.documentHashAtSigning,
-          signedAt: signature.signedAt,
-          ipAddress: signature.ipAddress,
-          userAgent: signature.userAgent,
-          signatureMethod: signature.signatureMethod,
-        },
-        {
-          name: recipient?.name,
-          email: recipient?.email ?? "unknown",
-        },
-        {
-          name: document.name,
-          documentHash: document.documentHash,
-        },
-      );
-    });
-
-    // 5. Build export object
-    const exportData = {
-      exportVersion: "1.0",
-      exportedAt: new Date().toISOString(),
-      exportedBy: userId,
-
-      document: {
-        id: document._id,
-        name: document.name,
-        description: document.description,
-        fileType: document.fileType,
-        fileSize: document.fileSize,
-        pageCount: document.pageCount,
-        createdAt: new Date(document.createdAt).toISOString(),
-        updatedAt: new Date(document.updatedAt).toISOString(),
-        workflowStatus: document.workflowStatus,
-        documentHash: document.documentHash,
-        integrityStatus: document.documentHash ? "hash_available" : "no_hash_computed",
-      },
-
-      recipients: recipients.map((r) => ({
-        id: r._id,
-        name: r.name,
-        email: r.email,
-        role: r.role,
-        status: r.status,
-        signedAt: r.signedAt ? new Date(r.signedAt).toISOString() : null,
-        viewedAt: r.viewedAt ? new Date(r.viewedAt).toISOString() : null,
-        declinedAt: r.declinedAt ? new Date(r.declinedAt).toISOString() : null,
-      })),
-
-      fields: fields.map((f) => ({
-        id: f._id,
-        fieldType: f.fieldType,
-        isRequired: f.isRequired,
-        page: f.page,
-        recipientId: f.recipientId,
-        signed: signatures.some((s) => s.fieldId === f._id),
-      })),
-
-      signatures: signatures.map((s) => ({
-        id: s._id,
-        fieldId: s.fieldId,
-        recipientId: s.recipientId,
-        signedAt: new Date(s.signedAt).toISOString(),
-        signatureMethod: s.signatureMethod,
-        signatureHash: s.signatureHash,
-        documentHashAtSigning: s.documentHashAtSigning,
-        ipAddress: s.ipAddress,
-        userAgent: s.userAgent,
-      })),
-
+    return buildAuditExport(
+      userId,
+      document,
+      recipients,
+      fields,
+      signatures,
+      auditLogs,
       signatureCertificates,
-
-      auditTrail: auditLogs.map((log) => ({
-        id: log._id,
-        action: log.action,
-        actorType: log.actorType,
-        actorId: log.actorId,
-        resourceType: log.resourceType,
-        resourceId: log.resourceId,
-        timestamp: new Date(log.createdAt).toISOString(),
-        ipAddress: log.ipAddress,
-        userAgent: log.userAgent,
-        metadata: log.metadata,
-      })),
-
-      summary: {
-        totalRecipients: recipients.length,
-        signedRecipients: recipients.filter((r) => r.status === "signed").length,
-        totalFields: fields.length,
-        requiredFields: fields.filter((f) => f.isRequired).length,
-        completedFields: signatures.length,
-        auditLogEntries: auditLogs.length,
-        completionPercentage:
-          fields.length > 0 ? Math.round((signatures.length / fields.length) * 100) : 0,
-      },
-    };
-
-    return exportData;
+    );
   },
 });
 

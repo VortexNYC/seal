@@ -1,6 +1,6 @@
-@import "tailwindcss";
 @import "@seal/tokens/seal-fonts-web.css";
 @import "@seal/tokens/seal-theme-web.css";
+@import "tailwindcss";
 
 /* Fumadocs: scan component files so Tailwind generates their utilities (md:hidden, etc.) */
 @source "../../../node_modules/fumadocs-ui/dist/**/*.js";

@@ -16,7 +16,7 @@ import Stripe from "stripe";
 
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { internalAction, internalMutation } from "./_generated/server";
+import { type ActionCtx, internalAction, internalMutation } from "./_generated/server";
 
 function getClerkClient() {
   const secretKey = process.env.CLERK_SECRET_KEY;
@@ -66,13 +66,6 @@ interface StripeSyncResult {
     skippedInactive: number;
     errors: number;
   };
-  backfill: {
-    total: number;
-    created: number;
-    alreadySubscribed: number;
-    skipped: number;
-    errors: number;
-  } | null;
 }
 
 interface CombinedSyncResult {
@@ -83,8 +76,137 @@ interface CombinedSyncResult {
 type UserForStripeLink = {
   userId: Id<"users">;
   email: string;
-  stripeCustomerId?: string;
 };
+
+function getPrimaryEmailAddress(clerkUser: {
+  primaryEmailAddressId: string | null;
+  emailAddresses: Array<{
+    id: string;
+    emailAddress: string;
+    verification?: { status?: string | null } | null;
+  }>;
+}): { email: string; isVerified: boolean } | null {
+  const primaryEmail =
+    clerkUser.emailAddresses.find((email) => email.id === clerkUser.primaryEmailAddressId) ??
+    clerkUser.emailAddresses[0];
+  const email = primaryEmail?.emailAddress?.toLowerCase();
+
+  if (!email) {
+    return null;
+  }
+
+  return {
+    email,
+    isVerified: primaryEmail?.verification?.status === "verified",
+  };
+}
+
+async function syncClerkUserRecord(
+  ctx: ActionCtx,
+  clerkUser: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    emailAddresses: Array<{
+      id: string;
+      emailAddress: string;
+      verification?: { status?: string | null } | null;
+    }>;
+    primaryEmailAddressId: string | null;
+    imageUrl: string;
+    locale: string | null;
+  },
+): Promise<"created" | "updated" | "skipped_no_email" | "error"> {
+  const primaryEmail = getPrimaryEmailAddress(clerkUser);
+  if (!primaryEmail) {
+    return "skipped_no_email";
+  }
+
+  const firstName = clerkUser.firstName ?? "";
+  const lastName = clerkUser.lastName ?? "";
+  const fullName = `${firstName} ${lastName}`.trim() || undefined;
+
+  try {
+    const result = await ctx.runMutation(api.clerk_webhooks.syncUser, {
+      clerkId: clerkUser.id,
+      name: fullName,
+      email: primaryEmail.email,
+      avatar: clerkUser.imageUrl || undefined,
+      isEmailVerified: primaryEmail.isVerified,
+      locale: clerkUser.locale ?? undefined,
+    });
+
+    return result.isNewUser ? "created" : "updated";
+  } catch (error) {
+    console.error("[syncUsersFromClerkToConvex] Failed to sync user", {
+      clerkUserId: clerkUser.id,
+      email: primaryEmail.email,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return "error";
+  }
+}
+
+async function linkStripeCustomers(
+  ctx: ActionCtx,
+  stripe: Stripe,
+  customerLinking: StripeLinkingResult,
+): Promise<void> {
+  const users = await ctx.runMutation(
+    internal.sync_external_data.getUsersForStripeCustomerLinking,
+    {},
+  );
+
+  for (const user of users) {
+    customerLinking.checked++;
+
+    // TODO: check org-level stripeCustomerId instead of user-level
+    // For now, skip the alreadyLinked check since user no longer has stripeCustomerId
+
+    try {
+      const byMetadata = await findStripeCustomerByMetadata(stripe, user.userId);
+      if (byMetadata) {
+        // TODO: resolve organizationId from user context for org-scoped linking
+        console.warn("[syncStripeToConvex] Skipping metadata link — needs org-scoped migration", {
+          userId: user.userId,
+          stripeCustomerId: byMetadata,
+        });
+        customerLinking.linkedByMetadata++;
+        continue;
+      }
+
+      const byEmail = await findStripeCustomersByEmail(stripe, user.email);
+      if (byEmail.length === 1) {
+        // TODO: resolve organizationId from user context for org-scoped linking
+        console.warn("[syncStripeToConvex] Skipping email link — needs org-scoped migration", {
+          userId: user.userId,
+          stripeCustomerId: byEmail[0]!,
+        });
+        customerLinking.linkedByEmail++;
+        continue;
+      }
+
+      if (byEmail.length > 1) {
+        customerLinking.ambiguousByEmail++;
+        console.warn("[syncStripeToConvex] Multiple Stripe customers for email", {
+          userId: user.userId,
+          email: user.email,
+          customerIds: byEmail,
+        });
+        continue;
+      }
+
+      customerLinking.noMatch++;
+    } catch (error) {
+      customerLinking.errors++;
+      console.error("[syncStripeToConvex] Failed customer linking", {
+        userId: user.userId,
+        email: user.email,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+}
 
 export const getUsersForStripeCustomerLinking = internalMutation({
   args: {},
@@ -93,7 +215,6 @@ export const getUsersForStripeCustomerLinking = internalMutation({
     return users.map((user) => ({
       userId: user._id,
       email: user.email,
-      stripeCustomerId: user.stripeCustomerId,
     }));
   },
 });
@@ -130,44 +251,17 @@ export const syncUsersFromClerkToConvex = internalAction({
 
       for (const clerkUser of page.data) {
         totalFetched++;
-
-        const primaryEmail =
-          clerkUser.emailAddresses.find((email) => email.id === clerkUser.primaryEmailAddressId) ??
-          clerkUser.emailAddresses[0];
-
-        const email = primaryEmail?.emailAddress?.toLowerCase();
-        if (!email) {
-          skippedNoEmail++;
-          continue;
-        }
-
-        const firstName = clerkUser.firstName ?? "";
-        const lastName = clerkUser.lastName ?? "";
-        const fullName = `${firstName} ${lastName}`.trim() || undefined;
-
-        try {
-          const result = await ctx.runMutation(api.clerk_webhooks.syncUser, {
-            clerkId: clerkUser.id,
-            name: fullName,
-            email,
-            avatar: clerkUser.imageUrl || undefined,
-            isEmailVerified: primaryEmail?.verification?.status === "verified",
-            locale: clerkUser.locale ?? undefined,
-          });
-
+        const outcome = await syncClerkUserRecord(ctx, clerkUser);
+        if (outcome === "created") {
           synced++;
-          if (result.isNewUser) {
-            created++;
-          } else {
-            updated++;
-          }
-        } catch (error) {
+          created++;
+        } else if (outcome === "updated") {
+          synced++;
+          updated++;
+        } else if (outcome === "skipped_no_email") {
+          skippedNoEmail++;
+        } else {
           errors++;
-          console.error("[syncUsersFromClerkToConvex] Failed to sync user", {
-            clerkUserId: clerkUser.id,
-            email,
-            error: error instanceof Error ? error.message : String(error),
-          });
         }
       }
 
@@ -222,20 +316,17 @@ async function findStripeCustomersByEmail(stripe: Stripe, email: string): Promis
  * 1. Optionally sync product/price catalog
  * 2. Link Convex users to Stripe customers (metadata first, then email fallback)
  * 3. Reconcile Stripe subscriptions into Convex
- * 4. Optionally backfill free subscriptions
  */
 export const syncStripeToConvex = internalAction({
   args: {
     syncCatalog: v.optional(v.boolean()),
     linkCustomers: v.optional(v.boolean()),
     syncSubscriptions: v.optional(v.boolean()),
-    runBackfillFreeSubscriptions: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<StripeSyncResult> => {
     const shouldSyncCatalog = args.syncCatalog ?? true;
     const shouldLinkCustomers = args.linkCustomers ?? true;
     const shouldSyncSubscriptions = args.syncSubscriptions ?? true;
-    const shouldRunBackfill = args.runBackfillFreeSubscriptions ?? false;
 
     const stripe = getStripeClient();
 
@@ -254,61 +345,7 @@ export const syncStripeToConvex = internalAction({
     }
 
     if (shouldLinkCustomers) {
-      const users = await ctx.runMutation(
-        internal.sync_external_data.getUsersForStripeCustomerLinking,
-        {},
-      );
-
-      for (const user of users) {
-        customerLinking.checked++;
-
-        if (user.stripeCustomerId) {
-          customerLinking.alreadyLinked++;
-          continue;
-        }
-
-        try {
-          const byMetadata = await findStripeCustomerByMetadata(stripe, user.userId);
-          if (byMetadata) {
-            await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
-              userId: user.userId,
-              stripeCustomerId: byMetadata,
-            });
-            customerLinking.linkedByMetadata++;
-            continue;
-          }
-
-          const byEmail = await findStripeCustomersByEmail(stripe, user.email);
-
-          if (byEmail.length === 1) {
-            await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
-              userId: user.userId,
-              stripeCustomerId: byEmail[0]!,
-            });
-            customerLinking.linkedByEmail++;
-            continue;
-          }
-
-          if (byEmail.length > 1) {
-            customerLinking.ambiguousByEmail++;
-            console.warn("[syncStripeToConvex] Multiple Stripe customers for email", {
-              userId: user.userId,
-              email: user.email,
-              customerIds: byEmail,
-            });
-            continue;
-          }
-
-          customerLinking.noMatch++;
-        } catch (error) {
-          customerLinking.errors++;
-          console.error("[syncStripeToConvex] Failed customer linking", {
-            userId: user.userId,
-            email: user.email,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
+      await linkStripeCustomers(ctx, stripe, customerLinking);
     }
 
     const subscriptionSync = shouldSyncSubscriptions
@@ -321,15 +358,10 @@ export const syncStripeToConvex = internalAction({
           errors: 0,
         };
 
-    const backfill = shouldRunBackfill
-      ? await ctx.runAction(internal.stripe.backfill_subscriptions.backfillFreeSubscriptions, {})
-      : null;
-
     const result: StripeSyncResult = {
       catalogSynced: shouldSyncCatalog,
       customerLinking,
       subscriptionSync,
-      backfill,
     };
 
     console.warn("[syncStripeToConvex] complete", result);
@@ -348,7 +380,6 @@ export const syncClerkThenStripeToConvex = internalAction({
     syncCatalog: v.optional(v.boolean()),
     linkCustomers: v.optional(v.boolean()),
     syncSubscriptions: v.optional(v.boolean()),
-    runBackfillFreeSubscriptions: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<CombinedSyncResult> => {
     const clerk = await ctx.runAction(internal.sync_external_data.syncUsersFromClerkToConvex, {
@@ -359,7 +390,6 @@ export const syncClerkThenStripeToConvex = internalAction({
       syncCatalog: args.syncCatalog,
       linkCustomers: args.linkCustomers,
       syncSubscriptions: args.syncSubscriptions,
-      runBackfillFreeSubscriptions: args.runBackfillFreeSubscriptions,
     });
 
     const result: CombinedSyncResult = { clerk, stripe };

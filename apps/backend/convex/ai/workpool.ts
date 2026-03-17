@@ -51,23 +51,15 @@ export async function enqueueAiPipeline(
 }
 
 /**
- * Check if an organization has at least one member with a Pro subscription.
+ * Check if an organization has an active Pro subscription.
  */
 async function isProOrganization(
   db: DatabaseReader,
   organizationId: Id<"organizations">,
 ): Promise<boolean> {
-  const owner = await db
-    .query("organization_members")
-    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
-    .filter((q) => q.eq(q.field("isPrimary"), true))
-    .first();
-
-  if (!owner) return false;
-
   const subscription = await db
     .query("subscriptions")
-    .withIndex("by_user_id", (q) => q.eq("userId", owner.userId))
+    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
     .order("desc")
     .first();
 

@@ -6,10 +6,150 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import { internalMutation } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
+import { internalMutation, type MutationCtx } from "../_generated/server";
 import { permissionMutation } from "../auth";
 import { publishWebhookEvent } from "../webhooks/publish";
 import { verifyDocumentOwnership } from "./recipient_helpers";
+
+type WorkflowMutationDbCtx = Pick<MutationCtx, "db">;
+type WorkflowMutationSchedulerCtx = Pick<MutationCtx, "db" | "scheduler">;
+
+function isRecipientFinished(status: Doc<"document_recipients">["status"]): boolean {
+  return status === "signed" || status === "approved" || status === "declined";
+}
+
+async function getActiveReminders(
+  ctx: WorkflowMutationDbCtx,
+  documentId: Id<"documents">,
+): Promise<Doc<"document_reminders">[]> {
+  const reminders = await ctx.db
+    .query("document_reminders")
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))
+    .collect();
+
+  return reminders.filter(
+    (reminder) => reminder.status === "scheduled" || reminder.status === "pending",
+  );
+}
+
+async function cancelReminders(
+  ctx: WorkflowMutationDbCtx,
+  reminders: Doc<"document_reminders">[],
+): Promise<void> {
+  for (const reminder of reminders) {
+    await ctx.db.patch(reminder._id, {
+      status: "cancelled",
+      cancelledAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  }
+}
+
+async function shareDocumentWithRecipientUsers(
+  ctx: WorkflowMutationDbCtx,
+  document: Doc<"documents">,
+  recipients: Doc<"document_recipients">[],
+  documentId: Id<"documents">,
+  userId: Id<"users">,
+): Promise<number> {
+  let sharedWithCount = 0;
+
+  for (const recipient of recipients) {
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", recipient.email))
+      .first();
+
+    if (!existingUser) {
+      continue;
+    }
+
+    const orgMember = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user_organization", (q) =>
+        q.eq("userId", existingUser._id).eq("organizationId", document.organizationId),
+      )
+      .first();
+
+    if (orgMember && orgMember.status === "active") {
+      const existingAccess = await ctx.db
+        .query("document_access")
+        .withIndex("by_document_user", (q) =>
+          q.eq("documentId", documentId).eq("userId", existingUser._id),
+        )
+        .first();
+
+      if (!existingAccess || existingAccess.revokedAt !== undefined) {
+        if (existingAccess) {
+          await ctx.db.patch(existingAccess._id, {
+            permissionLevel: "view",
+            grantedBy: userId,
+            grantedAt: Date.now(),
+            revokedAt: undefined,
+          });
+        } else {
+          await ctx.db.insert("document_access", {
+            documentId,
+            userId: existingUser._id,
+            permissionLevel: "view",
+            grantedBy: userId,
+            grantedAt: Date.now(),
+          });
+        }
+        sharedWithCount++;
+      }
+    }
+
+    if (!recipient.userId) {
+      await ctx.db.patch(recipient._id, {
+        userId: existingUser._id,
+        updatedAt: Date.now(),
+      });
+    }
+  }
+
+  return sharedWithCount;
+}
+
+async function scheduleAutomaticReminders(
+  ctx: WorkflowMutationSchedulerCtx,
+  recipients: Doc<"document_recipients">[],
+  documentId: Id<"documents">,
+  userId: Id<"users">,
+  now: number,
+  autoRemindAfterDays?: number,
+): Promise<void> {
+  if (!autoRemindAfterDays || autoRemindAfterDays <= 0) {
+    return;
+  }
+
+  for (const recipient of recipients) {
+    if (isRecipientFinished(recipient.status)) {
+      continue;
+    }
+
+    const scheduledFor = now + autoRemindAfterDays * 24 * 60 * 60 * 1000;
+    const reminderId = await ctx.db.insert("document_reminders", {
+      documentId,
+      recipientId: recipient._id,
+      type: "automated",
+      status: "scheduled",
+      scheduledFor,
+      createdBy: userId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.scheduler.runAfter(
+      scheduledFor - now,
+      internal.documents?.reminders.processReminder,
+      {
+        reminderId,
+      },
+    );
+  }
+}
 
 /**
  * Send document to recipients
@@ -45,65 +185,13 @@ export const sendDocument = permissionMutation("documents:edit")({
     }
 
     // 4. Share document with recipients who have existing accounts
-    let sharedWithCount = 0;
-    for (const recipient of recipients) {
-      // Look up user by email
-      const existingUser = await ctx.db
-        .query("users")
-        .withIndex("by_email", (q) => q.eq("email", recipient.email))
-        .first();
-
-      if (existingUser) {
-        // Check if user is a member of the document's organization
-        const orgMember = await ctx.db
-          .query("organization_members")
-          .withIndex("by_user_organization", (q) =>
-            q.eq("userId", existingUser._id).eq("organizationId", document.organizationId),
-          )
-          .first();
-
-        if (orgMember && orgMember.status === "active") {
-          // Check if access already exists
-          const existingAccess = await ctx.db
-            .query("document_access")
-            .withIndex("by_document_user", (q) =>
-              q.eq("documentId", args.documentId).eq("userId", existingUser._id),
-            )
-            .first();
-
-          // Only create access if it doesn't exist or was revoked
-          if (!existingAccess || existingAccess.revokedAt !== undefined) {
-            if (existingAccess) {
-              // Reactivate revoked access
-              await ctx.db.patch(existingAccess._id, {
-                permissionLevel: "view",
-                grantedBy: userId,
-                grantedAt: Date.now(),
-                revokedAt: undefined,
-              });
-            } else {
-              // Create new access record
-              await ctx.db.insert("document_access", {
-                documentId: args.documentId,
-                userId: existingUser._id,
-                permissionLevel: "view",
-                grantedBy: userId,
-                grantedAt: Date.now(),
-              });
-            }
-            sharedWithCount++;
-          }
-        }
-
-        // Link the userId to the recipient record for easier tracking
-        if (!recipient.userId) {
-          await ctx.db.patch(recipient._id, {
-            userId: existingUser._id,
-            updatedAt: Date.now(),
-          });
-        }
-      }
-    }
+    const sharedWithCount = await shareDocumentWithRecipientUsers(
+      ctx,
+      document,
+      recipients,
+      args.documentId,
+      userId,
+    );
 
     // 5. Update document status
     const now = Date.now();
@@ -115,36 +203,14 @@ export const sendDocument = permissionMutation("documents:edit")({
     });
 
     // 6. Schedule automated reminders if requested
-    if (args.autoRemindAfterDays && args.autoRemindAfterDays > 0) {
-      // Schedule reminder for each pending recipient
-      for (const recipient of recipients) {
-        // Only schedule for recipients who haven't completed their action
-        if (
-          recipient.status !== "signed" &&
-          recipient.status !== "approved" &&
-          recipient.status !== "declined"
-        ) {
-          const scheduledFor = now + args.autoRemindAfterDays * 24 * 60 * 60 * 1000;
-
-          const reminderId = await ctx.db.insert("document_reminders", {
-            documentId: args.documentId,
-            recipientId: recipient._id,
-            type: "automated",
-            status: "scheduled",
-            scheduledFor,
-            createdBy: userId,
-            createdAt: now,
-            updatedAt: now,
-          });
-
-          // Schedule the reminder processing
-          const delayMs = scheduledFor - now;
-          await ctx.scheduler.runAfter(delayMs, internal.documents?.reminders.processReminder, {
-            reminderId,
-          });
-        }
-      }
-    }
+    await scheduleAutomaticReminders(
+      ctx,
+      recipients,
+      args.documentId,
+      userId,
+      now,
+      args.autoRemindAfterDays,
+    );
 
     return {
       success: true,
@@ -182,9 +248,7 @@ export const completeDocument = permissionMutation("documents:edit")({
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
 
-    const allCompleted = recipients.every(
-      (r) => r.status === "signed" || r.status === "approved" || r.status === "declined",
-    );
+    const allCompleted = recipients.every((recipient) => isRecipientFinished(recipient.status));
 
     if (!allCompleted) {
       throw new ConvexError("Cannot complete document - not all recipients have taken action");
@@ -198,29 +262,8 @@ export const completeDocument = permissionMutation("documents:edit")({
     });
 
     // 5. Cancel any pending/scheduled reminders
-    const pendingReminders = await ctx.db
-      .query("document_reminders")
-      .withIndex("by_document_status", (q) =>
-        q.eq("documentId", args.documentId).eq("status", "scheduled"),
-      )
-      .collect();
-
-    const pendingReminders2 = await ctx.db
-      .query("document_reminders")
-      .withIndex("by_document_status", (q) =>
-        q.eq("documentId", args.documentId).eq("status", "pending"),
-      )
-      .collect();
-
-    const allPendingReminders = [...pendingReminders, ...pendingReminders2];
-
-    for (const reminder of allPendingReminders) {
-      await ctx.db.patch(reminder._id, {
-        status: "cancelled",
-        cancelledAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-    }
+    const allPendingReminders = await getActiveReminders(ctx, args.documentId);
+    await cancelReminders(ctx, allPendingReminders);
 
     // Publish webhook event
     await publishWebhookEvent(ctx, {
@@ -272,22 +315,8 @@ export const cancelDocument = permissionMutation("documents:edit")({
     });
 
     // 5. Cancel all pending/scheduled reminders
-    const pendingReminders = await ctx.db
-      .query("document_reminders")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
-
-    const activeReminders = pendingReminders.filter(
-      (r) => r.status === "scheduled" || r.status === "pending",
-    );
-
-    for (const reminder of activeReminders) {
-      await ctx.db.patch(reminder._id, {
-        status: "cancelled",
-        cancelledAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-    }
+    const activeReminders = await getActiveReminders(ctx, args.documentId);
+    await cancelReminders(ctx, activeReminders);
 
     // Publish webhook event
     await publishWebhookEvent(ctx, {
@@ -345,9 +374,7 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
       return { success: true, completed: false, reason: "no_recipients" };
     }
 
-    const allCompleted = recipients.every(
-      (r) => r.status === "signed" || r.status === "approved" || r.status === "declined",
-    );
+    const allCompleted = recipients.every((recipient) => isRecipientFinished(recipient.status));
 
     if (!allCompleted) {
       return { success: true, completed: false, reason: "pending_recipients" };
@@ -371,22 +398,8 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
       });
 
       // Cancel pending reminders even in waiting_for_payment
-      const pendingRemindersWfp = await ctx.db
-        .query("document_reminders")
-        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-        .collect();
-
-      const activeRemindersWfp = pendingRemindersWfp.filter(
-        (r) => r.status === "scheduled" || r.status === "pending",
-      );
-
-      for (const reminder of activeRemindersWfp) {
-        await ctx.db.patch(reminder._id, {
-          status: "cancelled",
-          cancelledAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      }
+      const activeRemindersWfp = await getActiveReminders(ctx, args.documentId);
+      await cancelReminders(ctx, activeRemindersWfp);
 
       return {
         success: true,
@@ -404,22 +417,8 @@ export const checkAndCompleteWorkflow = permissionMutation("documents:edit")({
     });
 
     // 7. Cancel pending reminders
-    const pendingReminders = await ctx.db
-      .query("document_reminders")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
-
-    const activeReminders = pendingReminders.filter(
-      (r) => r.status === "scheduled" || r.status === "pending",
-    );
-
-    for (const reminder of activeReminders) {
-      await ctx.db.patch(reminder._id, {
-        status: "cancelled",
-        cancelledAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-    }
+    const activeReminders = await getActiveReminders(ctx, args.documentId);
+    await cancelReminders(ctx, activeReminders);
 
     // Publish webhook event
     await publishWebhookEvent(ctx, {

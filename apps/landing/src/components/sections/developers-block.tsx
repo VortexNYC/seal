@@ -30,8 +30,8 @@ export function StaticDevelopers() {
       <div className="mx-auto max-w-6xl">
         <div className="grid items-start gap-16 lg:grid-cols-2">
           {/* Left — copy */}
-          <FadeIn>
-            <div>
+          <FadeIn className="min-w-0">
+            <div data-testid="developers-copy">
               <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">
                 For developers
               </p>
@@ -68,8 +68,11 @@ export function StaticDevelopers() {
           </FadeIn>
 
           {/* Right — code block */}
-          <FadeIn delay={0.15}>
-            <div className="border-border bg-card overflow-hidden rounded-xl border">
+          <FadeIn className="min-w-0" delay={0.15}>
+            <div
+              className="border-border bg-card min-w-0 overflow-hidden rounded-xl border"
+              data-testid="developers-code-panel"
+            >
               <div className="border-border flex items-center gap-2 border-b px-4 py-3">
                 <div aria-hidden="true" className="flex gap-1.5">
                   <div className="bg-border size-3 rounded-full" />

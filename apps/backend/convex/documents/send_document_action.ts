@@ -7,11 +7,55 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { type ActionCtx, action, internalAction, internalMutation } from "../_generated/server";
+import {
+  type ActionCtx,
+  action,
+  internalAction,
+  internalMutation,
+  type MutationCtx,
+} from "../_generated/server";
 import { logDocumentAction } from "../audit_logs/helpers";
 import { publishWebhookEvent } from "../webhooks/publish";
 import { sendDocumentInvitation } from "./email";
 import { findFirstIncompleteGroup } from "./recipient_helpers";
+
+type PaymentInvoiceLink = {
+  recipientEmail: string;
+  hostedInvoiceUrl: string | null;
+  stripeInvoiceId: string;
+  totalAmountCents: number;
+  currency: string;
+};
+
+type InvitationEmailResult = {
+  recipientId: Id<"document_recipients">;
+  success: boolean;
+  error?: string;
+};
+
+type SendDocumentEmailsResult = {
+  success: boolean;
+  totalRecipients: number;
+  emailsSent: number;
+  emailsFailed: number;
+  failures: InvitationEmailResult[];
+};
+
+type ExpirationPeriod = {
+  amount: number;
+  unit: "day" | "week" | "month";
+};
+
+type DocumentMutationCtx = Pick<MutationCtx, "db">;
+
+type MarkDocumentAsSentArgs = {
+  documentId: Id<"documents">;
+  deadline?: number;
+  userId?: string;
+  signingMode?: "parallel" | "sequential";
+  allowDictateNextSigner?: boolean;
+  expirationPeriod?: ExpirationPeriod;
+};
 
 /** Convert expiration period to milliseconds */
 export function expirationPeriodToMs(amount: number, unit: "day" | "week" | "month"): number {
@@ -24,6 +68,374 @@ export function expirationPeriodToMs(amount: number, unit: "day" | "week" | "mon
     case "month":
       return amount * 30 * MS_PER_DAY;
   }
+}
+
+function isRecipientDone(status: Doc<"document_recipients">["status"]): boolean {
+  return status === "signed" || status === "approved" || status === "declined";
+}
+
+function getRecipientsToEmail(
+  document: Doc<"documents">,
+  recipients: Doc<"document_recipients">[],
+): Doc<"document_recipients">[] {
+  if (document.signingMode === "sequential") {
+    return findFirstIncompleteGroup(recipients);
+  }
+
+  return recipients.filter((recipient) => !isRecipientDone(recipient.status));
+}
+
+function buildRecipientMessageMap(
+  recipientMessages: Array<{ recipientId: Id<"document_recipients">; message: string }> | undefined,
+): Map<Id<"document_recipients">, string> {
+  const recipientMessageMap = new Map<Id<"document_recipients">, string>();
+
+  for (const recipientMessage of recipientMessages ?? []) {
+    recipientMessageMap.set(recipientMessage.recipientId, recipientMessage.message);
+  }
+
+  return recipientMessageMap;
+}
+
+async function getSenderEmailContext(
+  ctx: ActionCtx,
+  userId: Id<"users">,
+  organizationId: Id<"organizations">,
+) {
+  const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+    userId,
+  });
+  const brandingSettings = await ctx.runQuery(
+    internal.organizations.queries.getBrandingSettingsInternal,
+    { organizationId },
+  );
+
+  return {
+    senderUser,
+    senderName: senderUser?.name ?? senderUser?.email ?? "Seal User",
+    emailBranding: brandingSettings.enabled
+      ? {
+          emailFromName: brandingSettings.emailFromName,
+          emailReplyTo: brandingSettings.emailReplyTo,
+        }
+      : undefined,
+  };
+}
+
+function getEmailDeadline(
+  deadline: number | undefined,
+  expirationPeriod: ExpirationPeriod | undefined,
+): number | undefined {
+  if (deadline) {
+    return deadline;
+  }
+
+  if (!expirationPeriod) {
+    return undefined;
+  }
+
+  return Date.now() + expirationPeriodToMs(expirationPeriod.amount, expirationPeriod.unit);
+}
+
+function resolveInvoiceDetails(paymentInvoiceLinks: PaymentInvoiceLink[], recipientEmail: string) {
+  const paymentLink = paymentInvoiceLinks.find((link) => link.recipientEmail === recipientEmail);
+  return {
+    invoiceUrl: paymentLink?.hostedInvoiceUrl ?? undefined,
+    invoiceAmount: paymentLink?.totalAmountCents,
+    invoiceCurrency: paymentLink?.currency,
+  };
+}
+
+async function sendInvitationBatch(
+  ctx: ActionCtx,
+  params: {
+    recipients: Doc<"document_recipients">[];
+    documentName: string;
+    senderName: string;
+    customMessage: string | undefined;
+    recipientMessageMap: Map<Id<"document_recipients">, string>;
+    emailBranding:
+      | {
+          emailFromName?: string;
+          emailReplyTo?: string;
+        }
+      | undefined;
+    paymentInvoiceLinks: PaymentInvoiceLink[];
+    deadline: number | undefined;
+  },
+): Promise<InvitationEmailResult[]> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+  const results: InvitationEmailResult[] = [];
+
+  for (const recipient of params.recipients) {
+    if (isRecipientDone(recipient.status)) {
+      continue;
+    }
+
+    const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
+    const invoiceDetails = resolveInvoiceDetails(params.paymentInvoiceLinks, recipient.email);
+    const emailResult = await sendDocumentInvitation(ctx, {
+      to: recipient.email,
+      recipientName: recipient.name || recipient.email,
+      documentName: params.documentName,
+      senderName: params.senderName,
+      signingUrl,
+      customMessage: params.recipientMessageMap.get(recipient._id) || params.customMessage,
+      expiresAt: params.deadline || recipient.expiresAt || recipient.tokenExpiresAt,
+      invoiceUrl: invoiceDetails.invoiceUrl,
+      invoiceAmount: invoiceDetails.invoiceAmount,
+      invoiceCurrency: invoiceDetails.invoiceCurrency,
+      branding: params.emailBranding,
+    });
+
+    results.push({
+      recipientId: recipient._id,
+      success: emailResult.success,
+      error: emailResult.error,
+    });
+  }
+
+  return results;
+}
+
+async function getRecipientsOrThrow(
+  ctx: ActionCtx,
+  documentId: Id<"documents">,
+): Promise<Doc<"document_recipients">[]> {
+  const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
+    internal.documents.recipients_queries.getDocumentRecipientsInternal,
+    { documentId },
+  );
+
+  if (recipients.length === 0) {
+    throw new ConvexError("No recipients found");
+  }
+
+  return recipients;
+}
+
+async function getPaymentInvoiceLinksForDocument(
+  ctx: ActionCtx,
+  params: {
+    documentId: Id<"documents">;
+    organizationId: Id<"organizations">;
+    userId: Id<"users">;
+  },
+): Promise<PaymentInvoiceLink[]> {
+  const signatureFields = await ctx.runQuery(
+    internal.signature_fields.queries.getFieldsByDocumentInternal,
+    {
+      documentId: params.documentId,
+    },
+  );
+
+  if (!signatureFields.some((field: (typeof signatureFields)[number]) => field.fieldType === "signature")) {
+    throw new ConvexError(
+      "Cannot send document without signature fields. Please add at least one signature field before sending.",
+    );
+  }
+
+  const paymentFields = signatureFields.filter((field: (typeof signatureFields)[number]) => field.fieldType === "payment");
+  if (paymentFields.length === 0) {
+    return [];
+  }
+
+  const paymentConfigs = await ctx.runQuery(
+    internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
+    { documentId: params.documentId },
+  );
+  const configuredFieldIds = new Set(paymentConfigs.map((config: (typeof paymentConfigs)[number]) => config.fieldId.toString()));
+
+  if (paymentFields.some((field: (typeof paymentFields)[number]) => !configuredFieldIds.has(field._id.toString()))) {
+    throw new ConvexError(
+      "All payment fields must be configured before sending. Please configure payment details for each payment field.",
+    );
+  }
+
+  const paymentResult = await ctx.runAction(
+    internal.stripe.payment_field_actions.createStripeObjectsForPaymentFields,
+    {
+      documentId: params.documentId,
+      organizationId: params.organizationId,
+      userId: params.userId,
+    },
+  );
+
+  return paymentResult.invoiceLinks;
+}
+
+function buildSendDocumentEmailsResult(
+  recipients: Doc<"document_recipients">[],
+  emailResults: InvitationEmailResult[],
+): SendDocumentEmailsResult {
+  const failures = emailResults.filter((result) => !result.success);
+
+  return {
+    success: failures.length === 0,
+    totalRecipients: recipients.length,
+    emailsSent: emailResults.filter((result) => result.success).length,
+    emailsFailed: failures.length,
+    failures,
+  };
+}
+
+async function syncRecipientAccess(
+  ctx: DocumentMutationCtx,
+  document: Doc<"documents">,
+  recipient: Doc<"document_recipients">,
+  documentId: Id<"documents">,
+): Promise<boolean> {
+  const existingUser = await ctx.db
+    .query("users")
+    .withIndex("by_email", (q) => q.eq("email", recipient.email))
+    .first();
+
+  if (!existingUser) {
+    return false;
+  }
+
+  const orgMember = await ctx.db
+    .query("organization_members")
+    .withIndex("by_user_organization", (q) =>
+      q.eq("userId", existingUser._id).eq("organizationId", document.organizationId),
+    )
+    .first();
+
+  let grantedAccess = false;
+  if (orgMember?.status === "active") {
+    const existingAccess = await ctx.db
+      .query("document_access")
+      .withIndex("by_document_user", (q) =>
+        q.eq("documentId", documentId).eq("userId", existingUser._id),
+      )
+      .first();
+
+    if (!existingAccess || existingAccess.revokedAt !== undefined) {
+      if (existingAccess) {
+        await ctx.db.patch(existingAccess._id, {
+          permissionLevel: "view",
+          grantedBy: document.ownerId,
+          grantedAt: Date.now(),
+          revokedAt: undefined,
+        });
+      } else {
+        await ctx.db.insert("document_access", {
+          documentId,
+          userId: existingUser._id,
+          permissionLevel: "view",
+          grantedBy: document.ownerId,
+          grantedAt: Date.now(),
+        });
+      }
+      grantedAccess = true;
+    }
+  }
+
+  if (!recipient.userId) {
+    await ctx.db.patch(recipient._id, {
+      userId: existingUser._id,
+      updatedAt: Date.now(),
+    });
+  }
+
+  return grantedAccess;
+}
+
+async function shareDocumentWithRecipients(
+  ctx: DocumentMutationCtx,
+  document: Doc<"documents">,
+  recipients: Doc<"document_recipients">[],
+  documentId: Id<"documents">,
+) {
+  let sharedWithAnyUser = false;
+
+  for (const recipient of recipients) {
+    if (await syncRecipientAccess(ctx, document, recipient, documentId)) {
+      sharedWithAnyUser = true;
+    }
+  }
+
+  if (sharedWithAnyUser && document.sharingMode === "private") {
+    await ctx.db.patch(documentId, {
+      sharingMode: "specific",
+    });
+  }
+}
+
+async function applyRecipientExpirationPeriod(
+  ctx: DocumentMutationCtx,
+  recipients: Doc<"document_recipients">[],
+  expirationPeriod: ExpirationPeriod | undefined,
+) {
+  if (!expirationPeriod) {
+    return;
+  }
+
+  const now = Date.now();
+  const expiresAt = now + expirationPeriodToMs(expirationPeriod.amount, expirationPeriod.unit);
+
+  for (const recipient of recipients) {
+    await ctx.db.patch(recipient._id, {
+      expiresAt,
+      updatedAt: now,
+      ...(recipient.status === "expired" && {
+        status: "pending",
+        expirationNotifiedAt: undefined,
+      }),
+    });
+  }
+}
+
+function buildSentDocumentPatch(document: Doc<"documents">, args: MarkDocumentAsSentArgs) {
+  const now = Date.now();
+
+  return {
+    status: "active" as const,
+    workflowStatus: "sent" as const,
+    sentAt: now,
+    updatedAt: now,
+    ...(document.workflowStatus === "expired" && { expiredAt: undefined }),
+    ...(args.deadline && { deadline: args.deadline }),
+    ...(args.signingMode && { signingMode: args.signingMode }),
+    ...(args.allowDictateNextSigner !== undefined && {
+      allowDictateNextSigner: args.allowDictateNextSigner,
+    }),
+    ...(args.expirationPeriod && { expirationPeriod: args.expirationPeriod }),
+  };
+}
+
+async function resetExpiredRecipientForResend(
+  ctx: ActionCtx,
+  documentId: Id<"documents">,
+  recipient: Doc<"document_recipients">,
+) {
+  if (recipient.status !== "expired") {
+    return undefined;
+  }
+
+  const latestDocument = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
+    documentId,
+  });
+  const expiresAt = latestDocument?.expirationPeriod
+    ? Date.now() +
+      expirationPeriodToMs(
+        latestDocument.expirationPeriod.amount,
+        latestDocument.expirationPeriod.unit,
+      )
+    : undefined;
+
+  await ctx.runMutation(internal.documents.send_document_action.resetExpiredRecipient, {
+    recipientId: recipient._id,
+    expiresAt,
+  });
+
+  if (latestDocument?.workflowStatus === "expired") {
+    await ctx.runMutation(internal.documents.send_document_action.reactivateExpiredDocument, {
+      documentId,
+    });
+  }
+
+  return expiresAt;
 }
 
 async function authorizeDocumentOwner(
@@ -101,109 +513,9 @@ export const markDocumentAsSent = internalMutation({
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
 
-    // Share document with recipients who have existing accounts
-    let sharedWithAnyUser = false;
-    for (const recipient of recipients) {
-      // Look up user by email
-      const existingUser = await ctx.db
-        .query("users")
-        .withIndex("by_email", (q) => q.eq("email", recipient.email))
-        .first();
-
-      if (existingUser) {
-        // Check if user is a member of the document's organization
-        const orgMember = await ctx.db
-          .query("organization_members")
-          .withIndex("by_user_organization", (q) =>
-            q.eq("userId", existingUser._id).eq("organizationId", document.organizationId),
-          )
-          .first();
-
-        if (orgMember && orgMember.status === "active") {
-          // Check if access already exists
-          const existingAccess = await ctx.db
-            .query("document_access")
-            .withIndex("by_document_user", (q) =>
-              q.eq("documentId", args.documentId).eq("userId", existingUser._id),
-            )
-            .first();
-
-          // Only create access if it doesn't exist or was revoked
-          if (!existingAccess || existingAccess.revokedAt !== undefined) {
-            if (existingAccess) {
-              // Reactivate revoked access
-              await ctx.db.patch(existingAccess._id, {
-                permissionLevel: "view",
-                grantedBy: document.ownerId,
-                grantedAt: Date.now(),
-                revokedAt: undefined,
-              });
-            } else {
-              // Create new access record
-              await ctx.db.insert("document_access", {
-                documentId: args.documentId,
-                userId: existingUser._id,
-                permissionLevel: "view",
-                grantedBy: document.ownerId,
-                grantedAt: Date.now(),
-              });
-            }
-            sharedWithAnyUser = true;
-          }
-        }
-
-        // Link the userId to the recipient record for easier tracking
-        if (!recipient.userId) {
-          await ctx.db.patch(recipient._id, {
-            userId: existingUser._id,
-            updatedAt: Date.now(),
-          });
-        }
-      }
-    }
-
-    // If we shared with any user, update the sharing mode to "specific"
-    // so the document_access records are respected by queries
-    if (sharedWithAnyUser && document.sharingMode === "private") {
-      await ctx.db.patch(args.documentId, {
-        sharingMode: "specific",
-      });
-    }
-
-    // Compute expiresAt for all recipients if expiration period is set
-    if (args.expirationPeriod) {
-      const now = Date.now();
-      const expiresAt =
-        now + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
-      for (const recipient of recipients) {
-        // When re-sending an expired document, reset expired recipients back to pending
-        const isExpiredRecipient = recipient.status === "expired";
-        await ctx.db.patch(recipient._id, {
-          expiresAt,
-          updatedAt: now,
-          ...(isExpiredRecipient && {
-            status: "pending",
-            expirationNotifiedAt: undefined,
-          }),
-        });
-      }
-    }
-
-    // Update document status to active and workflow status to sent
-    await ctx.db.patch(args.documentId, {
-      status: "active",
-      workflowStatus: "sent",
-      sentAt: Date.now(),
-      updatedAt: Date.now(),
-      // Clear expiredAt when re-sending an expired document
-      ...(document.workflowStatus === "expired" && { expiredAt: undefined }),
-      ...(args.deadline && { deadline: args.deadline }), // SEA-119: Save deadline if provided
-      ...(args.signingMode && { signingMode: args.signingMode }),
-      ...(args.allowDictateNextSigner !== undefined && {
-        allowDictateNextSigner: args.allowDictateNextSigner,
-      }),
-      ...(args.expirationPeriod && { expirationPeriod: args.expirationPeriod }),
-    });
+    await shareDocumentWithRecipients(ctx, document, recipients, args.documentId);
+    await applyRecipientExpirationPeriod(ctx, recipients, args.expirationPeriod);
+    await ctx.db.patch(args.documentId, buildSentDocumentPatch(document, args));
 
     // Audit trail
     if (args.userId) {
@@ -261,209 +573,37 @@ export const sendDocumentEmails = action({
       }),
     ),
   },
-  handler: async (
-    ctx,
-    args,
-  ): Promise<{
-    success: boolean;
-    totalRecipients: number;
-    emailsSent: number;
-    emailsFailed: number;
-    failures: Array<{
-      recipientId: Id<"document_recipients">;
-      success: boolean;
-      error?: string;
-    }>;
-  }> => {
-    // 1. Authenticate and authorize
+  handler: async (ctx, args): Promise<SendDocumentEmailsResult> => {
     const { document, userId } = await authorizeDocumentOwner(ctx, args.documentId);
-
-    // 2. Get all recipients
-    const recipients: Doc<"document_recipients">[] = await ctx.runQuery(
-      internal.documents.recipients_queries.getDocumentRecipientsInternal,
-      {
-        documentId: args.documentId,
-      },
-    );
-
-    if (recipients.length === 0) {
-      throw new ConvexError("No recipients found");
-    }
-
-    // 3. Validate document has at least one signature field
-    const signatureFields = await ctx.runQuery(
-      internal.signature_fields.queries.getFieldsByDocumentInternal,
-      {
-        documentId: args.documentId,
-      },
-    );
-
-    const signatureFieldCount = signatureFields.filter(
-      (field) => field.fieldType === "signature",
-    ).length;
-
-    if (signatureFieldCount === 0) {
-      throw new ConvexError(
-        "Cannot send document without signature fields. Please add at least one signature field before sending.",
-      );
-    }
-
-    // 3b. Validate payment fields have configs
-    const paymentFields = signatureFields.filter((f) => f.fieldType === "payment");
-    if (paymentFields.length > 0) {
-      const paymentConfigs = await ctx.runQuery(
-        internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
-        { documentId: args.documentId },
-      );
-      const configuredFieldIds = new Set(paymentConfigs.map((c) => c.fieldId.toString()));
-      const unconfigured = paymentFields.filter((f) => !configuredFieldIds.has(f._id.toString()));
-      if (unconfigured.length > 0) {
-        throw new ConvexError(
-          "All payment fields must be configured before sending. Please configure payment details for each payment field.",
-        );
-      }
-    }
-
-    // 4. Create Stripe invoices for payment field configs
-    let paymentInvoiceLinks: Array<{
-      recipientEmail: string;
-      hostedInvoiceUrl: string | null;
-      stripeInvoiceId: string;
-      totalAmountCents: number;
-      currency: string;
-    }> = [];
-
-    if (paymentFields.length > 0) {
-      const paymentResult = await ctx.runAction(
-        internal.stripe.payment_field_actions.createStripeObjectsForPaymentFields,
-        {
-          documentId: args.documentId,
-          organizationId: document.organizationId,
-          userId,
-        },
-      );
-      paymentInvoiceLinks = paymentResult.invoiceLinks;
-    }
-
-    // 5. Get sender information from document owner
-    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+    const recipients = await getRecipientsOrThrow(ctx, args.documentId);
+    const paymentInvoiceLinks = await getPaymentInvoiceLinksForDocument(ctx, {
+      documentId: args.documentId,
+      organizationId: document.organizationId,
       userId,
     });
-    const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
-
-    // 5b. Get organization branding settings for email customization
-    const brandingSettings = await ctx.runQuery(
-      internal.organizations.queries.getBrandingSettingsInternal,
-      { organizationId: document.organizationId },
+    const { senderUser, senderName, emailBranding } = await getSenderEmailContext(
+      ctx,
+      userId,
+      document.organizationId,
     );
-    const emailBranding = brandingSettings.enabled
-      ? {
-          emailFromName: brandingSettings.emailFromName,
-          emailReplyTo: brandingSettings.emailReplyTo,
-        }
-      : undefined;
-
-    // 6. Build a map of per-recipient messages (SEA-119)
-    const recipientMessageMap = new Map<Id<"document_recipients">, string>();
-    if (args.recipientMessages) {
-      for (const rm of args.recipientMessages) {
-        recipientMessageMap.set(rm.recipientId, rm.message);
-      }
-    }
-
-    // 7. Send emails to recipients
-    // In sequential mode, only send to the first incomplete order group.
-    // Invoice link is only sent to the recipient matching the invoice customer email.
-    const emailResults: Array<{
-      recipientId: Id<"document_recipients">;
-      success: boolean;
-      error?: string;
-    }> = [];
-
-    // Determine which recipients should receive emails now
-    let recipientsToEmail: Doc<"document_recipients">[];
-    if (document.signingMode === "sequential") {
-      recipientsToEmail = findFirstIncompleteGroup(recipients);
-    } else {
-      recipientsToEmail = recipients.filter(
-        (r) => r.status !== "signed" && r.status !== "approved" && r.status !== "declined",
-      );
-    }
-
-    // Pre-compute the business deadline for emails (outside loop for consistency)
-    const emailDeadline =
-      args.deadline ||
-      (args.expirationPeriod
-        ? Date.now() +
-          expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit)
-        : undefined);
-
-    for (const recipient of recipientsToEmail) {
-      // Skip recipients who have already completed their action
-      if (
-        recipient.status === "signed" ||
-        recipient.status === "approved" ||
-        recipient.status === "declined"
-      ) {
-        continue;
-      }
-
-      // Generate signing URL
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
-      const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
-
-      // SEA-119: Use per-recipient message if available, otherwise fallback to default
-      const messageForRecipient = recipientMessageMap.get(recipient._id) || args.customMessage;
-
-      const expiresAt = emailDeadline || recipient.tokenExpiresAt;
-
-      // Resolve invoice link from payment field system
-      const paymentLink = paymentInvoiceLinks.find(
-        (link) => link.recipientEmail === recipient.email,
-      );
-      const resolvedInvoiceUrl = paymentLink?.hostedInvoiceUrl ?? undefined;
-      const resolvedInvoiceAmount = paymentLink?.totalAmountCents;
-      const resolvedInvoiceCurrency = paymentLink?.currency;
-
-      // Send email
-      const emailResult = await sendDocumentInvitation(ctx, {
-        to: recipient.email,
-        recipientName: recipient.name || recipient.email,
-        documentName: document.name,
-        senderName,
-        signingUrl,
-        customMessage: messageForRecipient,
-        expiresAt,
-        invoiceUrl: resolvedInvoiceUrl ?? undefined,
-        invoiceAmount: resolvedInvoiceAmount,
-        invoiceCurrency: resolvedInvoiceCurrency,
-        branding: emailBranding,
-      });
-
-      emailResults.push({
-        recipientId: recipient._id,
-        success: emailResult.success,
-        error: emailResult.error,
-      });
-    }
-
-    // 7. Check if any emails failed
-    const failedEmails = emailResults.filter((r) => !r.success);
-    const allEmailsSucceeded = failedEmails.length === 0;
+    const emailDeadline = getEmailDeadline(args.deadline, args.expirationPeriod);
+    const emailResults = await sendInvitationBatch(ctx, {
+      recipients: getRecipientsToEmail(document, recipients),
+      documentName: document.name,
+      senderName,
+      customMessage: args.customMessage,
+      recipientMessageMap: buildRecipientMessageMap(args.recipientMessages),
+      emailBranding,
+      paymentInvoiceLinks,
+      deadline: emailDeadline,
+    });
+    const result = buildSendDocumentEmailsResult(recipients, emailResults);
 
     // 8. Mark document as sent only when all emails succeed so edits remain possible on failures
-    if (allEmailsSucceeded) {
-      // Compute deadline from expirationPeriod if no explicit deadline was provided
-      let computedDeadline = args.deadline;
-      if (!computedDeadline && args.expirationPeriod) {
-        computedDeadline =
-          Date.now() +
-          expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
-      }
-
+    if (result.success) {
       await ctx.runMutation(internal.documents.send_document_action.markDocumentAsSent, {
         documentId: args.documentId,
-        deadline: computedDeadline, // SEA-119: Pass deadline to be saved
+        deadline: emailDeadline,
         userId: senderUser?.clerkId,
         signingMode: args.signingMode,
         allowDictateNextSigner: args.allowDictateNextSigner,
@@ -471,13 +611,7 @@ export const sendDocumentEmails = action({
       });
     }
 
-    return {
-      success: allEmailsSucceeded,
-      totalRecipients: recipients.length,
-      emailsSent: emailResults.filter((r) => r.success).length,
-      emailsFailed: failedEmails.length,
-      failures: failedEmails,
-    };
+    return result;
   },
 });
 
@@ -531,62 +665,18 @@ export const resendRecipientEmail = action({
       };
     }
 
-    // 4b. If recipient is expired, reset their status and expiration
-    let newExpiresAt: number | undefined;
-    if (recipient.status === "expired") {
-      const document_latest = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-        documentId: args.documentId,
-      });
-      newExpiresAt = document_latest?.expirationPeriod
-        ? Date.now() +
-          expirationPeriodToMs(
-            document_latest.expirationPeriod.amount,
-            document_latest.expirationPeriod.unit,
-          )
-        : undefined;
-
-      await ctx.runMutation(internal.documents.send_document_action.resetExpiredRecipient, {
-        recipientId: args.recipientId,
-        expiresAt: newExpiresAt,
-      });
-
-      // If document is expired, transition back to sent
-      if (document_latest?.workflowStatus === "expired") {
-        await ctx.runMutation(internal.documents.send_document_action.reactivateExpiredDocument, {
-          documentId: args.documentId,
-        });
-      }
-    }
-
-    // 5. Generate signing URL
+    const newExpiresAt = await resetExpiredRecipientForResend(ctx, args.documentId, recipient);
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
-
-    // 6. Get sender information
-    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
+    const { senderName, emailBranding } = await getSenderEmailContext(
+      ctx,
       userId,
-    });
-    const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
-
-    // 6b. Get organization branding settings
-    const brandingSettings = await ctx.runQuery(
-      internal.organizations.queries.getBrandingSettingsInternal,
-      { organizationId: document.organizationId },
+      document.organizationId,
     );
-    const emailBranding = brandingSettings.enabled
-      ? {
-          emailFromName: brandingSettings.emailFromName,
-          emailReplyTo: brandingSettings.emailReplyTo,
-        }
-      : undefined;
-
-    // 7. Send email
-    // For expired recipients that were just reset, use the freshly-computed deadline.
-    // For other recipients, use their existing business deadline (expiresAt), not tokenExpiresAt.
     const emailExpiresAt =
       recipient.status === "expired"
         ? newExpiresAt
-        : (recipient.expiresAt ?? recipient.tokenExpiresAt);
+        : recipient.expiresAt || recipient.tokenExpiresAt;
 
     const emailResult = await sendDocumentInvitation(ctx, {
       to: recipient.email,
@@ -638,58 +728,22 @@ export const sendDocumentEmailsInternal = internalAction({
 
     if (recipients.length === 0) return;
 
-    // Get sender information
-    const senderUser = await ctx.runQuery(internal.organizations.helpers.getUserById, {
-      userId: document.ownerId,
-    });
-    const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
-
-    // Get organization branding settings
-    const brandingSettings = await ctx.runQuery(
-      internal.organizations.queries.getBrandingSettingsInternal,
-      { organizationId: document.organizationId },
+    const { senderName, emailBranding } = await getSenderEmailContext(
+      ctx,
+      document.ownerId,
+      document.organizationId,
     );
-    const emailBranding = brandingSettings.enabled
-      ? {
-          emailFromName: brandingSettings.emailFromName,
-          emailReplyTo: brandingSettings.emailReplyTo,
-        }
-      : undefined;
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
-
-    // In sequential mode, only send to the first incomplete order group
-    let recipientsToEmail: Doc<"document_recipients">[];
-    if (document.signingMode === "sequential") {
-      recipientsToEmail = findFirstIncompleteGroup(recipients);
-    } else {
-      recipientsToEmail = recipients.filter(
-        (r) => r.status !== "signed" && r.status !== "approved" && r.status !== "declined",
-      );
-    }
-
-    for (const recipient of recipientsToEmail) {
-      if (
-        recipient.status === "signed" ||
-        recipient.status === "approved" ||
-        recipient.status === "declined"
-      ) {
-        continue;
-      }
-
-      const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
-
-      await sendDocumentInvitation(ctx, {
-        to: recipient.email,
-        recipientName: recipient.name || recipient.email,
-        documentName: document.name,
-        senderName,
-        signingUrl,
-        customMessage: args.customMessage,
-        expiresAt: recipient.expiresAt ?? recipient.tokenExpiresAt,
-        branding: emailBranding,
-      });
-    }
+    await sendInvitationBatch(ctx, {
+      recipients: getRecipientsToEmail(document, recipients),
+      documentName: document.name,
+      senderName,
+      customMessage: args.customMessage,
+      recipientMessageMap: new Map(),
+      emailBranding,
+      paymentInvoiceLinks: [],
+      deadline: undefined,
+    });
   },
 });
 

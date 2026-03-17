@@ -13,6 +13,87 @@ export interface TeamInvitationProps {
   expiresAt?: number;
 }
 
+function formatInvitationExpirationDate(expiresAt?: number): string | null {
+  return expiresAt
+    ? new Date(expiresAt).toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
+}
+
+function InvitationIcon() {
+  return (
+    <Section className="mb-[24px] text-center">
+      <div
+        style={{
+          width: "64px",
+          height: "64px",
+          backgroundColor: status.infoSurface,
+          borderRadius: "50%",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ margin: "0", fontSize: "32px", lineHeight: "64px" }}>&#x2709;&#xFE0F;</Text>
+      </div>
+    </Section>
+  );
+}
+
+function OrganizationCard({
+  organizationName,
+  role,
+  expirationDate,
+}: {
+  organizationName: string;
+  role: string;
+  expirationDate: string | null;
+}) {
+  return (
+    <Section style={emailStyles.documentCard}>
+      <Text style={{ ...emailStyles.documentTitle, marginBottom: "8px" }}>{organizationName}</Text>
+      <Text style={{ ...emailStyles.documentMeta, marginBottom: "4px" }}>
+        Your role: <strong style={emailStyles.strong}>{role}</strong>
+      </Text>
+      {expirationDate && (
+        <Text style={{ ...emailStyles.documentMeta, color: status.destructive }}>
+          Invitation expires: {expirationDate}
+        </Text>
+      )}
+    </Section>
+  );
+}
+
+function MemberBenefitsSection() {
+  return (
+    <Section style={{ marginBottom: "24px" }}>
+      <Text
+        style={{
+          margin: "0 0 12px 0",
+          fontSize: "14px",
+          fontWeight: "500",
+          color: email.foreground,
+        }}
+      >
+        As a team member, you&apos;ll be able to:
+      </Text>
+      <Text style={{ margin: "0 0 4px 0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}>
+        &bull; Access shared documents and templates
+      </Text>
+      <Text style={{ margin: "0 0 4px 0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}>
+        &bull; Collaborate with team members
+      </Text>
+      <Text style={{ margin: "0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}>
+        &bull; Send documents for signature
+      </Text>
+    </Section>
+  );
+}
+
 export function TeamInvitation({
   inviteeEmail = "invitee@example.com",
   inviterName = "John Doe",
@@ -23,14 +104,7 @@ export function TeamInvitation({
   expiresAt,
 }: TeamInvitationProps) {
   const previewText = `${inviterName} invited you to join ${organizationName} on Seal`;
-  const expirationDate = expiresAt
-    ? new Date(expiresAt).toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : null;
+  const expirationDate = formatInvitationExpirationDate(expiresAt);
 
   return (
     <EmailLayout
@@ -38,24 +112,7 @@ export function TeamInvitation({
       subtitle="Team Invitation"
       footerText={`This invitation was sent to ${inviteeEmail}. If you don't want to join this team, you can safely ignore this email.`}
     >
-      {/* Invitation icon */}
-      <Section className="mb-[24px] text-center">
-        <div
-          style={{
-            width: "64px",
-            height: "64px",
-            backgroundColor: status.infoSurface,
-            borderRadius: "50%",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Text style={{ margin: "0", fontSize: "32px", lineHeight: "64px" }}>
-            &#x2709;&#xFE0F;
-          </Text>
-        </div>
-      </Section>
+      <InvitationIcon />
 
       <Section>
         <Heading
@@ -82,47 +139,13 @@ export function TeamInvitation({
           on Seal.
         </Text>
 
-        {/* Organization card */}
-        <Section style={emailStyles.documentCard}>
-          <Text style={{ ...emailStyles.documentTitle, marginBottom: "8px" }}>
-            {organizationName}
-          </Text>
-          <Text style={{ ...emailStyles.documentMeta, marginBottom: "4px" }}>
-            Your role: <strong style={emailStyles.strong}>{role}</strong>
-          </Text>
-          {expirationDate && (
-            <Text style={{ ...emailStyles.documentMeta, color: status.destructive }}>
-              Invitation expires: {expirationDate}
-            </Text>
-          )}
-        </Section>
+        <OrganizationCard
+          organizationName={organizationName}
+          role={role}
+          expirationDate={expirationDate}
+        />
 
-        {/* What you'll get */}
-        <Section style={{ marginBottom: "24px" }}>
-          <Text
-            style={{
-              margin: "0 0 12px 0",
-              fontSize: "14px",
-              fontWeight: "500",
-              color: email.foreground,
-            }}
-          >
-            As a team member, you&apos;ll be able to:
-          </Text>
-          <Text
-            style={{ margin: "0 0 4px 0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}
-          >
-            &bull; Access shared documents and templates
-          </Text>
-          <Text
-            style={{ margin: "0 0 4px 0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}
-          >
-            &bull; Collaborate with team members
-          </Text>
-          <Text style={{ margin: "0", fontSize: "14px", lineHeight: "24px", color: "#6b6560" }}>
-            &bull; Send documents for signature
-          </Text>
-        </Section>
+        <MemberBenefitsSection />
 
         {/* CTA Button */}
         <Section className="my-[32px] text-center">

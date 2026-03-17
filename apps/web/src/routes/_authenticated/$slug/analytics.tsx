@@ -6,6 +6,7 @@
  */
 
 import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
@@ -46,11 +47,12 @@ import {
 } from "recharts";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
+import { AnalyticsSkeleton, AnalyticsTabSkeleton } from "@/components/skeletons/analytics-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -62,13 +64,12 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { cn } from "@/lib/utils";
 import { pageSEO } from "@/lib/seo";
-import { api } from "@seal/backend/convex/_generated/api";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/$slug/analytics")({
   component: AnalyticsPage,
-  pendingComponent: DashboardSkeleton,
+  pendingComponent: AnalyticsSkeleton,
   head: () => ({
     meta: [
       { title: pageSEO.analytics.title },
@@ -98,11 +99,7 @@ function AnalyticsPage() {
   const effectiveScope = isAdmin ? scope : "personal";
 
   if (!stats) {
-    return (
-      <PageWrapper title="Analytics">
-        <DashboardSkeleton />
-      </PageWrapper>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   return (
@@ -343,8 +340,8 @@ function StatCard({
       <CardContent>
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold">{value}</span>
-          {trend === "up" && <ArrowUpIcon className="h-4 w-4 text-success" />}
-          {trend === "down" && <ArrowDownIcon className="h-4 w-4 text-destructive" />}
+          {trend === "up" && <ArrowUpIcon className="text-success h-4 w-4" />}
+          {trend === "down" && <ArrowDownIcon className="text-destructive h-4 w-4" />}
         </div>
         {progress !== undefined && <Progress value={progress} className="mt-2 h-2" />}
         {description && <p className="text-muted-foreground mt-1 text-xs">{description}</p>}
@@ -1079,9 +1076,14 @@ function ExportPanel() {
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1.5">
-            <label className="text-muted-foreground text-xs font-medium">Status</label>
+            <Label
+              htmlFor="analytics-export-status"
+              className="text-muted-foreground text-xs font-medium"
+            >
+              Status
+            </Label>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as ExportStatus)}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger id="analytics-export-status" className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1097,9 +1099,14 @@ function ExportPanel() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-muted-foreground text-xs font-medium">Period</label>
+            <Label
+              htmlFor="analytics-export-period"
+              className="text-muted-foreground text-xs font-medium"
+            >
+              Period
+            </Label>
             <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as ExportPeriod)}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger id="analytics-export-period" className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1154,7 +1161,7 @@ function EmailEngagementTab() {
   });
 
   if (!engagement) {
-    return <DashboardSkeleton />;
+    return <AnalyticsTabSkeleton />;
   }
 
   if (engagement.total === 0) {
@@ -1282,7 +1289,7 @@ function RecipientTimingTab() {
   const timing = useQuery(api.dashboard.analytics_queries.getRecipientTimingStats, { days: 30 });
 
   if (!timing) {
-    return <DashboardSkeleton />;
+    return <AnalyticsTabSkeleton />;
   }
 
   if (timing.sampleSize === 0) {
@@ -1384,7 +1391,7 @@ function TemplatePerformanceTab() {
   const templates = useQuery(api.dashboard.analytics_queries.getTemplatePerformance, { days: 90 });
 
   if (!templates || isLoadingPlan) {
-    return <DashboardSkeleton />;
+    return <AnalyticsTabSkeleton />;
   }
 
   if (!isPro) {
@@ -1393,7 +1400,7 @@ function TemplatePerformanceTab() {
         <CardContent className="flex h-[200px] flex-col items-center justify-center gap-2">
           <TrendingUpIcon className="text-muted-foreground h-8 w-8" />
           <p className="text-muted-foreground text-sm">
-            Template Performance is available on the Pro plan
+            Template Performance is available on the Professional plan
           </p>
         </CardContent>
       </Card>

@@ -37,7 +37,7 @@ export class ProfileSettingsPage {
 
   async goto(slug: string): Promise<void> {
     await this.page.goto(`/${slug}/settings/profile`);
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async updateProfile(data: {
@@ -56,26 +56,26 @@ export class ProfileSettingsPage {
     }
 
     await this.saveButton.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async navigateToNotifications(): Promise<void> {
     await this.notificationsLink.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async navigateToUsage(): Promise<void> {
     await this.usageLink.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async navigateToIntegrations(): Promise<void> {
     await this.integrationsLink.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async navigateToSecurity(): Promise<void> {
     await this.securityLink.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 }

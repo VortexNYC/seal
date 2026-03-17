@@ -90,3 +90,20 @@ export const getActiveMembershipByUserAndOrganization = internalQuery({
     return membership;
   },
 });
+
+/**
+ * Count active members in an organization (for per-seat billing)
+ */
+export const getActiveMemberCount = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    const members = await ctx.db
+      .query("organization_members")
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .collect();
+    return members.length;
+  },
+});

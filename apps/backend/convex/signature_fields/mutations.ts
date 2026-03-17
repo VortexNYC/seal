@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
-import { mutation } from "../_generated/server";
+import { mutation, type MutationCtx } from "../_generated/server";
 import { logFieldAction } from "../audit_logs/helpers";
 import { findRecipientByToken } from "../documents/recipient_helpers";
 import { findExistingPaymentFieldForRecipient } from "../payment_fields/helpers";
@@ -24,6 +24,83 @@ function verifyDocumentIsDraft(document: Doc<"documents">): void {
       `Cannot modify fields - document is ${workflowStatus}. Fields can only be modified in draft status.`,
     );
   }
+}
+
+async function ensureCreateFieldIsValid(
+  ctx: MutationCtx,
+  args: {
+    documentId: Id<"documents">;
+    recipientId?: Id<"document_recipients">;
+    fieldType: Doc<"signature_fields">["fieldType"];
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    page: number;
+    properties?: Doc<"signature_fields">["properties"];
+  },
+): Promise<void> {
+  const positionValidation = validateFieldPosition(args.x, args.y, args.width, args.height);
+  if (!positionValidation.valid) {
+    throw new Error(positionValidation.error);
+  }
+
+  const pageValidation = await validatePageNumber(ctx, args.documentId, args.page);
+  if (!pageValidation.valid) {
+    throw new Error(pageValidation.error);
+  }
+
+  if (args.recipientId) {
+    const assignmentValidation = await validateFieldAssignment(
+      ctx,
+      args.documentId,
+      args.recipientId,
+    );
+    if (!assignmentValidation.valid) {
+      throw new Error(assignmentValidation.error);
+    }
+  }
+
+  const typeValidation = validateFieldType(args.fieldType, args.properties);
+  if (!typeValidation.valid) {
+    throw new Error(typeValidation.error);
+  }
+}
+
+async function ensureRecipientHasNoPaymentField(
+  ctx: MutationCtx,
+  documentId: Id<"documents">,
+  recipientId: Id<"document_recipients">,
+): Promise<void> {
+  const existingPaymentField = await findExistingPaymentFieldForRecipient(
+    ctx,
+    documentId,
+    recipientId,
+  );
+  if (existingPaymentField) {
+    throw new ConvexError("Each recipient can only have one payment field");
+  }
+}
+
+async function determineMainSignatureField(
+  ctx: MutationCtx,
+  documentId: Id<"documents">,
+  recipientId?: Id<"document_recipients">,
+  fieldType?: Doc<"signature_fields">["fieldType"],
+): Promise<boolean | undefined> {
+  if (fieldType !== "signature" || !recipientId) {
+    return undefined;
+  }
+
+  const existingSignatureFields = await ctx.db
+    .query("signature_fields")
+    .withIndex("by_document_recipient", (q) =>
+      q.eq("documentId", documentId).eq("recipientId", recipientId),
+    )
+    .filter((q) => q.eq(q.field("fieldType"), "signature"))
+    .collect();
+
+  return existingSignatureFields.length === 0 ? true : undefined;
 }
 
 /**
@@ -89,63 +166,20 @@ export const createField = mutation({
     // Verify document is in draft status
     verifyDocumentIsDraft(document);
 
-    // Validate field position
-    const positionValidation = validateFieldPosition(args.x, args.y, args.width, args.height);
-    if (!positionValidation.valid) {
-      throw new Error(positionValidation.error);
-    }
-
-    // Validate page number
-    const pageValidation = await validatePageNumber(ctx, args.documentId, args.page);
-    if (!pageValidation.valid) {
-      throw new Error(pageValidation.error);
-    }
-
-    // Validate field assignment to recipient (only if assigned)
-    if (args.recipientId) {
-      const assignmentValidation = await validateFieldAssignment(
-        ctx,
-        args.documentId,
-        args.recipientId,
-      );
-      if (!assignmentValidation.valid) {
-        throw new Error(assignmentValidation.error);
-      }
-    }
-
-    // Validate field type and properties
-    const typeValidation = validateFieldType(args.fieldType, args.properties);
-    if (!typeValidation.valid) {
-      throw new Error(typeValidation.error);
-    }
+    await ensureCreateFieldIsValid(ctx, args);
 
     // Guard: only one payment field per recipient (only when assigned)
     if (args.fieldType === "payment" && args.recipientId) {
-      const existingPaymentField = await findExistingPaymentFieldForRecipient(
-        ctx,
-        args.documentId,
-        args.recipientId,
-      );
-      if (existingPaymentField) {
-        throw new ConvexError("Each recipient can only have one payment field");
-      }
+      await ensureRecipientHasNoPaymentField(ctx, args.documentId, args.recipientId);
     }
 
     // Auto-designate main signature if this is the first signature field for this recipient
-    let isMainSignature: boolean | undefined;
-    if (args.fieldType === "signature" && args.recipientId) {
-      const existingSignatureFields = await ctx.db
-        .query("signature_fields")
-        .withIndex("by_document_recipient", (q) =>
-          q.eq("documentId", args.documentId).eq("recipientId", args.recipientId),
-        )
-        .filter((q) => q.eq(q.field("fieldType"), "signature"))
-        .collect();
-
-      if (existingSignatureFields.length === 0) {
-        isMainSignature = true;
-      }
-    }
+    const isMainSignature = await determineMainSignatureField(
+      ctx,
+      args.documentId,
+      args.recipientId,
+      args.fieldType,
+    );
 
     // Create field
     const fieldId = await ctx.db.insert("signature_fields", {

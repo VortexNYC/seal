@@ -63,7 +63,7 @@ export function EsignConsentDialog({
   // Declined state
   if (consentState === "declined") {
     return (
-      <div className="dark:bg-background flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-8">
+      <div className="dark:bg-background bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-lg space-y-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
@@ -147,7 +147,7 @@ export function EsignConsentDialog({
   // Accepted state (brief flash before proceeding)
   if (consentState === "accepted") {
     return (
-      <div className="dark:bg-background flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-8">
+      <div className="dark:bg-background bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-lg space-y-6">
           <div className="flex justify-center">
             <SealLogo size={48} variant="color" />
@@ -183,7 +183,7 @@ export function EsignConsentDialog({
 
   // Initial consent form
   return (
-    <div className="dark:bg-background flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-8">
+    <div className="dark:bg-background bg-background flex min-h-dvh flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-lg space-y-6">
         <div className="flex justify-center">
           <SealLogo size={48} variant="color" />
@@ -258,17 +258,17 @@ export function EsignConsentDialog({
           </Label>
         </div>
 
-          <div className="space-y-3">
-            <Button
-              className="h-12 w-full text-base font-medium shadow-sm transition-shadow hover:shadow"
-              size="lg"
-              disabled={!isChecked || isSubmitting}
-              onClick={handleAccept}
-              aria-label="Accept electronic signature consent"
-            >
-              {isSubmitting ? "Recording consent..." : "Continue to Document"}
-            </Button>
-            <div className="text-center">
+        <div className="space-y-3">
+          <Button
+            className="h-12 w-full text-base font-medium shadow-sm transition-shadow hover:shadow"
+            size="lg"
+            disabled={!isChecked || isSubmitting}
+            onClick={handleAccept}
+            aria-label="Accept electronic signature consent"
+          >
+            {isSubmitting ? "Recording consent..." : "Continue to Document"}
+          </Button>
+          <div className="text-center">
             <Button
               variant="ghost"
               className="text-muted-foreground"

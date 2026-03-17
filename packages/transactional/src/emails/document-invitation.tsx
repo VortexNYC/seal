@@ -15,6 +15,97 @@ export interface DocumentInvitationProps {
   invoiceCurrency?: string;
 }
 
+function formatExpirationDate(expiresAt?: number): string | null {
+  return expiresAt
+    ? new Date(expiresAt).toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
+}
+
+function formatInvoiceAmount(invoiceAmount?: number, invoiceCurrency?: string): string | null {
+  return invoiceAmount && invoiceCurrency
+    ? new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: invoiceCurrency.toUpperCase(),
+      }).format(invoiceAmount / 100)
+    : null;
+}
+
+function CustomMessageSection({
+  customMessage,
+  senderName,
+}: Pick<DocumentInvitationProps, "customMessage" | "senderName">) {
+  if (!customMessage) {
+    return null;
+  }
+
+  return (
+    <Section style={emailStyles.messageBox}>
+      <Text
+        style={{
+          margin: "0",
+          fontSize: "14px",
+          color: email.warningText,
+          fontStyle: "italic",
+        }}
+      >
+        &ldquo;{customMessage}&rdquo;
+      </Text>
+      <Text style={{ margin: "4px 0 0 0", fontSize: "12px", color: email.warning }}>
+        &mdash; {senderName}
+      </Text>
+    </Section>
+  );
+}
+
+function InvoiceSection({
+  invoiceUrl,
+  invoiceAmountFormatted,
+}: {
+  invoiceUrl?: string;
+  invoiceAmountFormatted: string | null;
+}) {
+  if (!invoiceUrl) {
+    return null;
+  }
+
+  return (
+    <Section
+      style={{
+        backgroundColor: status.infoSurface,
+        border: `1px solid #bfdbfe`,
+        borderRadius: "8px",
+        padding: "16px",
+        marginBottom: "24px",
+      }}
+    >
+      <Text style={{ margin: "0", fontSize: "14px", fontWeight: "600", color: "#1e3a8a" }}>
+        Invoice attached
+      </Text>
+      <Text style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#1e40af" }}>
+        {invoiceAmountFormatted
+          ? `Amount due: ${invoiceAmountFormatted}`
+          : "Please review and pay the invoice before signing."}
+      </Text>
+      <Section className="mt-[12px] text-center">
+        <Button style={emailStyles.ctaButtonSecondary} href={invoiceUrl}>
+          Review Invoice
+        </Button>
+      </Section>
+      <Text style={{ margin: "10px 0 0 0", fontSize: "12px", color: email.mutedForeground }}>
+        Or open this link:{" "}
+        <Link href={invoiceUrl} style={{ color: "#2563eb", wordBreak: "break-all" }}>
+          {invoiceUrl}
+        </Link>
+      </Text>
+    </Section>
+  );
+}
+
 export function DocumentInvitation({
   recipientName = "Recipient",
   senderName = "Sender",
@@ -29,21 +120,8 @@ export function DocumentInvitation({
   const previewText = invoiceUrl
     ? `${senderName} sent you "${documentName}" with an invoice`
     : `${senderName} sent you "${documentName}" to sign`;
-  const expirationDate = expiresAt
-    ? new Date(expiresAt).toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : null;
-  const invoiceAmountFormatted =
-    invoiceAmount && invoiceCurrency
-      ? new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: invoiceCurrency.toUpperCase(),
-        }).format(invoiceAmount / 100)
-      : null;
+  const expirationDate = formatExpirationDate(expiresAt);
+  const invoiceAmountFormatted = formatInvoiceAmount(invoiceAmount, invoiceCurrency);
 
   return (
     <EmailLayout
@@ -68,57 +146,9 @@ export function DocumentInvitation({
           )}
         </Section>
 
-        {/* Custom message */}
-        {customMessage && (
-          <Section style={emailStyles.messageBox}>
-            <Text
-              style={{
-                margin: "0",
-                fontSize: "14px",
-                color: email.warningText,
-                fontStyle: "italic",
-              }}
-            >
-              &ldquo;{customMessage}&rdquo;
-            </Text>
-            <Text style={{ margin: "4px 0 0 0", fontSize: "12px", color: email.warning }}>
-              &mdash; {senderName}
-            </Text>
-          </Section>
-        )}
+        <CustomMessageSection customMessage={customMessage} senderName={senderName} />
 
-        {/* Invoice section */}
-        {invoiceUrl && (
-          <Section
-            style={{
-              backgroundColor: status.infoSurface,
-              border: `1px solid #bfdbfe`,
-              borderRadius: "8px",
-              padding: "16px",
-              marginBottom: "24px",
-            }}
-          >
-            <Text style={{ margin: "0", fontSize: "14px", fontWeight: "600", color: "#1e3a8a" }}>
-              Invoice attached
-            </Text>
-            <Text style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#1e40af" }}>
-              {invoiceAmountFormatted
-                ? `Amount due: ${invoiceAmountFormatted}`
-                : "Please review and pay the invoice before signing."}
-            </Text>
-            <Section className="mt-[12px] text-center">
-              <Button style={emailStyles.ctaButtonSecondary} href={invoiceUrl}>
-                Review Invoice
-              </Button>
-            </Section>
-            <Text style={{ margin: "10px 0 0 0", fontSize: "12px", color: email.mutedForeground }}>
-              Or open this link:{" "}
-              <Link href={invoiceUrl} style={{ color: "#2563eb", wordBreak: "break-all" }}>
-                {invoiceUrl}
-              </Link>
-            </Text>
-          </Section>
-        )}
+        <InvoiceSection invoiceUrl={invoiceUrl} invoiceAmountFormatted={invoiceAmountFormatted} />
 
         {/* CTA Button */}
         <Section className="my-[32px] text-center">

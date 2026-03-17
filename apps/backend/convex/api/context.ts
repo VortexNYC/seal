@@ -104,6 +104,14 @@ type ClerkJwtPayload = Record<string, unknown> & {
   scp?: string[];
 };
 
+type VerifiedApiKey = {
+  id: string;
+  name: string;
+  subject: string;
+  scopes?: string[];
+  claims?: Record<string, unknown>;
+};
+
 export interface ApiAuthContext {
   /** Which auth mechanism was used */
   authType: ApiAuthType;
@@ -294,6 +302,176 @@ function extractScopesFromJwt(payload: ClerkJwtPayload): string[] {
   return [];
 }
 
+async function verifyApiKey(token: string): Promise<VerifiedApiKey> {
+  const clerk = getClerkClient();
+
+  try {
+    return await (
+      clerk as unknown as {
+        apiKeys: {
+          verify: (value: string) => Promise<VerifiedApiKey>;
+        };
+      }
+    ).apiKeys.verify(token);
+  } catch (error) {
+    console.error("[resolveApiAuth] Clerk verification failed:", error);
+    throw new ApiError(401, "Invalid or expired API key", "INVALID_API_KEY");
+  }
+}
+
+async function resolveOrganizationKeySubject(
+  ctx: ActionCtx,
+  apiKey: VerifiedApiKey,
+): Promise<{
+  organizationId: Id<"organizations">;
+  userId: Id<"users">;
+  clerkUserId: string;
+}> {
+  const organization = await ctx.runQuery(internal.api.helpers.getOrgByClerkId, {
+    clerkOrgId: apiKey.subject,
+  });
+  if (!organization) {
+    throw new ApiError(403, "Organization not found", "ORGANIZATION_NOT_FOUND");
+  }
+
+  const creatorClerkId = apiKey.claims?.creator_user_id;
+  if (typeof creatorClerkId === "string") {
+    const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
+      clerkUserId: creatorClerkId,
+    });
+    if (!user) {
+      throw new ApiError(403, "API key creator not found", "USER_NOT_FOUND");
+    }
+
+    return {
+      organizationId: organization._id,
+      userId: user._id,
+      clerkUserId: creatorClerkId,
+    };
+  }
+
+  const owner = await ctx.runQuery(internal.api.helpers.getOrganizationOwner, {
+    organizationId: organization._id,
+  });
+  if (!owner) {
+    throw new ApiError(403, "Organization owner not found", "USER_NOT_FOUND");
+  }
+
+  return {
+    organizationId: organization._id,
+    userId: owner._id,
+    clerkUserId: owner.clerkId,
+  };
+}
+
+async function resolveUserKeySubject(
+  ctx: ActionCtx,
+  clerkUserId: string,
+): Promise<{
+  organizationId: Id<"organizations">;
+  userId: Id<"users">;
+  clerkUserId: string;
+}> {
+  const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
+    clerkUserId,
+  });
+  if (!user) {
+    throw new ApiError(403, "User not found", "USER_NOT_FOUND");
+  }
+  if (!user.activeOrganizationId) {
+    throw new ApiError(
+      403,
+      "User has no active organization. Set an active organization before using the API.",
+      "ORGANIZATION_ACCESS_DENIED",
+    );
+  }
+
+  return {
+    organizationId: user.activeOrganizationId,
+    userId: user._id,
+    clerkUserId,
+  };
+}
+
+function getOrgIdClaim(payload: ClerkJwtPayload): string | undefined {
+  return typeof payload.org_id === "string"
+    ? payload.org_id
+    : typeof payload.orgId === "string"
+      ? payload.orgId
+      : undefined;
+}
+
+async function getOrganizationIdForJwt(
+  ctx: ActionCtx,
+  user: { activeOrganizationId?: Id<"organizations"> | null },
+  orgIdClaim: string | undefined,
+): Promise<Id<"organizations">> {
+  if (orgIdClaim) {
+    const organization = await ctx.runQuery(internal.api.helpers.getOrgByClerkId, {
+      clerkOrgId: orgIdClaim,
+    });
+    if (!organization) {
+      throw new ApiError(403, "Organization not found", "ORGANIZATION_NOT_FOUND");
+    }
+    return organization._id;
+  }
+
+  if (user.activeOrganizationId) {
+    return user.activeOrganizationId;
+  }
+
+  throw new ApiError(
+    403,
+    "User has no active organization. Set an active organization before using the API.",
+    "ORGANIZATION_ACCESS_DENIED",
+  );
+}
+
+async function resolveOAuthAuthContext(
+  ctx: ActionCtx,
+  token: string,
+  clientIp?: string,
+): Promise<ApiAuthContext | null> {
+  const oauthResult = await verifyOAuthAccessToken(token);
+  if (!oauthResult) {
+    return null;
+  }
+
+  const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
+    clerkUserId: oauthResult.sub,
+  });
+  if (!user) {
+    throw new ApiError(403, "User not found", "USER_NOT_FOUND");
+  }
+
+  let organizationId = user.activeOrganizationId;
+  if (!organizationId) {
+    const memberships = await ctx.runQuery(internal.api.helpers.getUserOrganizationMemberships, {
+      userId: user._id,
+    });
+
+    if (memberships.length === 0) {
+      throw new ApiError(
+        403,
+        "User has no organization memberships. Join or create an organization first.",
+        "NO_ORGANIZATION",
+      );
+    }
+
+    organizationId = memberships[0].organizationId;
+  }
+
+  return buildAuthContext(ctx, {
+    authType: "jwt",
+    scopes: oauthResult.scopes,
+    userId: user._id,
+    organizationId,
+    clerkUserId: oauthResult.sub,
+    subjectType: "user",
+    clientIp,
+  });
+}
+
 async function buildAuthContext(
   ctx: ActionCtx,
   params: {
@@ -382,126 +560,29 @@ export async function resolveApiAuth(
   authHeader: string | null,
   clientIp?: string,
 ): Promise<ApiAuthContext> {
-  // Step 1: Extract Bearer token
   const token = parseBearerToken(authHeader);
+  const apiKey = await verifyApiKey(token);
+  const isOrgKey = apiKey.subject.startsWith("org_");
+  const resolvedIdentity = isOrgKey
+    ? await resolveOrganizationKeySubject(ctx, apiKey)
+    : await resolveUserKeySubject(ctx, apiKey.subject);
 
-  // Step 2: Verify API key with Clerk
-  const clerk = getClerkClient();
-  let apiKey: {
-    id: string;
-    name: string;
-    subject: string;
-    scopes?: string[];
-    claims?: Record<string, unknown>;
-  };
-
-  try {
-    // Note: Clerk API Keys is in beta, so the types may not be complete
-    // We use the verify method which returns the API key details
-    const verifyResult = await (
-      clerk as unknown as {
-        apiKeys: {
-          verify: (token: string) => Promise<{
-            id: string;
-            name: string;
-            subject: string;
-            scopes?: string[];
-            claims?: Record<string, unknown>;
-          }>;
-        };
-      }
-    ).apiKeys.verify(token);
-    apiKey = verifyResult;
-  } catch (error) {
-    console.error("[resolveApiAuth] Clerk verification failed:", error);
-    throw new ApiError(401, "Invalid or expired API key", "INVALID_API_KEY");
+  // Tier check: Free-tier organizations cannot use the API
+  const { plan } = await ctx.runQuery(internal.auth.subscription_helpers.checkProFeature, {
+    organizationId: resolvedIdentity.organizationId,
+  });
+  if (plan === "free") {
+    throw new ApiError(403, "API access requires a Professional plan", "API_ACCESS_DISABLED");
   }
-
-  const clerkSubject = apiKey.subject;
-  const isOrgKey = clerkSubject.startsWith("org_");
-
-  // Step 3: Resolve to internal user and organization
-  let userId: Id<"users">;
-  let organizationId: Id<"organizations">;
-  let clerkUserId: string;
-
-  if (isOrgKey) {
-    // Organization-scoped API key
-    const org = await ctx.runQuery(internal.api.helpers.getOrgByClerkId, {
-      clerkOrgId: clerkSubject,
-    });
-
-    if (!org) {
-      throw new ApiError(403, "Organization not found", "ORGANIZATION_NOT_FOUND");
-    }
-
-    organizationId = org._id;
-
-    // For org keys, get the creator user from claims or use org owner
-    const creatorClerkId = apiKey.claims?.creator_user_id as string | undefined;
-
-    if (creatorClerkId) {
-      // Use the specific creator user
-      const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
-        clerkUserId: creatorClerkId,
-      });
-
-      if (!user) {
-        throw new ApiError(403, "API key creator not found", "USER_NOT_FOUND");
-      }
-
-      userId = user._id;
-      clerkUserId = creatorClerkId;
-    } else {
-      // Fall back to organization owner
-      const owner = await ctx.runQuery(internal.api.helpers.getOrganizationOwner, {
-        organizationId,
-      });
-
-      if (!owner) {
-        throw new ApiError(403, "Organization owner not found", "USER_NOT_FOUND");
-      }
-
-      userId = owner._id;
-      clerkUserId = owner.clerkId;
-    }
-  } else {
-    // User-scoped API key
-    clerkUserId = clerkSubject;
-
-    const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
-      clerkUserId: clerkSubject,
-    });
-
-    if (!user) {
-      throw new ApiError(403, "User not found", "USER_NOT_FOUND");
-    }
-
-    userId = user._id;
-
-    // Use user's active organization
-    if (!user.activeOrganizationId) {
-      throw new ApiError(
-        403,
-        "User has no active organization. Set an active organization before using the API.",
-        "ORGANIZATION_ACCESS_DENIED",
-      );
-    }
-
-    organizationId = user.activeOrganizationId;
-  }
-
-  // Step 4: Build context with scope helpers
-  const scopes = apiKey.scopes ?? [];
 
   return buildAuthContext(ctx, {
     authType: "api_key",
     apiKeyId: apiKey.id,
     apiKeyName: apiKey.name,
-    scopes,
-    userId,
-    organizationId,
-    clerkUserId,
+    scopes: apiKey.scopes ?? [],
+    userId: resolvedIdentity.userId,
+    organizationId: resolvedIdentity.organizationId,
+    clerkUserId: resolvedIdentity.clerkUserId,
     subjectType: isOrgKey ? "organization" : "user",
     clientIp,
   });
@@ -584,52 +665,12 @@ export async function resolveJwtAuth(
     }
   }
 
-  // If session token verification failed, try OAuth access token
   if (!payload) {
-    const oauthResult = await verifyOAuthAccessToken(token);
-    if (oauthResult) {
-      // OAuth token verified - resolve user and build context
-      const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
-        clerkUserId: oauthResult.sub,
-      });
-
-      if (!user) {
-        throw new ApiError(403, "User not found", "USER_NOT_FOUND");
-      }
-
-      let organizationId = user.activeOrganizationId;
-
-      // Auto-select organization for OAuth users if not set
-      if (!organizationId) {
-        const memberships = await ctx.runQuery(
-          internal.api.helpers.getUserOrganizationMemberships,
-          { userId: user._id },
-        );
-
-        if (memberships.length === 0) {
-          throw new ApiError(
-            403,
-            "User has no organization memberships. Join or create an organization first.",
-            "NO_ORGANIZATION",
-          );
-        }
-
-        // Auto-select the first organization (or only one if single membership)
-        organizationId = memberships[0].organizationId;
-      }
-
-      return buildAuthContext(ctx, {
-        authType: "jwt",
-        scopes: oauthResult.scopes,
-        userId: user._id,
-        organizationId,
-        clerkUserId: oauthResult.sub,
-        subjectType: "user",
-        clientIp,
-      });
+    const oauthAuthContext = await resolveOAuthAuthContext(ctx, token, clientIp);
+    if (oauthAuthContext) {
+      return oauthAuthContext;
     }
 
-    // Both session token and OAuth verification failed
     console.error(
       "[resolveJwtAuth] Both session and OAuth verification failed:",
       sessionTokenError instanceof Error ? sessionTokenError.message : sessionTokenError,
@@ -643,13 +684,6 @@ export async function resolveJwtAuth(
     throw new ApiError(401, "Invalid session token subject", "INVALID_JWT");
   }
 
-  const orgIdClaim =
-    typeof payload.org_id === "string"
-      ? payload.org_id
-      : typeof payload.orgId === "string"
-        ? payload.orgId
-        : undefined;
-
   const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
     clerkUserId,
   });
@@ -658,34 +692,11 @@ export async function resolveJwtAuth(
     throw new ApiError(403, "User not found", "USER_NOT_FOUND");
   }
 
-  let organizationId: Id<"organizations"> | null = null;
-  if (orgIdClaim) {
-    const org = await ctx.runQuery(internal.api.helpers.getOrgByClerkId, {
-      clerkOrgId: orgIdClaim,
-    });
-
-    if (!org) {
-      throw new ApiError(403, "Organization not found", "ORGANIZATION_NOT_FOUND");
-    }
-
-    organizationId = org._id;
-  } else if (user.activeOrganizationId) {
-    organizationId = user.activeOrganizationId;
-  }
-
-  if (!organizationId) {
-    throw new ApiError(
-      403,
-      "User has no active organization. Set an active organization before using the API.",
-      "ORGANIZATION_ACCESS_DENIED",
-    );
-  }
-
-  const scopes = extractScopesFromJwt(payload);
+  const organizationId = await getOrganizationIdForJwt(ctx, user, getOrgIdClaim(payload));
 
   return buildAuthContext(ctx, {
     authType: "jwt",
-    scopes,
+    scopes: extractScopesFromJwt(payload),
     userId: user._id,
     organizationId,
     clerkUserId,

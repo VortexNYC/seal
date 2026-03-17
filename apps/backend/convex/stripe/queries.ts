@@ -6,11 +6,136 @@
  * - getAvailablePlans: active products with prices for the upgrade UI
  */
 
-import { query } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
+import { query, type QueryCtx } from "../_generated/server";
 import { authQuery } from "../auth/wrappers";
 
+type StripeQueryDbCtx = Pick<QueryCtx, "db">;
+
+async function getPriceAndProduct(ctx: StripeQueryDbCtx, externalPriceId: string) {
+  const price = await ctx.db
+    .query("subscription_prices")
+    .withIndex("by_external_price_id", (q) => q.eq("externalPriceId", externalPriceId))
+    .first();
+
+  const product = price
+    ? await ctx.db
+        .query("subscription_products")
+        .withIndex("by_external_product_id", (q) =>
+          q.eq("externalProductId", price.externalProductId),
+        )
+        .first()
+    : null;
+
+  return { price, product };
+}
+
+function selectPlanPrices(prices: Doc<"subscription_prices">[]) {
+  const monthly = prices.find(
+    (price) =>
+      price.recurring?.interval === "month" &&
+      (price.usageType === "licensed" || price.usageType === undefined),
+  );
+  const yearly = prices.find(
+    (price) =>
+      price.recurring?.interval === "year" &&
+      (price.usageType === "licensed" || price.usageType === undefined),
+  );
+  const fallback =
+    monthly ??
+    yearly ??
+    prices.find((price) => price.usageType === "licensed" || price.usageType === undefined);
+
+  return { monthly, yearly, fallback };
+}
+
+function toPricing(
+  price: Pick<Doc<"subscription_prices">, "unitAmount" | "currency" | "lookupKey"> | undefined,
+) {
+  if (!price) {
+    return null;
+  }
+
+  return {
+    amount: price.unitAmount ? price.unitAmount / 100 : 0,
+    currency: price.currency,
+    lookupKey: price.lookupKey ?? null,
+  };
+}
+
+async function buildAvailablePlan(ctx: StripeQueryDbCtx, product: Doc<"subscription_products">) {
+  const prices = await ctx.db
+    .query("subscription_prices")
+    .withIndex("by_external_product_id", (q) =>
+      q.eq("externalProductId", product.externalProductId),
+    )
+    .filter((q) => q.eq(q.field("status"), "active"))
+    .collect();
+
+  const { monthly, yearly, fallback } = selectPlanPrices(prices);
+  if (!fallback) {
+    return null;
+  }
+
+  return {
+    productId: product.externalProductId,
+    name: product.name,
+    description: product.description ?? null,
+    tier: product.metadata?.tier ?? null,
+    useType: product.metadata?.useType ?? null,
+    features: product.metadata?.features ?? null,
+    pricing: {
+      monthly: toPricing(monthly),
+      yearly: toPricing(yearly),
+    },
+  };
+}
+
+async function getCurrentSubscription(ctx: StripeQueryDbCtx, organizationId: Id<"organizations">) {
+  return await ctx.db
+    .query("subscriptions")
+    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
+    .order("desc")
+    .first();
+}
+
+function buildSubscriptionDetails(
+  subscription: Doc<"subscriptions">,
+  price: Doc<"subscription_prices"> | null,
+  product: Doc<"subscription_products"> | null,
+) {
+  return {
+    status: subscription.status,
+    currentPeriodStart: subscription.currentPeriodStart,
+    currentPeriodEnd: subscription.currentPeriodEnd,
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+    canceledAt: subscription.canceledAt,
+    trialStart: subscription.trialStart,
+    trialEnd: subscription.trialEnd,
+    ...buildSubscriptionPlanDetails(product),
+    ...buildSubscriptionPriceDetails(price),
+  };
+}
+
+function buildSubscriptionPlanDetails(product: Doc<"subscription_products"> | null) {
+  return {
+    tier: product?.metadata?.tier ?? "free",
+    planName: product?.name ?? "Free",
+    features: product?.metadata?.features ?? null,
+  };
+}
+
+function buildSubscriptionPriceDetails(price: Doc<"subscription_prices"> | null) {
+  return {
+    unitAmount: price?.unitAmount ?? 0,
+    currency: price?.currency ?? "usd",
+    interval: price?.recurring?.interval ?? "month",
+    intervalCount: price?.recurring?.intervalCount ?? 1,
+  };
+}
+
 /**
- * Get the current user's subscription details including plan metadata.
+ * Get the current organization's subscription details including plan metadata.
  *
  * Joins subscriptions → subscription_prices → subscription_products
  * to resolve tier, features, and credit information.
@@ -18,60 +143,15 @@ import { authQuery } from "../auth/wrappers";
 export const getSubscriptionDetails = authQuery({
   args: {},
   handler: async (ctx) => {
-    const userId = ctx.auth.userId;
-
-    // Find the user's active (or most relevant) subscription
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user_id", (q) => q.eq("userId", userId))
-      .order("desc")
-      .first();
+    const organizationId = ctx.auth.organizationId;
+    const subscription = await getCurrentSubscription(ctx, organizationId);
 
     if (!subscription) {
       return null;
     }
 
-    // Look up the price to get product info
-    const price = await ctx.db
-      .query("subscription_prices")
-      .withIndex("by_external_price_id", (q) =>
-        q.eq("externalPriceId", subscription.externalPriceId),
-      )
-      .first();
-
-    let product = null;
-    if (price) {
-      product = await ctx.db
-        .query("subscription_products")
-        .withIndex("by_external_product_id", (q) =>
-          q.eq("externalProductId", price.externalProductId),
-        )
-        .first();
-    }
-
-    const tier = product?.metadata?.tier ?? "free";
-    const features = product?.metadata?.features;
-
-    return {
-      status: subscription.status,
-      currentPeriodStart: subscription.currentPeriodStart,
-      currentPeriodEnd: subscription.currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-      canceledAt: subscription.canceledAt,
-      trialStart: subscription.trialStart,
-      trialEnd: subscription.trialEnd,
-
-      // Plan info
-      tier,
-      planName: product?.name ?? "Free",
-      features: features ?? null,
-
-      // Pricing
-      unitAmount: price?.unitAmount ?? 0,
-      currency: price?.currency ?? "usd",
-      interval: price?.recurring?.interval ?? "month",
-      intervalCount: price?.recurring?.intervalCount ?? 1,
-    };
+    const { price, product } = await getPriceAndProduct(ctx, subscription.externalPriceId);
+    return buildSubscriptionDetails(subscription, price, product);
   },
 });
 
@@ -93,59 +173,12 @@ export const getAvailablePlans = query({
     const plans = [];
 
     for (const product of products) {
-      const prices = await ctx.db
-        .query("subscription_prices")
-        .withIndex("by_external_product_id", (q) =>
-          q.eq("externalProductId", product.externalProductId),
-        )
-        .filter((q) => q.eq(q.field("status"), "active"))
-        .collect();
-
-      // Separate by interval for monthly/yearly pricing
-      const monthlyPrice = prices.find(
-        (p) =>
-          p.recurring?.interval === "month" &&
-          (p.usageType === "licensed" || p.usageType === undefined),
-      );
-      const yearlyPrice = prices.find(
-        (p) =>
-          p.recurring?.interval === "year" &&
-          (p.usageType === "licensed" || p.usageType === undefined),
-      );
-      // Fallback: any fixed recurring price
-      const fallbackPrice =
-        monthlyPrice ??
-        yearlyPrice ??
-        prices.find((p) => p.usageType === "licensed" || p.usageType === undefined);
-
-      if (!fallbackPrice) {
+      const plan = await buildAvailablePlan(ctx, product);
+      if (!plan) {
         continue;
       }
 
-      plans.push({
-        productId: product.externalProductId,
-        name: product.name,
-        description: product.description ?? null,
-        tier: product.metadata?.tier ?? null,
-        useType: product.metadata?.useType ?? null,
-        features: product.metadata?.features ?? null,
-        pricing: {
-          monthly: monthlyPrice
-            ? {
-                amount: monthlyPrice.unitAmount ? monthlyPrice.unitAmount / 100 : 0,
-                currency: monthlyPrice.currency,
-                lookupKey: monthlyPrice.lookupKey ?? null,
-              }
-            : null,
-          yearly: yearlyPrice
-            ? {
-                amount: yearlyPrice.unitAmount ? yearlyPrice.unitAmount / 100 : 0,
-                currency: yearlyPrice.currency,
-                lookupKey: yearlyPrice.lookupKey ?? null,
-              }
-            : null,
-        },
-      });
+      plans.push(plan);
     }
 
     // Sort by cheapest monthly price first

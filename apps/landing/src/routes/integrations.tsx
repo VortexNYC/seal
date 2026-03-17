@@ -70,7 +70,7 @@ function IntegrationsPage() {
         </FadeIn>
 
         {/* Integration cards */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3" data-testid="integrations-grid">
           {integrations.map((integration, i) => (
             <FadeIn delay={i * 0.1} key={integration.title}>
               <div className="border-border bg-card flex h-full flex-col rounded-2xl border p-8 sm:p-10">
@@ -128,7 +128,10 @@ function IntegrationsPage() {
               Get started with the API in minutes. Create an account, generate an API key, and send
               your first document.
             </p>
-            <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            <div
+              className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
+              data-testid="integrations-cta-group"
+            >
               <Button asChild className="group">
                 <a href="/docs/getting-started/quick-start">
                   Quick start guide

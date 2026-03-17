@@ -1,13 +1,20 @@
 {
-  "plugins": ["unicorn", "typescript", "oxc", "react", "react-hooks"],
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "jsx-a11y", "promise", "react", "typescript", "unicorn", "oxc"],
   "rules": {
     "no-console": ["warn", { "allow": ["info", "warn", "error", "debug"] }],
     "no-debugger": "error",
     "no-async-promise-executor": "error",
-    "no-shadow-restricted-names": "error",
+    "no-shadow-restricted-names": "off",
+    "no-undef": "off",
+    "array-callback-return": "off",
     "no-unused-vars": [
       "error",
-      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_" }
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
     ],
     "no-redeclare": "error",
     "eqeqeq": "error",
@@ -47,11 +54,15 @@
     "no-with": "warn",
     "use-isnan": "warn",
     "valid-typeof": "warn",
+    "jsx_a11y/click-events-have-key-events": "off",
+    "jsx_a11y/media-has-caption": "off",
+    "jsx_a11y/no-static-element-interactions": "off",
 
     "typescript/no-explicit-any": "error",
     "typescript/prefer-as-const": "error",
     "typescript/no-inferrable-types": "error",
     "typescript/await-thenable": "warn",
+    "typescript/consistent-type-imports": "error",
     "typescript/no-array-delete": "warn",
     "typescript/no-duplicate-enum-values": "warn",
     "typescript/no-extra-non-null-assertion": "warn",
@@ -66,8 +77,10 @@
     "typescript/triple-slash-reference": "warn",
 
     "react/no-children-prop": "off",
-    "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn",
+    "react/no-array-index-key": "off",
+    "react/button-has-type": "off",
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
 
     "oxc/bad-array-method-on-arguments": "warn",
     "oxc/bad-char-at-comparison": "warn",
@@ -95,23 +108,52 @@
     "unicorn/no-useless-length-check": "warn",
     "unicorn/no-useless-spread": "warn",
     "unicorn/prefer-set-size": "warn",
-    "unicorn/prefer-string-starts-ends-with": "warn"
+    "unicorn/prefer-string-starts-ends-with": "warn",
+
+    "complexity": ["warn", { "max": 15 }],
+    "max-lines-per-function": ["warn", { "max": 100, "skipBlankLines": true, "IIFEs": true }]
   },
+  "overrides": [
+    {
+      "files": [
+        "src/app/api/observability/route.ts",
+        "src/app/(app)/notes/[noteId]/page.tsx",
+        "src/app/(app)/chat/page.tsx",
+        "src/app/(app)/tui/connect/page.tsx",
+        "src/app/page.tsx",
+        "src/components/app-sidebar/app-sidebar.tsx",
+        "src/components/app-sidebar/folder-tree-item.tsx",
+        "src/components/app-sidebar/note-tree-item.tsx",
+        "src/components/ai-elements/prompt-input.tsx",
+        "src/hooks/use-convex-chat.ts"
+      ],
+      "rules": {
+        "complexity": "off",
+        "max-lines-per-function": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.integration.test.ts"],
+      "rules": {
+        "max-lines-per-function": "off"
+      }
+    }
+  ],
   "ignorePatterns": [
     "**/node_modules",
     "**/dist",
     "**/_generated",
     "**/.turbo",
     "**/coverage",
+    "**/.expo",
+    "**/src-tauri",
     "**/.clerk",
     "**/.cache",
     "**/.output",
     "**/.next",
-    "**/.tanstack",
     "**/*.d.ts",
-    "**/routeTree.gen.ts",
-    "**/.source",
-    "**/public/api/search.json",
+    "**/.auth",
+    "**/.whatsapp-auth",
     "**/test-results",
     "**/playwright-report"
   ]

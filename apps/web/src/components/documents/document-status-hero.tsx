@@ -34,16 +34,19 @@ export function DocumentStatusHero({ workflowStatus, createdAt }: DocumentStatus
 
   return (
     <div
-      className={cn("rounded-2xl border p-6 text-center shadow-sm sm:rounded-xl sm:p-5", getStatusStyles())}
+      className={cn(
+        "rounded-2xl border p-6 text-center shadow-sm sm:rounded-xl sm:p-5",
+        getStatusStyles(),
+      )}
       aria-live="polite"
     >
-      <div className="mb-2 text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+      <div className="text-muted-foreground mb-2 text-xs font-semibold tracking-[0.16em] uppercase">
         Document Status
       </div>
       <div className={cn("mb-1 text-3xl font-semibold sm:text-2xl", getTextStyles())}>
         {getStatusLabel(workflowStatus)}
       </div>
-      <div className="text-sm font-medium text-muted-foreground sm:text-xs">
+      <div className="text-muted-foreground text-sm font-medium sm:text-xs">
         Created {formatDate(createdAt)}
       </div>
     </div>

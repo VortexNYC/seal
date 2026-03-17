@@ -18,13 +18,13 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { FormSkeleton } from "@/components/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/profile/usage")({
@@ -60,11 +60,11 @@ function UsageSettings() {
         <Card className="border-warning/30 bg-warning-surface">
           <CardContent className="flex items-center justify-between py-4">
             <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-warning" />
+              <AlertTriangle className="text-warning h-5 w-5" />
               <div>
-                <p className="font-medium text-warning">Approaching usage limits</p>
-                <p className="text-sm text-warning">
-                  Upgrade to Pro for higher limits and more features
+                <p className="text-warning font-medium">Approaching usage limits</p>
+                <p className="text-warning text-sm">
+                  Upgrade to Professional for higher limits and more features
                 </p>
               </div>
             </div>
@@ -105,7 +105,7 @@ function UsageSettings() {
               className={cn(isApproachingDocumentLimit && "[&>div]:bg-warning")}
             />
             {isApproachingDocumentLimit && (
-              <p className="text-xs text-warning">
+              <p className="text-warning text-xs">
                 {Math.round(stats.documentsPercentUsed)}% of monthly limit used
               </p>
             )}
@@ -124,7 +124,7 @@ function UsageSettings() {
               className={cn(isApproachingStorageLimit && "[&>div]:bg-warning")}
             />
             {isApproachingStorageLimit && (
-              <p className="text-xs text-warning">
+              <p className="text-warning text-xs">
                 {Math.round(stats.storagePercentUsed)}% of storage limit used
               </p>
             )}
@@ -227,10 +227,10 @@ function UsageSettings() {
                 {stats.completedThisMonth} of {stats.sentThisMonth} documents completed
               </p>
               {stats.sentThisMonth > 0 && stats.completionRate >= 80 && (
-                <p className="text-sm text-success">Great completion rate!</p>
+                <p className="text-success text-sm">Great completion rate!</p>
               )}
               {stats.sentThisMonth > 0 && stats.completionRate < 50 && (
-                <p className="text-sm text-warning">
+                <p className="text-warning text-sm">
                   Consider sending reminders to improve completion
                 </p>
               )}

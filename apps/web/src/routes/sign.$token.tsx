@@ -6,10 +6,15 @@
  * This is an unauthenticated route - no Clerk login required.
  */
 
-import { ConvexError } from "convex/values";
 import { convexQuery } from "@convex-dev/react-query";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { type ErrorComponentProps, createFileRoute, Link, useRouteContext } from "@tanstack/react-router";
+import {
+  type ErrorComponentProps,
+  createFileRoute,
+  Link,
+  useRouteContext,
+} from "@tanstack/react-router";
+import { ConvexError } from "convex/values";
 import {
   AlertCircle,
   ArrowDownIcon,
@@ -46,13 +51,7 @@ import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signe
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
@@ -129,7 +128,7 @@ function SigningErrorComponent({ error }: ErrorComponentProps) {
     <div className="flex min-h-dvh items-center justify-center p-4">
       <Card className="w-full max-w-md text-center">
         <CardHeader>
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+          <div className="bg-muted mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
             <AlertCircle className="text-muted-foreground h-6 w-6" />
           </div>
           <CardTitle className="text-xl">
@@ -746,6 +745,7 @@ function SigningPage() {
       }, 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [unfilledFields, isCompleted, scrollToField]);
 
   // State for collapsible sections on mobile
@@ -814,13 +814,13 @@ function SigningPage() {
   if (waitingForPreviousGroup && !isCompleted) {
     return (
       <div
-        className="dark:bg-background flex h-dvh flex-col items-center justify-center bg-background px-4"
+        className="dark:bg-background bg-background flex h-dvh flex-col items-center justify-center px-4"
         role="status"
         aria-live="polite"
       >
         <div className="w-full max-w-md space-y-6 text-center">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-warning-surface">
-            <ClockIcon className="size-8 text-warning" />
+          <div className="bg-warning-surface mx-auto flex size-16 items-center justify-center rounded-full">
+            <ClockIcon className="text-warning size-8" />
           </div>
           <div className="space-y-2">
             <h1 className="text-xl font-semibold tracking-tight text-balance">
@@ -877,20 +877,20 @@ function SigningPage() {
 
   return (
     <div
-      className="dark:bg-background flex h-dvh flex-col overflow-hidden bg-background"
+      className="dark:bg-background bg-background flex h-dvh flex-col overflow-hidden"
       style={brandStyle}
       data-embedded={isEmbedded ? "true" : undefined}
     >
       <h1 className="sr-only">{doc.name} — Sign Document</h1>
 
-    {/* Offline Banner - Global */}
-    {!isOnline && (
-      <div
-        className="fixed top-0 right-0 left-0 z-50 border-b border-warning-surface bg-warning-surface px-4 py-2"
-        role="status"
-        aria-live="polite"
-      >
-          <div className="flex items-center justify-center gap-2 text-warning-foreground">
+      {/* Offline Banner - Global */}
+      {!isOnline && (
+        <div
+          className="border-warning-surface bg-warning-surface fixed top-0 right-0 left-0 z-50 border-b px-4 py-2"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="text-warning-foreground flex items-center justify-center gap-2">
             <WifiOffIcon className="h-4 w-4" />
             <span className="text-sm font-medium">
               You're offline. Your progress has been saved.
@@ -902,7 +902,7 @@ function SigningPage() {
       {/* Desktop Header - Full width top bar (hidden in embedded mode) */}
       <header
         className={cn(
-          "border-border/50 hidden shrink-0 border-b bg-card lg:block",
+          "border-border/50 bg-card hidden shrink-0 border-b lg:block",
           isEmbedded && "!hidden",
         )}
       >
@@ -986,7 +986,7 @@ function SigningPage() {
       {/* Mobile Header - Only visible on small screens (hidden in embedded mode) */}
       <header
         className={cn(
-          "border-border/50 sticky top-0 z-40 border-b bg-background/80 backdrop-blur-xl lg:hidden",
+          "border-border/50 bg-background/80 sticky top-0 z-40 border-b backdrop-blur-xl lg:hidden",
           isEmbedded && "!hidden",
         )}
       >
@@ -1065,7 +1065,10 @@ function SigningPage() {
               )}
             </button>
           </CollapsibleTrigger>
-          <CollapsibleContent id="signing-mobile-info" className="border-border/30 border-t bg-card">
+          <CollapsibleContent
+            id="signing-mobile-info"
+            className="border-border/30 bg-card border-t"
+          >
             <div className="space-y-4 px-4 py-4">
               {doc.description && (
                 <p className="text-muted-foreground text-sm">{doc.description}</p>
@@ -1095,7 +1098,7 @@ function SigningPage() {
       {/* Main Layout - Side by side on desktop */}
       <div className="min-h-0 flex-1 overflow-hidden lg:flex">
         {/* Right Sidebar - Document Info (Desktop only) - Uses order-2 to appear on right */}
-        <aside className="border-border/50 hidden overflow-hidden bg-card lg:order-2 lg:flex lg:w-[380px] lg:flex-col lg:border-l xl:w-[420px]">
+        <aside className="border-border/50 bg-card hidden overflow-hidden lg:order-2 lg:flex lg:w-[380px] lg:flex-col lg:border-l xl:w-[420px]">
           {/* Sidebar Header - Document Details */}
           {doc.description && (
             <div className="border-border/50 border-b p-6">
@@ -1184,8 +1187,8 @@ function SigningPage() {
               <div className="space-y-3">
                 {recipient.signedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success-surface">
-                      <CheckCircle2Icon className="h-4 w-4 text-success" />
+                    <div className="bg-success-surface flex h-8 w-8 items-center justify-center rounded-full">
+                      <CheckCircle2Icon className="text-success h-4 w-4" />
                     </div>
                     <div>
                       <p className="font-medium">Signed</p>
@@ -1197,8 +1200,8 @@ function SigningPage() {
                 )}
                 {recipient.approvedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success-surface">
-                      <ShieldCheckIcon className="h-4 w-4 text-success" />
+                    <div className="bg-success-surface flex h-8 w-8 items-center justify-center rounded-full">
+                      <ShieldCheckIcon className="text-success h-4 w-4" />
                     </div>
                     <div>
                       <p className="font-medium">Approved</p>
@@ -1210,8 +1213,8 @@ function SigningPage() {
                 )}
                 {recipient.declinedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10">
-                      <XCircleIcon className="h-4 w-4 text-destructive" />
+                    <div className="bg-destructive/10 flex h-8 w-8 items-center justify-center rounded-full">
+                      <XCircleIcon className="text-destructive h-4 w-4" />
                     </div>
                     <div>
                       <p className="font-medium">Declined</p>
@@ -1223,8 +1226,8 @@ function SigningPage() {
                 )}
                 {recipient.viewedAt && (
                   <div className="flex items-center gap-3 text-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info-surface">
-                      <ClockIcon className="h-4 w-4 text-info" />
+                    <div className="bg-info-surface flex h-8 w-8 items-center justify-center rounded-full">
+                      <ClockIcon className="text-info h-4 w-4" />
                     </div>
                     <div>
                       <p className="font-medium">Viewed</p>
@@ -1239,8 +1242,8 @@ function SigningPage() {
                   !recipient.declinedAt &&
                   !recipient.viewedAt && (
                     <div className="flex items-center gap-3 text-sm">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning-surface">
-                        <ClockIcon className="h-4 w-4 text-warning" />
+                      <div className="bg-warning-surface flex h-8 w-8 items-center justify-center rounded-full">
+                        <ClockIcon className="text-warning h-4 w-4" />
                       </div>
                       <div>
                         <p className="font-medium">Pending</p>
@@ -1257,7 +1260,7 @@ function SigningPage() {
               filledRequiredFields.length < requiredFields.length && (
                 <>
                   <Separator />
-                  <div className="rounded-xl border border-info-surface bg-info-surface/50 p-4">
+                  <div className="border-info-surface bg-info-surface/50 rounded-xl border p-4">
                     <div className="flex items-start gap-3">
                       <PlayCircleIcon className="text-info mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
@@ -1273,7 +1276,7 @@ function SigningPage() {
                           className="text-info hover:bg-info-surface mt-2 h-8 px-0"
                           onClick={() => {
                             if (unfilledFields.length > 0) {
-                              scrollToField(unfilledFields[0]._id);
+                              scrollToField(unfilledFields[0]!._id);
                             }
                           }}
                           aria-label="Jump to the next incomplete field"
@@ -1292,7 +1295,7 @@ function SigningPage() {
               <>
                 <Separator />
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-warning-surface bg-warning-surface/50 p-4">
+                  <div className="border-warning-surface bg-warning-surface/50 rounded-xl border p-4">
                     <div className="flex items-start gap-3">
                       <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
@@ -1322,7 +1325,7 @@ function SigningPage() {
               <>
                 <Separator />
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-warning-surface bg-warning-surface/50 p-4">
+                  <div className="border-warning-surface bg-warning-surface/50 rounded-xl border p-4">
                     <div className="flex items-start gap-3">
                       <CreditCardIcon className="text-warning mt-0.5 h-5 w-5 shrink-0" />
                       <div className="min-w-0 flex-1">
@@ -1391,8 +1394,8 @@ function SigningPage() {
 
           {/* Completed state footer */}
           {isCompleted && recipient.status !== "declined" && (
-            <div className="border-border/50 space-y-4 border-t bg-success-surface/30 p-6">
-              <div className="flex items-center justify-center gap-2 text-success">
+            <div className="border-border/50 bg-success-surface/30 space-y-4 border-t p-6">
+              <div className="text-success flex items-center justify-center gap-2">
                 <CheckCircleIcon className="h-5 w-5" />
                 <span className="text-sm font-semibold">
                   {recipient.status === "approved" ? "Document Approved" : "Document Signed"}
@@ -1429,7 +1432,7 @@ function SigningPage() {
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden lg:order-1">
           {/* Field Navigation Bar */}
           {!isCompleted && fields.length > 0 && (
-            <div className="border-border/50 sticky top-0 z-30 border-b bg-background/80 px-4 py-2.5 backdrop-blur-xl lg:top-0">
+            <div className="border-border/50 bg-background/80 sticky top-0 z-30 border-b px-4 py-2.5 backdrop-blur-xl lg:top-0">
               <div className="mx-auto flex max-w-4xl items-center justify-between">
                 <div className="hidden items-center gap-4 sm:flex">
                   <div className="flex items-center gap-2">
@@ -1478,9 +1481,11 @@ function SigningPage() {
                       </Button>
                     </>
                   ) : (
-                    <div className="text-success flex items-center gap-2 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                    <div className="text-success animate-in fade-in slide-in-from-bottom-1 flex items-center gap-2 duration-300">
                       <CheckCircleIcon className="h-5 w-5" />
-                      <span className="text-sm font-semibold">All fields completed — ready to sign</span>
+                      <span className="text-sm font-semibold">
+                        All fields completed — ready to sign
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1489,7 +1494,7 @@ function SigningPage() {
           )}
 
           {/* PDF Viewer Area */}
-          <div ref={pdfContainerRef} className="flex-1 overflow-auto bg-secondary dark:bg-muted/30">
+          <div ref={pdfContainerRef} className="bg-secondary dark:bg-muted/30 flex-1 overflow-auto">
             <div className="p-4 sm:p-6 lg:p-8">
               <div className="mx-auto max-w-4xl">
                 {/* Page count header */}
@@ -1517,7 +1522,7 @@ function SigningPage() {
                       onLoadSuccess={onDocumentLoadSuccess}
                       loading={
                         <div
-                          className="border-border/50 rounded-lg border bg-card p-16 text-center shadow-sm"
+                          className="border-border/50 bg-card rounded-lg border p-16 text-center shadow-sm"
                           role="status"
                           aria-live="polite"
                         >
@@ -1530,7 +1535,7 @@ function SigningPage() {
                       }
                       error={
                         <div
-                          className="border-destructive/30 rounded-lg border bg-card p-16 text-center shadow-sm"
+                          className="border-destructive/30 bg-card rounded-lg border p-16 text-center shadow-sm"
                           role="alert"
                         >
                           <p className="text-destructive font-medium">Failed to load PDF</p>
@@ -1547,7 +1552,7 @@ function SigningPage() {
                         return (
                           <div
                             key={`page_${pageNumber}`}
-                            className="border-border/50 relative mb-4 overflow-hidden rounded-lg border bg-card shadow-sm last:mb-0"
+                            className="border-border/50 bg-card relative mb-4 overflow-hidden rounded-lg border shadow-sm last:mb-0"
                           >
                             <Page
                               pageNumber={pageNumber}
@@ -1574,7 +1579,7 @@ function SigningPage() {
                               return (
                                 <FillableFieldOverlay
                                   key={field._id}
-                                  ref={(el) => {
+                                  ref={(el: HTMLButtonElement | null) => {
                                     if (el) {
                                       fieldRefs.current.set(field._id, el);
                                     } else {
@@ -1615,8 +1620,8 @@ function SigningPage() {
 
                     {/* Signature Stamp - shown when document is completed with no positioned fields */}
                     {isCompleted && fields.length === 0 && recipient.status === "signed" && (
-                      <div className="border-border/50 mx-auto mt-4 max-w-md rounded-lg border bg-card p-4 shadow-sm">
-                        <div className="overflow-hidden rounded-md border border-border">
+                      <div className="border-border/50 bg-card mx-auto mt-4 max-w-md rounded-lg border p-4 shadow-sm">
+                        <div className="border-border overflow-hidden rounded-md border">
                           {/* Signature details stamp - Name, date and time only */}
                           <div className="bg-card px-4 py-4">
                             <div className="text-success mb-3 flex items-center gap-2">
@@ -1655,7 +1660,7 @@ function SigningPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="border-border/50 rounded-lg border bg-card p-16 text-center shadow-sm">
+                  <div className="border-border/50 bg-card rounded-lg border p-16 text-center shadow-sm">
                     <div className="animate-pulse space-y-4">
                       <div className="bg-muted mx-auto h-4 w-1/3 rounded" />
                       <div className="bg-muted mx-auto h-4 w-1/2 rounded" />
@@ -1671,7 +1676,7 @@ function SigningPage() {
           {!isCompleted && !showSignatureCapture && (
             <div
               className={cn(
-                "border-border/50 sticky bottom-0 z-40 border-t bg-background/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden",
+                "border-border/50 bg-background/95 sticky bottom-0 z-40 border-t p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden",
                 isEmbedded && "!block",
               )}
             >
@@ -1710,10 +1715,10 @@ function SigningPage() {
 
           {/* Mobile Completed Footer */}
           {isCompleted && (
-            <div className="border-border/50 sticky bottom-0 z-40 border-t bg-background/95 p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+            <div className="border-border/50 bg-background/95 sticky bottom-0 z-40 border-t p-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
               {recipient.status !== "declined" ? (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-center gap-2 text-success">
+                  <div className="text-success flex items-center justify-center gap-2">
                     <CheckCircleIcon className="h-4 w-4" />
                     <span className="text-xs font-semibold">
                       {recipient.status === "approved" ? "Approved" : "Signed"} successfully
@@ -1748,7 +1753,7 @@ function SigningPage() {
       {/* Signature Capture Modal */}
       <Dialog
         open={!isCompleted && showSignatureCapture}
-        onOpenChange={(open) => !open && handleCancelSignature()}
+        onOpenChange={(open: boolean) => !open && handleCancelSignature()}
       >
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
           <DialogTitle className="sr-only">Sign Document</DialogTitle>
@@ -1775,7 +1780,7 @@ function SigningPage() {
             <Textarea
               id="decline-reason"
               value={declineReason}
-              onChange={(e) => setDeclineReason(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDeclineReason(e.target.value)}
               placeholder="Enter your reason here..."
               rows={4}
               className="resize-none"
@@ -1836,7 +1841,11 @@ function SigningPage() {
       {!isEmbedded && !branding?.hideSealBranding && (
         <div className="border-border/50 text-muted-foreground hidden shrink-0 border-t py-2 text-center text-xs lg:block">
           {branding?.customFooterText || (
-            <a href="https://seal.nyc" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+            <a
+              href="https://seal.nyc"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
               Powered by Seal
             </a>
           )}

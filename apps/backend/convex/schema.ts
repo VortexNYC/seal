@@ -8,6 +8,7 @@ import {
 } from "./schemas/ai_document_annotations";
 import { aiFieldSuggestionsTable } from "./schemas/ai_field_suggestions";
 import { aiProgressTable } from "./schemas/ai_progress";
+import { aiRoutingLogsTable } from "./schemas/ai_routing_logs";
 import { aiThreadsTable } from "./schemas/ai_threads";
 import { aiUsageLogTable } from "./schemas/ai_usage_log";
 import { connectedAppsTable, integrationActivityLogsTable } from "./schemas/api_keys";
@@ -34,6 +35,7 @@ import {
   documentsTable,
 } from "./schemas/documents";
 import { downloadTokensTable } from "./schemas/download_tokens";
+import { feedbackTable } from "./schemas/feedback";
 import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
 import {
   mcpOauthClientsTable,
@@ -213,6 +215,9 @@ export default defineSchema({
   webhook_endpoints: webhookEndpoints,
   webhook_deliveries: webhookDeliveries,
 
+  // Feedback
+  feedback: feedbackTable,
+
   // Data exports (GDPR/CCPA compliance)
   data_exports: dataExportsTable,
 
@@ -221,6 +226,7 @@ export default defineSchema({
   ai_document_annotations: aiDocumentAnnotationsTable,
   ai_threads: aiThreadsTable,
   ai_progress: aiProgressTable,
+  ai_routing_logs: aiRoutingLogsTable,
   ai_usage_log: aiUsageLogTable,
 
   // MCP OAuth

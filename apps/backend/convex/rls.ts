@@ -143,24 +143,18 @@ type StrictRules = {
  * Define RLS rules for each table
  * Exported for use in authQuery/authMutation wrappers
  */
-export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
-  const rlsCtx = await getRLSContext(ctx);
-
-  // TypeScript will error if any table from DataModel is missing
-  const rules: StrictRules = {
-    // ====================
-    // User Management
-    // ====================
+function getUserManagementRules(
+  ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<StrictRules, "users" | "user_profiles" | "saved_signatures"> {
+  return {
     users: {
       read: async (_ctx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        // User can read their own record
         if (doc._id === rlsCtx.userId) return true;
-        // Org members with users:view can see other members
         const currentOrgId = rlsCtx.orgId;
         if (rlsCtx.hasPermission("users:view") && currentOrgId) {
-          // Check if user is in the same organization
           const membership = await ctx.db
             .query("organization_members")
             .withIndex("by_user_organization", (q) =>
@@ -174,30 +168,25 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
       modify: async (_ctx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        // Users can only modify their own record
         return doc._id === rlsCtx.userId;
       },
     },
-
     user_profiles: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (!rlsCtx.userId) return false;
-        // Users can only read their own profile
-        // Look up user by clerkUserId to check ownership
-        const user = await ctx.db.get(rlsCtx.userId);
+        const user = await queryCtx.db.get(rlsCtx.userId);
         return user !== null && user.clerkId === doc.clerkUserId;
       },
-      modify: async (ctx, doc) => {
+      modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (!rlsCtx.userId) return false;
-        const user = await ctx.db.get(rlsCtx.userId);
+        const user = await queryCtx.db.get(rlsCtx.userId);
         return user !== null && user.clerkId === doc.clerkUserId;
       },
     },
-
     saved_signatures: {
       read: async (_ctx, doc) => {
         if (!rlsCtx) return false;
@@ -210,754 +199,618 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
         return doc.userId === rlsCtx.userId;
       },
     },
+  };
+}
 
-    // ====================
-    // Organization Management
-    // ====================
+function getOrganizationManagementRules(
+  _ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<
+  StrictRules,
+  "organizations" | "organization_members" | "organization_invitations" | "organization_roles"
+> {
+  return {
     organizations: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        // Members can read their organization
         return rlsCtx.orgId === doc._id;
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc._id) return false;
-        // Need organization:manage permission
         return rlsCtx.hasPermission("organization:manage");
       },
     },
-
     organization_members: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        // Can read own membership
         if (doc.userId === rlsCtx.userId) return true;
-        // Can read members of same org
         return rlsCtx.orgId === doc.organizationId;
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-        // Owner can modify anyone
         if (rlsCtx.isOwner) return true;
-        // Admin can modify non-owners
-        if (rlsCtx.isAdmin && doc.role !== "owner") return true;
-        return false;
+        return rlsCtx.isAdmin && doc.role !== "owner";
       },
     },
-
     organization_invitations: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        // Can see invitations in same org
         if (rlsCtx.orgId === doc.organizationId) return true;
-        // Can see invitations sent by user
-        if (doc.invitedBy === rlsCtx.userId) return true;
-        return false;
+        return doc.invitedBy === rlsCtx.userId;
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-        // Inviter can modify
         if (doc.invitedBy === rlsCtx.userId) return true;
-        // Admin can modify
         return rlsCtx.isAdmin;
       },
     },
-
     organization_roles: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        // Members can read roles in their org
         return rlsCtx.orgId === doc.organizationId;
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-        // Need users:roles permission
         return rlsCtx.hasPermission("users:roles");
       },
     },
+  };
+}
 
-    // ====================
-    // Documents (Complex Sharing Logic)
-    // ====================
+function getPrimaryDocumentRules(
+  ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<StrictRules, "documents" | "document_access" | "document_recipients"> {
+  return {
     documents: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (doc.status === "deleted") return false;
-
-        // Check for recipient context (token-based access)
         if (rlsCtx.recipientContext) {
           return doc._id === rlsCtx.recipientContext.documentId;
         }
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, doc);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, doc);
         return access !== "none";
       },
-      modify: async (ctx, doc) => {
+      modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (doc.status === "deleted") return false;
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, doc);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, doc);
         return access === "owner" || access === "manage" || access === "edit";
       },
     },
-
     document_access: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        // Can read own access grants
         if (doc.userId === rlsCtx.userId) return true;
-
-        // Document owner/manager can see all grants
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner" || access === "manage";
       },
-      modify: async (ctx, doc) => {
+      modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner" || access === "manage";
       },
     },
-
     document_recipients: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        // Check for recipient context (token-based access)
         if (rlsCtx.recipientContext) {
           return doc._id === rlsCtx.recipientContext.recipientId;
         }
-
-        // Check if user is the recipient
         if (doc.userId && doc.userId === rlsCtx.userId) return true;
-
-        // Check document access
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access !== "none";
       },
-      modify: async (ctx, doc) => {
+      modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        // Check for recipient context (token-based signing)
         if (rlsCtx.recipientContext) {
-          // Recipients can only modify their own record
           return doc._id === rlsCtx.recipientContext.recipientId;
         }
-
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        // Only owner can modify recipients
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner";
       },
     },
+  };
+}
 
+function getDocumentWorkflowRules(
+  _ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<StrictRules, "document_reminders" | "folders" | "document_invoices"> {
+  return {
     document_reminders: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access !== "none";
       },
-      modify: async (ctx, doc) => {
+      modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner";
       },
     },
-
     folders: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        // Members can see folders in their org
         if (doc.organizationId !== rlsCtx.orgId) return false;
-        // Admin-visibility folders require admin role
         if (doc.visibility === "admin") return rlsCtx.isAdmin;
         return true;
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (doc.organizationId !== rlsCtx.orgId) return false;
-        // Only admins and folder creators can modify
         return rlsCtx.isAdmin || doc.createdBy === rlsCtx.userId;
       },
     },
-
     document_invoices: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         return doc.organizationId === rlsCtx.orgId;
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (doc.organizationId !== rlsCtx.orgId) return false;
         return rlsCtx.isAdmin;
       },
     },
+  };
+}
 
+function getDocumentAssetRules(
+  _ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<StrictRules, "document_versions" | "payment_field_configs"> {
+  return {
     document_versions: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        // Access follows the parent document's access rules
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
         if (document.ownerId === rlsCtx.userId) return true;
-        if (document.sharingMode === "workspace" && document.organizationId === rlsCtx.orgId)
-          return true;
-        return false;
+        return document.sharingMode === "workspace" && document.organizationId === rlsCtx.orgId;
       },
-      modify: async (ctx, doc) => {
+      modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        // Only the document owner can create/modify versions
-        const document = await ctx.db.get(doc.documentId);
-        if (!document) return false;
-        return document.ownerId === rlsCtx.userId;
+        const document = await queryCtx.db.get(doc.documentId);
+        return document ? document.ownerId === rlsCtx.userId : false;
       },
     },
-
     payment_field_configs: {
-      read: async (ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        // Org members can read payment configs for their org's documents
         if (doc.organizationId === rlsCtx.orgId) return true;
-
-        // Recipients can read payment configs for documents they're signing
-        if (rlsCtx.recipientContext) {
-          return doc.documentId === rlsCtx.recipientContext.documentId;
-        }
-
-        return false;
+        return rlsCtx.recipientContext
+          ? doc.documentId === rlsCtx.recipientContext.documentId
+          : false;
       },
-      modify: async (ctx, doc) => {
+      modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (doc.organizationId !== rlsCtx.orgId) return false;
-
-        // Document owner can modify payment configs
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner";
       },
     },
+  };
+}
 
-    // ====================
-    // Signature Workflow (legacy recipients table)
-    // ====================
+function getSignatureWorkflowRules(
+  _ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<StrictRules, "recipients" | "signature_fields" | "signatures"> {
+  return {
     recipients: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        // Note: This is the legacy recipients table, not document_recipients
-        // Token-based access uses document_recipients.signingToken
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access !== "none";
       },
-      modify: async (ctx, doc) => {
+      modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access === "owner";
       },
     },
-
     signature_fields: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        // Check for recipient context
         if (rlsCtx.recipientContext) {
           return doc.documentId === rlsCtx.recipientContext.documentId;
         }
-
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access !== "none";
       },
-      modify: async (ctx, doc) => {
+      modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        // Recipient can modify their assigned fields (for signing)
         if (rlsCtx.recipientContext) {
-          // Check if field is assigned to this recipient
           return (
             doc.documentId === rlsCtx.recipientContext.documentId &&
             doc.recipientId === rlsCtx.recipientContext.recipientId
           );
         }
-
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        // Owner can always modify, edit access for draft documents
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
-        if (access === "owner") return true;
-        if (access === "edit" && document.workflowStatus === "draft") return true;
-        return false;
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
+        return access === "owner" || (access === "edit" && document.workflowStatus === "draft");
       },
     },
-
     signatures: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        // Check for recipient context
         if (rlsCtx.recipientContext) {
           return doc.documentId === rlsCtx.recipientContext.documentId;
         }
-
-        const document = await ctx.db.get(doc.documentId);
+        const document = await queryCtx.db.get(doc.documentId);
         if (!document) return false;
-
-        const access = await getDocumentAccessLevel(ctx, rlsCtx, document);
+        const access = await getDocumentAccessLevel(queryCtx, rlsCtx, document);
         return access !== "none";
       },
-      modify: async () => {
-        // Signatures are immutable after creation (audit trail)
-        // Only internal mutations can modify
-        return false;
-      },
+      modify: async () => false,
     },
+  };
+}
 
-    // ====================
-    // Templates
-    // ====================
+function getTemplateAndContactRules(
+  _ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<StrictRules, "templates" | "template_fields" | "contacts"> {
+  return {
     templates: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        if (doc.status === "deleted") return false;
-        if (rlsCtx.orgId !== doc.organizationId) return false;
-
+        if (doc.status === "deleted" || rlsCtx.orgId !== doc.organizationId) return false;
         return rlsCtx.hasPermission("templates:view") || rlsCtx.hasPermission("templates:read");
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        if (doc.status === "deleted") return false;
-        if (rlsCtx.orgId !== doc.organizationId) return false;
-
-        // Creator can always edit their templates
+        if (doc.status === "deleted" || rlsCtx.orgId !== doc.organizationId) return false;
         if (doc.createdBy === rlsCtx.userId) return true;
-
-        // Otherwise need edit permission
         return rlsCtx.hasPermission("templates:edit");
       },
     },
-
     template_fields: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        const template = await ctx.db.get(doc.templateId);
+        const template = await queryCtx.db.get(doc.templateId);
         if (!template || template.status === "deleted") return false;
         if (rlsCtx.orgId !== template.organizationId) return false;
-
         return rlsCtx.hasPermission("templates:view");
       },
-      modify: async (ctx, doc) => {
+      modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-
-        const template = await ctx.db.get(doc.templateId);
+        const template = await queryCtx.db.get(doc.templateId);
         if (!template || template.status === "deleted") return false;
         if (rlsCtx.orgId !== template.organizationId) return false;
-
         if (template.createdBy === rlsCtx.userId) return true;
         return rlsCtx.hasPermission("templates:edit");
       },
     },
-
-    // ====================
-    // Contacts
-    // ====================
     contacts: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-
         return rlsCtx.hasPermission("contacts:view");
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-
-        // Creator can always edit their contacts
         if (doc.createdBy === rlsCtx.userId) return true;
-
-        // Otherwise need edit permission
         return rlsCtx.hasPermission("contacts:edit");
       },
     },
+  };
+}
 
-    // ====================
-    // Audit and Compliance
-    // ====================
-    audit_logs: {
-      read: async (_ctx, doc) => {
+function getAuditAndBillingRules(
+  _ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<
+  StrictRules,
+  | "audit_logs"
+  | "subscriptions"
+  | "subscription_products"
+  | "subscription_prices"
+  | "stripe_accounts"
+  | "stripe_webhook_events"
+  | "feedback"
+> {
+  return {
+    feedback: {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-
-        return rlsCtx.hasPermission("audit:view") || rlsCtx.hasPermission("audit:read");
+        return rlsCtx.isAdmin || doc.userId === rlsCtx.userId;
       },
-      modify: async () => {
-        // Audit logs are append-only via internal mutations
-        return false;
-      },
-    },
-
-    // ====================
-    // Subscriptions (System-Managed)
-    // ====================
-    subscriptions: {
-      read: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        // Users can read their own subscription
-        return doc.userId === rlsCtx.userId;
-      },
-      modify: async () => {
-        // Subscriptions are modified via Stripe webhooks only
-        return false;
-      },
-    },
-
-    subscription_products: {
-      read: async () => {
-        // All authenticated users can read products
-        return rlsCtx !== null;
-      },
-      modify: async () => {
-        // Modified via webhooks/internal mutations only
-        return false;
-      },
-    },
-
-    subscription_prices: {
-      read: async () => {
-        // All authenticated users can read prices
-        return rlsCtx !== null;
-      },
-      modify: async () => {
-        // Modified via webhooks/internal mutations only
-        return false;
-      },
-    },
-
-    stripe_accounts: {
-      read: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         return doc.organizationId === rlsCtx.orgId;
       },
-      modify: async (_ctx, doc) => {
+    },
+    audit_logs: {
+      read: async (_queryCtx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        if (rlsCtx.orgId !== doc.organizationId) return false;
+        return rlsCtx.hasPermission("audit:view") || rlsCtx.hasPermission("audit:read");
+      },
+      modify: async () => false,
+    },
+    subscriptions: {
+      read: async (_queryCtx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async () => false,
+    },
+    subscription_products: {
+      read: async () => rlsCtx !== null,
+      modify: async () => false,
+    },
+    subscription_prices: {
+      read: async () => rlsCtx !== null,
+      modify: async () => false,
+    },
+    stripe_accounts: {
+      read: async (_queryCtx, doc) => {
+        if (!rlsCtx) return false;
+        if (rlsCtx.isSuperAdmin) return true;
+        return doc.organizationId === rlsCtx.orgId;
+      },
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (doc.organizationId !== rlsCtx.orgId) return false;
         return rlsCtx.isAdmin;
       },
     },
-
     stripe_webhook_events: {
-      read: async () => {
-        // Internal only - used for idempotency checks
-        if (!rlsCtx) return false;
-        return rlsCtx.isSuperAdmin;
-      },
-      modify: async () => {
-        // Modified via internal mutations only (webhook handlers)
-        return false;
-      },
+      read: async () => Boolean(rlsCtx?.isSuperAdmin),
+      modify: async () => false,
     },
+  };
+}
 
-    // ====================
-    // Integrations
-    // ====================
+function getIntegrationAndWebhookRules(
+  _ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<
+  StrictRules,
+  | "connected_apps"
+  | "integration_activity_logs"
+  | "notifications"
+  | "webhook_endpoints"
+  | "webhook_deliveries"
+> {
+  return {
     connected_apps: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         return doc.userId === rlsCtx.userId;
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         return doc.userId === rlsCtx.userId;
       },
     },
-
     integration_activity_logs: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         return doc.userId === rlsCtx.userId;
       },
-      modify: async () => {
-        return false;
-      },
+      modify: async () => false,
     },
-
     notifications: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         return doc.userId === rlsCtx.userId;
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         return doc.userId === rlsCtx.userId;
       },
     },
-
-    // ====================
-    // Webhooks
-    // ====================
     webhook_endpoints: {
-      read: async (_ctx, doc) => {
+      read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-        // Need settings:integrations permission to view webhooks
         return rlsCtx.hasPermission("settings:integrations");
       },
-      modify: async (_ctx, doc) => {
+      modify: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-        // Need settings:integrations permission to modify webhooks
         return rlsCtx.hasPermission("settings:integrations");
       },
     },
-
     webhook_deliveries: {
-      read: async (ctx, doc) => {
+      read: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (rlsCtx.orgId !== doc.organizationId) return false;
-
-        // Check if user can access the parent endpoint
-        const endpoint = await ctx.db.get(doc.endpointId);
+        const endpoint = await queryCtx.db.get(doc.endpointId);
         if (!endpoint) return false;
-
         return rlsCtx.hasPermission("settings:integrations");
       },
-      modify: async () => {
-        // Deliveries are system-managed
-        return false;
-      },
+      modify: async () => false,
     },
+  };
+}
 
-    // ====================
-    // Download Tokens (Internal Use Only)
-    // ====================
+function getInternalOnlyRules(
+  _ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<
+  StrictRules,
+  | "download_tokens"
+  | "mcp_oauth_clients"
+  | "mcp_oauth_codes"
+  | "mcp_oauth_refresh_tokens"
+  | "subscription_coupons"
+  | "subscription_promo_codes"
+> {
+  return {
     download_tokens: {
       read: async () => false,
       modify: async () => false,
     },
-
-    // ====================
-    // MCP OAuth (Internal Use Only)
-    // ====================
     mcp_oauth_clients: {
-      read: async () => {
-        // MCP OAuth clients are only accessed by the MCP server internally
-        return false;
-      },
-      modify: async () => {
-        // MCP OAuth clients are only modified by internal mutations
-        return false;
-      },
+      read: async () => false,
+      modify: async () => false,
     },
-
     mcp_oauth_codes: {
-      read: async () => {
-        // MCP OAuth codes are only accessed by the MCP server internally
-        return false;
-      },
-      modify: async () => {
-        // MCP OAuth codes are only modified by internal mutations
-        return false;
-      },
+      read: async () => false,
+      modify: async () => false,
     },
-
     mcp_oauth_refresh_tokens: {
-      read: async () => {
-        // MCP OAuth refresh tokens are only accessed by the MCP server internally
-        return false;
-      },
-      modify: async () => {
-        // MCP OAuth refresh tokens are only modified by internal mutations
-        return false;
-      },
+      read: async () => false,
+      modify: async () => false,
     },
-
-    // ====================
-    // Subscription Coupons & Promo Codes
-    // ====================
     subscription_coupons: {
-      read: async () => {
-        // Coupons are read-only mirrors from payment provider, accessible to authenticated users
-        return rlsCtx !== null;
-      },
-      modify: async () => {
-        // Coupons are only modified by internal webhook handlers
-        return false;
-      },
+      read: async () => rlsCtx !== null,
+      modify: async () => false,
     },
-
     subscription_promo_codes: {
-      read: async () => {
-        // Promo codes are read-only mirrors from payment provider, accessible to authenticated users
-        return rlsCtx !== null;
-      },
-      modify: async () => {
-        // Promo codes are only modified by internal webhook handlers
-        return false;
-      },
+      read: async () => rlsCtx !== null,
+      modify: async () => false,
     },
+  };
+}
 
-    // ====================
-    // Data Exports (GDPR/CCPA)
-    // ====================
+function getExportAndAiRules(
+  _ctx: QueryCtx,
+  rlsCtx: SealRLSContext | null,
+): Pick<
+  StrictRules,
+  | "data_exports"
+  | "ai_threads"
+  | "ai_progress"
+  | "ai_field_suggestions"
+  | "ai_document_annotations"
+  | "ai_routing_logs"
+  | "ai_usage_log"
+> {
+  return {
     data_exports: {
-      read: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        // Users can only read their own export records
-        return doc.userId === rlsCtx.userId;
-      },
-      modify: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        // Users can only create exports for themselves
-        return doc.userId === rlsCtx.userId;
-      },
+      read: async (_queryCtx, doc) => Boolean(rlsCtx && doc.userId === rlsCtx.userId),
+      modify: async (_queryCtx, doc) => Boolean(rlsCtx && doc.userId === rlsCtx.userId),
     },
-
-    // ====================
-    // AI
-    // ====================
     ai_threads: {
-      read: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
-      modify: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
+      read: async (_queryCtx, doc) =>
+        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+      modify: async (_queryCtx, doc) =>
+        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
     },
-
     ai_progress: {
-      read: async () => {
-        // Progress is keyed by threadId which is already org-scoped via ai_threads.
-        // Allow any authenticated user to read progress (they need the threadId).
-        return rlsCtx !== null;
-      },
-      modify: async () => {
-        // Progress is only modified by internal mutations
-        return false;
-      },
+      read: async () => rlsCtx !== null,
+      modify: async () => false,
     },
-
     ai_field_suggestions: {
-      read: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
-      modify: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
+      read: async (_queryCtx, doc) =>
+        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+      modify: async (_queryCtx, doc) =>
+        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
     },
     ai_document_annotations: {
-      read: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
-      modify: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
+      read: async (_queryCtx, doc) =>
+        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+      modify: async (_queryCtx, doc) =>
+        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+    },
+    ai_routing_logs: {
+      read: async () => Boolean(rlsCtx?.isSuperAdmin),
+      modify: async () => false,
     },
     ai_usage_log: {
-      read: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
-      modify: async (_ctx, doc) => {
-        if (!rlsCtx) return false;
-        if (rlsCtx.isSuperAdmin) return true;
-        return doc.organizationId === rlsCtx.orgId;
-      },
+      read: async (_queryCtx, doc) =>
+        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
+      modify: async (_queryCtx, doc) =>
+        Boolean(rlsCtx && (rlsCtx.isSuperAdmin || doc.organizationId === rlsCtx.orgId)),
     },
+  };
+}
+
+export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel>> {
+  const rlsCtx = await getRLSContext(ctx);
+
+  const rules: StrictRules = {
+    ...getUserManagementRules(ctx, rlsCtx),
+    ...getOrganizationManagementRules(ctx, rlsCtx),
+    ...getPrimaryDocumentRules(ctx, rlsCtx),
+    ...getDocumentWorkflowRules(ctx, rlsCtx),
+    ...getDocumentAssetRules(ctx, rlsCtx),
+    ...getSignatureWorkflowRules(ctx, rlsCtx),
+    ...getTemplateAndContactRules(ctx, rlsCtx),
+    ...getAuditAndBillingRules(ctx, rlsCtx),
+    ...getIntegrationAndWebhookRules(ctx, rlsCtx),
+    ...getInternalOnlyRules(ctx, rlsCtx),
+    ...getExportAndAiRules(ctx, rlsCtx),
   };
 
   return rules as Rules<QueryCtx, DataModel>;

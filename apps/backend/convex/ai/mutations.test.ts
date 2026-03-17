@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { createTestContext } from "../test.setup";
 
 describe("AI mutations", () => {
@@ -90,7 +90,7 @@ describe("AI mutations", () => {
         processingTimeMs: 2000,
       });
 
-      const suggestion = await t.run(async (ctx) => ctx.db.get(id));
+      const suggestion = await t.run(async (ctx) => ctx.db.get(id)) as Doc<"ai_field_suggestions"> | null;
       expect(suggestion).toBeTruthy();
       expect(suggestion?.status).toBe("pending");
       expect(suggestion?.fields).toHaveLength(1);
@@ -120,8 +120,8 @@ describe("AI mutations", () => {
         processingTimeMs: 1800,
       });
 
-      const first = await t.run(async (ctx) => ctx.db.get(firstId));
-      const second = await t.run(async (ctx) => ctx.db.get(secondId));
+      const first = await t.run(async (ctx) => ctx.db.get(firstId)) as Doc<"ai_field_suggestions"> | null;
+      const second = await t.run(async (ctx) => ctx.db.get(secondId)) as Doc<"ai_field_suggestions"> | null;
 
       expect(first?.status).toBe("dismissed");
       expect(second?.status).toBe("pending");
@@ -154,7 +154,7 @@ describe("AI mutations", () => {
         processingTimeMs: 1000,
       });
 
-      const first = await t.run(async (ctx) => ctx.db.get(firstId));
+      const first = await t.run(async (ctx) => ctx.db.get(firstId)) as Doc<"ai_field_suggestions"> | null;
       expect(first?.status).toBe("applied");
     });
 
@@ -174,9 +174,9 @@ describe("AI mutations", () => {
         processingTimeMs: 3000,
       });
 
-      const suggestion = await t.run(async (ctx) => ctx.db.get(id));
+      const suggestion = await t.run(async (ctx) => ctx.db.get(id)) as Doc<"ai_field_suggestions"> | null;
       expect(suggestion?.fields).toHaveLength(3);
-      expect(suggestion?.fields.map((f) => f.fieldType)).toEqual(["signature", "date", "payment"]);
+      expect(suggestion?.fields.map((f: Doc<"ai_field_suggestions">["fields"][number]) => f.fieldType)).toEqual(["signature", "date", "payment"]);
     });
   });
 
@@ -196,7 +196,7 @@ describe("AI mutations", () => {
       });
 
       expect(id).toBeTruthy();
-      const annotation = await t.run(async (ctx) => ctx.db.get(id!));
+      const annotation = await t.run(async (ctx) => ctx.db.get(id!)) as Doc<"ai_document_annotations"> | null;
       expect(annotation?.status).toBe("active");
       expect(annotation?.annotations).toHaveLength(1);
     });
@@ -238,10 +238,10 @@ describe("AI mutations", () => {
         forceOverrideDismissal: true,
       });
 
-      const first = await t.run(async (ctx) => ctx.db.get(firstId!));
+      const first = await t.run(async (ctx) => ctx.db.get(firstId!)) as Doc<"ai_document_annotations"> | null;
       expect(first?.status).toBe("dismissed");
 
-      const second = await t.run(async (ctx) => ctx.db.get(secondId!));
+      const second = await t.run(async (ctx) => ctx.db.get(secondId!)) as Doc<"ai_document_annotations"> | null;
       expect(second?.status).toBe("active");
     });
 
@@ -304,7 +304,7 @@ describe("AI mutations", () => {
       });
 
       expect(secondId).toBeTruthy();
-      const second = await t.run(async (ctx) => ctx.db.get(secondId!));
+      const second = await t.run(async (ctx) => ctx.db.get(secondId!)) as Doc<"ai_document_annotations"> | null;
       expect(second?.status).toBe("active");
     });
   });
@@ -570,7 +570,7 @@ describe("AI mutations", () => {
       });
 
       // Verify suggestion data is correct for heuristic matching
-      const suggestion = await t.run(async (ctx) => ctx.db.get(suggestionId));
+      const suggestion = await t.run(async (ctx) => ctx.db.get(suggestionId)) as Doc<"ai_field_suggestions"> | null;
       expect(suggestion?.fields).toHaveLength(2);
       expect(suggestion?.status).toBe("pending");
 
@@ -629,7 +629,7 @@ describe("AI mutations", () => {
         });
       });
 
-      const suggestion = await t.run(async (ctx) => ctx.db.get(suggestionId));
+      const suggestion = await t.run(async (ctx) => ctx.db.get(suggestionId)) as Doc<"ai_field_suggestions"> | null;
       expect(suggestion?.fields[0].label).toBe("Alice Johnson Signature");
       expect(suggestion?.fields[1].label).toBe("Bob Smith Date");
     });
@@ -657,7 +657,7 @@ describe("AI mutations", () => {
         });
       });
 
-      const suggestion = await t.run(async (ctx) => ctx.db.get(suggestionId));
+      const suggestion = await t.run(async (ctx) => ctx.db.get(suggestionId)) as Doc<"ai_field_suggestions"> | null;
       expect(suggestion?.paymentExtraction).toBeTruthy();
       expect(suggestion?.paymentExtraction?.lineItems).toHaveLength(1);
       expect(suggestion?.paymentExtraction?.paymentType).toBe("one_time");

@@ -4,8 +4,8 @@ import type { Page } from "@playwright/test";
  * Wait for Convex real-time updates to settle
  */
 export async function waitForConvexUpdate(page: Page, timeout = 3000): Promise<void> {
-  // Wait for network to be idle after Convex mutations
-  await page.waitForLoadState("networkidle", { timeout });
+  // Wait briefly for UI updates after Convex mutations.
+  await page.waitForLoadState("domcontentloaded", { timeout });
 }
 
 /**
@@ -42,7 +42,7 @@ export async function clickButton(
  */
 export async function navigateAndWait(page: Page, url: string): Promise<void> {
   await page.goto(url);
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("domcontentloaded");
 }
 
 /**

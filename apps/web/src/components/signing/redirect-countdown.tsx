@@ -66,15 +66,14 @@ export function RedirectCountdown({
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 rounded-xl border border-info-surface bg-info-surface/30 p-4 text-center">
+    <div className="border-info-surface bg-info-surface/30 flex flex-col items-center gap-4 rounded-xl border p-4 text-center">
       <div className="flex items-center gap-3" role="status" aria-live="polite">
         <div className="relative flex h-8 w-8 shrink-0 items-center justify-center">
-          <span className="absolute inset-0 animate-ping rounded-full bg-info/20" />
+          <span className="bg-info/20 absolute inset-0 animate-ping rounded-full" />
           <ExternalLinkIcon className="text-info relative h-4 w-4" />
         </div>
         <span className="text-muted-foreground text-sm">
-          Redirecting to{" "}
-          <span className="text-foreground font-medium">{destination}</span> in{" "}
+          Redirecting to <span className="text-foreground font-medium">{destination}</span> in{" "}
           <span className="text-foreground font-semibold tabular-nums">{secondsLeft}s</span>
         </span>
       </div>
@@ -83,7 +82,12 @@ export function RedirectCountdown({
           <ExternalLinkIcon className="mr-1.5 h-3.5 w-3.5" />
           Go now
         </Button>
-        <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={handleStayHere}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={handleStayHere}
+        >
           Stay here
         </Button>
       </div>

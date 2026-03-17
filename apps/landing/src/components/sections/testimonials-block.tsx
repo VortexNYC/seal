@@ -1,5 +1,4 @@
-import { urlFor } from "~/lib/sanity/image";
-import type { TestimonialsSectionBlock } from "~/lib/sanity/queries";
+import type { TestimonialsSectionBlock } from "~/lib/content/types";
 
 export function TestimonialsBlockComponent({ block }: { block: TestimonialsSectionBlock }) {
   return (
@@ -15,7 +14,7 @@ export function TestimonialsBlockComponent({ block }: { block: TestimonialsSecti
 
         <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-3">
           {block.testimonials.map((testimonial) => (
-            <div className="group relative" key={testimonial._id}>
+            <div className="group relative" key={testimonial.id}>
               <div className="relative h-full rounded-3xl border border-white/10 bg-white/5 p-8 transition-colors duration-300 hover:bg-white/10">
                 <blockquote className="mb-8">
                   <p className="text-lg leading-relaxed text-white/80">
@@ -23,14 +22,14 @@ export function TestimonialsBlockComponent({ block }: { block: TestimonialsSecti
                   </p>
                 </blockquote>
                 <div className="flex items-center gap-4">
-                  {testimonial.avatar?.asset ? (
+                  {testimonial.avatar ? (
                     <img
                       alt={testimonial.author}
                       className="size-12 rounded-full object-cover"
-                      height={48}
+                      height={testimonial.avatar.height || 48}
                       loading="lazy"
-                      src={urlFor(testimonial.avatar).width(80).height(80).url()}
-                      width={48}
+                      src={testimonial.avatar.src}
+                      width={testimonial.avatar.width || 48}
                     />
                   ) : (
                     <div className="flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-teal-400">

@@ -5,24 +5,31 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "docs:generate": "bunx fumadocs-mdx source.config.ts .source",
+    "content:generate": "bunx fumadocs-mdx source.config.ts .source",
+    "content:manifest": "bunx vite-node ./tools/generate-content-manifests.ts",
+    "content:prepare": "bun run content:generate && bun run content:manifest",
     "docs:generate:api": "bun run tools/generate-api-docs.ts",
-    "search:generate": "bun ./tools/generate-search-index.ts",
-    "sitemap:generate": "bun ./tools/generate-sitemap.ts",
-    "build": "bun run docs:generate && bun run search:generate && bun run sitemap:generate && NODE_OPTIONS='--max-old-space-size=8192' vite build",
+    "content:search": "bunx vite-node ./tools/generate-search-index.ts",
+    "content:sitemap": "bunx vite-node ./tools/generate-sitemap.ts",
+    "build:app": "node --max-old-space-size=6144 ../../node_modules/vite/bin/vite.js build",
+    "build": "bun run content:prepare && bun run content:search && bun run content:sitemap && bun run build:app",
     "preview": "vite preview",
     "start": "node .output/server/index.mjs",
+    "pretypecheck": "bun run content:prepare",
     "typecheck": "tsc --noEmit",
-    "sanity:dev": "sanity dev",
-    "sanity:deploy": "sanity deploy"
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:codegen": "playwright codegen http://localhost:3001"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.59.5",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-slot": "^1.2.4",
-    "@sanity/client": "^7.15.0",
-    "@sanity/image-url": "^2.0.3",
     "@scalar/api-reference-react": "^0.8.67",
     "@seal/tokens": "workspace:*",
     "@tailwindcss/typography": "^0.5.19",
@@ -39,13 +46,13 @@
     "path-browserify": "^1.0.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "sanity": "^3.86.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",
     "tw-animate-css": "^1.4.0",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.0",
     "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^25.0.10",
     "@types/react": "^19.2.7",
@@ -54,7 +61,6 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "fumadocs-mdx": "^14.2.6",
-    "@sanity/vision": "^3.86.1",
     "vite-tsconfig-paths": "^5.1.4"
   }
 }

@@ -60,7 +60,6 @@ next-env.d.ts
 
 # ide
 .idea
-.vscode
 .turbo
 
 .trigger
@@ -98,3 +97,5 @@ apps/backend/*.pdf
 
 # Generated reference docs
 docs/app-feature-map.md
+
+.firecrawl/

@@ -4,10 +4,11 @@
 
 import { ConvexError, v } from "convex/values";
 
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx, mutation } from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
 import { adminMutation, authMutation } from "../auth";
+import { ensureProFeature, ensureSeatLimit } from "../auth/subscription_guards";
 import { seedSystemRoles } from "../organization_roles/helpers";
 import { organizationBaseSchema } from "../validations/organizations";
 
@@ -21,6 +22,215 @@ type OrganizationUpdateData = Partial<
   updatedAt: number;
 };
 
+type EnsurePersonalOrganizationArgs = {
+  clerkOrganizationId?: string;
+  organizationName?: string;
+  organizationSlug?: string;
+};
+
+async function requireUserForPersonalOrganization(ctx: MutationCtx): Promise<Doc<"users">> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new ConvexError("Authentication required");
+  }
+
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+    .first();
+
+  if (!user) {
+    throw new ConvexError("User record not found");
+  }
+
+  return user;
+}
+
+async function findExistingOrganizationForPersonalWorkspace(
+  ctx: MutationCtx,
+  args: EnsurePersonalOrganizationArgs,
+): Promise<Doc<"organizations"> | null> {
+  if (args.clerkOrganizationId) {
+    const organization = await ctx.db
+      .query("organizations")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkOrganizationId!))
+      .first();
+
+    if (organization) {
+      return organization;
+    }
+  }
+
+  if (!args.organizationSlug) {
+    return null;
+  }
+
+  return ctx.db
+    .query("organizations")
+    .withIndex("by_slug", (q) => q.eq("slug", args.organizationSlug!))
+    .first();
+}
+
+async function upsertPersonalOrganization(
+  ctx: MutationCtx,
+  user: Doc<"users">,
+  args: EnsurePersonalOrganizationArgs,
+  preferredName: string,
+): Promise<Doc<"organizations">> {
+  const existingOrganization = await findExistingOrganizationForPersonalWorkspace(ctx, args);
+
+  if (!existingOrganization) {
+    const baseSlug = args.organizationSlug ?? slugify(preferredName);
+    const uniqueSlug = await generateUniqueSlug(ctx.db, baseSlug);
+    const organizationId = await ctx.db.insert("organizations", {
+      name: args.organizationName || `${preferredName}'s Personal Workspace`,
+      slug: uniqueSlug,
+      type: "personal",
+      timezone: user.timezone || "UTC",
+      isActive: true,
+      clerkId: args.clerkOrganizationId || undefined,
+      updatedAt: Date.now(),
+    });
+
+    await seedSystemRoles(ctx.db, organizationId);
+
+    const organization = await ctx.db.get(organizationId);
+    if (!organization) {
+      throw new ConvexError("Failed to upsert organization");
+    }
+
+    return organization;
+  }
+
+  await ctx.db.patch(existingOrganization._id, {
+    name: args.organizationName || existingOrganization.name,
+    slug: args.organizationSlug || existingOrganization.slug,
+    clerkId: args.clerkOrganizationId || existingOrganization.clerkId,
+    updatedAt: Date.now(),
+  });
+
+  const organization = await ctx.db.get(existingOrganization._id);
+  if (!organization) {
+    throw new ConvexError("Failed to upsert organization");
+  }
+
+  return organization;
+}
+
+async function ensurePrimaryOwnerMembership(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  organizationId: Id<"organizations">,
+): Promise<void> {
+  const membership = await ctx.db
+    .query("organization_members")
+    .withIndex("by_user_organization", (q) =>
+      q.eq("userId", userId).eq("organizationId", organizationId),
+    )
+    .first();
+
+  if (!membership) {
+    await ctx.db.insert("organization_members", {
+      organizationId,
+      userId,
+      role: "owner",
+      status: "active",
+      isPrimary: true,
+      permissions: [],
+      externalId: undefined,
+    });
+    return;
+  }
+
+  const updates: Partial<Doc<"organization_members">> = {};
+  if (!membership.isPrimary) {
+    updates.isPrimary = true;
+  }
+  if (membership.status !== "active") {
+    updates.status = "active";
+  }
+  if (Object.keys(updates).length > 0) {
+    await ctx.db.patch(membership._id, updates);
+  }
+}
+
+async function clearOtherPrimaryMemberships(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  organizationId: Id<"organizations">,
+): Promise<void> {
+  const otherMemberships = await ctx.db
+    .query("organization_members")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+
+  await Promise.all(
+    otherMemberships
+      .filter((membership) => membership.organizationId !== organizationId && membership.isPrimary)
+      .map((membership) => ctx.db.patch(membership._id, { isPrimary: false })),
+  );
+}
+
+async function resolveBrandingLogoState(
+  storage: MutationCtx["storage"],
+  current: {
+    logoUrl?: string;
+    logoStorageId?: Id<"_storage">;
+  },
+  args: {
+    logoStorageId?: Id<"_storage">;
+    removeLogo?: boolean;
+  },
+): Promise<{ logoUrl?: string; logoStorageId?: Id<"_storage"> }> {
+  if (args.removeLogo) {
+    if (current.logoStorageId) {
+      await storage.delete(current.logoStorageId);
+    }
+
+    return {
+      logoUrl: undefined,
+      logoStorageId: undefined,
+    };
+  }
+
+  if (!args.logoStorageId) {
+    return {
+      logoUrl: current.logoUrl,
+      logoStorageId: current.logoStorageId,
+    };
+  }
+
+  if (current.logoStorageId && current.logoStorageId !== args.logoStorageId) {
+    await storage.delete(current.logoStorageId);
+  }
+
+  return {
+    logoStorageId: args.logoStorageId,
+    logoUrl: (await storage.getUrl(args.logoStorageId)) ?? undefined,
+  };
+}
+
+function validateReminderSchedule(reminderSchedule: number[] | undefined): void {
+  if (reminderSchedule === undefined) {
+    return;
+  }
+
+  if (reminderSchedule.length > 10) {
+    throw new ConvexError("Reminder schedule cannot have more than 10 entries");
+  }
+
+  for (const day of reminderSchedule) {
+    if (!Number.isInteger(day) || day < 1) {
+      throw new ConvexError("Reminder days must be positive integers");
+    }
+  }
+
+  const sorted = [...reminderSchedule].sort((a, b) => a - b);
+  if (JSON.stringify(sorted) !== JSON.stringify(reminderSchedule)) {
+    throw new ConvexError("Reminder schedule must be in ascending order");
+  }
+}
+
 /**
  * Create or get personal organization for user
  */
@@ -31,114 +241,13 @@ export const ensurePersonalOrganization = mutation({
     organizationSlug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("Authentication required");
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-      .first();
-
-    if (!user) {
-      throw new ConvexError("User record not found");
-    }
-
+    const user = await requireUserForPersonalOrganization(ctx);
     const preferredName =
       args.organizationName?.trim() || user.name?.trim() || user.email.split("@")[0] || "user";
+    const organization = await upsertPersonalOrganization(ctx, user, args, preferredName);
 
-    let organization: Doc<"organizations"> | null = null;
-
-    if (args.clerkOrganizationId) {
-      const clerkOrgId = args.clerkOrganizationId;
-      organization = await ctx.db
-        .query("organizations")
-        .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkOrgId))
-        .first();
-    }
-
-    if (!organization && args.organizationSlug) {
-      const slug = args.organizationSlug;
-      organization = await ctx.db
-        .query("organizations")
-        .withIndex("by_slug", (q) => q.eq("slug", slug))
-        .first();
-    }
-
-    if (!organization) {
-      // Ensure we always have a non-empty slug
-      const baseSlug = args.organizationSlug ? args.organizationSlug : slugify(preferredName);
-      const uniqueSlug = await generateUniqueSlug(ctx.db, baseSlug);
-      const organizationId = await ctx.db.insert("organizations", {
-        name: args.organizationName || `${preferredName}'s Personal Workspace`,
-        slug: uniqueSlug,
-        type: "personal",
-        timezone: user.timezone || "UTC",
-        isActive: true,
-        clerkId: args.clerkOrganizationId || undefined,
-        updatedAt: Date.now(),
-      });
-
-      // Seed system roles for the new organization
-      await seedSystemRoles(ctx.db, organizationId);
-
-      organization = await ctx.db.get(organizationId);
-    } else {
-      await ctx.db.patch(organization._id, {
-        name: args.organizationName || organization.name,
-        slug: args.organizationSlug || organization.slug,
-        clerkId: args.clerkOrganizationId || organization.clerkId,
-        updatedAt: Date.now(),
-      });
-      organization = await ctx.db.get(organization._id);
-    }
-
-    if (!organization) {
-      throw new ConvexError("Failed to upsert organization");
-    }
-
-    let membership = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", user._id).eq("organizationId", organization._id),
-      )
-      .first();
-
-    if (!membership) {
-      const membershipId = await ctx.db.insert("organization_members", {
-        organizationId: organization._id,
-        userId: user._id,
-        role: "owner",
-        status: "active",
-        isPrimary: true,
-        permissions: [],
-        externalId: undefined,
-      });
-      membership = await ctx.db.get(membershipId);
-    } else {
-      const updates: Partial<Doc<"organization_members">> = {};
-      if (!membership.isPrimary) {
-        updates.isPrimary = true;
-      }
-      if (membership.status !== "active") {
-        updates.status = "active";
-      }
-      if (Object.keys(updates).length > 0) {
-        await ctx.db.patch(membership._id, updates);
-      }
-    }
-
-    const otherMemberships = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .collect();
-
-    await Promise.all(
-      otherMemberships
-        .filter((m) => m.organizationId !== organization._id && m.isPrimary)
-        .map((m) => ctx.db.patch(m._id, { isPrimary: false })),
-    );
+    await ensurePrimaryOwnerMembership(ctx, user._id, organization._id);
+    await clearOtherPrimaryMemberships(ctx, user._id, organization._id);
 
     await ctx.db.patch(user._id, {
       activeOrganizationId: organization._id,
@@ -202,7 +311,7 @@ export const createWorkspace = authMutation({
       type: args.type,
       logo: args.logo,
       metadata: args.metadata,
-      currency: args.currency || "BRL",
+      currency: args.currency || "USD",
       currencyKind: args.currencyKind || "normal",
       timezone: args.timezone || "UTC",
     });
@@ -343,6 +452,8 @@ export const addMember = adminMutation({
   },
   handler: async (ctx, args) => {
     const { organization } = ctx.auth;
+
+    await ensureSeatLimit(ctx.db, organization._id);
 
     // Check if user exists
     const user = await ctx.db.get(args.userId);
@@ -522,6 +633,8 @@ export const createInvitation = adminMutation({
   },
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
+
+    await ensureSeatLimit(ctx.db, organization._id);
 
     // Validate email
     const email = args.email.trim().toLowerCase();
@@ -938,6 +1051,7 @@ export const updateAiSettings = adminMutation({
 export const generateLogoUploadUrl = adminMutation({
   args: {},
   handler: async (ctx) => {
+    await ensureProFeature(ctx.db, ctx.auth.organization._id, "Custom branding");
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -957,6 +1071,8 @@ export const updateBrandingSettings = adminMutation({
     enabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await ensureProFeature(ctx.db, ctx.auth.organization._id, "Custom branding");
+
     const org = await ctx.db.get(ctx.auth.organization._id);
     if (!org) throw new ConvexError("Organization not found");
 
@@ -964,26 +1080,7 @@ export const updateBrandingSettings = adminMutation({
       enabled: false,
     };
 
-    // If a new logo was uploaded, generate its serving URL
-    let logoUrl = current.logoUrl;
-    let logoStorageId = current.logoStorageId;
-
-    if (args.removeLogo) {
-      // Delete old file from storage if it exists
-      if (current.logoStorageId) {
-        await ctx.storage.delete(current.logoStorageId);
-      }
-      logoUrl = undefined;
-      logoStorageId = undefined;
-    } else if (args.logoStorageId) {
-      // Delete old file from storage if replacing
-      if (current.logoStorageId && current.logoStorageId !== args.logoStorageId) {
-        await ctx.storage.delete(current.logoStorageId);
-      }
-      logoStorageId = args.logoStorageId;
-      const url = await ctx.storage.getUrl(args.logoStorageId);
-      logoUrl = url ?? undefined;
-    }
+    const { logoUrl, logoStorageId } = await resolveBrandingLogoState(ctx.storage, current, args);
 
     await ctx.db.patch(org._id, {
       brandingSettings: {
@@ -1073,20 +1170,7 @@ export const updateNotificationSettings = adminMutation({
       sendViewedNotification: true,
     };
 
-    if (args.reminderSchedule !== undefined) {
-      if (args.reminderSchedule.length > 10) {
-        throw new ConvexError("Reminder schedule cannot have more than 10 entries");
-      }
-      for (const day of args.reminderSchedule) {
-        if (!Number.isInteger(day) || day < 1) {
-          throw new ConvexError("Reminder days must be positive integers");
-        }
-      }
-      const sorted = [...args.reminderSchedule].sort((a, b) => a - b);
-      if (JSON.stringify(sorted) !== JSON.stringify(args.reminderSchedule)) {
-        throw new ConvexError("Reminder schedule must be in ascending order");
-      }
-    }
+    validateReminderSchedule(args.reminderSchedule);
 
     if (args.expirationAlertDays !== undefined) {
       if (args.expirationAlertDays < 1 || args.expirationAlertDays > 30) {

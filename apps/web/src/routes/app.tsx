@@ -3,6 +3,7 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 
+import Loader from "@/components/loader";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { api } from "@seal/backend/convex/_generated/api";
 
@@ -57,8 +58,8 @@ function AuthenticatedRedirect() {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="text-center">
-          <div className="border-brand-700 mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2" />
-          <p className="text-muted-foreground">
+          <Loader />
+          <p className="text-muted-foreground mt-4">
             {isFixingOrg ? "Setting up your workspace..." : "Loading..."}
           </p>
         </div>

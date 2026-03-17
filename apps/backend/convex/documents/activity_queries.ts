@@ -7,8 +7,12 @@
 
 import { ConvexError, v } from "convex/values";
 
+import type { Doc } from "../_generated/dataModel";
+import type { QueryCtx } from "../_generated/server";
 import { authQuery } from "../auth";
 import { ACCESS_ERRORS, checkDocumentAccess, getDocumentOrThrow } from "../auth/access_control";
+
+type ActivityQueryDbCtx = Pick<QueryCtx, "db">;
 
 /**
  * Activity event types that map to the frontend ActivityFeed component
@@ -59,6 +63,219 @@ interface PaginatedActivityResult {
   hasMore: boolean;
 }
 
+interface OwnerActivityContext {
+  ownerName: string;
+  ownerId: string;
+}
+
+function addActivityEvent(events: ActivityEvent[], event: ActivityEvent): void {
+  events.push(event);
+}
+
+function addDocumentEvents(
+  events: ActivityEvent[],
+  document: Doc<"documents">,
+  owner: OwnerActivityContext,
+  recipientCount: number,
+): void {
+  addActivityEvent(events, {
+    type: "created",
+    timestamp: document.createdAt,
+    description: "Document created",
+    actor: owner.ownerName,
+    actorId: owner.ownerId,
+  });
+
+  if (document.sentAt) {
+    addActivityEvent(events, {
+      type: "sent",
+      timestamp: document.sentAt,
+      description: `Document sent to ${recipientCount} recipient${recipientCount !== 1 ? "s" : ""}`,
+      actor: owner.ownerName,
+      actorId: owner.ownerId,
+    });
+  }
+
+  if (document.completedAt) {
+    addActivityEvent(events, {
+      type: "completed",
+      timestamp: document.completedAt,
+      description: "All recipients have completed signing",
+    });
+  }
+
+  if (document.cancelledAt) {
+    addActivityEvent(events, {
+      type: "cancelled",
+      timestamp: document.cancelledAt,
+      description: "Document was cancelled",
+      actor: owner.ownerName,
+      actorId: owner.ownerId,
+    });
+  }
+}
+
+function addRecipientStatusEvents(
+  events: ActivityEvent[],
+  recipientName: string,
+  recipientActorId: string,
+  timestamps: Partial<
+    Record<Extract<ActivityEventType, "viewed" | "signed" | "approved" | "declined">, number>
+  >,
+): void {
+  if (timestamps.viewed) {
+    addActivityEvent(events, {
+      type: "viewed",
+      timestamp: timestamps.viewed,
+      description: `${recipientName} viewed the document`,
+      actor: recipientName,
+      actorId: recipientActorId,
+    });
+  }
+
+  if (timestamps.signed) {
+    addActivityEvent(events, {
+      type: "signed",
+      timestamp: timestamps.signed,
+      description: `${recipientName} signed the document`,
+      actor: recipientName,
+      actorId: recipientActorId,
+    });
+  }
+
+  if (timestamps.approved) {
+    addActivityEvent(events, {
+      type: "approved",
+      timestamp: timestamps.approved,
+      description: `${recipientName} approved the document`,
+      actor: recipientName,
+      actorId: recipientActorId,
+    });
+  }
+
+  if (timestamps.declined) {
+    addActivityEvent(events, {
+      type: "declined",
+      timestamp: timestamps.declined,
+      description: `${recipientName} declined to sign`,
+      actor: recipientName,
+      actorId: recipientActorId,
+    });
+  }
+}
+
+function addRecipientEvents(
+  events: ActivityEvent[],
+  recipients: Doc<"document_recipients">[],
+  owner: OwnerActivityContext,
+): void {
+  for (const recipient of recipients) {
+    const recipientName = recipient.name || recipient.email;
+    const recipientActorId = `recipient:${recipient.email}`;
+
+    addActivityEvent(events, {
+      type: "recipient_added",
+      timestamp: recipient.createdAt,
+      description: `${recipientName} added as ${recipient.role}`,
+      actor: owner.ownerName,
+      actorId: owner.ownerId,
+    });
+
+    addRecipientStatusEvents(events, recipientName, recipientActorId, {
+      viewed: recipient.viewedAt,
+      signed: recipient.signedAt,
+      approved: recipient.approvedAt,
+      declined: recipient.declinedAt,
+    });
+  }
+}
+
+async function addReminderEvents(
+  ctx: ActivityQueryDbCtx,
+  events: ActivityEvent[],
+  documentId: Doc<"documents">["_id"],
+  recipients: Doc<"document_recipients">[],
+  owner: OwnerActivityContext,
+): Promise<void> {
+  const reminders = await ctx.db
+    .query("document_reminders")
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))
+    .filter((q) => q.eq(q.field("status"), "sent"))
+    .collect();
+
+  for (const reminder of reminders) {
+    if (!reminder.sentAt || !reminder.recipientId) {
+      continue;
+    }
+
+    const recipient = recipients.find((item) => item._id === reminder.recipientId);
+    const recipientName = recipient?.name || recipient?.email || "Recipient";
+    addActivityEvent(events, {
+      type: "reminder_sent",
+      timestamp: reminder.sentAt,
+      description: `Reminder sent to ${recipientName}`,
+      actor: owner.ownerName,
+      actorId: owner.ownerId,
+    });
+  }
+}
+
+async function addAccessEvents(
+  ctx: ActivityQueryDbCtx,
+  events: ActivityEvent[],
+  documentId: Doc<"documents">["_id"],
+  owner: OwnerActivityContext,
+): Promise<void> {
+  const accessRecords = await ctx.db
+    .query("document_access")
+    .withIndex("by_document", (q) => q.eq("documentId", documentId))
+    .collect();
+
+  for (const access of accessRecords) {
+    const accessUser = await ctx.db.get(access.userId);
+    const grantedByUser = await ctx.db.get(access.grantedBy);
+    const accessUserName = accessUser?.name || accessUser?.email || "User";
+    const grantedByName = grantedByUser?.name || grantedByUser?.email || "Someone";
+
+    addActivityEvent(events, {
+      type: "shared",
+      timestamp: access.grantedAt,
+      description: `${accessUserName} was given ${access.permissionLevel} access`,
+      actor: grantedByName,
+      actorId: access.grantedBy.toString(),
+    });
+
+    if (access.revokedAt) {
+      addActivityEvent(events, {
+        type: "access_revoked",
+        timestamp: access.revokedAt,
+        description: `${accessUserName}'s access was revoked`,
+        actor: owner.ownerName,
+        actorId: owner.ownerId,
+      });
+    }
+  }
+}
+
+function applyActivityFilters(
+  events: ActivityEvent[],
+  actorId?: string,
+  eventTypes?: ActivityEventType[],
+): ActivityEvent[] {
+  let filteredEvents = events;
+
+  if (actorId) {
+    filteredEvents = filteredEvents.filter((event) => event.actorId === actorId);
+  }
+
+  if (eventTypes && eventTypes.length > 0) {
+    const eventTypeSet = new Set(eventTypes);
+    filteredEvents = filteredEvents.filter((event) => eventTypeSet.has(event.type));
+  }
+
+  return filteredEvents;
+}
+
 /**
  * Get activity events for a document
  * Combines audit logs and recipient activity into a unified timeline
@@ -84,195 +301,31 @@ export const getDocumentActivity = authQuery({
       throw new ConvexError(ACCESS_ERRORS.NO_ACCESS);
     }
 
-    // Get owner information for actor name
     const owner = await ctx.db.get(document.ownerId);
-    const ownerName = owner?.name || owner?.email || "Document owner";
-    const ownerId = document.ownerId.toString();
-
-    // 4. Build activity events from document and recipients
+    const ownerActivity = {
+      ownerName: owner?.name || owner?.email || "Document owner",
+      ownerId: document.ownerId.toString(),
+    };
     const events: ActivityEvent[] = [];
 
-    // Document creation event
-    events.push({
-      type: "created",
-      timestamp: document.createdAt,
-      description: "Document created",
-      actor: ownerName,
-      actorId: ownerId,
-    });
-
-    // Get recipients for recipient events
     const recipients = await ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
 
-    // Add recipient-related events
-    for (const recipient of recipients) {
-      const recipientName = recipient.name || recipient.email;
-      // Recipients are external users identified by email, not system users
-      // Use a pseudo-ID based on email for filtering purposes
-      const recipientActorId = `recipient:${recipient.email}`;
+    addDocumentEvents(events, document, ownerActivity, recipients.length);
+    addRecipientEvents(events, recipients, ownerActivity);
+    await addReminderEvents(ctx, events, args.documentId, recipients, ownerActivity);
+    await addAccessEvents(ctx, events, args.documentId, ownerActivity);
 
-      // Recipient added event (by owner)
-      events.push({
-        type: "recipient_added",
-        timestamp: recipient.createdAt,
-        description: `${recipientName} added as ${recipient.role}`,
-        actor: ownerName,
-        actorId: ownerId,
-      });
+    const filteredEvents = applyActivityFilters(
+      events,
+      args.actorId?.toString(),
+      args.eventTypes ?? undefined,
+    );
 
-      // Viewed event (by recipient)
-      if (recipient.viewedAt) {
-        events.push({
-          type: "viewed",
-          timestamp: recipient.viewedAt,
-          description: `${recipientName} viewed the document`,
-          actor: recipientName,
-          actorId: recipientActorId,
-        });
-      }
-
-      // Signed event (by recipient)
-      if (recipient.signedAt) {
-        events.push({
-          type: "signed",
-          timestamp: recipient.signedAt,
-          description: `${recipientName} signed the document`,
-          actor: recipientName,
-          actorId: recipientActorId,
-        });
-      }
-
-      // Approved event (by recipient)
-      if (recipient.approvedAt) {
-        events.push({
-          type: "approved",
-          timestamp: recipient.approvedAt,
-          description: `${recipientName} approved the document`,
-          actor: recipientName,
-          actorId: recipientActorId,
-        });
-      }
-
-      // Declined event (by recipient)
-      if (recipient.declinedAt) {
-        events.push({
-          type: "declined",
-          timestamp: recipient.declinedAt,
-          description: `${recipientName} declined to sign`,
-          actor: recipientName,
-          actorId: recipientActorId,
-        });
-      }
-    }
-
-    // Document sent event (by owner)
-    if (document.sentAt) {
-      events.push({
-        type: "sent",
-        timestamp: document.sentAt,
-        description: `Document sent to ${recipients.length} recipient${recipients.length !== 1 ? "s" : ""}`,
-        actor: ownerName,
-        actorId: ownerId,
-      });
-    }
-
-    // Document completed event (system event, no specific actor)
-    if (document.completedAt) {
-      events.push({
-        type: "completed",
-        timestamp: document.completedAt,
-        description: "All recipients have completed signing",
-      });
-    }
-
-    // Document cancelled event (by owner)
-    if (document.cancelledAt) {
-      events.push({
-        type: "cancelled",
-        timestamp: document.cancelledAt,
-        description: "Document was cancelled",
-        actor: ownerName,
-        actorId: ownerId,
-      });
-    }
-
-    // Get reminder events (sent by owner)
-    const reminders = await ctx.db
-      .query("document_reminders")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("status"), "sent"))
-      .collect();
-
-    for (const reminder of reminders) {
-      if (reminder.sentAt && reminder.recipientId) {
-        const recipient = recipients.find((r) => r._id === reminder.recipientId);
-        const recipientName = recipient?.name || recipient?.email || "Recipient";
-        events.push({
-          type: "reminder_sent",
-          timestamp: reminder.sentAt,
-          description: `Reminder sent to ${recipientName}`,
-          actor: ownerName,
-          actorId: ownerId,
-        });
-      }
-    }
-
-    // Get document access events (sharing)
-    const accessRecords = await ctx.db
-      .query("document_access")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
-
-    for (const access of accessRecords) {
-      // Get user and granter info
-      const accessUser = await ctx.db.get(access.userId);
-      const grantedByUser = await ctx.db.get(access.grantedBy);
-      const accessUserName = accessUser?.name || accessUser?.email || "User";
-      const grantedByName = grantedByUser?.name || grantedByUser?.email || "Someone";
-
-      // Access granted event (by granter)
-      events.push({
-        type: "shared",
-        timestamp: access.grantedAt,
-        description: `${accessUserName} was given ${access.permissionLevel} access`,
-        actor: grantedByName,
-        actorId: access.grantedBy.toString(),
-      });
-
-      // Access revoked event (by owner typically)
-      if (access.revokedAt) {
-        events.push({
-          type: "access_revoked",
-          timestamp: access.revokedAt,
-          description: `${accessUserName}'s access was revoked`,
-          actor: ownerName,
-          actorId: ownerId,
-        });
-      }
-    }
-
-    // 5. Apply filters
-    let filteredEvents = events;
-
-    // Filter by actor ID if provided
-    if (args.actorId) {
-      const actorIdStr = args.actorId.toString();
-      filteredEvents = filteredEvents.filter((event) => event.actorId === actorIdStr);
-    }
-
-    // Filter by event types if provided
-    if (args.eventTypes && args.eventTypes.length > 0) {
-      const eventTypeSet = new Set(args.eventTypes);
-      filteredEvents = filteredEvents.filter((event) => eventTypeSet.has(event.type));
-    }
-
-    // 6. Sort by timestamp descending (most recent first)
     filteredEvents.sort((a, b) => b.timestamp - a.timestamp);
 
-    // 7. Apply pagination
     const total = filteredEvents.length;
     const paginatedEvents = filteredEvents.slice(offset, offset + limit);
     const hasMore = offset + limit < total;

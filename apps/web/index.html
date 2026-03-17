@@ -60,11 +60,70 @@
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
 
+    <!-- Avoid dark-mode flash before React hydrates -->
+    <script>
+      (function () {
+        const THEME_KEY = "catapult.theme";
+        let storedTheme = null;
+        try {
+          storedTheme = window.localStorage.getItem(THEME_KEY);
+        } catch {
+          storedTheme = null;
+        }
+
+        const isSystem = storedTheme !== "light" && storedTheme !== "dark";
+        const nextResolvedTheme =
+          storedTheme === "dark" || (isSystem && window.matchMedia("(prefers-color-scheme: dark)").matches)
+            ? "dark"
+            : "light";
+        const fallbackBackground = nextResolvedTheme === "dark" ? "#09090b" : "#f8fafc";
+
+        const root = document.documentElement;
+        root.classList.toggle("dark", nextResolvedTheme === "dark");
+        root.dataset.theme = nextResolvedTheme;
+        root.style.colorScheme = nextResolvedTheme;
+        root.style.backgroundColor = fallbackBackground;
+      })();
+    </script>
+    <style>
+      html,
+      body {
+        background: #f8fafc;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background: #09090b;
+        }
+      }
+    </style>
+
     <!-- Preconnect to critical third-party origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://clerk.com" />
     <link rel="dns-prefetch" href="https://us.i.posthog.com" />
+
+    <!-- Jam.dev bug reporting -->
+    <script type="module">
+      const jamTeamId = import.meta.env.VITE_JAM_TEAM_ID;
+      if (jamTeamId) {
+        const jamTeamMeta = document.createElement("meta");
+        jamTeamMeta.name = "jam:team";
+        jamTeamMeta.content = jamTeamId;
+        document.head.appendChild(jamTeamMeta);
+
+        const capture = document.createElement("script");
+        capture.type = "module";
+        capture.src = "https://js.jam.dev/capture.js";
+        document.head.appendChild(capture);
+
+        const recorder = document.createElement("script");
+        recorder.type = "module";
+        recorder.src = "https://js.jam.dev/recorder.js";
+        document.head.appendChild(recorder);
+      }
+    </script>
 
     <!-- Preload critical logo for LCP optimization -->
     <link

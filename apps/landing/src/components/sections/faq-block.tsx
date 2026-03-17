@@ -2,7 +2,7 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 import { FadeIn } from "~/components/ui/fade-in";
-import type { FaqSectionBlock } from "~/lib/sanity/queries";
+import type { FaqSectionBlock } from "~/lib/content/types";
 
 export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -27,7 +27,7 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
             const answerId = `faq-a-${block._key}-${index}`;
 
             return (
-              <div className="group" key={faq._id}>
+              <div className="group" key={faq.id}>
                 <button
                   aria-controls={answerId}
                   aria-expanded={isOpen}
@@ -72,7 +72,7 @@ export function FaqBlockComponent({ block }: { block: FaqSectionBlock }) {
 }
 
 /**
- * Static FAQ for when Sanity has no FAQ data.
+ * Static FAQ for the marketing homepage.
  * FAQ JSON-LD schema is injected via the route's head() function.
  */
 const staticFaqs = [

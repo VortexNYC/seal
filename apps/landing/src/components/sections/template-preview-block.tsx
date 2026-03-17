@@ -1,7 +1,6 @@
 import { FileText } from "lucide-react";
 
-import { urlFor } from "~/lib/sanity/image";
-import type { TemplatePreviewBlock } from "~/lib/sanity/queries";
+import type { TemplatePreviewBlock } from "~/lib/content/types";
 
 export function TemplatePreviewBlockComponent({ block }: { block: TemplatePreviewBlock }) {
   return (
@@ -26,13 +25,13 @@ export function TemplatePreviewBlockComponent({ block }: { block: TemplatePrevie
               className="group overflow-hidden rounded-xl border border-white/10 bg-white/5"
               key={template.name}
             >
-              {template.image?.asset ? (
+              {template.image ? (
                 <div className="aspect-[4/3] overflow-hidden border-b border-white/10">
                   <img
                     alt={template.image.alt || template.name}
                     className="size-full object-cover"
                     loading="lazy"
-                    src={urlFor(template.image).width(400).height(300).url()}
+                    src={template.image.src}
                   />
                 </div>
               ) : (

@@ -89,46 +89,77 @@ export function validateAgainstRules(
     return { valid: true };
   }
 
-  // Check required
-  if (validationRules.required && (!value || value.trim() === "")) {
-    return {
-      valid: false,
-      error: validationRules.customMessage || "This field is required",
-    };
+  const firstError =
+    getRequiredRuleError(value, validationRules) ??
+    getMinRuleError(value, validationRules) ??
+    getMaxRuleError(value, validationRules) ??
+    getPatternRuleError(value, validationRules);
+  if (firstError) {
+    return { valid: false, error: firstError };
   }
 
   if (!value) {
     return { valid: true };
   }
 
-  // Check min length
-  if (validationRules.min !== undefined && value.length < validationRules.min) {
-    return {
-      valid: false,
-      error: validationRules.customMessage || `Minimum length is ${validationRules.min} characters`,
-    };
-  }
-
-  // Check max length
-  if (validationRules.max !== undefined && value.length > validationRules.max) {
-    return {
-      valid: false,
-      error: validationRules.customMessage || `Maximum length is ${validationRules.max} characters`,
-    };
-  }
-
-  // Check pattern
-  if (validationRules.pattern) {
-    const regex = new RegExp(validationRules.pattern);
-    if (!regex.test(value)) {
-      return {
-        valid: false,
-        error: validationRules.customMessage || "Value does not match required pattern",
-      };
-    }
-  }
-
   return { valid: true };
+}
+
+function getValidationErrorMessage(
+  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>,
+  fallback: string,
+): string {
+  return validationRules.customMessage || fallback;
+}
+
+function getRequiredRuleError(
+  value: string | undefined,
+  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>,
+): string | undefined {
+  if (!validationRules.required || (value && value.trim() !== "")) {
+    return undefined;
+  }
+
+  return getValidationErrorMessage(validationRules, "This field is required");
+}
+
+function getMinRuleError(
+  value: string | undefined,
+  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>,
+): string | undefined {
+  if (!value || validationRules.min === undefined || value.length >= validationRules.min) {
+    return undefined;
+  }
+
+  return getValidationErrorMessage(
+    validationRules,
+    `Minimum length is ${validationRules.min} characters`,
+  );
+}
+
+function getMaxRuleError(
+  value: string | undefined,
+  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>,
+): string | undefined {
+  if (!value || validationRules.max === undefined || value.length <= validationRules.max) {
+    return undefined;
+  }
+
+  return getValidationErrorMessage(
+    validationRules,
+    `Maximum length is ${validationRules.max} characters`,
+  );
+}
+
+function getPatternRuleError(
+  value: string | undefined,
+  validationRules: NonNullable<Parameters<typeof validateAgainstRules>[1]>,
+): string | undefined {
+  if (!value || !validationRules.pattern || new RegExp(validationRules.pattern).test(value)) {
+    return undefined;
+  }
+
+  return getValidationErrorMessage(validationRules, "Value does not match required pattern");
 }
 
 /**

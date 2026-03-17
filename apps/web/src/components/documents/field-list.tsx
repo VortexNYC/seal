@@ -160,7 +160,7 @@ function FieldRow({
             )}
             {field.fieldType === "payment" && field.paymentConfig && (
               <div className="mt-1 flex items-center gap-1.5 text-xs">
-                <span className="font-semibold text-field-payment">
+                <span className="text-field-payment font-semibold">
                   {formatCents(field.paymentConfig.totalAmountCents, field.paymentConfig.currency)}
                 </span>
                 <span className="text-muted-foreground">•</span>

@@ -113,15 +113,6 @@ async function handlePriceDeleted(ctx: HttpActionCtx, obj: Stripe.DeletedPrice) 
   }
 }
 
-async function handleCheckoutCompleted(
-  ctx: HttpActionCtx,
-  session: Stripe.Checkout.Session,
-): Promise<void> {
-  await ctx.runMutation(internal.stripe.handlers.handleCheckoutCompleted, {
-    session,
-  });
-}
-
 // Coupon Handlers
 async function handleCouponCreated(ctx: HttpActionCtx, coupon: Stripe.Coupon): Promise<void> {
   // Hydrate coupon to get applies_to field (not included in webhook payload)
@@ -285,9 +276,6 @@ const EVENT_HANDLERS: Record<string, EventHandler> = {
   // Invoice events
   "invoice.payment_succeeded": (ctx, data) => handlePaymentSucceeded(ctx, data as Stripe.Invoice),
   "invoice.payment_failed": (ctx, data) => handlePaymentFailed(ctx, data as Stripe.Invoice),
-  // Checkout events
-  "checkout.session.completed": (ctx, data) =>
-    handleCheckoutCompleted(ctx, data as Stripe.Checkout.Session),
   // Product & Price events
   "product.created": (ctx) => handleProductOrPriceChange(ctx),
   "product.updated": (ctx) => handleProductOrPriceChange(ctx),

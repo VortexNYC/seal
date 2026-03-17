@@ -1,9 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Calendar, Tag } from "lucide-react";
 
+import { getChangelogEntries, type ChangelogManifestEntry } from "~/lib/changelog/manifest";
 import { Badge } from "~/components/ui/badge";
-import { urlFor } from "~/lib/sanity/image";
-import { type ChangelogEntry, getChangelogList } from "~/lib/sanity/queries";
 
 export const Route = createFileRoute("/changelog")({
   head: () => ({
@@ -17,7 +16,7 @@ export const Route = createFileRoute("/changelog")({
     ],
   }),
   loader: async () => {
-    const entries = await getChangelogList();
+    const entries = getChangelogEntries();
     return { entries };
   },
   component: ChangelogPage,
@@ -29,9 +28,8 @@ function ChangelogPage() {
   return (
     <div className="bg-background min-h-dvh py-24 sm:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mx-auto mb-16 max-w-3xl text-center">
-          <h1 className="mb-4 text-4xl font-bold tracking-tight text-balance text-foreground sm:text-5xl lg:text-6xl">
+          <h1 className="text-foreground mb-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl">
             Changelog
           </h1>
           <p className="text-muted-foreground text-lg text-pretty sm:text-xl">
@@ -39,7 +37,6 @@ function ChangelogPage() {
           </p>
         </div>
 
-        {/* Changelog entries */}
         <div className="mx-auto max-w-3xl">
           {entries.length === 0 ? (
             <div className="text-muted-foreground text-center">
@@ -47,22 +44,18 @@ function ChangelogPage() {
             </div>
           ) : (
             <div className="space-y-12">
-              {entries.map((entry: ChangelogEntry, index: number) => (
-                <article className="group relative" key={entry._id}>
-                  {/* Timeline line */}
+              {entries.map((entry: ChangelogManifestEntry, index: number) => (
+                <article className="group relative" key={entry.slug}>
                   {index < entries.length - 1 && (
-                    <div className="absolute top-8 left-[7px] h-full w-px bg-border" />
+                    <div className="bg-border absolute top-8 left-[7px] h-full w-px" />
                   )}
 
                   <div className="flex gap-6">
-                    {/* Timeline dot */}
                     <div className="relative shrink-0">
-                      <div className="bg-background size-4 rounded-full border-2 border-primary" />
+                      <div className="bg-background border-primary size-4 rounded-full border-2" />
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 pb-8">
-                      {/* Meta info */}
                       <div className="mb-3 flex flex-wrap items-center gap-3">
                         <Badge className="border-primary/30 text-primary" variant="outline">
                           <Tag className="mr-1 size-3" />
@@ -78,32 +71,28 @@ function ChangelogPage() {
                         </span>
                       </div>
 
-                      {/* Title */}
                       <h2 className="text-foreground mb-2 text-2xl font-bold">{entry.title}</h2>
 
-                      {/* Summary */}
                       {entry.summary && (
                         <p className="text-muted-foreground mb-4 text-pretty">{entry.summary}</p>
                       )}
 
-                      {/* Cover image */}
-                      {entry.coverImage?.asset && (
-                        <div className="mb-4 overflow-hidden rounded-xl border border-border">
+                      {entry.coverImage && (
+                        <div className="border-border mb-4 overflow-hidden rounded-xl border">
                           <img
                             alt={entry.coverImage.alt || entry.title}
                             className="h-auto w-full"
-                            height={400}
+                            height={entry.coverImage.height || 400}
                             loading="lazy"
-                            src={urlFor(entry.coverImage).width(800).height(400).url()}
-                            width={800}
+                            src={entry.coverImage.src}
+                            width={entry.coverImage.width || 800}
                           />
                         </div>
                       )}
 
-                      {/* Read more link */}
                       <Link
                         className="text-primary hover:text-primary/80 inline-flex items-center gap-1 transition-colors"
-                        params={{ slug: entry.slug.current }}
+                        params={{ slug: entry.slug }}
                         to="/changelog/$slug"
                       >
                         Read more

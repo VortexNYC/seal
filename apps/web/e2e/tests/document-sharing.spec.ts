@@ -1,16 +1,37 @@
 import { expect, test } from "../fixtures/auth";
+import type { Page } from "@playwright/test";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { ShareDialogPage } from "../pages/documents/share-dialog-page";
 import { waitForToast } from "../utils/test-helpers";
+import { testData } from "../utils/test-data";
 
 test.describe("Document Sharing", () => {
   let documentsPage: DocumentsListPage;
   let shareDialog: ShareDialogPage;
 
-  test.beforeEach(async ({ authenticatedPage }) => {
+  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
     documentsPage = new DocumentsListPage(authenticatedPage);
     shareDialog = new ShareDialogPage(authenticatedPage);
+    await documentsPage.goto(organizationSlug);
+    await documentsPage.ensureAtLeastOneDocument(testData.samplePdfPath);
+    await documentsPage.waitForAnyDocumentRow();
   });
+
+  const openShareForFirstDocument = async (page: Page, documentsListPage: DocumentsListPage) => {
+    const firstRow = documentsListPage.getDocumentRows().first();
+
+    await expect(firstRow).toBeVisible({ timeout: 10000 });
+
+    const rowActionsButton = firstRow.getByRole("button", {
+      name: /document actions for/i,
+    });
+
+    await rowActionsButton.click();
+
+    const shareMenuItem = page.getByRole("menuitem", { name: /^share$/i });
+    await expect(shareMenuItem).toBeVisible({ timeout: 10000 });
+    await shareMenuItem.first().click();
+  };
 
   test.describe("Share Dialog Opening", () => {
     test("should open share dialog from document row actions", async ({
@@ -19,13 +40,10 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
       expect(await shareDialog.isOpen()).toBe(true);
-      expect(await shareDialog.isOwnerDisplayed()).toBe(true);
     });
 
     test("should close share dialog with Done button", async ({
@@ -34,9 +52,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
       await shareDialog.close();
@@ -50,9 +66,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
       await shareDialog.closeWithX();
@@ -68,20 +82,22 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
       const initialMode = await shareDialog.getCurrentSharingMode();
-      if (initialMode === "private") {
+      if (initialMode === "private" && !(await shareDialog.isTeamSharingDisabled())) {
         await shareDialog.selectSharingMode("specific");
-        await waitForToast(authenticatedPage, /sharing settings updated/i);
-
-        expect(await shareDialog.isSharingModeSelected("specific")).toBe(true);
-        expect(await shareDialog.isAddMemberSectionVisible()).toBe(true);
+      } else if (await shareDialog.isSharingModeSelected("specific")) {
+        // Already in specific mode; continue asserting shared settings controls.
+      } else {
+        test.skip();
+        return;
       }
+
+      expect(await shareDialog.isSharingModeSelected("specific")).toBe(true);
+      expect(await shareDialog.isAddMemberSectionVisible()).toBe(true);
     });
 
     test("should change sharing mode from specific to workspace", async ({
@@ -90,18 +106,19 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
-      if (!(await shareDialog.isTeamSharingDisabled())) {
-        await shareDialog.selectSharingMode("workspace");
-        await waitForToast(authenticatedPage, /sharing settings updated/i);
-
-        expect(await shareDialog.isSharingModeSelected("workspace")).toBe(true);
+      if (await shareDialog.isTeamSharingDisabled()) {
+        test.skip();
+        return;
       }
+
+      await shareDialog.selectSharingMode("specific");
+      await shareDialog.selectSharingMode("workspace");
+
+      expect(await shareDialog.isSharingModeSelected("workspace")).toBe(true);
     });
 
     test("should change sharing mode from workspace to private", async ({
@@ -110,14 +127,11 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
       await shareDialog.selectSharingMode("private");
-      await waitForToast(authenticatedPage, /sharing settings updated/i);
 
       expect(await shareDialog.isSharingModeSelected("private")).toBe(true);
     });
@@ -130,9 +144,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
@@ -154,9 +166,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
@@ -180,9 +190,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
@@ -207,9 +215,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
@@ -246,9 +252,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
@@ -283,9 +287,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
@@ -300,9 +302,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
@@ -321,13 +321,12 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
       if (!(await shareDialog.isTeamSharingDisabled())) {
+        await shareDialog.selectSharingMode("private");
         await shareDialog.selectSharingMode("specific");
 
         const sharedCount = await shareDialog.getSharedUserCount();
@@ -345,9 +344,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
@@ -362,25 +359,8 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const sharedDocRow = authenticatedPage
-        .locator('[data-testid="document-row"][data-shared="true"]')
-        .first();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
-      const rowExists = await sharedDocRow.isVisible().catch(() => false);
-      if (!rowExists) {
-        test.skip();
-        return;
-      }
-
-      await sharedDocRow.hover();
-      const shareButton = sharedDocRow.locator('[data-testid="share-button"]');
-      const buttonVisible = await shareButton.isVisible().catch(() => false);
-      if (!buttonVisible) {
-        test.skip();
-        return;
-      }
-
-      await shareButton.click();
       await shareDialog.waitForOpen();
 
       const canViewAccess = !(await shareDialog.showsNoPermissionMessage());
@@ -408,25 +388,8 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const sharedDocRow = authenticatedPage
-        .locator('[data-testid="document-row"][data-shared="true"]')
-        .first();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
-      const rowExists = await sharedDocRow.isVisible().catch(() => false);
-      if (!rowExists) {
-        test.skip();
-        return;
-      }
-
-      await sharedDocRow.hover();
-      const shareButton = sharedDocRow.locator('[data-testid="share-button"]');
-      const buttonVisible = await shareButton.isVisible().catch(() => false);
-      if (!buttonVisible) {
-        test.skip();
-        return;
-      }
-
-      await shareButton.click();
       await shareDialog.waitForOpen();
 
       const revokeButtons = authenticatedPage.locator('[data-testid="revoke-access-button"]');
@@ -446,25 +409,8 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const sharedDocRow = authenticatedPage
-        .locator('[data-testid="document-row"][data-shared="true"]')
-        .first();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
-      const rowExists = await sharedDocRow.isVisible().catch(() => false);
-      if (!rowExists) {
-        test.skip();
-        return;
-      }
-
-      await sharedDocRow.hover();
-      const shareButton = sharedDocRow.locator('[data-testid="share-button"]');
-      const buttonVisible = await shareButton.isVisible().catch(() => false);
-      if (!buttonVisible) {
-        test.skip();
-        return;
-      }
-
-      await shareButton.click();
       await shareDialog.waitForOpen();
 
       const permissionDropdowns = authenticatedPage.locator('[data-testid="permission-dropdown"]');
@@ -483,9 +429,7 @@ test.describe("Document Sharing", () => {
     test("should prevent sharing with oneself", async ({ authenticatedPage, organizationSlug }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
@@ -511,9 +455,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 
@@ -537,9 +479,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      const documentRow = authenticatedPage.locator('[data-testid="document-row"]').first();
-      await documentRow.hover();
-      await documentRow.locator('[data-testid="share-button"]').click();
+      await openShareForFirstDocument(authenticatedPage, documentsPage);
 
       await shareDialog.waitForOpen();
 

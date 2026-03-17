@@ -1,8 +1,10 @@
+import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
+import { APP_URL } from "~/lib/constants";
 import { cn } from "~/utils/cn";
 
 const navItems = [
@@ -12,13 +14,12 @@ const navItems = [
   { label: "Changelog", href: "/changelog" },
 ];
 
-const APP_URL = "https://app.seal.co";
-
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const pathname = location.pathname;
   const [isScrolled, setIsScrolled] = useState(false);
+  const hasClerk = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -56,7 +57,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="flex items-center gap-1 max-md:hidden" data-testid="desktop-nav">
           {navItems.map((item) => (
             <Link
               className={cn(
@@ -73,19 +74,19 @@ export function Navbar() {
         </nav>
 
         {/* Desktop CTA */}
-        <div className="hidden items-center gap-3 md:flex">
-          <Button asChild className="text-muted-foreground hover:text-foreground" variant="ghost">
-            <a href={`${APP_URL}/sign-in`}>Sign in</a>
-          </Button>
-          <Button asChild className="group">
-            <a href={`${APP_URL}/sign-up`}>
-              Start Free
-              <ArrowRight
-                aria-hidden="true"
-                className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
-              />
-            </a>
-          </Button>
+        <div className="flex items-center gap-3 max-md:hidden">
+          {hasClerk ? (
+            <>
+              <SignedOut>
+                <SignedOutDesktopCtas />
+              </SignedOut>
+              <SignedIn>
+                <SignedInCta />
+              </SignedIn>
+            </>
+          ) : (
+            <SignedOutDesktopCtas />
+          )}
         </div>
 
         {/* Mobile toggle */}
@@ -93,6 +94,7 @@ export function Navbar() {
           aria-expanded={mobileOpen}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           className="text-foreground flex size-11 items-center justify-center rounded-md md:hidden"
+          data-testid="mobile-menu-button"
           onClick={() => setMobileOpen(!mobileOpen)}
           type="button"
         >
@@ -102,7 +104,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <nav className="bg-background border-border border-t px-6 pt-4 pb-6 md:hidden">
+        <nav className="bg-background border-border border-t px-6 pt-4 pb-6 md:hidden" data-testid="mobile-nav">
           <div className="flex flex-col gap-1">
             {navItems.map((item) => (
               <Link
@@ -117,21 +119,87 @@ export function Navbar() {
             ))}
           </div>
           <div className="mt-4 flex flex-col gap-2 border-t pt-4">
-            <Button asChild variant="outline" size="lg" className="w-full">
-              <a href={`${APP_URL}/sign-in`}>Sign in</a>
-            </Button>
-            <Button asChild className="group w-full" size="lg">
-              <a href={`${APP_URL}/sign-up`}>
-                Start Free
-                <ArrowRight
-                  aria-hidden="true"
-                  className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
-                />
-              </a>
-            </Button>
+            {hasClerk ? (
+              <>
+                <SignedOut>
+                  <SignedOutMobileCtas />
+                </SignedOut>
+                <SignedIn>
+                  <SignedInMobileCta />
+                </SignedIn>
+              </>
+            ) : (
+              <SignedOutMobileCtas />
+            )}
           </div>
         </nav>
       )}
     </header>
+  );
+}
+
+function SignedOutDesktopCtas() {
+  return (
+    <>
+      <Button asChild className="text-muted-foreground hover:text-foreground" variant="ghost">
+        <a href={`${APP_URL}/sign-in`}>Sign in</a>
+      </Button>
+      <Button asChild className="group">
+        <a href={`${APP_URL}/sign-up`}>
+          Start Free
+          <ArrowRight
+            aria-hidden="true"
+            className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
+          />
+        </a>
+      </Button>
+    </>
+  );
+}
+
+function SignedOutMobileCtas() {
+  return (
+    <>
+      <Button asChild variant="outline" size="lg" className="w-full">
+        <a href={`${APP_URL}/sign-in`}>Sign in</a>
+      </Button>
+      <Button asChild className="group w-full" size="lg">
+        <a href={`${APP_URL}/sign-up`}>
+          Start Free
+          <ArrowRight
+            aria-hidden="true"
+            className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
+          />
+        </a>
+      </Button>
+    </>
+  );
+}
+
+function SignedInCta() {
+  return (
+    <Button asChild className="group">
+      <a href={`${APP_URL}/app`}>
+        Open App
+        <ArrowRight
+          aria-hidden="true"
+          className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
+        />
+      </a>
+    </Button>
+  );
+}
+
+function SignedInMobileCta() {
+  return (
+    <Button asChild className="group w-full" size="lg">
+      <a href={`${APP_URL}/app`}>
+        Open App
+        <ArrowRight
+          aria-hidden="true"
+          className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
+        />
+      </a>
+    </Button>
   );
 }

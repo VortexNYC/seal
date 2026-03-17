@@ -118,6 +118,68 @@ function parseRequest(request: Request): {
   return { url, pathSegments, query };
 }
 
+function createCorsPreflightResponse(): Response {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Version",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
+}
+
+function getClientIp(request: Request): string | undefined {
+  const forwarded = request.headers.get("x-forwarded-for");
+  return forwarded
+    ? forwarded.split(",")[0]?.trim()
+    : (request.headers.get("cf-connecting-ip") ?? request.headers.get("x-real-ip") ?? undefined);
+}
+
+async function authenticateApiRequest(
+  ctx: ActionCtx,
+  request: Request,
+  options: ApiEndpointOptions,
+): Promise<{ auth: ApiAuthContext | null; rateLimitHeaders?: Headers }> {
+  if (options.public) {
+    return { auth: null };
+  }
+
+  const authHeader = request.headers.get("Authorization");
+  const auth = await resolveAuthContext(ctx, authHeader, getClientIp(request));
+
+  if (options.scope) {
+    requireScope(auth, options.scope);
+  } else if (options.scopes && options.scopes.length > 0) {
+    const hasRequiredScope = options.scopes.some((scope) => auth.hasScope(scope));
+    if (!hasRequiredScope) {
+      throw new ApiError(
+        403,
+        `Missing required scope. Need one of: ${options.scopes.join(", ")}`,
+        "INSUFFICIENT_SCOPE",
+      );
+    }
+  }
+
+  if (options.skipRateLimit) {
+    return { auth };
+  }
+
+  const rateLimitKey = auth.authType === "api_key" ? auth.apiKeyId : `jwt:${auth.userId}`;
+  if (!rateLimitKey) {
+    throw new ApiError(500, "Rate limit key unavailable", "INTERNAL_ERROR");
+  }
+
+  const rateLimitResult = await checkApiRateLimit(ctx, rateLimitKey, options.rateLimit);
+  const rateLimitHeaders = buildRateLimitHeaders(rateLimitResult);
+  if (!rateLimitResult.allowed) {
+    throwRateLimitExceeded(rateLimitResult);
+  }
+
+  return { auth, rateLimitHeaders };
+}
+
 /**
  * Adds standard and rate limit headers to a response.
  */
@@ -178,75 +240,13 @@ function addResponseHeaders(response: Response, rateLimitHeaders?: Headers): Res
 export function apiHttpAction(handler: ApiHandler, options: ApiEndpointOptions = {}) {
   return httpAction(async (ctx, request) => {
     try {
-      // Handle CORS preflight
       if (request.method === "OPTIONS") {
-        return new Response(null, {
-          status: 204,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Version",
-            "Access-Control-Max-Age": "86400",
-          },
-        });
+        return createCorsPreflightResponse();
       }
 
-      // Parse request
       const { url, pathSegments, query } = parseRequest(request);
-
-      // Get API version
       const apiVersion = getApiVersion(request);
-
-      // Authenticate unless public endpoint
-      let auth: ApiAuthContext | null = null;
-
-      // Track rate limit result for headers
-      let rateLimitHeaders: Headers | undefined;
-
-      if (!options.public) {
-        const authHeader = request.headers.get("Authorization");
-        // Extract client IP for IP allowlist enforcement
-        const forwarded = request.headers.get("x-forwarded-for");
-        const clientIp = forwarded
-          ? forwarded.split(",")[0]?.trim()
-          : (request.headers.get("cf-connecting-ip") ??
-            request.headers.get("x-real-ip") ??
-            undefined);
-        auth = await resolveAuthContext(ctx, authHeader, clientIp);
-
-        // Check required scopes
-        if (options.scope) {
-          requireScope(auth, options.scope);
-        } else if (options.scopes && options.scopes.length > 0) {
-          const hasRequiredScope = options.scopes.some((scope) => auth?.hasScope(scope));
-          if (!hasRequiredScope) {
-            throw new ApiError(
-              403,
-              `Missing required scope. Need one of: ${options.scopes.join(", ")}`,
-              "INSUFFICIENT_SCOPE",
-            );
-          }
-        }
-
-        // Check rate limits (unless explicitly skipped)
-        if (!options.skipRateLimit) {
-          const rateLimitKey = auth.authType === "api_key" ? auth.apiKeyId : `jwt:${auth.userId}`;
-          if (!rateLimitKey) {
-            throw new ApiError(500, "Rate limit key unavailable", "INTERNAL_ERROR");
-          }
-          const rateLimitResult = await checkApiRateLimit(ctx, rateLimitKey, options.rateLimit);
-
-          // Build headers regardless of result (for transparency)
-          rateLimitHeaders = buildRateLimitHeaders(rateLimitResult);
-
-          // Reject if rate limited
-          if (!rateLimitResult.allowed) {
-            throwRateLimitExceeded(rateLimitResult);
-          }
-        }
-      }
-
-      // Build request context
+      const { auth, rateLimitHeaders } = await authenticateApiRequest(ctx, request, options);
       const requestContext: ApiRequestContext = {
         ctx,
         request,

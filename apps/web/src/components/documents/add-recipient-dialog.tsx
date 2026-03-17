@@ -191,8 +191,9 @@ export function AddRecipientDialog({
               ) : eligibleMembers && eligibleMembers.length > 0 ? (
                 <div className="max-h-[200px] space-y-1 overflow-y-auto rounded-md border p-2">
                   {eligibleMembers.map((member) => (
-                    <div
+                    <button
                       key={member.id}
+                      type="button"
                       onClick={() =>
                         setSelectedMember({
                           id: member.id,
@@ -200,19 +201,8 @@ export function AddRecipientDialog({
                           name: member.name ?? null,
                         })
                       }
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          setSelectedMember({
-                            id: member.id,
-                            email: member.email,
-                            name: member.name ?? null,
-                          });
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
                       className={cn(
-                        "hover:bg-accent flex cursor-pointer items-center gap-3 rounded-md p-2 transition-colors",
+                        "hover:bg-accent flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors",
                         selectedMember?.id === member.id && "bg-accent",
                       )}
                     >
@@ -229,7 +219,7 @@ export function AddRecipientDialog({
                       {selectedMember?.id === member.id && (
                         <CheckIcon className="text-primary h-4 w-4 shrink-0" />
                       )}
-                    </div>
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -267,27 +257,19 @@ export function AddRecipientDialog({
                   {showSuggestions && filteredSuggestions && filteredSuggestions.length > 0 && (
                     <div className="bg-popover absolute top-full left-0 z-50 mt-1 w-full rounded-md border p-1 shadow-md">
                       {filteredSuggestions.map((contact) => (
-                        <div
+                        <button
                           key={contact._id}
-                          role="button"
-                          tabIndex={0}
-                          className="hover:bg-accent flex cursor-pointer flex-col rounded-sm px-2 py-1.5 text-sm"
+                          type="button"
+                          className="hover:bg-accent flex w-full flex-col rounded-sm px-2 py-1.5 text-left text-sm"
                           onClick={() => {
                             setEmail(contact.email);
                             setName(contact.fullName);
                             setShowSuggestions(false);
                           }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              setEmail(contact.email);
-                              setName(contact.fullName);
-                              setShowSuggestions(false);
-                            }
-                          }}
                         >
                           <span className="font-medium">{contact.fullName}</span>
                           <span className="text-muted-foreground text-xs">{contact.email}</span>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}

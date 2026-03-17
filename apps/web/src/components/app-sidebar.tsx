@@ -30,8 +30,8 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Switch } from "@/components/ui/switch";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
@@ -76,6 +76,7 @@ type NavMainItem = {
     title: string;
     url: string;
     isActive: boolean;
+    locked?: boolean;
   }[];
 };
 
@@ -124,11 +125,13 @@ function buildNavSections({
   currentPath,
   permissions,
   hasStripeConnect,
+  isPro,
 }: {
   slug: string;
   currentPath: string;
   permissions: PermissionSet | undefined;
   hasStripeConnect: boolean;
+  isPro: boolean;
 }): NavMainItem[] {
   const permissionFlags = permissions?.permissions;
   const canView = (flag?: boolean) => (flag === undefined ? true : Boolean(flag));
@@ -226,6 +229,7 @@ function buildNavSections({
       title: "Branding",
       url: buildOrganizationPath(slug, "/settings/branding"),
       visible: canView(permissionFlags?.canViewSettings),
+      proGated: true,
     },
     {
       title: "Signing",
@@ -266,11 +270,13 @@ function buildNavSections({
       url: buildOrganizationPath(slug, "/settings/developer/api-keys"),
       visible:
         canView(permissionFlags?.canManageAPIKeys) || canView(permissionFlags?.canManageWebhooks),
+      proGated: true,
     },
     {
       title: "Webhooks",
       url: buildOrganizationPath(slug, "/settings/developer/webhooks"),
       visible: canView(permissionFlags?.canManageWebhooks),
+      proGated: true,
     },
     {
       title: "Documentation",
@@ -308,7 +314,7 @@ function buildNavSections({
         return null;
       }
 
-      const items = section.items.map((item) => ({
+      const items: NavMainItem["items"] = section.items.map((item) => ({
         title: item.title,
         url: item.url,
         isActive: isPathActive(
@@ -316,6 +322,7 @@ function buildNavSections({
           item.url,
           "exactMatch" in item ? Boolean(item.exactMatch) : false,
         ),
+        locked: "proGated" in item && Boolean(item.proGated) && !isPro,
       }));
 
       return {
@@ -378,6 +385,7 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
   const organizations = useQuery(api.check_membership.listUserOrganizations);
   const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
   const hasStripeConnect = connectedAccount?.status === "connected";
+  const { isPro } = useSubscriptionLimits();
 
   // Wrapper to reset PostHog identity before signing out
   const handleSignOut = React.useCallback(async () => {
@@ -397,8 +405,9 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
         currentPath: location.pathname,
         permissions,
         hasStripeConnect,
+        isPro,
       }),
-    [slug, location.pathname, permissions, hasStripeConnect],
+    [slug, location.pathname, permissions, hasStripeConnect, isPro],
   );
 
   const activeTeamSlug = slug;
@@ -486,29 +495,29 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
           <SidebarMenuItem>
             <div className="flex items-center justify-between px-2">
               <NotificationsPopover slug={slug} />
-              <SidebarMenuButton asChild className="ml-2 flex-1 justify-between">
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={handleThemeToggle}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleThemeToggle();
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
-                    <span className="group-data-[collapsible=icon]:hidden">Dark mode</span>
-                  </div>
-                  <Switch
-                    checked={isDark}
-                    className="group-data-[collapsible=icon]:hidden"
-                    aria-label="Toggle dark mode"
-                    tabIndex={-1}
-                  />
+              <SidebarMenuButton
+                className="ml-2 flex-1 justify-between"
+                onClick={handleThemeToggle}
+                aria-pressed={isDark}
+              >
+                <div className="flex items-center gap-2">
+                  {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
+                  <span className="group-data-[collapsible=icon]:hidden">Dark mode</span>
                 </div>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "group-data-[collapsible=icon]:hidden inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
+                    isDark ? "bg-primary border-primary justify-end" : "bg-muted border-border",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "bg-background block h-4 w-4 rounded-full shadow-sm transition-transform",
+                      isDark ? "-translate-x-0.5" : "translate-x-0.5",
+                    )}
+                  />
+                </span>
               </SidebarMenuButton>
             </div>
           </SidebarMenuItem>

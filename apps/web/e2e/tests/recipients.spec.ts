@@ -1,22 +1,31 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "../fixtures/auth";
 import { DocumentPage } from "../pages/documents/document-page";
+import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
 import { waitForToast } from "../utils/test-helpers";
+
+async function createAndOpenDocument(authenticatedPage: Page, organizationSlug: string): Promise<void> {
+  const documentsPage = new DocumentsListPage(authenticatedPage);
+
+  await documentsPage.goto(organizationSlug);
+  const documentName = await documentsPage.createDocument(testData.samplePdfPath);
+  await documentsPage.openDocument(documentName);
+}
 
 test.describe("Recipients Management", () => {
   test("should display recipients section", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
     // Verify Recipients section is visible
-    await expect(authenticatedPage.getByText("Recipients")).toBeVisible();
+    await expect(documentPage.recipientsSectionButton).toBeVisible();
 
-    // Verify Add button exists
-    const addButton = authenticatedPage.getByRole("button", { name: /add/i });
-    await expect(addButton).toBeVisible();
+    // Verify at least one recipient field state is displayed.
+    await expect(authenticatedPage.getByText("No recipients")).toBeVisible();
   });
 
   test("should show empty state when no recipients", async ({
@@ -25,18 +34,18 @@ test.describe("Recipients Management", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
     // Verify empty state message
-    await expect(authenticatedPage.getByText(/no recipients added yet/i)).toBeVisible();
+    await expect(authenticatedPage.getByText(/no recipients/i)).toBeVisible();
   });
 
   test.skip("should open add recipient dialog", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -51,7 +60,7 @@ test.describe("Recipients Management", () => {
   test.skip("should add recipient with email", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -76,7 +85,7 @@ test.describe("Recipients Management", () => {
   test.skip("should add multiple recipients", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -107,7 +116,7 @@ test.describe("Recipients Management", () => {
   test.skip("should remove recipient", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -134,7 +143,7 @@ test.describe("Recipients Management", () => {
   test.skip("should set recipient order", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -158,7 +167,7 @@ test.describe("Recipients Management", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -189,7 +198,7 @@ test.describe("Recipients - Authentication Methods", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -217,7 +226,7 @@ test.describe("Document Sending", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -244,7 +253,7 @@ test.describe("Document Sending", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -261,7 +270,7 @@ test.describe("Document Sending", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentPage.goto(organizationSlug, "kn7azgjcc96f3dgxgca5h6rtq17t8ta1");
+    await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 

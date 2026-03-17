@@ -25,6 +25,7 @@ import { NotFoundPage } from "@/components/not-found-page";
 import { PageWrapper } from "@/components/page-wrapper";
 import { RouteErrorComponent } from "@/components/route-error-component";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { buildActivityEvents } from "@/lib/document-activity";
 import { countSignatureFields } from "@/lib/signature-fields";
 import { cn } from "@/lib/utils";
@@ -71,10 +72,7 @@ export const Route = createFileRoute("/_authenticated/$slug/documents/$documentI
   component: DocumentDetailPage,
   errorComponent: DocumentErrorComponent,
   head: () => ({
-    meta: [
-      { title: "Document - Seal" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ title: "Document - Seal" }, { name: "robots", content: "noindex, nofollow" }],
   }),
 });
 
@@ -168,6 +166,8 @@ function DocumentDetailPage() {
   const signingSettings = useQuery(api.organizations.queries.getSigningSettings, {
     organizationId: documentData.organizationId,
   });
+
+  const { canCreateTemplates } = useSubscriptionLimits();
 
   // ── Memoized maps ───────────────────────────────────────────────────────
   const paymentConfigByFieldId = useMemo(() => {
@@ -478,13 +478,13 @@ function DocumentDetailPage() {
     canEdit && aiEnabled ? (
       <div key="ai-toggle" className="flex items-center gap-1.5 sm:flex-none">
         {documentData.aiProcessingStatus === "processing" && (
-          <span className="flex items-center gap-1.5 text-xs text-ai-accent">
+          <span className="text-ai-accent flex items-center gap-1.5 text-xs">
             <Loader2Icon className="h-3 w-3 animate-spin" />
             Analyzing...
           </span>
         )}
         {documentData.aiProcessingStatus === "failed" && (
-          <span className="flex items-center gap-1.5 text-xs text-warning">
+          <span className="text-warning flex items-center gap-1.5 text-xs">
             Analysis incomplete
           </span>
         )}
@@ -506,10 +506,7 @@ function DocumentDetailPage() {
           size="sm"
           variant="ghost"
           disabled={isCreatingThread}
-          className={cn(
-            "text-ai-accent",
-            showAIChat && "bg-ai-accent/20 dark:bg-ai-accent/20",
-          )}
+          className={cn("text-ai-accent", showAIChat && "bg-ai-accent/20 dark:bg-ai-accent/20")}
           aria-pressed={showAIChat}
         >
           {isCreatingThread ? (
@@ -524,16 +521,26 @@ function DocumentDetailPage() {
 
   const saveAsTemplateButton =
     canEdit && signatureFields.length > 0 ? (
-      <Button
-        key="save-template"
-        onClick={() => docState.setSaveAsTemplateOpen(true)}
-        size="sm"
-        variant="outline"
-        className="flex-1 sm:flex-none"
-      >
-        <SaveIcon className="mr-2 h-4 w-4" />
-        <span className="truncate">Save as Template</span>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="flex-1 sm:flex-none" tabIndex={!canCreateTemplates ? 0 : undefined}>
+            <Button
+              key="save-template"
+              onClick={() => docState.setSaveAsTemplateOpen(true)}
+              size="sm"
+              variant="outline"
+              className="w-full"
+              disabled={!canCreateTemplates}
+            >
+              <SaveIcon className="mr-2 h-4 w-4" />
+              <span className="truncate">Save as Template</span>
+            </Button>
+          </span>
+        </TooltipTrigger>
+        {!canCreateTemplates && (
+          <TooltipContent>Templates require a Professional plan</TooltipContent>
+        )}
+      </Tooltip>
     ) : null;
 
   const sendDocumentButton = sendDocumentValidation.canSend ? (
@@ -594,7 +601,7 @@ function DocumentDetailPage() {
           <div className="lg:col-span-2">
             <div
               ref={pdfViewer.pdfWrapperRef}
-              className="relative min-h-[600px] rounded-2xl bg-muted/80 p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4 dark:bg-background"
+              className="bg-muted/80 dark:bg-background relative min-h-[600px] rounded-2xl p-6 sm:min-h-[400px] sm:rounded-xl sm:p-3 md:p-4"
             >
               {pdfViewer.pdfUrl ? (
                 <TransformWrapper
@@ -611,7 +618,7 @@ function DocumentDetailPage() {
                   }}
                 >
                   <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                    <div className="flex items-center gap-2 font-serif text-base font-medium text-foreground sm:gap-3 sm:text-lg">
+                    <div className="text-foreground flex items-center gap-2 font-serif text-base font-medium sm:gap-3 sm:text-lg">
                       <span>Document Preview</span>
                     </div>
                     <PdfViewerControls
@@ -632,18 +639,22 @@ function DocumentDetailPage() {
                       ref={pdfViewer.containerRef}
                       onDragOver={fieldPlacement.handleFieldDragOver}
                       onDrop={fieldPlacement.handleFieldDrop}
-                       className={cn("relative overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-300 dark:border-border/80 dark:bg-card", fieldPlacement.draggingFieldType && "scale-[1.002] border-primary shadow-lg ring-4 ring-primary/20")}
+                      className={cn(
+                        "border-border bg-card dark:border-border/80 dark:bg-card relative overflow-hidden rounded-lg border shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-300",
+                        fieldPlacement.draggingFieldType &&
+                          "border-primary ring-primary/20 scale-[1.002] shadow-lg ring-4",
+                      )}
                     >
                       <Document
                         file={pdfViewer.pdfUrl}
                         onLoadSuccess={pdfViewer.onDocumentLoadSuccess}
                         loading={
-                          <div className="p-16 text-center text-muted-foreground">
+                          <div className="text-muted-foreground p-16 text-center">
                             <div className="animate-pulse">Loading document...</div>
                           </div>
                         }
                         error={
-                          <div className="p-16 text-center text-destructive">
+                          <div className="text-destructive p-16 text-center">
                             Failed to load document
                           </div>
                         }
@@ -711,9 +722,9 @@ function DocumentDetailPage() {
                     showAiSuggestions &&
                     !aiSuggestions.suggestions &&
                     documentData.aiProcessingStatus === "processing" && (
-                      <div className="mt-3 flex items-center gap-3 rounded-xl border border-dashed border-ai-accent/40 bg-ai-accent/10 px-4 py-3 dark:border-ai-accent/30 dark:bg-ai-accent/15">
-                        <Loader2Icon className="h-4 w-4 animate-spin text-ai-accent" />
-                        <span className="font-sans text-xs text-ai-accent">
+                      <div className="border-ai-accent/40 bg-ai-accent/10 dark:border-ai-accent/30 dark:bg-ai-accent/15 mt-3 flex items-center gap-3 rounded-xl border border-dashed px-4 py-3">
+                        <Loader2Icon className="text-ai-accent h-4 w-4 animate-spin" />
+                        <span className="text-ai-accent font-sans text-xs">
                           Detecting form fields...
                         </span>
                       </div>
@@ -722,16 +733,16 @@ function DocumentDetailPage() {
               ) : (
                 <>
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 font-serif text-lg font-medium text-foreground sm:flex-wrap sm:text-base">
+                    <div className="text-foreground flex items-center gap-3 font-serif text-lg font-medium sm:flex-wrap sm:text-base">
                       <span>Document Preview</span>
                       {pdfViewer.numPages && (
-                        <span className="rounded-full bg-muted px-2.5 py-1 font-sans text-xs font-medium text-muted-foreground">
+                        <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-1 font-sans text-xs font-medium">
                           {pdfViewer.numPages} {pdfViewer.numPages === 1 ? "page" : "pages"}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="relative overflow-hidden rounded-lg border border-border bg-card p-16 text-center text-muted-foreground shadow-sm dark:border-border/80 dark:bg-card">
+                  <div className="border-border bg-card text-muted-foreground dark:border-border/80 dark:bg-card relative overflow-hidden rounded-lg border p-16 text-center shadow-sm">
                     <div className="animate-pulse">Loading document...</div>
                   </div>
                 </>

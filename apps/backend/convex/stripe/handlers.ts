@@ -11,133 +11,36 @@
  * - invoice.payment_failed: Handle failed payments
  */
 
-/* eslint-disable max-lines */
-
 import { v } from "convex/values";
 import Stripe from "stripe";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { internalAction, internalMutation, type MutationCtx } from "../_generated/server";
+import { internalAction, internalMutation } from "../_generated/server";
 
-type SubscriptionStatus =
-  | "active"
-  | "canceled"
-  | "past_due"
-  | "trialing"
-  | "incomplete"
-  | "incomplete_expired"
-  | "unpaid";
+import {
+  type SubscriptionStatus,
+  cancelOtherSubscriptions,
+  extractInvoiceData,
+  extractSubscriptionData,
+  getRetryDelayMs,
+  logTrialConversionIfNeeded,
+  MAX_SUBSCRIPTION_RETRY_ATTEMPTS,
+  resolveOrgForSubscription,
+} from "./handler_helpers";
 
-/**
- * Validators for Stripe webhook data
- * We validate only the fields we actually use
- *
- * Note: As of Stripe API 2025-03-31, period dates are in items.data[], not at subscription root
- * Note: We use Stripe's actual types and extract fields in handlers for validation
- */
-
-/**
- * Helper: Convert unix timestamp to milliseconds
- */
-function timestampToMs(timestamp: number | null | undefined): number | undefined {
-  return timestamp ? timestamp * 1000 : undefined;
-}
-
-/**
- * Extract and validate subscription data from Stripe webhook
- * Stripe API 2025-03-31: period dates are in items.data[], not at subscription root
- */
-function extractSubscriptionData(subscription: Stripe.Subscription) {
-  // Access customer as string (it's expanded in some contexts, but webhooks send ID)
-  const customerId =
-    typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
-
-  // Get first subscription item for period dates
-  const firstItem = subscription.items.data[0];
-  if (!firstItem) {
-    // Structured error logging for Axiom analytics
-    console.error(
-      JSON.stringify({
-        topic: "stripe_webhook_errors",
-        event: "subscription_missing_items",
-        operation: "extractSubscriptionData",
-        stripeSubscriptionId: subscription.id,
-        customerId,
-        status: subscription.status,
-        itemsCount: subscription.items.data.length,
-        severity: "critical",
-        timestamp: Date.now(),
-      }),
-    );
-    throw new Error("Subscription has no items");
-  }
-
-  // Extract period dates from subscription item (Stripe API 2025-03-31)
-  const currentPeriodStart = firstItem.current_period_start;
-  const currentPeriodEnd = firstItem.current_period_end;
-
-  if (!currentPeriodStart || !currentPeriodEnd) {
-    // Structured error logging for Axiom analytics
-    console.error(
-      JSON.stringify({
-        topic: "stripe_webhook_errors",
-        event: "subscription_missing_period_dates",
-        operation: "extractSubscriptionData",
-        stripeSubscriptionId: subscription.id,
-        customerId,
-        priceId: firstItem.price.id,
-        hasPeriodStart: !!currentPeriodStart,
-        hasPeriodEnd: !!currentPeriodEnd,
-        severity: "critical",
-        timestamp: Date.now(),
-      }),
-    );
-    throw new Error("Subscription item missing period dates");
-  }
-
-  return {
-    id: subscription.id,
-    customer: customerId,
-    status: subscription.status as SubscriptionStatus,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    canceledAt: timestampToMs(subscription.canceled_at),
-    cancelReason: subscription.cancellation_details?.reason || undefined,
-    trialStart: timestampToMs(subscription.trial_start),
-    trialEnd: timestampToMs(subscription.trial_end),
-    latestInvoiceId:
-      typeof subscription.latest_invoice === "string"
-        ? subscription.latest_invoice
-        : subscription.latest_invoice?.id,
-    userId: subscription.metadata?.userId as Id<"users">,
-    priceId: firstItem.price.id,
-    currentPeriodStart: currentPeriodStart * 1000, // Convert to ms
-    currentPeriodEnd: currentPeriodEnd * 1000, // Convert to ms
-  };
-}
-
-/**
- * Extract and validate invoice data from Stripe webhook
- */
-function extractInvoiceData(invoice: Stripe.Invoice) {
-  // Access customer as string (it's expanded in some contexts, but webhooks send ID)
-  const customerId =
-    typeof invoice.customer === "string" ? invoice.customer : (invoice.customer?.id ?? null);
-
-  // In Stripe API 2025, subscription is in parent.subscription_details.subscription
-  const parent = invoice.parent as
-    | { subscription_details?: { subscription?: string } }
-    | null
-    | undefined;
-  const subscriptionId = parent?.subscription_details?.subscription;
-
-  return {
-    customer: customerId,
-    amountPaid: invoice.amount_paid,
-    amountDue: invoice.amount_due,
-    currency: invoice.currency,
-    subscription: subscriptionId,
-  };
+// Note: cancelOtherSubscriptions needs a scheduler callback since it can't import `internal` directly
+async function cancelOtherSubscriptionsForOrg(
+  ctx: Parameters<typeof cancelOtherSubscriptions>[0],
+  organizationId: Id<"organizations">,
+  now: number,
+): Promise<void> {
+  await cancelOtherSubscriptions(ctx, organizationId, now, async (subscriptionIds) => {
+    await ctx.scheduler.runAfter(0, internal.stripe.handlers.cancelOldStripeSubscriptions, {
+      subscriptionIds,
+      organizationId,
+    });
+  });
 }
 
 /**
@@ -147,192 +50,39 @@ function extractInvoiceData(invoice: Stripe.Invoice) {
 export const cancelOldStripeSubscriptions = internalAction({
   args: {
     subscriptionIds: v.array(v.string()),
-    userId: v.string(),
+    organizationId: v.string(),
   },
   handler: async (_ctx, args) => {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
-      console.error("STRIPE_SECRET_KEY not configured for canceling old subscriptions");
-      return;
+      throw new Error("STRIPE_SECRET_KEY not configured — cannot cancel old subscriptions");
     }
 
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2025-12-15.clover",
     });
 
+    const failures: string[] = [];
     for (const subscriptionId of args.subscriptionIds) {
       try {
         await stripe.subscriptions.cancel(subscriptionId);
-        console.warn(`Cancelled old Stripe subscription ${subscriptionId} for user ${args.userId}`);
+        console.warn(`Cancelled old Stripe subscription ${subscriptionId} for org ${args.organizationId}`);
       } catch (err) {
+        failures.push(subscriptionId);
         console.error(`Failed to cancel Stripe subscription ${subscriptionId}`, {
           error: err instanceof Error ? err.message : String(err),
-          userId: args.userId,
+          organizationId: args.organizationId,
         });
       }
     }
+
+    if (failures.length > 0) {
+      throw new Error(
+        `Failed to cancel ${failures.length}/${args.subscriptionIds.length} Stripe subscriptions: ${failures.join(", ")}`,
+      );
+    }
   },
 });
-
-/**
- * Helper: Log trial conversion events for Axiom analytics
- */
-function logTrialConversionIfNeeded(
-  existingStatus: SubscriptionStatus,
-  subscription: {
-    id: string;
-    userId: Id<"users"> | undefined;
-    customer: string;
-    status: SubscriptionStatus;
-    trialStart: number | undefined;
-    trialEnd: number | undefined;
-    cancelReason: string | undefined;
-    priceId: string;
-  },
-): void {
-  const wasTrialing = existingStatus === "trialing";
-  const nowActive = subscription.status === "active";
-  const nowCanceled = subscription.status === "canceled";
-
-  // Trial converted to paid
-  if (wasTrialing && nowActive) {
-    const trialDurationDays =
-      subscription.trialStart && subscription.trialEnd
-        ? Math.round((subscription.trialEnd - subscription.trialStart) / (1000 * 60 * 60 * 24))
-        : null;
-
-    console.warn(
-      JSON.stringify({
-        topic: "trial_conversion",
-        event: "trial_converted",
-        operation: "handleSubscriptionUpdated",
-        stripeSubscriptionId: subscription.id,
-        userId: subscription.userId,
-        customerId: subscription.customer,
-        trialStart: subscription.trialStart,
-        trialEnd: subscription.trialEnd,
-        trialDurationDays,
-        stripePriceId: subscription.priceId,
-        timestamp: Date.now(),
-      }),
-    );
-  }
-
-  // Trial ended without conversion
-  if (wasTrialing && nowCanceled) {
-    console.warn(
-      JSON.stringify({
-        topic: "trial_conversion",
-        event: "trial_not_converted",
-        operation: "handleSubscriptionUpdated",
-        stripeSubscriptionId: subscription.id,
-        userId: subscription.userId,
-        customerId: subscription.customer,
-        trialStart: subscription.trialStart,
-        trialEnd: subscription.trialEnd,
-        cancelReason: subscription.cancelReason,
-        timestamp: Date.now(),
-      }),
-    );
-  }
-}
-
-/**
- * Helper: Cancel other active subscriptions for a user
- */
-async function cancelOtherSubscriptions(
-  ctx: MutationCtx,
-  userId: Id<"users">,
-  now: number,
-): Promise<void> {
-  const otherActiveSubscriptions = await ctx.db
-    .query("subscriptions")
-    .withIndex("by_user_id", (q) => q.eq("userId", userId))
-    .filter((q) => q.eq(q.field("status"), "active"))
-    .collect();
-
-  if (otherActiveSubscriptions.length === 0) {
-    return;
-  }
-
-  const oldSubscriptionIds = otherActiveSubscriptions.map((sub) => sub.externalSubscriptionId);
-
-  console.warn(
-    `Found ${otherActiveSubscriptions.length} old active subscription(s) for user ${userId}, canceling them`,
-  );
-
-  // Cancel old subscriptions in Convex first
-  for (const oldSubscription of otherActiveSubscriptions) {
-    await ctx.db.patch(oldSubscription._id, {
-      status: "canceled",
-      updatedAt: now,
-    });
-  }
-
-  // Schedule cancellation in Stripe (via action)
-  await ctx.scheduler.runAfter(0, internal.stripe.handlers.cancelOldStripeSubscriptions, {
-    subscriptionIds: oldSubscriptionIds,
-    userId,
-  });
-}
-
-/**
- * Handle customer.subscription.created event
- * Creates a new subscription record in Convex
- */
-const MAX_SUBSCRIPTION_RETRY_ATTEMPTS = 5;
-
-function getRetryDelayMs(retryCount: number): number {
-  const baseDelayMs = 5000; // 5 seconds
-  return baseDelayMs * 2 ** retryCount;
-  // Results: 5s, 10s, 20s, 40s, 80s (total ~155s)
-}
-
-/**
- * Resolve user from subscription metadata or Stripe customer ID.
- *
- * Strategy 1: Direct userId from subscription metadata
- * Strategy 2: Stripe customer ID lookup on users table
- * Strategy 3: Stripe customer ID lookup on existing subscriptions table
- */
-async function resolveUserForSubscription(
-  ctx: MutationCtx,
-  metadataUserId: Id<"users"> | undefined,
-  stripeCustomerId: string,
-): Promise<Id<"users"> | null> {
-  // Strategy 1: Direct metadata lookup
-  if (metadataUserId) {
-    const user = await ctx.db.get(metadataUserId);
-    if (user) {
-      return user._id;
-    }
-    console.warn(`userId ${metadataUserId} from metadata not found in users table`);
-  }
-
-  // Strategy 2: Look up user by stripeCustomerId
-  const allUsers = await ctx.db.query("users").collect();
-  const matchedUser = allUsers.find((u) => u.stripeCustomerId === stripeCustomerId);
-  if (matchedUser) {
-    console.warn(
-      `Resolved userId ${matchedUser._id} from Stripe customer ${stripeCustomerId} (metadata lookup failed)`,
-    );
-    return matchedUser._id;
-  }
-
-  // Strategy 3: Look up via existing subscriptions for this customer
-  const existingSub = await ctx.db
-    .query("subscriptions")
-    .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", stripeCustomerId))
-    .first();
-  if (existingSub) {
-    console.warn(
-      `Resolved userId ${existingSub.userId} from existing subscription for customer ${stripeCustomerId}`,
-    );
-    return existingSub.userId;
-  }
-
-  return null;
-}
 
 export const handleSubscriptionCreated = internalMutation({
   args: {
@@ -343,18 +93,18 @@ export const handleSubscriptionCreated = internalMutation({
     const subscription = extractSubscriptionData(args.subscription);
     const retryCount = args.retryCount ?? 0;
 
-    // Resolve userId with multi-strategy fallback
-    const resolvedUserId = await resolveUserForSubscription(
+    // Resolve organizationId with multi-strategy fallback
+    const resolvedOrgId = await resolveOrgForSubscription(
       ctx,
-      subscription.userId,
+      subscription.organizationId,
       subscription.customer,
     );
 
-    if (!resolvedUserId) {
+    if (!resolvedOrgId) {
       if (retryCount < MAX_SUBSCRIPTION_RETRY_ATTEMPTS) {
         const delayMs = getRetryDelayMs(retryCount);
         console.warn(
-          `User not found for subscription ${subscription.id} (customer ${subscription.customer}), scheduling retry ${retryCount + 1}/${MAX_SUBSCRIPTION_RETRY_ATTEMPTS} in ${delayMs / 1000}s`,
+          `Organization not found for subscription ${subscription.id} (customer ${subscription.customer}), scheduling retry ${retryCount + 1}/${MAX_SUBSCRIPTION_RETRY_ATTEMPTS} in ${delayMs / 1000}s`,
         );
         await ctx.scheduler.runAfter(delayMs, internal.stripe.handlers.handleSubscriptionCreated, {
           subscription: args.subscription,
@@ -363,11 +113,9 @@ export const handleSubscriptionCreated = internalMutation({
         return;
       }
       throw new Error(
-        `User not found for subscription ${subscription.id} (customer ${subscription.customer}) after ${MAX_SUBSCRIPTION_RETRY_ATTEMPTS} retries`,
+        `Organization not found for subscription ${subscription.id} (customer ${subscription.customer}) after ${MAX_SUBSCRIPTION_RETRY_ATTEMPTS} retries`,
       );
     }
-
-    subscription.userId = resolvedUserId;
 
     const now = Date.now();
 
@@ -398,11 +146,11 @@ export const handleSubscriptionCreated = internalMutation({
       return;
     }
 
-    // Cancel any other active subscriptions for this user
-    await cancelOtherSubscriptions(ctx, subscription.userId, now);
+    // Cancel any other active subscriptions for this org
+    await cancelOtherSubscriptionsForOrg(ctx, resolvedOrgId, now);
 
     await ctx.db.insert("subscriptions", {
-      userId: subscription.userId,
+      organizationId: resolvedOrgId,
       externalCustomerId: subscription.customer,
       externalSubscriptionId: subscription.id,
       externalPriceId: subscription.priceId,
@@ -419,7 +167,7 @@ export const handleSubscriptionCreated = internalMutation({
       updatedAt: now,
     });
 
-    console.warn(`Created subscription for user ${subscription.userId}: ${subscription.id}`);
+    console.warn(`Created subscription for org ${resolvedOrgId}: ${subscription.id}`);
   },
 });
 
@@ -444,7 +192,7 @@ export const handleSubscriptionUpdated = internalMutation({
       console.error("Subscription not found for update", {
         operation: "handleSubscriptionUpdated",
         stripeSubscriptionId: subscription.id,
-        userId: subscription.userId,
+        organizationId: subscription.organizationId,
         stripePriceId: subscription.priceId,
         status: subscription.status,
         currentPeriodStart: subscription.currentPeriodStart,
@@ -486,15 +234,46 @@ export const handleSubscriptionUpdated = internalMutation({
     const wasActive =
       existingSubscription.status === "active" || existingSubscription.status === "trialing";
     const isNowInactive =
+      subscription.status === "canceled" ||
       subscription.status === "past_due" ||
       subscription.status === "incomplete_expired" ||
       subscription.status === "unpaid";
 
-    if (wasActive && isNowInactive && existingSubscription.userId) {
-      await ctx.scheduler.runAfter(0, internal.documents.sharing_cleanup.downgradeUserSharing, {
-        userId: existingSubscription.userId,
-        reason: `subscription_${subscription.status}`,
-      });
+    if (wasActive && isNowInactive) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.webhooks.delivery.abandonPendingDeliveriesForOrg,
+        { organizationId: existingSubscription.organizationId },
+      );
+      console.warn(
+        JSON.stringify({
+          topic: "subscription_lifecycle",
+          event: "downgrade_cascade_triggered",
+          organizationId: existingSubscription.organizationId,
+          stripeSubscriptionId: subscription.id,
+          previousStatus: existingSubscription.status,
+          newStatus: subscription.status,
+          timestamp: Date.now(),
+        }),
+      );
+    }
+
+    // Explicit past_due detection — features remain active during grace period
+    if (existingSubscription.status !== "past_due" && subscription.status === "past_due") {
+      console.warn(
+        JSON.stringify({
+          topic: "subscription_lifecycle",
+          event: "subscription_past_due",
+          severity: "warning",
+          operation: "handleSubscriptionUpdated",
+          stripeSubscriptionId: subscription.id,
+          organizationId: existingSubscription.organizationId,
+          customerId: subscription.customer,
+          previousStatus: existingSubscription.status,
+          stripePriceId: subscription.priceId,
+          timestamp: Date.now(),
+        }),
+      );
     }
 
     console.warn(`Updated subscription: ${subscription.id}`);
@@ -521,7 +300,7 @@ export const handleSubscriptionDeleted = internalMutation({
       console.error("Subscription not found for deletion", {
         operation: "handleSubscriptionDeleted",
         stripeSubscriptionId: subscription.id,
-        userId: subscription.userId,
+        organizationId: subscription.organizationId,
         stripePriceId: subscription.priceId,
         status: subscription.status,
         timestamp: Date.now(),
@@ -539,12 +318,25 @@ export const handleSubscriptionDeleted = internalMutation({
       updatedAt: now,
     });
 
-    if (existingSubscription.userId) {
-      await ctx.scheduler.runAfter(0, internal.documents.sharing_cleanup.downgradeUserSharing, {
-        userId: existingSubscription.userId,
-        reason: "subscription_canceled",
-      });
-    }
+    // Downgrade cascade: abandon pending webhook deliveries
+    await ctx.scheduler.runAfter(
+      0,
+      internal.webhooks.delivery.abandonPendingDeliveriesForOrg,
+      { organizationId: existingSubscription.organizationId },
+    );
+    console.warn(
+      JSON.stringify({
+        topic: "subscription_lifecycle",
+        event: "downgrade_cascade_triggered",
+        operation: "handleSubscriptionDeleted",
+        organizationId: existingSubscription.organizationId,
+        stripeSubscriptionId: subscription.id,
+        customerId: subscription.customer,
+        previousStatus: existingSubscription.status,
+        cancelReason: subscription.cancelReason,
+        timestamp: now,
+      }),
+    );
 
     console.warn(
       JSON.stringify({
@@ -552,7 +344,7 @@ export const handleSubscriptionDeleted = internalMutation({
         event: "subscription_canceled",
         operation: "handleSubscriptionDeleted",
         stripeSubscriptionId: subscription.id,
-        userId: subscription.userId,
+        organizationId: subscription.organizationId,
         customerId: subscription.customer,
         cancelReason: subscription.cancelReason,
         canceledAt: subscription.canceledAt || now,
@@ -663,24 +455,6 @@ export const handlePaymentFailed = internalMutation({
         });
       }
     }
-  },
-});
-
-/**
- * Handle checkout.session.completed event
- * Currently a no-op placeholder for future one-time purchase handling.
- */
-export const handleCheckoutCompleted = internalMutation({
-  args: { session: v.any() },
-  handler: async (_ctx, args: { session: Stripe.Checkout.Session }) => {
-    const session = args.session;
-
-    // Only handle payment mode (one-time purchases)
-    if (session.mode !== "payment") {
-      return;
-    }
-
-    console.warn(`Checkout session ${session.id} completed (mode: payment)`);
   },
 });
 

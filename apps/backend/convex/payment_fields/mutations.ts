@@ -236,21 +236,56 @@ export const updatePaymentStatusFromWebhook = internalMutation({
     paymentStatus: paymentStatusTuple,
   },
   handler: async (ctx, args) => {
+    const now = Date.now();
+
+    const statusMap: Record<string, "open" | "paid" | "void" | "uncollectible"> = {
+      awaiting: "open",
+      paid: "paid",
+      failed: "uncollectible",
+      cancelled: "void",
+    };
+
     const config = await ctx.db
       .query("payment_field_configs")
       .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
       .first();
 
-    if (!config) {
+    // Always look up document_invoices — cycle 2+ invoices may exist here
+    // even when config doesn't match (config stores the initial invoice ID)
+    const invoiceRecord = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .first();
+
+    if (config) {
+      await ctx.db.patch(config._id, {
+        paymentStatus: args.paymentStatus,
+        updatedAt: now,
+      });
+    }
+
+    if (invoiceRecord) {
+      const invoiceStatus = statusMap[args.paymentStatus];
+      if (invoiceStatus) {
+        await ctx.db.patch(invoiceRecord._id, {
+          status: invoiceStatus,
+          ...(invoiceStatus === "paid" && { paidAt: now }),
+          ...(invoiceStatus === "void" && { voidedAt: now }),
+          updatedAt: now,
+        });
+      }
+    }
+
+    // Return null only if neither config nor invoice record was found
+    if (!config && !invoiceRecord) {
       return null;
     }
 
-    await ctx.db.patch(config._id, {
-      paymentStatus: args.paymentStatus,
-      updatedAt: Date.now(),
-    });
-
-    return { configId: config._id, documentId: config.documentId };
+    return {
+      configId: config?._id,
+      documentId: config?.documentId ?? invoiceRecord?.documentId,
+      invoiceRecordId: invoiceRecord?._id,
+    };
   },
 });
 
@@ -288,6 +323,7 @@ export const updatePaymentStatusFromSubscriptionWebhook = internalMutation({
 /**
  * Internal mutation to store Stripe IDs back on a payment config
  * after Stripe objects are created during the send flow.
+ * Also creates a document_invoices record for revenue tracking.
  */
 export const storeStripeIds = internalMutation({
   args: {
@@ -297,12 +333,18 @@ export const storeStripeIds = internalMutation({
     stripeSubscriptionId: v.optional(v.string()),
     stripePaymentIntentId: v.optional(v.string()),
     hostedInvoiceUrl: v.optional(v.string()),
+    // Fields for document_invoices record
+    stripeAccountId: v.optional(v.string()),
+    customerEmail: v.optional(v.string()),
+    customerName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const config = await ctx.db.get(args.configId);
     if (!config) {
       throw new ConvexError("Payment config not found");
     }
+
+    const now = Date.now();
 
     await ctx.db.patch(args.configId, {
       paymentStatus: args.paymentStatus,
@@ -314,7 +356,130 @@ export const storeStripeIds = internalMutation({
         stripePaymentIntentId: args.stripePaymentIntentId,
       }),
       ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
+
+    // Create document_invoices record for revenue tracking
+    if (args.stripeInvoiceId && args.stripeAccountId && args.customerEmail) {
+      // Check if record already exists (idempotent)
+      const existing = await ctx.db
+        .query("document_invoices")
+        .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId!))
+        .first();
+
+      if (!existing) {
+        await ctx.db.insert("document_invoices", {
+          documentId: config.documentId,
+          organizationId: config.organizationId,
+          stripeAccountId: args.stripeAccountId,
+          stripeInvoiceId: args.stripeInvoiceId,
+          stripeSubscriptionId: args.stripeSubscriptionId,
+          stripeCustomerId: undefined,
+          status: "open",
+          customerEmail: args.customerEmail,
+          customerName: args.customerName,
+          amountDue: config.totalAmountCents,
+          currency: config.currency,
+          hostedInvoiceUrl: args.hostedInvoiceUrl,
+          finalizedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+  },
+});
+
+/**
+ * Internal mutation to upsert a document_invoices record from a Stripe
+ * subscription invoice webhook (invoice.created / invoice.finalized).
+ *
+ * For recurring payments, Stripe generates new invoices each billing cycle.
+ * This mutation links those subsequent invoices back to the original document
+ * by looking up the payment_field_config via stripeSubscriptionId.
+ *
+ * Idempotent — won't create duplicates for the same stripeInvoiceId.
+ */
+export const upsertRecurringInvoice = internalMutation({
+  args: {
+    stripeInvoiceId: v.string(),
+    stripeSubscriptionId: v.string(),
+    stripeCustomerId: v.optional(v.string()),
+    stripeAccountId: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("open"),
+      v.literal("paid"),
+      v.literal("void"),
+      v.literal("uncollectible"),
+    ),
+    customerEmail: v.string(),
+    customerName: v.optional(v.string()),
+    amountDue: v.number(),
+    currency: v.string(),
+    hostedInvoiceUrl: v.optional(v.string()),
+    invoicePdf: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Look up payment_field_config by subscription to get documentId/organizationId
+    const config = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_stripe_subscription", (q) =>
+        q.eq("stripeSubscriptionId", args.stripeSubscriptionId),
+      )
+      .first();
+
+    if (!config) {
+      return null;
+    }
+
+    const now = Date.now();
+
+    // Check if record already exists (idempotent)
+    const existing = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_stripe_invoice", (q) => q.eq("stripeInvoiceId", args.stripeInvoiceId))
+      .first();
+
+    if (existing) {
+      // Never regress terminal statuses (paid, void, uncollectible) on replayed events
+      const terminalStatuses = new Set(["paid", "void", "uncollectible"]);
+      if (terminalStatuses.has(existing.status)) {
+        return { invoiceId: existing._id, created: false };
+      }
+
+      // Update existing record with latest data from Stripe
+      await ctx.db.patch(existing._id, {
+        status: args.status,
+        amountDue: args.amountDue,
+        hostedInvoiceUrl: args.hostedInvoiceUrl,
+        invoicePdf: args.invoicePdf,
+        ...(args.status === "open" && !existing.finalizedAt && { finalizedAt: now }),
+        updatedAt: now,
+      });
+      return { invoiceId: existing._id, created: false };
+    }
+
+    // Create new document_invoices record
+    const invoiceId = await ctx.db.insert("document_invoices", {
+      documentId: config.documentId,
+      organizationId: config.organizationId,
+      stripeAccountId: args.stripeAccountId,
+      stripeInvoiceId: args.stripeInvoiceId,
+      stripeSubscriptionId: args.stripeSubscriptionId,
+      stripeCustomerId: args.stripeCustomerId,
+      status: args.status,
+      customerEmail: args.customerEmail,
+      customerName: args.customerName,
+      amountDue: args.amountDue,
+      currency: args.currency,
+      hostedInvoiceUrl: args.hostedInvoiceUrl,
+      invoicePdf: args.invoicePdf,
+      ...(args.status === "open" && { finalizedAt: now }),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { invoiceId, created: true };
   },
 });

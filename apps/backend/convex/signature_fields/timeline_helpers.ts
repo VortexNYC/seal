@@ -44,6 +44,18 @@ interface TimelineSnapshot {
   }>;
 }
 
+type CurrentField = Awaited<ReturnType<typeof getFieldsForDocument>>[number];
+type SignatureFieldType =
+  | "signature"
+  | "text"
+  | "number"
+  | "date"
+  | "checkbox"
+  | "dropdown"
+  | "radio"
+  | "attachment"
+  | "payment";
+
 function timelineScope(documentId: Id<"documents">): string {
   return `fields:${documentId}`;
 }
@@ -53,6 +65,88 @@ async function getFieldsForDocument(ctx: QueryCtx, documentId: Id<"documents">) 
     .query("signature_fields")
     .withIndex("by_document", (q) => q.eq("documentId", documentId))
     .collect();
+}
+
+function toSignatureFieldType(fieldType: string): SignatureFieldType {
+  return fieldType as SignatureFieldType;
+}
+
+function needsFieldPatch(existing: CurrentField, data: FieldSnapshot): boolean {
+  return (
+    existing.x !== data.x ||
+    existing.y !== data.y ||
+    existing.width !== data.width ||
+    existing.height !== data.height ||
+    existing.page !== data.page ||
+    existing.label !== data.label ||
+    existing.isRequired !== data.isRequired ||
+    existing.isMainSignature !== data.isMainSignature ||
+    existing.recipientId !== data.recipientId ||
+    JSON.stringify(existing.properties) !== JSON.stringify(data.properties) ||
+    JSON.stringify(existing.validationRules) !== JSON.stringify(data.validationRules)
+  );
+}
+
+async function deleteFieldIfMissing(
+  ctx: MutationCtx,
+  field: CurrentField,
+  snapshotMap: Map<string, FieldSnapshot>,
+): Promise<void> {
+  if (snapshotMap.has(field._id as string)) {
+    return;
+  }
+
+  if (field.fieldType === "payment") {
+    const paymentConfig = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_field", (q) => q.eq("fieldId", field._id))
+      .unique();
+    if (paymentConfig) {
+      await ctx.db.delete(paymentConfig._id);
+    }
+  }
+
+  await ctx.db.delete(field._id);
+}
+
+async function upsertSnapshotField(
+  ctx: MutationCtx,
+  documentId: Id<"documents">,
+  now: number,
+  id: string,
+  data: FieldSnapshot,
+  currentMap: Map<string, CurrentField>,
+): Promise<void> {
+  const existing = currentMap.get(id);
+  if (!existing) {
+    await ctx.db.insert("signature_fields", {
+      ...data,
+      documentId,
+      fieldType: toSignatureFieldType(data.fieldType),
+      createdAt: now,
+      updatedAt: now,
+    });
+    return;
+  }
+
+  if (!needsFieldPatch(existing, data)) {
+    return;
+  }
+
+  await ctx.db.patch(existing._id, {
+    x: data.x,
+    y: data.y,
+    width: data.width,
+    height: data.height,
+    page: data.page,
+    label: data.label,
+    isRequired: data.isRequired,
+    isMainSignature: data.isMainSignature,
+    recipientId: data.recipientId,
+    properties: data.properties,
+    validationRules: data.validationRules,
+    updatedAt: now,
+  });
 }
 
 function fieldToSnapshot(field: {
@@ -148,75 +242,11 @@ async function reconcileFields(
   const snapshotMap = new Map(snapshot.fields.map((f) => [f.id, f.data]));
   const now = Date.now();
 
-  // Delete fields not in snapshot
   for (const field of currentFields) {
-    if (!snapshotMap.has(field._id as string)) {
-      // Cascade-delete payment config if payment field
-      if (field.fieldType === "payment") {
-        const paymentConfig = await ctx.db
-          .query("payment_field_configs")
-          .withIndex("by_field", (q) => q.eq("fieldId", field._id))
-          .unique();
-        if (paymentConfig) {
-          await ctx.db.delete(paymentConfig._id);
-        }
-      }
-      await ctx.db.delete(field._id);
-    }
+    await deleteFieldIfMissing(ctx, field, snapshotMap);
   }
 
-  // Insert or update fields from snapshot
   for (const [id, data] of snapshotMap) {
-    const existing = currentMap.get(id);
-    if (!existing) {
-      // Field was deleted — re-insert (gets new ID, which is fine in draft)
-      await ctx.db.insert("signature_fields", {
-        ...data,
-        documentId,
-        fieldType: data.fieldType as
-          | "signature"
-          | "text"
-          | "number"
-          | "date"
-          | "checkbox"
-          | "dropdown"
-          | "radio"
-          | "attachment"
-          | "payment",
-        createdAt: now,
-        updatedAt: now,
-      });
-    } else {
-      // Field exists — patch if anything changed
-      const needsPatch =
-        existing.x !== data.x ||
-        existing.y !== data.y ||
-        existing.width !== data.width ||
-        existing.height !== data.height ||
-        existing.page !== data.page ||
-        existing.label !== data.label ||
-        existing.isRequired !== data.isRequired ||
-        existing.isMainSignature !== data.isMainSignature ||
-        existing.recipientId !== data.recipientId ||
-        JSON.stringify(existing.properties) !== JSON.stringify(data.properties) ||
-        JSON.stringify(existing.validationRules) !== JSON.stringify(data.validationRules);
-
-      if (needsPatch) {
-        await ctx.db.patch(existing._id, {
-          x: data.x,
-          y: data.y,
-          width: data.width,
-          height: data.height,
-          page: data.page,
-          label: data.label,
-          isRequired: data.isRequired,
-          isMainSignature: data.isMainSignature,
-          recipientId: data.recipientId,
-          properties: data.properties,
-          validationRules: data.validationRules,
-          updatedAt: now,
-        });
-      }
-    }
+    await upsertSnapshotField(ctx, documentId, now, id, data, currentMap);
   }
 }

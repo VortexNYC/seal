@@ -10,12 +10,20 @@ export const documentInvoiceStatusTuple = v.union(
   v.literal("deleted"),
 );
 
+export const dunningStatusTuple = v.union(
+  v.literal("none"),
+  v.literal("active"),
+  v.literal("completed"),
+  v.literal("cancelled"),
+);
+
 export const documentInvoicesTable = defineTable({
   documentId: v.id("documents"),
   organizationId: v.id("organizations"),
   stripeAccountId: v.string(),
   stripeInvoiceId: v.string(),
   stripeCustomerId: v.optional(v.string()),
+  stripeSubscriptionId: v.optional(v.string()),
   status: documentInvoiceStatusTuple,
   customerEmail: v.string(),
   customerName: v.optional(v.string()),
@@ -27,9 +35,18 @@ export const documentInvoicesTable = defineTable({
   paidAt: v.optional(v.number()),
   voidedAt: v.optional(v.number()),
   deletedAt: v.optional(v.number()),
+  // Dunning (payment recovery) fields
+  dunningStatus: v.optional(dunningStatusTuple),
+  dunningStep: v.optional(v.number()),
+  dunningStartedAt: v.optional(v.number()),
+  lastDunningEmailAt: v.optional(v.number()),
+  nextDunningAt: v.optional(v.number()),
+  dunningCompletedAt: v.optional(v.number()),
   createdAt: v.number(),
   updatedAt: v.number(),
 })
   .index("by_document", ["documentId"])
   .index("by_stripe_invoice", ["stripeInvoiceId"])
-  .index("by_organization", ["organizationId"]);
+  .index("by_organization", ["organizationId"])
+  .index("by_stripe_subscription", ["stripeSubscriptionId"])
+  .index("by_dunning_status", ["dunningStatus", "nextDunningAt"]);

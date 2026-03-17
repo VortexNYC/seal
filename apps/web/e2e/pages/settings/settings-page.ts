@@ -20,21 +20,21 @@ export class SettingsPage {
 
   async goto(slug: string): Promise<void> {
     await this.page.goto(`/${slug}/settings`);
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async navigateToProfile(): Promise<void> {
     await this.profileLink.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async navigateToTeam(): Promise<void> {
     await this.teamLink.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 
   async navigateToBilling(): Promise<void> {
     await this.billingLink.click();
-    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForLoadState("domcontentloaded");
   }
 }

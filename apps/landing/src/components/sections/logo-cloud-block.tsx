@@ -1,5 +1,4 @@
-import { urlFor } from "~/lib/sanity/image";
-import type { LogoCloudBlock } from "~/lib/sanity/queries";
+import type { LogoCloudBlock } from "~/lib/content/types";
 
 export function LogoCloudBlockComponent({ block }: { block: LogoCloudBlock }) {
   if (!block.logos || block.logos.length === 0) {
@@ -17,18 +16,15 @@ export function LogoCloudBlockComponent({ block }: { block: LogoCloudBlock }) {
 
         <div className="flex flex-wrap items-center justify-center gap-12">
           {block.logos.map((logo) => (
-            <div
-              className="flex shrink-0 items-center justify-center"
-              key={logo.asset?._id ?? logo.alt ?? "logo"}
-            >
-              {logo.asset && (
+            <div className="flex shrink-0 items-center justify-center" key={logo.src}>
+              {logo.src && (
                 <img
                   alt={logo.alt || "Partner logo"}
                   className="h-8 w-auto opacity-60 grayscale transition-all hover:opacity-100 hover:grayscale-0"
-                  height={32}
+                  height={logo.height || 32}
                   loading="lazy"
-                  src={urlFor(logo).height(64).url()}
-                  width={120}
+                  src={logo.src}
+                  width={logo.width || 120}
                 />
               )}
             </div>

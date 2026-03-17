@@ -14,10 +14,15 @@ export default defineConfig(({ command }) => {
       tailwindcss(),
       tanstackRouter({}),
       react(),
+      // Sentry must be last so source maps from all other plugins are finalized
       enableSentry
         ? sentryVitePlugin({
             org: "plasma-vh",
             project: "seal",
+            reactComponentAnnotation: { enabled: true },
+            sourcemaps: {
+              filesToDeleteAfterUpload: ["./dist/**/*.map"],
+            },
           })
         : undefined,
     ].filter(Boolean),
@@ -46,7 +51,7 @@ export default defineConfig(({ command }) => {
     },
 
     build: {
-      sourcemap: true,
+      sourcemap: "hidden",
       // SEA-136: Mobile performance optimization - chunk splitting for lazy loading
       rollupOptions: {
         output: {

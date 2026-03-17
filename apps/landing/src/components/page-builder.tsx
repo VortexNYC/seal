@@ -1,4 +1,4 @@
-import type { PageBlock } from "~/lib/sanity/queries";
+import type { PageBlock } from "~/lib/content/types";
 
 import {
   ComparisonTableBlockComponent,
@@ -14,10 +14,9 @@ import {
 } from "./sections";
 
 /**
- * PageBuilder renders Sanity page content blocks.
+ * PageBuilder renders local page content blocks.
  * Each block `_type` maps to a React component.
- * This is the core of the programmatic SEO system — new pages
- * created in Sanity automatically render here without code changes.
+ * This is the core of the programmatic SEO system for repo-managed landing pages.
  */
 export function PageBuilder({ content }: { content: PageBlock[] }) {
   if (!content || content.length === 0) {

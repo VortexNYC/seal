@@ -5,9 +5,38 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
-import { internalMutation } from "../_generated/server";
+import type { Doc } from "../_generated/dataModel";
+import { internalMutation, type MutationCtx } from "../_generated/server";
 import { authMutation } from "../auth";
 import { verifyDocumentOwnership } from "./recipient_helpers";
+
+function isRecipientDone(status: Doc<"document_recipients">["status"]): boolean {
+  return status === "signed" || status === "approved" || status === "declined";
+}
+
+async function updateReminderFailure(
+  ctx: MutationCtx,
+  reminderId: Doc<"document_reminders">["_id"],
+  lastError: string,
+): Promise<void> {
+  await ctx.db.patch(reminderId, {
+    status: "failed",
+    failedAt: Date.now(),
+    lastError,
+    updatedAt: Date.now(),
+  });
+}
+
+async function cancelReminderRecord(
+  ctx: MutationCtx,
+  reminderId: Doc<"document_reminders">["_id"],
+): Promise<void> {
+  await ctx.db.patch(reminderId, {
+    status: "cancelled",
+    cancelledAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+}
 
 /**
  * Send manual reminder to specific recipient
@@ -258,12 +287,7 @@ export const processReminder = internalMutation({
       // 4. Get document to validate it exists
       const document = await ctx.db.get(reminder.documentId);
       if (!document || document.status === "deleted") {
-        await ctx.db.patch(args.reminderId, {
-          status: "failed",
-          failedAt: Date.now(),
-          lastError: "Document not found or deleted",
-          updatedAt: Date.now(),
-        });
+        await updateReminderFailure(ctx, args.reminderId, "Document not found or deleted");
         return { success: false, error: "Document not found" };
       }
 
@@ -271,26 +295,13 @@ export const processReminder = internalMutation({
       if (reminder.recipientId) {
         const recipient = await ctx.db.get(reminder.recipientId);
         if (!recipient) {
-          await ctx.db.patch(args.reminderId, {
-            status: "failed",
-            failedAt: Date.now(),
-            lastError: "Recipient not found",
-            updatedAt: Date.now(),
-          });
+          await updateReminderFailure(ctx, args.reminderId, "Recipient not found");
           return { success: false, error: "Recipient not found" };
         }
 
         // Don't send if recipient has already completed action
-        if (
-          recipient.status === "signed" ||
-          recipient.status === "approved" ||
-          recipient.status === "declined"
-        ) {
-          await ctx.db.patch(args.reminderId, {
-            status: "cancelled",
-            cancelledAt: Date.now(),
-            updatedAt: Date.now(),
-          });
+        if (isRecipientDone(recipient.status)) {
+          await cancelReminderRecord(ctx, args.reminderId);
           console.info(
             `Recipient ${recipient._id} already ${recipient.status}, cancelling reminder`,
           );

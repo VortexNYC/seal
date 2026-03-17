@@ -222,9 +222,9 @@ export function SendDocumentDialog({
         <div className="-mx-6 flex-1 space-y-4 overflow-y-auto px-6 py-4">
           {/* Payment Fields Summary */}
           {paymentConfigs && paymentConfigs.length > 0 && (
-            <div className="rounded-md border border-field-payment-border bg-field-payment-surface p-4">
+            <div className="border-field-payment-border bg-field-payment-surface rounded-md border p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-field-payment-surface text-field-payment">
+                <div className="bg-field-payment-surface text-field-payment flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
                   <CreditCardIcon className="h-4 w-4" />
                 </div>
                 <div>
@@ -476,7 +476,7 @@ export function SendDocumentDialog({
 
           {/* Error box - No signature fields */}
           {signatureFieldCount === 0 && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3">
+            <div className="border-destructive/30 bg-destructive/10 rounded-md border p-3">
               <p className="text-foreground text-sm font-medium">
                 Cannot send document without signature fields.
               </p>
@@ -488,7 +488,7 @@ export function SendDocumentDialog({
 
           {/* Info box */}
           {signatureFieldCount > 0 && (
-            <div className="rounded-md border border-info/30 bg-info/10 p-3">
+            <div className="border-info/30 bg-info/10 rounded-md border p-3">
               <p className="text-foreground text-sm">
                 Recipients will receive an email with a link to sign the document.
                 {getExpirationText() && <span className="mt-1 block">{getExpirationText()}</span>}

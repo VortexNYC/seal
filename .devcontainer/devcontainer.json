@@ -1,0 +1,10 @@
+{
+  "name": "seal",
+  "image": "ghcr.io/plasmapos/devcontainers/light:latest",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "bun install",
+  "runArgs": ["--shm-size=2g"]
+}

@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  Hash,
   Pause,
   Play,
   Plus,
@@ -62,7 +63,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import { FeatureGate } from "@/components/feature-gate";
 import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc } from "@seal/backend/convex/_generated/dataModel";
@@ -106,7 +107,6 @@ type WebhookEndpointWithStats = Omit<Doc<"webhook_endpoints">, "secret" | "secre
 };
 
 function WebhooksPage() {
-  const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
   const endpoints = useQuery(api.webhooks.queries.listEndpoints);
   const eventTypes = useQuery(api.webhooks.queries.getEventTypes);
 
@@ -121,39 +121,312 @@ function WebhooksPage() {
     );
   }
 
+  const slackEndpoints = endpoints.filter((e) => e.format === "slack");
+  const jsonEndpoints = endpoints.filter((e) => e.format !== "slack");
+
   return (
     <PageWrapper
       title="Webhooks"
       description="Receive real-time notifications when events happen in Seal"
     >
+      <FeatureGate
+        tier="pro"
+        feature="Webhooks"
+        description="Receive real-time notifications when events happen in Seal."
+      >
       <div className="space-y-6">
-        <WebhookEndpointsSection
-          endpoints={endpoints}
+        <SlackNotificationsSection
+          endpoints={slackEndpoints}
           eventTypes={eventTypes}
-          isPro={isPro}
-          isLoadingPlan={isLoadingPlan}
+        />
+
+        <WebhookEndpointsSection
+          endpoints={jsonEndpoints}
+          eventTypes={eventTypes}
         />
 
         <EventTypesReference eventTypes={eventTypes} />
 
         <WebhookDocumentation />
       </div>
+      </FeatureGate>
     </PageWrapper>
+  );
+}
+
+interface SlackNotificationsSectionProps {
+  endpoints: WebhookEndpointWithStats[];
+  eventTypes: { type: string; category: string; description: string }[];
+}
+
+function SlackNotificationsSection({
+  endpoints,
+  eventTypes,
+}: SlackNotificationsSectionProps) {
+  const [isCreating, setIsCreating] = useState(false);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Hash className="text-ai-accent h-5 w-5" />
+            <CardTitle>Slack Notifications</CardTitle>
+          </div>
+          <CreateSlackDialog
+            open={isCreating}
+            onOpenChange={setIsCreating}
+            eventTypes={eventTypes}
+          />
+        </div>
+        <CardDescription>
+          Get notified in Slack when documents are signed, sent, or completed
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {endpoints.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="bg-muted flex h-16 w-16 items-center justify-center rounded-2xl border">
+              <Hash className="text-muted-foreground h-8 w-8" />
+            </div>
+            <p className="mt-6 font-mono">Connect a Slack channel</p>
+            <p className="text-muted-foreground mt-1 max-w-sm text-sm">
+              Paste a Slack Incoming Webhook URL to start receiving event notifications in your
+              channel.
+            </p>
+            <Button
+              onClick={() => setIsCreating(true)}
+              className="bg-ai-accent hover:bg-ai-accent/90 mt-4 text-white"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Connect Slack
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {endpoints.map((endpoint) => (
+              <WebhookEndpointRow key={endpoint._id} endpoint={endpoint} />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+interface CreateSlackDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  eventTypes: { type: string; category: string; description: string }[];
+}
+
+function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialogProps) {
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const createSlackEndpoint = useMutation(api.webhooks.mutations.createSlackEndpoint);
+
+  const handleCreate = async () => {
+    if (!name.trim()) {
+      toast.error("Please enter a name");
+      return;
+    }
+    if (!url.trim()) {
+      toast.error("Please paste your Slack webhook URL");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await createSlackEndpoint({
+        name: name.trim(),
+        url: url.trim(),
+        events: selectedEvents,
+      });
+      toast.success("Slack channel connected");
+      handleClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to connect Slack");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setName("");
+    setUrl("");
+    setSelectedEvents([]);
+    setIsSubmitting(false);
+    onOpenChange(false);
+  };
+
+  const toggleEvent = (eventType: string) => {
+    setSelectedEvents((prev) =>
+      prev.includes(eventType) ? prev.filter((e) => e !== eventType) : [...prev, eventType],
+    );
+  };
+
+  const toggleCategory = (category: string) => {
+    const categoryEvents = eventTypes.filter((e) => e.category === category).map((e) => e.type);
+    const allSelected = categoryEvents.every((e) => selectedEvents.includes(e));
+    if (allSelected) {
+      setSelectedEvents((prev) => prev.filter((e) => !categoryEvents.includes(e)));
+    } else {
+      setSelectedEvents((prev) => [...new Set([...prev, ...categoryEvents])]);
+    }
+  };
+
+  const eventsByCategory = eventTypes.reduce(
+    (acc, event) => {
+      if (!acc[event.category]) acc[event.category] = [];
+      acc[event.category].push(event);
+      return acc;
+    },
+    {} as Record<string, typeof eventTypes>,
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="bg-ai-accent hover:bg-ai-accent/90 text-white">
+          <Plus className="mr-1 h-4 w-4" />
+          Connect Slack
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Connect Slack Channel</DialogTitle>
+          <DialogDescription>
+            Paste a Slack Incoming Webhook URL to send event notifications to your channel.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="slack-name">Name</Label>
+            <Input
+              id="slack-name"
+              placeholder="e.g., #contracts-alerts"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="slack-url">Webhook URL</Label>
+            <Input
+              id="slack-url"
+              placeholder="https://hooks.slack.com/services/T.../B.../..."
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="font-mono"
+            />
+            <p className="text-muted-foreground text-xs">
+              Create one at{" "}
+              <a
+                href="https://api.slack.com/messaging/webhooks"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-ai-accent hover:underline"
+              >
+                api.slack.com/messaging/webhooks
+              </a>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Events to notify</Label>
+              {selectedEvents.length > 0 && (
+                <Badge variant="secondary" className="text-ai-accent">
+                  {selectedEvents.length} selected
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground text-xs">Leave empty to receive all events</p>
+            <div className="bg-muted/30 max-h-48 space-y-4 overflow-y-auto rounded-lg border p-3">
+              {Object.entries(eventsByCategory).map(([category, events]) => {
+                const categorySelected = events.every((e) => selectedEvents.includes(e.type));
+                const categoryPartial =
+                  !categorySelected && events.some((e) => selectedEvents.includes(e.type));
+
+                return (
+                  <div key={category}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <Checkbox
+                        id={`slack-category-${category}`}
+                        checked={categorySelected}
+                        ref={(el) => {
+                          if (el) {
+                            (el as HTMLButtonElement).dataset.state = categoryPartial
+                              ? "indeterminate"
+                              : undefined;
+                          }
+                        }}
+                        onCheckedChange={() => toggleCategory(category)}
+                        className="data-[state=checked]:border-ai-accent data-[state=checked]:bg-ai-accent"
+                      />
+                      <Label
+                        htmlFor={`slack-category-${category}`}
+                        className="cursor-pointer font-medium"
+                      >
+                        {category}
+                      </Label>
+                    </div>
+                    <div className="ml-6 space-y-1">
+                      {events.map((event) => (
+                        <div key={event.type} className="flex items-start gap-2">
+                          <Checkbox
+                            id={`slack-${event.type}`}
+                            checked={selectedEvents.includes(event.type)}
+                            onCheckedChange={() => toggleEvent(event.type)}
+                            className="data-[state=checked]:border-ai-accent data-[state=checked]:bg-ai-accent mt-0.5"
+                          />
+                          <Label
+                            htmlFor={`slack-${event.type}`}
+                            className="cursor-pointer text-sm font-normal"
+                          >
+                            <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
+                              {event.type}
+                            </code>
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={isSubmitting}
+              className="bg-ai-accent hover:bg-ai-accent/90 text-white"
+            >
+              {isSubmitting ? "Connecting..." : "Connect Channel"}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 interface WebhookEndpointsSectionProps {
   endpoints: WebhookEndpointWithStats[];
   eventTypes: { type: string; category: string; description: string }[];
-  isPro: boolean;
-  isLoadingPlan: boolean;
 }
 
 function WebhookEndpointsSection({
   endpoints,
   eventTypes,
-  isPro,
-  isLoadingPlan,
 }: WebhookEndpointsSectionProps) {
   const [isCreating, setIsCreating] = useState(false);
 
@@ -162,32 +435,17 @@ function WebhookEndpointsSection({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Radio className="h-5 w-5 text-ai-accent" />
+            <Radio className="text-ai-accent h-5 w-5" />
             <CardTitle>Webhook Endpoints</CardTitle>
           </div>
-          {isPro ? (
-            <CreateWebhookDialog
-              open={isCreating}
-              onOpenChange={setIsCreating}
-              eventTypes={eventTypes}
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">
-                Pro
-              </Badge>
-              <Button size="sm" variant="outline" disabled>
-                <Plus className="mr-1 h-4 w-4" />
-                Add Endpoint
-              </Button>
-            </div>
-          )}
+          <CreateWebhookDialog
+            open={isCreating}
+            onOpenChange={setIsCreating}
+            eventTypes={eventTypes}
+          />
         </div>
         <CardDescription>
           Configure endpoints to receive webhook events
-          {!isPro && !isLoadingPlan && (
-            <span className="mt-1 block text-warning">Webhooks require a Pro plan.</span>
-          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -198,10 +456,10 @@ function WebhookEndpointsSection({
                 <Webhook className="text-muted-foreground h-10 w-10" />
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-32 w-32 animate-[ping_2s_ease-in-out_infinite] rounded-full border border-ai-accent/20" />
+                <div className="border-ai-accent/20 h-32 w-32 animate-[ping_2s_ease-in-out_infinite] rounded-full border" />
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-24 w-24 animate-[ping_2s_ease-in-out_infinite_0.5s] rounded-full border border-ai-accent/30" />
+                <div className="border-ai-accent/30 h-24 w-24 animate-[ping_2s_ease-in-out_infinite_0.5s] rounded-full border" />
               </div>
             </div>
             <p className="mt-8 font-mono">Connect your first endpoint</p>
@@ -210,15 +468,11 @@ function WebhookEndpointsSection({
             </p>
             <Button
               onClick={() => setIsCreating(true)}
-              className="mt-6 bg-ai-accent text-white hover:bg-ai-accent/90"
-              disabled={!isPro}
+              className="bg-ai-accent hover:bg-ai-accent/90 mt-6 text-white"
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Endpoint
             </Button>
-            {!isPro && !isLoadingPlan && (
-              <p className="mt-2 text-sm text-warning">Requires a Pro plan</p>
-            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -333,7 +587,7 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-ai-accent text-white hover:bg-ai-accent/90">
+        <Button size="sm" className="bg-ai-accent hover:bg-ai-accent/90 text-white">
           <Plus className="mr-1 h-4 w-4" />
           Add Endpoint
         </Button>
@@ -353,12 +607,12 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
             <div>
               <Label>Signing Secret</Label>
               <div className="relative mt-1.5">
-                <div className="absolute -inset-1 rounded-lg bg-gradient-to-r from-ai-accent/20 to-ai-accent/10 blur" />
-                <div className="bg-muted relative flex items-center gap-2 rounded-lg border border-ai-accent/30 p-3">
+                <div className="from-ai-accent/20 to-ai-accent/10 absolute -inset-1 rounded-lg bg-gradient-to-r blur" />
+                <div className="bg-muted border-ai-accent/30 relative flex items-center gap-2 rounded-lg border p-3">
                   <Input
                     value={newSecret}
                     readOnly
-                    className="flex-1 border-0 bg-transparent font-mono text-sm text-ai-accent focus-visible:ring-0"
+                    className="text-ai-accent flex-1 border-0 bg-transparent font-mono text-sm focus-visible:ring-0"
                   />
                   <Button
                     variant="ghost"
@@ -368,7 +622,7 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                     className="shrink-0"
                   >
                     {copiedSecret ? (
-                      <Check className="h-4 w-4 text-success" />
+                      <Check className="text-success h-4 w-4" />
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}
@@ -376,17 +630,17 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                 </div>
               </div>
             </div>
-            <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-surface p-4">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+            <div className="border-warning/30 bg-warning-surface flex items-start gap-3 rounded-lg border p-4">
+              <AlertTriangle className="text-warning mt-0.5 h-5 w-5 shrink-0" />
               <div>
-                <p className="font-medium text-warning">Store this secret securely</p>
-                <p className="text-sm text-warning">You'll need it to verify webhook signatures.</p>
+                <p className="text-warning font-medium">Store this secret securely</p>
+                <p className="text-warning text-sm">You'll need it to verify webhook signatures.</p>
               </div>
             </div>
             <DialogFooter>
               <Button
                 onClick={handleClose}
-                className="bg-ai-accent text-white hover:bg-ai-accent/90"
+                className="bg-ai-accent hover:bg-ai-accent/90 text-white"
               >
                 Done
               </Button>
@@ -473,13 +727,13 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
                               id={event.type}
                               checked={selectedEvents.includes(event.type)}
                               onCheckedChange={() => toggleEvent(event.type)}
-                              className="mt-0.5 data-[state=checked]:border-ai-accent data-[state=checked]:bg-ai-accent"
+                              className="data-[state=checked]:border-ai-accent data-[state=checked]:bg-ai-accent mt-0.5"
                             />
                             <Label
                               htmlFor={event.type}
                               className="cursor-pointer text-sm font-normal"
                             >
-                              <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs text-ai-accent">
+                              <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
                                 {event.type}
                               </code>
                             </Label>
@@ -498,7 +752,7 @@ function CreateWebhookDialog({ open, onOpenChange, eventTypes }: CreateWebhookDi
               </Button>
               <Button
                 onClick={handleCreate}
-                className="bg-ai-accent text-white hover:bg-ai-accent/90"
+                className="bg-ai-accent hover:bg-ai-accent/90 text-white"
               >
                 Create Endpoint
               </Button>
@@ -601,14 +855,14 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-    <div className="group relative overflow-hidden rounded-lg border transition-[border-color,box-shadow] duration-200 hover:border-ai-accent/30 hover:shadow-sm">
+      <div className="group hover:border-ai-accent/30 relative overflow-hidden rounded-lg border transition-[border-color,box-shadow] duration-200 hover:shadow-sm">
         <div className={cn("absolute top-0 bottom-0 left-0 w-1", config.border)} />
 
         <div className="p-4 pl-5">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="min-w-0 flex-1 space-y-2">
               <div className="flex flex-wrap items-center gap-3">
-                <CollapsibleTrigger className="flex items-center gap-2 transition-colors hover:text-ai-accent">
+                <CollapsibleTrigger className="hover:text-ai-accent flex items-center gap-2 transition-colors">
                   {isExpanded ? (
                     <ChevronDown className="text-muted-foreground h-4 w-4" />
                   ) : (
@@ -620,6 +874,11 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
                 <Badge variant="secondary" className={config.badge}>
                   {endpoint.status}
                 </Badge>
+                {endpoint.format === "slack" && (
+                  <Badge variant="outline" className="text-xs">
+                    Slack
+                  </Badge>
+                )}
               </div>
               <div className="truncate font-mono text-sm">
                 <span className="text-muted-foreground">{protocol}</span>
@@ -700,60 +959,67 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
         <CollapsibleContent>
           <Separator />
           <div className="space-y-6 p-4 pl-5">
-            <div className="space-y-2">
-              <Label>Signing Secret</Label>
-              <div className="flex items-center gap-2">
-                <div className="bg-muted/50 flex flex-1 items-center gap-2 rounded-lg border px-3 py-2">
-                  <code
-                    className={cn(
-                      "font-mono text-sm transition-[filter,color] duration-300",
-                      showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm",
-                    )}
+            {endpoint.format !== "slack" && (
+              <div className="space-y-2">
+                <Label>Signing Secret</Label>
+                <div className="flex items-center gap-2">
+                  <div className="bg-muted/50 flex flex-1 items-center gap-2 rounded-lg border px-3 py-2">
+                    <code
+                      className={cn(
+                        "font-mono text-sm transition-[filter,color] duration-300",
+                        showSecret ? "text-ai-accent" : "text-muted-foreground blur-sm",
+                      )}
+                    >
+                      {showSecret ? `${endpoint.secretPrefix}...` : "whsec_••••••••••••••••"}
+                    </code>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label={showSecret ? "Hide signing secret" : "Show signing secret"}
+                    onClick={() => setShowSecret(!showSecret)}
                   >
-                    {showSecret ? `${endpoint.secretPrefix}...` : "whsec_••••••••••••••••"}
-                  </code>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label={showSecret ? "Hide signing secret" : "Show signing secret"}
-                  onClick={() => setShowSecret(!showSecret)}
-                >
-                  {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="icon" title="Rotate secret" aria-label="Rotate signing secret">
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Rotate Secret</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will generate a new signing secret. The old secret will be invalidated
-                        immediately. Make sure to update your integration.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleRotateSecret}
-                        className="bg-warning text-white hover:bg-warning/90"
+                    {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        title="Rotate secret"
+                        aria-label="Rotate signing secret"
                       >
-                        Rotate Secret
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Rotate Secret</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will generate a new signing secret. The old secret will be invalidated
+                          immediately. Make sure to update your integration.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleRotateSecret}
+                          className="bg-warning hover:bg-warning/90 text-white"
+                        >
+                          Rotate Secret
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="space-y-2">
               <Label>Subscribed Events</Label>
               <div className="flex flex-wrap gap-1.5">
                 {endpoint.events.length === 0 ? (
-                  <Badge variant="outline" className="font-mono text-xs text-ai-accent">
+                  <Badge variant="outline" className="text-ai-accent font-mono text-xs">
                     All events
                   </Badge>
                 ) : (
@@ -770,7 +1036,7 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
               <Label>Recent Deliveries</Label>
               {deliveries === undefined ? (
                 <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                  <div className="border-muted-foreground/30 h-4 w-4 animate-spin rounded-full border-2 border-t-ai-accent" />
+                  <div className="border-muted-foreground/30 border-t-ai-accent h-4 w-4 animate-spin rounded-full border-2" />
                   Loading...
                 </div>
               ) : deliveries.length === 0 ? (
@@ -804,15 +1070,15 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
 
   const statusConfig = {
     pending: {
-      icon: <Clock className="h-4 w-4 text-info" />,
+      icon: <Clock className="text-info h-4 w-4" />,
       bg: "bg-info-surface",
     },
     delivered: {
-      icon: <Check className="h-4 w-4 text-success" />,
+      icon: <Check className="text-success h-4 w-4" />,
       bg: "bg-success-surface",
     },
     failed: {
-      icon: <XCircle className="h-4 w-4 text-destructive" />,
+      icon: <XCircle className="text-destructive h-4 w-4" />,
       bg: "bg-destructive/10",
     },
     abandoned: {
@@ -853,7 +1119,7 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
           className="bg-muted/30 hover:bg-muted/50 flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors"
         >
           <div className="flex items-center gap-2">
-            <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs text-ai-accent">
+            <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
               {delivery.eventType}
             </code>
           </div>
@@ -911,7 +1177,7 @@ function DeliveryRow({ delivery, isLast }: DeliveryRowProps) {
             {delivery.errorMessage && (
               <div>
                 <span className="text-muted-foreground text-xs">Error</span>
-                <div className="bg-destructive/10 mt-1 rounded border border-destructive/30 p-2 font-mono text-xs text-destructive">
+                <div className="bg-destructive/10 border-destructive/30 text-destructive mt-1 rounded border p-2 font-mono text-xs">
                   {delivery.errorMessage}
                 </div>
               </div>
@@ -964,7 +1230,7 @@ function EventTypesReference({ eventTypes }: EventTypesReferenceProps) {
           <CardHeader className="hover:bg-muted/50 cursor-pointer transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-ai-accent" />
+                <Zap className="text-ai-accent h-5 w-5" />
                 <div>
                   <CardTitle className="text-base">Event Types Reference</CardTitle>
                   <CardDescription>All available webhook event types</CardDescription>
@@ -990,7 +1256,7 @@ function EventTypesReference({ eventTypes }: EventTypesReferenceProps) {
                         key={event.type}
                         className="bg-muted/30 flex items-start justify-between gap-4 rounded-lg border px-3 py-2"
                       >
-                        <code className="bg-muted shrink-0 rounded px-1.5 py-0.5 font-mono text-xs text-ai-accent">
+                        <code className="bg-muted text-ai-accent shrink-0 rounded px-1.5 py-0.5 font-mono text-xs">
                           {event.type}
                         </code>
                         <span className="text-muted-foreground text-right text-sm">
@@ -1014,7 +1280,7 @@ function WebhookDocumentation() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <ExternalLink className="h-5 w-5 text-ai-accent" />
+          <ExternalLink className="text-ai-accent h-5 w-5" />
           <CardTitle>Webhook Documentation</CardTitle>
         </div>
         <CardDescription>Learn how to verify and handle webhook events</CardDescription>
@@ -1022,9 +1288,9 @@ function WebhookDocumentation() {
       <CardContent className="space-y-4">
         <div className="bg-muted relative overflow-hidden rounded-lg border">
           <div className="bg-muted/50 flex items-center gap-2 border-b px-4 py-2">
-            <div className="h-3 w-3 rounded-full bg-destructive/80" />
-            <div className="h-3 w-3 rounded-full bg-warning/80" />
-            <div className="h-3 w-3 rounded-full bg-success/80" />
+            <div className="bg-destructive/80 h-3 w-3 rounded-full" />
+            <div className="bg-warning/80 h-3 w-3 rounded-full" />
+            <div className="bg-success/80 h-3 w-3 rounded-full" />
             <span className="text-muted-foreground ml-2 font-mono text-xs">
               verify-signature.js
             </span>
@@ -1091,7 +1357,7 @@ function WebhookDocumentation() {
               ["X-Seal-Event-Type", "Event type name"],
             ].map(([header, description]) => (
               <div key={header} className="flex items-center justify-between gap-4">
-                <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs text-ai-accent">
+                <code className="bg-muted text-ai-accent rounded px-1.5 py-0.5 font-mono text-xs">
                   {header}
                 </code>
                 <span className="text-muted-foreground">{description}</span>

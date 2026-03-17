@@ -299,13 +299,13 @@ function BillingSettingsPage() {
                     {proMonthlyLookupKey && (
                       <Button className="w-full" onClick={() => handleUpgrade(proMonthlyLookupKey)}>
                         <Sparkles className="mr-2 h-4 w-4" />
-                        Upgrade to Pro
+                        Upgrade to Professional
                       </Button>
                     )}
                   </div>
                 </div>
               ) : (
-                /* Pro plan (or paid): single column with details + features */
+                /* Professional plan (or paid): single column with details + features */
                 <div className="space-y-6">
                   <div>
                     <div className="flex items-baseline gap-2">

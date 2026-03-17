@@ -10,6 +10,7 @@
 import { v } from "convex/values";
 
 import { internal } from "../../_generated/api";
+import type { Doc, Id } from "../../_generated/dataModel";
 import { internalMutation, internalQuery } from "../../_generated/server";
 
 /**
@@ -36,6 +37,51 @@ export interface ApiRecipient {
   signing_url?: string;
 }
 
+type ApiDocument = Doc<"documents">;
+type ApiDocumentRecipient = Doc<"document_recipients">;
+
+function isDocumentAccessible(
+  document: ApiDocument | null,
+  organizationId: Id<"organizations">,
+): document is ApiDocument {
+  return Boolean(
+    document && document.status !== "deleted" && document.organizationId === organizationId,
+  );
+}
+
+function getCompletedAtIso(
+  recipient: Pick<ApiDocumentRecipient, "signedAt" | "approvedAt">,
+): string | undefined {
+  const completedAt = recipient.signedAt || recipient.approvedAt;
+  return completedAt ? new Date(completedAt).toISOString() : undefined;
+}
+
+function buildApiRecipient(recipient: ApiDocumentRecipient, signingUrl?: string): ApiRecipient {
+  return {
+    id: recipient._id,
+    email: recipient.email,
+    name: recipient.name ?? "",
+    role: recipient.role,
+    status: recipient.status,
+    order: recipient.order,
+    viewed_at: recipient.viewedAt ? new Date(recipient.viewedAt).toISOString() : undefined,
+    completed_at: getCompletedAtIso(recipient),
+    signing_url: signingUrl,
+  };
+}
+
+function getSigningUrl(
+  workflowStatus: ApiDocument["workflowStatus"],
+  recipient: Pick<ApiDocumentRecipient, "status" | "signingToken">,
+): string | undefined {
+  const activeWorkflow =
+    workflowStatus === "draft" || workflowStatus === "sent" || workflowStatus === "in_progress";
+  if (activeWorkflow && recipient.status === "pending") {
+    return `/sign/${recipient.signingToken}`;
+  }
+  return undefined;
+}
+
 /**
  * Internal query to list recipients for a document.
  *
@@ -50,10 +96,7 @@ export const listRecipients = internalQuery({
   handler: async (ctx, args): Promise<ApiRecipient[] | null> => {
     // Verify document exists and belongs to the organization
     const document = await ctx.db.get(args.documentId);
-    if (!document || document.status === "deleted") {
-      return null;
-    }
-    if (document.organizationId !== args.organizationId) {
+    if (!isDocumentAccessible(document, args.organizationId)) {
       return null;
     }
 
@@ -66,20 +109,7 @@ export const listRecipients = internalQuery({
     // Sort by order if present
     recipients.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
 
-    return recipients.map((r) => ({
-      id: r._id,
-      email: r.email,
-      name: r.name ?? "",
-      role: r.role,
-      status: r.status,
-      order: r.order,
-      viewed_at: r.viewedAt ? new Date(r.viewedAt).toISOString() : undefined,
-      completed_at:
-        r.signedAt || r.approvedAt
-          ? new Date((r.signedAt || r.approvedAt) as number).toISOString()
-          : undefined,
-      // Don't expose signing URL in list for security
-    }));
+    return recipients.map((recipient) => buildApiRecipient(recipient));
   },
 });
 
@@ -98,10 +128,7 @@ export const getRecipient = internalQuery({
   handler: async (ctx, args): Promise<ApiRecipient | null> => {
     // Verify document exists and belongs to the organization
     const document = await ctx.db.get(args.documentId);
-    if (!document || document.status === "deleted") {
-      return null;
-    }
-    if (document.organizationId !== args.organizationId) {
+    if (!isDocumentAccessible(document, args.organizationId)) {
       return null;
     }
 
@@ -111,33 +138,8 @@ export const getRecipient = internalQuery({
       return null;
     }
 
-    // Generate signing URL (only for draft/sent documents)
-    let signingUrl: string | undefined;
-    const workflowStatus = document.workflowStatus ?? "draft";
-    if (
-      (workflowStatus === "draft" ||
-        workflowStatus === "sent" ||
-        workflowStatus === "in_progress") &&
-      recipient.status === "pending"
-    ) {
-      // Build signing URL with token
-      signingUrl = `/sign/${recipient.signingToken}`;
-    }
-
-    return {
-      id: recipient._id,
-      email: recipient.email,
-      name: recipient.name ?? "",
-      role: recipient.role,
-      status: recipient.status,
-      order: recipient.order,
-      viewed_at: recipient.viewedAt ? new Date(recipient.viewedAt).toISOString() : undefined,
-      completed_at:
-        recipient.signedAt || recipient.approvedAt
-          ? new Date((recipient.signedAt || recipient.approvedAt) as number).toISOString()
-          : undefined,
-      signing_url: signingUrl,
-    };
+    const signingUrl = getSigningUrl(document.workflowStatus ?? "draft", recipient);
+    return buildApiRecipient(recipient, signingUrl);
   },
 });
 

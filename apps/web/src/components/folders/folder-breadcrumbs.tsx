@@ -6,8 +6,11 @@
  * Intermediate folders are clickable; the last segment is the current page.
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { Home } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import {
   Breadcrumb,
@@ -17,50 +20,109 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 interface FolderBreadcrumbsProps {
-  folderId: Id<"folders">;
+  folderId?: Id<"folders">;
   type: "document" | "template";
   onNavigate: (folderId?: Id<"folders">) => void;
 }
 
 export function FolderBreadcrumbs({ folderId, type, onNavigate }: FolderBreadcrumbsProps) {
-  const breadcrumbs = useQuery(api.folders.queries.getFolderBreadcrumbs, { folderId });
+  const breadcrumbs = useQuery(
+    api.folders.queries.getFolderBreadcrumbs,
+    folderId ? { folderId } : "skip",
+  );
 
   const rootLabel = type === "document" ? "All Documents" : "All Templates";
+  const breadcrumbItems = breadcrumbs ?? [];
+  const breadcrumbSignature = [rootLabel, ...breadcrumbItems.map((crumb) => crumb.id)].join("/");
+  const previousDepthRef = useRef(breadcrumbItems.length);
+  const previousSignatureRef = useRef(breadcrumbSignature);
+  const hasMountedRef = useRef(false);
+  const [motionOffset, setMotionOffset] = useState<"idle" | "from-left" | "from-right">("idle");
 
-  if (!breadcrumbs) {
-    return null;
-  }
+  useLayoutEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      previousDepthRef.current = breadcrumbItems.length;
+      previousSignatureRef.current = breadcrumbSignature;
+      return;
+    }
+
+    const previousDepth = previousDepthRef.current;
+    const previousSignature = previousSignatureRef.current;
+
+    previousDepthRef.current = breadcrumbItems.length;
+    previousSignatureRef.current = breadcrumbSignature;
+
+    if (previousSignature === breadcrumbSignature) {
+      return;
+    }
+
+    const nextOffset =
+      breadcrumbItems.length > previousDepth
+        ? "from-right"
+        : breadcrumbItems.length < previousDepth
+          ? "from-left"
+          : null;
+
+    if (!nextOffset) {
+      return;
+    }
+
+    setMotionOffset(nextOffset);
+
+    let resetFrame = 0;
+    const startFrame = requestAnimationFrame(() => {
+      resetFrame = requestAnimationFrame(() => {
+        setMotionOffset("idle");
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(startFrame);
+      cancelAnimationFrame(resetFrame);
+    };
+  }, [breadcrumbItems.length, breadcrumbSignature]);
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
+    <Breadcrumb className="max-w-full min-w-0 overflow-hidden">
+      <BreadcrumbList
+        className="max-w-full flex-nowrap justify-center whitespace-nowrap motion-safe:transition-transform motion-safe:duration-250 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{
+          transform:
+            motionOffset === "from-right"
+              ? "translateX(12px)"
+              : motionOffset === "from-left"
+                ? "translateX(-12px)"
+                : "translateX(0)",
+        }}
+      >
         {/* Root segment */}
         <BreadcrumbItem>
           <BreadcrumbLink
-            className="flex cursor-pointer items-center gap-1.5"
+            className="text-foreground/80 hover:text-foreground flex shrink-0 cursor-pointer items-center gap-1.5 font-medium"
             onClick={() => onNavigate(undefined)}
           >
-            <Home className="size-3.5" />
+            <Home className="size-3.5 shrink-0" />
             {rootLabel}
           </BreadcrumbLink>
         </BreadcrumbItem>
 
-        {breadcrumbs.map((crumb, index) => {
-          const isLast = index === breadcrumbs.length - 1;
+        {breadcrumbItems.map((crumb, index) => {
+          const isLast = index === breadcrumbItems.length - 1;
 
           return (
             <span key={crumb.id} className="contents">
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 {isLast ? (
-                  <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
+                  <BreadcrumbPage className="max-w-40 truncate sm:max-w-56">
+                    {crumb.name}
+                  </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink
-                    className="cursor-pointer"
+                    className="max-w-32 cursor-pointer truncate sm:max-w-48"
                     onClick={() => onNavigate(crumb.id as Id<"folders">)}
                   >
                     {crumb.name}
