@@ -76,6 +76,7 @@ function buildRecipientTokenResponse(
   organization: Doc<"organizations"> | null,
   sequentialState: Awaited<ReturnType<typeof getSequentialSigningState>>,
 ) {
+  // TODO: Check org tier — if Free, use Seal defaults instead of brandingSettings
   const branding = organization?.brandingSettings?.enabled
     ? organization.brandingSettings
     : undefined;

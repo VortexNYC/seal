@@ -493,6 +493,24 @@ export const handleSubscriptionUpdated = internalMutation({
       console.warn(`Subscription ${subscription.id} became inactive for org ${existingSubscription.organizationId}`);
     }
 
+    // Explicit past_due detection — features remain active during grace period
+    if (existingSubscription.status !== "past_due" && subscription.status === "past_due") {
+      console.warn(
+        JSON.stringify({
+          topic: "subscription_lifecycle",
+          event: "subscription_past_due",
+          severity: "warning",
+          operation: "handleSubscriptionUpdated",
+          stripeSubscriptionId: subscription.id,
+          organizationId: existingSubscription.organizationId,
+          customerId: subscription.customer,
+          previousStatus: existingSubscription.status,
+          stripePriceId: subscription.priceId,
+          timestamp: Date.now(),
+        }),
+      );
+    }
+
     console.warn(`Updated subscription: ${subscription.id}`);
   },
 });
@@ -535,7 +553,21 @@ export const handleSubscriptionDeleted = internalMutation({
       updatedAt: now,
     });
 
-    // TODO Phase 4: trigger org-scoped downgrade cascade
+    // Downgrade cascade detection — log what should be triggered
+    // TODO: Cascade should trigger: suspend webhooks, freeze templates/branding, downgrade sharing
+    console.warn(
+      JSON.stringify({
+        topic: "subscription_lifecycle",
+        event: "downgrade_cascade",
+        operation: "handleSubscriptionDeleted",
+        organizationId: existingSubscription.organizationId,
+        stripeSubscriptionId: subscription.id,
+        customerId: subscription.customer,
+        previousStatus: existingSubscription.status,
+        cancelReason: subscription.cancelReason,
+        timestamp: now,
+      }),
+    );
     console.warn(`Subscription canceled for org ${existingSubscription.organizationId}`);
 
     console.warn(

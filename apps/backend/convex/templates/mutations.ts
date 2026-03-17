@@ -104,6 +104,9 @@ export const createFromTemplate = permissionMutation("documents:create")({
     const organizationId = ctx.auth.organization._id;
     const now = Date.now();
 
+    // 0. Templates require Pro plan
+    await ensureProFeature(ctx.db, organizationId, "Templates");
+
     // 1. Get the template
     const template = await ctx.db.get(args.templateId);
     if (!template || template.status === "deleted") {
