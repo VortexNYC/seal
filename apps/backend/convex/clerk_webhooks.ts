@@ -557,6 +557,11 @@ export const upsertMembershipFromClerk = internalMutation({
     // Create new membership
     const membershipId = await ctx.db.insert("organization_members", membershipData);
 
+    // Sync seat count with Stripe after adding a member
+    await ctx.scheduler.runAfter(0, internal.stripe.subscription_actions.syncSeatCount, {
+      organizationId: organization._id,
+    });
+
     const membershipType = isFirstMember ? "owner" : mappedRole;
     console.info(
       `✅ Created membership from Clerk: ${user.email} -> ${organization.name} (${membershipType})`,
@@ -611,6 +616,11 @@ export const deleteMembershipFromClerk = internalMutation({
 
     await ctx.scheduler.runAfter(0, internal.documents.sharing_cleanup.fullMemberRemovalCleanup, {
       userId,
+      organizationId,
+    });
+
+    // Sync seat count with Stripe after removing a member
+    await ctx.scheduler.runAfter(0, internal.stripe.subscription_actions.syncSeatCount, {
       organizationId,
     });
 

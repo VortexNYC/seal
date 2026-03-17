@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { FormSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/branding")(
 
 function BrandingSettings() {
   const { slug } = Route.useParams();
+  const { canBrand: _canBrand, isLoading: _subscriptionLoading } = useSubscriptionLimits();
 
   const organization = useQuery(api.organizations.queries.getOrganization, {
     slug,
