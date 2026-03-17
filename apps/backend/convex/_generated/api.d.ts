@@ -67,6 +67,7 @@ import type * as auth from "../auth.js";
 import type * as auth_access_control from "../auth/access_control.js";
 import type * as auth_guards from "../auth/guards.js";
 import type * as auth_permissions from "../auth/permissions.js";
+import type * as auth_plan_limits from "../auth/plan_limits.js";
 import type * as auth_recipient_wrappers from "../auth/recipient_wrappers.js";
 import type * as auth_subscription_guards from "../auth/subscription_guards.js";
 import type * as auth_subscription_helpers from "../auth/subscription_helpers.js";
@@ -209,6 +210,7 @@ import type * as stripe_connect_subscription_actions from "../stripe/connect_sub
 import type * as stripe_connect_webhook_handlers from "../stripe/connect_webhook_handlers.js";
 import type * as stripe_coupon from "../stripe/coupon.js";
 import type * as stripe_downgrade_validation from "../stripe/downgrade_validation.js";
+import type * as stripe_handler_helpers from "../stripe/handler_helpers.js";
 import type * as stripe_handlers from "../stripe/handlers.js";
 import type * as stripe_helpers from "../stripe/helpers.js";
 import type * as stripe_payment_field_actions from "../stripe/payment_field_actions.js";
@@ -310,6 +312,7 @@ declare const fullApi: ApiFromModules<{
   "auth/access_control": typeof auth_access_control;
   "auth/guards": typeof auth_guards;
   "auth/permissions": typeof auth_permissions;
+  "auth/plan_limits": typeof auth_plan_limits;
   "auth/recipient_wrappers": typeof auth_recipient_wrappers;
   "auth/subscription_guards": typeof auth_subscription_guards;
   "auth/subscription_helpers": typeof auth_subscription_helpers;
@@ -452,6 +455,7 @@ declare const fullApi: ApiFromModules<{
   "stripe/connect_webhook_handlers": typeof stripe_connect_webhook_handlers;
   "stripe/coupon": typeof stripe_coupon;
   "stripe/downgrade_validation": typeof stripe_downgrade_validation;
+  "stripe/handler_helpers": typeof stripe_handler_helpers;
   "stripe/handlers": typeof stripe_handlers;
   "stripe/helpers": typeof stripe_helpers;
   "stripe/payment_field_actions": typeof stripe_payment_field_actions;
