@@ -13,7 +13,7 @@ concurrency:
 jobs:
   quality:
     name: Quality Checks
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
 
     steps:
@@ -36,7 +36,7 @@ jobs:
 
   test-backend:
     name: Backend Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     needs: quality
 
@@ -57,7 +57,7 @@ jobs:
 
   test-frontend:
     name: Frontend Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     needs: quality
 
@@ -78,7 +78,7 @@ jobs:
 
   test-web-e2e:
     name: Web E2E
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     needs: quality
 
@@ -111,7 +111,7 @@ jobs:
 
   test-landing-e2e:
     name: Landing E2E
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     needs: quality
 
@@ -140,7 +140,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     needs: [quality, test-backend, test-frontend, test-web-e2e, test-landing-e2e]
 
