@@ -17,7 +17,6 @@ import Stripe from "stripe";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalAction, internalMutation } from "../_generated/server";
-
 import {
   type SubscriptionStatus,
   cancelOtherSubscriptions,
@@ -59,14 +58,16 @@ export const cancelOldStripeSubscriptions = internalAction({
     }
 
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2025-12-15.clover",
+      apiVersion: "2026-02-25.clover",
     });
 
     const failures: string[] = [];
     for (const subscriptionId of args.subscriptionIds) {
       try {
         await stripe.subscriptions.cancel(subscriptionId);
-        console.warn(`Cancelled old Stripe subscription ${subscriptionId} for org ${args.organizationId}`);
+        console.warn(
+          `Cancelled old Stripe subscription ${subscriptionId} for org ${args.organizationId}`,
+        );
       } catch (err) {
         failures.push(subscriptionId);
         console.error(`Failed to cancel Stripe subscription ${subscriptionId}`, {
@@ -240,11 +241,9 @@ export const handleSubscriptionUpdated = internalMutation({
       subscription.status === "unpaid";
 
     if (wasActive && isNowInactive) {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.webhooks.delivery.abandonPendingDeliveriesForOrg,
-        { organizationId: existingSubscription.organizationId },
-      );
+      await ctx.scheduler.runAfter(0, internal.webhooks.delivery.abandonPendingDeliveriesForOrg, {
+        organizationId: existingSubscription.organizationId,
+      });
       console.warn(
         JSON.stringify({
           topic: "subscription_lifecycle",
@@ -319,11 +318,9 @@ export const handleSubscriptionDeleted = internalMutation({
     });
 
     // Downgrade cascade: abandon pending webhook deliveries
-    await ctx.scheduler.runAfter(
-      0,
-      internal.webhooks.delivery.abandonPendingDeliveriesForOrg,
-      { organizationId: existingSubscription.organizationId },
-    );
+    await ctx.scheduler.runAfter(0, internal.webhooks.delivery.abandonPendingDeliveriesForOrg, {
+      organizationId: existingSubscription.organizationId,
+    });
     console.warn(
       JSON.stringify({
         topic: "subscription_lifecycle",
@@ -534,7 +531,7 @@ export const checkSubscriptionStatus = internalAction({
     }
 
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2025-12-15.clover",
+      apiVersion: "2026-02-25.clover",
     });
 
     // Get all active or past_due subscriptions

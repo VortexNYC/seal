@@ -30,11 +30,7 @@ const LOOKUP_KEY_REGEX = /^([a-z]+):(monthly|yearly):(v\d+)$/;
 /**
  * Build a lookup key from components
  */
-export function buildLookupKey(
-  tier: TierName,
-  interval: BillingInterval,
-  version = "v2",
-): string {
+export function buildLookupKey(tier: TierName, interval: BillingInterval, version = "v2"): string {
   return `${tier}:${interval}:${version}`;
 }
 

@@ -110,9 +110,9 @@ describe("Folders", () => {
 
       expect(result.id).toBeDefined();
 
-      const folder = await t.run(async (ctx) => {
+      const folder = (await t.run(async (ctx) => {
         return await ctx.db.get(result.id);
-      }) as Doc<"folders"> | null;
+      })) as Doc<"folders"> | null;
 
       expect(folder).not.toBeNull();
       expect(folder!.name).toBe("Contracts");
@@ -138,9 +138,9 @@ describe("Folders", () => {
           parentId: parent.id,
         });
 
-      const childFolder = await t.run(async (ctx) => {
+      const childFolder = (await t.run(async (ctx) => {
         return await ctx.db.get(child.id);
-      }) as Doc<"folders"> | null;
+      })) as Doc<"folders"> | null;
 
       expect(childFolder!.parentId).toEqual(parent.id);
     });
@@ -225,9 +225,9 @@ describe("Folders", () => {
           name: "New Name",
         });
 
-      const folder = await t.run(async (ctx) => {
+      const folder = (await t.run(async (ctx) => {
         return await ctx.db.get(folderId);
-      }) as Doc<"folders"> | null;
+      })) as Doc<"folders"> | null;
 
       expect(folder!.name).toBe("New Name");
     });
@@ -247,9 +247,9 @@ describe("Folders", () => {
           visibility: "admin",
         });
 
-      const folder = await t.run(async (ctx) => {
+      const folder = (await t.run(async (ctx) => {
         return await ctx.db.get(folderId);
-      }) as Doc<"folders"> | null;
+      })) as Doc<"folders"> | null;
 
       expect(folder!.visibility).toBe("admin");
     });
@@ -400,7 +400,7 @@ describe("Folders", () => {
           newParentId: folderB,
         });
 
-      const moved = await t.run(async (ctx) => ctx.db.get(folderA)) as Doc<"folders"> | null;
+      const moved = (await t.run(async (ctx) => ctx.db.get(folderA))) as Doc<"folders"> | null;
       expect(moved!.parentId).toEqual(folderB);
     });
 
@@ -427,7 +427,7 @@ describe("Folders", () => {
           // newParentId omitted = move to root
         });
 
-      const moved = await t.run(async (ctx) => ctx.db.get(childId)) as Doc<"folders"> | null;
+      const moved = (await t.run(async (ctx) => ctx.db.get(childId))) as Doc<"folders"> | null;
       expect(moved!.parentId).toBeUndefined();
     });
 
@@ -719,7 +719,9 @@ describe("Folders", () => {
         });
 
       expect(children.length).toBe(2);
-      expect(children.map((f: (typeof children)[number]) => f.name)).toEqual(expect.arrayContaining(["Child 1", "Child 2"]));
+      expect(children.map((f: (typeof children)[number]) => f.name)).toEqual(
+        expect.arrayContaining(["Child 1", "Child 2"]),
+      );
     });
 
     test("filters admin-only folders from members", async () => {

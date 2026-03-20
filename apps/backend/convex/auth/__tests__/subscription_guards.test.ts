@@ -100,7 +100,6 @@ describe("subscription_guards", () => {
     });
   }
 
-
   // ---------------------------------------------------------------------------
   // PLAN_LIMITS
   // ---------------------------------------------------------------------------
@@ -376,5 +375,4 @@ describe("subscription_guards", () => {
       expect(calculateApplicationFee(0, "free", false)).toBe(30);
     });
   });
-
 });

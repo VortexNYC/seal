@@ -20,7 +20,7 @@ function initializeStripe(): Stripe {
     throw new Error("STRIPE_SECRET_KEY not configured");
   }
   return new Stripe(stripeSecretKey, {
-    apiVersion: "2025-12-15.clover",
+    apiVersion: "2026-02-25.clover",
   });
 }
 
@@ -127,7 +127,9 @@ export const createSubscriptionRecord = internalMutation({
       updatedAt: now,
     });
 
-    console.warn(`Created subscription ${args.stripeSubscriptionId} for org ${args.organizationId}`);
+    console.warn(
+      `Created subscription ${args.stripeSubscriptionId} for org ${args.organizationId}`,
+    );
     return subscriptionId;
   },
 });
@@ -183,9 +185,12 @@ export const handleNewOrgCreated = internalAction({
       return { stripeCustomerId, enrolled: false };
     }
 
-    const priceData = await ctx.runMutation(internal.stripe.subscription_actions.getPriceByLookupKey, {
-      lookupKey,
-    });
+    const priceData = await ctx.runMutation(
+      internal.stripe.subscription_actions.getPriceByLookupKey,
+      {
+        lookupKey,
+      },
+    );
 
     if (!priceData?.price) {
       console.warn(`Price not found for lookup key ${lookupKey}, skipping enrollment`);

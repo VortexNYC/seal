@@ -164,7 +164,11 @@ describe("api/v1/audit", () => {
       });
 
       expect(result.entries).toHaveLength(2);
-      expect(result.entries.every((e: (typeof result.entries)[number]) => e.action === "document.created")).toBe(true);
+      expect(
+        result.entries.every(
+          (e: (typeof result.entries)[number]) => e.action === "document.created",
+        ),
+      ).toBe(true);
     });
 
     test("filters by document_id", async () => {
@@ -180,7 +184,9 @@ describe("api/v1/audit", () => {
       });
 
       expect(result.entries).toHaveLength(2);
-      expect(result.entries.every((e: (typeof result.entries)[number]) => e.document_id === documentId)).toBe(true);
+      expect(
+        result.entries.every((e: (typeof result.entries)[number]) => e.document_id === documentId),
+      ).toBe(true);
     });
 
     test("filters by created_after", async () => {
@@ -196,7 +202,10 @@ describe("api/v1/audit", () => {
 
       expect(result.entries).toHaveLength(2);
       expect(
-        result.entries.every((e: (typeof result.entries)[number]) => new Date(e.created_at).getTime() >= BASE_TIME + 5000),
+        result.entries.every(
+          (e: (typeof result.entries)[number]) =>
+            new Date(e.created_at).getTime() >= BASE_TIME + 5000,
+        ),
       ).toBe(true);
     });
 
@@ -213,7 +222,10 @@ describe("api/v1/audit", () => {
 
       expect(result.entries).toHaveLength(2);
       expect(
-        result.entries.every((e: (typeof result.entries)[number]) => new Date(e.created_at).getTime() <= BASE_TIME + 15000),
+        result.entries.every(
+          (e: (typeof result.entries)[number]) =>
+            new Date(e.created_at).getTime() <= BASE_TIME + 15000,
+        ),
       ).toBe(true);
     });
 

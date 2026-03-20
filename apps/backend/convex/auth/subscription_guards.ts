@@ -12,7 +12,6 @@ import { ConvexError } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
 import type { DatabaseReader } from "../_generated/server";
-
 import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
 
 export { PLAN_LIMITS, type TierPlan };
@@ -117,7 +116,9 @@ export async function ensureProFeature(
 ): Promise<void> {
   const { isPro } = await getSubscriptionPlan(db, organizationId);
   if (!isPro) {
-    throw new ConvexError(`${featureName} requires a Professional plan. Please upgrade to continue.`);
+    throw new ConvexError(
+      `${featureName} requires a Professional plan. Please upgrade to continue.`,
+    );
   }
 }
 
@@ -192,9 +193,11 @@ export async function getApplicationFee(
 
   // Check for enterprise custom rates
   const org = await db.get(organizationId);
-  const customRates = plan === "enterprise"
-    ? (org as { customPaymentRates?: { cardRate: number; cardFixed: number } })?.customPaymentRates
-    : undefined;
+  const customRates =
+    plan === "enterprise"
+      ? (org as { customPaymentRates?: { cardRate: number; cardFixed: number } })
+          ?.customPaymentRates
+      : undefined;
 
   return calculateApplicationFee(amountCents, plan, isAch, customRates);
 }

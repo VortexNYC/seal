@@ -21,7 +21,7 @@ function initializeStripe(): Stripe {
     throw new Error("STRIPE_SECRET_KEY not configured");
   }
   return new Stripe(stripeSecretKey, {
-    apiVersion: "2025-12-15.clover",
+    apiVersion: "2026-02-25.clover",
   });
 }
 
@@ -156,10 +156,9 @@ async function getOrgMemberCount(
   ctx: ActionCtx,
   organizationId: Id<"organizations">,
 ): Promise<number> {
-  const count: number = await ctx.runQuery(
-    internal.organizations.helpers.getActiveMemberCount,
-    { organizationId },
-  );
+  const count: number = await ctx.runQuery(internal.organizations.helpers.getActiveMemberCount, {
+    organizationId,
+  });
   return Math.max(count, 1); // At least 1 seat (the owner)
 }
 
