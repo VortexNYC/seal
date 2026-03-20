@@ -60,7 +60,6 @@
     "@vitejs/plugin-react": "catalog:",
     "fumadocs-mdx": "^14.2.11",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vite-tsconfig-paths": "^6.1.1"
+    "vite": "catalog:"
   }
 }
