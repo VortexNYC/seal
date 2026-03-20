@@ -1,0 +1,1 @@
+/Users/shlomokabareti/.claude/hookify.enforce-cross-project.local.md

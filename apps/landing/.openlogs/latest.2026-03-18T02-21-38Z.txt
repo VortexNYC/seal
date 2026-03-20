@@ -1,0 +1,8 @@
+[MDX] generated files in 4.168791999999939ms
+
+  VITE v7.3.1  ready in 944 ms
+
+  ➜  Local:   http://localhost:4409/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+[vite] connected.

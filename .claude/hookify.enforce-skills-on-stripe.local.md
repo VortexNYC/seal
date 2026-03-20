@@ -1,0 +1,1 @@
+/Users/shlomokabareti/.claude/hookify.enforce-skills-on-stripe.local.md

@@ -1,0 +1,9 @@
+[MDX] generated files in 4.510125000000016ms
+
+  VITE v7.3.1  ready in 927 ms
+
+  ➜  Local:   http://localhost:4145/
+  ➜  Network: http://172.16.227.80:4145/
+  ➜  press h + enter to show help
+[vite] connected.
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
