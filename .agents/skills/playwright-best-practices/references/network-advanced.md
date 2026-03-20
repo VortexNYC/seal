@@ -150,9 +150,7 @@ export const test = base.extend<GraphQLFixtures>({
 
           // Optionally match variables
           if (m.variables) {
-            return (
-              JSON.stringify(m.variables) === JSON.stringify(postData.variables)
-            );
+            return JSON.stringify(m.variables) === JSON.stringify(postData.variables);
           }
           return true;
         });

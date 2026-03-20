@@ -33,15 +33,15 @@ User uploads a PDF. AI visually analyzes every page, identifies where fillable f
 
 ### Detection Targets
 
-| What AI Looks For | Maps To `fieldType` | Examples |
-|---|---|---|
-| Signature lines (underscores, "Sign here", "Authorized by") | `signature` | `_____________`, "Signature:", dotted lines |
-| Name fields ("Full Name", "Printed Name", name blanks) | `text` | "Name: ___", "Printed Name" |
-| Date fields ("Date", "MM/DD/YYYY", date blanks) | `date` | "Date: ___", "Effective Date:" |
-| Numerical inputs (amounts, quantities, account numbers) | `number` | "Amount: $___", "Qty:" |
-| Checkboxes (empty squares, "[ ]", option lists) | `checkbox` | "[ ] I agree", "[ ] Option A" |
-| Payment/invoice tables (line items, totals, due amounts) | `payment` | Invoice tables, "Total Due: $___" |
-| File attachment areas ("Attach proof", "Supporting docs") | `attachment` | "Attach ID:", "Upload proof of insurance" |
+| What AI Looks For                                           | Maps To `fieldType` | Examples                                    |
+| ----------------------------------------------------------- | ------------------- | ------------------------------------------- |
+| Signature lines (underscores, "Sign here", "Authorized by") | `signature`         | `_____________`, "Signature:", dotted lines |
+| Name fields ("Full Name", "Printed Name", name blanks)      | `text`              | "Name: \_\_\_", "Printed Name"              |
+| Date fields ("Date", "MM/DD/YYYY", date blanks)             | `date`              | "Date: \_\_\_", "Effective Date:"           |
+| Numerical inputs (amounts, quantities, account numbers)     | `number`            | "Amount: $\_\_\_", "Qty:"                   |
+| Checkboxes (empty squares, "[ ]", option lists)             | `checkbox`          | "[ ] I agree", "[ ] Option A"               |
+| Payment/invoice tables (line items, totals, due amounts)    | `payment`           | Invoice tables, "Total Due: $\_\_\_"        |
+| File attachment areas ("Attach proof", "Supporting docs")   | `attachment`        | "Attach ID:", "Upload proof of insurance"   |
 
 ### How It Works
 
@@ -61,6 +61,7 @@ User uploads a PDF. AI visually analyzes every page, identifies where fillable f
 ### Recipient Assignment Strategy
 
 Fields are created **unassigned** (recipientId = undefined). If the document already has recipients, the agent attempts smart assignment:
+
 - If document has exactly 1 recipient: assign all fields to them
 - If document has multiple recipients: use label context ("Buyer" -> first recipient, "Seller" -> second) or leave unassigned for manual review
 - Always surfaced in UI as "AI-suggested" so user can override
@@ -74,6 +75,7 @@ Fields are created **unassigned** (recipientId = undefined). If the document alr
 ### Gemini Prompt Strategy
 
 Use Gemini's structured output mode with a JSON schema. The prompt includes:
+
 - System instruction explaining Seal's field types and coordinate system
 - The PDF as inline data (or via Files API for large docs)
 - Request for structured array output matching our field schema
@@ -82,6 +84,7 @@ Use Gemini's structured output mode with a JSON schema. The prompt includes:
 ### Data Model Changes
 
 New table: `ai_field_suggestions`
+
 ```
 documentId: Id<"documents">
 fields: array of detected field objects (before user confirms)
@@ -93,6 +96,7 @@ createdAt: number
 ```
 
 This stores the raw AI output separately from `signature_fields`, so:
+
 - User can "undo" AI placement (delete suggestions, revert)
 - We track AI accuracy over time
 - Billing/usage attribution
@@ -116,13 +120,13 @@ AI reads the PDF and creates visual annotations highlighting key clauses, obliga
 
 ### Annotation Categories
 
-| Category | Color | What Gets Highlighted |
-|---|---|---|
-| **Obligations** | Blue | "shall", "must", "agrees to", deadlines, deliverables |
-| **Payment Terms** | Green | Amounts, due dates, payment schedules, penalties |
+| Category             | Color      | What Gets Highlighted                                         |
+| -------------------- | ---------- | ------------------------------------------------------------- |
+| **Obligations**      | Blue       | "shall", "must", "agrees to", deadlines, deliverables         |
+| **Payment Terms**    | Green      | Amounts, due dates, payment schedules, penalties              |
 | **Risk / Liability** | Red/Orange | Indemnification, limitation of liability, termination clauses |
-| **Important Dates** | Purple | Effective dates, expiration, renewal periods |
-| **Defined Terms** | Yellow | Key definitions that affect interpretation |
+| **Important Dates**  | Purple     | Effective dates, expiration, renewal periods                  |
+| **Defined Terms**    | Yellow     | Key definitions that affect interpretation                    |
 
 ### How It Works
 
@@ -141,6 +145,7 @@ AI reads the PDF and creates visual annotations highlighting key clauses, obliga
 ### Data Model
 
 New table: `ai_document_annotations`
+
 ```
 documentId: Id<"documents">
 page: number
@@ -181,6 +186,7 @@ Workspace-wide semantic search across all documents. Users ask natural language 
 ### How It Works
 
 **Indexing Pipeline** (background, on document upload/update):
+
 1. Document PDF text is extracted (we already do this for field positioning)
 2. Text is chunked (by page or by semantic sections)
 3. Chunks are embedded using Gemini's embedding model (`text-embedding-004`)
@@ -188,6 +194,7 @@ Workspace-wide semantic search across all documents. Users ask natural language 
 5. Metadata attached: documentId, page number, document title, status, created date
 
 **Search Flow**:
+
 1. User types a natural language query in the workspace search bar
 2. Query is embedded and searched against the vector index
 3. Top-K relevant chunks retrieved, with document filters if specified
@@ -205,6 +212,7 @@ Workspace-wide semantic search across all documents. Users ask natural language 
 ### Convex Agent Integration
 
 This is where `@convex-dev/agent` shines:
+
 - **Threads** persist search conversations per user
 - **RAG** is built-in — vector search + text search hybrid
 - **Tool calling** lets the agent fetch document metadata, recipient info, field values
@@ -216,6 +224,7 @@ This is where `@convex-dev/agent` shines:
 Uses Convex Agent's built-in tables for threads/messages. Additional:
 
 New table: `ai_document_chunks`
+
 ```
 documentId: Id<"documents">
 organizationId: Id<"organizations">
@@ -227,6 +236,7 @@ metadata: { title, status, createdAt, recipientNames }
 ```
 
 With vector index:
+
 ```
 .vectorIndex("by_embedding", {
   vectorField: "embedding",
@@ -255,15 +265,15 @@ AI reads payment terms, line items, amounts, schedules, and fee structures from 
 
 ### What Gets Extracted
 
-| Data Point | Maps To | Example |
-|---|---|---|
-| Line items (description + amount) | `lineItems[]` in payment config | "Consulting: $5,000/month" |
-| Total amount | `amount` field | "Total: $15,000" |
-| Currency | `currency` | "$" -> "usd", "EUR" -> "eur" |
-| Payment schedule | metadata/notes | "Due within 30 days", "Monthly installments" |
-| Late fees / penalties | metadata/notes | "2% monthly late fee" |
-| Tax information | `taxRate` or line items | "Plus applicable sales tax" |
-| Deposit / upfront | Split into line items | "50% deposit due upon signing" |
+| Data Point                        | Maps To                         | Example                                      |
+| --------------------------------- | ------------------------------- | -------------------------------------------- |
+| Line items (description + amount) | `lineItems[]` in payment config | "Consulting: $5,000/month"                   |
+| Total amount                      | `amount` field                  | "Total: $15,000"                             |
+| Currency                          | `currency`                      | "$" -> "usd", "EUR" -> "eur"                 |
+| Payment schedule                  | metadata/notes                  | "Due within 30 days", "Monthly installments" |
+| Late fees / penalties             | metadata/notes                  | "2% monthly late fee"                        |
+| Tax information                   | `taxRate` or line items         | "Plus applicable sales tax"                  |
+| Deposit / upfront                 | Split into line items           | "50% deposit due upon signing"               |
 
 ### How It Works
 
@@ -280,6 +290,7 @@ AI reads payment terms, line items, amounts, schedules, and fee structures from 
 ### Integration with Existing Payment Flow
 
 This feeds directly into the payment field builder we just built (Phase 1-4 of Stripe). The extracted config populates:
+
 - Line items in the invoice builder
 - Amount and currency
 - The payment field's label (e.g., "Project Payment - Phase 1")
@@ -301,10 +312,10 @@ const sealAI = new Agent(components.agent, {
   model: "gemini-3-flash",
   instructions: "You are Seal AI, a document intelligence assistant...",
   tools: [
-    analyzeDocumentFields,    // Capability 1
-    redlineDocument,          // Capability 2
-    searchDocuments,          // Capability 3
-    extractPaymentTerms,     // Capability 4
+    analyzeDocumentFields, // Capability 1
+    redlineDocument, // Capability 2
+    searchDocuments, // Capability 3
+    extractPaymentTerms, // Capability 4
   ],
 });
 ```
@@ -312,6 +323,7 @@ const sealAI = new Agent(components.agent, {
 ### Workspace Settings
 
 New settings in organization config:
+
 - `aiEnabled`: boolean (feature gate, tied to plan)
 - `aiAutoAnalyze`: boolean (auto-trigger on upload, default false)
 - `aiShowRedlinesToSigners`: boolean (show annotations to recipients)
@@ -334,12 +346,12 @@ New settings in organization config:
 
 ## Implementation Order
 
-| Phase | Capability | Why This Order |
-|---|---|---|
-| **Phase 1** | Auto Field Placement | Highest immediate value. Saves the most manual work. Proves the AI integration works. |
-| **Phase 2** | Payment Structure Extraction | Builds directly on Phase 1's infrastructure. Extends field placement with payment-specific intelligence. |
-| **Phase 3** | Document Redlining | Adds visual intelligence layer. Reuses the same PDF analysis pipeline. |
-| **Phase 4** | Cross-Document Search | Most complex (requires embedding pipeline + RAG). Benefits from having more documents processed by Phases 1-3. |
+| Phase       | Capability                   | Why This Order                                                                                                 |
+| ----------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Phase 1** | Auto Field Placement         | Highest immediate value. Saves the most manual work. Proves the AI integration works.                          |
+| **Phase 2** | Payment Structure Extraction | Builds directly on Phase 1's infrastructure. Extends field placement with payment-specific intelligence.       |
+| **Phase 3** | Document Redlining           | Adds visual intelligence layer. Reuses the same PDF analysis pipeline.                                         |
+| **Phase 4** | Cross-Document Search        | Most complex (requires embedding pipeline + RAG). Benefits from having more documents processed by Phases 1-3. |
 
 Each phase is independently shippable and valuable.
 
@@ -376,51 +388,58 @@ Each phase is independently shippable and valuable.
 These components should be integrated as we build each phase:
 
 ### Phase 1 (Auto Field Placement)
-| Component | Purpose |
-|---|---|
-| **AI Agent** (`@convex-dev/agent`) | Orchestration, tool calling, usage tracking |
-| **Action Cache** (`@convex-dev/action-cache`) | Cache Gemini responses — same PDF analyzed twice returns cached result |
-| **Action Retrier** (`@convex-dev/action-retrier`) | Auto-retry Gemini API failures with backoff |
-| **Workflow** (`@convex-dev/workflow`) | Durable multi-step pipeline: analyze -> extract -> suggest fields |
+
+| Component                                         | Purpose                                                                |
+| ------------------------------------------------- | ---------------------------------------------------------------------- |
+| **AI Agent** (`@convex-dev/agent`)                | Orchestration, tool calling, usage tracking                            |
+| **Action Cache** (`@convex-dev/action-cache`)     | Cache Gemini responses — same PDF analyzed twice returns cached result |
+| **Action Retrier** (`@convex-dev/action-retrier`) | Auto-retry Gemini API failures with backoff                            |
+| **Workflow** (`@convex-dev/workflow`)             | Durable multi-step pipeline: analyze -> extract -> suggest fields      |
 
 ### Phase 2 (Payment Extraction)
-| Component | Purpose |
-|---|---|
+
+| Component              | Purpose                                       |
+| ---------------------- | --------------------------------------------- |
 | (Reuses Phase 1 infra) | Extends the Agent with payment-specific tools |
 
 ### Phase 3 (Document Redlining)
-| Component | Purpose |
-|---|---|
+
+| Component              | Purpose                                |
+| ---------------------- | -------------------------------------- |
 | (Reuses Phase 1 infra) | Extends the Agent with redlining tools |
 
 ### Phase 4 (Cross-Document Search)
-| Component | Purpose |
-|---|---|
-| **RAG** (`@convex-dev/rag`) | Chunking, embedding, vector indexing for document search |
-| **Persistent Text Streaming** (`@convex-dev/persistent-text-streaming`) | Stream search answers while persisting them |
+
+| Component                                                               | Purpose                                                  |
+| ----------------------------------------------------------------------- | -------------------------------------------------------- |
+| **RAG** (`@convex-dev/rag`)                                             | Chunking, embedding, vector indexing for document search |
+| **Persistent Text Streaming** (`@convex-dev/persistent-text-streaming`) | Stream search answers while persisting them              |
 
 ### Cross-Cutting (All Phases)
-| Component | Purpose |
-|---|---|
-| **Neutral Cost** (`@convex-dev/neutralcost`) | Track AI costs per-org, per-user, per-agent for billing decisions |
+
+| Component                                     | Purpose                                                                 |
+| --------------------------------------------- | ----------------------------------------------------------------------- |
+| **Neutral Cost** (`@convex-dev/neutralcost`)  | Track AI costs per-org, per-user, per-agent for billing decisions       |
 | **Rate Limiter** (`@convex-dev/rate-limiter`) | Per-user/per-org rate limiting on AI requests (replace our custom impl) |
-| **Aggregate** (`@convex-dev/aggregate`) | Track usage counts efficiently (AI analyses per org per month) |
-| **Workpool** (`@convex-dev/workpool`) | Priority queues — Pro users get priority AI processing |
+| **Aggregate** (`@convex-dev/aggregate`)       | Track usage counts efficiently (AI analyses per org per month)          |
+| **Workpool** (`@convex-dev/workpool`)         | Priority queues — Pro users get priority AI processing                  |
 
 ### Future Enhancements
-| Component | Purpose |
-|---|---|
-| **Timeline** (`@convex-dev/timeline`) | Undo/redo for AI field placement in document editor |
-| **Presence** (`@convex-dev/presence`) | Show who's viewing a document in real-time |
-| **Files Control** (`@convex-dev/files-control`) | Upgrade file uploads with access control and lifecycle cleanup |
+
+| Component                                         | Purpose                                                          |
+| ------------------------------------------------- | ---------------------------------------------------------------- |
+| **Timeline** (`@convex-dev/timeline`)             | Undo/redo for AI field placement in document editor              |
+| **Presence** (`@convex-dev/presence`)             | Show who's viewing a document in real-time                       |
+| **Files Control** (`@convex-dev/files-control`)   | Upgrade file uploads with access control and lifecycle cleanup   |
 | **Durable Agents** (`@convex-dev/durable-agents`) | Long-running AI agents for batch processing entire doc libraries |
-| **Migrations** (`@convex-dev/migrations`) | Backfill AI embeddings across existing documents |
+| **Migrations** (`@convex-dev/migrations`)         | Backfill AI embeddings across existing documents                 |
 
 ---
 
 ## Next Steps
 
 Each capability becomes its own feature spec with full implementation plan:
+
 1. `docs/features/ai/auto-field-placement/feature-spec.md`
 2. `docs/features/ai/payment-extraction/feature-spec.md`
 3. `docs/features/ai/document-redlining/feature-spec.md`

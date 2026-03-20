@@ -19,10 +19,10 @@ Allow SaaS companies and developers to embed Seal's signing experience directly 
 
 ### Two Integration Modes
 
-| Mode | How It Works | Use Case |
-|------|-------------|----------|
-| **iFrame URL** | Embed `/sign/{token}?embed=true` in an `<iframe>` | Any platform (PHP, Rails, vanilla JS) |
-| **React SDK** | `<SealSigningEmbed token={token} onSigned={...} />` component | React/Next.js apps (our primary audience) |
+| Mode           | How It Works                                                  | Use Case                                  |
+| -------------- | ------------------------------------------------------------- | ----------------------------------------- |
+| **iFrame URL** | Embed `/sign/{token}?embed=true` in an `<iframe>`             | Any platform (PHP, Rails, vanilla JS)     |
+| **React SDK**  | `<SealSigningEmbed token={token} onSigned={...} />` component | React/Next.js apps (our primary audience) |
 
 Both modes use the same underlying mechanism: iFrame + postMessage.
 
@@ -102,12 +102,14 @@ The `/api/v1/ip` endpoint already has `Access-Control-Allow-Origin: *` — no ch
 
 ```typescript
 // Add to document schema
-embeddingConfig: v.optional(v.object({
-  enabled: v.boolean(),                        // Allow this document to be embedded
-  allowedOrigins: v.optional(v.array(v.string())), // Restrict to specific domains (empty = allow all)
-  hideDeclineButton: v.optional(v.boolean()),  // Hide decline in embedded mode
-  redirectUrl: v.optional(v.string()),         // URL to redirect after signing (non-embedded fallback)
-}))
+embeddingConfig: v.optional(
+  v.object({
+    enabled: v.boolean(), // Allow this document to be embedded
+    allowedOrigins: v.optional(v.array(v.string())), // Restrict to specific domains (empty = allow all)
+    hideDeclineButton: v.optional(v.boolean()), // Hide decline in embedded mode
+    redirectUrl: v.optional(v.string()), // URL to redirect after signing (non-embedded fallback)
+  }),
+);
 ```
 
 ### React SDK (`@seal/react`)
@@ -136,6 +138,7 @@ function MyApp() {
 ```
 
 **Package internals:**
+
 - Creates an `<iframe>` pointing to `https://app.seal.nyc/sign/{token}?embed=true`
 - Attaches `message` event listener, filters by `seal:*` event types
 - Validates `event.origin` matches Seal's domain
@@ -151,6 +154,7 @@ const isEmbedded = new URLSearchParams(window.location.search).has("embed");
 ```
 
 **When `isEmbedded` is true:**
+
 1. Hide the full header → show minimal inline document name
 2. Replace sidebar with bottom sheet (or collapsible panel)
 3. After sign/decline: emit postMessage event instead of `window.location.reload()`
@@ -191,24 +195,24 @@ No new permissions — embedding is controlled by document-level `embeddingConfi
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Embedded signing (iFrame URL) | Yes | Yes |
-| React SDK | Yes | Yes |
-| Custom allowed origins | No | Yes |
-| Hide decline button | No | Yes |
+| Feature                       | Free | Pro |
+| ----------------------------- | ---- | --- |
+| Embedded signing (iFrame URL) | Yes  | Yes |
+| React SDK                     | Yes  | Yes |
+| Custom allowed origins        | No   | Yes |
+| Hide decline button           | No   | Yes |
 
 Embedded signing itself is free — it drives adoption. Advanced configuration options are Pro.
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/web/vercel.json` | Modify — route-specific headers for `/sign/*` |
-| `apps/web/src/routes/sign.$token.tsx` | Modify — detect `?embed=true`, conditional layout, postMessage events |
-| `apps/backend/convex/schemas/documents.ts` | Modify — add `embeddingConfig` |
-| `packages/react-sdk/` | Create — `@seal/react` npm package with `SealSigningEmbed` component |
-| `packages/react-sdk/src/SealSigningEmbed.tsx` | Create — iFrame wrapper component |
-| `packages/react-sdk/src/types.ts` | Create — event type definitions |
-| `packages/react-sdk/package.json` | Create — package config |
-| `docs/embedded-signing.md` | Create — developer documentation |
+| File                                          | Action                                                                |
+| --------------------------------------------- | --------------------------------------------------------------------- |
+| `apps/web/vercel.json`                        | Modify — route-specific headers for `/sign/*`                         |
+| `apps/web/src/routes/sign.$token.tsx`         | Modify — detect `?embed=true`, conditional layout, postMessage events |
+| `apps/backend/convex/schemas/documents.ts`    | Modify — add `embeddingConfig`                                        |
+| `packages/react-sdk/`                         | Create — `@seal/react` npm package with `SealSigningEmbed` component  |
+| `packages/react-sdk/src/SealSigningEmbed.tsx` | Create — iFrame wrapper component                                     |
+| `packages/react-sdk/src/types.ts`             | Create — event type definitions                                       |
+| `packages/react-sdk/package.json`             | Create — package config                                               |
+| `docs/embedded-signing.md`                    | Create — developer documentation                                      |

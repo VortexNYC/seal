@@ -40,8 +40,16 @@
             "Stripe customer created manually (Clerk webhook idempotency key conflict)"
           ],
           "bugs": [
-            { "id": "BUG-1", "description": "React 19.2.4/19.2.3 mismatch crashes app silently. Fixed with resolutions pin in package.json.", "fixed": true },
-            { "id": "BUG-2", "description": "handleNewOrgCreated fails with Stripe idempotency key conflict on retry with different params.", "fixed": false }
+            {
+              "id": "BUG-1",
+              "description": "React 19.2.4/19.2.3 mismatch crashes app silently. Fixed with resolutions pin in package.json.",
+              "fixed": true
+            },
+            {
+              "id": "BUG-2",
+              "description": "handleNewOrgCreated fails with Stripe idempotency key conflict on retry with different params.",
+              "fixed": false
+            }
           ],
           "notes": "Clerk webhooks ARE configured and firing. The handleNewOrgCreated action fails due to Stripe idempotency key collision."
         },
@@ -74,7 +82,11 @@
             "Start free trial navigates to /$slug/settings/billing correctly (BUG-3 fixed)"
           ],
           "bugs": [
-            { "id": "BUG-3", "description": "FeatureGate CTA used relative href='settings/billing' causing 404 from nested routes. Fixed with TanStack Router Link + useParams.", "fixed": true }
+            {
+              "id": "BUG-3",
+              "description": "FeatureGate CTA used relative href='settings/billing' causing 404 from nested routes. Fixed with TanStack Router Link + useParams.",
+              "fixed": true
+            }
           ],
           "notes": null
         },
@@ -154,7 +166,11 @@
             "Completed upgrade via Stripe CLI (test token + direct subscription creation)"
           ],
           "bugs": [
-            { "id": "BUG-4", "description": "Stripe webhook endpoint was pointing to coordinated-lemur-768 instead of wooden-poodle-362. Created new webhook endpoint and updated STRIPE_WEBHOOK_SECRET env var.", "fixed": true }
+            {
+              "id": "BUG-4",
+              "description": "Stripe webhook endpoint was pointing to coordinated-lemur-768 instead of wooden-poodle-362. Created new webhook endpoint and updated STRIPE_WEBHOOK_SECRET env var.",
+              "fixed": true
+            }
           ],
           "notes": "Stripe iframe blocks headless interaction. Used Stripe API to create subscription directly. Webhook now configured for correct deployment."
         },

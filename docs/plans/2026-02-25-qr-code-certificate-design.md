@@ -38,7 +38,7 @@ Embed a QR code in the certificate of completion PDF that links to a public veri
    - Document name
    - Completion date and time
    - Number of signers
-   - Signer names with masked emails (e.g., "John Smith — j***@acme.com")
+   - Signer names with masked emails (e.g., "John Smith — j\*\*\*@acme.com")
    - Document hash (SHA-256) for manual integrity checking
    - Seal branding footer
 5. No login or account is required — the page is fully public
@@ -69,7 +69,7 @@ When the document completion flow runs (the existing logic that sets `workflowSt
 2. Store on the document: `qrToken`, `qrTokenGeneratedAt: Date.now()`
 3. Pass the token to the certificate generation action
 
-Token format: `24` characters from nanoid's default alphabet (A-Za-z0-9_-). This gives ~143 bits of entropy — more than sufficient for a non-secret lookup key.
+Token format: `24` characters from nanoid's default alphabet (A-Za-z0-9\_-). This gives ~143 bits of entropy — more than sufficient for a non-secret lookup key.
 
 #### Certificate PDF Modification
 
@@ -153,6 +153,7 @@ New route: `apps/web/src/routes/verify.$qrToken.tsx`
 This is a **public route** (not under `_authenticated`). It does not require login.
 
 Layout:
+
 - Centered card on a clean background with Seal branding
 - Top: Seal logo
 - If token is valid:
@@ -184,10 +185,10 @@ The token is not secret (it is printed on PDFs that are shared), but the data ex
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| QR code on certificate | Yes | Yes |
-| Public verification page | Yes | Yes |
+| Feature                  | Free | Pro |
+| ------------------------ | ---- | --- |
+| QR code on certificate   | Yes  | Yes |
+| Public verification page | Yes  | Yes |
 
 This feature is available on all plans. The verification page promotes Seal's brand and builds trust in the platform — it is a growth/marketing mechanism, not a premium feature.
 
@@ -205,10 +206,10 @@ This feature is available on all plans. The verification page promotes Seal's br
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/documents.ts` | Modify — add `qrToken`, `qrTokenGeneratedAt` fields and `by_qr_token` index |
-| `apps/backend/convex/documents/certificate_of_completion.ts` | Modify — generate QR code and embed in PDF |
-| `apps/backend/convex/documents/verification.ts` | Create — public query `getDocumentByQrToken` |
-| `apps/backend/convex/documents/mutations.ts` | Modify — generate `qrToken` on document completion |
-| `apps/web/src/routes/verify.$qrToken.tsx` | Create — public verification page |
+| File                                                         | Action                                                                      |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `apps/backend/convex/schemas/documents.ts`                   | Modify — add `qrToken`, `qrTokenGeneratedAt` fields and `by_qr_token` index |
+| `apps/backend/convex/documents/certificate_of_completion.ts` | Modify — generate QR code and embed in PDF                                  |
+| `apps/backend/convex/documents/verification.ts`              | Create — public query `getDocumentByQrToken`                                |
+| `apps/backend/convex/documents/mutations.ts`                 | Modify — generate `qrToken` on document completion                          |
+| `apps/web/src/routes/verify.$qrToken.tsx`                    | Create — public verification page                                           |

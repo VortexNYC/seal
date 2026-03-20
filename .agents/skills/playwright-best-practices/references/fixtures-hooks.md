@@ -85,10 +85,7 @@ type Fixtures = {
 
 export const test = base.extend<Options & Fixtures>({
   // Define option with default
-  defaultUser: [
-    { email: "test@example.com", password: "pass123" },
-    { option: true },
-  ],
+  defaultUser: [{ email: "test@example.com", password: "pass123" }, { option: true }],
 
   // Use option in fixture
   authenticatedPage: async ({ page, defaultUser }, use) => {

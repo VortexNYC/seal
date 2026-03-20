@@ -31,10 +31,13 @@ Set payment type   →       installments: Sub Schedule  →   invoice.payment_f
 ## Payment Types
 
 ### One-time (`one_time`)
+
 Standard Stripe Invoice with line items. Finalized immediately to generate `hosted_invoice_url`.
 
 ### Recurring (`recurring`)
+
 Creates a Stripe Subscription (or Subscription Schedule for fixed iteration counts).
+
 - **Open-ended** (`endCondition: "never"`): Standard subscription, runs until cancelled.
 - **After N payments** (`endCondition: "after_count"`): Subscription Schedule with `end_behavior: "cancel"`.
 - **Until date** (`endCondition: "on_date"`): Subscription with `cancel_at` timestamp.
@@ -42,12 +45,15 @@ Creates a Stripe Subscription (or Subscription Schedule for fixed iteration coun
 Platform fee is applied as `application_fee_percent` on the subscription.
 
 ### Installments (`installments`)
+
 Uses Subscription Schedules with fixed iteration count. Total amount is split equally across `count` installments, billed at the configured `interval` (week or month).
 
 Supports an optional `firstPaymentAmount` for a custom first installment — in this case, a one-time invoice is created for the first payment and a subscription handles the remaining installments.
 
 ### Deposit + Balance (`deposit_balance`)
+
 Creates two separate Stripe Invoices:
+
 - **Deposit invoice**: Due immediately (`days_until_due: 1`), amount = `totalAmountCents × depositPercent / 100`.
 - **Balance invoice**: Due after `balanceDueDays`, amount = remainder.
 
@@ -88,22 +94,22 @@ All Connect events are handled in `connect_webhook_handlers.ts`. Events are idem
 
 Each handler calls `updatePaymentStatusFromWebhook`, which looks up the config by `stripeInvoiceId` (via the `by_stripe_invoice` index):
 
-| Stripe Event | Payment Status |
-|---|---|
-| `invoice.paid` | `"paid"` |
-| `invoice.payment_failed` | `"failed"` |
-| `invoice.voided` | `"cancelled"` |
-| `invoice.marked_uncollectible` | `"failed"` |
-| `invoice.deleted` | `"cancelled"` |
+| Stripe Event                   | Payment Status |
+| ------------------------------ | -------------- |
+| `invoice.paid`                 | `"paid"`       |
+| `invoice.payment_failed`       | `"failed"`     |
+| `invoice.voided`               | `"cancelled"`  |
+| `invoice.marked_uncollectible` | `"failed"`     |
+| `invoice.deleted`              | `"cancelled"`  |
 
 ### Subscription Events
 
 Each handler calls `updatePaymentStatusFromSubscriptionWebhook`, which looks up the config by `stripeSubscriptionId` (via the `by_stripe_subscription` index):
 
-| Stripe Event | Status Mapping |
-|---|---|
+| Stripe Event                    | Status Mapping                                                                                                                                                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `customer.subscription.updated` | Maps Stripe status: `active`→`"awaiting"`, `past_due`→`"failed"`, `canceled`→`"cancelled"`, `unpaid`→`"failed"`, `incomplete`→`"awaiting"`, `incomplete_expired`→`"cancelled"`, `trialing`→`"awaiting"`, `paused`→`"awaiting"` |
-| `customer.subscription.deleted` | `"paid"` if ended naturally (`ended_at` set + `cancel_at_period_end`), otherwise `"cancelled"` |
+| `customer.subscription.deleted` | `"paid"` if ended naturally (`ended_at` set + `cancel_at_period_end`), otherwise `"cancelled"`                                                                                                                                 |
 
 ## Platform Fees
 

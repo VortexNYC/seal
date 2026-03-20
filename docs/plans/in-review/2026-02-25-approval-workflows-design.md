@@ -11,6 +11,7 @@ Enable multi-step document workflows where approvers must review and approve a d
 The data model is surprisingly approval-aware already:
 
 **What exists:**
+
 - `approver` is a first-class recipient role (`signer | viewer | approver`)
 - `approved` is a valid recipient status with `approvedAt` timestamp
 - `submitRecipientSignature` enforces role-status consistency (only approvers can have `approved` status)
@@ -20,6 +21,7 @@ The data model is surprisingly approval-aware already:
 - `order` field exists on `document_recipients` with `by_document_order` index
 
 **What's missing:**
+
 - **No enforcement** — signers can sign before approvers approve; all recipients get emails simultaneously
 - **No distinct approval UX** — approvers go through the same signature capture UI as signers
 - **No sequential email dispatch** — everyone is notified at once regardless of `order` field
@@ -31,10 +33,10 @@ The data model is surprisingly approval-aware already:
 
 Documents support two workflow modes, configured at send time:
 
-| Mode | Behavior |
-|------|----------|
-| **Parallel** (default) | All recipients receive emails at once. No ordering enforcement. Current behavior. |
-| **Sequential** | Recipients are grouped by `order` value. Group N+1 is only notified after all recipients in group N have completed their action (signed/approved/viewed). |
+| Mode                   | Behavior                                                                                                                                                  |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Parallel** (default) | All recipients receive emails at once. No ordering enforcement. Current behavior.                                                                         |
+| **Sequential**         | Recipients are grouped by `order` value. Group N+1 is only notified after all recipients in group N have completed their action (signed/approved/viewed). |
 
 The `order` field already exists. We add enforcement logic, not new schema.
 
@@ -166,6 +168,7 @@ No other schema changes needed — `order` and `approver` role already exist.
 #### Document Detail Page
 
 When a sequential document is in progress:
+
 - Show a **workflow progress indicator**: pipeline showing which group is active
 - Each group shows its recipients with status badges
 - Completed groups are collapsed, active group is expanded
@@ -173,6 +176,7 @@ When a sequential document is in progress:
 ### Audit Trail
 
 New audit events:
+
 - `recipient.approval_requested` — notification sent to approver
 - `recipient.approved` — approver approved (already exists in webhook events)
 - `recipient.changes_requested` — approver requested changes (maps to declined)
@@ -182,9 +186,11 @@ New audit events:
 ### Email Templates
 
 New email for sequential workflows:
+
 - **"It's your turn"** email — sent when a previous group completes and it's now this recipient's turn. Different from the initial invitation email. Subject: `"{Document Name}" is ready for your {review/signature}`
 
 Modify existing invitation email:
+
 - For approvers: "You've been asked to **review and approve** this document" (instead of "sign")
 - CTA button: "Review Document" (instead of "Sign Document")
 
@@ -203,25 +209,25 @@ No new permissions — controlled by existing `documents:edit` for configuring w
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Approver role | Yes | Yes |
-| Sequential mode | No | Yes |
-| Approval workflow progress UI | No | Yes |
+| Feature                       | Free | Pro |
+| ----------------------------- | ---- | --- |
+| Approver role                 | Yes  | Yes |
+| Sequential mode               | No   | Yes |
+| Approval workflow progress UI | No   | Yes |
 
 Free plan gets the approver role (parallel only — approve and sign happen simultaneously). Pro plan gets sequential enforcement (approval gates signing).
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/documents.ts` | Modify — add `signingMode` field |
-| `apps/backend/convex/documents/send_document_action.ts` | Modify — sequential email dispatch |
-| `apps/backend/convex/documents/recipients_mutations.ts` | Modify — signing order enforcement gate |
-| `apps/backend/convex/documents/recipient_helpers.ts` | Modify — add `getNextPendingGroup`, `getFullyCompletedOrders` helpers |
-| `apps/backend/convex/documents/email.ts` | Modify — "it's your turn" email trigger, approver-specific email wording |
-| `apps/web/src/routes/sign.$token.tsx` | Modify — approver-specific UI (Approve/Request Changes buttons, no signature capture) |
-| `apps/web/src/components/documents/add-recipient-dialog.tsx` | Modify — role selector, order group assignment |
-| `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` | Modify — workflow progress indicator |
-| `packages/transactional/` | Modify — approver invitation email template, "your turn" notification template |
-| `apps/backend/convex/schemas/audit_logs.ts` | Modify — add new event types |
+| File                                                                 | Action                                                                                |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `apps/backend/convex/schemas/documents.ts`                           | Modify — add `signingMode` field                                                      |
+| `apps/backend/convex/documents/send_document_action.ts`              | Modify — sequential email dispatch                                                    |
+| `apps/backend/convex/documents/recipients_mutations.ts`              | Modify — signing order enforcement gate                                               |
+| `apps/backend/convex/documents/recipient_helpers.ts`                 | Modify — add `getNextPendingGroup`, `getFullyCompletedOrders` helpers                 |
+| `apps/backend/convex/documents/email.ts`                             | Modify — "it's your turn" email trigger, approver-specific email wording              |
+| `apps/web/src/routes/sign.$token.tsx`                                | Modify — approver-specific UI (Approve/Request Changes buttons, no signature capture) |
+| `apps/web/src/components/documents/add-recipient-dialog.tsx`         | Modify — role selector, order group assignment                                        |
+| `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` | Modify — workflow progress indicator                                                  |
+| `packages/transactional/`                                            | Modify — approver invitation email template, "your turn" notification template        |
+| `apps/backend/convex/schemas/audit_logs.ts`                          | Modify — add new event types                                                          |

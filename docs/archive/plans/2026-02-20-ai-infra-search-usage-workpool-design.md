@@ -52,20 +52,21 @@ No backend changes needed — `fullSearch` already accepts `workflowStatus`, `da
 
 ### New Table: `ai_usage_log`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `organizationId` | `Id<"organizations">` | Which workspace |
-| `userId` | `Id<"users">` | Who triggered it |
-| `action` | union literal | `"field_analysis"` / `"payment_extraction"` / `"redlining"` / `"search"` / `"chat"` |
-| `tokensUsed` | `number` | Input + output tokens |
-| `estimatedCostUsd` | `number` | Calculated from token count + model pricing |
-| `durationMs` | `number` | Processing time |
-| `documentId` | `optional Id<"documents">` | Null for search/chat |
-| `modelUsed` | `string` | e.g. "gemini-2.0-flash" |
+| Field              | Type                       | Description                                                                         |
+| ------------------ | -------------------------- | ----------------------------------------------------------------------------------- |
+| `organizationId`   | `Id<"organizations">`      | Which workspace                                                                     |
+| `userId`           | `Id<"users">`              | Who triggered it                                                                    |
+| `action`           | union literal              | `"field_analysis"` / `"payment_extraction"` / `"redlining"` / `"search"` / `"chat"` |
+| `tokensUsed`       | `number`                   | Input + output tokens                                                               |
+| `estimatedCostUsd` | `number`                   | Calculated from token count + model pricing                                         |
+| `durationMs`       | `number`                   | Processing time                                                                     |
+| `documentId`       | `optional Id<"documents">` | Null for search/chat                                                                |
+| `modelUsed`        | `string`                   | e.g. "gemini-2.0-flash"                                                             |
 
 ### Aggregate Counters
 
 Use `@convex-dev/aggregate` to maintain:
+
 - Total AI calls per org per month
 - Total tokens per org per month
 - Total estimated cost per org per month
@@ -75,6 +76,7 @@ Efficient rollup queries without scanning all log records.
 ### Instrumentation Points
 
 Every AI action writes a usage record on completion:
+
 - `pipeline.ts` (field analysis + redlining)
 - `paymentExtraction.ts`
 - `search.ts` (hybrid search)
@@ -90,14 +92,15 @@ Every AI action writes a usage record on completion:
 
 ### Priority Tiers
 
-| Tier | Priority | Who |
-|------|----------|-----|
-| High | 1 | Pro orgs (active/trialing subscription) |
-| Low | 2 | Free orgs (no subscription) |
+| Tier | Priority | Who                                     |
+| ---- | -------- | --------------------------------------- |
+| High | 1        | Pro orgs (active/trialing subscription) |
+| Low  | 2        | Free orgs (no subscription)             |
 
 ### Where Applied
 
 Replace `ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, ...)` with workpool enqueue in:
+
 - `createDocument`
 - `replaceDocumentPdf`
 - `restoreDocumentVersion`

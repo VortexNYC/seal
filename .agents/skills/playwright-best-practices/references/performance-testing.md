@@ -104,9 +104,7 @@ test("page load performance", async ({ page }) => {
   await page.goto("/");
 
   const timing = await page.evaluate(() => {
-    const nav = performance.getEntriesByType(
-      "navigation",
-    )[0] as PerformanceNavigationTiming;
+    const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
 
     return {
       // Time to First Byte
@@ -241,9 +239,7 @@ test("homepage meets performance budget", async ({ page }) => {
 
   // Measure resources
   const resources = await page.evaluate(() => {
-    const entries = performance.getEntriesByType(
-      "resource",
-    ) as PerformanceResourceTiming[];
+    const entries = performance.getEntriesByType("resource") as PerformanceResourceTiming[];
     return {
       totalSize: entries.reduce((sum, e) => sum + (e.transferSize || 0), 0),
       jsSize: entries
@@ -255,15 +251,9 @@ test("homepage meets performance budget", async ({ page }) => {
 
   // Assert budgets
   expect(lcp, "LCP exceeds budget").toBeLessThan(budget.lcp);
-  expect(resources.totalSize, "Total size exceeds budget").toBeLessThan(
-    budget.totalSize,
-  );
-  expect(resources.jsSize, "JS size exceeds budget").toBeLessThan(
-    budget.jsSize,
-  );
-  expect(resources.imageCount, "Too many images").toBeLessThanOrEqual(
-    budget.imageCount,
-  );
+  expect(resources.totalSize, "Total size exceeds budget").toBeLessThan(budget.totalSize);
+  expect(resources.jsSize, "JS size exceeds budget").toBeLessThan(budget.jsSize);
+  expect(resources.imageCount, "Too many images").toBeLessThanOrEqual(budget.imageCount);
 });
 ```
 
@@ -286,33 +276,23 @@ export const test = base.extend<PerformanceFixtures>({
   assertBudget: async ({ page }, use) => {
     await use(async (budget) => {
       const metrics = await page.evaluate(() => {
-        const nav = performance.getEntriesByType(
-          "navigation",
-        )[0] as PerformanceNavigationTiming;
-        const resources = performance.getEntriesByType(
-          "resource",
-        ) as PerformanceResourceTiming[];
+        const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
+        const resources = performance.getEntriesByType("resource") as PerformanceResourceTiming[];
 
         return {
           ttfb: nav.responseStart - nav.requestStart,
-          totalSize: resources.reduce(
-            (sum, r) => sum + (r.transferSize || 0),
-            0,
-          ),
+          totalSize: resources.reduce((sum, r) => sum + (r.transferSize || 0), 0),
         };
       });
 
       if (budget.ttfb) {
-        expect(
-          metrics.ttfb,
-          `TTFB ${metrics.ttfb}ms exceeds budget ${budget.ttfb}ms`,
-        ).toBeLessThan(budget.ttfb);
+        expect(metrics.ttfb, `TTFB ${metrics.ttfb}ms exceeds budget ${budget.ttfb}ms`).toBeLessThan(
+          budget.ttfb,
+        );
       }
 
       if (budget.totalSize) {
-        expect(metrics.totalSize, `Total size exceeds budget`).toBeLessThan(
-          budget.totalSize,
-        );
+        expect(metrics.totalSize, `Total size exceeds budget`).toBeLessThan(budget.totalSize);
       }
     });
   },
@@ -346,12 +326,8 @@ test("lighthouse audit", async ({ page }) => {
   });
 
   // Assertions
-  expect(audit.lhr.categories.performance.score * 100).toBeGreaterThanOrEqual(
-    80,
-  );
-  expect(audit.lhr.categories.accessibility.score * 100).toBeGreaterThanOrEqual(
-    90,
-  );
+  expect(audit.lhr.categories.performance.score * 100).toBeGreaterThanOrEqual(80);
+  expect(audit.lhr.categories.accessibility.score * 100).toBeGreaterThanOrEqual(90);
 });
 ```
 
@@ -404,9 +380,7 @@ class PerfReporter implements Reporter {
   private metrics: any[] = [];
 
   onTestEnd(test: any, result: TestResult) {
-    const perfAnnotation = test.annotations.find(
-      (a: any) => a.type === "performance",
-    );
+    const perfAnnotation = test.annotations.find((a: any) => a.type === "performance");
 
     if (perfAnnotation) {
       this.metrics.push({
@@ -442,9 +416,7 @@ test("no performance regression", async ({ page }) => {
   await page.goto("/");
 
   const metrics = await page.evaluate(() => {
-    const nav = performance.getEntriesByType(
-      "navigation",
-    )[0] as PerformanceNavigationTiming;
+    const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
     return {
       loadTime: nav.loadEventEnd - nav.startTime,
     };

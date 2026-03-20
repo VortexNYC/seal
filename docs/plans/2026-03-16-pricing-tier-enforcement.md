@@ -7,24 +7,25 @@
 
 ## Pricing Structure
 
-|                  | Free        | Professional              | Enterprise   |
-|------------------|-------------|---------------------------|--------------|
-| **Price**        | $0          | $19/seat/mo ($180/seat/yr)| Contact us   |
-| **Seats**        | 1           | 1–20                      | 20+          |
-| **Signatures**   | Unlimited   | Unlimited                 | Unlimited    |
-| **Documents**    | Unlimited   | Unlimited                 | Unlimited    |
-| **Templates**    | Use only    | Create + use              | Create + use |
-| **Audit trail**  | Yes         | Yes                       | Yes          |
-| **Custom brand** | No          | Yes                       | Yes          |
-| **API access**   | No          | Yes                       | Yes          |
-| **MCP access**   | No          | Yes                       | Yes          |
-| **Webhooks**     | No          | Yes                       | Yes          |
-| **SSO/SAML**     | No          | No                        | Yes          |
-| **Storage**      | Unlimited   | Unlimited                 | Unlimited    |
-| **Card rate**    | 4.5% + 30¢  | 4% + 30¢                 | Custom       |
-| **ACH rate**     | 0.8% ($5 cap)| 0.8% ($5 cap)            | Custom       |
+|                  | Free          | Professional               | Enterprise   |
+| ---------------- | ------------- | -------------------------- | ------------ |
+| **Price**        | $0            | $19/seat/mo ($180/seat/yr) | Contact us   |
+| **Seats**        | 1             | 1–20                       | 20+          |
+| **Signatures**   | Unlimited     | Unlimited                  | Unlimited    |
+| **Documents**    | Unlimited     | Unlimited                  | Unlimited    |
+| **Templates**    | Use only      | Create + use               | Create + use |
+| **Audit trail**  | Yes           | Yes                        | Yes          |
+| **Custom brand** | No            | Yes                        | Yes          |
+| **API access**   | No            | Yes                        | Yes          |
+| **MCP access**   | No            | Yes                        | Yes          |
+| **Webhooks**     | No            | Yes                        | Yes          |
+| **SSO/SAML**     | No            | No                         | Yes          |
+| **Storage**      | Unlimited     | Unlimited                  | Unlimited    |
+| **Card rate**    | 4.5% + 30¢    | 4% + 30¢                   | Custom       |
+| **ACH rate**     | 0.8% ($5 cap) | 0.8% ($5 cap)              | Custom       |
 
 **Billing notes:**
+
 - Annual plan = $180/seat/year ($15/seat/mo equivalent) billed as a single upfront charge. One payment, one year of access.
 - Card rates are Seal's total margin (inclusive of Stripe base fees). ACH rate is Stripe passthrough at cost — Seal takes $0 margin on ACH.
 - Enterprise rates negotiated per customer
@@ -35,19 +36,19 @@
 
 ### Already Correct
 
-| Feature | Gate | Backend File | Notes |
-|---------|------|-------------|-------|
-| API key creation | Pro+ | `api_keys/actions.ts` | Checks `isPro` before Clerk key creation |
-| Webhook endpoint creation | Pro+ | `webhooks/mutations.ts:205` | `ensureProFeature()` |
-| Slack webhook creation | Pro+ | `webhooks/mutations.ts:455` | `ensureProFeature()` |
-| Document sharing (workspace) | Pro+ | `documents/sharing.ts:124-137` | Blocks workspace/specific modes for Free |
-| Template creation | Pro+ | `templates/mutations.ts:30` | `ensureProFeature()` on `saveAsTemplate` |
-| Template usage | All tiers | `templates/mutations.ts:97` | `createFromTemplate` has no tier gate |
-| Audit trail | All tiers | — | No gate needed |
-| Payment field CRUD | All tiers | `payment_fields/mutations.ts` | No gate, correct per pricing |
-| Frontend: API keys UI | Pro+ | `settings/developer/api-keys.tsx:207` | Shows upgrade CTA |
-| Frontend: Webhooks UI | Pro+ | `settings/developer/webhooks.tsx:110` | Shows upgrade CTA |
-| Frontend: Team invites | Pro+ | `settings/team/index.tsx:26` | `isPro` check on invite button |
+| Feature                      | Gate      | Backend File                          | Notes                                    |
+| ---------------------------- | --------- | ------------------------------------- | ---------------------------------------- |
+| API key creation             | Pro+      | `api_keys/actions.ts`                 | Checks `isPro` before Clerk key creation |
+| Webhook endpoint creation    | Pro+      | `webhooks/mutations.ts:205`           | `ensureProFeature()`                     |
+| Slack webhook creation       | Pro+      | `webhooks/mutations.ts:455`           | `ensureProFeature()`                     |
+| Document sharing (workspace) | Pro+      | `documents/sharing.ts:124-137`        | Blocks workspace/specific modes for Free |
+| Template creation            | Pro+      | `templates/mutations.ts:30`           | `ensureProFeature()` on `saveAsTemplate` |
+| Template usage               | All tiers | `templates/mutations.ts:97`           | `createFromTemplate` has no tier gate    |
+| Audit trail                  | All tiers | —                                     | No gate needed                           |
+| Payment field CRUD           | All tiers | `payment_fields/mutations.ts`         | No gate, correct per pricing             |
+| Frontend: API keys UI        | Pro+      | `settings/developer/api-keys.tsx:207` | Shows upgrade CTA                        |
+| Frontend: Webhooks UI        | Pro+      | `settings/developer/webhooks.tsx:110` | Shows upgrade CTA                        |
+| Frontend: Team invites       | Pro+      | `settings/team/index.tsx:26`          | `isPro` check on invite button           |
 
 ### Wrong (Gated incorrectly)
 
@@ -56,9 +57,11 @@
 **Problem:** Free users get payment card rate 4.5% + 30¢ per pricing, but can't access Stripe Connect at all.
 
 **Backend:**
+
 - `stripe/connect_actions.ts`: `createConnectedAccount`, `createAccountLink`, `createConnectOAuthUrl` — admin-only, no explicit tier gate, but frontend blocks access
 
 **Frontend:**
+
 - `settings/payments.tsx:168-192` — Shows "Stripe Connect requires a Pro plan" for non-Pro users
 - `field-toolbar.tsx:329-335` — Payment field button disabled when `!stripeConnected`, which Free users can never satisfy
 
@@ -69,6 +72,7 @@
 #### 2. Enterprise tier not recognized
 
 **Files:**
+
 - `auth/subscription_guards.ts` — `PLAN_LIMITS` only has `free` and `pro` entries. `getSubscriptionPlan()` returns `"free"` for anything that isn't `tier === "pro"`.
 - `stripe/pricing.ts` — `TIER_NAMES` array only contains `["free", "pro"]`
 - `hooks/use-subscription-limits.ts` — Returns `isPro` boolean only, no `isEnterprise`
@@ -78,9 +82,11 @@
 #### 3. Custom branding — no tier gate
 
 **Backend:**
+
 - `organizations/mutations.ts`: `updateBrandingSettings` (~line 1053) and `generateLogoUploadUrl` (~line 1046) only check admin permission, not subscription tier
 
 **Frontend:**
+
 - `settings/branding.tsx:181-451` — Entire page accessible to all users, no plan check
 
 **Fix:** Add `ensureProFeature(ctx.db, userId, "Custom branding")` to both mutations. Add `isPro` check to branding settings page with upgrade CTA.
@@ -88,6 +94,7 @@
 #### 4. Seat limits — no enforcement
 
 **Backend:**
+
 - `organizations/mutations.ts`: `addMember` (~line 446) and `createInvitation` (~line 626) have zero seat count checks
 
 **Fix:** Create `ensureSeatLimit(db, organizationId)` helper in `subscription_guards.ts`. Check current member count against tier limit (Free=1, Pro=20, Enterprise=unlimited). Call from both `addMember` and `createInvitation`.
@@ -95,6 +102,7 @@
 #### 5. MCP server — no tier gate
 
 **Files:**
+
 - `apps/mcp-server/src/index.ts` — Clerk OAuth authentication only, no subscription check
 - Any authenticated user can call any of the 15 MCP tools
 
@@ -105,17 +113,19 @@
 **Problem:** Platform fee rates are hardcoded and don't match the pricing structure.
 
 **Current code** (`stripe/payment_field_actions.ts:36-47`):
+
 ```typescript
 const PLATFORM_FEE_RATES = {
-  free: 0.01,      // 1% — should be 4.5% + 30¢
-  pro: 0.0025,     // 0.25% — should be 4% + 30¢
+  free: 0.01, // 1% — should be 4.5% + 30¢
+  pro: 0.0025, // 0.25% — should be 4% + 30¢
 } as const;
 
 // For subscriptions (line 754, 846):
-const platformFeePercent = isPro ? 0.25 : 1;  // used as application_fee_percent
+const platformFeePercent = isPro ? 0.25 : 1; // used as application_fee_percent
 ```
 
 These rates are wrong per the pricing table and don't account for:
+
 - The fixed 30¢ per transaction component
 - Enterprise custom rates
 - ACH-specific rates (0.8% cap $5)
@@ -125,15 +135,15 @@ These rates are wrong per the pricing table and don't account for:
 
 ```typescript
 type PaymentRates = {
-  cardPercent: number;    // e.g., 0.045 for 4.5%
+  cardPercent: number; // e.g., 0.045 for 4.5%
   cardFixedCents: number; // 30
-  achPercent: number;     // 0.008
-  achCapCents: number;    // 500 ($5)
+  achPercent: number; // 0.008
+  achCapCents: number; // 500 ($5)
 };
 
 // ACH is Stripe passthrough at cost — Seal takes $0. Only card rates matter here.
 type SealFeeRates = {
-  cardPercent: number;    // Seal's margin (e.g., 0.045 = 4.5%)
+  cardPercent: number; // Seal's margin (e.g., 0.045 = 4.5%)
   cardFixedCents: number; // Seal's fixed fee per txn (30)
 };
 
@@ -145,6 +155,7 @@ const TIER_RATES: Record<string, SealFeeRates> = {
 ```
 
 Update all call sites:
+
 - `createOneTimePayment` (line 362): uses `calculatePlatformFee()` → update
 - `createDepositBalancePayment` (line 439): uses `calculatePlatformFee()` → update
 - `createRecurringPayment` (line 754): uses hardcoded `isPro ? 0.25 : 1` → update
@@ -152,6 +163,7 @@ Update all call sites:
 - `createCustomFirstInstallmentInvoice` (line 907): uses `platformFeeCents` param → update caller
 
 **Important:** For subscriptions using `application_fee_percent`, the fixed 30¢ component can't be expressed as a percentage. Options:
+
 1. Switch subscriptions to per-invoice `application_fee_amount` (calculated at invoice creation)
 2. Or approximate: bake the 30¢ into the percentage based on typical transaction size
 3. Or use Stripe's Platform Pricing Tool for subscriptions (handles complex fee structures)
@@ -159,6 +171,7 @@ Update all call sites:
 #### 7. Templates create button on frontend — no gate
 
 **Frontend files:**
+
 - `save-as-template-dialog.tsx` — Dialog component, no tier check
 - `$documentId.tsx:520-531` — "Save as Template" button rendered for all users
 
@@ -167,6 +180,7 @@ Update all call sites:
 #### 8. Landing page pricing — outdated
 
 **File:** `apps/landing/src/components/sections/pricing-block.tsx:22-58`
+
 - Shows "5 documents per month" for Free (should be unlimited)
 - Only 2 tiers (missing Enterprise)
 - Feature lists don't match new pricing
@@ -176,6 +190,7 @@ Update all call sites:
 #### 9. Billing settings page — only shows Free vs Pro
 
 **File:** `settings/billing.tsx:247-352`
+
 - No Enterprise tier display
 - Feature lists don't match new pricing structure
 
@@ -190,6 +205,7 @@ Update all call sites:
 The sandbox was set up under a prior model. The personal/business product split, document limits, storage limits — all irrelevant to the current pricing. Nuke and rebuild.
 
 **Archive in Stripe (don't delete — Stripe won't allow it on used prices):**
+
 - `prod_TqXACZXiyTOQfY` (Free Plan - Personal)
 - `prod_TqXB4AsCg7Wskq` (Free Plan - Business)
 - `prod_TqXCyhPXvoxpZD` (Pro Plan - Personal)
@@ -198,11 +214,11 @@ The sandbox was set up under a prior model. The personal/business product split,
 
 **Created in Stripe (2026-03-16):**
 
-| Product | ID | Metadata | Prices |
-|---------|-----|----------|--------|
-| Seal Free | `prod_UA8jeoy4gTXdbh` | `{ tier: "free" }` | `price_1TBoSdIlmpJUPMjL2HE52QRf` — $0/mo (lookup: `free:monthly:v2`) |
-| Seal Professional | `prod_UA8kjCwPSZCnzr` | `{ tier: "pro" }` | `price_1TBoSuIlmpJUPMjL0AOT54o3` — $19/seat/mo (lookup: `pro:monthly:v2`, 14-day trial), `price_1TBoSuIlmpJUPMjLjYBqRIXJ` — $180/seat/yr (lookup: `pro:yearly:v2`, 14-day trial) |
-| Seal Enterprise | `prod_UA8kC2CUjjy1Ad` | `{ tier: "enterprise" }` | Custom per customer — no public price |
+| Product           | ID                    | Metadata                 | Prices                                                                                                                                                                           |
+| ----------------- | --------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Seal Free         | `prod_UA8jeoy4gTXdbh` | `{ tier: "free" }`       | `price_1TBoSdIlmpJUPMjL2HE52QRf` — $0/mo (lookup: `free:monthly:v2`)                                                                                                             |
+| Seal Professional | `prod_UA8kjCwPSZCnzr` | `{ tier: "pro" }`        | `price_1TBoSuIlmpJUPMjL0AOT54o3` — $19/seat/mo (lookup: `pro:monthly:v2`, 14-day trial), `price_1TBoSuIlmpJUPMjLjYBqRIXJ` — $180/seat/yr (lookup: `pro:yearly:v2`, 14-day trial) |
+| Seal Enterprise   | `prod_UA8kC2CUjjy1Ad` | `{ tier: "enterprise" }` | Custom per customer — no public price                                                                                                                                            |
 
 **Portal config:** `bpc_1TBoT8IlmpJUPMjLH4CkX5oh` — cancel disabled, payment update + invoice history enabled.
 **Env var:** `DEFAULT_PLAN_LOOKUP_KEY=free:monthly:v2` set in dev.
@@ -214,6 +230,7 @@ The sandbox was set up under a prior model. The personal/business product split,
 **14-day trial:** Set `trial_period_days: 14` on Pro prices. New users sign up Free, upgrade to Pro, get 14 days before first charge. If they cancel during trial, they fall back to Free with no charge.
 
 **Migrate subscriptions from user-scoped to org-scoped (CRITICAL):**
+
 1. Add `organizationId: v.id("organizations")` to `schemas/subscriptions.ts`
 2. Add index `by_organization_id` on `["organizationId"]`
 3. Rewrite `getSubscriptionPlan(db, organizationId)` — query by org, not user
@@ -232,6 +249,7 @@ The sandbox was set up under a prior model. The personal/business product split,
 11. Update tests in `auth/__tests__/subscription_guards.test.ts`
 
 **Move `stripeCustomerId` from users to organizations:**
+
 1. Add `stripeCustomerId: v.optional(v.string())` to `schemas/organizations.ts`
 2. Remove `stripeCustomerId` from `schemas/users.ts:35`
 3. Rewrite `getOrCreateStripeCustomer` / `getOrCreateCustomerId` — uses org name + admin email, stores on org record
@@ -242,15 +260,18 @@ The sandbox was set up under a prior model. The personal/business product split,
 8. Cleanup: `stripe/sync_subscriptions.ts`, `sync_external_data.ts`, `stripe/backfill_subscriptions.ts` — rewrite or delete
 
 **Move auto-enrollment from user-level to org-level:**
+
 1. In `clerk_webhooks.ts` `syncOrganization`: after creating org, create Stripe customer + Free subscription ($0/mo, qty 1)
 2. Delete user-level auto-enrollment in `subscription_actions.ts` (`isAutoEnrollEnabled`, `autoEnrollFreeSubscription`)
 3. Delete `backfill_subscriptions.ts` (user-based backfill — no longer relevant)
 
 **Configure Stripe Customer Portal (Dashboard or API):**
+
 1. Disable self-service cancellation (`subscription_cancel: { enabled: false }`)
 2. Keep: update payment method, view invoices, update billing info
 
 **Codebase cleanup (delete dead code):**
+
 1. Remove `useType` ("personal"/"business") from `stripe/pricing.ts` — simplify lookup key to `{tier}:{interval}:v{version}`
 2. Delete `ensureDocumentLimit()` from `subscription_guards.ts` — documents are unlimited
 3. Delete `ensureStorageLimit()` from `subscription_guards.ts` — storage are unlimited
@@ -308,6 +329,7 @@ The sandbox was set up under a prior model. The personal/business product split,
 ## Frontend UX Spec
 
 ### Principle
+
 The product should feel complete at every tier, not like a crippled version begging to upgrade. Gated features are visible but softly locked. No banners, no pop-ups, no repeated CTAs.
 
 ### Shared Component: `<FeatureGate>`
@@ -315,17 +337,23 @@ The product should feel complete at every tier, not like a crippled version begg
 One component used across all gated surfaces. Checks org tier, either renders children or renders a locked overlay.
 
 ```tsx
-<FeatureGate tier="pro" feature="Custom branding" description="Add your logo and colors to signing pages.">
+<FeatureGate
+  tier="pro"
+  feature="Custom branding"
+  description="Add your logo and colors to signing pages."
+>
   <BrandingSettingsForm />
 </FeatureGate>
 ```
 
 **Locked state renders:**
+
 - A card at the top with lock icon, feature name, one-line description, and "Start free trial" button
 - Children render below at `opacity-50 pointer-events-none` — user sees a preview of the feature but can't interact
 - "Start free trial" links to billing page checkout flow
 
 ### Sidebar Navigation
+
 All items visible regardless of tier. Pro-only sections (Branding, API Keys, Webhooks) show a small lock icon next to the label in `text-muted-foreground`. Clicking still navigates to the page — `<FeatureGate>` handles the rest.
 
 ### Gated Settings Pages
@@ -365,9 +393,11 @@ The ONE place with a full tier comparison. Three cards:
 - Cancellation: "Cancel plan" button with multi-step confirmation that validates preconditions (seat count ≤ 1 for downgrade to Free)
 
 ### Dashboard / Home
+
 No upgrade banners. No "you're on Free!" callouts. Dashboard feels like a complete product.
 
 ### One-Time Proactive Prompt
+
 After 7+ days on Free AND 3+ documents created, show a single dismissable notification (toast or inbox-style): "Professional includes templates, custom branding, and API access. Try it free for 14 days." Shown once. Dismissable. Never again. Track dismissal in user metadata.
 
 ### Downgrade States
@@ -395,43 +425,49 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 ## Key Files Reference
 
 ### Backend — Subscription System
-| File | Purpose |
-|------|---------|
-| `auth/subscription_guards.ts` | Plan detection, limits, `ensureProFeature()` |
-| `auth/subscription_helpers.ts` | `checkProFeature` internal query |
-| `stripe/pricing.ts` | Tier names, lookup key parsing |
+
+| File                           | Purpose                                      |
+| ------------------------------ | -------------------------------------------- |
+| `auth/subscription_guards.ts`  | Plan detection, limits, `ensureProFeature()` |
+| `auth/subscription_helpers.ts` | `checkProFeature` internal query             |
+| `stripe/pricing.ts`            | Tier names, lookup key parsing               |
 
 ### Backend — Features Needing Gates
-| File | Functions |
-|------|-----------|
+
+| File                         | Functions                                                                          |
+| ---------------------------- | ---------------------------------------------------------------------------------- |
 | `organizations/mutations.ts` | `updateBrandingSettings`, `generateLogoUploadUrl`, `addMember`, `createInvitation` |
-| `stripe/connect_actions.ts` | `createConnectedAccount`, `createAccountLink` |
+| `stripe/connect_actions.ts`  | `createConnectedAccount`, `createAccountLink`                                      |
 
 ### Frontend — Settings Pages
-| File | Purpose |
-|------|---------|
-| `settings/payments.tsx` | Stripe Connect setup (currently Pro-gated, needs unlocking) |
-| `settings/branding.tsx` | Custom branding (needs Pro gate) |
-| `settings/billing.tsx` | Plan display (needs 3-tier update) |
-| `settings/team/index.tsx` | Team management (needs seat limit display) |
-| `settings/developer/api-keys.tsx` | API keys (correct) |
-| `settings/developer/webhooks.tsx` | Webhooks (correct) |
+
+| File                              | Purpose                                                     |
+| --------------------------------- | ----------------------------------------------------------- |
+| `settings/payments.tsx`           | Stripe Connect setup (currently Pro-gated, needs unlocking) |
+| `settings/branding.tsx`           | Custom branding (needs Pro gate)                            |
+| `settings/billing.tsx`            | Plan display (needs 3-tier update)                          |
+| `settings/team/index.tsx`         | Team management (needs seat limit display)                  |
+| `settings/developer/api-keys.tsx` | API keys (correct)                                          |
+| `settings/developer/webhooks.tsx` | Webhooks (correct)                                          |
 
 ### Frontend — Document Flow
-| File | Purpose |
-|------|---------|
-| `documents/field-toolbar.tsx` | Payment field button (correct once Connect unblocked) |
-| `documents/save-as-template-dialog.tsx` | Template creation (needs Pro gate) |
-| `$documentId.tsx` | "Save as Template" action (needs Pro gate) |
+
+| File                                    | Purpose                                               |
+| --------------------------------------- | ----------------------------------------------------- |
+| `documents/field-toolbar.tsx`           | Payment field button (correct once Connect unblocked) |
+| `documents/save-as-template-dialog.tsx` | Template creation (needs Pro gate)                    |
+| `$documentId.tsx`                       | "Save as Template" action (needs Pro gate)            |
 
 ### Landing Page
-| File | Purpose |
-|------|---------|
+
+| File                                                | Purpose                                     |
+| --------------------------------------------------- | ------------------------------------------- |
 | `landing/src/components/sections/pricing-block.tsx` | Public pricing display (needs full rewrite) |
 
 ### MCP Server
-| File | Purpose |
-|------|---------|
+
+| File                           | Purpose                            |
+| ------------------------------ | ---------------------------------- |
 | `apps/mcp-server/src/index.ts` | Auth middleware (needs tier check) |
 
 ---
@@ -447,6 +483,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Defer PaymentIntent creation to the moment the recipient is ready to pay (after they load the signing page and interact with the payment field). Do NOT create the PaymentIntent when the document is sent.
 
 **Implementation:**
+
 - `getPaymentSecret` action (called when recipient opens payment field): creates the PaymentIntent at this point, using the org's **current** tier to calculate `application_fee_amount`
 - If the org changes tiers between document send and recipient payment, the rate reflects the tier at payment time — this is the correct behavior since the org is paying the current rate for current service
 - If a PaymentIntent already exists for this field (recipient revisiting), reuse it — don't create a new one
@@ -459,6 +496,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Block the downgrade. User must manually remove members until they have 1 seat (the owner) before the system allows downgrade to Free.
 
 **Implementation:** Before processing a subscription cancellation/downgrade:
+
 1. Count active `organization_members` for the org
 2. If count > target tier's seat limit, reject with: "You currently have {n} team members. Free plan supports 1 seat. Please remove {n-1} members before downgrading."
 3. Pending invitations do NOT count toward the limit — they aren't members yet
@@ -468,6 +506,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Free users lose the ability to create new templates. Existing templates they created become read-only — they can view them but cannot use them to create new documents. They can still use templates explicitly shared with them by other orgs (if that feature exists), but their own templates are effectively frozen.
 
 **Implementation:**
+
 - `saveAsTemplate` mutation: already gated by `ensureProFeature()` — correct
 - `createFromTemplate` mutation: add a check — if template was created by the org AND org is on Free tier, block with "Upgrade to Professional to use your templates"
 - Templates page: show templates as read-only with a lock icon and upgrade CTA
@@ -477,6 +516,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Persist branding on already-sent documents (they're immutable snapshots). Strip branding from the org settings so new documents use Seal defaults. Don't delete the saved branding config — just stop applying it. If they upgrade again, their branding comes back.
 
 **Implementation:**
+
 - `updateBrandingSettings`: gated by `ensureProFeature()` (can't modify on Free)
 - Document rendering: branding is already baked into sent documents at send time, so no retroactive change needed
 - Signing page: if org is Free, ignore `brandingSettings` and use Seal defaults
@@ -487,6 +527,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Immediately stop all webhook deliveries and reject all API calls. Keys are not deleted — they're suspended. If the org upgrades again, they resume.
 
 **Implementation:**
+
 - Webhook dispatch: before sending, check org tier. If Free, skip delivery and log as "suspended"
 - API middleware (`resolveApiAuth`): after validating the API key, check org's subscription tier. If Free, return 403 "API access requires a Professional plan"
 - MCP server: same tier check in auth middleware
@@ -500,6 +541,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** All users (Free, Pro, Enterprise) create Stripe Connect accounts under Seal's platform. This is NOT "bring your own Stripe." Users go through Stripe Connect onboarding (KYC, bank account) via Seal's embedded onboarding flow. Their existing Stripe account can potentially be linked as a Standard connected account via OAuth, but the primary flow is creating a new Express/Custom connected account under Seal.
 
 **Implementation:**
+
 - Remove the "requires Pro plan" gate from `settings/payments.tsx`
 - Connect onboarding flow stays the same — just available to all tiers
 - Seal remains the platform account; user is always the connected account
@@ -510,6 +552,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Stored on the organization record in a `customPaymentRates` field. Set manually by Seal team (no self-service UI for enterprise rate configuration).
 
 **Implementation:**
+
 - Add `customPaymentRates?: { cardRate: number, cardFixed: number, achRate: number, achCap: number }` to organization schema
 - `getApplicationFee()` helper checks: if enterprise AND `customPaymentRates` exists, use those. Otherwise fall back to tier defaults.
 - Admin/superadmin mutation to set custom rates (internal tool only)
@@ -555,6 +598,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Subscription belongs to the organization. Stripe customer = organization, not user. `getSubscriptionPlan()` takes `organizationId`.
 
 **Implementation:**
+
 - Add `organizationId` to `subscriptions` schema (or replace `userId`)
 - Create Stripe customer per org, not per user
 - `getSubscriptionPlan(db, organizationId)` replaces `getSubscriptionPlan(db, userId)`
@@ -568,6 +612,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Enforce at the webhook level. If adding this member would exceed the seat limit, mark them as `suspended` instead of `active`.
 
 **Implementation:**
+
 - In `upsertMembershipFromClerk`: before creating/activating membership, count active members for the org
 - If count >= tier max seats, set member status to `suspended` and log a warning
 - After successful membership creation (if within limit), call `syncSeatCount()` action to update Stripe subscription quantity
@@ -580,6 +625,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Gate at both the UI level and the Clerk API level.
 
 **Implementation:**
+
 - Don't expose SSO configuration UI to non-Enterprise orgs (hide the settings section)
 - Use Clerk Backend API to programmatically create Enterprise Connections only for Enterprise-tier orgs
 - If org downgrades from Enterprise: delete the Enterprise Connection via Clerk Backend API, which disables SSO
@@ -593,7 +639,8 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Stripe confirmation (2026-03-16):** ACH rate 0.8% (cap $5) is Stripe's processing fee. Seal takes $0 application fee on ACH transactions.
 
 **Implementation:**
-- Card payments: `application_fee_amount` = tier-based (4.5% or 4%) * amount + 30¢
+
+- Card payments: `application_fee_amount` = tier-based (4.5% or 4%) \* amount + 30¢
 - ACH payments: `application_fee_amount` = 0 (omit entirely)
 - Payment method type must be detected at invoice creation to determine which fee to apply
 - Use `allowedPaymentMethods` on the payment field config to determine if ACH is in play
@@ -602,9 +649,10 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Stripe confirmed (2026-03-16):** Deferred payment flow works — collect payment method first, determine fee, then create PaymentIntent. Application fees cannot be updated after creation, but they CAN be set correctly if you know the payment method type before creating the intent.
 
 **Implementation — two-step approach:**
+
 1. Recipient opens payment field → present payment method selection (card vs ACH)
 2. After recipient selects method → create invoice with correct `application_fee_amount`:
-   - Card: (4.5% or 4%) * amount + 30¢
+   - Card: (4.5% or 4%) \* amount + 30¢
    - ACH: $0 (omit `application_fee_amount`)
 3. This requires splitting the current `getPaymentSecret` flow into: (a) show payment options, (b) create invoice after selection
 
@@ -621,6 +669,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** 7-day grace period with Stripe Smart Retries, then cancel.
 
 **Configuration (Stripe Dashboard → Settings → Billing → Automatic collection):**
+
 - Enable Smart Retries (ML-driven optimal retry timing)
 - Max retry attempts: 4 (within 7 days)
 - After retries exhausted: mark subscription as `canceled`
@@ -628,6 +677,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 - Enable card expiry email (pre-emptive)
 
 **Implementation:**
+
 - `handleSubscriptionUpdated`: when status changes to `past_due`, log warning but continue providing service (grace period)
 - `handleSubscriptionDeleted` (or status → `canceled`): downgrade org to Free, trigger all downgrade enforcement (suspend webhooks/API, freeze templates/branding)
 - Add `pastDue` visual indicator on billing page: "Your payment failed. Please update your payment method within 7 days to keep Professional features."
@@ -638,6 +688,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** When Seal admin changes custom rates for an enterprise org, show a warning listing how many in-flight PaymentIntents exist at the old rate. Rates only apply to new PaymentIntents — existing ones are immutable.
 
 **Implementation:**
+
 - Admin tool: before saving new rates, query `payment_field_configs` with `paymentStatus: "awaiting"` for the org
 - Display: "X payments are in-flight at the current rate. New rates will only apply to future payments."
 - No blocking — admin can still save, it's just informational
@@ -649,6 +700,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Disable self-service cancellation in Stripe Customer Portal. Handle all cancellations through Seal's own UI, where we can validate seat count and other preconditions before processing.
 
 **Implementation:**
+
 - Configure portal via Stripe API: `stripe.billingPortal.configurations.create({ features: { subscription_cancel: { enabled: false } } })`
 - Portal still available for: updating payment method, viewing invoices, updating billing info
 - Cancellation/downgrade flow lives in `settings/billing.tsx` — validates preconditions (seat count ≤ target limit), then calls our backend action which cancels the Stripe subscription
@@ -659,6 +711,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** Kill `users.stripeCustomerId`. Replace with `organizations.stripeCustomerId`. Each org has its own Stripe customer. Users don't need one.
 
 **Cleanup required — files referencing `user.stripeCustomerId`:**
+
 - `schemas/users.ts:35` — remove field
 - `stripe/actions.ts:123,194,262,267` — checkout/portal sessions: use org's customer ID
 - `stripe/subscription_actions.ts:204-205` — `getOrCreateCustomerId`: rewrite for org
@@ -674,6 +727,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** `createCheckoutSession` and `createEmbeddedCheckoutSession` pass `quantity: activeOrgMemberCount` instead of `1`.
 
 **Implementation:**
+
 - Before creating checkout session, count active `organization_members` for the org
 - Pass count as `quantity` in `line_items`
 - Checkout shows `{count} × $19/mo = ${count * 19}/mo`
@@ -683,6 +737,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **Decision:** `handleSubscriptionDeleted` triggers `downgradeOrgSharing({ organizationId })` instead of `downgradeUserSharing({ userId })`.
 
 **Implementation:**
+
 - Rewrite `documents/sharing_cleanup.ts` to accept `organizationId`
 - Only affect documents owned by the org, not the user's personal docs in other orgs
 
@@ -693,6 +748,7 @@ After 7+ days on Free AND 3+ documents created, show a single dismissable notifi
 **However:** No credit card required at Free tier. Card is only collected when user starts the 14-day Pro trial ("Start free trial" → Stripe Checkout with `trial_period_days: 14`). This maximizes Free-tier adoption (no signup friction) while ensuring card is on file before any charges.
 
 **Flow:**
+
 1. Org created → Stripe customer created (no card) → Free subscription ($0/mo, quantity: 1)
 2. User clicks "Start free trial" → Stripe Checkout collects card → Pro subscription with 14-day trial
 3. Trial ends → card charged $19/seat/mo (or $180/seat/year if annual selected)

@@ -89,7 +89,7 @@ All electronic signature platforms must comply with the **ESIGN Act** (Electroni
 
 - [x] Store signed documents for minimum **7 years** (industry standard) — `retainUntil` field set to `completedAt + 7 years` on document completion; deletion blocked during retention period
 - [x] Encrypted storage in Convex database — Convex provides encrypted-at-rest storage
-- [x] Immutable storage (prevent tampering) — `DOCUMENT_IMMUTABLE` guard on `updateDocument`/`updateThumbnail`; signature_fields enforce draft-only; workflow transitions prevent completed→* transitions; retention policy blocks deletion
+- [x] Immutable storage (prevent tampering) — `DOCUMENT_IMMUTABLE` guard on `updateDocument`/`updateThumbnail`; signature_fields enforce draft-only; workflow transitions prevent completed→\* transitions; retention policy blocks deletion
 - [x] Document retrieval system for legal requests — `exportDocumentAuditTrail` query provides comprehensive compliance export
 - [x] Audit trail preserved alongside document — audit logs indexed by `documentId`, retained alongside document
 - [ ] Backup and disaster recovery procedures

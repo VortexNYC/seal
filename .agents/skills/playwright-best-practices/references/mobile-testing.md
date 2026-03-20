@@ -34,8 +34,7 @@ test.use({
   deviceScaleFactor: 3,
   isMobile: true,
   hasTouch: true,
-  userAgent:
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
+  userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
 });
 
 test("custom mobile device", async ({ page }) => {
@@ -112,10 +111,7 @@ test("swipe carousel", async ({ page }) => {
 import { test as base, Page } from "@playwright/test";
 
 type TouchFixtures = {
-  swipe: (
-    element: Locator,
-    direction: "left" | "right" | "up" | "down",
-  ) => Promise<void>;
+  swipe: (element: Locator, direction: "left" | "right" | "up" | "down") => Promise<void>;
 };
 
 export const test = base.extend<TouchFixtures>({

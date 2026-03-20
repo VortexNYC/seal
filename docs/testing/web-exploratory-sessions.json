@@ -195,18 +195,7 @@
           "notes": "Expiration Alert field found with label 'Notify the sender this many days before a document expires', spinbutton default 3, unit 'days before expiry'. Changed to 5, saved (toast: 'Notification settings updated'). Reset to 3 after test."
         }
       ],
-      "executionOrder": [
-        "A1",
-        "A2",
-        "B1",
-        "B2",
-        "C1",
-        "C2",
-        "D1",
-        "D2",
-        "E1",
-        "E2"
-      ],
+      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2", "E1", "E2"],
       "blocks": {
         "A": {
           "name": "Send with Expiration",
@@ -379,16 +368,7 @@
           "notes": "With awaitingDictation=true and redirectUrl='https://acme.com/thanks' on document: DictateNextSignerDialog appeared. Clicked 'I'll do this later' \u2192 dialog closed \u2192 redirect countdown appeared 'You will be redirected to acme.com in 2 seconds...' with Go now/Stay here buttons. Stay here clicked \u2192 stayed at signing URL, no redirect for 6+ seconds. Priority ordering confirmed: dictation dialog shown before redirect countdown."
         }
       ],
-      "executionOrder": [
-        "A1",
-        "A2",
-        "B1",
-        "B2",
-        "C1",
-        "D1",
-        "D2",
-        "D3"
-      ],
+      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "D1", "D2", "D3"],
       "blocks": {
         "A": {
           "name": "Document Settings Panel",
@@ -548,16 +528,7 @@
           "notes": "Access control tested via documents list Actions menu \u2192 Share: dialog shows General access section with Private / Workspace buttons. Default is Private (\"Only you and people you share with can access\"). Clicked Workspace \u2192 description changes to \"Everyone in your workspace can access\" \u2192 clicked Done. Re-opened Share dialog: setting persisted as Workspace. Change is saved immediately via Convex mutation (no explicit Save button, Done just closes). Feature works correctly."
         }
       ],
-      "executionOrder": [
-        "A1",
-        "A2",
-        "B1",
-        "B2",
-        "C1",
-        "D1",
-        "D2",
-        "E1"
-      ],
+      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "D1", "D2", "E1"],
       "blocks": {
         "A": {
           "name": "Audit Log",
@@ -784,18 +755,7 @@
           "notes": "Analytics dashboard loaded with real data: '5 created this week', '3 sent, 0 in progress', '1 completed this month', '1 cancelled/declined'. Eight tabs: Document Activity, Status Breakdown, Recent Activity, Email Engagement, Recipient Timing, Template Performance, Export, Team Members. Date range filters (7 days / 30 days) work correctly \u2014 30 days becomes active on click. Status Breakdown tab shows pie/donut chart: Draft (2), Sent (3), Completed (1), Cancelled (1). Team/Personal toggle present. All data reflects the documents created during this testing round. No empty state shown (data present). No Pro plan gate on analytics."
         }
       ],
-      "executionOrder": [
-        "A1",
-        "A2",
-        "A3",
-        "B1",
-        "B2",
-        "C1",
-        "C2",
-        "D1",
-        "D2",
-        "E1"
-      ],
+      "executionOrder": ["A1", "A2", "A3", "B1", "B2", "C1", "C2", "D1", "D2", "E1"],
       "blocks": {
         "A": {
           "name": "Signing Flow (Recipient)",
@@ -958,14 +918,7 @@
           "notes": null
         }
       ],
-      "executionOrder": [
-        "E1",
-        "E2",
-        "E3",
-        "E4",
-        "E5",
-        "E6"
-      ],
+      "executionOrder": ["E1", "E2", "E3", "E4", "E5", "E6"],
       "blocks": {
         "E": {
           "name": "REST API Endpoints",
@@ -1089,14 +1042,7 @@
           "notes": "At 390x844px (iPhone 14 Pro): no horizontal overflow, all core actions visible, signing page renders correctly in completed state. Consent dialog also has no overflow."
         }
       ],
-      "executionOrder": [
-        "F1",
-        "F2",
-        "F3",
-        "F4",
-        "F5",
-        "F6"
-      ],
+      "executionOrder": ["F1", "F2", "F3", "F4", "F5", "F6"],
       "blocks": {
         "F": {
           "name": "Signing Flow",
@@ -1139,9 +1085,7 @@
           "notes": "Webhook endpoint created: ph798a9mdeen8759m4yxz2rap982933b. Signed document jx725m92ck4ytt0qpj6r05n1s1826hgx via token y56E8iNq29o5gexF9bHteM24RWBbqQO7. Delivery received at webhook.site within ~60s. Event: recipient.signed. HMAC-SHA256 signature verified (v1=fa60f1c5...match:true). Delivery architecture confirmed working: publishWebhookEvent \u2192 webhook_deliveries table \u2192 cron processWebhookDeliveries every 60s \u2192 POST with Seal-Webhooks/1.0 UA and x-seal-signature/timestamp/event-id headers."
         }
       ],
-      "executionOrder": [
-        "G1"
-      ],
+      "executionOrder": ["G1"],
       "blocks": {
         "G": {
           "name": "Webhook Delivery",
@@ -1351,18 +1295,7 @@
           "notes": "Mobile resize (375x812) renders correctly with collapsed sidebar and stacked cards. Rapid navigation between dashboard/documents/contacts/home works cleanly with no console errors and sub-500ms loads. Toast notifications verified (folder creation, document upload, recipient add, AI field apply). 404 handling has issues - see bugs."
         }
       ],
-      "executionOrder": [
-        "A1",
-        "A2",
-        "B1",
-        "B2",
-        "C1",
-        "C2",
-        "D1",
-        "D2",
-        "E1",
-        "E2"
-      ],
+      "executionOrder": ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2", "E1", "E2"],
       "blocks": {
         "A": {
           "name": "Dashboard",
@@ -1488,13 +1421,7 @@
         "notes": "Tested activity inline on document detail rather than separate audit log page. Full audit trail captured for create/add-recipient/sign/view actions."
       }
     ],
-    "executionOrder": [
-      "A1",
-      "A2",
-      "B1",
-      "C1",
-      "D1"
-    ],
+    "executionOrder": ["A1", "A2", "B1", "C1", "D1"],
     "blocks": {
       "A": {
         "name": "Document Creation",
@@ -1623,13 +1550,7 @@
         "notes": "Responsive behavior works. Sidebar transitions from inline to overlay at narrow widths."
       }
     ],
-    "executionOrder": [
-      "A1",
-      "B1",
-      "C1",
-      "D1",
-      "E1"
-    ],
+    "executionOrder": ["A1", "B1", "C1", "D1", "E1"],
     "blocks": {
       "A": {
         "name": "API Keys",
@@ -1769,14 +1690,7 @@
         "notes": "No contrast issues found across any page. Dark mode is well-implemented with proper token usage."
       }
     ],
-    "executionOrder": [
-      "A1",
-      "A2",
-      "B1",
-      "B2",
-      "C1",
-      "D1"
-    ],
+    "executionOrder": ["A1", "A2", "B1", "B2", "C1", "D1"],
     "blocks": {
       "A": {
         "name": "Document Detail",
@@ -1869,12 +1783,7 @@
         "notes": "Clean error handling for non-existent routes. All 3 recovery buttons work."
       }
     ],
-    "executionOrder": [
-      "V1",
-      "V2",
-      "V3",
-      "V4"
-    ],
+    "executionOrder": ["V1", "V2", "V3", "V4"],
     "blocks": {
       "V": {
         "name": "Verification & Coverage Gaps",
@@ -2020,16 +1929,7 @@
         "notes": "DELETE /api/v1/documents and GET /api/v1/nonexistent both return plain text 'No matching routes found' with 404. Not RFC 7807."
       }
     ],
-    "executionOrder": [
-      "H1",
-      "H2",
-      "H3",
-      "H4",
-      "H5",
-      "H6",
-      "H7",
-      "H8"
-    ],
+    "executionOrder": ["H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8"],
     "blocks": {
       "H": {
         "name": "API Error Boundaries",

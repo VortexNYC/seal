@@ -20,11 +20,11 @@ Add stronger recipient authentication methods beyond the current email-token-onl
 
 Three tiers, configurable per-recipient by the sender:
 
-| Method | How It Works | Cost | Use Case |
-|--------|-------------|------|----------|
-| **Email (default)** | Token in signing link — current behavior | Free | Low-risk documents |
-| **SMS verification** | Recipient enters a 6-digit code sent to their phone | ~$0.01/SMS (Twilio) | Medium-risk: employment agreements, NDAs |
-| **ID verification** | Recipient uploads government ID + selfie | ~$1.50/verification (Stripe Identity) | High-risk: real estate, financial, legal |
+| Method               | How It Works                                        | Cost                                  | Use Case                                 |
+| -------------------- | --------------------------------------------------- | ------------------------------------- | ---------------------------------------- |
+| **Email (default)**  | Token in signing link — current behavior            | Free                                  | Low-risk documents                       |
+| **SMS verification** | Recipient enters a 6-digit code sent to their phone | ~$0.01/SMS (Twilio)                   | Medium-risk: employment agreements, NDAs |
+| **ID verification**  | Recipient uploads government ID + selfie            | ~$1.50/verification (Stripe Identity) | High-risk: real estate, financial, legal |
 
 ### User Flow: Sender Side
 
@@ -38,6 +38,7 @@ Three tiers, configurable per-recipient by the sender:
 ### User Flow: Recipient Side
 
 #### SMS Verification
+
 1. Recipient clicks signing link → lands on `/sign/{token}`
 2. Instead of the document, they see an **SMS verification gate**:
    - "A verification code has been sent to •••••4567"
@@ -48,6 +49,7 @@ Three tiers, configurable per-recipient by the sender:
 5. SMS code expires after 10 minutes
 
 #### ID Verification
+
 1. Recipient clicks signing link → lands on `/sign/{token}`
 2. They see a **Stripe Identity verification gate**:
    - "This document requires identity verification before signing"
@@ -101,13 +103,13 @@ sms_verifications:
 
 ```typescript
 // Add to organization schema
-securitySettings: v.optional(v.object({
-  defaultAuthMethod: v.optional(v.union(
-    v.literal("email"),
-    v.literal("sms"),
-    v.literal("id_verification"),
-  )),
-}))
+securitySettings: v.optional(
+  v.object({
+    defaultAuthMethod: v.optional(
+      v.union(v.literal("email"), v.literal("sms"), v.literal("id_verification")),
+    ),
+  }),
+);
 ```
 
 ### Backend Implementation
@@ -144,6 +146,7 @@ Both gates are full-screen with the document header visible but content blurred/
 ### Audit Trail
 
 All authentication events logged to `audit_logs`:
+
 - `recipient.sms_sent` — SMS verification code sent
 - `recipient.sms_verified` — SMS code verified successfully
 - `recipient.sms_failed` — SMS code verification failed
@@ -155,6 +158,7 @@ All authentication events logged to `audit_logs`:
 ### Certificate of Completion
 
 The existing certificate PDF generator should include the authentication method used:
+
 - "Authenticated via: Email link"
 - "Authenticated via: SMS verification to •••••4567"
 - "Authenticated via: Government ID verification (Stripe Identity)"
@@ -165,11 +169,11 @@ No new permissions — controlled by who can add recipients (existing `documents
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Email auth | Yes | Yes |
-| SMS auth | No | Yes |
-| ID verification | No | Yes |
+| Feature         | Free | Pro |
+| --------------- | ---- | --- |
+| Email auth      | Yes  | Yes |
+| SMS auth        | No   | Yes |
+| ID verification | No   | Yes |
 
 SMS and ID verification costs are passed through to the organization (tracked in usage, billed via Stripe).
 
@@ -183,18 +187,18 @@ SMS and ID verification costs are passed through to the organization (tracked in
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/recipients.ts` | Modify — add auth fields |
-| `apps/backend/convex/schemas/sms_verifications.ts` | Create |
-| `apps/backend/convex/schema.ts` | Modify — register new table |
-| `apps/backend/convex/documents/sms_verification.ts` | Create — send/verify actions |
-| `apps/backend/convex/documents/id_verification.ts` | Create — Stripe Identity actions |
-| `apps/backend/convex/schemas/audit_logs.ts` | Modify — add new action types |
-| `apps/backend/convex/documents/certificate_of_completion.ts` | Modify — show auth method |
-| `apps/web/src/routes/sign.$token.tsx` | Modify — add auth gates |
-| `apps/web/src/components/signing/sms-verification-gate.tsx` | Create |
-| `apps/web/src/components/signing/id-verification-gate.tsx` | Create |
-| `apps/web/src/components/documents/add-recipient-dialog.tsx` | Modify — auth method selector |
-| `apps/backend/convex/schemas/organizations.ts` | Modify — add securitySettings |
+| File                                                             | Action                                  |
+| ---------------------------------------------------------------- | --------------------------------------- |
+| `apps/backend/convex/schemas/recipients.ts`                      | Modify — add auth fields                |
+| `apps/backend/convex/schemas/sms_verifications.ts`               | Create                                  |
+| `apps/backend/convex/schema.ts`                                  | Modify — register new table             |
+| `apps/backend/convex/documents/sms_verification.ts`              | Create — send/verify actions            |
+| `apps/backend/convex/documents/id_verification.ts`               | Create — Stripe Identity actions        |
+| `apps/backend/convex/schemas/audit_logs.ts`                      | Modify — add new action types           |
+| `apps/backend/convex/documents/certificate_of_completion.ts`     | Modify — show auth method               |
+| `apps/web/src/routes/sign.$token.tsx`                            | Modify — add auth gates                 |
+| `apps/web/src/components/signing/sms-verification-gate.tsx`      | Create                                  |
+| `apps/web/src/components/signing/id-verification-gate.tsx`       | Create                                  |
+| `apps/web/src/components/documents/add-recipient-dialog.tsx`     | Modify — auth method selector           |
+| `apps/backend/convex/schemas/organizations.ts`                   | Modify — add securitySettings           |
 | `apps/web/src/routes/_authenticated/$slug/settings/security.tsx` | Create or modify — default auth setting |

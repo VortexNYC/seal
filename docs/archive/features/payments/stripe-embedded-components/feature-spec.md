@@ -33,12 +33,12 @@ This document catalogs **every available Stripe embedded component**, maps each 
 
 ### Key Numbers
 
-| Family | Package | Total Components | Relevant to Seal |
-|--------|---------|-----------------|------------------|
-| Connect Embedded Components | `@stripe/react-connect-js` | 35 | ~8 |
-| Stripe Elements | `@stripe/react-stripe-js` | 7 | ~3 |
-| Embedded Checkout | `@stripe/react-stripe-js` | 1 (provider pattern) | 1 |
-| Pricing Table / Buy Button | Web components (no React pkg) | 2 | 1 |
+| Family                      | Package                       | Total Components     | Relevant to Seal |
+| --------------------------- | ----------------------------- | -------------------- | ---------------- |
+| Connect Embedded Components | `@stripe/react-connect-js`    | 35                   | ~8               |
+| Stripe Elements             | `@stripe/react-stripe-js`     | 7                    | ~3               |
+| Embedded Checkout           | `@stripe/react-stripe-js`     | 1 (provider pattern) | 1                |
+| Pricing Table / Buy Button  | Web components (no React pkg) | 2                    | 1                |
 
 ---
 
@@ -51,6 +51,7 @@ All open questions have been resolved. These are the finalized architectural dec
 **Decision**: Signers complete their signature FIRST, then pay inline immediately after.
 
 **Flow**:
+
 1. Signer opens document, fills all fields, submits signature
 2. If payment fields exist → document status becomes **"Waiting for payment"**
 3. Inline `<PaymentElement />` appears immediately after signature submission
@@ -59,6 +60,7 @@ All open questions have been resolved. These are the finalized architectural dec
 6. If signer closes before paying → status stays "Waiting for payment", they can return via their signing link to complete payment
 
 **Rationale** (informed by [PandaDoc competitor analysis](#competitor-analysis-pandadoc)):
+
 - **Lower friction at the critical moment** — the signature is the hardest psychological step. Adding a payment wall before it increases drop-off.
 - **Legal enforceability** — a signed document creates legal obligation to pay. If they sign but don't pay, you have a signed contract to enforce. If they don't sign at all (because they bounced at the payment wall), you have nothing.
 - **Higher conversion** — get the signature first while intent is high, then collect payment immediately after while they're still engaged.
@@ -69,6 +71,7 @@ All open questions have been resolved. These are the finalized architectural dec
 **Decision**: Keep the entire invoice-based payment architecture. Only add ~3 lines of code to expose the invoice's underlying PaymentIntent `client_secret` to the frontend.
 
 **What does NOT change** (zero modifications):
+
 - Invoice creation logic — all 4 payment types (one_time, recurring, installments, deposit_balance) stay exactly as-is
 - Line item creation — stays as-is
 - Recurring subscriptions via `stripe.subscriptions.create()` — stays as-is
@@ -127,6 +130,7 @@ No embedded replacement exists from Stripe. Not worth building custom subscripti
 **Decision**: Add `waiting_for_payment` as an explicit status in `documentWorkflowStatusTuple`.
 
 **Updated state machine**:
+
 ```
 draft → sent → in_progress → waiting_for_payment → completed
                     ↓
@@ -142,6 +146,7 @@ A document enters `waiting_for_payment` when all signatures are collected but pa
 **Decision**: Payment is gated behind **all parties signing**. One designated payer per document.
 
 **Flow with multiple signers** (informed by [PandaDoc](#competitor-analysis-pandadoc)):
+
 1. Signer A signs → document stays `in_progress`
 2. Signer B signs → document stays `in_progress`
 3. Signer C (who has the payment field) signs → all signatures complete → document enters `waiting_for_payment`
@@ -149,6 +154,7 @@ A document enters `waiting_for_payment` when all signatures are collected but pa
 5. Payment confirmed → document status → `completed`
 
 **Why all-sign-then-pay** (not pay-on-individual-sign):
+
 - PandaDoc requires all parties to sign before payment is available — proven pattern
 - Legally stronger: all parties have agreed to the terms before money changes hands
 - Avoids the edge case of "paid but another party declined to sign" (would require refund)
@@ -161,14 +167,15 @@ A document enters `waiting_for_payment` when all signatures are collected but pa
 
 **Vision**: A contract is like a project. The document detail page shows everything — signatures, fields, AND all financial data in one clean view:
 
-| Section | What It Shows |
-|---------|---------------|
-| **Payment Status** | Current status badge: Unpaid / Waiting / Paid / Overdue / Partial |
-| **Invoices** | All Stripe invoices linked to this document (one-time, deposit, balance, recurring) with status, amount, date |
-| **Payment Timeline** | Chronological feed: "Invoice created → Payment attempted → Payment succeeded" |
-| **Upcoming Payments** | For recurring/installments: next invoice date, remaining installments |
+| Section               | What It Shows                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Payment Status**    | Current status badge: Unpaid / Waiting / Paid / Overdue / Partial                                             |
+| **Invoices**          | All Stripe invoices linked to this document (one-time, deposit, balance, recurring) with status, amount, date |
+| **Payment Timeline**  | Chronological feed: "Invoice created → Payment attempted → Payment succeeded"                                 |
+| **Upcoming Payments** | For recurring/installments: next invoice date, remaining installments                                         |
 
 This data comes from two sources:
+
 - **Convex** (`payment_field_configs` table) — stores Stripe invoice IDs, payment status, amounts
 - **Stripe** (via API or webhooks) — real-time invoice/payment status synced via existing webhook handlers
 
@@ -178,16 +185,16 @@ This data comes from two sources:
 
 ### Decision Summary
 
-| Question | Decision | Key Rationale |
-|----------|----------|---------------|
-| Payment timing | **Sign-then-pay** | Lower friction, higher conversion, legal standing from signature |
-| Invoice vs PaymentIntent | **Keep invoices**, expose `client_secret` | Zero rewrite, ~3 lines of new backend code |
-| Pricing UI | **Keep custom cards** + Embedded Checkout | Current design is strong, just replace the redirect step |
-| Customer Portal | **Keep redirect** | No embedded replacement exists |
-| Standard account compat | **Confirmed** — all account types supported | [See details](#standard-account-compatibility) |
-| Workflow status | **Add `waiting_for_payment`** | Explicit status for signed-but-unpaid documents |
-| Multi-party payment timing | **All-sign-then-pay** | All sign first, then payer pays (PandaDoc model) |
-| Financial data display | **Document as financial hub** | Document detail page shows all invoices, payments, timeline |
+| Question                   | Decision                                    | Key Rationale                                                    |
+| -------------------------- | ------------------------------------------- | ---------------------------------------------------------------- |
+| Payment timing             | **Sign-then-pay**                           | Lower friction, higher conversion, legal standing from signature |
+| Invoice vs PaymentIntent   | **Keep invoices**, expose `client_secret`   | Zero rewrite, ~3 lines of new backend code                       |
+| Pricing UI                 | **Keep custom cards** + Embedded Checkout   | Current design is strong, just replace the redirect step         |
+| Customer Portal            | **Keep redirect**                           | No embedded replacement exists                                   |
+| Standard account compat    | **Confirmed** — all account types supported | [See details](#standard-account-compatibility)                   |
+| Workflow status            | **Add `waiting_for_payment`**               | Explicit status for signed-but-unpaid documents                  |
+| Multi-party payment timing | **All-sign-then-pay**                       | All sign first, then payer pays (PandaDoc model)                 |
+| Financial data display     | **Document as financial hub**               | Document detail page shows all invoices, payments, timeline      |
 
 ---
 
@@ -207,25 +214,25 @@ PandaDoc is the leading e-signature competitor when it comes to integrated payme
 
 ### Key Design Choices
 
-| Aspect | PandaDoc Approach |
-|--------|-------------------|
-| **Payment timing** | After ALL parties sign and finalize — payment gated behind signature completion |
-| **Payment UI** | Embedded inline within the document viewer (no redirect for card/ACH; PayPal redirects to PayPal auth) |
+| Aspect              | PandaDoc Approach                                                                                              |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Payment timing**  | After ALL parties sign and finalize — payment gated behind signature completion                                |
+| **Payment UI**      | Embedded inline within the document viewer (no redirect for card/ACH; PayPal redirects to PayPal auth)         |
 | **Payment methods** | Credit card, ACH/bank transfer, PayPal, digital wallets, Klarna, SEPA (all methods enabled in Stripe settings) |
-| **Gating** | All parties must sign before payment becomes available |
-| **Platform fee** | $0 PandaDoc fee (Stripe processing fee still applies) |
-| **Limitations** | Minimum charge $0.50; one Stripe account per workspace |
-| **NOT supported** | Real-time payments, cash vouchers, bank transfers (push), BNPL |
+| **Gating**          | All parties must sign before payment becomes available                                                         |
+| **Platform fee**    | $0 PandaDoc fee (Stripe processing fee still applies)                                                          |
+| **Limitations**     | Minimum charge $0.50; one Stripe account per workspace                                                         |
+| **NOT supported**   | Real-time payments, cash vouchers, bank transfers (push), BNPL                                                 |
 
 ### How Seal Will Differ from PandaDoc
 
-| Aspect | PandaDoc | Seal |
-|--------|----------|------|
-| Payment types | One-time, recurring | One-time, recurring, installments, deposit + balance |
-| Payment architecture | Stripe Checkout (likely) | Invoice-based with PaymentElement (more control) |
-| Platform fees | $0 | 1% free / 0.25% Pro (configurable absorb/pass-through) |
-| Fee handling | Fixed | Sender chooses: absorb or pass to recipient |
-| Multi-account | One Stripe per workspace | One Stripe Connect account per org |
+| Aspect               | PandaDoc                 | Seal                                                   |
+| -------------------- | ------------------------ | ------------------------------------------------------ |
+| Payment types        | One-time, recurring      | One-time, recurring, installments, deposit + balance   |
+| Payment architecture | Stripe Checkout (likely) | Invoice-based with PaymentElement (more control)       |
+| Platform fees        | $0                       | 1% free / 0.25% Pro (configurable absorb/pass-through) |
+| Fee handling         | Fixed                    | Sender chooses: absorb or pass to recipient            |
+| Multi-account        | One Stripe per workspace | One Stripe Connect account per org                     |
 
 ### Sources
 
@@ -240,33 +247,33 @@ PandaDoc is the leading e-signature competitor when it comes to integrated payme
 
 ### Backend Actions (`apps/backend/convex/stripe/`)
 
-| File | Action | What It Does | Redirect? |
-|------|--------|-------------|-----------|
-| `actions.ts` | `createCheckoutSession` | Creates `stripe.checkout.sessions.create()`, returns URL | **Yes** — redirects to Stripe Checkout |
-| `actions.ts` | `createCustomerPortalSession` | Creates `stripe.billingPortal.sessions.create()`, returns URL | **Yes** — redirects to Stripe Portal |
-| `connect_actions.ts` | `createConnectedAccount` | Creates Standard Connect account via `stripe.accounts.create()` | No (API only) |
-| `connect_actions.ts` | `createAccountLink` | Creates `stripe.accountLinks.create()` for hosted onboarding | **Yes** — redirects to Stripe onboarding |
-| `connect_actions.ts` | `createConnectOAuthUrl` | Generates OAuth authorize URL | **Yes** — redirects to Stripe OAuth |
-| `connect_actions.ts` | `exchangeConnectOAuthCode` | Handles OAuth code exchange | No (API only) |
-| `connect_actions.ts` | `refreshConnectedAccount` | Refreshes account status from Stripe | No (API only) |
-| `payment_field_actions.ts` | Various | Creates invoices/subscriptions for payment fields | **Yes** — hosted invoice URLs in email |
+| File                       | Action                        | What It Does                                                    | Redirect?                                |
+| -------------------------- | ----------------------------- | --------------------------------------------------------------- | ---------------------------------------- |
+| `actions.ts`               | `createCheckoutSession`       | Creates `stripe.checkout.sessions.create()`, returns URL        | **Yes** — redirects to Stripe Checkout   |
+| `actions.ts`               | `createCustomerPortalSession` | Creates `stripe.billingPortal.sessions.create()`, returns URL   | **Yes** — redirects to Stripe Portal     |
+| `connect_actions.ts`       | `createConnectedAccount`      | Creates Standard Connect account via `stripe.accounts.create()` | No (API only)                            |
+| `connect_actions.ts`       | `createAccountLink`           | Creates `stripe.accountLinks.create()` for hosted onboarding    | **Yes** — redirects to Stripe onboarding |
+| `connect_actions.ts`       | `createConnectOAuthUrl`       | Generates OAuth authorize URL                                   | **Yes** — redirects to Stripe OAuth      |
+| `connect_actions.ts`       | `exchangeConnectOAuthCode`    | Handles OAuth code exchange                                     | No (API only)                            |
+| `connect_actions.ts`       | `refreshConnectedAccount`     | Refreshes account status from Stripe                            | No (API only)                            |
+| `payment_field_actions.ts` | Various                       | Creates invoices/subscriptions for payment fields               | **Yes** — hosted invoice URLs in email   |
 
 ### Frontend Pages
 
-| File | Page | Current UX |
-|------|------|-----------|
-| `settings/billing.tsx` | Subscription billing | Custom pricing cards → redirect to Stripe Checkout; "Manage" → redirect to Customer Portal |
-| `settings/payments.tsx` | Stripe Connect onboarding | Status display → redirect to Account Link for onboarding; OAuth flow for connection |
-| Signing page | Payment collection | Recipient clicks hosted invoice URL in email → Stripe-hosted payment page |
+| File                    | Page                      | Current UX                                                                                 |
+| ----------------------- | ------------------------- | ------------------------------------------------------------------------------------------ |
+| `settings/billing.tsx`  | Subscription billing      | Custom pricing cards → redirect to Stripe Checkout; "Manage" → redirect to Customer Portal |
+| `settings/payments.tsx` | Stripe Connect onboarding | Status display → redirect to Account Link for onboarding; OAuth flow for connection        |
+| Signing page            | Payment collection        | Recipient clicks hosted invoice URL in email → Stripe-hosted payment page                  |
 
 ### Webhook Handlers
 
-| Event | Handler |
-|-------|---------|
-| `checkout.session.completed` | Activates subscription |
+| Event                                     | Handler                      |
+| ----------------------------------------- | ---------------------------- |
+| `checkout.session.completed`              | Activates subscription       |
 | `invoice.paid` / `invoice.payment_failed` | Updates payment field status |
-| `customer.subscription.updated/deleted` | Syncs subscription state |
-| `account.updated` | Syncs Connect account status |
+| `customer.subscription.updated/deleted`   | Syncs subscription state     |
+| `account.updated`                         | Syncs Connect account status |
 
 ---
 
@@ -311,72 +318,72 @@ const stripeConnect = loadConnectAndInitialize({
 
 ##### Onboarding & Compliance (3 components)
 
-| Component | React Element | Status | Description |
-|-----------|--------------|--------|-------------|
-| **Account Onboarding** | `<ConnectAccountOnboarding />` | GA | Full onboarding flow — replaces Account Links redirect. Collects identity, business info, banking. |
-| **Account Management** | `<ConnectAccountManagement />` | GA | Post-onboarding account settings — update business info, banking, identity. |
-| **Notification Banner** | `<ConnectNotificationBanner />` | GA | Shows actionable alerts (e.g., "verification required") with inline resolution. |
+| Component               | React Element                   | Status | Description                                                                                        |
+| ----------------------- | ------------------------------- | ------ | -------------------------------------------------------------------------------------------------- |
+| **Account Onboarding**  | `<ConnectAccountOnboarding />`  | GA     | Full onboarding flow — replaces Account Links redirect. Collects identity, business info, banking. |
+| **Account Management**  | `<ConnectAccountManagement />`  | GA     | Post-onboarding account settings — update business info, banking, identity.                        |
+| **Notification Banner** | `<ConnectNotificationBanner />` | GA     | Shows actionable alerts (e.g., "verification required") with inline resolution.                    |
 
 ##### Payments (5 components)
 
-| Component | React Element | Status | Description |
-|-----------|--------------|--------|-------------|
-| **Payments** | `<ConnectPayments />` | GA | Payments list/table for a connected account. |
-| **Payment Details** | `<ConnectPaymentDetails />` | GA | Detail view of a single payment — timeline, refund actions. |
-| **Disputes for a Payment** | `<ConnectDisputesForPayment />` | GA | Disputes associated with a specific payment. |
-| **Disputes List** | `<ConnectDisputesList />` | GA | All disputes for the connected account. |
-| **Payment Method Settings** | `<ConnectPaymentMethodSettings />` | Preview | Configure accepted payment methods. |
+| Component                   | React Element                      | Status  | Description                                                 |
+| --------------------------- | ---------------------------------- | ------- | ----------------------------------------------------------- |
+| **Payments**                | `<ConnectPayments />`              | GA      | Payments list/table for a connected account.                |
+| **Payment Details**         | `<ConnectPaymentDetails />`        | GA      | Detail view of a single payment — timeline, refund actions. |
+| **Disputes for a Payment**  | `<ConnectDisputesForPayment />`    | GA      | Disputes associated with a specific payment.                |
+| **Disputes List**           | `<ConnectDisputesList />`          | GA      | All disputes for the connected account.                     |
+| **Payment Method Settings** | `<ConnectPaymentMethodSettings />` | Preview | Configure accepted payment methods.                         |
 
 ##### Payouts (5 components)
 
-| Component | React Element | Status | Description |
-|-----------|--------------|--------|-------------|
-| **Payouts** | `<ConnectPayouts />` | GA | Payouts overview — balance + recent payouts. |
-| **Balances** | `<ConnectBalances />` | GA | Account balance breakdown (available, pending). |
-| **Payouts List** | `<ConnectPayoutsList />` | GA | Full payout history table. |
-| **Payout Details** | `<ConnectPayoutDetails />` | GA | Detail view of a single payout with transaction list. |
-| **Instant Payouts Promotion** | `<ConnectInstantPayoutsPromotion />` | GA | CTA to enable instant payouts if eligible. |
+| Component                     | React Element                        | Status | Description                                           |
+| ----------------------------- | ------------------------------------ | ------ | ----------------------------------------------------- |
+| **Payouts**                   | `<ConnectPayouts />`                 | GA     | Payouts overview — balance + recent payouts.          |
+| **Balances**                  | `<ConnectBalances />`                | GA     | Account balance breakdown (available, pending).       |
+| **Payouts List**              | `<ConnectPayoutsList />`             | GA     | Full payout history table.                            |
+| **Payout Details**            | `<ConnectPayoutDetails />`           | GA     | Detail view of a single payout with transaction list. |
+| **Instant Payouts Promotion** | `<ConnectInstantPayoutsPromotion />` | GA     | CTA to enable instant payouts if eligible.            |
 
 ##### Capital (3 components)
 
-| Component | React Element | Status | Description |
-|-----------|--------------|--------|-------------|
-| **Capital Financing Application** | `<ConnectCapitalFinancingApplication />` | Preview | Apply for Stripe Capital financing. |
-| **Capital Financing Promotion** | `<ConnectCapitalFinancingPromotion />` | Preview | Promotional banner for Capital offers. |
-| **Capital Financing** | `<ConnectCapitalFinancing />` | Preview | Overview of active Capital financing. |
+| Component                         | React Element                            | Status  | Description                            |
+| --------------------------------- | ---------------------------------------- | ------- | -------------------------------------- |
+| **Capital Financing Application** | `<ConnectCapitalFinancingApplication />` | Preview | Apply for Stripe Capital financing.    |
+| **Capital Financing Promotion**   | `<ConnectCapitalFinancingPromotion />`   | Preview | Promotional banner for Capital offers. |
+| **Capital Financing**             | `<ConnectCapitalFinancing />`            | Preview | Overview of active Capital financing.  |
 
 ##### Tax (5 components)
 
-| Component | React Element | Status | Description |
-|-----------|--------------|--------|-------------|
-| **Tax Registrations** | `<ConnectTaxRegistrations />` | GA | Manage tax registrations by jurisdiction. |
-| **Tax Settings** | `<ConnectTaxSettings />` | GA | Configure tax calculation settings. |
-| **Export Tax Transactions** | `<ConnectExportTaxTransactions />` | Preview | Export tax transaction data. |
-| **Tax Threshold Monitoring** | `<ConnectTaxThresholdMonitoring />` | Preview | Monitor tax thresholds by region. |
-| **Product Tax Code Selector** | `<ConnectProductTaxCodeSelector />` | Preview | Select tax codes for products. |
+| Component                     | React Element                       | Status  | Description                               |
+| ----------------------------- | ----------------------------------- | ------- | ----------------------------------------- |
+| **Tax Registrations**         | `<ConnectTaxRegistrations />`       | GA      | Manage tax registrations by jurisdiction. |
+| **Tax Settings**              | `<ConnectTaxSettings />`            | GA      | Configure tax calculation settings.       |
+| **Export Tax Transactions**   | `<ConnectExportTaxTransactions />`  | Preview | Export tax transaction data.              |
+| **Tax Threshold Monitoring**  | `<ConnectTaxThresholdMonitoring />` | Preview | Monitor tax thresholds by region.         |
+| **Product Tax Code Selector** | `<ConnectProductTaxCodeSelector />` | Preview | Select tax codes for products.            |
 
 ##### Financial Services (4 components)
 
-| Component | React Element | Status | Description |
-|-----------|--------------|--------|-------------|
-| **Financial Account** | `<ConnectFinancialAccount />` | GA | Treasury financial account overview. |
-| **Financial Account Transactions** | `<ConnectFinancialAccountTransactions />` | GA | Transaction history for financial account. |
-| **Issuing Card** | `<ConnectIssuingCard />` | GA | Display/manage a single issued card. |
-| **Issuing Cards List** | `<ConnectIssuingCardsList />` | GA | List all issued cards. |
+| Component                          | React Element                             | Status | Description                                |
+| ---------------------------------- | ----------------------------------------- | ------ | ------------------------------------------ |
+| **Financial Account**              | `<ConnectFinancialAccount />`             | GA     | Treasury financial account overview.       |
+| **Financial Account Transactions** | `<ConnectFinancialAccountTransactions />` | GA     | Transaction history for financial account. |
+| **Issuing Card**                   | `<ConnectIssuingCard />`                  | GA     | Display/manage a single issued card.       |
+| **Issuing Cards List**             | `<ConnectIssuingCardsList />`             | GA     | List all issued cards.                     |
 
 ##### Reporting (2 components)
 
-| Component | React Element | Status | Description |
-|-----------|--------------|--------|-------------|
-| **Documents** | `<ConnectDocuments />` | GA | Tax documents, 1099s, account statements. |
-| **Reporting Chart** | `<ConnectReportingChart />` | Preview | Embedded analytics/reporting charts. |
+| Component           | React Element               | Status  | Description                               |
+| ------------------- | --------------------------- | ------- | ----------------------------------------- |
+| **Documents**       | `<ConnectDocuments />`      | GA      | Tax documents, 1099s, account statements. |
+| **Reporting Chart** | `<ConnectReportingChart />` | Preview | Embedded analytics/reporting charts.      |
 
 ##### Apps (2 components)
 
-| Component | React Element | Status | Description |
-|-----------|--------------|--------|-------------|
-| **App Install** | `<ConnectAppInstall />` | Preview | Install Stripe Apps into a connected account. |
-| **App Viewport** | `<ConnectAppViewport />` | Preview | Render a Stripe App within your platform UI. |
+| Component        | React Element            | Status  | Description                                   |
+| ---------------- | ------------------------ | ------- | --------------------------------------------- |
+| **App Install**  | `<ConnectAppInstall />`  | Preview | Install Stripe Apps into a connected account. |
+| **App Viewport** | `<ConnectAppViewport />` | Preview | Render a Stripe App within your platform UI.  |
 
 ---
 
@@ -400,15 +407,15 @@ const stripePromise = loadStripe("pk_...");
 
 #### Complete Elements Catalog
 
-| Element | React Component | Description | Use Case |
-|---------|----------------|-------------|----------|
-| **Payment Element** | `<PaymentElement />` | Unified payment method selector — cards, wallets, bank transfers, BNPL. Auto-adapts to customer location. | **Primary** — replaces hosted invoice for payment collection |
-| **Express Checkout Element** | `<ExpressCheckoutElement />` | One-click checkout buttons — Apple Pay, Google Pay, Link. | Fast payment for returning users |
-| **Link Authentication Element** | `<LinkAuthenticationElement />` | Email input that auto-detects Stripe Link users for 1-click pay. | Pre-auth for payment flows |
-| **Address Element** | `<AddressElement />` | Smart address form with autocomplete, validation, formatting per country. | Billing/shipping address collection |
-| **Payment Method Messaging Element** | `<PaymentMethodMessagingElement />` | "Pay in 4 with Afterpay" or "Pay with Klarna" messaging banners. | BNPL promotion on pricing pages |
-| **Currency Selector Element** | `<CurrencySelectorElement />` | Currency picker for multi-currency payments. | International payment flows |
-| **Tax ID Element** | `<TaxIdElement />` | Tax ID input with country-specific formatting/validation. | B2B invoicing |
+| Element                              | React Component                     | Description                                                                                               | Use Case                                                     |
+| ------------------------------------ | ----------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **Payment Element**                  | `<PaymentElement />`                | Unified payment method selector — cards, wallets, bank transfers, BNPL. Auto-adapts to customer location. | **Primary** — replaces hosted invoice for payment collection |
+| **Express Checkout Element**         | `<ExpressCheckoutElement />`        | One-click checkout buttons — Apple Pay, Google Pay, Link.                                                 | Fast payment for returning users                             |
+| **Link Authentication Element**      | `<LinkAuthenticationElement />`     | Email input that auto-detects Stripe Link users for 1-click pay.                                          | Pre-auth for payment flows                                   |
+| **Address Element**                  | `<AddressElement />`                | Smart address form with autocomplete, validation, formatting per country.                                 | Billing/shipping address collection                          |
+| **Payment Method Messaging Element** | `<PaymentMethodMessagingElement />` | "Pay in 4 with Afterpay" or "Pay with Klarna" messaging banners.                                          | BNPL promotion on pricing pages                              |
+| **Currency Selector Element**        | `<CurrencySelectorElement />`       | Currency picker for multi-currency payments.                                                              | International payment flows                                  |
+| **Tax ID Element**                   | `<TaxIdElement />`                  | Tax ID input with country-specific formatting/validation.                                                 | B2B invoicing                                                |
 
 ---
 
@@ -456,18 +463,15 @@ import { CheckoutProvider, useCheckout } from "@stripe/react-stripe-js/checkout"
 
 <!-- Buy Button -->
 <script async src="https://js.stripe.com/v3/buy-button.js"></script>
-<stripe-buy-button
-  buy-button-id="buy_btn_..."
-  publishable-key="pk_..."
-/>
+<stripe-buy-button buy-button-id="buy_btn_..." publishable-key="pk_..." />
 ```
 
 **Important limitation**: Pricing Table does **NOT** support Stripe Connect (cannot attribute to connected accounts). It only works for direct charges on the platform account.
 
-| Component | Type | Description | Connect Support |
-|-----------|------|-------------|----------------|
-| **Pricing Table** | Web component | No-code pricing display with built-in checkout | **No** |
-| **Buy Button** | Web component | Single-product purchase button | **No** |
+| Component         | Type          | Description                                    | Connect Support |
+| ----------------- | ------------- | ---------------------------------------------- | --------------- |
+| **Pricing Table** | Web component | No-code pricing display with built-in checkout | **No**          |
+| **Buy Button**    | Web component | Single-product purchase button                 | **No**          |
 
 ---
 
@@ -477,18 +481,20 @@ This section maps each current redirect-based flow to its embedded component rep
 
 ### Map 1: Connect Onboarding (settings/payments.tsx)
 
-| Current Flow | Embedded Replacement |
-|-------------|---------------------|
-| `createAccountLink` → redirect to Stripe-hosted onboarding | `<ConnectAccountOnboarding />` — inline onboarding |
-| `createConnectOAuthUrl` → redirect to OAuth | Can be replaced entirely by Account Onboarding component |
-| Custom status display + "Continue Setup" button | `<ConnectNotificationBanner />` — auto-shows pending requirements |
-| No post-onboarding account management | `<ConnectAccountManagement />` — inline account settings |
+| Current Flow                                               | Embedded Replacement                                              |
+| ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| `createAccountLink` → redirect to Stripe-hosted onboarding | `<ConnectAccountOnboarding />` — inline onboarding                |
+| `createConnectOAuthUrl` → redirect to OAuth                | Can be replaced entirely by Account Onboarding component          |
+| Custom status display + "Continue Setup" button            | `<ConnectNotificationBanner />` — auto-shows pending requirements |
+| No post-onboarding account management                      | `<ConnectAccountManagement />` — inline account settings          |
 
 **Backend changes needed**:
+
 - New action: `createAccountSession` in `connect_actions.ts` — calls `stripe.accountSessions.create()` with enabled components
 - Keep existing actions for fallback/migration
 
 **Frontend changes needed**:
+
 - Install `@stripe/connect-js` + `@stripe/react-connect-js`
 - Refactor `payments.tsx` to use `ConnectComponentsProvider`
 - Replace redirect flow with `<ConnectAccountOnboarding />`
@@ -496,6 +502,7 @@ This section maps each current redirect-based flow to its embedded component rep
 - Add `<ConnectAccountManagement />` for post-onboarding settings
 
 **Files affected**:
+
 - `apps/backend/convex/stripe/connect_actions.ts` — add `createAccountSession`
 - `apps/web/src/routes/_authenticated/$slug/settings/payments.tsx` — full refactor
 - `apps/web/package.json` — add `@stripe/connect-js`, `@stripe/react-connect-js`
@@ -504,22 +511,25 @@ This section maps each current redirect-based flow to its embedded component rep
 
 **Decision**: Keep custom pricing cards + Embedded Checkout. Customer Portal stays redirect-based.
 
-| Current Flow | Embedded Replacement |
-|-------------|---------------------|
+| Current Flow                                                                 | Embedded Replacement                                                      |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Custom pricing cards → `createCheckoutSession` → redirect to Stripe Checkout | Keep custom cards → Embedded Checkout with `ui_mode: "embedded"` (inline) |
-| "Manage Subscription" → `createCustomerPortalSession` → redirect to Portal | **No change** — Customer Portal stays redirect-based |
+| "Manage Subscription" → `createCustomerPortalSession` → redirect to Portal   | **No change** — Customer Portal stays redirect-based                      |
 
 **Backend changes needed**:
+
 - New action `createEmbeddedCheckoutSession` in `actions.ts` — same as current `createCheckoutSession` but with `ui_mode: "embedded"` and returns `client_secret` instead of URL
 - Keep existing `createCheckoutSession` as-is (for any other checkout needs)
 
 **Frontend changes needed**:
+
 - Install `@stripe/stripe-js` + `@stripe/react-stripe-js`
 - When user clicks "Upgrade to Pro", set `checkoutClientSecret` state instead of redirecting
 - Conditionally render `<CheckoutProvider>` with inline checkout (dialog or expanded section)
 - Handle return flow (session status check via `return_url`)
 
 **Files affected**:
+
 - `apps/backend/convex/stripe/actions.ts` — add `createEmbeddedCheckoutSession`
 - `apps/web/src/routes/_authenticated/$slug/settings/billing.tsx` — replace redirect with inline checkout
 - `apps/web/package.json` — add `@stripe/stripe-js`, `@stripe/react-stripe-js`
@@ -528,18 +538,20 @@ This section maps each current redirect-based flow to its embedded component rep
 
 **Decision**: Sign-then-pay flow. Keep invoices, expose `client_secret` for inline `<PaymentElement />`.
 
-| Current Flow | Embedded Replacement |
-|-------------|---------------------|
+| Current Flow                                                                              | Embedded Replacement                                                                   |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Backend creates Stripe invoice → `hosted_invoice_url` in email → recipient pays on Stripe | Invoice stays. Also return `client_secret` → `<PaymentElement />` inline after signing |
-| Recipient leaves Seal entirely to pay | Signer signs first → inline payment appears → pays without leaving |
+| Recipient leaves Seal entirely to pay                                                     | Signer signs first → inline payment appears → pays without leaving                     |
 
 **This is the highest-impact change** — recipients currently leave Seal to pay. The sign-then-pay flow with inline PaymentElement:
+
 - Eliminates the redirect to Stripe's hosted invoice page
 - Captures payment while intent is highest (immediately after signing)
 - Keeps the entire signing + payment experience in-app
 - Falls back to hosted invoice URL in email for signers who close before paying
 
 **Backend changes needed** (~3 lines per payment type function):
+
 - After `stripe.invoices.finalizeInvoice()`, retrieve the invoice's underlying PaymentIntent
 - Return `paymentIntent.client_secret` alongside existing `hosted_invoice_url`
 - Store `client_secret` on `payment_field_configs` for the signing page to query
@@ -549,18 +561,20 @@ This section maps each current redirect-based flow to its embedded component rep
 // Add after finalizeInvoice in each payment type function:
 const paymentIntent = await stripe.paymentIntents.retrieve(
   finalizedInvoice.payment_intent as string,
-  { stripeAccount: stripeAccountId }
+  { stripeAccount: stripeAccountId },
 );
 // Return both: hosted URL for email fallback, client_secret for inline payment
 ```
 
 **Frontend changes needed**:
+
 - After signature submission with payment fields: show inline `<PaymentElement />` instead of "Pay Now →" link
 - Document status transitions: "in_progress" → (signature submitted) → "Waiting for payment" → (payment confirmed) → "Completed"
 - `PaymentFieldSummary` component: replace external link with `<Elements>` + `<PaymentElement />`
 - Handle payment confirmation and error states inline
 
 **Files affected**:
+
 - `apps/backend/convex/stripe/payment_field_actions.ts` — add `client_secret` retrieval (~3 lines per function)
 - `apps/backend/convex/payment_fields/queries.ts` — new query to return `client_secret` for signing page
 - `apps/web/src/components/documents/field-inputs/payment-field-summary.tsx` — replace "Pay Now" link with inline `<PaymentElement />`
@@ -571,20 +585,22 @@ const paymentIntent = await stripe.paymentIntents.retrieve(
 
 No current equivalent in Seal. These are **net-new pages** using Connect embedded components to display Stripe-loaded account information. See [Data Loading Architecture](#data-loading-architecture) for the full rationale.
 
-| Route | Component | What It Shows |
-|-------|-----------|---------------|
-| `settings/payment-history` | `<ConnectPayments />` | Payment history for collected document payments |
-| `settings/payouts` | `<ConnectPayouts />` | Payout schedule and history |
-| `settings/balances` | `<ConnectBalances />` + `<ConnectInstantPayoutsPromotion />` | Available/pending balance |
-| `settings/disputes` | `<ConnectDisputesList />` | Payment disputes and chargebacks |
-| `settings/tax-documents` | `<ConnectDocuments />` | Tax forms (1099-K, etc.) |
+| Route                      | Component                                                    | What It Shows                                   |
+| -------------------------- | ------------------------------------------------------------ | ----------------------------------------------- |
+| `settings/payment-history` | `<ConnectPayments />`                                        | Payment history for collected document payments |
+| `settings/payouts`         | `<ConnectPayouts />`                                         | Payout schedule and history                     |
+| `settings/balances`        | `<ConnectBalances />` + `<ConnectInstantPayoutsPromotion />` | Available/pending balance                       |
+| `settings/disputes`        | `<ConnectDisputesList />`                                    | Payment disputes and chargebacks                |
+| `settings/tax-documents`   | `<ConnectDocuments />`                                       | Tax forms (1099-K, etc.)                        |
 
 **Conditional visibility**: These pages and their sidebar links only appear when the org has a connected Stripe account. Organizations that don't use Stripe Connect for payments never see them.
 
 **Backend change needed**:
+
 - New action: `createAccountSession` in `connect_actions.ts` — shared with Phase 1 onboarding (same action, different `components` list)
 
 **Frontend changes needed**:
+
 - Create `StripeConnectProvider` component (shared with Phase 1)
 - Create 5 new settings routes following the [Plasma portal pattern](#plasma-portal-pattern)
 - Add conditional sidebar section with Connect page links
@@ -598,12 +614,14 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 **Goal**: Replace redirect-based Connect onboarding with inline experience.
 
 **Why first**:
+
 - Direct replacement of existing flow — no new business logic
 - Stripe confirms embedded components support all account types including Standard
 - Eliminates the most jarring redirect (leaving app during setup)
 - `<ConnectNotificationBanner />` replaces our custom requirements summary
 
 **Scope**:
+
 1. Install `@stripe/connect-js` + `@stripe/react-connect-js`
 2. Create `createAccountSession` action in `connect_actions.ts`
 3. Create `StripeConnectProvider` component in `integrations/stripe/`
@@ -620,11 +638,13 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 **Goal**: Replace Stripe Checkout redirect with inline checkout on billing page.
 
 **Why second**:
+
 - Clear before/after — same flow, just embedded
 - Keeps our custom pricing card design (which is strong)
 - Only changes the checkout step, not the pricing UI
 
 **Scope**:
+
 1. Install `@stripe/stripe-js` + `@stripe/react-stripe-js`
 2. Add `createEmbeddedCheckoutSession` action (same as current but `ui_mode: "embedded"`, returns `client_secret`)
 3. In `billing.tsx`: "Upgrade to Pro" sets `checkoutClientSecret` state → renders `<CheckoutProvider>` inline (dialog or expanded section)
@@ -638,12 +658,14 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 **Goal**: Collect payments inline immediately after signature, using the PandaDoc-inspired sign-then-pay model.
 
 **Why third**:
+
 - Highest business impact (payment conversion)
 - Architecture is much simpler than originally estimated — we keep invoices, just expose `client_secret`
 - ~3 lines of new backend code per payment type function
 - Frontend is the main work: post-signature payment flow + inline PaymentElement
 
 **Scope**:
+
 1. Backend: After `finalizeInvoice()`, retrieve the underlying PaymentIntent's `client_secret` and return it alongside `hosted_invoice_url`
 2. Backend: New query for signing page to fetch payment `client_secret` by signing token
 3. Frontend: After signature submission, if payment fields exist, show "Waiting for payment" state with inline `<PaymentElement />`
@@ -660,6 +682,7 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 **Goal**: Provide connected accounts with dedicated pages for payment history, payouts, balances, disputes, and tax documents — all powered by Stripe Connect embedded components.
 
 **Why last**:
+
 - Net-new feature, not replacing existing flow
 - Lower priority than core signing experience
 - Can be deferred based on user demand
@@ -667,6 +690,7 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 **Critical constraint**: Not all Seal organizations use Stripe Connect. These pages and their sidebar links must only appear when the org has a connected Stripe account.
 
 **Scope** (informed by [Plasma portal pattern](#plasma-portal-pattern)):
+
 1. Create reusable `StripeConnectProvider` component (`integrations/stripe/connect-provider.tsx`) with:
    - AccountSession creation via `fetchClientSecret` callback
    - Skeleton loading, error states, theme sync
@@ -682,6 +706,7 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 5. "No Stripe Connect" empty state for direct URL access (user types URL but org has no Stripe)
 
 **Files affected**:
+
 - `apps/web/src/integrations/stripe/connect-provider.tsx` — new (shared with Phase 1)
 - `apps/web/src/routes/_authenticated/$slug/settings/payment-history.tsx` — new
 - `apps/web/src/routes/_authenticated/$slug/settings/payouts.tsx` — new
@@ -696,12 +721,12 @@ No current equivalent in Seal. These are **net-new pages** using Connect embedde
 
 ## Priority Matrix
 
-| Phase | Feature | Impact | Effort | Priority |
-|-------|---------|--------|--------|----------|
-| 1 | Connect Onboarding | Medium (better setup UX) | Medium | **High** |
-| 2 | Embedded Checkout | Medium (less friction for billing) | Low-Medium | **High** |
-| 3 | Inline Payment (Sign-then-Pay) | **High** (payment conversion) | Medium (invoice arch stays) | **High** (do after 1 & 2) |
-| 4 | Connect Dashboard | Low (nice-to-have) | Medium | **Low** |
+| Phase | Feature                        | Impact                             | Effort                      | Priority                  |
+| ----- | ------------------------------ | ---------------------------------- | --------------------------- | ------------------------- |
+| 1     | Connect Onboarding             | Medium (better setup UX)           | Medium                      | **High**                  |
+| 2     | Embedded Checkout              | Medium (less friction for billing) | Low-Medium                  | **High**                  |
+| 3     | Inline Payment (Sign-then-Pay) | **High** (payment conversion)      | Medium (invoice arch stays) | **High** (do after 1 & 2) |
+| 4     | Connect Dashboard              | Low (nice-to-have)                 | Medium                      | **Low**                   |
 
 ---
 
@@ -779,11 +804,13 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_...
 ### Stripe Dashboard Configuration
 
 For Connect Embedded Components:
+
 1. Enable "Embedded components" in Connect Settings
 2. Configure branding (logo, colors, favicon) in Connect Settings → Branding
 3. Set redirect URLs for Account Onboarding completion
 
 For Embedded Checkout:
+
 1. No special dashboard configuration needed
 2. Uses existing products/prices
 
@@ -797,12 +824,12 @@ Stripe embedded components load data **from Stripe's servers**, not from Convex.
 
 These components are part of an **active user flow** where Stripe handling its own data loading is natural and expected:
 
-| Component | Context | Why Stripe-Loading Is Fine |
-|-----------|---------|---------------------------|
-| `<PaymentElement />` | Signing page — collecting payment | User is actively paying. Stripe loads its own PaymentIntent. |
-| `<EmbeddedCheckout />` | Billing page — subscription checkout | User is actively checking out. Stripe loads its own session. |
-| `<ConnectAccountOnboarding />` | Settings — Connect setup | User is actively onboarding. Stripe manages the flow. |
-| `<ConnectAccountManagement />` | Settings — account updates | User is actively editing Stripe settings. |
+| Component                      | Context                              | Why Stripe-Loading Is Fine                                   |
+| ------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
+| `<PaymentElement />`           | Signing page — collecting payment    | User is actively paying. Stripe loads its own PaymentIntent. |
+| `<EmbeddedCheckout />`         | Billing page — subscription checkout | User is actively checking out. Stripe loads its own session. |
+| `<ConnectAccountOnboarding />` | Settings — Connect setup             | User is actively onboarding. Stripe manages the flow.        |
+| `<ConnectAccountManagement />` | Settings — account updates           | User is actively editing Stripe settings.                    |
 
 **No architectural concern** — these are transactional components where Stripe's data loading is the feature.
 
@@ -810,13 +837,13 @@ These components are part of an **active user flow** where Stripe handling its o
 
 These components display **read-only account information** loaded entirely from Stripe. They feel like dashboard widgets but load data from a completely different system than the rest of Seal (Convex):
 
-| Component | What It Shows |
-|-----------|---------------|
-| `<ConnectPayments />` | Payment history table |
-| `<ConnectPayouts />` | Payout history + schedule |
-| `<ConnectBalances />` | Available/pending balance |
-| `<ConnectDisputesList />` | Active disputes |
-| `<ConnectDocuments />` | Tax documents (1099s) |
+| Component                 | What It Shows             |
+| ------------------------- | ------------------------- |
+| `<ConnectPayments />`     | Payment history table     |
+| `<ConnectPayouts />`      | Payout history + schedule |
+| `<ConnectBalances />`     | Available/pending balance |
+| `<ConnectDisputesList />` | Active disputes           |
+| `<ConnectDocuments />`    | Tax documents (1099s)     |
 
 **Architectural approach** (informed by [Plasma portal pattern](#plasma-portal-pattern)):
 
@@ -837,17 +864,18 @@ These components display **read-only account information** loaded entirely from 
 
 The Plasma codebase (`apps/portal/`) implements this exact pattern and serves as the reference implementation:
 
-| Plasma Route | Component | Seal Equivalent |
-|-------------|-----------|-----------------|
-| `/payments` | `<ConnectPayments />` | `settings/payment-history` |
-| `/payouts` | `<ConnectPayouts />` | `settings/payouts` |
-| `/balances` | `<ConnectBalances />` + `<ConnectInstantPayoutsPromotion />` | `settings/balances` |
-| `/disputes` | `<ConnectDisputesList />` | `settings/disputes` |
-| `/documents` | `<ConnectDocuments />` | `settings/tax-documents` |
+| Plasma Route | Component                                                    | Seal Equivalent            |
+| ------------ | ------------------------------------------------------------ | -------------------------- |
+| `/payments`  | `<ConnectPayments />`                                        | `settings/payment-history` |
+| `/payouts`   | `<ConnectPayouts />`                                         | `settings/payouts`         |
+| `/balances`  | `<ConnectBalances />` + `<ConnectInstantPayoutsPromotion />` | `settings/balances`        |
+| `/disputes`  | `<ConnectDisputesList />`                                    | `settings/disputes`        |
+| `/documents` | `<ConnectDocuments />`                                       | `settings/tax-documents`   |
 
 **Key difference**: In Plasma, Stripe Connect is **required** for all portal access (no Stripe account → redirect to onboarding). In Seal, Stripe Connect is **optional** — the sidebar conditionally shows these pages only when the org has connected a Stripe account.
 
 **Pattern per page**:
+
 ```tsx
 // Every stats page follows the same structure:
 function PaymentHistoryPage() {
@@ -886,16 +914,16 @@ Connect embedded component sessions expire on long-running pages. The `StripeCon
 
 For completeness, these Connect components exist but are **not relevant** to Seal's document-signing use case:
 
-| Component | Why Not Relevant |
-|-----------|-----------------|
-| Capital (3 components) | Stripe Capital lending — not applicable |
-| Tax (5 components) | Tax compliance tooling — Seal doesn't manage taxes |
-| Financial Account / Transactions | Treasury/banking — not applicable |
-| Issuing Card / Cards List | Card issuing — not applicable |
-| Reporting Chart | Generic reporting — Seal has its own analytics |
-| App Install / App Viewport | Stripe Apps marketplace — not applicable |
-| Currency Selector Element | Multi-currency — not needed currently |
-| Tax ID Element | B2B tax IDs — not core to signing flow |
+| Component                        | Why Not Relevant                                   |
+| -------------------------------- | -------------------------------------------------- |
+| Capital (3 components)           | Stripe Capital lending — not applicable            |
+| Tax (5 components)               | Tax compliance tooling — Seal doesn't manage taxes |
+| Financial Account / Transactions | Treasury/banking — not applicable                  |
+| Issuing Card / Cards List        | Card issuing — not applicable                      |
+| Reporting Chart                  | Generic reporting — Seal has its own analytics     |
+| App Install / App Viewport       | Stripe Apps marketplace — not applicable           |
+| Currency Selector Element        | Multi-currency — not needed currently              |
+| Tax ID Element                   | B2B tax IDs — not core to signing flow             |
 
 ---
 
