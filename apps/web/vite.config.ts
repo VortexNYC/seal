@@ -6,6 +6,22 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+function getManualChunkName(id: string): string | undefined {
+  if (id.includes("react-pdf") || id.includes("pdfjs-dist")) {
+    return "pdf-viewer";
+  }
+
+  if (id.includes("recharts")) {
+    return "charts";
+  }
+
+  if (id.includes("date-fns")) {
+    return "date-utils";
+  }
+
+  return undefined;
+}
+
 export default defineConfig(({ command }) => {
   const enableSentry = command === "build";
 
@@ -55,13 +71,8 @@ export default defineConfig(({ command }) => {
       // SEA-136: Mobile performance optimization - chunk splitting for lazy loading
       rollupOptions: {
         output: {
-          manualChunks: {
-            // Large PDF library - lazy loaded on signing/document pages
-            "pdf-viewer": ["react-pdf", "pdfjs-dist"],
-            // Charts library - only used on dashboard
-            charts: ["recharts"],
-            // Date utilities
-            "date-utils": ["date-fns"],
+          manualChunks(id: string) {
+            return getManualChunkName(id);
           },
         },
       },
