@@ -1,8 +1,8 @@
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { LinkIcon, MailIcon, TrashIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";

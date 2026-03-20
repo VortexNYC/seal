@@ -74,9 +74,7 @@ if (shouldInitSentry) {
     environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || "production",
     release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
     sendDefaultPii: true,
-    integrations: [
-      Sentry.tanstackRouterBrowserTracingIntegration(router),
-    ],
+    integrations: [Sentry.tanstackRouterBrowserTracingIntegration(router)],
     tracesSampleRate: 0.2,
     tracePropagationTargets: [/^\//, /convex\.cloud/],
     beforeSend(event) {

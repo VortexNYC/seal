@@ -1,11 +1,11 @@
 import { useUser } from "@clerk/clerk-react";
 import usePresence from "@convex-dev/presence/react";
+import { api } from "@seal/backend/convex/_generated/api";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getInitials } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
 
 interface DocumentPresenceProps {
   documentId: string;

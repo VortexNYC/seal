@@ -10,6 +10,7 @@
  * Route: /{slug}/settings/billing
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { createFileRoute } from "@tanstack/react-router";
@@ -24,7 +25,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { api } from "@seal/backend/convex/_generated/api";
 
 // Initialize Stripe.js once (lazy-loaded on first use)
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string);

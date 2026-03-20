@@ -1,3 +1,4 @@
+import { api } from "@seal/backend/convex/_generated/api";
 import { useMutation } from "convex/react";
 import { UserPlusIcon } from "lucide-react";
 import { useState } from "react";
@@ -14,7 +15,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@seal/backend/convex/_generated/api";
 
 interface DictateNextSignerDialogProps {
   open: boolean;

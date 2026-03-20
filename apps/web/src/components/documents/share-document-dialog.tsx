@@ -1,4 +1,6 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import {
   AlertTriangleIcon,
@@ -14,8 +16,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { cn, getErrorMessage } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";

@@ -7,6 +7,8 @@
  */
 
 import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
   type ErrorComponentProps,
@@ -43,10 +45,10 @@ import { EsignConsentDialog } from "@/components/documents/esign-consent-dialog"
 import { FieldInputManager } from "@/components/documents/field-input-manager";
 import { PaymentFieldSummary } from "@/components/documents/field-inputs";
 import { FillableFieldOverlay } from "@/components/documents/fillable-field-overlay";
-import { SignatureCapture } from "@/components/documents/signature-capture";
-import { SealLogo } from "@/components/seal-logo";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { SignatureCapture } from "@/components/documents/signature-capture";
+import { SealLogo } from "@/components/seal-logo";
 import { DictateNextSignerDialog } from "@/components/signing/dictate-next-signer-dialog";
 import { DocumentExpiredPage } from "@/components/signing/document-expired-page";
 import { RedirectCountdown } from "@/components/signing/redirect-countdown";
@@ -67,8 +69,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { pageSEO } from "@/lib/seo";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -1780,7 +1780,9 @@ function SigningPage() {
             <Textarea
               id="decline-reason"
               value={declineReason}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDeclineReason(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setDeclineReason(e.target.value)
+              }
               placeholder="Enter your reason here..."
               rows={4}
               className="resize-none"

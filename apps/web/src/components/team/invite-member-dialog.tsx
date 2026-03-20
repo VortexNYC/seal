@@ -5,6 +5,8 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useAction } from "convex/react";
 import { AlertCircle } from "lucide-react";
 import { useEffect } from "react";
@@ -39,8 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 const inviteMemberSchema = z.object({
   email: z.email("Please enter a valid email address"),

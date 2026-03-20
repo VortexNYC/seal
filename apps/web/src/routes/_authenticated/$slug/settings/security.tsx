@@ -5,6 +5,7 @@
  * Route: /{slug}/settings/security
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowRightLeft, KeyRound, Save, Shield } from "lucide-react";
@@ -19,7 +20,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/security")({
   component: SecuritySettings,

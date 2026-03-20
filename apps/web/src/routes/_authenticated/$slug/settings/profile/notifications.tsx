@@ -5,6 +5,7 @@
  * Route: /{slug}/settings/profile/notifications
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Bell, Clock, Mail, Monitor } from "lucide-react";
@@ -23,7 +24,6 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/profile/notifications")({
   component: NotificationSettings,

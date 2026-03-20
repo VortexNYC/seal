@@ -1,3 +1,4 @@
+import { api } from "@seal/backend/convex/_generated/api";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { ChevronsUpDown, CreditCard, LogOut, Sparkles, User } from "lucide-react";
@@ -19,7 +20,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { api } from "@seal/backend/convex/_generated/api";
 
 export function NavUser({
   user,

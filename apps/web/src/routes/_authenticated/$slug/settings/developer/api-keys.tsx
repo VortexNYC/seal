@@ -5,6 +5,7 @@
  * Route: /{slug}/settings/developer/api-keys
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useAction } from "convex/react";
 import {
@@ -57,7 +58,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { cn, getErrorMessage } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/developer/api-keys")({
   component: ApiKeysPage,

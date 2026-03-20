@@ -5,6 +5,8 @@
  * Route: /{slug}/settings/developer/webhooks
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -65,8 +67,6 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/developer/webhooks")({
   component: WebhooksPage,
@@ -487,9 +487,7 @@ function WebhookEndpointsSection({
         <CardDescription>
           Configure endpoints to receive webhook events
           {!isPro && !isLoadingPlan && (
-            <span className="text-warning mt-1 block">
-              Webhooks require a Professional plan.
-            </span>
+            <span className="text-warning mt-1 block">Webhooks require a Professional plan.</span>
           )}
         </CardDescription>
       </CardHeader>
@@ -1045,8 +1043,8 @@ function WebhookEndpointRow({ endpoint }: WebhookEndpointRowProps) {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Rotate Secret</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will generate a new signing secret. The old secret will be invalidated
-                          immediately. Make sure to update your integration.
+                          This will generate a new signing secret. The old secret will be
+                          invalidated immediately. Make sure to update your integration.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

@@ -1,10 +1,10 @@
+import { api } from "@seal/backend/convex/_generated/api";
 import { useLocation } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Bug, Lightbulb, MessageSquare, X } from "lucide-react";
 import { useState } from "react";
 
 import { startJamRecording } from "@/lib/jam";
-import { api } from "@seal/backend/convex/_generated/api";
 
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -52,7 +52,7 @@ export function FeedbackButton() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed right-6 bottom-6 z-50">
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2 shadow-md" aria-label="Feedback">

@@ -1,5 +1,7 @@
 import { useUser } from "@clerk/clerk-react";
 import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { type ErrorComponentProps, createFileRoute, useRouter } from "@tanstack/react-router";
 import { useAction, useMutation, useQuery } from "convex/react";
@@ -15,10 +17,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document } from "react-pdf";
-import { pdfjs } from "react-pdf";
-import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { pdfjs } from "react-pdf";
+import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { toast } from "sonner";
 
 import { NotFoundPage } from "@/components/not-found-page";
@@ -29,8 +31,6 @@ import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { buildActivityEvents } from "@/lib/document-activity";
 import { countSignatureFields } from "@/lib/signature-fields";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { AddMyselfDialog } from "../../../../components/documents/add-myself-dialog";
 import { AddRecipientDialog } from "../../../../components/documents/add-recipient-dialog";

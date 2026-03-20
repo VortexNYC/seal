@@ -5,6 +5,8 @@
  * Route: /{slug}/settings/payments
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import {
   ConnectAccountManagement,
   ConnectAccountOnboarding,
@@ -23,8 +25,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/payments")({
   component: PaymentsSettingsPage,
@@ -272,8 +272,8 @@ function PaymentsSettingsPage() {
             <CardHeader>
               <CardTitle>Platform Fee</CardTitle>
               <CardDescription>
-                Seal charges a 0.25% platform fee on Professional plans for each invoice payment. Choose who
-                pays this fee.
+                Seal charges a 0.25% platform fee on Professional plans for each invoice payment.
+                Choose who pays this fee.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

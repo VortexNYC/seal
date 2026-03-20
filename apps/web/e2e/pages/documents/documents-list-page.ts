@@ -1,6 +1,7 @@
-import type { Locator, Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+
+import type { Locator, Page } from "@playwright/test";
 
 export class DocumentsListPage {
   readonly page: Page;
@@ -54,7 +55,10 @@ export class DocumentsListPage {
     const timeout = 30000;
     let rowDetectedWithName = false;
     while (Date.now() - start < timeout) {
-      const isFileVisible = await this.page.getByText(fileName).isVisible().catch(() => false);
+      const isFileVisible = await this.page
+        .getByText(fileName)
+        .isVisible()
+        .catch(() => false);
       if (isFileVisible) {
         rowDetectedWithName = true;
         break;
