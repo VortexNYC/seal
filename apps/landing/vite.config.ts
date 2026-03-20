@@ -9,15 +9,9 @@ import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 
 import * as SourceConfig from "./source.config";
-import { contentManifestsPlugin } from "./src/plugins/content-manifests";
 import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
-const tslibModulePath = new URL(import.meta.resolve("tslib/tslib.es6.mjs")).pathname;
-const reactRemoveScrollSsrShim = path.resolve(
-  import.meta.dirname,
-  "./src/lib/ssr/react-remove-scroll.tsx",
-);
 
 export default defineConfig(async ({ command }) => ({
   server: {
@@ -43,21 +37,12 @@ export default defineConfig(async ({ command }) => ({
       name: "polyfill-node-path-client",
       enforce: "pre" as const,
       resolveId(source: string, _importer: string | undefined, options: { ssr?: boolean }) {
-        if (source === "tslib") {
-          return tslibModulePath;
-        }
-
-        if (source === "react-remove-scroll" && options.ssr) {
-          return reactRemoveScrollSsrShim;
-        }
-
         if (source === "node:path" && !options.ssr) {
           return require.resolve("path-browserify");
         }
       },
     },
     await mdx(SourceConfig, { updateViteConfig: false }),
-    contentManifestsPlugin(),
     searchIndexPlugin(),
     tailwindcss(),
     tanstackStart({
@@ -73,20 +58,11 @@ export default defineConfig(async ({ command }) => ({
     noExternal: ["fumadocs-core", "fumadocs-ui", "fumadocs-openapi", "@fumadocs/base-ui"],
     dedupe: ["fumadocs-core", "fumadocs-ui", "fumadocs-openapi", "@fumadocs/base-ui"],
     tsconfigPaths: true,
-    alias: [
-      {
-        find: "fumadocs-mdx:collections/server",
-        replacement: path.resolve(import.meta.dirname, "./.source/server.ts"),
-      },
-      {
-        find: "fumadocs-mdx:collections/browser",
-        replacement: path.resolve(import.meta.dirname, "./.source/browser.ts"),
-      },
-      {
-        find: "fumadocs-mdx:collections/dynamic",
-        replacement: path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
-      },
-    ],
+    alias: {
+      "fumadocs-mdx:collections/server": path.resolve(import.meta.dirname, "./.source/server.ts"),
+      "fumadocs-mdx:collections/browser": path.resolve(import.meta.dirname, "./.source/browser.ts"),
+      "fumadocs-mdx:collections/dynamic": path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
+    },
   },
 
   // Polyfill node:path → path-browserify only during browser dep pre-bundling.
