@@ -108,16 +108,15 @@ async function streamWithAgent(
   sealCtx: SealAICtx,
   system: string,
 ): Promise<number> {
+  const { thread } = await agent.continueThread(sealCtx, {
+    threadId: args.threadId,
+    userId: args.userId,
+  });
   let stepCount = 0;
   const completedTools: string[] = [];
   let totalTokens = 0;
 
-  const result = await agent.streamText(
-    sealCtx,
-    {
-      threadId: args.threadId,
-      userId: args.userId,
-    },
+  const result = await thread.streamText(
     {
       system,
       promptMessageId: args.promptMessageId,
@@ -178,9 +177,11 @@ async function executeResponseGeneration(
     // TIER_1: Flash-Lite with saveMessages: "none" + quality check
     let tier1Result: { text?: string; toolCalls?: { toolName: string }[] } | null = null;
     try {
-      tier1Result = await sealAgentTier1.generateText(
-        sealCtx,
-        { threadId: args.threadId, userId: args.userId },
+      const { thread } = await sealAgentTier1.continueThread(sealCtx, {
+        threadId: args.threadId,
+        userId: args.userId,
+      });
+      tier1Result = await thread.generateText(
         {
           promptMessageId: args.promptMessageId,
           system,
