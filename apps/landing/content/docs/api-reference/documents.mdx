@@ -635,11 +635,11 @@ curl -X GET "https://seal.convex.site/api/v1/documents/access?id=jd7k8l9m0n1p2q3
 }
 ```
 
-| `sharing_mode` | Description                                          |
-| -------------- | ---------------------------------------------------- |
-| `private`      | Only the document owner can access it                |
-| `workspace`    | All workspace members can view the document (Pro)    |
-| `specific`     | Access granted to specific users only                |
+| `sharing_mode` | Description                                       |
+| -------------- | ------------------------------------------------- |
+| `private`      | Only the document owner can access it             |
+| `workspace`    | All workspace members can view the document (Pro) |
+| `specific`     | Access granted to specific users only             |
 
 ## Update Document Access
 
@@ -663,8 +663,8 @@ PATCH /api/v1/documents/access?id={id}
 
 ### Request Body
 
-| Field          | Type   | Required | Description                                            |
-| -------------- | ------ | -------- | ------------------------------------------------------ |
+| Field          | Type   | Required | Description                                             |
+| -------------- | ------ | -------- | ------------------------------------------------------- |
 | `sharing_mode` | string | Yes      | New sharing mode: `private`, `workspace`, or `specific` |
 
 ### TypeScript Example
@@ -719,31 +719,25 @@ POST /api/v1/documents/bulk-void
 
 ### Request Body
 
-| Field          | Type     | Required | Description                              |
-| -------------- | -------- | -------- | ---------------------------------------- |
-| `document_ids` | string[] | Yes      | IDs of documents to void (max 50)        |
-| `reason`       | string   | No       | Cancellation reason shown to recipients  |
+| Field          | Type     | Required | Description                             |
+| -------------- | -------- | -------- | --------------------------------------- |
+| `document_ids` | string[] | Yes      | IDs of documents to void (max 50)       |
+| `reason`       | string   | No       | Cancellation reason shown to recipients |
 
 ### TypeScript Example
 
 ```typescript
-const response = await fetch(
-  "https://seal.convex.site/api/v1/documents/bulk-void",
-  {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      document_ids: [
-        "jd7k8l9m0n1p2q3r4s5t6u7v",
-        "ab1cd2ef3gh4ij5kl6mn7op8",
-      ],
-      reason: "Contract terms updated — please sign the revised version",
-    }),
+const response = await fetch("https://seal.convex.site/api/v1/documents/bulk-void", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
   },
-);
+  body: JSON.stringify({
+    document_ids: ["jd7k8l9m0n1p2q3r4s5t6u7v", "ab1cd2ef3gh4ij5kl6mn7op8"],
+    reason: "Contract terms updated — please sign the revised version",
+  }),
+});
 
 const result = await response.json();
 console.log(`Voided: ${result.succeeded} / ${result.total_requested}`);
@@ -783,7 +777,8 @@ curl -X POST "https://seal.convex.site/api/v1/documents/bulk-void" \
 ```
 
 <Callout type="warn">
-  Documents that are already `completed`, `cancelled`, or `declined` cannot be voided and will appear in `results` with `success: false`.
+  Documents that are already `completed`, `cancelled`, or `declined` cannot be voided and will
+  appear in `results` with `success: false`.
 </Callout>
 
 ## Bulk Send Documents
@@ -802,30 +797,27 @@ POST /api/v1/documents/bulk-send
 
 ### Request Body
 
-| Field          | Type     | Required | Description                        |
-| -------------- | -------- | -------- | ---------------------------------- |
+| Field          | Type     | Required | Description                             |
+| -------------- | -------- | -------- | --------------------------------------- |
 | `document_ids` | string[] | Yes      | IDs of draft documents to send (max 50) |
 
 ### TypeScript Example
 
 ```typescript
-const response = await fetch(
-  "https://seal.convex.site/api/v1/documents/bulk-send",
-  {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      document_ids: [
-        "jd7k8l9m0n1p2q3r4s5t6u7v",
-        "ab1cd2ef3gh4ij5kl6mn7op8",
-        "cd3ef4gh5ij6kl7mn8op9qr0",
-      ],
-    }),
+const response = await fetch("https://seal.convex.site/api/v1/documents/bulk-send", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
   },
-);
+  body: JSON.stringify({
+    document_ids: [
+      "jd7k8l9m0n1p2q3r4s5t6u7v",
+      "ab1cd2ef3gh4ij5kl6mn7op8",
+      "cd3ef4gh5ij6kl7mn8op9qr0",
+    ],
+  }),
+});
 
 const result = await response.json();
 console.log(`Sent: ${result.succeeded} / ${result.total_requested}`);
@@ -865,7 +857,8 @@ curl -X POST "https://seal.convex.site/api/v1/documents/bulk-send" \
 ```
 
 <Callout type="info">
-  Only `draft` documents with at least one recipient can be bulk-sent. Documents that are already sent, completed, or cancelled will appear in `results` with `success: false`.
+  Only `draft` documents with at least one recipient can be bulk-sent. Documents that are already
+  sent, completed, or cancelled will appear in `results` with `success: false`.
 </Callout>
 
 ## Document Status Workflow

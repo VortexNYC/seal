@@ -13,19 +13,19 @@ Use the audit log for compliance reporting, security investigations, and integra
 
 ### Attributes
 
-| Attribute       | Type   | Description                                                       |
-| --------------- | ------ | ----------------------------------------------------------------- |
-| `id`            | string | Unique audit log entry ID                                         |
-| `action`        | string | The action performed (see [Action Types](#action-types) below)    |
-| `actor_type`    | string | Who performed it: `user`, `recipient`, or `system`                |
-| `actor_name`    | string | Display name of the actor (optional)                              |
-| `actor_email`   | string | Email of the actor (optional)                                     |
-| `resource_type` | string | Type of resource affected: `document`, `recipient`, `member`, etc.|
-| `resource_id`   | string | ID of the affected resource (optional)                            |
-| `document_id`   | string | Document ID if the event is document-related (optional)           |
-| `ip_address`    | string | IP address of the actor                                           |
-| `source`        | string | Where the action originated: `web`, `api`, or `system`            |
-| `created_at`    | string | ISO 8601 timestamp of the event                                   |
+| Attribute       | Type   | Description                                                        |
+| --------------- | ------ | ------------------------------------------------------------------ |
+| `id`            | string | Unique audit log entry ID                                          |
+| `action`        | string | The action performed (see [Action Types](#action-types) below)     |
+| `actor_type`    | string | Who performed it: `user`, `recipient`, or `system`                 |
+| `actor_name`    | string | Display name of the actor (optional)                               |
+| `actor_email`   | string | Email of the actor (optional)                                      |
+| `resource_type` | string | Type of resource affected: `document`, `recipient`, `member`, etc. |
+| `resource_id`   | string | ID of the affected resource (optional)                             |
+| `document_id`   | string | Document ID if the event is document-related (optional)            |
+| `ip_address`    | string | IP address of the actor                                            |
+| `source`        | string | Where the action originated: `web`, `api`, or `system`             |
+| `created_at`    | string | ISO 8601 timestamp of the event                                    |
 
 ### Example Object
 
@@ -49,41 +49,41 @@ Use the audit log for compliance reporting, security investigations, and integra
 
 ### Document Actions
 
-| Action                        | Description                              |
-| ----------------------------- | ---------------------------------------- |
-| `document.created`            | New document uploaded                    |
-| `document.updated`            | Document metadata changed                |
-| `document.deleted`            | Document permanently deleted             |
-| `document.sent`               | Document sent to recipients for signing  |
-| `document.viewed`             | Document opened                          |
-| `document.completed`          | All required signatures collected        |
-| `document.cancelled`          | Document voided by sender                |
-| `document.expired`            | Document expired before completion       |
-| `document.ownership_transferred` | Document reassigned to a new owner    |
+| Action                           | Description                             |
+| -------------------------------- | --------------------------------------- |
+| `document.created`               | New document uploaded                   |
+| `document.updated`               | Document metadata changed               |
+| `document.deleted`               | Document permanently deleted            |
+| `document.sent`                  | Document sent to recipients for signing |
+| `document.viewed`                | Document opened                         |
+| `document.completed`             | All required signatures collected       |
+| `document.cancelled`             | Document voided by sender               |
+| `document.expired`               | Document expired before completion      |
+| `document.ownership_transferred` | Document reassigned to a new owner      |
 
 ### Recipient Actions
 
-| Action                    | Description                              |
-| ------------------------- | ---------------------------------------- |
-| `recipient.added`         | Recipient added to a document            |
-| `recipient.updated`       | Recipient details changed                |
-| `recipient.removed`       | Recipient removed from a document        |
-| `recipient.viewed`        | Recipient opened the signing link        |
-| `recipient.signed`        | Recipient completed signing              |
-| `recipient.declined`      | Recipient declined to sign               |
-| `recipient.esign_consent` | Recipient accepted ESIGN consent         |
-| `recipient.esign_opt_out` | Recipient declined ESIGN consent         |
-| `recipient.expired`       | Recipient's signing deadline passed      |
+| Action                    | Description                         |
+| ------------------------- | ----------------------------------- |
+| `recipient.added`         | Recipient added to a document       |
+| `recipient.updated`       | Recipient details changed           |
+| `recipient.removed`       | Recipient removed from a document   |
+| `recipient.viewed`        | Recipient opened the signing link   |
+| `recipient.signed`        | Recipient completed signing         |
+| `recipient.declined`      | Recipient declined to sign          |
+| `recipient.esign_consent` | Recipient accepted ESIGN consent    |
+| `recipient.esign_opt_out` | Recipient declined ESIGN consent    |
+| `recipient.expired`       | Recipient's signing deadline passed |
 
 ### Member & Organization Actions
 
-| Action                | Description                              |
-| --------------------- | ---------------------------------------- |
-| `member.invited`      | User invited to workspace                |
-| `member.joined`       | User accepted invitation                 |
-| `member.removed`      | User removed from workspace              |
-| `member.role_changed` | Member role updated                      |
-| `organization.updated`| Workspace settings changed               |
+| Action                 | Description                 |
+| ---------------------- | --------------------------- |
+| `member.invited`       | User invited to workspace   |
+| `member.joined`        | User accepted invitation    |
+| `member.removed`       | User removed from workspace |
+| `member.role_changed`  | Member role updated         |
+| `organization.updated` | Workspace settings changed  |
 
 ## List Audit Log
 
@@ -101,14 +101,14 @@ GET /api/v1/audit-log
 
 ### Query Parameters
 
-| Parameter       | Type   | Description                                           |
-| --------------- | ------ | ----------------------------------------------------- |
-| `limit`         | number | Number of results (max 100, default 20)               |
-| `cursor`        | string | Pagination cursor from previous response              |
-| `document_id`   | string | Filter entries related to a specific document         |
-| `action`        | string | Filter by exact action name (e.g., `document.sent`)   |
-| `created_after` | number | Unix timestamp (ms) — only return entries after this  |
-| `created_before`| number | Unix timestamp (ms) — only return entries before this |
+| Parameter        | Type   | Description                                           |
+| ---------------- | ------ | ----------------------------------------------------- |
+| `limit`          | number | Number of results (max 100, default 20)               |
+| `cursor`         | string | Pagination cursor from previous response              |
+| `document_id`    | string | Filter entries related to a specific document         |
+| `action`         | string | Filter by exact action name (e.g., `document.sent`)   |
+| `created_after`  | number | Unix timestamp (ms) — only return entries after this  |
+| `created_before` | number | Unix timestamp (ms) — only return entries before this |
 
 <Callout type="info">
   Entries are returned in **reverse chronological order** (newest first).
@@ -193,10 +193,9 @@ async function exportAuditLog(fromMs: number, toMs: number) {
       ...(cursor ? { cursor } : {}),
     });
 
-    const response = await fetch(
-      `https://seal.convex.site/api/v1/audit-log?${params}`,
-      { headers: { Authorization: "Bearer ak_your_api_key_here" } },
-    );
+    const response = await fetch(`https://seal.convex.site/api/v1/audit-log?${params}`, {
+      headers: { Authorization: "Bearer ak_your_api_key_here" },
+    });
 
     const data = await response.json();
     entries.push(...data.entries);

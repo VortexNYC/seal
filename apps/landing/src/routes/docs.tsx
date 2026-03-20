@@ -2,7 +2,6 @@ import "fumadocs-ui/style.css";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
-
 import { getDocsPageTree } from "~/lib/docs/manifest";
 
 const docsPageTree = getDocsPageTree();

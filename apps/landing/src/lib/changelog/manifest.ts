@@ -1,5 +1,4 @@
 import changelogManifestData from "../../../.source/changelog-manifest.json";
-
 import type { ContentImage } from "../content/types";
 
 export interface ChangelogFeature {
@@ -45,7 +44,9 @@ const changelogEntries = [...changelogManifest.entries]
     improvements: entry.improvements ?? [],
   }))
   .sort((a, b) => b.releaseDate.localeCompare(a.releaseDate));
-const changelogEntriesBySlug = Object.fromEntries(changelogEntries.map((entry) => [entry.slug, entry]));
+const changelogEntriesBySlug = Object.fromEntries(
+  changelogEntries.map((entry) => [entry.slug, entry]),
+);
 
 export function getChangelogEntries(): ChangelogManifestEntry[] {
   return changelogEntries;

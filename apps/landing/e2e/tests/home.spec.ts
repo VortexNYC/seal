@@ -13,7 +13,9 @@ test.describe("landing homepage", () => {
     await homePage.goto();
 
     await expect(homePage.heroHeading()).toBeVisible();
-    await expect(page.getByRole("heading", { name: /three things the old tools can.t do/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /three things the old tools can.t do/i }),
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: /simple, honest pricing/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: /questions\? answers\./i })).toBeVisible();
 
@@ -34,7 +36,10 @@ test.describe("landing homepage", () => {
     await browserErrors.assertNoErrors();
   });
 
-  test("desktop navigation reaches public routes and in-page anchors", async ({ page, isMobile }) => {
+  test("desktop navigation reaches public routes and in-page anchors", async ({
+    page,
+    isMobile,
+  }) => {
     test.skip(isMobile, "Desktop navigation assertions are covered in desktop projects.");
 
     const homePage = new HomePage(page);
@@ -44,7 +49,10 @@ test.describe("landing homepage", () => {
     await homePage.desktopNavLink("Pricing").click();
     await expect(homePage.pricingSection()).toBeInViewport();
 
-    await Promise.all([page.waitForURL(/\/integrations$/), homePage.desktopNavLink("Integrations").click()]);
+    await Promise.all([
+      page.waitForURL(/\/integrations$/),
+      homePage.desktopNavLink("Integrations").click(),
+    ]);
     await expect(page).toHaveURL(/\/integrations$/);
     await expect(page.getByRole("heading", { level: 1, name: /built to connect/i })).toBeVisible();
 
@@ -55,7 +63,10 @@ test.describe("landing homepage", () => {
     await page.goto("/");
     await homePage.waitForReady();
 
-    await Promise.all([page.waitForURL(/\/changelog$/), homePage.desktopNavLink("Changelog").click()]);
+    await Promise.all([
+      page.waitForURL(/\/changelog$/),
+      homePage.desktopNavLink("Changelog").click(),
+    ]);
     await expect(page).toHaveURL(/\/changelog$/);
     await expect(page.getByRole("heading", { level: 1, name: /changelog/i })).toBeVisible();
   });
@@ -74,7 +85,10 @@ test.describe("landing homepage", () => {
     await expect(homePage.pricingSection()).toBeInViewport();
 
     await homePage.mobileMenuButton().tap();
-    await Promise.all([page.waitForURL(/\/integrations$/), homePage.mobileMenuLink("Integrations").click()]);
+    await Promise.all([
+      page.waitForURL(/\/integrations$/),
+      homePage.mobileMenuLink("Integrations").click(),
+    ]);
     await expect(page).toHaveURL(/\/integrations$/);
     await expect(page.getByRole("heading", { level: 1, name: /built to connect/i })).toBeVisible();
   });
