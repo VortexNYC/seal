@@ -7,35 +7,16 @@ import viteReact from "@vitejs/plugin-react";
 import mdx from "fumadocs-mdx/vite";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
-import tsConfigPaths from "vite-tsconfig-paths";
 
 import * as SourceConfig from "./source.config";
 import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
-
-function matchesPackage(id: string, pkg: string): boolean {
-  return id.includes(`/node_modules/${pkg}/`) || id.endsWith(`/node_modules/${pkg}`);
-}
-
-function getManualChunkName(id: string): string | undefined {
-  if (!id.includes("node_modules")) {
-    return undefined;
-  }
-
-  if (
-    matchesPackage(id, "fumadocs-core") ||
-    matchesPackage(id, "fumadocs-mdx") ||
-    matchesPackage(id, "fumadocs-openapi") ||
-    matchesPackage(id, "fumadocs-ui") ||
-    id.includes("/node_modules/shiki/") ||
-    id.includes("/node_modules/refractor/")
-  ) {
-    return "vendor-docs";
-  }
-
-  return undefined;
-}
+const tslibModulePath = new URL(import.meta.resolve("tslib/tslib.es6.mjs")).pathname;
+const reactRemoveScrollSsrShim = path.resolve(
+  import.meta.dirname,
+  "./src/lib/ssr/react-remove-scroll.tsx",
+);
 
 export default defineConfig(async ({ command }) => ({
   server: {
@@ -61,16 +42,21 @@ export default defineConfig(async ({ command }) => ({
       name: "polyfill-node-path-client",
       enforce: "pre" as const,
       resolveId(source: string, _importer: string | undefined, options: { ssr?: boolean }) {
+        if (source === "tslib") {
+          return tslibModulePath;
+        }
+
+        if (source === "react-remove-scroll" && options.ssr) {
+          return reactRemoveScrollSsrShim;
+        }
+
         if (source === "node:path" && !options.ssr) {
           return require.resolve("path-browserify");
         }
       },
     },
-    await mdx(SourceConfig, { updateViteConfig: true }),
+    await mdx(SourceConfig, { updateViteConfig: false }),
     searchIndexPlugin(),
-    tsConfigPaths({
-      projects: ["./tsconfig.json"],
-    }),
     tailwindcss(),
     tanstackStart({
       srcDirectory: "src",
@@ -82,45 +68,39 @@ export default defineConfig(async ({ command }) => ({
   ],
 
   resolve: {
-    alias: {
-      "fumadocs-mdx:collections/server": path.resolve(import.meta.dirname, "./.source/server.ts"),
-      "fumadocs-mdx:collections/browser": path.resolve(import.meta.dirname, "./.source/browser.ts"),
-      "fumadocs-mdx:collections/dynamic": path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
-    },
-  },
-
-  // Prevent Fumadocs packages from being externalized during SSR.
-  // This avoids React context errors and hydration mismatches.
-  ssr: {
-    noExternal: ["fumadocs-core", "fumadocs-ui"],
+    noExternal: ["fumadocs-core", "fumadocs-ui", "fumadocs-openapi", "@fumadocs/base-ui"],
+    dedupe: ["fumadocs-core", "fumadocs-ui", "fumadocs-openapi", "@fumadocs/base-ui"],
+    tsconfigPaths: true,
+    alias: [
+      {
+        find: "fumadocs-mdx:collections/server",
+        replacement: path.resolve(import.meta.dirname, "./.source/server.ts"),
+      },
+      {
+        find: "fumadocs-mdx:collections/browser",
+        replacement: path.resolve(import.meta.dirname, "./.source/browser.ts"),
+      },
+      {
+        find: "fumadocs-mdx:collections/dynamic",
+        replacement: path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
+      },
+    ],
   },
 
   // Polyfill node:path → path-browserify only during browser dep pre-bundling.
   // fumadocs-core/source uses path.join/dirname which don't exist in browsers.
   optimizeDeps: {
-    esbuildOptions: {
+    rolldownOptions: {
       plugins: [
         {
           name: "polyfill-node-path",
-          setup(build: {
-            onResolve: (opts: { filter: RegExp }, cb: () => { path: string }) => void;
-          }) {
-            build.onResolve({ filter: /^node:path$/ }, () => ({
-              path: require.resolve("path-browserify"),
-            }));
+          resolveId(source: string) {
+            if (source === "node:path") {
+              return require.resolve("path-browserify");
+            }
           },
         },
       ],
-    },
-  },
-
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id: string) {
-          return getManualChunkName(id);
-        },
-      },
     },
   },
 }));
