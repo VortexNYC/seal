@@ -1,9 +1,6 @@
-import type { Root } from "fumadocs-core/page-tree";
-import { deserializePageTree } from "fumadocs-core/source/client";
-<<<<<<< HEAD
+import { type Root, visit } from "fumadocs-core/page-tree";
+import { jsx } from "react/jsx-runtime";
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 import docsManifestData from "../../../.source/docs-manifest.json";
 
 interface SerializedPageTree {
@@ -28,6 +25,28 @@ export interface DocsManifestPage {
 interface DocsManifest {
   pageTree: SerializedPageTree;
   pages: Record<string, DocsManifestPage>;
+}
+
+function deserializeHtml(html: string) {
+  return jsx("span", { dangerouslySetInnerHTML: { __html: html } });
+}
+
+function deserializePageTree(serialized: SerializedPageTree): Root {
+  const root = serialized.data as Root;
+
+  visit(root, (item) => {
+    const mutableItem = item as { icon?: unknown; name?: unknown };
+
+    if (typeof mutableItem.icon === "string") {
+      mutableItem.icon = deserializeHtml(mutableItem.icon);
+    }
+
+    if (typeof mutableItem.name === "string") {
+      mutableItem.name = deserializeHtml(mutableItem.name);
+    }
+  });
+
+  return root;
 }
 
 const docsManifest = docsManifestData as unknown as DocsManifest;

@@ -17914,3 +17914,44 @@ package.json:12:0: ERROR: Expected string in JSON but found "<<"
 vite.config.ts:92:0: ERROR: Expected identifier but found "<<"
 ../../package.json:14:0: ERROR: Expected string in JSON but found "<<"
 1:55:31 PM [vite] server restart failed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1:55:31 PM [vite] vite.config.ts changed, restarting server...
+✘ [ERROR] Expected string in JSON but found "<<"
+
+    ../../package.json:14:0:
+      14 │ <<<<<<< HEAD
+         ╵ ~~
+
+✘ [ERROR] Expected string in JSON but found "<<"
+
+    package.json:12:0:
+      12 │ <<<<<<< HEAD
+         ╵ ~~
+
+failed to load config from /Users/shlomokabareti/Projects/Seal/apps/web/vite.config.ts
+1:55:31 PM [vite] Build failed with 2 errors:
+package.json:12:0: ERROR: Expected string in JSON but found "<<"
+../../package.json:14:0: ERROR: Expected string in JSON but found "<<"
+1:55:31 PM [vite] server restart failed
