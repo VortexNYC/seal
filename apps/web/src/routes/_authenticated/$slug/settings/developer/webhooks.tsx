@@ -63,7 +63,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { FeatureGate } from "@/components/feature-gate";
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { cn } from "@/lib/utils";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Doc } from "@seal/backend/convex/_generated/dataModel";
@@ -107,6 +107,7 @@ type WebhookEndpointWithStats = Omit<Doc<"webhook_endpoints">, "secret" | "secre
 };
 
 function WebhooksPage() {
+  const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
   const endpoints = useQuery(api.webhooks.queries.listEndpoints);
   const eventTypes = useQuery(api.webhooks.queries.getEventTypes);
 
@@ -129,27 +130,25 @@ function WebhooksPage() {
       title="Webhooks"
       description="Receive real-time notifications when events happen in Seal"
     >
-      <FeatureGate
-        tier="pro"
-        feature="Webhooks"
-        description="Receive real-time notifications when events happen in Seal."
-      >
       <div className="space-y-6">
         <SlackNotificationsSection
           endpoints={slackEndpoints}
           eventTypes={eventTypes}
+          isPro={isPro}
+          isLoadingPlan={isLoadingPlan}
         />
 
         <WebhookEndpointsSection
           endpoints={jsonEndpoints}
           eventTypes={eventTypes}
+          isPro={isPro}
+          isLoadingPlan={isLoadingPlan}
         />
 
         <EventTypesReference eventTypes={eventTypes} />
 
         <WebhookDocumentation />
       </div>
-      </FeatureGate>
     </PageWrapper>
   );
 }
@@ -157,11 +156,15 @@ function WebhooksPage() {
 interface SlackNotificationsSectionProps {
   endpoints: WebhookEndpointWithStats[];
   eventTypes: { type: string; category: string; description: string }[];
+  isPro: boolean;
+  isLoadingPlan: boolean;
 }
 
 function SlackNotificationsSection({
   endpoints,
   eventTypes,
+  isPro,
+  isLoadingPlan,
 }: SlackNotificationsSectionProps) {
   const [isCreating, setIsCreating] = useState(false);
 
@@ -173,14 +176,31 @@ function SlackNotificationsSection({
             <Hash className="text-ai-accent h-5 w-5" />
             <CardTitle>Slack Notifications</CardTitle>
           </div>
-          <CreateSlackDialog
-            open={isCreating}
-            onOpenChange={setIsCreating}
-            eventTypes={eventTypes}
-          />
+          {isPro ? (
+            <CreateSlackDialog
+              open={isCreating}
+              onOpenChange={setIsCreating}
+              eventTypes={eventTypes}
+            />
+          ) : (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                Professional
+              </Badge>
+              <Button size="sm" variant="outline" disabled>
+                <Plus className="mr-1 h-4 w-4" />
+                Connect Slack
+              </Button>
+            </div>
+          )}
         </div>
         <CardDescription>
           Get notified in Slack when documents are signed, sent, or completed
+          {!isPro && !isLoadingPlan && (
+            <span className="text-warning mt-1 block">
+              Slack notifications require a Professional plan.
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -197,10 +217,14 @@ function SlackNotificationsSection({
             <Button
               onClick={() => setIsCreating(true)}
               className="bg-ai-accent hover:bg-ai-accent/90 mt-4 text-white"
+              disabled={!isPro}
             >
               <Plus className="mr-2 h-4 w-4" />
               Connect Slack
             </Button>
+            {!isPro && !isLoadingPlan && (
+              <p className="text-warning mt-2 text-sm">Requires a Professional plan</p>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -422,11 +446,15 @@ function CreateSlackDialog({ open, onOpenChange, eventTypes }: CreateSlackDialog
 interface WebhookEndpointsSectionProps {
   endpoints: WebhookEndpointWithStats[];
   eventTypes: { type: string; category: string; description: string }[];
+  isPro: boolean;
+  isLoadingPlan: boolean;
 }
 
 function WebhookEndpointsSection({
   endpoints,
   eventTypes,
+  isPro,
+  isLoadingPlan,
 }: WebhookEndpointsSectionProps) {
   const [isCreating, setIsCreating] = useState(false);
 
@@ -438,14 +466,31 @@ function WebhookEndpointsSection({
             <Radio className="text-ai-accent h-5 w-5" />
             <CardTitle>Webhook Endpoints</CardTitle>
           </div>
-          <CreateWebhookDialog
-            open={isCreating}
-            onOpenChange={setIsCreating}
-            eventTypes={eventTypes}
-          />
+          {isPro ? (
+            <CreateWebhookDialog
+              open={isCreating}
+              onOpenChange={setIsCreating}
+              eventTypes={eventTypes}
+            />
+          ) : (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                Professional
+              </Badge>
+              <Button size="sm" variant="outline" disabled>
+                <Plus className="mr-1 h-4 w-4" />
+                Add Endpoint
+              </Button>
+            </div>
+          )}
         </div>
         <CardDescription>
           Configure endpoints to receive webhook events
+          {!isPro && !isLoadingPlan && (
+            <span className="text-warning mt-1 block">
+              Webhooks require a Professional plan.
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -469,10 +514,14 @@ function WebhookEndpointsSection({
             <Button
               onClick={() => setIsCreating(true)}
               className="bg-ai-accent hover:bg-ai-accent/90 mt-6 text-white"
+              disabled={!isPro}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Endpoint
             </Button>
+            {!isPro && !isLoadingPlan && (
+              <p className="text-warning mt-2 text-sm">Requires a Professional plan</p>
+            )}
           </div>
         ) : (
           <div className="space-y-3">

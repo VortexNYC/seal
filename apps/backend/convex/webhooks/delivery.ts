@@ -351,7 +351,6 @@ async function markDeliverySuspended(
 
   return { delivered: false };
 }
-
 async function processPendingDelivery(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
@@ -372,7 +371,6 @@ async function processPendingDelivery(
   if (orgTier === "free") {
     return markDeliverySuspended(ctx, delivery, attemptCount);
   }
-
   return deliverWebhook(ctx, delivery, endpoint, attemptCount);
 }
 

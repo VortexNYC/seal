@@ -574,7 +574,6 @@ export async function resolveApiAuth(
   if (plan === "free") {
     throw new ApiError(403, "API access requires a Professional plan", "API_ACCESS_DISABLED");
   }
-
   return buildAuthContext(ctx, {
     authType: "api_key",
     apiKeyId: apiKey.id,

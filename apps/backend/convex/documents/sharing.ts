@@ -586,7 +586,11 @@ export const getDocumentAccess = authQuery({
     );
     const owner = await ctx.db.get(document.ownerId);
     const hasSharedDocuments = document.sharingMode !== "private" || activeAccessRecords.length > 0;
-    const subscriptionState = await getSharingSubscriptionState(ctx, document.organizationId, hasSharedDocuments);
+    const subscriptionState = await getSharingSubscriptionState(
+      ctx,
+      document.organizationId,
+      hasSharedDocuments,
+    );
 
     return {
       documentId: args.documentId,

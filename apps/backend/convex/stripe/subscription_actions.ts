@@ -95,7 +95,6 @@ export const createSubscriptionRecord = internalMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Check if subscription already exists
     const existing = await ctx.db
       .query("subscriptions")
       .withIndex("by_external_subscription_id", (q) =>
@@ -149,10 +148,12 @@ export const handleNewOrgCreated = internalAction({
     orgName: v.string(),
     adminEmail: v.string(),
   },
-  handler: async (ctx, { organizationId, orgName, adminEmail }): Promise<{ stripeCustomerId: string; enrolled: boolean; subscriptionId?: string }> => {
+  handler: async (
+    ctx,
+    { organizationId, orgName, adminEmail },
+  ): Promise<{ stripeCustomerId: string; enrolled: boolean; subscriptionId?: string }> => {
     const stripe = initializeStripe();
 
-    // 1. Create Stripe customer for the org
     const stripeCustomerId = await getOrCreateStripeCustomer(
       stripe,
       organizationId,
@@ -161,7 +162,6 @@ export const handleNewOrgCreated = internalAction({
       undefined,
     );
 
-    // 2. Save customer ID to org
     await ctx.runMutation(internal.stripe.subscription_actions.updateOrgStripeCustomerId, {
       organizationId,
       stripeCustomerId,
@@ -169,35 +169,29 @@ export const handleNewOrgCreated = internalAction({
 
     console.warn(`Created Stripe customer ${stripeCustomerId} for org ${organizationId}`);
 
-    // 3. Auto-enroll to free plan
     const lookupKey = getDefaultPlanLookupKey();
     if (!lookupKey) {
       console.warn("DEFAULT_PLAN_LOOKUP_KEY not configured, skipping free plan enrollment");
       return { stripeCustomerId, enrolled: false };
     }
 
-    // Check for existing subscription
-    const existingSub = await ctx.runQuery(
-      internal.auth.subscription_helpers.checkProFeature,
-      { organizationId },
-    );
+    const existingSub = await ctx.runQuery(internal.auth.subscription_helpers.checkProFeature, {
+      organizationId,
+    });
     if (existingSub.plan !== "free" || existingSub.isPro) {
       console.warn(`Org ${organizationId} already has a paid subscription, skipping enrollment`);
       return { stripeCustomerId, enrolled: false };
     }
 
-    // Get the free plan price
-    const priceData = await ctx.runMutation(
-      internal.stripe.subscription_actions.getPriceByLookupKey,
-      { lookupKey },
-    );
+    const priceData = await ctx.runMutation(internal.stripe.subscription_actions.getPriceByLookupKey, {
+      lookupKey,
+    });
 
     if (!priceData?.price) {
       console.warn(`Price not found for lookup key ${lookupKey}, skipping enrollment`);
       return { stripeCustomerId, enrolled: false };
     }
 
-    // Create the free subscription
     try {
       const subscription = await stripe.subscriptions.create({
         customer: stripeCustomerId,
@@ -206,7 +200,6 @@ export const handleNewOrgCreated = internalAction({
         collection_method: "charge_automatically",
       });
 
-      // Save subscription record
       const firstItem = subscription.items.data[0];
       const periodStart = firstItem?.current_period_start
         ? firstItem.current_period_start * 1000
@@ -250,7 +243,6 @@ export const syncSeatCount = internalAction({
   handler: async (ctx, { organizationId }) => {
     const stripe = initializeStripe();
 
-    // Get org's Stripe customer ID
     const org = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
       organizationId,
     });
@@ -259,14 +251,12 @@ export const syncSeatCount = internalAction({
       return;
     }
 
-    // Get active member count
     const memberCount: number = await ctx.runQuery(
       internal.organizations.helpers.getActiveMemberCount,
       { organizationId },
     );
     const quantity = Math.max(memberCount, 1);
 
-    // Find the active Stripe subscription for this customer
     const subscriptions = await stripe.subscriptions.list({
       customer: org.stripeCustomerId,
       status: "active",
@@ -285,12 +275,11 @@ export const syncSeatCount = internalAction({
       return;
     }
 
-    // Only update if quantity changed
     if (item.quantity === quantity) {
       return;
     }
 
     await stripe.subscriptionItems.update(item.id, { quantity });
-    console.warn(`Updated seat count for org ${organizationId}: ${item.quantity} → ${quantity}`);
+    console.warn(`Updated seat count for org ${organizationId}: ${item.quantity} -> ${quantity}`);
   },
 });

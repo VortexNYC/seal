@@ -310,7 +310,7 @@ export const hybridSearchDocuments = internalAction({
       const docs = await ctx.runQuery(internal.ai.search.getDocumentsByIds, {
         documentIds: extractDocumentIds(filtered),
       });
-      const docMap = new Map(docs.map((document: Doc<"documents">) => [document._id.toString(), document]));
+      const docMap = new Map(docs.map((document) => [document._id.toString(), document]));
 
       filtered = filtered.filter((entry) => {
         const documentId = entry.key?.split(":")[1];
