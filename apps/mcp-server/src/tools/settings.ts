@@ -2,7 +2,6 @@
  * @fileoverview Organization settings tools for the Seal MCP server.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-
 import {
   type ApiSettings,
   type UpdateSettingsInput,
