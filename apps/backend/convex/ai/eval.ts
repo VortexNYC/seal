@@ -51,9 +51,8 @@ async function processEvalMessage(
   console.info(`[SealAI eval] Route → ${tier} for: "${prompt.slice(0, 60)}"`);
 
   if (tier === "TIER_3") {
-    const result = await sealAgentTier3.generateText(
-      sealCtx,
-      { threadId },
+    const { thread } = await sealAgentTier3.continueThread(sealCtx, { threadId });
+    const result = await thread.generateText(
       { promptMessageId: messageId, system: systemPrompt },
       { storageOptions: { saveMessages: "all" } },
     );
@@ -61,9 +60,8 @@ async function processEvalMessage(
   }
 
   if (tier === "TIER_2") {
-    const result = await sealAgent.generateText(
-      sealCtx,
-      { threadId },
+    const { thread } = await sealAgent.continueThread(sealCtx, { threadId });
+    const result = await thread.generateText(
       { promptMessageId: messageId, system: systemPrompt },
       { storageOptions: { saveMessages: "all" } },
     );
@@ -73,9 +71,8 @@ async function processEvalMessage(
   // TIER_1: Flash-Lite with quality check + fallback
   let tier1: ExecResult | null = null;
   try {
-    tier1 = await sealAgentTier1.generateText(
-      sealCtx,
-      { threadId },
+    const { thread } = await sealAgentTier1.continueThread(sealCtx, { threadId });
+    tier1 = await thread.generateText(
       { promptMessageId: messageId, system: systemPrompt, ...tier1Opts },
       { storageOptions: { saveMessages: "none" } },
     );
@@ -93,9 +90,8 @@ async function processEvalMessage(
   }
 
   console.warn(`[SealAI eval] TIER_1 failed (${failure}) — falling back to TIER_2`);
-  const result = await sealAgent.generateText(
-    sealCtx,
-    { threadId },
+  const { thread } = await sealAgent.continueThread(sealCtx, { threadId });
+  const result = await thread.generateText(
     { promptMessageId: messageId, system: systemPrompt },
     { storageOptions: { saveMessages: "all" } },
   );
