@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
+
+type AuthStep = "authenticated" | "otp" | "password";
 
 function getSignInPromptMatcher() {
   return /sign in/i;
@@ -21,6 +24,94 @@ function getAuthSpecEmail(kind: "valid" | "invalid") {
   }
 
   return process.env.TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
+}
+
+async function clickPrimaryAuthAction(page: Page): Promise<void> {
+  const candidates: Locator[] = [
+    page.getByRole("button", { name: "Continue", exact: true }),
+    page.getByRole("button", { name: /continue/i }),
+    page.getByRole("button", { name: /^sign in$/i }),
+    page.getByRole("button", { name: /sign in/i }),
+  ];
+
+  for (const locator of candidates) {
+    if (await locator.first().isVisible().catch(() => false)) {
+      await locator.first().click();
+      return;
+    }
+  }
+
+  throw new Error("Unable to find the primary Clerk auth action.");
+}
+
+async function waitForNextAuthStep(page: Page): Promise<AuthStep> {
+  const otpCandidates: Locator[] = [
+    page.getByRole("heading", { name: getOtpPromptMatcher() }).first(),
+    page.getByText(/check your email/i),
+    page.getByText(/verification code/i),
+  ];
+  const passwordCandidates: Locator[] = [
+    page.getByRole("heading", { name: /password/i }),
+    page.getByText(/enter your password/i),
+    page.locator('input[type="password"]'),
+  ];
+
+  const start = Date.now();
+  while (Date.now() - start < 30000) {
+    if (page.url().match(getSuccessfulAuthUrlMatcher())) {
+      return "authenticated";
+    }
+
+    for (const locator of otpCandidates) {
+      if (await locator.isVisible().catch(() => false)) {
+        return "otp";
+      }
+    }
+
+    for (const locator of passwordCandidates) {
+      if (await locator.first().isVisible().catch(() => false)) {
+        return "password";
+      }
+    }
+
+    await page.waitForTimeout(250);
+  }
+
+  throw new Error(`Authentication flow did not reach a known next step. Current URL: ${page.url()}`);
+}
+
+async function fillOtpCode(page: Page, code: string): Promise<void> {
+  const singleOtpInput = page
+    .locator('input[name="code"], input[autocomplete="one-time-code"]')
+    .first();
+  const multiOtpInputs = page.locator(
+    '[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]',
+  );
+  const codeRoleInput = page.getByRole("textbox", { name: /code/i }).first();
+
+  if ((await singleOtpInput.count()) > 0) {
+    await singleOtpInput.fill(code);
+    return;
+  }
+
+  if ((await multiOtpInputs.count()) > 1) {
+    for (let index = 0; index < Math.min(6, code.length); index++) {
+      await multiOtpInputs.nth(index).fill(code[index] ?? "");
+    }
+    return;
+  }
+
+  if ((await codeRoleInput.count()) > 0) {
+    await codeRoleInput.fill(code);
+    return;
+  }
+
+  await page.keyboard.type(code);
+}
+
+async function fillPassword(page: Page, password: string): Promise<void> {
+  const passwordInput = page.getByLabel(/password/i).or(page.locator('input[type="password"]'));
+  await passwordInput.first().fill(password);
 }
 
 test.describe("Authentication", () => {
@@ -46,8 +137,6 @@ test.describe("Authentication", () => {
     );
 
     const testEmail = getAuthSpecEmail("valid");
-    const testEmailCode = process.env.TEST_EMAIL_CODE || "424242";
-
     // Navigate directly to sign-in page
     await page.goto("/sign-in");
 
@@ -59,36 +148,25 @@ test.describe("Authentication", () => {
 
     // Fill in email
     await page.getByRole("textbox", { name: /email/i }).first().fill(testEmail);
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await clickPrimaryAuthAction(page);
 
-    // Wait for OTP code screen and inputs to be ready
-    await expect(
-      page.getByRole("heading", { name: getOtpPromptMatcher() }).first(),
-      `Expected OTP prompt ${getOtpPromptMatcher()}`,
-    ).toBeVisible();
+    const nextStep = await waitForNextAuthStep(page);
 
-    // Wait a moment for Clerk OTP to initialize
-    await page.waitForTimeout(500);
+    if (nextStep === "otp") {
+      const testEmailCode = process.env.TEST_EMAIL_CODE || "424242";
 
-    // Type the OTP code directly (Clerk test mode accepts 424242 for +clerk_test emails)
-    const singleOtpInput = page
-      .locator('input[name="code"], input[autocomplete="one-time-code"]')
-      .first();
-    const multiOtpInputs = page.locator(
-      '[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]',
-    );
-    const codeRoleInput = page.getByRole("textbox", { name: /code/i }).first();
-
-    if ((await singleOtpInput.count()) > 0) {
-      await singleOtpInput.fill(testEmailCode);
-    } else if ((await multiOtpInputs.count()) > 1) {
-      for (let i = 0; i < Math.min(6, testEmailCode.length); i++) {
-        await multiOtpInputs.nth(i).fill(testEmailCode[i] ?? "");
+      // Wait a moment for Clerk OTP to initialize
+      await page.waitForTimeout(500);
+      await fillOtpCode(page, testEmailCode);
+    } else if (nextStep === "password") {
+      const testPassword = process.env.TEST_USER_PASSWORD;
+      test.skip(!testPassword, "TEST_USER_PASSWORD is required when the shared Clerk user uses password auth.");
+      if (!testPassword) {
+        return;
       }
-    } else if ((await codeRoleInput.count()) > 0) {
-      await codeRoleInput.fill(testEmailCode);
-    } else {
-      await page.keyboard.type(testEmailCode);
+
+      await fillPassword(page, testPassword);
+      await clickPrimaryAuthAction(page);
     }
 
     // Fresh Clerk test users may land on onboarding before they have a workspace.
@@ -111,17 +189,26 @@ test.describe("Authentication", () => {
 
     // Fill in email
     await page.getByLabel(/email address/i).fill(testEmail);
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await clickPrimaryAuthAction(page);
 
-    // Wait for OTP code screen
-    await expect(page.getByRole("heading", { name: getOtpPromptMatcher() }).first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: getOtpPromptMatcher() }).first()).toBeVisible();
+    const nextStep = await waitForNextAuthStep(page);
 
-    // Wait a moment for Clerk OTP to initialize
-    await page.waitForTimeout(500);
+    if (nextStep === "otp") {
+      // Wait a moment for Clerk OTP to initialize
+      await page.waitForTimeout(500);
 
-    // Type an invalid OTP code directly
-    await page.keyboard.type("000000");
+      // Type an invalid OTP code directly
+      await fillOtpCode(page, "000000");
+    } else {
+      const validPassword = process.env.TEST_USER_PASSWORD;
+      test.skip(!validPassword, "TEST_USER_PASSWORD is required when the shared Clerk user uses password auth.");
+      if (!validPassword) {
+        return;
+      }
+
+      await fillPassword(page, `${validPassword}-invalid`);
+      await clickPrimaryAuthAction(page);
+    }
 
     // Should show an auth error message (rate limits and invalid code are both expected).
     await expect(

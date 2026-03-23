@@ -4,6 +4,8 @@ import path from "node:path";
 /* oxlint-disable react-hooks/rules-of-hooks */
 import { expect, test as base, type Locator, type Page } from "@playwright/test";
 
+type AuthStep = "authenticated" | "otp" | "password";
+
 type AuthFixtures = {
   authenticatedPage: Page;
   organizationSlug: string;
@@ -90,11 +92,16 @@ export const test = base.extend<AuthFixtures, WorkerFixtures>({
 });
 
 /**
- * Perform login using Clerk with email code verification
+ * Perform login using the first Clerk step rendered for the configured account.
+ *
+ * The shared CI account has historically drifted between email-code and
+ * password-based sign-in flows, so the worker bootstrap needs to support both
+ * instead of assuming that Clerk will always render the OTP screen.
  */
 async function performLogin(page: Page): Promise<void> {
   const testEmail = process.env.TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
   const testEmailCode = process.env.TEST_EMAIL_CODE || "424242";
+  const testUserPassword = process.env.TEST_USER_PASSWORD;
 
   // Navigate directly to sign-in page
   await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
@@ -116,22 +123,38 @@ async function performLogin(page: Page): Promise<void> {
 
   // Fill in email
   await fillFieldWithFallback(page, testEmail);
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await clickPrimaryAuthAction(page);
 
-  // Wait for OTP code screen
-  await waitForElementWithFallback(page, [
-    page.getByRole("heading", { name: /check your email/i }),
-    page.getByText(/check your email/i),
-    page.getByText(/verification code/i),
-  ]);
+  const nextStep = await waitForAuthStep(page);
 
-  // Wait a moment for Clerk OTP to initialize
-  await page.waitForTimeout(500);
+  if (nextStep === "authenticated") {
+    return;
+  }
 
-  // Type the OTP code directly (Clerk test mode accepts 424242 for +clerk_test emails)
-  await fillOtpCode(page, testEmailCode);
+  if (nextStep === "otp") {
+    // Wait a moment for Clerk OTP to initialize
+    await page.waitForTimeout(500);
 
-  // Wait for redirect to authenticated area (or onboarding flow that still requires auth context)
+    // Type the OTP code directly (Clerk test mode accepts 424242 for +clerk_test emails)
+    await fillOtpCode(page, testEmailCode);
+
+    // Wait for redirect to authenticated area (or onboarding flow that still requires auth context)
+    await page.waitForURL(/\/(app|.*\/home|.*\/onboarding\/choose-organization)/, {
+      timeout: 30000,
+    });
+    return;
+  }
+
+  if (!testUserPassword) {
+    const authState = await describeAuthState(page);
+    throw new Error(
+      `Clerk requested password authentication for ${testEmail}, but TEST_USER_PASSWORD is not set. ${authState}`,
+    );
+  }
+
+  await fillPasswordWithFallback(page, testUserPassword);
+  await clickPrimaryAuthAction(page);
+
   await page.waitForURL(/\/(app|.*\/home|.*\/onboarding\/choose-organization)/, {
     timeout: 30000,
   });
@@ -202,6 +225,23 @@ async function fillFieldWithFallback(page: Page, value: string): Promise<void> {
   await page.locator("input").first().fill(value);
 }
 
+async function fillPasswordWithFallback(page: Page, value: string): Promise<void> {
+  const candidates: Locator[] = [
+    page.getByLabel(/password/i),
+    page.getByRole("textbox", { name: /password/i }),
+    page.locator('input[type="password"]'),
+  ];
+
+  for (const locator of candidates) {
+    if ((await locator.count()) > 0) {
+      await locator.first().fill(value);
+      return;
+    }
+  }
+
+  throw new Error(`Unable to find the Clerk password field. ${await describeAuthState(page)}`);
+}
+
 async function fillOtpCode(page: Page, code: string): Promise<void> {
   const singleInputs = page.locator('input[name="code"], input[autocomplete="one-time-code"]');
   const digitInputs = page.locator(
@@ -259,12 +299,78 @@ async function waitForElementWithFallback(page: Page, candidates: Locator[]): Pr
     return;
   }
 
-  await expect(candidates[0]).toBeVisible({ timeout: 1000 });
+  throw new Error(`Authentication flow stalled before the expected element rendered. ${await describeAuthState(page)}`);
+}
+
+async function clickPrimaryAuthAction(page: Page): Promise<void> {
+  const candidates: Locator[] = [
+    page.getByRole("button", { name: "Continue", exact: true }),
+    page.getByRole("button", { name: /continue/i }),
+    page.getByRole("button", { name: /^sign in$/i }),
+    page.getByRole("button", { name: /sign in/i }),
+  ];
+
+  for (const locator of candidates) {
+    if (await locator.first().isVisible().catch(() => false)) {
+      await locator.first().click();
+      return;
+    }
+  }
+
+  throw new Error(`Unable to find the primary Clerk auth action. ${await describeAuthState(page)}`);
+}
+
+async function waitForAuthStep(page: Page): Promise<AuthStep> {
+  const start = Date.now();
+  const timeoutMs = 30000;
+
+  const otpCandidates: Locator[] = [
+    page.getByRole("heading", { name: /check your email/i }),
+    page.getByText(/check your email/i),
+    page.getByText(/verification code/i),
+  ];
+  const passwordCandidates: Locator[] = [
+    page.getByRole("heading", { name: /password/i }),
+    page.getByText(/enter your password/i),
+    page.getByText(/password/i),
+    page.locator('input[type="password"]'),
+  ];
+
+  while (Date.now() - start < timeoutMs) {
+    if (isAuthenticatedUrl(page.url())) {
+      return "authenticated";
+    }
+
+    for (const locator of otpCandidates) {
+      if (await locator.first().isVisible()) {
+        return "otp";
+      }
+    }
+
+    for (const locator of passwordCandidates) {
+      if (await locator.first().isVisible()) {
+        return "password";
+      }
+    }
+
+    const authError = await getVisibleAuthError(page);
+    if (authError) {
+      throw new Error(`Authentication flow failed before the next step rendered: ${authError}`);
+    }
+
+    await page.waitForTimeout(250);
+  }
+
+  if (isAuthenticatedUrl(page.url())) {
+    return "authenticated";
+  }
+
+  throw new Error(`Authentication flow stalled before the next step rendered. ${await describeAuthState(page)}`);
 }
 
 async function getVisibleAuthError(page: Page): Promise<string | null> {
   const authErrorLocator = page
-    .getByText(/too many requests|try again|incorrect|invalid|wrong/i)
+    .getByText(/too many requests|try again|incorrect|invalid|wrong|password|code/i)
     .first();
 
   if (!(await authErrorLocator.isVisible().catch(() => false))) {
@@ -273,6 +379,17 @@ async function getVisibleAuthError(page: Page): Promise<string | null> {
 
   const text = (await authErrorLocator.textContent())?.trim();
   return text || "Unknown authentication error";
+}
+
+async function describeAuthState(page: Page): Promise<string> {
+  const headingTexts = await page.locator("h1, h2, h3").allTextContents();
+  const buttonTexts = await page.locator("button").allTextContents();
+  const currentUrl = page.url();
+
+  const headings = headingTexts.map((text) => text.trim()).filter(Boolean).slice(0, 5).join(" | ");
+  const buttons = buttonTexts.map((text) => text.trim()).filter(Boolean).slice(0, 5).join(" | ");
+
+  return `Current URL: ${currentUrl}. Visible headings: ${headings || "none"}. Visible buttons: ${buttons || "none"}.`;
 }
 
 /**
