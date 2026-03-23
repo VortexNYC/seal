@@ -75,8 +75,6 @@ Create `.env.test` file (see `.env.test.example`):
 ```bash
 E2E_TEST_USER_EMAIL=seal-e2e+clerk_test@example.com
 E2E_TEST_EMAIL_CODE=424242
-# Optional when the shared Clerk test account uses password auth instead of email codes
-TEST_USER_PASSWORD=TestPassword123!
 VITE_CONVEX_URL=https://test-deployment.convex.cloud
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 PLAYWRIGHT_BASE_URL=http://localhost:5173
@@ -216,7 +214,6 @@ Configure these in GitHub repository settings:
 
 - `E2E_TEST_USER_EMAIL`
 - `E2E_TEST_EMAIL_CODE` for Clerk email-code auth
-- `TEST_USER_PASSWORD` for Clerk password auth
 - `VITE_CONVEX_URL_TEST`
 - `VITE_CLERK_PUBLISHABLE_KEY_TEST`
 

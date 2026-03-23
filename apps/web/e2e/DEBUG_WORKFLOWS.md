@@ -348,8 +348,6 @@ Create `.env.test` for test-specific configuration:
 # Test user credentials
 E2E_TEST_USER_EMAIL=seal-e2e+clerk_test@example.com
 E2E_TEST_EMAIL_CODE=424242
-# Optional when the Clerk test account is configured for password auth.
-TEST_USER_PASSWORD=TestPassword123!
 
 # Convex
 VITE_CONVEX_URL=https://test-deployment.convex.cloud

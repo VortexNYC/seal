@@ -115,7 +115,6 @@ jobs:
         env:
           E2E_TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER_EMAIL }}
           E2E_TEST_EMAIL_CODE: ${{ secrets.E2E_TEST_EMAIL_CODE }}
-          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL_TEST }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
           PLAYWRIGHT_CI_RETRIES: "1"
