@@ -1,0 +1,11 @@
+[mcp_servers.convex]
+command = "npx"
+args = ["-y", "convex@latest", "mcp", "start"]
+
+[mcp_servers.clerk]
+type = "url"
+url = "https://mcp.clerk.com/mcp"
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
