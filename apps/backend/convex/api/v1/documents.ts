@@ -11,6 +11,7 @@ import { v } from "convex/values";
 
 import { internal } from "../../_generated/api";
 import { internalMutation, internalQuery } from "../../_generated/server";
+import { sanitizeFileName } from "../../documents/upload_config";
 import type { DocumentWorkflowStatus } from "../../schemas/document_workflow_status";
 import { publishWebhookEvent } from "../../webhooks/publish";
 import { workflow } from "../../workflows";
@@ -242,11 +243,14 @@ export const createDocument = internalMutation({
     deadline: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<string> => {
+    // Sanitize title to prevent path traversal attacks
+    const sanitizedTitle = sanitizeFileName(args.title);
+
     // Create the document
     const documentId = await ctx.db.insert("documents", {
       organizationId: args.organizationId,
       ownerId: args.userId,
-      name: args.title,
+      name: sanitizedTitle,
       description: args.description,
       fileSize: args.fileSize,
       fileType: args.fileType,
@@ -301,7 +305,7 @@ export const updateDocument = internalMutation({
     };
 
     if (args.title !== undefined) {
-      updateData.name = args.title;
+      updateData.name = sanitizeFileName(args.title);
     }
     if (args.description !== undefined) {
       updateData.description = args.description;

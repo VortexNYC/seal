@@ -110,6 +110,92 @@ export function validateFileType(fileType: string): {
 }
 
 /**
+ * Sanitize a file name to prevent path traversal and other injection attacks.
+ *
+ * - Strips directory components (path traversal: ../, /, \)
+ * - Removes null bytes
+ * - Removes control characters (U+0000–U+001F, U+007F)
+ * - Collapses leading/trailing whitespace and dots
+ * - Falls back to "document.pdf" if the result is empty
+ */
+export function sanitizeFileName(fileName: string): string {
+  let sanitized = fileName;
+
+  // 1. Remove null bytes
+  sanitized = sanitized.replace(/\0/g, "");
+
+  // 2. Remove control characters
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional sanitization of control chars
+  sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, "");
+
+  // 3. Normalize path separators and strip directory traversal
+  //    Extract only the basename (last segment after / or \)
+  sanitized = sanitized.split(/[/\\]/).pop() ?? "";
+
+  // 4. Remove remaining .. sequences (e.g. "..contract.pdf" → "contract.pdf")
+  sanitized = sanitized.replace(/^\.\.+/, "");
+
+  // 5. Trim whitespace and leading/trailing dots
+  sanitized = sanitized.trim().replace(/^\.+|\.+$/g, "");
+
+  // 6. Collapse multiple spaces into one
+  sanitized = sanitized.replace(/\s+/g, " ");
+
+  // 7. Fallback if empty
+  if (!sanitized) {
+    return "document.pdf";
+  }
+
+  // 8. Re-add .pdf extension if it was stripped (e.g. filename was just ".pdf")
+  if (!sanitized.includes(".")) {
+    sanitized = `${sanitized}.pdf`;
+  }
+
+  return sanitized;
+}
+
+/**
+ * Validate that a file name does not contain path traversal sequences.
+ * Returns an error if the raw name contains suspicious patterns.
+ */
+export function validateFileName(fileName: string): {
+  valid: boolean;
+  error?: string;
+} {
+  if (!fileName || fileName.trim().length === 0) {
+    return { valid: false, error: "File name is required" };
+  }
+
+  // Reject null bytes
+  if (fileName.includes("\0")) {
+    return { valid: false, error: "File name contains invalid characters" };
+  }
+
+  // Reject path separators
+  if (/[/\\]/.test(fileName)) {
+    return { valid: false, error: "File name must not contain path separators" };
+  }
+
+  // Reject .. traversal
+  if (/\.\./.test(fileName)) {
+    return { valid: false, error: "File name must not contain path traversal sequences" };
+  }
+
+  // Reject control characters
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional validation of control chars
+  if (/[\x00-\x1F\x7F]/.test(fileName)) {
+    return { valid: false, error: "File name contains invalid characters" };
+  }
+
+  // Reasonable length limit
+  if (fileName.length > 255) {
+    return { valid: false, error: "File name must be 255 characters or less" };
+  }
+
+  return { valid: true };
+}
+
+/**
  * Validate file extension matches MIME type
  */
 export function validateFileExtension(
@@ -151,6 +237,11 @@ export function validateFile(
   errors: string[];
 } {
   const errors: string[] = [];
+
+  const nameValidation = validateFileName(fileName);
+  if (!nameValidation.valid && nameValidation.error) {
+    errors.push(nameValidation.error);
+  }
 
   const sizeValidation = validateFileSize(fileSize);
   if (!sizeValidation.valid && sizeValidation.error) {

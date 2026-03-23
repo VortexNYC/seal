@@ -14,7 +14,7 @@ import { authMutation, permissionMutation } from "../auth";
 import { ensureDocumentLimit, ensureStorageLimit } from "../auth/subscription_guards";
 import { retrier } from "../retrier";
 import { expirationPeriodToMs } from "./send_document_action";
-import { validateFile } from "./upload_config";
+import { sanitizeFileName, validateFile } from "./upload_config";
 import { createVersionSnapshot } from "./version_helpers";
 import {
   canCancelDocument,
@@ -177,13 +177,16 @@ export const createDocument = permissionMutation("documents:create")({
   handler: async (ctx, args) => {
     const userId = ctx.auth.user._id;
 
-    // 1. Validate file before processing
-    const validation = validateFile(args.name, args.fileType, args.fileSize);
+    // 1. Sanitize filename to prevent path traversal attacks
+    const sanitizedName = sanitizeFileName(args.name);
+
+    // 2. Validate file before processing
+    const validation = validateFile(sanitizedName, args.fileType, args.fileSize);
     if (!validation.valid) {
       throw new ConvexError(`File validation failed: ${validation.errors.join(", ")}`);
     }
 
-    // 2. Verify user is a member of the organization
+    // 3. Verify user is a member of the organization
     const member = await ctx.db
       .query("organization_members")
       .withIndex("by_user_organization", (q) =>
@@ -199,15 +202,15 @@ export const createDocument = permissionMutation("documents:create")({
       throw new ConvexError("Your organization membership is not active");
     }
 
-    // 3. Check subscription limits
+    // 4. Check subscription limits
     await ensureDocumentLimit(ctx.db, userId);
     await ensureStorageLimit(ctx.db, userId, args.fileSize);
 
-    // 4. Create the document record (default to private sharing)
+    // 5. Create the document record (default to private sharing)
     const documentId = await ctx.db.insert("documents", {
       organizationId: args.organizationId,
       ownerId: userId,
-      name: args.name,
+      name: sanitizedName,
       description: args.description,
       fileSize: args.fileSize,
       fileType: args.fileType,
@@ -222,7 +225,7 @@ export const createDocument = permissionMutation("documents:create")({
       updatedAt: Date.now(),
     });
 
-    // 5. Insert initial version snapshot
+    // 6. Insert initial version snapshot
     await createVersionSnapshot(ctx, {
       documentId,
       createdBy: userId,
@@ -236,23 +239,23 @@ export const createDocument = permissionMutation("documents:create")({
       userId: ctx.auth.user.clerkId,
       action: "document.created",
       documentId,
-      newValues: { name: args.name, fileType: args.fileType },
+      newValues: { name: sanitizedName, fileType: args.fileType },
       description: "Document created",
       ipAddress: "web-authenticated",
     });
 
-    // 6. Schedule SHA-256 hash computation for document integrity baseline
+    // 7. Schedule SHA-256 hash computation for document integrity baseline
     // Runs as an action since it needs to download the PDF from storage
     await retrier.run(ctx, internal.documents.hash_document_action.hashDocument, {
       documentId,
     });
 
-    // 7. Schedule PDF text extraction for search indexing
+    // 8. Schedule PDF text extraction for search indexing
     await retrier.run(ctx, internal.documents.extract_text_action.extractDocumentText, {
       documentId,
     });
 
-    // 8. Schedule AI field analysis pipeline (if auto-analyze is on)
+    // 9. Schedule AI field analysis pipeline (if auto-analyze is on)
     if (await shouldAutoAnalyze(ctx.db, args.organizationId)) {
       await enqueueAiPipeline(ctx, ctx.db, documentId, args.organizationId, ctx.auth.user._id);
       await ctx.db.patch(documentId, { aiProcessingStatus: "pending" });
