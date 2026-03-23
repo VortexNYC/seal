@@ -2,6 +2,7 @@
 
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { getChangelogEntries } from "../src/lib/changelog/manifest";
 import { getAllPageSlugs } from "../src/lib/content/pages";
@@ -10,7 +11,7 @@ import { source } from "../src/lib/docs/server-source";
 const SITE_URL = "https://seal.nyc";
 const OUTPUT_FILE = path.resolve("public", "sitemap.xml");
 
-async function generateSitemap(): Promise<void> {
+export async function generateSitemap(): Promise<void> {
   const today = new Date().toISOString().split("T")[0] as string;
   const docsPages = source.getPages();
   const landingPages = getAllPageSlugs();
@@ -63,8 +64,14 @@ ${urlEntries}
   console.info(`[sitemap] Generated ${urls.length} URLs → ${OUTPUT_FILE}`);
 }
 
-generateSitemap().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error("[sitemap] Failed to generate sitemap:", message);
-  process.exitCode = 1;
-});
+const isDirectExecution = process.argv[1]
+  ? path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  : false;
+
+if (isDirectExecution) {
+  generateSitemap().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[sitemap] Failed to generate sitemap:", message);
+    process.exitCode = 1;
+  });
+}

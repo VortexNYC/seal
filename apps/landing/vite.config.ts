@@ -9,6 +9,7 @@ import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 
 import * as SourceConfig from "./source.config";
+import { contentManifestsPlugin } from "./src/plugins/content-manifests";
 import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
@@ -56,6 +57,7 @@ export default defineConfig(async ({ command }) => ({
       },
     },
     await mdx(SourceConfig, { updateViteConfig: false }),
+    contentManifestsPlugin(),
     searchIndexPlugin(),
     tailwindcss(),
     tanstackStart({
