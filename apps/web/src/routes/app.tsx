@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, useOrganization } from "@clerk/clerk-react";
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import Loader from "@/components/loader";
 import { buildOrganizationPath } from "@/lib/organization-path";
+import { shouldWaitForOrganizationSync } from "@/lib/organization-sync";
 
 export const Route = createFileRoute("/app")({
   component: AppRedirect,
@@ -25,14 +26,22 @@ function AppRedirect() {
 }
 
 function AuthenticatedRedirect() {
+  const { isLoaded: isClerkLoaded, organization: clerkOrganization } = useOrganization();
   const organizationStatus = useQuery(api.check_membership.hasOrganization);
   const ensureActiveOrganization = useMutation(api.check_membership.ensureActiveOrganization);
   const [isFixingOrg, setIsFixingOrg] = useState(false);
   const [fixedSlug, setFixedSlug] = useState<string | null>(null);
 
   const isLoading = organizationStatus === undefined;
+  const hasOrganization = organizationStatus?.hasOrganization ?? false;
   const activeOrganizationSlug = fixedSlug ?? organizationStatus?.activeOrganizationSlug ?? null;
   const needsActiveOrgFix = organizationStatus?.needsActiveOrgFix ?? false;
+  const isWaitingForOrganizationSync = shouldWaitForOrganizationSync({
+    isClerkLoaded,
+    hasClerkActiveOrganization: clerkOrganization !== null,
+    hasOrganization,
+    activeOrganizationSlug,
+  });
 
   // Auto-fix activeOrganizationId if user has membership but no active org set
   useEffect(() => {
@@ -54,13 +63,15 @@ function AuthenticatedRedirect() {
   }, [isLoading, needsActiveOrgFix, isFixingOrg, fixedSlug, ensureActiveOrganization]);
 
   // Show loading state while checking authentication or fixing organization
-  if (isLoading || isFixingOrg) {
+  if (isLoading || isFixingOrg || isWaitingForOrganizationSync) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="text-center">
           <Loader />
           <p className="text-muted-foreground mt-4">
-            {isFixingOrg ? "Setting up your workspace..." : "Loading..."}
+            {isFixingOrg || isWaitingForOrganizationSync
+              ? "Setting up your workspace..."
+              : "Loading..."}
           </p>
         </div>
       </div>
