@@ -99,8 +99,8 @@ export const test = base.extend<AuthFixtures, WorkerFixtures>({
  * instead of assuming that Clerk will always render the OTP screen.
  */
 async function performLogin(page: Page): Promise<void> {
-  const testEmail = process.env.TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
-  const testEmailCode = process.env.TEST_EMAIL_CODE || "424242";
+  const testEmail = process.env.E2E_TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
+  const testEmailCode = process.env.E2E_TEST_EMAIL_CODE || "424242";
   const testUserPassword = process.env.TEST_USER_PASSWORD;
 
   // Navigate directly to sign-in page

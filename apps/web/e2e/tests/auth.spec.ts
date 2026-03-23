@@ -23,7 +23,7 @@ function getAuthSpecEmail(kind: "valid" | "invalid") {
     return envValue;
   }
 
-  return process.env.TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
+  return process.env.E2E_TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
 }
 
 async function clickPrimaryAuthAction(page: Page): Promise<void> {
@@ -153,7 +153,7 @@ test.describe("Authentication", () => {
     const nextStep = await waitForNextAuthStep(page);
 
     if (nextStep === "otp") {
-      const testEmailCode = process.env.TEST_EMAIL_CODE || "424242";
+      const testEmailCode = process.env.E2E_TEST_EMAIL_CODE || "424242";
 
       // Wait a moment for Clerk OTP to initialize
       await page.waitForTimeout(500);
