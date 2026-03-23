@@ -9,6 +9,7 @@ import { internalMutation, type MutationCtx, mutation } from "../_generated/serv
 import { logAction } from "../audit_logs/helpers";
 import { adminMutation, authMutation } from "../auth";
 import { seedSystemRoles } from "../organization_roles/helpers";
+import { slugify } from "../utils";
 import { organizationBaseSchema } from "../validations/organizations";
 
 // Type for organization update operations
@@ -257,15 +258,6 @@ export const ensurePersonalOrganization = mutation({
   },
 });
 
-function slugify(input: string): string {
-  const slug = input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-
-  // Return non-empty slug or fallback
-  return slug || `user-${Date.now()}`;
-}
 
 async function generateUniqueSlug(db: MutationCtx["db"], desiredSlug: string): Promise<string> {
   let slug = desiredSlug;

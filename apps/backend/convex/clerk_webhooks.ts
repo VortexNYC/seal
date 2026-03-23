@@ -10,6 +10,7 @@ import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, internalMutation, mutation } from "./_generated/server";
 import { logAction } from "./audit_logs/helpers";
 import type { OrganizationRole } from "./schema";
+import { slugify } from "./utils";
 
 type MembershipUpsertArgs = {
   clerkUserId: string;
@@ -245,14 +246,14 @@ export const syncOrganization = mutation({
       existingOrg = await ctx.db
         .query("organizations")
         .withIndex("by_slug", (q) =>
-          q.eq("slug", args.slug || args.name.toLowerCase().replace(/\s+/g, "-")),
+          q.eq("slug", args.slug || slugify(args.name)),
         )
         .first();
     }
 
     const organizationData = {
       name: args.name,
-      slug: args.slug || args.name.toLowerCase().replace(/\s+/g, "-"),
+      slug: args.slug || slugify(args.name),
       type: "company" as const, // Default to company type for Clerk organizations
       logo: args.logo || undefined,
       metadata: args.metadata || undefined,
