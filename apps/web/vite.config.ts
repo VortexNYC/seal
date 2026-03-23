@@ -8,6 +8,21 @@ import { defineConfig } from "vite";
 
 export default defineConfig(({ command }) => {
   const enableSentry = command === "build";
+  const manualChunks = (moduleId: string): string | undefined => {
+    if (moduleId.includes("react-pdf") || moduleId.includes("pdfjs-dist")) {
+      return "pdf-viewer";
+    }
+
+    if (moduleId.includes("recharts")) {
+      return "charts";
+    }
+
+    if (moduleId.includes("date-fns")) {
+      return "date-utils";
+    }
+
+    return undefined;
+  };
 
   return {
     plugins: [
@@ -55,14 +70,7 @@ export default defineConfig(({ command }) => {
       // SEA-136: Mobile performance optimization - chunk splitting for lazy loading
       rollupOptions: {
         output: {
-          manualChunks: {
-            // Large PDF library - lazy loaded on signing/document pages
-            "pdf-viewer": ["react-pdf", "pdfjs-dist"],
-            // Charts library - only used on dashboard
-            charts: ["recharts"],
-            // Date utilities
-            "date-utils": ["date-fns"],
-          },
+          manualChunks,
         },
       },
     },

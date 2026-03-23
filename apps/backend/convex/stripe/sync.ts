@@ -197,7 +197,7 @@ const syncFromStripeInternal = async (ctx: ActionCtx) => {
   }
 
   const stripe = new Stripe(stripeSecretKey, {
-    apiVersion: "2025-12-15.clover",
+    apiVersion: "2026-02-25.clover",
   });
 
   // Fetch and sync all products from Stripe with pagination (active and archived)

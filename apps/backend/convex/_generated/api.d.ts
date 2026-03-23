@@ -3955,12 +3955,17 @@ export declare const components: {
         "internal",
         {
           chunkContext?: { after: number; before: number };
-          embedding: Array<number>;
+          dimension?: number;
+          embedding?: Array<number>;
           filters: Array<{ name: string; value: any }>;
           limit: number;
           modelId: string;
           namespace: string;
+          searchType?: "vector" | "text" | "hybrid";
+          textQuery?: string;
+          textWeight?: number;
           vectorScoreThreshold?: number;
+          vectorWeight?: number;
         },
         {
           entries: Array<{
@@ -4713,7 +4718,7 @@ export declare const components: {
       cleanup: FunctionReference<
         "mutation",
         "internal",
-        { workflowId: string },
+        { force?: boolean; workflowId: string },
         boolean
       >;
       complete: FunctionReference<
@@ -4919,6 +4924,12 @@ export declare const components: {
           pageStatus?: "SplitRecommended" | "SplitRequired" | null;
           splitCursor?: string | null;
         }
+      >;
+      restart: FunctionReference<
+        "mutation",
+        "internal",
+        { from?: number | string; startAsync?: boolean; workflowId: string },
+        null
       >;
     };
   };

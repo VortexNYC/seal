@@ -27,7 +27,6 @@ export const Route = createFileRoute("/changelog/$slug")({
       ],
     };
   },
-  // @ts-expect-error — TanStack Router generic inference limitation with $slug param routes
   loader: async ({ params }) => {
     const entry = getChangelogEntry(params.slug);
     if (!entry) {
