@@ -347,6 +347,8 @@ Create `.env.test` for test-specific configuration:
 ```bash
 # Test user credentials
 TEST_USER_EMAIL=test@seal-test.com
+TEST_EMAIL_CODE=424242
+# Optional when the Clerk test account is configured for password auth.
 TEST_USER_PASSWORD=TestPassword123!
 
 # Convex
