@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { DocData } from "fumadocs-mdx/runtime/types";
 import type { ReactNode } from "react";
@@ -163,5 +164,15 @@ async function generateChangelogManifest(): Promise<void> {
   await fs.writeFile(changelogOutputPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 }
 
-await generateDocsManifest();
-await generateChangelogManifest();
+export async function generateContentManifests(): Promise<void> {
+  await generateDocsManifest();
+  await generateChangelogManifest();
+}
+
+const isDirectExecution = process.argv[1]
+  ? path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  : false;
+
+if (isDirectExecution) {
+  await generateContentManifests();
+}
