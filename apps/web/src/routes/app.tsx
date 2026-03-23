@@ -1,7 +1,7 @@
 import { SignedIn, SignedOut, useOrganization } from "@clerk/clerk-react";
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 
 import Loader from "@/components/loader";
@@ -29,7 +29,12 @@ function AuthenticatedRedirect() {
   const { isLoaded: isClerkLoaded, organization: clerkOrganization } = useOrganization();
   const organizationStatus = useQuery(api.check_membership.hasOrganization);
   const ensureActiveOrganization = useMutation(api.check_membership.ensureActiveOrganization);
+  const recoverOrganizationSyncFromClerk = useAction(
+    api.check_membership.recoverOrganizationSyncFromClerk,
+  );
   const [isFixingOrg, setIsFixingOrg] = useState(false);
+  const [isRecoveringOrgSync, setIsRecoveringOrgSync] = useState(false);
+  const [hasAttemptedRecovery, setHasAttemptedRecovery] = useState(false);
   const [fixedSlug, setFixedSlug] = useState<string | null>(null);
 
   const isLoading = organizationStatus === undefined;
@@ -41,6 +46,7 @@ function AuthenticatedRedirect() {
     hasClerkActiveOrganization: clerkOrganization !== null,
     hasOrganization,
     activeOrganizationSlug,
+    hasAttemptedRecovery,
   });
 
   // Auto-fix activeOrganizationId if user has membership but no active org set
@@ -62,14 +68,53 @@ function AuthenticatedRedirect() {
     }
   }, [isLoading, needsActiveOrgFix, isFixingOrg, fixedSlug, ensureActiveOrganization]);
 
+  // Recover user/org/membership sync when Clerk already has an active organization
+  useEffect(() => {
+    if (
+      !isWaitingForOrganizationSync ||
+      !clerkOrganization?.id ||
+      isRecoveringOrgSync ||
+      fixedSlug ||
+      isFixingOrg
+    ) {
+      return;
+    }
+
+    setIsRecoveringOrgSync(true);
+
+    recoverOrganizationSyncFromClerk({ clerkOrganizationId: clerkOrganization.id })
+      .then((result) => {
+        if (result.success && result.activeOrganizationSlug) {
+          setFixedSlug(result.activeOrganizationSlug);
+          return;
+        }
+
+        console.error("Failed to recover organization sync:", result.reason ?? "Unknown error");
+      })
+      .catch((error) => {
+        console.error("Failed to recover organization sync:", error);
+      })
+      .finally(() => {
+        setHasAttemptedRecovery(true);
+        setIsRecoveringOrgSync(false);
+      });
+  }, [
+    clerkOrganization?.id,
+    fixedSlug,
+    isFixingOrg,
+    isRecoveringOrgSync,
+    isWaitingForOrganizationSync,
+    recoverOrganizationSyncFromClerk,
+  ]);
+
   // Show loading state while checking authentication or fixing organization
-  if (isLoading || isFixingOrg || isWaitingForOrganizationSync) {
+  if (isLoading || isFixingOrg || isRecoveringOrgSync || isWaitingForOrganizationSync) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="text-center">
           <Loader />
           <p className="text-muted-foreground mt-4">
-            {isFixingOrg || isWaitingForOrganizationSync
+            {isFixingOrg || isRecoveringOrgSync || isWaitingForOrganizationSync
               ? "Setting up your workspace..."
               : "Loading..."}
           </p>

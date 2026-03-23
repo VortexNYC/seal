@@ -10,6 +10,7 @@ describe("shouldWaitForOrganizationSync", () => {
         hasClerkActiveOrganization: true,
         hasOrganization: false,
         activeOrganizationSlug: null,
+        hasAttemptedRecovery: false,
       }),
     ).toBe(false);
   });
@@ -21,6 +22,7 @@ describe("shouldWaitForOrganizationSync", () => {
         hasClerkActiveOrganization: false,
         hasOrganization: false,
         activeOrganizationSlug: null,
+        hasAttemptedRecovery: false,
       }),
     ).toBe(false);
   });
@@ -32,6 +34,7 @@ describe("shouldWaitForOrganizationSync", () => {
         hasClerkActiveOrganization: true,
         hasOrganization: false,
         activeOrganizationSlug: null,
+        hasAttemptedRecovery: false,
       }),
     ).toBe(true);
   });
@@ -43,6 +46,7 @@ describe("shouldWaitForOrganizationSync", () => {
         hasClerkActiveOrganization: true,
         hasOrganization: true,
         activeOrganizationSlug: null,
+        hasAttemptedRecovery: false,
       }),
     ).toBe(true);
   });
@@ -54,6 +58,19 @@ describe("shouldWaitForOrganizationSync", () => {
         hasClerkActiveOrganization: true,
         hasOrganization: true,
         activeOrganizationSlug: "acme",
+        hasAttemptedRecovery: false,
+      }),
+    ).toBe(false);
+  });
+
+  test("returns false after recovery has already been attempted", () => {
+    expect(
+      shouldWaitForOrganizationSync({
+        isClerkLoaded: true,
+        hasClerkActiveOrganization: true,
+        hasOrganization: false,
+        activeOrganizationSlug: null,
+        hasAttemptedRecovery: true,
       }),
     ).toBe(false);
   });
