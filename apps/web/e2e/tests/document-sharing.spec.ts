@@ -19,14 +19,9 @@ test.describe("Document Sharing", () => {
   });
 
   const openShareForFirstDocument = async (page: Page, documentsListPage: DocumentsListPage) => {
-    const firstRow = documentsListPage.getDocumentRows().first();
+    const rowActionsButton = documentsListPage.getDocumentActionButtons().first();
 
-    await expect(firstRow).toBeVisible({ timeout: 10000 });
-
-    const rowActionsButton = firstRow.getByRole("button", {
-      name: /document actions for/i,
-    });
-
+    await expect(rowActionsButton).toBeVisible({ timeout: 10000 });
     await rowActionsButton.click();
 
     const shareMenuItem = page.getByRole("menuitem", { name: /^share$/i });

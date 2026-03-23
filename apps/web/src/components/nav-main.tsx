@@ -12,6 +12,10 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
+function toTestIdSegment(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, "-");
+}
+
 export function NavMain({
   items,
 }: {
@@ -40,7 +44,11 @@ export function NavMain({
           >
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title} isActive={item.isActive}>
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  isActive={item.isActive}
+                  data-testid={`sidebar-section-${toTestIdSegment(item.title)}`}
+                >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
                   <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -51,7 +59,10 @@ export function NavMain({
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild isActive={subItem.isActive}>
-                        <Link to={subItem.url}>
+                        <Link
+                          to={subItem.url}
+                          data-testid={`sidebar-link-${toTestIdSegment(item.title)}-${toTestIdSegment(subItem.title)}`}
+                        >
                           <span>{subItem.title}</span>
                           {subItem.locked && (
                             <LockIcon className="text-muted-foreground ml-auto h-3 w-3" />

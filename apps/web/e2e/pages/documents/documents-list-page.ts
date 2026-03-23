@@ -8,6 +8,7 @@ export class DocumentsListPage {
   readonly createDocumentButton: Locator;
   readonly documentTable: Locator;
   readonly searchInput: Locator;
+  readonly documentActionButtons: Locator;
   readonly documentRows: Locator;
 
   constructor(page: Page) {
@@ -19,7 +20,12 @@ export class DocumentsListPage {
       .first();
     this.documentTable = page.locator("table");
     this.searchInput = page.getByPlaceholder("Search documents by name or description...");
-    this.documentRows = page.locator("table tbody tr");
+    this.documentActionButtons = page.getByRole("button", {
+      name: /document actions for/i,
+    });
+    this.documentRows = page.locator("table tbody tr").filter({
+      has: this.documentActionButtons,
+    });
   }
 
   async goto(slug: string): Promise<void> {
@@ -93,6 +99,10 @@ export class DocumentsListPage {
     return this.documentRows;
   }
 
+  getDocumentActionButtons(): Locator {
+    return this.documentActionButtons;
+  }
+
   async getDocumentRowCount(): Promise<number> {
     return await this.documentRows.count();
   }
@@ -121,9 +131,8 @@ export class DocumentsListPage {
   }
 
   async openFirstDocumentActionsMenu(): Promise<void> {
-    const firstRow = this.documentRows.first();
-    await firstRow.waitFor({ state: "visible", timeout: 30000 });
-    await firstRow.getByRole("button", { name: /document actions for/i }).click();
+    await this.documentActionButtons.first().waitFor({ state: "visible", timeout: 30000 });
+    await this.documentActionButtons.first().click();
   }
 
   async getDocumentCount(): Promise<number> {

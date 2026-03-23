@@ -30,22 +30,16 @@ export class DashboardPage {
     );
 
     // Metric cards
-    this.totalDocumentsCard = page.getByText("Total Documents").locator("..");
-    this.pendingSignaturesCard = page.getByText("Pending Signatures").locator("..");
-    this.completedCard = page.getByText("Completed").first().locator("..");
-    this.completionRateCard = page.getByText("Completion Rate").locator("..");
+    this.totalDocumentsCard = page.locator('[aria-label^="Total Documents:"]');
+    this.pendingSignaturesCard = page.locator('[aria-label^="Pending Signatures:"]');
+    this.completedCard = page.locator('[aria-label^="Completed:"]');
+    this.completionRateCard = page.locator('[aria-label^="Completion Rate:"]');
 
     // Metric values - the large numbers in each card
-    this.totalDocumentsValue = this.totalDocumentsCard.locator(
-      'div:has-text("0"), div:has-text("1"), div:has-text("2")',
-    );
-    this.pendingSignaturesValue = this.pendingSignaturesCard.locator(
-      'div:has-text("0"), div:has-text("1"), div:has-text("2")',
-    );
-    this.completedValue = this.completedCard.locator(
-      'div:has-text("0"), div:has-text("1"), div:has-text("2")',
-    );
-    this.completionRateValue = this.completionRateCard.locator('div:has-text("%")');
+    this.totalDocumentsValue = this.totalDocumentsCard.locator(".font-serif");
+    this.pendingSignaturesValue = this.pendingSignaturesCard.locator(".font-serif");
+    this.completedValue = this.completedCard.locator(".font-serif");
+    this.completionRateValue = this.completionRateCard.locator(".font-serif");
 
     // Document activity section - use partial text match
     this.documentActivitySection = page.locator("text=Document Activity");
@@ -58,45 +52,42 @@ export class DashboardPage {
   }
 
   async getTotalDocuments(): Promise<number> {
-    // Get the value from the Total Documents card
-    const card = this.page.locator('[class*="card"]').filter({
-      hasText: "Total Documents",
-    });
-    const valueEl = card.locator("div").filter({ hasText: /^\d+$/ }).first();
-    const text = await valueEl.textContent();
+    const text = await this.totalDocumentsValue.first().textContent();
     return Number.parseInt(text || "0", 10);
   }
 
   async getPendingSignatures(): Promise<number> {
-    const card = this.page.locator('[class*="card"]').filter({
-      hasText: "Pending Signatures",
-    });
-    const valueEl = card.locator("div").filter({ hasText: /^\d+$/ }).first();
-    const text = await valueEl.textContent();
+    const text = await this.pendingSignaturesValue.first().textContent();
     return Number.parseInt(text || "0", 10);
   }
 
   async getCompleted(): Promise<number> {
-    // Be specific to avoid matching "0 completed this month"
-    const card = this.page
-      .locator('[class*="card"]')
-      .filter({ hasText: "Completed" })
-      .filter({ hasNotText: "Completion Rate" })
-      .first();
-    const valueEl = card.locator("div").filter({ hasText: /^\d+$/ }).first();
-    const text = await valueEl.textContent();
+    const text = await this.completedValue.first().textContent();
     return Number.parseInt(text || "0", 10);
   }
 
   async getCompletionRate(): Promise<string> {
-    const card = this.page.locator('[class*="card"]').filter({
-      hasText: "Completion Rate",
-    });
-    const valueEl = card.locator("div").filter({ hasText: /\d+%/ }).first();
-    return (await valueEl.textContent()) || "0%";
+    return (await this.completionRateValue.first().textContent()) || "0%";
   }
 
   async hasDocumentActivity(): Promise<boolean> {
     return !(await this.noActivityMessage.isVisible());
   }
+
+  async navigateToSidebarItem(sectionTitle: string, itemTitle: string): Promise<void> {
+    const sectionId = toTestIdSegment(sectionTitle);
+    const itemId = toTestIdSegment(itemTitle);
+    const sectionButton = this.page.getByTestId(`sidebar-section-${sectionId}`);
+    const itemLink = this.page.getByTestId(`sidebar-link-${sectionId}-${itemId}`);
+
+    if (!(await itemLink.isVisible().catch(() => false))) {
+      await sectionButton.click();
+    }
+
+    await itemLink.click();
+  }
+}
+
+function toTestIdSegment(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, "-");
 }

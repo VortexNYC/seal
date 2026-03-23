@@ -26,12 +26,20 @@ type WorkerFixtures = {
 export const test = base.extend<AuthFixtures, WorkerFixtures>({
   authSession: [
     async ({ browser }, use, testInfo) => {
+      const baseURL =
+        typeof testInfo.project.use.baseURL === "string" ? testInfo.project.use.baseURL : undefined;
+
+      if (!baseURL) {
+        throw new Error("Playwright baseURL is required for the authenticated worker session.");
+      }
+
       const authDir = path.join(testInfo.project.outputDir, ".auth");
       const storageStatePath = path.join(authDir, `worker-${testInfo.workerIndex}.json`);
 
       await mkdir(authDir, { recursive: true });
 
-      const page = await browser.newPage();
+      const context = await browser.newContext({ baseURL });
+      const page = await context.newPage();
 
       try {
         await performLogin(page);
@@ -45,7 +53,7 @@ export const test = base.extend<AuthFixtures, WorkerFixtures>({
           storageStatePath,
         });
       } finally {
-        await page.close();
+        await context.close();
       }
     },
     { scope: "worker" },
@@ -130,7 +138,31 @@ async function performLogin(page: Page): Promise<void> {
 }
 
 async function waitForAuthenticatedHome(page: Page, timeout: number): Promise<void> {
-  await page.waitForURL(/\/[\w-]+\/home/, { timeout });
+  const start = Date.now();
+
+  while (Date.now() - start < timeout) {
+    if (isAuthenticatedHomeUrl(page.url())) {
+      return;
+    }
+
+    const authError = await getVisibleAuthError(page);
+    if (authError) {
+      throw new Error(`Authentication failed before reaching the workspace home: ${authError}`);
+    }
+
+    await page.waitForTimeout(250);
+  }
+
+  await page.waitForURL(/\/[\w-]+\/home/, { timeout: 1000 });
+}
+
+function isAuthenticatedHomeUrl(url: string): boolean {
+  try {
+    const pathname = new URL(url).pathname;
+    return /\/[\w-]+\/home(?:\/|$)/.test(pathname);
+  } catch {
+    return false;
+  }
 }
 
 function isAuthenticatedUrl(url: string): boolean {
@@ -214,6 +246,12 @@ async function waitForElementWithFallback(page: Page, candidates: Locator[]): Pr
         return;
       }
     }
+
+    const authError = await getVisibleAuthError(page);
+    if (authError) {
+      throw new Error(`Authentication flow failed before the next step rendered: ${authError}`);
+    }
+
     await page.waitForTimeout(250);
   }
 
@@ -222,6 +260,19 @@ async function waitForElementWithFallback(page: Page, candidates: Locator[]): Pr
   }
 
   await expect(candidates[0]).toBeVisible({ timeout: 1000 });
+}
+
+async function getVisibleAuthError(page: Page): Promise<string | null> {
+  const authErrorLocator = page
+    .getByText(/too many requests|try again|incorrect|invalid|wrong/i)
+    .first();
+
+  if (!(await authErrorLocator.isVisible().catch(() => false))) {
+    return null;
+  }
+
+  const text = (await authErrorLocator.textContent())?.trim();
+  return text || "Unknown authentication error";
 }
 
 /**
