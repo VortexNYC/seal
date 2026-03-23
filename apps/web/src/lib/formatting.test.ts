@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
+  formatCurrency,
   formatDate,
   formatFileSize,
   formatRelativeTime,
@@ -162,6 +163,29 @@ describe("getInitials", () => {
     expect(getInitials(undefined, undefined)).toBe("?");
     expect(getInitials("", undefined)).toBe("?");
     expect(getInitials("", "")).toBe("?");
+  });
+});
+
+describe("formatCurrency", () => {
+  test("formats positive cent amounts as USD", () => {
+    expect(formatCurrency(1250)).toBe("$12.50");
+    expect(formatCurrency(100)).toBe("$1.00");
+    expect(formatCurrency(1)).toBe("$0.01");
+    expect(formatCurrency(99)).toBe("$0.99");
+  });
+
+  test("formats zero as $0.00", () => {
+    expect(formatCurrency(0)).toBe("$0.00");
+  });
+
+  test("formats negative amounts", () => {
+    expect(formatCurrency(-1250)).toBe("-$12.50");
+    expect(formatCurrency(-1)).toBe("-$0.01");
+  });
+
+  test("formats large amounts with commas", () => {
+    expect(formatCurrency(123456)).toBe("$1,234.56");
+    expect(formatCurrency(10000000)).toBe("$100,000.00");
   });
 });
 

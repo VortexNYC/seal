@@ -61,6 +61,23 @@ export function getInitials(name?: string, email?: string): string {
 }
 
 /**
+ * Format a cent amount as a USD currency string.
+ *
+ * @example
+ * formatCurrency(1250)   // "$12.50"
+ * formatCurrency(0)      // "$0.00"
+ * formatCurrency(-1250)  // "-$12.50"
+ */
+const usdFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+export function formatCurrency(cents: number): string {
+  return usdFormatter.format(cents / 100);
+}
+
+/**
  * Get a human-readable label for a document workflow status
  */
 export function getStatusLabel(
