@@ -1,3 +1,6 @@
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+
 /* oxlint-disable react-hooks/rules-of-hooks */
 import { expect, test as base, type Locator, type Page } from "@playwright/test";
 
@@ -6,23 +9,66 @@ type AuthFixtures = {
   organizationSlug: string;
 };
 
+type WorkerFixtures = {
+  authSession: {
+    organizationSlug: string;
+    storageStatePath: string;
+  };
+};
+
 /**
  * Extended test with authentication fixtures
  *
- * Note: Clerk uses short-lived JWTs (60s), so we perform fresh login for each test
- * to ensure reliable authentication. The login flow is quick with Clerk test mode.
+ * Log in once per worker, then give each test its own isolated browser context
+ * seeded from that authenticated storage state. This keeps tests isolated while
+ * avoiding dozens of repeated OTP sign-ins that can throttle CI.
  */
-export const test = base.extend<AuthFixtures>({
+export const test = base.extend<AuthFixtures, WorkerFixtures>({
+  authSession: [
+    async ({ browser }, use, testInfo) => {
+      const authDir = path.join(testInfo.project.outputDir, ".auth");
+      const storageStatePath = path.join(authDir, `worker-${testInfo.workerIndex}.json`);
+
+      await mkdir(authDir, { recursive: true });
+
+      const page = await browser.newPage();
+
+      try {
+        await performLogin(page);
+        await waitForAuthenticatedHome(page, 30000);
+
+        const organizationSlug = extractOrganizationSlug(page.url());
+        await page.context().storageState({ path: storageStatePath });
+
+        await use({
+          organizationSlug,
+          storageStatePath,
+        });
+      } finally {
+        await page.close();
+      }
+    },
+    { scope: "worker" },
+  ],
+
+  storageState: async ({ authSession }, use) => {
+    await use(authSession.storageStatePath);
+  },
+
   /**
    * Provides an authenticated page with a logged-in user
    */
-  authenticatedPage: async ({ page }, use) => {
-    // Always perform fresh login (Clerk JWTs are short-lived)
-    await performLogin(page);
+  authenticatedPage: async ({ page, authSession }, use) => {
+    await page.goto(`/${authSession.organizationSlug}/home`, {
+      waitUntil: "domcontentloaded",
+    });
 
-    // Wait for redirect to org-specific URL
-    // The app redirects: sign-in -> /app -> /{org-slug}/home
-    await page.waitForURL(/\/[\w-]+\/home/, { timeout: 15000 });
+    // Clerk should refresh the session from the seeded browser state. If the
+    // worker's session expires during a long run, recover with a fresh sign-in.
+    if (!isAuthenticatedUrl(page.url())) {
+      await performLogin(page);
+      await waitForAuthenticatedHome(page, 30000);
+    }
 
     await use(page);
   },
@@ -30,13 +76,8 @@ export const test = base.extend<AuthFixtures>({
   /**
    * Provides the organization slug for the authenticated user
    */
-  organizationSlug: async ({ authenticatedPage }, use) => {
-    // Extract organization slug from URL
-    const url = authenticatedPage.url();
-    const match = url.match(/\/([\w-]+)\/home/);
-    const slug = match ? match[1] : "test-org";
-
-    await use(slug);
+  organizationSlug: async ({ authSession }, use) => {
+    await use(authSession.organizationSlug);
   },
 });
 
@@ -88,12 +129,26 @@ async function performLogin(page: Page): Promise<void> {
   });
 }
 
+async function waitForAuthenticatedHome(page: Page, timeout: number): Promise<void> {
+  await page.waitForURL(/\/[\w-]+\/home/, { timeout });
+}
+
 function isAuthenticatedUrl(url: string): boolean {
   try {
     const pathname = new URL(url).pathname;
     return /\/(app|[\w-]+\/home|[\w-]+\/onboarding\/choose-organization)/.test(pathname);
   } catch {
     return false;
+  }
+}
+
+function extractOrganizationSlug(url: string): string {
+  try {
+    const pathname = new URL(url).pathname;
+    const match = pathname.match(/^\/([\w-]+)\/home(?:\/|$)/);
+    return match?.[1] ?? "test-org";
+  } catch {
+    return "test-org";
   }
 }
 
