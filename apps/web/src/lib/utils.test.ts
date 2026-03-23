@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 
-import { cn, parseConvexError, getErrorMessage } from "./utils";
+import { cn, parseConvexError, getErrorMessage, slugify } from "./utils";
 
 describe("cn", () => {
   test("merges simple class names", () => {
@@ -233,5 +233,55 @@ describe("getErrorMessage", () => {
   test("returns fallback for empty error", () => {
     const msg = getErrorMessage(new Error(""));
     expect(msg).toBe("An unexpected error occurred. Please try again.");
+  });
+});
+
+describe("slugify", () => {
+  test("converts a simple string to a slug", () => {
+    expect(slugify("Hello World")).toBe("hello-world");
+  });
+
+  test("lowercases the output", () => {
+    expect(slugify("FOO BAR BAZ")).toBe("foo-bar-baz");
+  });
+
+  test("removes special characters", () => {
+    expect(slugify("Hello, World! How's it going?")).toBe("hello-world-hows-it-going");
+  });
+
+  test("handles leading and trailing spaces", () => {
+    expect(slugify("  hello world  ")).toBe("hello-world");
+  });
+
+  test("collapses multiple consecutive spaces into a single hyphen", () => {
+    expect(slugify("hello    world")).toBe("hello-world");
+  });
+
+  test("handles strings with hyphens already present", () => {
+    expect(slugify("already-slugified")).toBe("already-slugified");
+  });
+
+  test("removes leading and trailing hyphens from special chars", () => {
+    expect(slugify("--hello--")).toBe("hello");
+  });
+
+  test("handles unicode/accented characters", () => {
+    expect(slugify("café résumé")).toBe("cafe-resume");
+  });
+
+  test("returns an empty string for empty input", () => {
+    expect(slugify("")).toBe("");
+  });
+
+  test("returns an empty string for whitespace-only input", () => {
+    expect(slugify("   ")).toBe("");
+  });
+
+  test("handles numbers in strings", () => {
+    expect(slugify("Version 2.0 Release")).toBe("version-20-release");
+  });
+
+  test("handles ampersands and pipes", () => {
+    expect(slugify("Hello & Goodbye")).toBe("hello-and-goodbye");
   });
 });

@@ -1,8 +1,24 @@
 import { type ClassValue, clsx } from "clsx";
+import baseSlugify from "slugify";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+/**
+ * Convert a string into a URL-safe slug.
+ *
+ * Uses the `slugify` package under the hood with sensible defaults:
+ * - Lowercases the result
+ * - Removes characters that aren't alphanumeric, hyphens, or underscores
+ * - Trims leading/trailing whitespace before processing
+ */
+export function slugify(text: string): string {
+  return baseSlugify(text.trim(), {
+    lower: true,
+    strict: true,
+  });
 }
 
 /**
