@@ -95,13 +95,16 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: cd apps/web && bunx playwright install --with-deps chromium firefox webkit
+        # CI runs a Chromium smoke pass only. The full multi-browser/device matrix
+        # remains available locally, but keeping PR validation to one project
+        # avoids serial 15-20 minute runs under the current Playwright config.
+        run: cd apps/web && bunx playwright install --with-deps chromium
 
       - name: Run web E2E tests
         # Avoid `bun --bun run` here: Playwright's config loader fails under
         # Bun's Node shim, while the normal workspace script execution works
         # locally and in CI-compatible environments.
-        run: cd apps/web && bun run test:e2e
+        run: cd apps/web && bun run test:e2e -- --project=chromium
         env:
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_EMAIL_CODE: ${{ secrets.TEST_EMAIL_CODE }}
@@ -128,13 +131,14 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: cd apps/landing && bunx playwright install --with-deps chromium firefox webkit
+        # Match the web E2E strategy in CI: Chromium only for fast PR feedback.
+        run: cd apps/landing && bunx playwright install --with-deps chromium
 
       - name: Run landing E2E tests
         # Avoid `bun --bun run` here: Playwright's config loader fails under
         # Bun's Node shim, while the normal workspace script execution works
         # locally and in CI-compatible environments.
-        run: cd apps/landing && bun run test:e2e
+        run: cd apps/landing && bun run test:e2e -- --project=chromium
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
 
