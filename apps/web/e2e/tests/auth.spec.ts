@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 
-type AuthStep = "authenticated" | "otp" | "password";
+type AuthStep = "authenticated" | "otp";
 
 function getSignInPromptMatcher() {
   return /sign in/i;
@@ -50,11 +50,6 @@ async function waitForNextAuthStep(page: Page): Promise<AuthStep> {
     page.getByText(/check your email/i),
     page.getByText(/verification code/i),
   ];
-  const passwordCandidates: Locator[] = [
-    page.getByRole("heading", { name: /password/i }),
-    page.getByText(/enter your password/i),
-    page.locator('input[type="password"]'),
-  ];
 
   const start = Date.now();
   while (Date.now() - start < 30000) {
@@ -68,10 +63,10 @@ async function waitForNextAuthStep(page: Page): Promise<AuthStep> {
       }
     }
 
-    for (const locator of passwordCandidates) {
-      if (await locator.first().isVisible().catch(() => false)) {
-        return "password";
-      }
+    if (await isUnexpectedPasswordStepVisible(page)) {
+      throw new Error(
+        `Unexpected Clerk password step rendered; this project expects email-code auth only. Current URL: ${page.url()}`,
+      );
     }
 
     await page.waitForTimeout(250);
@@ -109,9 +104,20 @@ async function fillOtpCode(page: Page, code: string): Promise<void> {
   await page.keyboard.type(code);
 }
 
-async function fillPassword(page: Page, password: string): Promise<void> {
-  const passwordInput = page.getByLabel(/password/i).or(page.locator('input[type="password"]'));
-  await passwordInput.first().fill(password);
+async function isUnexpectedPasswordStepVisible(page: Page): Promise<boolean> {
+  const passwordCandidates: Locator[] = [
+    page.getByRole("heading", { name: /enter your password|password/i }),
+    page.getByLabel(/password/i),
+    page.locator('input[type="password"]'),
+  ];
+
+  for (const locator of passwordCandidates) {
+    if (await locator.first().isVisible().catch(() => false)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 test.describe("Authentication", () => {
@@ -150,24 +156,13 @@ test.describe("Authentication", () => {
     await page.getByRole("textbox", { name: /email/i }).first().fill(testEmail);
     await clickPrimaryAuthAction(page);
 
-    const nextStep = await waitForNextAuthStep(page);
+    await waitForNextAuthStep(page);
 
-    if (nextStep === "otp") {
-      const testEmailCode = process.env.E2E_TEST_EMAIL_CODE || "424242";
+    const testEmailCode = process.env.E2E_TEST_EMAIL_CODE || "424242";
 
-      // Wait a moment for Clerk OTP to initialize
-      await page.waitForTimeout(500);
-      await fillOtpCode(page, testEmailCode);
-    } else if (nextStep === "password") {
-      const testPassword = process.env.TEST_USER_PASSWORD;
-      test.skip(!testPassword, "TEST_USER_PASSWORD is required when the shared Clerk user uses password auth.");
-      if (!testPassword) {
-        return;
-      }
-
-      await fillPassword(page, testPassword);
-      await clickPrimaryAuthAction(page);
-    }
+    // Wait a moment for Clerk OTP to initialize
+    await page.waitForTimeout(500);
+    await fillOtpCode(page, testEmailCode);
 
     // Fresh Clerk test users may land on onboarding before they have a workspace.
     await expect(page).toHaveURL(getSuccessfulAuthUrlMatcher(), { timeout: 30000 });
@@ -191,24 +186,13 @@ test.describe("Authentication", () => {
     await page.getByLabel(/email address/i).fill(testEmail);
     await clickPrimaryAuthAction(page);
 
-    const nextStep = await waitForNextAuthStep(page);
+    await waitForNextAuthStep(page);
 
-    if (nextStep === "otp") {
-      // Wait a moment for Clerk OTP to initialize
-      await page.waitForTimeout(500);
+    // Wait a moment for Clerk OTP to initialize
+    await page.waitForTimeout(500);
 
-      // Type an invalid OTP code directly
-      await fillOtpCode(page, "000000");
-    } else {
-      const validPassword = process.env.TEST_USER_PASSWORD;
-      test.skip(!validPassword, "TEST_USER_PASSWORD is required when the shared Clerk user uses password auth.");
-      if (!validPassword) {
-        return;
-      }
-
-      await fillPassword(page, `${validPassword}-invalid`);
-      await clickPrimaryAuthAction(page);
-    }
+    // Type an invalid OTP code directly
+    await fillOtpCode(page, "000000");
 
     // Should show an auth error message (rate limits and invalid code are both expected).
     await expect(
