@@ -346,8 +346,8 @@ Create `.env.test` for test-specific configuration:
 
 ```bash
 # Test user credentials
-TEST_USER_EMAIL=test@seal-test.com
-TEST_USER_PASSWORD=TestPassword123!
+E2E_TEST_USER_EMAIL=seal-e2e+clerk_test@example.com
+E2E_TEST_EMAIL_CODE=424242
 
 # Convex
 VITE_CONVEX_URL=https://test-deployment.convex.cloud

@@ -42,7 +42,6 @@ export const testData = {
     firstName: "Test",
     lastName: "User",
     email: testData.email("user"),
-    password: "TestPassword123!",
   }),
 
   /**
@@ -78,7 +77,7 @@ export const testConstants = {
    * Test user credentials (if using pre-seeded data)
    */
   TEST_USER: {
-    EMAIL: process.env.TEST_USER_EMAIL || "test@seal-test.com",
-    PASSWORD: process.env.TEST_USER_PASSWORD || "TestPassword123!",
+    EMAIL:
+      process.env.E2E_TEST_USER_EMAIL || process.env.TEST_USER_EMAIL || "seal-e2e+clerk_test@example.com",
   },
 };

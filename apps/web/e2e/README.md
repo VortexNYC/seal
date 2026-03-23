@@ -73,8 +73,8 @@ e2e/
 Create `.env.test` file (see `.env.test.example`):
 
 ```bash
-TEST_USER_EMAIL=test@seal-test.com
-TEST_EMAIL_CODE=424242
+E2E_TEST_USER_EMAIL=seal-e2e+clerk_test@example.com
+E2E_TEST_EMAIL_CODE=424242
 VITE_CONVEX_URL=https://test-deployment.convex.cloud
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 PLAYWRIGHT_BASE_URL=http://localhost:5173
@@ -213,9 +213,12 @@ See `.github/workflows/ci.yml` for CI configuration.
 Configure these in GitHub repository settings:
 
 - `TEST_USER_EMAIL`
-- `TEST_EMAIL_CODE`
+- `E2E_TEST_EMAIL_CODE`
 - `VITE_CONVEX_URL_TEST`
 - `VITE_CLERK_PUBLISHABLE_KEY_TEST`
+- `CLERK_TESTING_TOKEN` (if your Clerk test environment requires it)
+- `CLERK_SECRET_KEY` (alternative to `CLERK_TESTING_TOKEN` for some setups)
+- `E2E_TEST_USER_EMAIL`
 
 ## 🎨 Best Practices
 

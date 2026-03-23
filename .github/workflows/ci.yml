@@ -103,8 +103,8 @@ jobs:
         # locally and in CI-compatible environments.
         run: cd apps/web && bun run test:e2e
         env:
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_EMAIL_CODE: ${{ secrets.TEST_EMAIL_CODE }}
+          E2E_TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER_EMAIL }}
+          E2E_TEST_EMAIL_CODE: ${{ secrets.E2E_TEST_EMAIL_CODE }}
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL_TEST }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
           NODE_OPTIONS: "--max-old-space-size=4096"

@@ -44,8 +44,12 @@ export const test = base.extend<AuthFixtures>({
  * Perform login using Clerk with email code verification
  */
 async function performLogin(page: Page): Promise<void> {
-  const testEmail = process.env.TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
-  const testEmailCode = process.env.TEST_EMAIL_CODE || "424242";
+  const testEmail =
+    process.env.E2E_TEST_USER_EMAIL ||
+    process.env.TEST_USER_EMAIL ||
+    "sealtest001+clerk_test@example.com";
+  const testEmailCode =
+    process.env.E2E_TEST_EMAIL_CODE || process.env.TEST_EMAIL_CODE || "424242";
 
   // Navigate directly to sign-in page
   await page.goto("/sign-in", { waitUntil: "domcontentloaded" });

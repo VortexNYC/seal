@@ -19,10 +19,12 @@ import { SealApiClient, SealApiError } from "./client";
 // Configuration — reads from env so CI can inject credentials
 // ---------------------------------------------------------------------------
 
-const API_KEY = process.env.SEAL_API_KEY ?? "ak_H20JEZ7R12KTQEQPCTWJ3VN7NB75JQQH";
-const BASE_URL = process.env.SEAL_BASE_URL ?? "https://wooden-poodle-362.convex.site";
+const API_KEY = process.env.SEAL_API_KEY;
+const BASE_URL = process.env.SEAL_BASE_URL;
 
-const SKIP_INTEGRATION = !API_KEY || API_KEY === "skip";
+const SKIP_INTEGRATION = !API_KEY || !BASE_URL || API_KEY === "skip";
+const EFFECTIVE_API_KEY = API_KEY ?? "skip";
+const EFFECTIVE_BASE_URL = BASE_URL ?? "https://example.invalid";
 
 const describeIf = SKIP_INTEGRATION ? describe.skip : describe;
 
@@ -34,8 +36,8 @@ let client: SealApiClient;
 
 beforeAll(() => {
   client = new SealApiClient({
-    baseUrl: BASE_URL,
-    apiKey: API_KEY,
+    baseUrl: EFFECTIVE_BASE_URL,
+    apiKey: EFFECTIVE_API_KEY,
     requestTimeout: 15_000,
     debug: false,
     maxFileSize: 50 * 1024 * 1024,
@@ -342,10 +344,10 @@ describeIf("GET /signatures", () => {
 // Authentication error handling
 // ---------------------------------------------------------------------------
 
-describe("auth error handling", () => {
+describeIf("auth error handling", () => {
   test("no API key returns 401", async () => {
     const unauthClient = new SealApiClient({
-      baseUrl: BASE_URL,
+      baseUrl: EFFECTIVE_BASE_URL,
       apiKey: "",
       requestTimeout: 10_000,
       debug: false,
@@ -356,7 +358,7 @@ describe("auth error handling", () => {
 
   test("invalid API key returns 401", async () => {
     const badClient = new SealApiClient({
-      baseUrl: BASE_URL,
+      baseUrl: EFFECTIVE_BASE_URL,
       apiKey: "ak_totally_invalid_key",
       requestTimeout: 10_000,
       debug: false,
