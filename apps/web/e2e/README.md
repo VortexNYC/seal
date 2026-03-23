@@ -73,7 +73,7 @@ e2e/
 Create `.env.test` file (see `.env.test.example`):
 
 ```bash
-E2E_TEST_USER_EMAIL=seal.e2e+clerk_test@example.com
+E2E_TEST_USER_EMAIL=seal-e2e+clerk_test@example.com
 E2E_TEST_EMAIL_CODE=424242
 # Optional when the shared Clerk test account uses password auth instead of email codes
 TEST_USER_PASSWORD=TestPassword123!
