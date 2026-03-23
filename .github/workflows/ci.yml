@@ -81,6 +81,11 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        shard_index: [1, 2, 3]
+        shard_total: [3]
 
     steps:
       - name: Checkout
@@ -95,21 +100,24 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright browsers
-        # CI runs a Chromium smoke pass only. The full multi-browser/device matrix
-        # remains available locally, but keeping PR validation to one project
-        # avoids serial 15-20 minute runs under the current Playwright config.
+        # CI keeps browser coverage intentionally narrow: Chromium only.
+        # Wall-clock runtime now comes from parallel sharding instead of trying
+        # to push the entire suite through one long serial browser job.
         run: cd apps/web && bunx playwright install --with-deps chromium
 
       - name: Run web E2E tests
         # Avoid `bun --bun run` here: Playwright's config loader fails under
         # Bun's Node shim, while the normal workspace script execution works
         # locally and in CI-compatible environments.
-        run: cd apps/web && bun run test:e2e -- --project=chromium
+        run: >-
+          cd apps/web && bun run test:e2e -- --project=chromium
+          --shard=${{ matrix.shard_index }}/${{ matrix.shard_total }}
         env:
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_EMAIL_CODE: ${{ secrets.TEST_EMAIL_CODE }}
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL_TEST }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
+          PLAYWRIGHT_CI_RETRIES: "1"
           NODE_OPTIONS: "--max-old-space-size=4096"
 
   test-landing-e2e:

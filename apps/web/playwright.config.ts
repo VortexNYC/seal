@@ -11,6 +11,22 @@ import dotenv from "dotenv";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, ".env.test") });
 
+function parsePositiveInteger(value: string | undefined): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+const ciRetries = parsePositiveInteger(process.env.PLAYWRIGHT_CI_RETRIES);
+const ciWorkers = parsePositiveInteger(process.env.PLAYWRIGHT_CI_WORKERS);
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -21,9 +37,9 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? ciRetries ?? 2 : 0,
+  /* Keep CI configurable so the workflow can choose between workers and sharding. */
+  workers: process.env.CI ? ciWorkers ?? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ["html", { outputFolder: "playwright-report" }],
