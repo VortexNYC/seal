@@ -5,6 +5,7 @@
  */
 
 import { useUser } from "@clerk/clerk-react";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { Filter, SearchIcon, UsersIcon, X } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -31,7 +32,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { RoleSelector } from "./role-selector";
 

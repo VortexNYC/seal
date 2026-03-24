@@ -5,6 +5,8 @@
  * Route: /{slug}/settings/payments
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import {
   ConnectAccountManagement,
   ConnectAccountOnboarding,
@@ -23,8 +25,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/payments")({
   component: PaymentsSettingsPage,

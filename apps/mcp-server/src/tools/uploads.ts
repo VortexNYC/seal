@@ -8,7 +8,6 @@ import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-
 import {
   type UploadFileContentInput,
   type UploadFileInput,

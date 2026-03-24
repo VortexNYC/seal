@@ -5,6 +5,7 @@
  * Inline filter bar for status and date range filtering.
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useAction } from "convex/react";
 import { CalendarIcon, FileTextIcon, Loader2Icon, XIcon } from "lucide-react";
@@ -31,7 +32,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api } from "@seal/backend/convex/_generated/api";
 
 interface SearchResult {
   documentId: string;

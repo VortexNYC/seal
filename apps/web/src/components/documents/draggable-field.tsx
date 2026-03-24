@@ -1,8 +1,7 @@
+import { canvas } from "@seal/tokens/theme";
 import type Konva from "konva";
 import { useEffect, useRef, useState } from "react";
 import { Group, Image as KonvaImage, Rect, Text, Transformer } from "react-konva";
-
-import { canvas } from "@seal/tokens/theme";
 
 import type { FieldType } from "./field-toolbar";
 import { getRecipientColorById, type RecipientColor, UNASSIGNED_COLOR } from "./recipient-colors";

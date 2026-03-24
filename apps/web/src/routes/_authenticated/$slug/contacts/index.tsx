@@ -7,6 +7,9 @@
  */
 
 import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
+import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
@@ -57,9 +60,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { pageSEO } from "@/lib/seo";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
-import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
 
 export const Route = createFileRoute("/_authenticated/$slug/contacts/")({
   component: ContactsPage,

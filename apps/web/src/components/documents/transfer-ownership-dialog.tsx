@@ -1,3 +1,5 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowRightLeftIcon, AlertTriangleIcon } from "lucide-react";
 import { useState } from "react";
@@ -20,8 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 interface TransferOwnershipDialogProps {
   open: boolean;

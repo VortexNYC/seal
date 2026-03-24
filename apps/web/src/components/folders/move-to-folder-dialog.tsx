@@ -7,6 +7,8 @@
  * exclude itself and its descendants).
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { ChevronRight, FolderIcon, Home } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -21,8 +23,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 interface MoveToFolderDialogProps {
   open: boolean;

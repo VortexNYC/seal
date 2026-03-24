@@ -1,3 +1,5 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { UserPlus } from "lucide-react";
@@ -12,8 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/team/")({
   component: TeamSettings,

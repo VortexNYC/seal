@@ -1,9 +1,9 @@
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { getErrorMessage } from "@/lib/utils";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 
 import { Button } from "../ui/button";
 import {

@@ -1,8 +1,7 @@
-import { useMutation, useQuery } from "convex/react";
-import { useCallback, useState } from "react";
-
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import { useCallback, useState } from "react";
 
 /**
  * Manages the AI chat thread for a document.

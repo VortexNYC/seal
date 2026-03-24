@@ -1,3 +1,5 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import {
   AlertTriangleIcon,
@@ -22,8 +24,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 // ---------------------------------------------------------------------------
 // Types

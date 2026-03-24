@@ -1,3 +1,5 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { CheckIcon, Loader2Icon, UsersIcon } from "lucide-react";
 import { useState } from "react";
@@ -5,8 +7,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { cn, getErrorMessage } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";

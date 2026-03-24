@@ -1,3 +1,5 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import {
   CalendarIcon,
@@ -16,8 +18,6 @@ import {
 import { useCallback, useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { FIELD_DIMENSIONS } from "./draggable-field";
 

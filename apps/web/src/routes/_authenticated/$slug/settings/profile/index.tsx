@@ -7,6 +7,7 @@
  */
 
 import { UserProfile } from "@clerk/clerk-react";
+import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Save, User } from "lucide-react";
@@ -18,7 +19,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")({
   component: ProfileSettings,

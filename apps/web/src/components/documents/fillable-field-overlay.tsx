@@ -1,3 +1,5 @@
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 import {
   CalendarIcon,
   CheckSquareIcon,
@@ -13,8 +15,6 @@ import {
 import { forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 
 interface SignatureDetails {
   signedAt: number;

@@ -11,6 +11,8 @@
  * - Loading skeleton and error states
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { loadConnectAndInitialize, type StripeConnectInstance } from "@stripe/connect-js";
 import { ConnectComponentsProvider } from "@stripe/react-connect-js";
 import { useAction } from "convex/react";
@@ -19,8 +21,6 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { useTheme } from "@/components/theme-provider";
 import { getStripeConnectAppearance } from "@/lib/stripe-theme";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 interface StripeConnectProviderProps {
   organizationId: Id<"organizations">;

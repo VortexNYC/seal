@@ -5,6 +5,8 @@
  * Route: /{slug}/settings/audit-log
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { AuditAction } from "@seal/backend/convex/schemas/audit_logs";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { DownloadIcon, FileTextIcon, ShieldCheckIcon, UserIcon, UsersIcon } from "lucide-react";
@@ -32,8 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { AuditAction } from "@seal/backend/convex/schemas/audit_logs";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/audit-log")({
   component: AuditLogPage,

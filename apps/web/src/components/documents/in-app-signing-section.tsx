@@ -1,3 +1,6 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 import { useMutation } from "convex/react";
 import {
   CheckCircleIcon,
@@ -11,9 +14,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";

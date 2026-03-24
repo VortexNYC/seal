@@ -5,6 +5,7 @@
  * Route: /{slug}/settings/ai
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { BotIcon, Save } from "lucide-react";
@@ -17,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/ai")({
   component: AISettings,

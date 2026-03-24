@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vitest";
-
 import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
+import { describe, expect, it } from "vitest";
 
 import { countSignatureFields } from "./signature-fields";
 

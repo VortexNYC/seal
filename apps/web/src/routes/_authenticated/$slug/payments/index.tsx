@@ -1,3 +1,4 @@
+import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { BadgeDollarSign, CircleDollarSign, Clock, Receipt } from "lucide-react";
@@ -23,7 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/payments/")({
   component: PaymentsOverviewPage,
