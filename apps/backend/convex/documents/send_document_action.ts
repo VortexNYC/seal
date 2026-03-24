@@ -164,7 +164,7 @@ async function sendInvitationBatch(
     deadline: number | undefined;
   },
 ): Promise<InvitationEmailResult[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
   const results: InvitationEmailResult[] = [];
 
   for (const recipient of params.recipients) {
@@ -666,7 +666,7 @@ export const resendRecipientEmail = action({
     }
 
     const newExpiresAt = await resetExpiredRecipientForResend(ctx, args.documentId, recipient);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
     const { senderName, emailBranding } = await getSenderEmailContext(
       ctx,

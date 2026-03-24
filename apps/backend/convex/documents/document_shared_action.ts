@@ -70,7 +70,7 @@ export const sendDocumentSharedEmail = internalAction({
     }
 
     // 4. Build document URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
     const documentUrl = `${baseUrl}/documents/${document._id}`;
 
     // 5. Send the email

@@ -133,7 +133,7 @@ export const processExpirationAlerts = internalAction({
 
       if (pendingRecipients.length === 0) continue;
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
       const documentUrl = `${baseUrl}/documents/${candidate.documentId}`;
 
       const result = await sendExpirationAlert(ctx, {

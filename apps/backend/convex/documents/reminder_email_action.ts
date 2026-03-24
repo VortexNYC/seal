@@ -51,7 +51,7 @@ async function buildReminderEmailContext(
 
   return {
     senderName: owner?.name || owner?.email || "Document Owner",
-    signingUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173"}/sign/${recipient.signingToken}`,
+    signingUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180"}/sign/${recipient.signingToken}`,
     emailBranding: brandingSettings.enabled
       ? {
           emailFromName: brandingSettings.emailFromName,

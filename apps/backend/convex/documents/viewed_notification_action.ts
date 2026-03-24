@@ -55,7 +55,7 @@ export const sendViewedNotification = internalAction({
     if (!owner?.email) return { success: false, error: "Owner email not found" };
 
     // 5. Send email
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
     const documentUrl = `${baseUrl}/documents/${args.documentId}`;
 
     const result = await sendDocumentViewed(ctx, {
