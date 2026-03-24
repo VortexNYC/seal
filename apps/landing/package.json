@@ -1,7 +1,7 @@
 {
   "name": "@seal/landing",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -58,9 +58,9 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.2",
+    "fumadocs-mdx": "^14.2.6",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "fumadocs-mdx": "^14.2.6",
     "vite-tsconfig-paths": "^5.1.4"
   }
 }

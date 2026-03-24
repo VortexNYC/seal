@@ -1,7 +1,6 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { DocsBody, DocsDescription, DocsPage, DocsTitle, PageLastUpdate } from "fumadocs-ui/page";
 import { Suspense, useMemo } from "react";
-
 import { renderDocsPageContent } from "~/lib/docs/client-loader";
 import { getDocsPage } from "~/lib/docs/manifest";
 
@@ -31,9 +30,7 @@ function DocsPageRoute() {
       <DocsTitle>{page.title}</DocsTitle>
       <DocsDescription>{page.description}</DocsDescription>
       <DocsBody>
-        <Suspense fallback={<div>Loading...</div>}>
-          {renderDocsPageContent(page.path)}
-        </Suspense>
+        <Suspense fallback={<div>Loading...</div>}>{renderDocsPageContent(page.path)}</Suspense>
       </DocsBody>
       {lastModified ? <PageLastUpdate date={lastModified} /> : null}
     </DocsPage>

@@ -11,14 +11,14 @@ The Seal MCP server provides 57 tools, 6 pre-built workflow prompts, and a knowl
 
 Prompts are pre-built workflow templates. Instead of knowing which tools to call, just ask Claude to use one of these — it will guide you through each step.
 
-| Prompt | What it does |
-| --- | --- |
-| `send-document` | Upload a PDF → create document → add recipients → send for signing |
-| `check-signing-status` | Find documents → check who signed → optionally send reminders |
-| `use-template` | Browse templates → create document → add recipients → send |
-| `verify-document` | Verify cryptographic integrity → audit trail → download URL |
-| `setup-webhooks` | Browse events → create endpoint → save signing secret |
-| `void-document` | Find document → confirm → provide reason → cancel |
+| Prompt                 | What it does                                                       |
+| ---------------------- | ------------------------------------------------------------------ |
+| `send-document`        | Upload a PDF → create document → add recipients → send for signing |
+| `check-signing-status` | Find documents → check who signed → optionally send reminders      |
+| `use-template`         | Browse templates → create document → add recipients → send         |
+| `verify-document`      | Verify cryptographic integrity → audit trail → download URL        |
+| `setup-webhooks`       | Browse events → create endpoint → save signing secret              |
+| `void-document`        | Find document → confirm → provide reason → cancel                  |
 
 **Example:** "Use the send-document prompt" or "Help me send a contract using the Seal prompt"
 
@@ -28,17 +28,17 @@ Prompts are pre-built workflow templates. Instead of knowing which tools to call
 
 The MCP server exposes Seal product documentation as readable resources at `seal://docs/{topic}`.
 
-| Resource URI | Topic |
-| --- | --- |
-| `seal://docs` | Index of all topics |
-| `seal://docs/overview` | What Seal is and how it works |
-| `seal://docs/document-states` | State machine and lifecycle |
-| `seal://docs/recipient-roles` | signer vs approver vs viewer |
-| `seal://docs/field-types` | All field types and properties |
-| `seal://docs/sequential-signing` | How ordered signing groups work |
-| `seal://docs/webhooks` | Events, payload format, signature verification |
-| `seal://docs/limits` | Rate limits, file limits, quotas |
-| `seal://docs/authentication` | API keys, scopes, security best practices |
+| Resource URI                     | Topic                                          |
+| -------------------------------- | ---------------------------------------------- |
+| `seal://docs`                    | Index of all topics                            |
+| `seal://docs/overview`           | What Seal is and how it works                  |
+| `seal://docs/document-states`    | State machine and lifecycle                    |
+| `seal://docs/recipient-roles`    | signer vs approver vs viewer                   |
+| `seal://docs/field-types`        | All field types and properties                 |
+| `seal://docs/sequential-signing` | How ordered signing groups work                |
+| `seal://docs/webhooks`           | Events, payload format, signature verification |
+| `seal://docs/limits`             | Rate limits, file limits, quotas               |
+| `seal://docs/authentication`     | API keys, scopes, security best practices      |
 
 Claude reads these automatically when you ask product questions like "how does sequential signing work?" or "what events can I subscribe to?"
 
@@ -677,24 +677,24 @@ List all available webhook event types with descriptions. Use this before creati
 
 **Available event types:**
 
-| Event | Category | Description |
-| --- | --- | --- |
-| `document.created` | Documents | A new document was created |
-| `document.sent` | Documents | A document was sent for signing |
-| `document.viewed` | Documents | A document was viewed by a recipient |
-| `document.completed` | Documents | All recipients have signed |
-| `document.voided` | Documents | A document was voided/cancelled |
-| `document.expired` | Documents | A document deadline passed |
-| `document.declined` | Documents | A recipient declined to sign |
-| `recipient.added` | Recipients | A recipient was added |
-| `recipient.viewed` | Recipients | A recipient viewed the document |
-| `recipient.signed` | Recipients | A recipient signed |
-| `recipient.approved` | Recipients | A recipient approved |
-| `recipient.declined` | Recipients | A recipient declined |
-| `recipient.reminded` | Recipients | A reminder was sent |
-| `template.created` | Templates | A new template was created |
-| `template.updated` | Templates | A template was modified |
-| `template.used` | Templates | A document was created from a template |
+| Event                | Category   | Description                            |
+| -------------------- | ---------- | -------------------------------------- |
+| `document.created`   | Documents  | A new document was created             |
+| `document.sent`      | Documents  | A document was sent for signing        |
+| `document.viewed`    | Documents  | A document was viewed by a recipient   |
+| `document.completed` | Documents  | All recipients have signed             |
+| `document.voided`    | Documents  | A document was voided/cancelled        |
+| `document.expired`   | Documents  | A document deadline passed             |
+| `document.declined`  | Documents  | A recipient declined to sign           |
+| `recipient.added`    | Recipients | A recipient was added                  |
+| `recipient.viewed`   | Recipients | A recipient viewed the document        |
+| `recipient.signed`   | Recipients | A recipient signed                     |
+| `recipient.approved` | Recipients | A recipient approved                   |
+| `recipient.declined` | Recipients | A recipient declined                   |
+| `recipient.reminded` | Recipients | A reminder was sent                    |
+| `template.created`   | Templates  | A new template was created             |
+| `template.updated`   | Templates  | A template was modified                |
+| `template.used`      | Templates  | A document was created from a template |
 
 ## Tool Categories
 

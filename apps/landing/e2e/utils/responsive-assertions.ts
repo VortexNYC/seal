@@ -2,7 +2,10 @@ import { expect, type Locator, type Page, type TestInfo } from "@playwright/test
 
 export type ViewportKind = "desktop" | "mobile" | "tablet";
 
-function requireBox(locator: Locator, name: string): Promise<NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>> {
+function requireBox(
+  locator: Locator,
+  name: string,
+): Promise<NonNullable<Awaited<ReturnType<Locator["boundingBox"]>>>> {
   return locator.boundingBox().then((box) => {
     expect(box, `${name} should have a bounding box`).not.toBeNull();
     return box!;

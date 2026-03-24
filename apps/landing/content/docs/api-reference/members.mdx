@@ -11,16 +11,16 @@ The Members API provides read access to your workspace's team directory. Use it 
 
 ### Attributes
 
-| Attribute    | Type   | Description                                               |
-| ------------ | ------ | --------------------------------------------------------- |
-| `id`         | string | Membership record ID                                      |
-| `user_id`    | string | Internal user identifier                                  |
-| `name`       | string | Display name (falls back to email if not set)             |
-| `email`      | string | Email address                                             |
-| `avatar_url` | string | Avatar image URL (optional)                               |
+| Attribute    | Type   | Description                                                 |
+| ------------ | ------ | ----------------------------------------------------------- |
+| `id`         | string | Membership record ID                                        |
+| `user_id`    | string | Internal user identifier                                    |
+| `name`       | string | Display name (falls back to email if not set)               |
+| `email`      | string | Email address                                               |
+| `avatar_url` | string | Avatar image URL (optional)                                 |
 | `role`       | string | Role in the workspace: `owner`, `admin`, `member`, `viewer` |
-| `status`     | string | Membership status (e.g., `active`)                        |
-| `joined_at`  | string | ISO 8601 timestamp when the member joined                 |
+| `status`     | string | Membership status (e.g., `active`)                          |
+| `joined_at`  | string | ISO 8601 timestamp when the member joined                   |
 
 ### Example Object
 
@@ -53,9 +53,9 @@ GET /api/v1/members
 
 ### Query Parameters
 
-| Parameter | Type   | Description                                                  |
-| --------- | ------ | ------------------------------------------------------------ |
-| `role`    | string | Filter by role: `owner`, `admin`, `member`, or `viewer`      |
+| Parameter | Type   | Description                                             |
+| --------- | ------ | ------------------------------------------------------- |
+| `role`    | string | Filter by role: `owner`, `admin`, `member`, or `viewer` |
 
 ### TypeScript Example
 
@@ -119,21 +119,18 @@ GET /api/v1/members/get?id={id}
 
 ### Query Parameters
 
-| Parameter | Type   | Description                   |
-| --------- | ------ | ----------------------------- |
-| `id`      | string | **Required.** Membership ID   |
+| Parameter | Type   | Description                 |
+| --------- | ------ | --------------------------- |
+| `id`      | string | **Required.** Membership ID |
 
 ### TypeScript Example
 
 ```typescript
-const response = await fetch(
-  "https://seal.convex.site/api/v1/members/get?id=mem_abc123",
-  {
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-    },
+const response = await fetch("https://seal.convex.site/api/v1/members/get?id=mem_abc123", {
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
   },
-);
+});
 
 const member = await response.json();
 ```
@@ -166,12 +163,12 @@ curl -X GET "https://seal.convex.site/api/v1/members/get?id=mem_abc123" \
 
 ## Member Roles
 
-| Role     | Description                                          |
-| -------- | ---------------------------------------------------- |
-| `owner`  | Full administrative access, including billing        |
-| `admin`  | Can manage documents, members, and most settings     |
-| `member` | Can create and manage their own documents            |
-| `viewer` | Read-only access to documents shared with them       |
+| Role     | Description                                      |
+| -------- | ------------------------------------------------ |
+| `owner`  | Full administrative access, including billing    |
+| `admin`  | Can manage documents, members, and most settings |
+| `member` | Can create and manage their own documents        |
+| `viewer` | Read-only access to documents shared with them   |
 
 ## Next Steps
 

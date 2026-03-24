@@ -1,6 +1,5 @@
 import { FileCheck, Lock, Shield, Zap } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
-
 import { FadeIn } from "~/components/ui/fade-in";
 
 interface TrustItem {

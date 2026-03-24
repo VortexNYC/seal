@@ -1,12 +1,10 @@
 import { ArrowRight, Check, Minus } from "lucide-react";
 import { useState } from "react";
-
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
-import { cn } from "~/utils/cn";
-import type { PricingSectionBlock } from "~/lib/content/types";
-
 import { APP_URL } from "~/lib/constants";
+import type { PricingSectionBlock } from "~/lib/content/types";
+import { cn } from "~/utils/cn";
 
 interface Plan {
   name: string;
@@ -84,7 +82,7 @@ export function StaticPricing() {
             <div className="bg-muted inline-flex items-center gap-1 rounded-full p-1">
               <button
                 className={cn(
-                  "rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  "focus-visible:ring-ring rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                   !annual
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -96,7 +94,7 @@ export function StaticPricing() {
               </button>
               <button
                 className={cn(
-                  "rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  "focus-visible:ring-ring rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                   annual
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -120,13 +118,11 @@ export function StaticPricing() {
               <div
                 className={cn(
                   "relative flex h-full flex-col rounded-2xl border p-8 sm:p-10",
-                  plan.highlighted
-                    ? "border-primary/30 bg-primary/5"
-                    : "border-border bg-card",
+                  plan.highlighted ? "border-primary/30 bg-primary/5" : "border-border bg-card",
                 )}
               >
                 {plan.highlighted && (
-                  <div className="bg-card text-foreground absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-wider shadow-sm">
+                  <div className="bg-card text-foreground absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full border px-4 py-1 text-xs font-semibold tracking-wider uppercase shadow-sm">
                     Most Popular
                   </div>
                 )}

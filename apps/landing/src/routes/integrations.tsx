@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Bot, Code2, Webhook } from "lucide-react";
-
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 
