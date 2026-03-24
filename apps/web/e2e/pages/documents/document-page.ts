@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { waitForConvexMutation } from "../../fixtures/convex-helpers";
 
@@ -6,11 +6,13 @@ export class DocumentPage {
   readonly page: Page;
   readonly documentTitle: Locator;
   readonly documentCanvas: Locator;
+  readonly documentDropTarget: Locator;
   readonly documentPreview: Locator;
   readonly backButton: Locator;
   readonly zoomInButton: Locator;
   readonly zoomOutButton: Locator;
   readonly zoomLevelSelect: Locator;
+  readonly mobileZoomLevel: Locator;
   readonly resetZoomButton: Locator;
   readonly fitButton: Locator;
   readonly recipientsSectionButton: Locator;
@@ -18,17 +20,25 @@ export class DocumentPage {
   readonly activitySectionButton: Locator;
   readonly addFieldButton: Locator;
   readonly sendButton: Locator;
-  readonly fieldTypeDropdown: Locator;
+  readonly addMyselfAsSignerButton: Locator;
+  readonly recipientSelectorDialog: Locator;
+  readonly placeFieldButton: Locator;
+  selectedFieldType: "signature" | "text" | "date" | "checkbox";
 
   constructor(page: Page) {
     this.page = page;
     this.documentTitle = page.locator('[data-testid="document-title"]');
     this.documentCanvas = page.locator("canvas");
+    this.documentDropTarget = page.locator(".react-pdf__Page").first();
     this.documentPreview = page.getByText("Document Preview");
     this.backButton = page.getByRole("button", { name: /^Back$/ });
     this.zoomInButton = page.getByRole("button", { name: "Zoom in" });
     this.zoomOutButton = page.getByRole("button", { name: "Zoom out" });
     this.zoomLevelSelect = page.getByRole("combobox").first();
+    this.mobileZoomLevel = page
+      .locator("span:not([data-slot='select-value'])")
+      .filter({ hasText: /^\d+%$/ })
+      .first();
     this.resetZoomButton = page.getByRole("button", { name: "Reset" });
     this.fitButton = page.getByRole("button", { name: "Fit" });
     this.recipientsSectionButton = page.getByRole("button", { name: /^Recipients/ });
@@ -36,7 +46,10 @@ export class DocumentPage {
     this.activitySectionButton = page.getByRole("button", { name: /^Activity/ });
     this.addFieldButton = page.getByRole("button", { name: /add field/i });
     this.sendButton = page.getByRole("button", { name: /send/i });
-    this.fieldTypeDropdown = page.locator('[data-testid="field-type-select"]');
+    this.addMyselfAsSignerButton = page.getByRole("button", { name: /add myself as signer/i });
+    this.recipientSelectorDialog = page.getByRole("dialog", { name: /assign field to recipient/i });
+    this.placeFieldButton = page.getByRole("button", { name: /place field/i });
+    this.selectedFieldType = "signature";
   }
 
   async goto(slug: string, documentId: string): Promise<void> {
@@ -44,16 +57,51 @@ export class DocumentPage {
   }
 
   async addSignatureField(x: number, y: number): Promise<void> {
-    // Click on canvas to add field
-    await this.documentCanvas.click({ position: { x, y } });
+    await this.ensureSignerAvailable();
+
+    const fieldButton = this.page.getByRole("button", {
+      name: new RegExp(`^${this.selectedFieldLabel}$`, "i"),
+    });
+    await fieldButton.waitFor({ state: "visible", timeout: 15000 });
+    await expect(fieldButton).toBeEnabled();
+    const dropTargetBox = await this.documentDropTarget.boundingBox();
+    if (!dropTargetBox) {
+      throw new Error("Could not determine the PDF page bounds for field placement.");
+    }
+
+    const dropClientX = dropTargetBox.x + x;
+    const dropClientY = dropTargetBox.y + y;
+    const dataTransfer = await this.page.evaluateHandle(() => new DataTransfer());
+
+    await fieldButton.dispatchEvent("dragstart", { dataTransfer });
+    await this.documentDropTarget.dispatchEvent("dragover", {
+      dataTransfer,
+      clientX: dropClientX,
+      clientY: dropClientY,
+    });
+    await this.documentDropTarget.dispatchEvent("drop", {
+      dataTransfer,
+      clientX: dropClientX,
+      clientY: dropClientY,
+    });
+
+    await this.recipientSelectorDialog.waitFor({ state: "visible", timeout: 15000 });
+    await this.placeFieldButton.click();
 
     // Wait for field to be created
-    await waitForConvexMutation(this.page, "createSignatureField");
+    await waitForConvexMutation(this.page, "createField");
+    await this.recipientSelectorDialog.waitFor({ state: "hidden", timeout: 15000 }).catch(() => {});
   }
 
   async selectFieldType(fieldType: "signature" | "text" | "date" | "checkbox"): Promise<void> {
-    await this.fieldTypeDropdown.click();
-    await this.page.getByRole("option", { name: fieldType }).click();
+    this.selectedFieldType = fieldType;
+    await this.ensureSignerAvailable();
+
+    const fieldButton = this.page.getByRole("button", {
+      name: new RegExp(`^${this.selectedFieldLabel}$`, "i"),
+    });
+    await fieldButton.waitFor({ state: "visible", timeout: 15000 });
+    await expect(fieldButton).toBeEnabled();
   }
 
   async sendDocument(): Promise<void> {
@@ -65,9 +113,48 @@ export class DocumentPage {
     return (await this.documentTitle.textContent()) || "";
   }
 
+  async getVisibleZoomText(): Promise<string> {
+    if (await this.zoomLevelSelect.isVisible().catch(() => false)) {
+      return ((await this.zoomLevelSelect.textContent()) || "").trim();
+    }
+
+    await this.mobileZoomLevel.waitFor({ state: "visible", timeout: 15000 });
+    return ((await this.mobileZoomLevel.textContent()) || "").trim();
+  }
+
+  async hasDesktopOnlyZoomControls(): Promise<boolean> {
+    return await this.fitButton.isVisible().catch(() => false);
+  }
+
   async waitForDocumentLoad(): Promise<void> {
     await this.documentPreview.waitFor({ state: "visible", timeout: 30000 });
     await this.documentCanvas.waitFor({ state: "visible" });
     await this.page.waitForLoadState("domcontentloaded");
+  }
+
+  private get selectedFieldLabel(): string {
+    switch (this.selectedFieldType) {
+      case "checkbox":
+        return "Checkbox";
+      case "date":
+        return "Date";
+      case "text":
+        return "Text";
+      default:
+        return "Signature";
+    }
+  }
+
+  private async ensureSignerAvailable(): Promise<void> {
+    const needsSigner = await this.addMyselfAsSignerButton.isVisible().catch(() => false);
+
+    if (!needsSigner) {
+      return;
+    }
+
+    await this.addMyselfAsSignerButton.click();
+    await this.page.getByRole("button", { name: /add as signer/i }).click();
+    await this.addMyselfAsSignerButton.waitFor({ state: "hidden", timeout: 15000 }).catch(() => {});
+    await this.page.waitForTimeout(500);
   }
 }

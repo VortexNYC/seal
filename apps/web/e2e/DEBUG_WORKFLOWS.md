@@ -21,7 +21,7 @@ When a test fails, use Chrome DevTools MCP to:
 (await mcp__chrome) -
   devtools__navigate_page({
     type: "url",
-    url: "http://localhost:5173/test-org/documents",
+    url: "http://localhost:5180/test-org/documents",
   });
 ```
 
@@ -301,7 +301,7 @@ When Claude Code runs tests autonomously, it will:
 (await mcp__chrome) -
   devtools__navigate_page({
     type: "url",
-    url: "http://localhost:5173/test-org/documents/doc123",
+    url: "http://localhost:5180/test-org/documents/doc123",
   });
 
 // 2. Get page snapshot
@@ -356,5 +356,5 @@ VITE_CONVEX_URL=https://test-deployment.convex.cloud
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 
 # Playwright
-PLAYWRIGHT_BASE_URL=http://localhost:5173
+PLAYWRIGHT_BASE_URL=http://localhost:5180
 ```

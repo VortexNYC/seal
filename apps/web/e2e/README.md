@@ -75,16 +75,19 @@ Create `.env.test` file (see `.env.test.example`):
 ```bash
 E2E_TEST_USER_EMAIL=seal-e2e+clerk_test@example.com
 E2E_TEST_EMAIL_CODE=424242
+# Optional, for deterministic workspace recovery in setup:
+# E2E_TEST_ORGANIZATION_NAME="Seal E2E Workspace"
+# E2E_TEST_ORGANIZATION_SLUG=seal-e2e-clerk-test
 VITE_CONVEX_URL=https://test-deployment.convex.cloud
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-PLAYWRIGHT_BASE_URL=http://localhost:5173
+PLAYWRIGHT_BASE_URL=http://localhost:5180
 ```
 
 ### Playwright Configuration
 
 Configuration is in `playwright.config.ts`:
 
-- Base URL: `http://localhost:5173`
+- Base URL: `http://localhost:5180`
 - Browsers: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
 - Auto-starts dev server
 - Captures screenshots/videos on failure

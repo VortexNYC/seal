@@ -3,8 +3,8 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../fixtures/auth";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
-import { waitForToast } from "../utils/test-helpers";
 import { testData } from "../utils/test-data";
+import { waitForToast } from "../utils/test-helpers";
 
 async function gotoDocumentsList(
   authenticatedPage: Page,
@@ -105,9 +105,7 @@ test.describe("Document Actions", () => {
     await authenticatedPage.getByRole("menuitem", { name: /^download$/i }).click();
 
     const popup = await popupPromise;
-    await expect
-      .poll(async () => popup.url(), { timeout: 10000 })
-      .not.toBe("about:blank");
+    await expect.poll(async () => popup.url(), { timeout: 10000 }).not.toBe("about:blank");
   });
 
   test("should navigate back from document editor", async ({
@@ -150,16 +148,20 @@ test.describe("Document Actions", () => {
 });
 
 test.describe("Document Editor - Zoom Controls", () => {
+  test.describe.configure({ mode: "serial" });
+
   test("should zoom in on document", async ({ authenticatedPage, organizationSlug }) => {
     const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
     // Click zoom in button
-    const initialZoom = (await documentPage.zoomLevelSelect.textContent())?.trim();
+    const initialZoom = await documentPage.getVisibleZoomText();
     await documentPage.zoomInButton.click();
 
     await authenticatedPage.waitForTimeout(500);
 
-    await expect(documentPage.zoomLevelSelect).not.toHaveText(initialZoom ?? "");
+    await expect
+      .poll(async () => documentPage.getVisibleZoomText(), { timeout: 10000 })
+      .not.toBe(initialZoom);
   });
 
   test("should zoom out on document", async ({ authenticatedPage, organizationSlug }) => {
@@ -172,6 +174,10 @@ test.describe("Document Editor - Zoom Controls", () => {
 
   test("should reset zoom on document", async ({ authenticatedPage, organizationSlug }) => {
     const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
+
+    if (!(await documentPage.hasDesktopOnlyZoomControls())) {
+      test.skip(true, "Reset zoom control is hidden on mobile layouts.");
+    }
 
     // Zoom in first
     await documentPage.zoomInButton.click();
@@ -186,6 +192,10 @@ test.describe("Document Editor - Zoom Controls", () => {
   test("should fit document to viewport", async ({ authenticatedPage, organizationSlug }) => {
     const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
+    if (!(await documentPage.hasDesktopOnlyZoomControls())) {
+      test.skip(true, "Fit control is hidden on mobile layouts.");
+    }
+
     await documentPage.fitButton.click();
 
     await authenticatedPage.waitForTimeout(500);
@@ -193,6 +203,8 @@ test.describe("Document Editor - Zoom Controls", () => {
 });
 
 test.describe("Document Details Sidebar", () => {
+  test.describe.configure({ mode: "serial" });
+
   test("should display document details", async ({ authenticatedPage, organizationSlug }) => {
     const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 

@@ -8,6 +8,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig(({ command }) => {
   const enableSentry = command === "build";
+  const defaultPort = Number(process.env.PORT || 5180);
   const manualChunks = (moduleId: string): string | undefined => {
     if (moduleId.includes("react-pdf") || moduleId.includes("pdfjs-dist")) {
       return "pdf-viewer";
@@ -51,6 +52,8 @@ export default defineConfig(({ command }) => {
 
     // PostHog reverse proxy to bypass ad blockers
     server: {
+      port: defaultPort,
+      strictPort: true,
       proxy: {
         "/ingest/static": {
           target: "https://us-assets.i.posthog.com",
@@ -73,6 +76,11 @@ export default defineConfig(({ command }) => {
           manualChunks,
         },
       },
+    },
+
+    preview: {
+      port: defaultPort,
+      strictPort: true,
     },
   };
 });

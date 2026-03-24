@@ -1,11 +1,15 @@
 import type { Page } from "@playwright/test";
+
 import { expect, test } from "../fixtures/auth";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
 import { waitForToast } from "../utils/test-helpers";
 
-async function createAndOpenDocument(authenticatedPage: Page, organizationSlug: string): Promise<void> {
+async function createAndOpenDocument(
+  authenticatedPage: Page,
+  organizationSlug: string,
+): Promise<void> {
   const documentsPage = new DocumentsListPage(authenticatedPage);
 
   await documentsPage.goto(organizationSlug);

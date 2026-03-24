@@ -1,5 +1,12 @@
 /* oxlint-disable react-hooks/rules-of-hooks */
+import { clerk } from "@clerk/testing/playwright";
 import { expect, test as base, type Locator, type Page } from "@playwright/test";
+
+import {
+  ensureWorkspaceForAuthenticatedUser,
+  getTestWorkspaceConfig,
+  waitForClerkConvexToken,
+} from "./auth-helpers";
 
 type AuthFixtures = {
   authenticatedPage: Page;
@@ -9,20 +16,32 @@ type AuthFixtures = {
 /**
  * Extended test with authentication fixtures
  *
- * Note: Clerk uses short-lived JWTs (60s), so we perform fresh login for each test
- * to ensure reliable authentication. The login flow is quick with Clerk test mode.
+ * Prefer the Playwright storage state created by the setup project.
+ * If state is missing locally, fall back to the direct login helper/UI flow.
  */
 export const test = base.extend<AuthFixtures>({
   /**
    * Provides an authenticated page with a logged-in user
    */
   authenticatedPage: async ({ page }, use) => {
-    // Always perform fresh login (Clerk JWTs are short-lived)
-    await performLogin(page);
+    await page.goto("/app", { waitUntil: "domcontentloaded" });
 
-    // Wait for redirect to org-specific URL
-    // The app redirects: sign-in -> /app -> /{org-slug}/home
-    await page.waitForURL(/\/[\w-]+\/home/, { timeout: 15000 });
+    if (!isAuthenticatedUrl(page.url())) {
+      await performLogin(page);
+    }
+
+    const landedOnWorkspaceHome = await page
+      .waitForURL(/\/[\w-]+\/home/, { timeout: 15000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (!landedOnWorkspaceHome) {
+      await ensureWorkspaceForAuthenticatedUser(page);
+      await page.goto("/app", { waitUntil: "domcontentloaded" });
+      await page.waitForURL(/\/[\w-]+\/home/, { timeout: 15000 });
+    }
+
+    await ensureAuthenticatedAppReady(page);
 
     await use(page);
   },
@@ -41,50 +60,58 @@ export const test = base.extend<AuthFixtures>({
 });
 
 /**
- * Perform login using Clerk with email code verification
+ * Perform login using Clerk's official Playwright helper.
+ * This avoids brittle UI-driven authentication and is much more stable under parallel load.
  */
 async function performLogin(page: Page): Promise<void> {
-  const testEmail =
-    process.env.E2E_TEST_USER_EMAIL ||
-    process.env.TEST_USER_EMAIL ||
-    "sealtest001+clerk_test@example.com";
-  const testEmailCode =
-    process.env.E2E_TEST_EMAIL_CODE || process.env.TEST_EMAIL_CODE || "424242";
+  const { email: testEmail, emailCode: testEmailCode } = getTestWorkspaceConfig();
 
-  // Navigate directly to sign-in page
   await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
 
   if (isAuthenticatedUrl(page.url())) {
     return;
   }
 
-  // Wait for Clerk sign-in component
-  await waitForElementWithFallback(page, [
-    page.getByRole("heading", { name: /sign in/i }),
-    page.getByText(/sign in to seal/i),
-    page.getByText(/sign in/i),
-  ]);
+  const shouldUseClerkTesting = Boolean(
+    process.env.CLERK_FAPI && (process.env.CLERK_SECRET_KEY || process.env.CLERK_TESTING_TOKEN),
+  );
 
-  if (isAuthenticatedUrl(page.url())) {
-    return;
+  if (shouldUseClerkTesting) {
+    await clerk.loaded({ page });
+    await clerk.signIn({
+      page,
+      signInParams: {
+        strategy: "email_code",
+        identifier: testEmail,
+      },
+    });
+  } else {
+    await waitForElementWithFallback(page, [
+      page.getByRole("heading", { name: /sign in/i }),
+      page.getByText(/sign in to seal/i),
+      page.getByText(/sign in/i),
+    ]);
+
+    if (isAuthenticatedUrl(page.url())) {
+      return;
+    }
+
+    await fillFieldWithFallback(page, testEmail);
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+
+    await waitForElementWithFallback(page, [
+      page.getByRole("heading", { name: /check your email/i }),
+      page.getByText(/check your email/i),
+      page.getByText(/verification code/i),
+    ]);
+
+    await page.waitForTimeout(500);
+    await fillOtpCode(page, testEmailCode);
   }
 
-  // Fill in email
-  await fillFieldWithFallback(page, testEmail);
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
-
-  // Wait for OTP code screen
-  await waitForElementWithFallback(page, [
-    page.getByRole("heading", { name: /check your email/i }),
-    page.getByText(/check your email/i),
-    page.getByText(/verification code/i),
-  ]);
-
-  // Wait a moment for Clerk OTP to initialize
-  await page.waitForTimeout(500);
-
-  // Type the OTP code directly (Clerk test mode accepts 424242 for +clerk_test emails)
-  await fillOtpCode(page, testEmailCode);
+  if (shouldUseClerkTesting) {
+    await page.goto("/app", { waitUntil: "domcontentloaded" });
+  }
 
   // Wait for redirect to authenticated area (or onboarding flow that still requires auth context)
   await page.waitForURL(/\/(app|.*\/home|.*\/onboarding\/choose-organization)/, {
@@ -110,18 +137,20 @@ async function fillFieldWithFallback(page: Page, value: string): Promise<void> {
   ];
 
   for (const locator of candidates) {
-    if (await locator.count() > 0) {
+    if ((await locator.count()) > 0) {
       await locator.first().fill(value);
       return;
     }
   }
 
-  await page.locator('input').first().fill(value);
+  await page.locator("input").first().fill(value);
 }
 
 async function fillOtpCode(page: Page, code: string): Promise<void> {
   const singleInputs = page.locator('input[name="code"], input[autocomplete="one-time-code"]');
-  const digitInputs = page.locator('[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]');
+  const digitInputs = page.locator(
+    '[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]',
+  );
   const roleInputs = page.getByRole("textbox", { name: /code/i });
 
   const singleCount = await singleInputs.count();
@@ -157,7 +186,12 @@ async function waitForElementWithFallback(page: Page, candidates: Locator[]): Pr
     }
 
     for (const locator of candidates) {
-      if (await locator.first().isVisible()) {
+      if (
+        await locator
+          .first()
+          .isVisible()
+          .catch(() => false)
+      ) {
         return;
       }
     }
@@ -170,7 +204,6 @@ async function waitForElementWithFallback(page: Page, candidates: Locator[]): Pr
 
   await expect(candidates[0]).toBeVisible({ timeout: 1000 });
 }
-
 /**
  * Helper to sign out
  */
@@ -183,6 +216,27 @@ export async function signOut(page: Page): Promise<void> {
 
   // Wait for redirect to login
   await page.waitForURL("**/sign-in", { timeout: 10000 });
+}
+
+async function ensureAuthenticatedAppReady(page: Page): Promise<void> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await waitForClerkConvexToken(page);
+
+    const hasAuthRouteError = await page
+      .getByText(/authentication required/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    if (!hasAuthRouteError) {
+      return;
+    }
+
+    await page.goto("/app", { waitUntil: "domcontentloaded" });
+    await page.waitForURL(/\/[\w-]+\/home/, { timeout: 15000 });
+  }
+
+  await expect(page.getByText(/authentication required/i).first()).not.toBeVisible();
 }
 
 export { expect } from "@playwright/test";
