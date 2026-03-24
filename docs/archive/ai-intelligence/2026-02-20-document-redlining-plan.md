@@ -13,6 +13,7 @@
 ## Task 1: Create `ai_document_annotations` schema
 
 **Files:**
+
 - Create: `apps/backend/convex/schemas/ai_document_annotations.ts`
 - Modify: `apps/backend/convex/schema.ts`
 
@@ -96,6 +97,7 @@ Add the table to the schema definition (after `ai_progress: aiProgressTable` aro
 ## Task 2: Extend Gemini analysis to return annotations
 
 **Files:**
+
 - Modify: `apps/backend/convex/ai/analyzeFieldsAction.ts`
 
 **Step 1:** Expand `FieldAnalysisResult` interface (line 26) to include annotations:
@@ -165,10 +167,15 @@ export const DocumentAnalysisSchema = z.object({
       y: z.number().min(0).max(100).describe("Y position as percentage of page height"),
       width: z.number().min(1).max(100).describe("Width as percentage of page width"),
       height: z.number().min(0.5).max(30).describe("Height as percentage of page height"),
-      category: z.enum(["obligation", "payment", "risk", "dates", "terms"]).describe("Clause category"),
+      category: z
+        .enum(["obligation", "payment", "risk", "dates", "terms"])
+        .describe("Clause category"),
       severity: z.enum(["informational", "important", "critical"]).describe("Severity level"),
       text: z.string().describe("The exact clause text being annotated"),
-      summary: z.string().max(120).describe("One-sentence plain-English explanation of this clause"),
+      summary: z
+        .string()
+        .max(120)
+        .describe("One-sentence plain-English explanation of this clause"),
     }),
   ),
 });
@@ -286,6 +293,7 @@ Analyze the document and return both detected fields AND clause annotations.`;
 ## Task 3: Add annotation mutations
 
 **Files:**
+
 - Modify: `apps/backend/convex/ai/mutations.ts`
 
 **Step 1:** Add `saveDocumentAnnotations` internal mutation. Add after the existing `saveFieldSuggestions` mutation:
@@ -335,12 +343,7 @@ export const saveDocumentAnnotations = internalMutation({
     const existing = await ctx.db
       .query("ai_document_annotations")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "pending"),
-          q.eq(q.field("status"), "active"),
-        ),
-      )
+      .filter((q) => q.or(q.eq(q.field("status"), "pending"), q.eq(q.field("status"), "active")))
       .collect();
 
     for (const annotation of existing) {
@@ -382,6 +385,7 @@ export const dismissDocumentAnnotations = authMutation({
 ## Task 4: Add annotation query
 
 **Files:**
+
 - Modify: `apps/backend/convex/ai/queries.ts`
 
 **Step 1:** Add `getDocumentAnnotations` query after the existing queries:
@@ -407,22 +411,23 @@ export const getDocumentAnnotations = authQuery({
 ## Task 5: Hook annotations into the pipeline
 
 **Files:**
+
 - Modify: `apps/backend/convex/ai/pipeline.ts`
 
 **Step 1:** After the existing `saveFieldSuggestions` call (step 4, around line 42), add the annotation save:
 
 ```ts
-      // 5. Save document annotations (redlining)
-      if (result.annotations && result.annotations.length > 0) {
-        await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
-          documentId: args.documentId,
-          organizationId: args.organizationId,
-          annotations: result.annotations,
-          modelUsed: "gemini-3-flash",
-          tokensUsed: result.tokensUsed,
-          processingTimeMs: result.processingTimeMs,
-        });
-      }
+// 5. Save document annotations (redlining)
+if (result.annotations && result.annotations.length > 0) {
+  await ctx.runMutation(internal.ai.mutations.saveDocumentAnnotations, {
+    documentId: args.documentId,
+    organizationId: args.organizationId,
+    annotations: result.annotations,
+    modelUsed: "gemini-3-flash",
+    tokensUsed: result.tokensUsed,
+    processingTimeMs: result.processingTimeMs,
+  });
+}
 ```
 
 Update the step numbers for the existing search indexing (becomes step 6) and mark completed (becomes step 7).
@@ -434,6 +439,7 @@ Update the step numbers for the existing search indexing (becomes step 6) and ma
 ## Task 6: Create annotation highlight overlays component
 
 **Files:**
+
 - Create: `apps/web/src/components/documents/ai-annotation-overlays.tsx`
 
 **Step 1:** Create the component file:
@@ -599,7 +605,9 @@ function HighlightOverlay({
       <div className="pointer-events-none absolute bottom-full left-0 z-50 mb-1 hidden max-w-xs rounded-md border border-slate-200 bg-white px-3 py-2 shadow-lg group-hover/highlight:block dark:border-slate-700 dark:bg-slate-800">
         <div className="flex items-center gap-1.5 mb-0.5">
           <config.icon className={cn("h-3 w-3", config.textColor)} />
-          <span className={cn("text-[10px] font-semibold uppercase tracking-wide", config.textColor)}>
+          <span
+            className={cn("text-[10px] font-semibold uppercase tracking-wide", config.textColor)}
+          >
             {config.label}
           </span>
         </div>
@@ -757,6 +765,7 @@ export function AIInsightsPanel({
 ## Task 7: Wire annotations into the document editor page
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx`
 
 **Step 1:** Add imports at the top of the file (near the other AI component imports around line 38):
@@ -774,68 +783,76 @@ Add `ScanSearchIcon` to the lucide-react import (for the Insights section header
 **Step 2:** In `DocumentDetailPage()`, add the hook call near the existing AI hooks (around line 363):
 
 ```ts
-  const documentAnnotations = useDocumentAnnotations(documentId as Id<"documents">);
+const documentAnnotations = useDocumentAnnotations(documentId as Id<"documents">);
 ```
 
 **Step 3:** Add annotation overlays inside TransformComponent, right after the `AIFieldOverlays` block (around line 1169). The overlays must be inside the same container div so they zoom with the PDF:
 
 ```tsx
-                      {/* AI annotation overlays (redlining) — inside TransformComponent */}
-                      {canEdit && documentAnnotations.annotations && (
-                        <AIAnnotationOverlays
-                          annotations={documentAnnotations.annotations}
-                          enabledCategories={documentAnnotations.enabledCategories}
-                          currentPage={currentPage}
-                          pdfPageWidth={pdfWidth}
-                          pdfPageHeight={pdfHeight}
-                        />
-                      )}
+{
+  /* AI annotation overlays (redlining) — inside TransformComponent */
+}
+{
+  canEdit && documentAnnotations.annotations && (
+    <AIAnnotationOverlays
+      annotations={documentAnnotations.annotations}
+      enabledCategories={documentAnnotations.enabledCategories}
+      currentPage={currentPage}
+      pdfPageWidth={pdfWidth}
+      pdfPageHeight={pdfHeight}
+    />
+  );
+}
 ```
 
 **Step 4:** Add the Insights sidebar section. Add it after the AI Chat Panel section (around line 1387) and before the Signature Fields section:
 
 ```tsx
-              {/* AI Insights (Redlining) */}
-              {canEdit && documentAnnotations.annotations && (
-                <Collapsible
-                  open={openSections.has("insights")}
-                  onOpenChange={() => toggleSection("insights")}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
-                >
-                  <CollapsibleTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-rose-100 text-rose-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-rose-900 dark:text-rose-400">
-                          <ScanSearchIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
-                        </div>
-                        <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
-                          Insights
-                        </span>
-                        <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                          {documentAnnotations.annotations.annotations.length}
-                        </span>
-                      </div>
-                      <ChevronDownIcon
-                        className={`h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400 ${openSections.has("insights") ? "rotate-180" : ""}`}
-                      />
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
-                    <div className="mt-3">
-                      <AIInsightsPanel
-                        annotations={documentAnnotations.annotations}
-                        enabledCategories={documentAnnotations.enabledCategories}
-                        toggleCategory={documentAnnotations.toggleCategory}
-                        onDismiss={documentAnnotations.handleDismiss}
-                        onPageJump={(page) => setCurrentPage(page)}
-                      />
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
+{
+  /* AI Insights (Redlining) */
+}
+{
+  canEdit && documentAnnotations.annotations && (
+    <Collapsible
+      open={openSections.has("insights")}
+      onOpenChange={() => toggleSection("insights")}
+      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-xl dark:border-slate-700 dark:bg-slate-900"
+    >
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="flex w-full cursor-pointer items-center justify-between px-5 py-4 transition-colors select-none hover:bg-slate-50 sm:px-4 sm:py-3.5 dark:hover:bg-slate-800"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-rose-100 text-rose-600 sm:h-8 sm:w-8 sm:rounded-lg dark:bg-rose-900 dark:text-rose-400">
+              <ScanSearchIcon className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
+            </div>
+            <span className="font-sans text-[0.9375rem] font-semibold text-slate-800 sm:text-sm dark:text-slate-200">
+              Insights
+            </span>
+            <span className="ml-2 rounded-xl bg-slate-100 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              {documentAnnotations.annotations.annotations.length}
+            </span>
+          </div>
+          <ChevronDownIcon
+            className={`h-4 w-4 text-slate-500 transition-transform duration-200 dark:text-slate-400 ${openSections.has("insights") ? "rotate-180" : ""}`}
+          />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="border-t border-slate-100 px-5 pb-5 sm:px-4 sm:pb-4 dark:border-slate-800">
+        <div className="mt-3">
+          <AIInsightsPanel
+            annotations={documentAnnotations.annotations}
+            enabledCategories={documentAnnotations.enabledCategories}
+            toggleCategory={documentAnnotations.toggleCategory}
+            onDismiss={documentAnnotations.handleDismiss}
+            onPageJump={(page) => setCurrentPage(page)}
+          />
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
 ```
 
 **Step 5:** Run typecheck + lint: `bun --bun run typecheck && bun --bun run lint`
@@ -857,20 +874,22 @@ Add `ScanSearchIcon` to the lucide-react import (for the Insights section header
 ## Files Summary
 
 ### New Files
-| File | Purpose |
-|------|---------|
-| `convex/schemas/ai_document_annotations.ts` | Annotation table schema |
+
+| File                                                      | Purpose                         |
+| --------------------------------------------------------- | ------------------------------- |
+| `convex/schemas/ai_document_annotations.ts`               | Annotation table schema         |
 | `web/src/components/documents/ai-annotation-overlays.tsx` | Overlay + insights panel + hook |
 
 ### Modified Files
-| File | Changes |
-|------|---------|
-| `convex/schema.ts` | Register `ai_document_annotations` table |
-| `convex/ai/analyzeFieldsAction.ts` | Expand Zod schema, prompt, and result type to include annotations |
-| `convex/ai/mutations.ts` | Add `saveDocumentAnnotations` + `dismissDocumentAnnotations` |
-| `convex/ai/queries.ts` | Add `getDocumentAnnotations` |
-| `convex/ai/pipeline.ts` | Fan out annotations from combined result |
-| `web/.../documents/$documentId.tsx` | Render overlays + insights sidebar section |
+
+| File                                | Changes                                                           |
+| ----------------------------------- | ----------------------------------------------------------------- |
+| `convex/schema.ts`                  | Register `ai_document_annotations` table                          |
+| `convex/ai/analyzeFieldsAction.ts`  | Expand Zod schema, prompt, and result type to include annotations |
+| `convex/ai/mutations.ts`            | Add `saveDocumentAnnotations` + `dismissDocumentAnnotations`      |
+| `convex/ai/queries.ts`              | Add `getDocumentAnnotations`                                      |
+| `convex/ai/pipeline.ts`             | Fan out annotations from combined result                          |
+| `web/.../documents/$documentId.tsx` | Render overlays + insights sidebar section                        |
 
 ---
 

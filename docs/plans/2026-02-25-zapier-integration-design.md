@@ -63,6 +63,7 @@ Response:
 ```
 
 Implementation:
+
 - Creates a record in the existing `webhooks` table (or a new `webhook_subscriptions` table if the existing schema doesn't fit)
 - Sets `source: "zapier"` to distinguish from user-created webhooks
 - Sets `secret: null` — Zapier hooks don't need HMAC signing (Zapier trusts the registered URL)
@@ -77,6 +78,7 @@ Response: 204 No Content
 ```
 
 Implementation:
+
 - Deletes the webhook subscription record
 - Validates the subscription belongs to the authenticated org
 
@@ -106,6 +108,7 @@ Response:
 ```
 
 Implementation:
+
 - Returns the most recent documents for the authenticated org
 - Uses existing document queries with a limit
 - Formats response to match the webhook payload shape (so Zapier field mapping is consistent)
@@ -124,11 +127,11 @@ Zapier subscriptions are delivered through the **existing webhook delivery syste
 
 These already exist or are straightforward extensions of the current REST API:
 
-| Zapier Action | Seal Endpoint | Status |
-|---------------|--------------|--------|
+| Zapier Action                 | Seal Endpoint                              | Status                        |
+| ----------------------------- | ------------------------------------------ | ----------------------------- |
 | Create Document from Template | `POST /api/v1/documents` with `templateId` | May need `templateId` support |
-| Send Document | `POST /api/v1/documents/{id}/send` | Exists |
-| Add Recipient | `POST /api/v1/documents/{id}/recipients` | Exists |
+| Send Document                 | `POST /api/v1/documents/{id}/send`         | Exists                        |
+| Add Recipient                 | `POST /api/v1/documents/{id}/recipients`   | Exists                        |
 
 If any action endpoints are missing, they should be added to the existing API v1 routes following the established pattern in `apps/backend/convex/api/v1/`.
 
@@ -164,6 +167,7 @@ The event dispatcher must query both `webhooks` and `zapier_subscriptions` table
 The Zapier app is configured entirely on Zapier's Developer Platform (https://developer.zapier.com). No Zapier-specific code lives in the Seal repo.
 
 Zapier app definition includes:
+
 - **Authentication**: API Key type. User pastes their Seal API key. Zapier sends it as `Authorization: Bearer <key>`.
 - **Test endpoint**: `GET /api/v1/zapier/list-documents` — Zapier calls this to validate the API key works.
 - **Triggers**: Each trigger maps to a subscribe/unsubscribe endpoint pair + a `list-documents` polling fallback.
@@ -178,9 +182,9 @@ Zapier app definition includes:
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Zapier integration | No | Yes |
+| Feature            | Free | Pro |
+| ------------------ | ---- | --- |
+| Zapier integration | No   | Yes |
 
 Zapier access requires Pro plan and API key access (which is already Pro-gated). The subscribe endpoint should check plan status and return 403 for free orgs.
 
@@ -196,11 +200,11 @@ Zapier access requires Pro plan and API key access (which is already Pro-gated).
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/api/v1/zapier.ts` | Create — subscribe, unsubscribe, list-documents endpoints |
-| `apps/backend/convex/api/index.ts` | Modify — register Zapier routes |
-| `apps/backend/convex/schemas/webhooks.ts` | Modify — add `source` field (or create `zapier_subscriptions` schema) |
-| `apps/backend/convex/schema.ts` | Modify — register new table if needed |
-| `apps/backend/convex/webhooks/delivery.ts` | Modify — handle 410 Gone cleanup, skip HMAC for Zapier hooks |
-| `apps/backend/convex/webhooks/dispatcher.ts` | Modify — query Zapier subscriptions alongside regular webhooks |
+| File                                         | Action                                                                |
+| -------------------------------------------- | --------------------------------------------------------------------- |
+| `apps/backend/convex/api/v1/zapier.ts`       | Create — subscribe, unsubscribe, list-documents endpoints             |
+| `apps/backend/convex/api/index.ts`           | Modify — register Zapier routes                                       |
+| `apps/backend/convex/schemas/webhooks.ts`    | Modify — add `source` field (or create `zapier_subscriptions` schema) |
+| `apps/backend/convex/schema.ts`              | Modify — register new table if needed                                 |
+| `apps/backend/convex/webhooks/delivery.ts`   | Modify — handle 410 Gone cleanup, skip HMAC for Zapier hooks          |
+| `apps/backend/convex/webhooks/dispatcher.ts` | Modify — query Zapier subscriptions alongside regular webhooks        |

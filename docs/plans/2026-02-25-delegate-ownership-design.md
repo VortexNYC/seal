@@ -95,6 +95,7 @@ Extend existing organization settings mutations to accept `delegateOwnership` bo
 #### API Endpoint
 
 Modify `PATCH /api/v1/documents/:id` handler to accept `ownerId` in the request body. When `ownerId` is provided:
+
 - Call `transferDocumentOwnership` internally
 - Return updated document
 
@@ -122,6 +123,7 @@ New component: `TransferOwnershipDialog`
 #### Organization Settings
 
 Add toggle under **Settings > General** (or a new **Settings > Security** section):
+
 - "Allow document ownership transfer"
 - Description: "When enabled, document owners and admins can transfer document ownership to other organization members"
 - Default: off
@@ -129,15 +131,16 @@ Add toggle under **Settings > General** (or a new **Settings > Security** sectio
 ### Permissions
 
 No new permission keys needed. The transfer action requires:
+
 - The caller to be the document owner OR have admin/owner org role
 - The `delegateOwnership` organization setting to be enabled
 - The target user to have `documents:edit` permission
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Transfer ownership | No | Yes |
+| Feature            | Free | Pro |
+| ------------------ | ---- | --- |
+| Transfer ownership | No   | Yes |
 
 Free plan: the "Transfer Ownership" menu item is hidden entirely.
 
@@ -153,14 +156,14 @@ Free plan: the "Transfer Ownership" menu item is hidden entirely.
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/organizations.ts` | Modify — add `delegateOwnership` field |
-| `apps/backend/convex/schemas/audit_logs.ts` | Modify — add `document.ownership_transferred` action |
-| `apps/backend/convex/documents/mutations.ts` | Modify — add `transferDocumentOwnership` mutation |
-| `apps/backend/convex/organizations/mutations.ts` | Modify — accept `delegateOwnership` in settings update |
-| `apps/backend/convex/api/v1/documents.ts` | Modify — accept `ownerId` in PATCH endpoint |
-| `apps/web/src/components/documents/transfer-ownership-dialog.tsx` | Create — transfer dialog component |
-| `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` | Modify — add "Transfer Ownership" to actions dropdown |
-| `apps/web/src/routes/_authenticated/$slug/settings/index.tsx` | Modify — add delegate ownership toggle |
-| `packages/transactional/emails/ownership-transferred.tsx` | Create — new owner notification email |
+| File                                                                 | Action                                                 |
+| -------------------------------------------------------------------- | ------------------------------------------------------ |
+| `apps/backend/convex/schemas/organizations.ts`                       | Modify — add `delegateOwnership` field                 |
+| `apps/backend/convex/schemas/audit_logs.ts`                          | Modify — add `document.ownership_transferred` action   |
+| `apps/backend/convex/documents/mutations.ts`                         | Modify — add `transferDocumentOwnership` mutation      |
+| `apps/backend/convex/organizations/mutations.ts`                     | Modify — accept `delegateOwnership` in settings update |
+| `apps/backend/convex/api/v1/documents.ts`                            | Modify — accept `ownerId` in PATCH endpoint            |
+| `apps/web/src/components/documents/transfer-ownership-dialog.tsx`    | Create — transfer dialog component                     |
+| `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` | Modify — add "Transfer Ownership" to actions dropdown  |
+| `apps/web/src/routes/_authenticated/$slug/settings/index.tsx`        | Modify — add delegate ownership toggle                 |
+| `packages/transactional/emails/ownership-transferred.tsx`            | Create — new owner notification email                  |

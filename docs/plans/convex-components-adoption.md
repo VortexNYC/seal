@@ -5,20 +5,20 @@
 
 ## Already Using (11 components)
 
-| Component | Package | Status |
-|---|---|---|
-| AI Agent | `@convex-dev/agent` | Fully adopted — `sealAgent` in `ai/agent.ts`, threads, streaming, tools |
-| RAG | `@convex-dev/rag` | Fully adopted — `documentRag` in `ai/search.ts`, hybrid search, ingestion |
-| Rate Limiter | `@convex-dev/rate-limiter` | Fully adopted — API rate limiting + AI chat anti-spam |
-| Action Cache | `@convex-dev/action-cache` | Fully adopted — `fieldAnalysisCache` wraps Gemini calls, 24h TTL |
-| Action Retrier | `@convex-dev/action-retrier` | Fully adopted — `retrier.run()` for hashDocument + extractDocumentText |
-| Aggregate | `@convex-dev/aggregate` | Fully adopted — `aiUsageAggregate` for token usage count/sum |
-| Workpool | `@convex-dev/workpool` | Fully adopted — `aiPoolPro`/`aiPoolFree` for AI pipeline dispatch |
-| Resend | `@convex-dev/resend` | Fully adopted — all 10+ email types via `sendEmailManually()` |
-| Presence | `@convex-dev/presence` | Fully adopted — document detail page "who's viewing" avatars |
-| Timeline | `convex-timeline` | Fully adopted — undo/redo for field editor with Ctrl+Z/Ctrl+Shift+Z |
-| Migrations | `@convex-dev/migrations` | Registered but unused — `Migrations` instance exists, 0 `define()` calls |
-| Workflow | `@convex-dev/workflow` | Fully adopted — `postSignatureWorkflow` + `documentCompletionWorkflow` + `documentCancellationWorkflow` in `workflows/` |
+| Component      | Package                      | Status                                                                                                                  |
+| -------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| AI Agent       | `@convex-dev/agent`          | Fully adopted — `sealAgent` in `ai/agent.ts`, threads, streaming, tools                                                 |
+| RAG            | `@convex-dev/rag`            | Fully adopted — `documentRag` in `ai/search.ts`, hybrid search, ingestion                                               |
+| Rate Limiter   | `@convex-dev/rate-limiter`   | Fully adopted — API rate limiting + AI chat anti-spam                                                                   |
+| Action Cache   | `@convex-dev/action-cache`   | Fully adopted — `fieldAnalysisCache` wraps Gemini calls, 24h TTL                                                        |
+| Action Retrier | `@convex-dev/action-retrier` | Fully adopted — `retrier.run()` for hashDocument + extractDocumentText                                                  |
+| Aggregate      | `@convex-dev/aggregate`      | Fully adopted — `aiUsageAggregate` for token usage count/sum                                                            |
+| Workpool       | `@convex-dev/workpool`       | Fully adopted — `aiPoolPro`/`aiPoolFree` for AI pipeline dispatch                                                       |
+| Resend         | `@convex-dev/resend`         | Fully adopted — all 10+ email types via `sendEmailManually()`                                                           |
+| Presence       | `@convex-dev/presence`       | Fully adopted — document detail page "who's viewing" avatars                                                            |
+| Timeline       | `convex-timeline`            | Fully adopted — undo/redo for field editor with Ctrl+Z/Ctrl+Shift+Z                                                     |
+| Migrations     | `@convex-dev/migrations`     | Registered but unused — `Migrations` instance exists, 0 `define()` calls                                                |
+| Workflow       | `@convex-dev/workflow`       | Fully adopted — `postSignatureWorkflow` + `documentCompletionWorkflow` + `documentCancellationWorkflow` in `workflows/` |
 
 ## To Adopt — Confirmed List
 
@@ -98,41 +98,41 @@ Undo/redo for document field editor — Ctrl+Z/Ctrl+Shift+Z with timeline snapsh
 
 ## Evaluated & Skipped
 
-| Component | Package | Why Skipped |
-|---|---|---|
-| Better Auth | `@convex-dev/better-auth` | We use Clerk |
-| WorkOS AuthKit | `@convex-dev/workos-authkit` | We use Clerk |
-| Expo Push | `@convex-dev/push-notifications` | No mobile app |
-| Twilio SMS | `@convex-dev/twilio` | No SMS feature planned |
-| Loops | `@convex-dev/loops` | We use Resend for emails |
-| LaunchDarkly | `@convex-dev/launchdarkly` | No feature flag infra yet — revisit if needed |
-| Geospatial | `@convex-dev/geospatial` | No location features |
-| Cloudflare R2 | `@convex-dev/cloudflare-r2` | Convex storage sufficient for now |
-| ConvexFS | `@convex-dev/convex-fs` | Same — revisit if storage limits become an issue |
-| OSS Stats | `@convex-dev/oss-stats` | Not relevant |
-| Cloudinary | `@convex-dev/cloudinary` | No image processing needs |
-| Transloadit | `@convex-dev/transloadit` | No media processing pipeline |
-| Nano Banana | `@convex-dev/nano-banana` | AI image generation — not relevant |
-| Browser Use | `@convex-dev/browser-use` | AI browser automation — not relevant |
-| Firecrawl Scrape | `@convex-dev/firecrawl-scrape` | Web scraping — not relevant |
-| Durable Agents | `@convex-dev/durable-agents` | Interesting but `@convex-dev/agent` already covers our needs |
-| Neutral Cost | `@convex-dev/neutralcost` | Our `ai/usage.ts` + aggregate handles this already |
-| ProseMirror Sync | `@convex-dev/prosemirror-sync` | Collaborative editing — not a current feature |
-| Sharded Counter | `@convex-dev/sharded-counter` | Aggregate component already covers our counting needs |
-| Autumn | `@convex-dev/autumn` | We use Stripe |
-| Polar | `@convex-dev/polar` | We use Stripe |
-| Dodo Payments | `@convex-dev/dodopayments` | We use Stripe |
+| Component        | Package                          | Why Skipped                                                  |
+| ---------------- | -------------------------------- | ------------------------------------------------------------ |
+| Better Auth      | `@convex-dev/better-auth`        | We use Clerk                                                 |
+| WorkOS AuthKit   | `@convex-dev/workos-authkit`     | We use Clerk                                                 |
+| Expo Push        | `@convex-dev/push-notifications` | No mobile app                                                |
+| Twilio SMS       | `@convex-dev/twilio`             | No SMS feature planned                                       |
+| Loops            | `@convex-dev/loops`              | We use Resend for emails                                     |
+| LaunchDarkly     | `@convex-dev/launchdarkly`       | No feature flag infra yet — revisit if needed                |
+| Geospatial       | `@convex-dev/geospatial`         | No location features                                         |
+| Cloudflare R2    | `@convex-dev/cloudflare-r2`      | Convex storage sufficient for now                            |
+| ConvexFS         | `@convex-dev/convex-fs`          | Same — revisit if storage limits become an issue             |
+| OSS Stats        | `@convex-dev/oss-stats`          | Not relevant                                                 |
+| Cloudinary       | `@convex-dev/cloudinary`         | No image processing needs                                    |
+| Transloadit      | `@convex-dev/transloadit`        | No media processing pipeline                                 |
+| Nano Banana      | `@convex-dev/nano-banana`        | AI image generation — not relevant                           |
+| Browser Use      | `@convex-dev/browser-use`        | AI browser automation — not relevant                         |
+| Firecrawl Scrape | `@convex-dev/firecrawl-scrape`   | Web scraping — not relevant                                  |
+| Durable Agents   | `@convex-dev/durable-agents`     | Interesting but `@convex-dev/agent` already covers our needs |
+| Neutral Cost     | `@convex-dev/neutralcost`        | Our `ai/usage.ts` + aggregate handles this already           |
+| ProseMirror Sync | `@convex-dev/prosemirror-sync`   | Collaborative editing — not a current feature                |
+| Sharded Counter  | `@convex-dev/sharded-counter`    | Aggregate component already covers our counting needs        |
+| Autumn           | `@convex-dev/autumn`             | We use Stripe                                                |
+| Polar            | `@convex-dev/polar`              | We use Stripe                                                |
+| Dodo Payments    | `@convex-dev/dodopayments`       | We use Stripe                                                |
 
 ## Implementation History
 
-| Date | Component | Commit |
-|---|---|---|
-| 2026-02-28 | `@convex-dev/resend` | `8f443c4` |
-| 2026-02-28 | `@convex-dev/rate-limiter` | `076144e` |
-| 2026-03-01 | `@convex-dev/action-retrier` | `2f982b1` |
-| 2026-03-01 | `@convex-dev/workflow` | *(pending commit)* |
-| 2026-03-01 | `@convex-dev/presence` | *(pending commit)* |
-| 2026-03-01 | `convex-timeline` | *(pending commit)* |
+| Date       | Component                    | Commit             |
+| ---------- | ---------------------------- | ------------------ |
+| 2026-02-28 | `@convex-dev/resend`         | `8f443c4`          |
+| 2026-02-28 | `@convex-dev/rate-limiter`   | `076144e`          |
+| 2026-03-01 | `@convex-dev/action-retrier` | `2f982b1`          |
+| 2026-03-01 | `@convex-dev/workflow`       | _(pending commit)_ |
+| 2026-03-01 | `@convex-dev/presence`       | _(pending commit)_ |
+| 2026-03-01 | `convex-timeline`            | _(pending commit)_ |
 
 ## Recommended Implementation Order
 

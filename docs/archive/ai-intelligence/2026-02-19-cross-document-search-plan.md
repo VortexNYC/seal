@@ -34,6 +34,7 @@
 ## Task 1: Install dependencies and register RAG component
 
 **Files:**
+
 - Modify: `apps/backend/package.json`
 - Modify: `apps/backend/convex/convex.config.ts`
 - Modify: `apps/web/package.json`
@@ -91,6 +92,7 @@ bun --bun run typecheck
 ## Task 2: Add `searchIndexedAt` to documents schema
 
 **Files:**
+
 - Modify: `apps/backend/convex/schemas/documents.ts`
 
 **Step 1:** Add the field after `aiProcessingStatus` (line ~56):
@@ -119,6 +121,7 @@ cd apps/backend && bun --bun run typecheck
 ## Task 3: Create RAG instance and document search module
 
 **Files:**
+
 - Create: `apps/backend/convex/ai/search.ts`
 
 This is the core search module — sets up the RAG instance, provides ingestion helpers, and implements hybrid search with filter support.
@@ -325,7 +328,14 @@ export const removeDocumentFromIndex = internalAction({
 // =============================================================================
 
 /** Workflow status filter values. */
-type WorkflowStatusFilter = "draft" | "sent" | "in_progress" | "completed" | "cancelled" | "declined" | "all";
+type WorkflowStatusFilter =
+  | "draft"
+  | "sent"
+  | "in_progress"
+  | "completed"
+  | "cancelled"
+  | "declined"
+  | "all";
 
 /**
  * Hybrid search across all workspace documents.
@@ -415,7 +425,12 @@ export const hybridSearchDocuments = internalAction({
         const doc = textResults.find((d) => d._id.toString() === docId);
 
         // Apply filters
-        if (args.workflowStatus && args.workflowStatus !== "all" && doc?.workflowStatus !== args.workflowStatus) continue;
+        if (
+          args.workflowStatus &&
+          args.workflowStatus !== "all" &&
+          doc?.workflowStatus !== args.workflowStatus
+        )
+          continue;
         if (args.dateFrom && doc && doc.createdAt < args.dateFrom) continue;
         if (args.dateTo && doc && doc.createdAt > args.dateTo) continue;
 
@@ -438,7 +453,12 @@ export const hybridSearchDocuments = internalAction({
         seen.add(id);
 
         // Apply filters
-        if (args.workflowStatus && args.workflowStatus !== "all" && textHit.workflowStatus !== args.workflowStatus) continue;
+        if (
+          args.workflowStatus &&
+          args.workflowStatus !== "all" &&
+          textHit.workflowStatus !== args.workflowStatus
+        )
+          continue;
         if (args.dateFrom && textHit.createdAt < args.dateFrom) continue;
         if (args.dateTo && textHit.createdAt > args.dateTo) continue;
 
@@ -555,6 +575,7 @@ cd apps/backend && bun --bun run typecheck
 ## Task 4: Create the `searchDocuments` agent tool with structured citations
 
 **Files:**
+
 - Create: `apps/backend/convex/ai/tools/search_documents.ts`
 - Modify: `apps/backend/convex/ai/agent.ts`
 
@@ -583,9 +604,7 @@ export const searchDocuments = createTool<SealAICtx>({
     "Use this when the user asks about document contents, specific clauses, terms, dates, " +
     "or any information that might be in their uploaded documents.",
   args: z.object({
-    query: z
-      .string()
-      .describe("The search query — what to look for across documents"),
+    query: z.string().describe("The search query — what to look for across documents"),
   }),
   handler: async (ctx, { query }) => {
     const results = await ctx.runAction(internal.ai.search.hybridSearchDocuments, {
@@ -665,6 +684,7 @@ cd apps/backend && bun --bun run typecheck
 ## Task 5: Hook search indexing into the pipeline
 
 **Files:**
+
 - Modify: `apps/backend/convex/ai/pipeline.ts`
 
 The pipeline already runs on document create/replace/restore. We add search indexing as a step after field analysis completes.
@@ -751,6 +771,7 @@ export const processDocument = internalAction({
 ```
 
 Key design decisions:
+
 - Search indexing is wrapped in its own try/catch — if embedding fails, field analysis still succeeds
 - The `indexDocumentForSearch` action checks for `extractedText` internally and skips if missing
 - Re-indexing on PDF replace: `indexDocumentForSearch` handles cleanup of old page keys when pageCount decreases
@@ -768,6 +789,7 @@ cd apps/backend && bun --bun run typecheck
 ## Task 6: Create exposed search queries/actions for frontend
 
 **Files:**
+
 - Create: `apps/backend/convex/ai/search_queries.ts`
 
 These are the authenticated, exposed endpoints the frontend calls — both the command palette quick search and the full conversational search need them.
@@ -825,6 +847,7 @@ cd apps/backend && bun --bun run typecheck
 ## Task 7: Create Command Palette (Cmd+K) component
 
 **Files:**
+
 - Create: `apps/web/src/components/command-palette.tsx`
 
 This is the global Cmd+K overlay. References the Plasma search dialog pattern (`plasma/apps/landing/src/components/search-dialog.tsx`) and Catapult global search (`Catapult/src/features/global-search/components/GlobalSearchDialog.tsx`).
@@ -872,14 +895,16 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const [query, setQuery] = useState("");
   const [debouncedQuery] = useDebounce(query, 150);
-  const [results, setResults] = useState<Array<{
-    documentId: string;
-    documentName: string;
-    pageNumber: number | null;
-    excerpt: string;
-    score: number;
-    source: string;
-  }>>([]);
+  const [results, setResults] = useState<
+    Array<{
+      documentId: string;
+      documentName: string;
+      pageNumber: number | null;
+      excerpt: string;
+      score: number;
+      source: string;
+    }>
+  >([]);
   const [isSearching, setIsSearching] = useState(false);
 
   // Run search when debounced query changes
@@ -903,7 +928,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         if (!cancelled) setIsSearching(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [debouncedQuery, quickSearch]);
 
   // Reset on close
@@ -933,11 +960,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput
-        placeholder="Search documents..."
-        value={query}
-        onValueChange={setQuery}
-      />
+      <CommandInput placeholder="Search documents..." value={query} onValueChange={setQuery} />
       <CommandList>
         {isSearching ? (
           <div className="flex items-center justify-center py-6">
@@ -976,7 +999,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             )}
             {query.length >= 2 && (
               <CommandGroup>
-                <CommandItem onSelect={handleOpenFullSearch} className="justify-center text-sm text-muted-foreground">
+                <CommandItem
+                  onSelect={handleOpenFullSearch}
+                  className="justify-center text-sm text-muted-foreground"
+                >
                   <SearchIcon className="mr-2 h-4 w-4" />
                   Open full search
                 </CommandItem>
@@ -1028,7 +1054,7 @@ import { CommandPalette, useCommandPalette } from "@/components/command-palette"
 const { open: cmdKOpen, setOpen: setCmdKOpen } = useCommandPalette();
 
 // In the JSX return, add before the closing tag:
-<CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />
+<CommandPalette open={cmdKOpen} onOpenChange={setCmdKOpen} />;
 ```
 
 **Step 3:** Verify the route loads:
@@ -1052,6 +1078,7 @@ bun --bun run typecheck
 ## Task 8: Create dedicated search page with filters and citation chips
 
 **Files:**
+
 - Create: `apps/web/src/components/search/citation-chip.tsx`
 - Create: `apps/web/src/components/search/search-filters.tsx`
 - Create: `apps/web/src/routes/_authenticated/$slug/search.tsx`
@@ -1085,7 +1112,9 @@ export function CitationChip({ documentId, pageNumber, documentName, slug }: Cit
     >
       <FileTextIcon className="h-3 w-3" />
       {documentName}
-      {pageNumber > 0 && <span className="text-violet-500 dark:text-violet-400">p.{pageNumber}</span>}
+      {pageNumber > 0 && (
+        <span className="text-violet-500 dark:text-violet-400">p.{pageNumber}</span>
+      )}
     </Link>
   );
 }
@@ -1155,18 +1184,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export interface SearchFilters {
   workflowStatus: string;
   dateFrom: string; // ISO date string or ""
-  dateTo: string;   // ISO date string or ""
+  dateTo: string; // ISO date string or ""
 }
 
 interface SearchFiltersBarProps {
@@ -1264,13 +1289,7 @@ import { optimisticallySendMessage } from "@convex-dev/agent/react";
 import { useSmoothText } from "@convex-dev/agent/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import {
-  BotIcon,
-  Loader2Icon,
-  SearchIcon,
-  SendIcon,
-  UserIcon,
-} from "lucide-react";
+import { BotIcon, Loader2Icon, SearchIcon, SendIcon, UserIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -1440,8 +1459,8 @@ function SearchPage() {
             <div>
               <h2 className="text-lg font-medium">Search across your documents</h2>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                Ask about specific clauses, payment terms, dates, signers, or anything else.
-                Seal AI will search all your documents and cite its sources.
+                Ask about specific clauses, payment terms, dates, signers, or anything else. Seal AI
+                will search all your documents and cite its sources.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
@@ -1536,6 +1555,7 @@ bun --bun run typecheck
 ## Task 9: Add search link to sidebar navigation
 
 **Files:**
+
 - Modify: `apps/web/src/components/app-sidebar.tsx`
 
 **Step 1:** Add `SearchIcon` to the lucide-react import.
@@ -1586,28 +1606,28 @@ bun --bun run build
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
-| `convex/ai/search.ts` | RAG instance, ingestion, hybrid search with filters, quick search |
-| `convex/ai/search_queries.ts` | Exposed search actions for frontend (quick search for Cmd+K) |
-| `convex/ai/tools/search_documents.ts` | Agent tool with structured citation markers |
-| `web/src/components/command-palette.tsx` | Global Cmd+K overlay with `useCommandPalette` hook |
-| `web/src/components/search/citation-chip.tsx` | Clickable citation chip + `parseTextWithCitations` |
-| `web/src/components/search/search-filters.tsx` | Filter bar (workflow status + date range) |
-| `web/src/routes/_authenticated/$slug/search.tsx` | Dedicated search page with conversational UI |
+| File                                             | Purpose                                                           |
+| ------------------------------------------------ | ----------------------------------------------------------------- |
+| `convex/ai/search.ts`                            | RAG instance, ingestion, hybrid search with filters, quick search |
+| `convex/ai/search_queries.ts`                    | Exposed search actions for frontend (quick search for Cmd+K)      |
+| `convex/ai/tools/search_documents.ts`            | Agent tool with structured citation markers                       |
+| `web/src/components/command-palette.tsx`         | Global Cmd+K overlay with `useCommandPalette` hook                |
+| `web/src/components/search/citation-chip.tsx`    | Clickable citation chip + `parseTextWithCitations`                |
+| `web/src/components/search/search-filters.tsx`   | Filter bar (workflow status + date range)                         |
+| `web/src/routes/_authenticated/$slug/search.tsx` | Dedicated search page with conversational UI                      |
 
 ### Modified Files
 
-| File | Changes |
-|------|---------|
-| `apps/backend/package.json` | Add `@convex-dev/rag` dependency |
-| `apps/web/package.json` | Add `use-debounce`, Shadcn command component |
-| `apps/backend/convex/convex.config.ts` | Register RAG component |
-| `convex/schemas/documents.ts` | Add `searchIndexedAt` field |
-| `convex/ai/pipeline.ts` | Add search indexing step |
-| `convex/ai/agent.ts` | Add `searchDocuments` tool, update system instructions |
-| `web/src/routes/_authenticated.tsx` | Wire up CommandPalette + useCommandPalette |
-| `web/src/components/app-sidebar.tsx` | Add Search nav link |
+| File                                   | Changes                                                |
+| -------------------------------------- | ------------------------------------------------------ |
+| `apps/backend/package.json`            | Add `@convex-dev/rag` dependency                       |
+| `apps/web/package.json`                | Add `use-debounce`, Shadcn command component           |
+| `apps/backend/convex/convex.config.ts` | Register RAG component                                 |
+| `convex/schemas/documents.ts`          | Add `searchIndexedAt` field                            |
+| `convex/ai/pipeline.ts`                | Add search indexing step                               |
+| `convex/ai/agent.ts`                   | Add `searchDocuments` tool, update system instructions |
+| `web/src/routes/_authenticated.tsx`    | Wire up CommandPalette + useCommandPalette             |
+| `web/src/components/app-sidebar.tsx`   | Add Search nav link                                    |
 
 ---
 

@@ -200,19 +200,13 @@ test("internal state updates", async ({ mount }) => {
   const component = await mount(<Toggle defaultChecked={false} />);
 
   // Initial state
-  await expect(component.locator('[role="switch"]')).toHaveAttribute(
-    "aria-checked",
-    "false",
-  );
+  await expect(component.locator('[role="switch"]')).toHaveAttribute("aria-checked", "false");
 
   // Trigger state change
   await component.click();
 
   // Verify state updated
-  await expect(component.locator('[role="switch"]')).toHaveAttribute(
-    "aria-checked",
-    "true",
-  );
+  await expect(component.locator('[role="switch"]')).toHaveAttribute("aria-checked", "true");
 });
 ```
 
@@ -224,9 +218,7 @@ test("internal state updates", async ({ mount }) => {
 test("click event fires", async ({ mount }) => {
   let clicked = false;
 
-  const component = await mount(
-    <Button onClick={() => (clicked = true)}>Click</Button>,
-  );
+  const component = await mount(<Button onClick={() => (clicked = true)}>Click</Button>);
 
   await component.click();
 
@@ -241,10 +233,7 @@ test("onChange provides correct value", async ({ mount }) => {
   const values: string[] = [];
 
   const component = await mount(
-    <Select
-      options={["a", "b", "c"]}
-      onChange={(value) => values.push(value)}
-    />,
+    <Select options={["a", "b", "c"]} onChange={(value) => values.push(value)} />,
   );
 
   await component.getByRole("combobox").click();
@@ -283,9 +272,7 @@ test("form submission", async ({ mount }) => {
 
 ```tsx
 test("keyboard navigation", async ({ mount }) => {
-  const component = await mount(
-    <Dropdown options={["Apple", "Banana", "Cherry"]} />,
-  );
+  const component = await mount(<Dropdown options={["Apple", "Banana", "Cherry"]} />);
 
   // Open dropdown
   await component.getByRole("button").click();
@@ -341,9 +328,7 @@ test("renders named slots", async ({ mount }) => {
 test("render prop pattern", async ({ mount }) => {
   const component = await mount(
     <DataFetcher url="/api/users">
-      {({ data, loading }) =>
-        loading ? <span>Loading...</span> : <span>{data.name}</span>
-      }
+      {({ data, loading }) => (loading ? <span>Loading...</span> : <span>{data.name}</span>)}
     </DataFetcher>,
   );
 

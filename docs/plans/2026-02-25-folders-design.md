@@ -45,7 +45,7 @@ folders:
 
 ```typescript
 // Add optional field
-folderId: v.optional(v.id("folders"))
+folderId: v.optional(v.id("folders"));
 ```
 
 New index: `by_folder` on `["folderId"]`
@@ -55,7 +55,7 @@ Compound index: `by_org_folder` on `["organizationId", "folderId"]` (for folder-
 
 ```typescript
 // Add optional field
-folderId: v.optional(v.id("folders"))
+folderId: v.optional(v.id("folders"));
 ```
 
 New index: `by_folder` on `["folderId"]`
@@ -127,12 +127,12 @@ No new permissions needed. Folder creation/deletion follows existing `documents:
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Folders (flat, no nesting) | Yes — max 5 folders | Yes |
-| Nested folders (unlimited depth) | No | Yes |
-| Folder visibility controls | No (all folders visible to everyone) | Yes |
-| Pinned folders | Yes | Yes |
+| Feature                          | Free                                 | Pro |
+| -------------------------------- | ------------------------------------ | --- |
+| Folders (flat, no nesting)       | Yes — max 5 folders                  | Yes |
+| Nested folders (unlimited depth) | No                                   | Yes |
+| Folder visibility controls       | No (all folders visible to everyone) | Yes |
+| Pinned folders                   | Yes                                  | Yes |
 
 ### What We Skip (v1)
 
@@ -145,16 +145,16 @@ No new permissions needed. Folder creation/deletion follows existing `documents:
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/folders.ts` | Create — folder table schema |
-| `apps/backend/convex/schema.ts` | Modify — register folders table |
-| `apps/backend/convex/schemas/documents.ts` | Modify — add optional `folderId` field and index |
-| `apps/backend/convex/schemas/templates.ts` | Modify — add optional `folderId` field and index |
-| `apps/backend/convex/folders/mutations.ts` | Create — CRUD, move, pin |
-| `apps/backend/convex/folders/queries.ts` | Create — list, breadcrumbs, contents |
-| `apps/web/src/components/folders/folder-sidebar.tsx` | Create — tree sidebar component |
-| `apps/web/src/components/folders/folder-breadcrumbs.tsx` | Create — breadcrumb navigation |
-| `apps/web/src/components/folders/move-to-folder-dialog.tsx` | Create — folder picker modal |
-| `apps/web/src/routes/_authenticated/$slug/documents.tsx` | Modify — integrate folder sidebar and filtering |
-| `apps/web/src/routes/_authenticated/$slug/templates.tsx` | Modify — integrate folder sidebar and filtering |
+| File                                                        | Action                                           |
+| ----------------------------------------------------------- | ------------------------------------------------ |
+| `apps/backend/convex/schemas/folders.ts`                    | Create — folder table schema                     |
+| `apps/backend/convex/schema.ts`                             | Modify — register folders table                  |
+| `apps/backend/convex/schemas/documents.ts`                  | Modify — add optional `folderId` field and index |
+| `apps/backend/convex/schemas/templates.ts`                  | Modify — add optional `folderId` field and index |
+| `apps/backend/convex/folders/mutations.ts`                  | Create — CRUD, move, pin                         |
+| `apps/backend/convex/folders/queries.ts`                    | Create — list, breadcrumbs, contents             |
+| `apps/web/src/components/folders/folder-sidebar.tsx`        | Create — tree sidebar component                  |
+| `apps/web/src/components/folders/folder-breadcrumbs.tsx`    | Create — breadcrumb navigation                   |
+| `apps/web/src/components/folders/move-to-folder-dialog.tsx` | Create — folder picker modal                     |
+| `apps/web/src/routes/_authenticated/$slug/documents.tsx`    | Modify — integrate folder sidebar and filtering  |
+| `apps/web/src/routes/_authenticated/$slug/templates.tsx`    | Modify — integrate folder sidebar and filtering  |

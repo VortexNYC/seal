@@ -111,13 +111,14 @@ For actions that happen inside Seal (not via Clerk webhooks), add a `logSecurity
 
 ```typescript
 // Helper function
-async function logSecurityEvent(ctx, {
-  organizationId, userId, userName, userEmail,
-  action, ipAddress, userAgent, metadata,
-})
+async function logSecurityEvent(
+  ctx,
+  { organizationId, userId, userName, userEmail, action, ipAddress, userAgent, metadata },
+);
 ```
 
 Mutations to instrument:
+
 - `createApiKey` → log `api_key.created` with key prefix in metadata
 - `revokeApiKey` → log `api_key.revoked` with key prefix
 - `inviteOrganizationMember` → log `member.invited` with target email
@@ -138,6 +139,7 @@ Mutations to instrument:
 - **Pro plan**: Unlimited retention (no automatic deletion).
 
 The retention cron:
+
 ```
 // In crons.ts
 crons.daily("cleanupSecurityAuditLogs", { hourUTC: 3 }, internal.security_audit.cleanupExpiredLogs)
@@ -180,11 +182,11 @@ Nested under the existing settings layout. Accessible from the Settings sidebar 
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| View security audit logs | No (upgrade prompt) | Yes |
-| Log retention | 90 days (background cleanup) | Unlimited |
-| Export CSV | No | Yes |
+| Feature                  | Free                         | Pro       |
+| ------------------------ | ---------------------------- | --------- |
+| View security audit logs | No (upgrade prompt)          | Yes       |
+| Log retention            | 90 days (background cleanup) | Unlimited |
+| Export CSV               | No                           | Yes       |
 
 ### What We Skip (v1)
 
@@ -199,17 +201,17 @@ Nested under the existing settings layout. Accessible from the Settings sidebar 
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/user_security_audit_logs.ts` | Create — new table schema |
-| `apps/backend/convex/schema.ts` | Modify — register new table |
-| `apps/backend/convex/security_audit/mutations.ts` | Create — `logSecurityEvent` helper |
-| `apps/backend/convex/security_audit/queries.ts` | Create — `listSecurityAuditLogs` paginated query |
-| `apps/backend/convex/security_audit/actions.ts` | Create — CSV export action |
-| `apps/backend/convex/webhooks.ts` | Modify — extend Clerk webhook handler to log auth events |
-| `apps/backend/convex/crons.ts` | Modify — add retention cleanup cron |
-| `apps/backend/convex/api_keys/mutations.ts` | Modify — add security audit logging |
-| `apps/backend/convex/organizations/mutations.ts` | Modify — add security audit logging for member actions |
-| `apps/web/src/routes/_authenticated/$slug/settings/security.audit-log.tsx` | Create — audit log page |
-| `apps/web/src/components/settings/security-audit-table.tsx` | Create — table component with filters |
-| `apps/web/src/components/settings/security-audit-filters.tsx` | Create — filter bar component |
+| File                                                                       | Action                                                   |
+| -------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `apps/backend/convex/schemas/user_security_audit_logs.ts`                  | Create — new table schema                                |
+| `apps/backend/convex/schema.ts`                                            | Modify — register new table                              |
+| `apps/backend/convex/security_audit/mutations.ts`                          | Create — `logSecurityEvent` helper                       |
+| `apps/backend/convex/security_audit/queries.ts`                            | Create — `listSecurityAuditLogs` paginated query         |
+| `apps/backend/convex/security_audit/actions.ts`                            | Create — CSV export action                               |
+| `apps/backend/convex/webhooks.ts`                                          | Modify — extend Clerk webhook handler to log auth events |
+| `apps/backend/convex/crons.ts`                                             | Modify — add retention cleanup cron                      |
+| `apps/backend/convex/api_keys/mutations.ts`                                | Modify — add security audit logging                      |
+| `apps/backend/convex/organizations/mutations.ts`                           | Modify — add security audit logging for member actions   |
+| `apps/web/src/routes/_authenticated/$slug/settings/security.audit-log.tsx` | Create — audit log page                                  |
+| `apps/web/src/components/settings/security-audit-table.tsx`                | Create — table component with filters                    |
+| `apps/web/src/components/settings/security-audit-filters.tsx`              | Create — filter bar component                            |

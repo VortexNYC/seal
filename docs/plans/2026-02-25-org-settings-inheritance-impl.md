@@ -12,19 +12,20 @@
 
 ## Critical Reference Files
 
-| File | Why It Matters |
-|------|---------------|
-| `apps/backend/convex/schemas/organizations.ts` | Add new settings validators + fields to `organizationsTable` |
-| `apps/backend/convex/organizations/queries.ts` | Pattern: `AI_SETTINGS_DEFAULTS`, `getAiSettings` authQuery, `getAiSettingsInternal` internalQuery |
-| `apps/backend/convex/organizations/mutations.ts` | Pattern: `updateAiSettings` adminMutation with `args.field ?? current.field` merging |
-| `apps/web/src/routes/_authenticated/$slug/settings/ai.tsx` | Frontend pattern: `useQuery` → `useEffect` sync → `useState` form → `useMutation` submit |
-| `apps/web/src/components/app-sidebar.tsx:195-233` | `settingsItems` array — add new nav entries here |
+| File                                                       | Why It Matters                                                                                    |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `apps/backend/convex/schemas/organizations.ts`             | Add new settings validators + fields to `organizationsTable`                                      |
+| `apps/backend/convex/organizations/queries.ts`             | Pattern: `AI_SETTINGS_DEFAULTS`, `getAiSettings` authQuery, `getAiSettingsInternal` internalQuery |
+| `apps/backend/convex/organizations/mutations.ts`           | Pattern: `updateAiSettings` adminMutation with `args.field ?? current.field` merging              |
+| `apps/web/src/routes/_authenticated/$slug/settings/ai.tsx` | Frontend pattern: `useQuery` → `useEffect` sync → `useState` form → `useMutation` submit          |
+| `apps/web/src/components/app-sidebar.tsx:195-233`          | `settingsItems` array — add new nav entries here                                                  |
 
 ---
 
 ## Task 1: Schema — Add Signing, Notification, Security Settings Validators
 
 **Files:**
+
 - Modify: `apps/backend/convex/schemas/organizations.ts`
 
 **What to do:**
@@ -83,6 +84,7 @@ Add to `organizationsTable` (after `brandingSettings` field, before `updatedAt`)
 ## Task 2: Backend — Default Constants + Queries
 
 **Files:**
+
 - Modify: `apps/backend/convex/organizations/queries.ts`
 
 **What to do:**
@@ -206,6 +208,7 @@ export const getOrgSettings = authQuery({
 ## Task 3: Backend — Admin Mutations for New Settings
 
 **Files:**
+
 - Modify: `apps/backend/convex/organizations/mutations.ts`
 
 **What to do:**
@@ -380,6 +383,7 @@ export const updateSecuritySettings = ownerMutation({
 ## Task 4: Frontend — Signing Settings Page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/settings/signing.tsx`
 - Modify: `apps/web/src/components/app-sidebar.tsx`
 
@@ -601,12 +605,14 @@ function SigningSettings() {
 ## Task 5: Frontend — Notifications Settings Page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/settings/notifications.tsx`
 - Modify: `apps/web/src/components/app-sidebar.tsx`
 
 **What to do:**
 
 Same pattern as Task 4. Key UI elements:
+
 - Reminder schedule: list of day chips with add/remove. Input field + "Add" button. Each chip shows "Day N" with an X to remove.
 - Expiration alert days: number input (1-30)
 - Send completion email: Switch toggle
@@ -888,12 +894,14 @@ function NotificationSettings() {
 ## Task 6: Frontend — Security Settings Page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/settings/security.tsx`
 - Modify: `apps/web/src/components/app-sidebar.tsx`
 
 **What to do:**
 
 Same pattern. Key UI differences:
+
 - This page should show a warning that changes are owner-only
 - MFA toggle, API access toggle
 - IP allowlist: textarea (one CIDR per line)
@@ -1170,12 +1178,12 @@ function SecuritySettings() {
 
 ## Summary
 
-| Task | What | Files |
-|------|------|-------|
-| 1 | Schema validators + fields | `schemas/organizations.ts` |
-| 2 | Default constants + queries | `organizations/queries.ts` |
-| 3 | Admin/owner mutations | `organizations/mutations.ts` |
-| 4 | Signing settings page + nav | `settings/signing.tsx`, `app-sidebar.tsx` |
-| 5 | Notifications settings page + nav | `settings/notifications.tsx`, `app-sidebar.tsx` |
-| 6 | Security settings page + nav | `settings/security.tsx`, `app-sidebar.tsx` |
-| 7 | Static analysis + verification | All files |
+| Task | What                              | Files                                           |
+| ---- | --------------------------------- | ----------------------------------------------- |
+| 1    | Schema validators + fields        | `schemas/organizations.ts`                      |
+| 2    | Default constants + queries       | `organizations/queries.ts`                      |
+| 3    | Admin/owner mutations             | `organizations/mutations.ts`                    |
+| 4    | Signing settings page + nav       | `settings/signing.tsx`, `app-sidebar.tsx`       |
+| 5    | Notifications settings page + nav | `settings/notifications.tsx`, `app-sidebar.tsx` |
+| 6    | Security settings page + nav      | `settings/security.tsx`, `app-sidebar.tsx`      |
+| 7    | Static analysis + verification    | All files                                       |

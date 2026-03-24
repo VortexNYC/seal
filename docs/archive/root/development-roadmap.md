@@ -8,45 +8,45 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 
 ## Implementation Status (Updated 2026-02-18)
 
-| # | Deliverable | Status | Notes |
-|---|---|---|---|
-| **Foundation Layer** | | | |
-| 1 | Monorepo Setup | ✅ DONE | Turborepo + Bun, oxlint/oxfmt (not Biome) |
-| 2 | Frontend App Running | ✅ DONE | Vite + React 19, TanStack Router, Tailwind v4, Shadcn |
-| 3 | Convex Database | ✅ DONE | 15+ tables, real-time queries, Zod on backend |
-| 4 | Clerk Authentication | ✅ DONE | OAuth, OTP, orgs, RBAC, team invitations |
-| 5 | Stripe Payments | ✅ DONE | Subscriptions, Connect (payment fields), webhooks |
-| **Document Management Layer** | | | |
-| 6 | File Upload System | ✅ DONE | PDF upload, drag-drop, validation, metadata |
-| 7 | Document Library & Search | ✅ DONE | List, sort, search, PDF viewer, templates |
-| **Signature Workflow Layer** | | | |
-| 8 | Document Preparation | ✅ DONE | Konva canvas, drag-drop fields, recipient assignment, field properties |
-| 9 | Signature Capture & Signing | ✅ DONE | Draw/type/upload, signing page, field navigation. SHA-256 hashing, document integrity verification, signature encryption (AES-256-GCM) |
-| 10 | Email Notifications | ✅ DONE | Resend + React Email: invitation, completion, reminder, cancellation, welcome, team invite. Resend webhook delivery tracking |
-| 11 | Document Status Tracking | ✅ DONE | Real-time status, recipient tracking, activity feed, reminders |
-| **User Experience Layer** | | | |
-| 12 | Sender Dashboard | ✅ DONE | Stats cards, recharts trends, recent docs, quick actions. Analytics page with area/bar/pie charts |
-| 13 | Mobile Optimization | 🟡 PARTIAL | Responsive Tailwind classes throughout; `useIsMobile` hook. **Gap**: document editor canvas not touch-optimized (tap-to-place needed) |
-| 14 | Notifications & Onboarding | 🟡 PARTIAL | In-app notifications with user preference enforcement done. **Gap**: no welcome tour, no guided walkthrough, no onboarding wizard |
-| **Business Integration Layer** | | | |
-| 15 | Public REST API | ✅ DONE | Full v1 endpoints with email triggers wired. Clerk API key auth, sliding window rate limiting |
-| 16 | Webhooks System | ✅ DONE | Full delivery pipeline: management API, HMAC-SHA256 signed HTTP delivery, exponential backoff retries, cron processing, event publishing from mutations |
-| **Quality & Launch Layer** | | | |
-| 17 | Testing | 🟡 PARTIAL | Vitest backend (113 tests), frontend (29 tests), Playwright E2E setup. **Gap**: no performance testing, no load testing, coverage unknown |
-| 18 | Security & Compliance | ✅ DONE | ESIGN Act 5 requirements implemented: consent modal, IP tracking, SHA-256 integrity, token hashing, 7-year retention, certificate of completion. See `compliance-implementation-checklist.md`. **Remaining**: legal review, security audit, pen testing |
-| 19 | Production Deployment | 🟡 PARTIAL | Convex + Vercel deployed. Sentry wired in error boundary. Security headers configured. CI/CD via GitHub Actions. **Gap**: no smoke tests |
-| 20 | Launch Prep | 🟡 PARTIAL | Landing page done. **Gap**: no demo videos, no user/developer docs site, no GitHub open-source prep |
+| #                              | Deliverable                 | Status     | Notes                                                                                                                                                                                                                                                   |
+| ------------------------------ | --------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Foundation Layer**           |                             |            |                                                                                                                                                                                                                                                         |
+| 1                              | Monorepo Setup              | ✅ DONE    | Turborepo + Bun, oxlint/oxfmt (not Biome)                                                                                                                                                                                                               |
+| 2                              | Frontend App Running        | ✅ DONE    | Vite + React 19, TanStack Router, Tailwind v4, Shadcn                                                                                                                                                                                                   |
+| 3                              | Convex Database             | ✅ DONE    | 15+ tables, real-time queries, Zod on backend                                                                                                                                                                                                           |
+| 4                              | Clerk Authentication        | ✅ DONE    | OAuth, OTP, orgs, RBAC, team invitations                                                                                                                                                                                                                |
+| 5                              | Stripe Payments             | ✅ DONE    | Subscriptions, Connect (payment fields), webhooks                                                                                                                                                                                                       |
+| **Document Management Layer**  |                             |            |                                                                                                                                                                                                                                                         |
+| 6                              | File Upload System          | ✅ DONE    | PDF upload, drag-drop, validation, metadata                                                                                                                                                                                                             |
+| 7                              | Document Library & Search   | ✅ DONE    | List, sort, search, PDF viewer, templates                                                                                                                                                                                                               |
+| **Signature Workflow Layer**   |                             |            |                                                                                                                                                                                                                                                         |
+| 8                              | Document Preparation        | ✅ DONE    | Konva canvas, drag-drop fields, recipient assignment, field properties                                                                                                                                                                                  |
+| 9                              | Signature Capture & Signing | ✅ DONE    | Draw/type/upload, signing page, field navigation. SHA-256 hashing, document integrity verification, signature encryption (AES-256-GCM)                                                                                                                  |
+| 10                             | Email Notifications         | ✅ DONE    | Resend + React Email: invitation, completion, reminder, cancellation, welcome, team invite. Resend webhook delivery tracking                                                                                                                            |
+| 11                             | Document Status Tracking    | ✅ DONE    | Real-time status, recipient tracking, activity feed, reminders                                                                                                                                                                                          |
+| **User Experience Layer**      |                             |            |                                                                                                                                                                                                                                                         |
+| 12                             | Sender Dashboard            | ✅ DONE    | Stats cards, recharts trends, recent docs, quick actions. Analytics page with area/bar/pie charts                                                                                                                                                       |
+| 13                             | Mobile Optimization         | 🟡 PARTIAL | Responsive Tailwind classes throughout; `useIsMobile` hook. **Gap**: document editor canvas not touch-optimized (tap-to-place needed)                                                                                                                   |
+| 14                             | Notifications & Onboarding  | 🟡 PARTIAL | In-app notifications with user preference enforcement done. **Gap**: no welcome tour, no guided walkthrough, no onboarding wizard                                                                                                                       |
+| **Business Integration Layer** |                             |            |                                                                                                                                                                                                                                                         |
+| 15                             | Public REST API             | ✅ DONE    | Full v1 endpoints with email triggers wired. Clerk API key auth, sliding window rate limiting                                                                                                                                                           |
+| 16                             | Webhooks System             | ✅ DONE    | Full delivery pipeline: management API, HMAC-SHA256 signed HTTP delivery, exponential backoff retries, cron processing, event publishing from mutations                                                                                                 |
+| **Quality & Launch Layer**     |                             |            |                                                                                                                                                                                                                                                         |
+| 17                             | Testing                     | 🟡 PARTIAL | Vitest backend (113 tests), frontend (29 tests), Playwright E2E setup. **Gap**: no performance testing, no load testing, coverage unknown                                                                                                               |
+| 18                             | Security & Compliance       | ✅ DONE    | ESIGN Act 5 requirements implemented: consent modal, IP tracking, SHA-256 integrity, token hashing, 7-year retention, certificate of completion. See `compliance-implementation-checklist.md`. **Remaining**: legal review, security audit, pen testing |
+| 19                             | Production Deployment       | 🟡 PARTIAL | Convex + Vercel deployed. Sentry wired in error boundary. Security headers configured. CI/CD via GitHub Actions. **Gap**: no smoke tests                                                                                                                |
+| 20                             | Launch Prep                 | 🟡 PARTIAL | Landing page done. **Gap**: no demo videos, no user/developer docs site, no GitHub open-source prep                                                                                                                                                     |
 
 ### Additional Work Not in Original Roadmap
 
-| Feature | Status | Notes |
-|---|---|---|
-| Payment Field Builder | ✅ DONE | Stripe Connect invoicing: one-time, recurring, installments, deposit+balance. Payment completion enforced before signing |
-| Document Sharing System | ✅ DONE (core) | Share dialog, access levels, Pro plan gates. See `IMPROVEMENT_PLAN_SHARED_DOCUMENTS.md` for 9 remaining items |
-| Row-Level Security (RLS) | ✅ DONE | Private/workspace/specific access modes |
-| Advanced Field Types | ✅ DONE | Dropdown, radio, number, date, checkbox (multi-option), attachment (Convex Storage upload), payment |
-| ESIGN Compliance Suite | ✅ DONE | Consent dialog, audit trail hardening (logActionRequired), certificate of completion, download tokens, data export (GDPR/CCPA), signature encryption |
-| Webhook Delivery | ✅ DONE | HMAC-SHA256 signing, exponential backoff, cron processing, auto-disable after 10 failures |
+| Feature                  | Status         | Notes                                                                                                                                                |
+| ------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Payment Field Builder    | ✅ DONE        | Stripe Connect invoicing: one-time, recurring, installments, deposit+balance. Payment completion enforced before signing                             |
+| Document Sharing System  | ✅ DONE (core) | Share dialog, access levels, Pro plan gates. See `IMPROVEMENT_PLAN_SHARED_DOCUMENTS.md` for 9 remaining items                                        |
+| Row-Level Security (RLS) | ✅ DONE        | Private/workspace/specific access modes                                                                                                              |
+| Advanced Field Types     | ✅ DONE        | Dropdown, radio, number, date, checkbox (multi-option), attachment (Convex Storage upload), payment                                                  |
+| ESIGN Compliance Suite   | ✅ DONE        | Consent dialog, audit trail hardening (logActionRequired), certificate of completion, download tokens, data export (GDPR/CCPA), signature encryption |
+| Webhook Delivery         | ✅ DONE        | HMAC-SHA256 signing, exponential backoff, cron processing, auto-disable after 10 failures                                                            |
 
 ---
 

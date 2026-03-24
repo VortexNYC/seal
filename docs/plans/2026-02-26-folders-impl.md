@@ -11,6 +11,7 @@
 **Design Doc:** `docs/plans/2026-02-25-folders-design.md`
 
 **Decisions locked in during brainstorming:**
+
 - No drag-and-drop (context menu "Move to..." only)
 - No plan gating (skip Free/Pro checks for now)
 - Resizable sidebar panel layout (collapsible)
@@ -20,6 +21,7 @@
 ## Task 1: Create folders schema and register table
 
 **Files:**
+
 - Create: `apps/backend/convex/schemas/folders.ts`
 - Modify: `apps/backend/convex/schema.ts`
 
@@ -30,16 +32,10 @@
 import { defineTable } from "convex/server";
 import { type Infer, v } from "convex/values";
 
-export const folderTypeTuple = v.union(
-  v.literal("document"),
-  v.literal("template"),
-);
+export const folderTypeTuple = v.union(v.literal("document"), v.literal("template"));
 export type FolderType = Infer<typeof folderTypeTuple>;
 
-export const folderVisibilityTuple = v.union(
-  v.literal("everyone"),
-  v.literal("admin"),
-);
+export const folderVisibilityTuple = v.union(v.literal("everyone"), v.literal("admin"));
 export type FolderVisibility = Infer<typeof folderVisibilityTuple>;
 
 export const foldersTable = defineTable({
@@ -62,16 +58,19 @@ export const foldersTable = defineTable({
 **Step 2: Register in schema.ts**
 
 Add import:
+
 ```typescript
 import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
 ```
 
 Add type re-exports:
+
 ```typescript
 export type { FolderType, FolderVisibility };
 ```
 
 Add to schema definition (after `document_reminders`):
+
 ```typescript
 folders: foldersTable,
 ```
@@ -79,11 +78,13 @@ folders: foldersTable,
 **Step 3: Add folderId to documents schema**
 
 In `apps/backend/convex/schemas/documents.ts`, add field inside `documentsTable` (after `sourceTemplateId`):
+
 ```typescript
 folderId: v.optional(v.id("folders")),
 ```
 
 Add indexes (after existing indexes):
+
 ```typescript
 .index("by_folder", ["folderId"])
 .index("by_org_folder", ["organizationId", "folderId"])
@@ -92,11 +93,13 @@ Add indexes (after existing indexes):
 **Step 4: Add folderId to templates schema**
 
 In `apps/backend/convex/schemas/templates.ts`, add field inside `templatesTable` (after `sourceDocumentId`):
+
 ```typescript
 folderId: v.optional(v.id("folders")),
 ```
 
 Add index (after existing indexes):
+
 ```typescript
 .index("by_folder", ["folderId"])
 ```
@@ -117,6 +120,7 @@ feat(folders): add folders schema, register table, add folderId to documents and
 ## Task 2: Create folder mutations
 
 **Files:**
+
 - Create: `apps/backend/convex/folders/mutations.ts`
 
 **Reference:** Auth wrappers are in `apps/backend/convex/auth.ts`. Use `adminMutation` for mutations that need admin+ access, `authMutation` for basic auth. The design doc says folder creation follows `documents:create` / `templates:create` permissions but for simplicity we'll use `adminMutation` (admin/owner can manage folders, members view them).
@@ -144,7 +148,9 @@ async function getAncestorDepth(
     if (depth > maxDepth) {
       throw new ConvexError(`Folder nesting cannot exceed ${maxDepth} levels`);
     }
-    const parent = await (db as { get(id: string): Promise<{ parentId?: string } | null> }).get(current);
+    const parent = await (db as { get(id: string): Promise<{ parentId?: string } | null> }).get(
+      current,
+    );
     if (!parent) break;
     current = parent.parentId;
   }
@@ -164,7 +170,9 @@ async function detectCircularReference(
     if (current === folderId) {
       throw new ConvexError("Cannot move a folder into its own descendant");
     }
-    const folder = await (db as { get(id: string): Promise<{ parentId?: string } | null> }).get(current);
+    const folder = await (db as { get(id: string): Promise<{ parentId?: string } | null> }).get(
+      current,
+    );
     if (!folder) break;
     current = folder.parentId;
     depth++;
@@ -368,9 +376,7 @@ export const moveItemsToFolder = adminMutation({
         throw new ConvexError("Target folder not found");
       }
       if (targetFolder.type !== args.itemType) {
-        throw new ConvexError(
-          `Cannot move ${args.itemType}s into a ${targetFolder.type} folder`,
-        );
+        throw new ConvexError(`Cannot move ${args.itemType}s into a ${targetFolder.type} folder`);
       }
     }
 
@@ -421,6 +427,7 @@ feat(folders): add folder mutations — create, update, delete, move, pin
 ## Task 3: Create folder queries
 
 **Files:**
+
 - Create: `apps/backend/convex/folders/queries.ts`
 
 **Step 1: Create the queries file**
@@ -575,27 +582,32 @@ feat(folders): add folder queries — list, breadcrumbs, getFolder, getAllFolder
 ## Task 4: Add folderId filter to existing document and template queries
 
 **Files:**
+
 - Modify: `apps/backend/convex/documents/queries.ts` (`listDocuments`)
 - Modify: `apps/backend/convex/templates/queries.ts` (`getOrganizationTemplates`)
 
 **Step 1: Add optional folderId arg to listDocuments**
 
 In `apps/backend/convex/documents/queries.ts`, add to args:
+
 ```typescript
 folderId: v.optional(v.id("folders")),
 ```
 
 After the access filtering loop, add folder filtering:
+
 ```typescript
 // Filter by folder if specified
-const folderFiltered = args.folderId !== undefined
-  ? accessibleDocuments.filter((doc) => doc.folderId === args.folderId)
-  : accessibleDocuments;
+const folderFiltered =
+  args.folderId !== undefined
+    ? accessibleDocuments.filter((doc) => doc.folderId === args.folderId)
+    : accessibleDocuments;
 ```
 
 Then use `folderFiltered` instead of `accessibleDocuments` for the rest of the function (workflow status filtering, return).
 
 Also handle `folderId === null` case for "root only" (documents with no folder):
+
 - If `args.folderId` is explicitly passed as `undefined` in the args object → show all docs (existing behavior)
 - We add a separate `rootOnly` boolean arg: when `true`, filter to documents where `folderId` is `undefined`
 
@@ -621,6 +633,7 @@ feat(folders): add folderId filtering to listDocuments and getOrganizationTempla
 ## Task 5: Write folder tests
 
 **Files:**
+
 - Create: `apps/backend/convex/folders/__tests__/folders.test.ts`
 
 **Test cases to cover:**
@@ -654,6 +667,7 @@ test(folders): add comprehensive tests for folder CRUD, move, pin, list, breadcr
 ## Task 6: Install resizable panel and create folder sidebar component
 
 **Files:**
+
 - Create: `apps/web/src/components/folders/folder-sidebar.tsx`
 
 **Step 1: Install shadcn resizable component**
@@ -663,6 +677,7 @@ Run: `cd apps/web && pnpx shadcn@latest add resizable`
 **Step 2: Create the folder sidebar component**
 
 The sidebar is a collapsible tree that:
+
 - Fetches folders via `listFolders` query
 - Renders a tree with expand/collapse chevrons
 - Has a right-click context menu (Rename, Move, Pin/Unpin, Set Visibility, Delete)
@@ -671,6 +686,7 @@ The sidebar is a collapsible tree that:
 - Calls `onFolderSelect(folderId | undefined)` when a folder is clicked
 
 Props:
+
 ```typescript
 interface FolderSidebarProps {
   organizationId: Id<"organizations">;
@@ -681,6 +697,7 @@ interface FolderSidebarProps {
 ```
 
 Key implementation details:
+
 - Each folder node lazily loads children only when expanded
 - Use `ContextMenu` from shadcn for right-click actions
 - Inline rename via double-click (contentEditable or Input swap)
@@ -703,6 +720,7 @@ feat(folders): add folder sidebar tree component with context menu actions
 ## Task 7: Create breadcrumb and move-to-folder components
 
 **Files:**
+
 - Create: `apps/web/src/components/folders/folder-breadcrumbs.tsx`
 - Create: `apps/web/src/components/folders/move-to-folder-dialog.tsx`
 
@@ -711,6 +729,7 @@ feat(folders): add folder sidebar tree component with context menu actions
 Uses `getFolderBreadcrumbs` query. Renders clickable segments. Root segment says "All Documents" or "All Templates" based on type prop.
 
 Props:
+
 ```typescript
 interface FolderBreadcrumbsProps {
   folderId: Id<"folders">;
@@ -724,6 +743,7 @@ interface FolderBreadcrumbsProps {
 Modal with a folder tree picker. Uses `getAllFoldersFlat` query to get all folders, then builds a tree in-memory for the picker. Has a "Root" option at top. Optionally has a "New Folder" shortcut. On confirm, calls the provided `onMove(targetFolderId)` callback.
 
 Props:
+
 ```typescript
 interface MoveToFolderDialogProps {
   open: boolean;
@@ -751,11 +771,13 @@ feat(folders): add breadcrumb navigation and move-to-folder dialog
 ## Task 8: Integrate folder sidebar into documents page
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/documents/index.tsx`
 
 **Step 1: Add folder state via URL search params**
 
 Use TanStack Router's `searchParams` to read/write `folderId` from the URL:
+
 ```typescript
 // In route definition, add search params validation
 export const Route = createFileRoute("/_authenticated/$slug/documents/")({
@@ -782,7 +804,9 @@ export const Route = createFileRoute("/_authenticated/$slug/documents/")({
   <ResizableHandle withHandle />
   <ResizablePanel defaultSize={80}>
     {/* Existing document list content */}
-    {folderId && <FolderBreadcrumbs folderId={folderId} type="document" onNavigate={handleFolderSelect} />}
+    {folderId && (
+      <FolderBreadcrumbs folderId={folderId} type="document" onNavigate={handleFolderSelect} />
+    )}
     {/* ... rest of page */}
   </ResizablePanel>
 </ResizablePanelGroup>
@@ -812,9 +836,11 @@ feat(folders): integrate folder sidebar into documents page
 ## Task 9: Integrate folder sidebar into templates page
 
 **Files:**
+
 - Modify: `apps/web/src/routes/_authenticated/$slug/templates.tsx`
 
 Same integration pattern as Task 8 but for templates:
+
 - Add `folderId` search param
 - Wrap in ResizablePanelGroup with FolderSidebar (type="template")
 - Add breadcrumbs

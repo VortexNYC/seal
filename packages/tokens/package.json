@@ -1,7 +1,7 @@
 {
   "name": "@seal/tokens",
-  "private": true,
   "version": "1.0.0",
+  "private": true,
   "exports": {
     "./seal-fonts-web.css": "./src/seal-fonts-web.css",
     "./seal-theme-web.css": "./src/seal-theme-web.css",

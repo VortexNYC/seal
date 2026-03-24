@@ -52,7 +52,7 @@ email_domains:
 
 ```typescript
 // Add optional field
-emailDomainId: v.optional(v.id("email_domains"))  // Active verified domain for sending
+emailDomainId: v.optional(v.id("email_domains")); // Active verified domain for sending
 ```
 
 ### Backend Implementation
@@ -71,6 +71,7 @@ All calls go through Convex actions (external HTTP calls not allowed in queries/
 #### Verification Cron
 
 A Convex cron job runs every hour:
+
 1. Query all `email_domains` with status `pending`
 2. For each, call `GET https://api.resend.com/domains/{resendDomainId}` to check verification status
 3. If all DNS records verified, update status to `verified`, set `verifiedAt`
@@ -123,9 +124,9 @@ Each row has a copy button for the Value field.
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Custom sending domain | No | Yes |
+| Feature               | Free | Pro |
+| --------------------- | ---- | --- |
+| Custom sending domain | No   | Yes |
 
 Free plan users see the setting grayed out with an upgrade prompt.
 
@@ -140,15 +141,15 @@ Free plan users see the setting grayed out with an upgrade prompt.
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/email_domains.ts` | Create — new table schema |
-| `apps/backend/convex/schema.ts` | Modify — register `email_domains` table |
-| `apps/backend/convex/email_domains/queries.ts` | Create — `getEmailDomain` |
-| `apps/backend/convex/email_domains/mutations.ts` | Create — internal mutations for status updates |
-| `apps/backend/convex/email_domains/actions.ts` | Create — Resend API calls (add, verify, remove) |
-| `apps/backend/convex/crons.ts` | Modify — add hourly domain verification cron |
-| `apps/backend/convex/documents/actions.ts` | Modify — `resolveFromAddress` logic in email sending |
-| `apps/backend/convex/schemas/organizations.ts` | Modify — add `emailDomainId` field |
-| `apps/web/src/routes/_authenticated/$slug/settings/email.tsx` | Create — domain management UI |
-| `apps/web/src/components/settings/dns-records-table.tsx` | Create — DNS record display component |
+| File                                                          | Action                                               |
+| ------------------------------------------------------------- | ---------------------------------------------------- |
+| `apps/backend/convex/schemas/email_domains.ts`                | Create — new table schema                            |
+| `apps/backend/convex/schema.ts`                               | Modify — register `email_domains` table              |
+| `apps/backend/convex/email_domains/queries.ts`                | Create — `getEmailDomain`                            |
+| `apps/backend/convex/email_domains/mutations.ts`              | Create — internal mutations for status updates       |
+| `apps/backend/convex/email_domains/actions.ts`                | Create — Resend API calls (add, verify, remove)      |
+| `apps/backend/convex/crons.ts`                                | Modify — add hourly domain verification cron         |
+| `apps/backend/convex/documents/actions.ts`                    | Modify — `resolveFromAddress` logic in email sending |
+| `apps/backend/convex/schemas/organizations.ts`                | Modify — add `emailDomainId` field                   |
+| `apps/web/src/routes/_authenticated/$slug/settings/email.tsx` | Create — domain management UI                        |
+| `apps/web/src/components/settings/dns-records-table.tsx`      | Create — DNS record display component                |

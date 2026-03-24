@@ -21,37 +21,39 @@ Allow organizations to customize the signing experience with their own branding 
 Add a `brandingSettings` object to the organization schema:
 
 ```typescript
-brandingSettings: v.optional(v.object({
-  // Visual identity
-  logoStorageId: v.optional(v.id("_storage")),  // Uploaded logo (Convex storage)
-  logoUrl: v.optional(v.string()),               // Serving URL (generated)
-  brandColor: v.optional(v.string()),            // Primary brand color (hex, e.g., "#0d9488")
-  accentColor: v.optional(v.string()),           // Secondary color (hex)
+brandingSettings: v.optional(
+  v.object({
+    // Visual identity
+    logoStorageId: v.optional(v.id("_storage")), // Uploaded logo (Convex storage)
+    logoUrl: v.optional(v.string()), // Serving URL (generated)
+    brandColor: v.optional(v.string()), // Primary brand color (hex, e.g., "#0d9488")
+    accentColor: v.optional(v.string()), // Secondary color (hex)
 
-  // Email customization
-  emailFromName: v.optional(v.string()),         // e.g., "Acme Legal" instead of "Seal"
-  emailReplyTo: v.optional(v.string()),          // Reply-to address
+    // Email customization
+    emailFromName: v.optional(v.string()), // e.g., "Acme Legal" instead of "Seal"
+    emailReplyTo: v.optional(v.string()), // Reply-to address
 
-  // Signing page
-  hideSealbrand: v.optional(v.boolean()),        // Pro: hide "Powered by Seal" footer
-  customFooterText: v.optional(v.string()),      // e.g., "Acme Corp — Confidential"
+    // Signing page
+    hideSealbrand: v.optional(v.boolean()), // Pro: hide "Powered by Seal" footer
+    customFooterText: v.optional(v.string()), // e.g., "Acme Corp — Confidential"
 
-  // Feature flag
-  enabled: v.boolean(),                          // Master switch
-}))
+    // Feature flag
+    enabled: v.boolean(), // Master switch
+  }),
+);
 ```
 
 ### Where Branding Applies
 
-| Surface | What Changes |
-|---------|-------------|
-| **Signing page header** | Org logo replaces Seal logo. Brand color applied to primary buttons and progress indicators. |
-| **Signing page footer** | Free plan: "Powered by Seal" shown. Pro plan with `hideSealbrand`: org's custom footer text or nothing. |
-| **Invitation emails** | `emailFromName` in From header. Org logo in email header. Brand color for CTA button. |
-| **Reminder emails** | Same as invitation emails. |
-| **Completion emails** | Same branding. |
-| **Certificate of completion PDF** | Org logo in header instead of Seal logo (if logo uploaded). |
-| **Signing page Stripe payment form** | Brand color passed to Stripe `appearance.variables.colorPrimary`. |
+| Surface                              | What Changes                                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| **Signing page header**              | Org logo replaces Seal logo. Brand color applied to primary buttons and progress indicators.            |
+| **Signing page footer**              | Free plan: "Powered by Seal" shown. Pro plan with `hideSealbrand`: org's custom footer text or nothing. |
+| **Invitation emails**                | `emailFromName` in From header. Org logo in email header. Brand color for CTA button.                   |
+| **Reminder emails**                  | Same as invitation emails.                                                                              |
+| **Completion emails**                | Same branding.                                                                                          |
+| **Certificate of completion PDF**    | Org logo in header instead of Seal logo (if logo uploaded).                                             |
+| **Signing page Stripe payment form** | Brand color passed to Stripe `appearance.variables.colorPrimary`.                                       |
 
 ### What Branding Does NOT Affect (v1)
 
@@ -65,6 +67,7 @@ brandingSettings: v.optional(v.object({
 New page: **`/{slug}/settings/branding`**
 
 Layout:
+
 - **Logo upload**: Drag-drop or file picker. Max 2MB, PNG/SVG/JPG. Preview shown at signing page scale.
 - **Colors**: Brand color picker + accent color picker. Live preview swatch.
 - **Email**: From name input, reply-to email input (validated).
@@ -90,6 +93,7 @@ const brandColor = org.brandingSettings?.brandColor || "#0d9488"  // Seal teal d
 ```
 
 CSS custom properties injected at the signing page root:
+
 ```css
 --brand-primary: {brandColor};
 --brand-accent: {accentColor};
@@ -100,11 +104,12 @@ Signing page buttons, progress bar, and active states use these variables.
 #### Email Template Changes
 
 Email templates in `packages/transactional/` receive branding props:
+
 ```typescript
 interface BrandingProps {
-  logoUrl?: string
-  brandColor?: string
-  fromName?: string
+  logoUrl?: string;
+  brandColor?: string;
+  fromName?: string;
 }
 ```
 
@@ -124,24 +129,24 @@ The `sendDocumentInvitation()` function in `email.ts` queries the org's branding
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Custom logo | Yes | Yes |
-| Brand color | Yes | Yes |
-| Email from name | No | Yes |
-| Hide "Powered by Seal" | No | Yes |
-| Custom footer text | No | Yes |
+| Feature                | Free | Pro |
+| ---------------------- | ---- | --- |
+| Custom logo            | Yes  | Yes |
+| Brand color            | Yes  | Yes |
+| Email from name        | No   | Yes |
+| Hide "Powered by Seal" | No   | Yes |
+| Custom footer text     | No   | Yes |
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/organizations.ts` | Modify — add `brandingSettings` |
-| `apps/backend/convex/organizations/mutations.ts` | Modify — add `updateBrandingSettings` mutation |
-| `apps/backend/convex/documents/recipients_queries.ts` | Modify — include branding in token query response |
-| `apps/web/src/routes/sign.$token.tsx` | Modify — apply branding to header/footer/colors |
-| `apps/web/src/routes/_authenticated/$slug/settings/branding.tsx` | Create — branding settings page |
-| `packages/transactional/` | Modify — accept branding props in all email templates |
-| `apps/backend/convex/documents/email.ts` | Modify — pass branding to email renderer |
-| `apps/backend/convex/documents/certificate_of_completion.ts` | Modify — use org logo |
-| `apps/backend/convex/auth/permissions.ts` | Modify — add `branding:manage` |
+| File                                                             | Action                                                |
+| ---------------------------------------------------------------- | ----------------------------------------------------- |
+| `apps/backend/convex/schemas/organizations.ts`                   | Modify — add `brandingSettings`                       |
+| `apps/backend/convex/organizations/mutations.ts`                 | Modify — add `updateBrandingSettings` mutation        |
+| `apps/backend/convex/documents/recipients_queries.ts`            | Modify — include branding in token query response     |
+| `apps/web/src/routes/sign.$token.tsx`                            | Modify — apply branding to header/footer/colors       |
+| `apps/web/src/routes/_authenticated/$slug/settings/branding.tsx` | Create — branding settings page                       |
+| `packages/transactional/`                                        | Modify — accept branding props in all email templates |
+| `apps/backend/convex/documents/email.ts`                         | Modify — pass branding to email renderer              |
+| `apps/backend/convex/documents/certificate_of_completion.ts`     | Modify — use org logo                                 |
+| `apps/backend/convex/auth/permissions.ts`                        | Modify — add `branding:manage`                        |

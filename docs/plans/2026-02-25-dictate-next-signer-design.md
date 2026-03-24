@@ -72,6 +72,7 @@ v.literal("recipient.dictated"),
 #### Send Flow Changes
 
 When `markDocumentAsSent` processes a sequential document with `allowDictateNextSigner`:
+
 - Placeholder recipients (where `isPlaceholder === true`) are skipped in the initial email send
 - Only the first non-placeholder recipient receives an invitation
 - Validation: at least the first recipient must have a real name + email (cannot be a placeholder)
@@ -109,6 +110,7 @@ dictateNextRecipient:
 #### Sequential Flow Integration
 
 Modify the existing sequential signing logic (the code that triggers the next recipient's email after a signature):
+
 - Before sending to the next recipient, check if the next recipient `isPlaceholder`
 - If yes, set `awaitingDictation: true` on the next recipient and show the dictation dialog instead of sending
 - The invitation is deferred until `dictateNextRecipient` is called
@@ -116,6 +118,7 @@ Modify the existing sequential signing logic (the code that triggers the next re
 #### Reminder for Pending Dictation
 
 If `awaitingDictation` remains true for 24 hours after the previous signer completed:
+
 - Send a reminder email to the previous signer: "You signed [Document Name] but haven't designated the next signer yet"
 - Include a link back to the dictation page (a special route or the signing page with a dictation-only mode)
 - This can be handled by the existing reminder cron or a new check in the email retry system
@@ -125,6 +128,7 @@ If `awaitingDictation` remains true for 24 hours after the previous signer compl
 #### Document Settings Panel
 
 Add a toggle in the document settings (only visible when `signingMode === "sequential"`):
+
 - "Allow signers to choose the next recipient"
 - Description: "When enabled, signers can specify who should sign after them"
 - When toggled on, the recipient list UI changes to allow marking recipients as placeholders
@@ -132,6 +136,7 @@ Add a toggle in the document settings (only visible when `signingMode === "seque
 #### Recipient List (Document Editor)
 
 When `allowDictateNextSigner` is enabled:
+
 - Each recipient (except the first and last) shows a checkbox: "Placeholder — to be chosen by previous signer"
 - When checked, the name and email inputs are replaced with a grey pill: "To be designated by [Previous Signer Name]"
 - The role and field assignments remain editable by the sender
@@ -155,6 +160,7 @@ New component: `DictateNextSignerDialog`
 #### Signing Page (Dictation-Only Mode)
 
 For the reminder flow, the previous signer returns to `/sign/{token}?dictate=true`:
+
 - The existing signing token is **NOT invalidated** after signing — it remains valid but access is gated by recipient status
 - When a token resolves to a recipient with `status: "signed"` and `awaitingDictation: true`, the signing page renders ONLY the `DictateNextSignerDialog` (no document, no fields, no re-signing)
 - When a token resolves to a recipient with `status: "signed"` and `awaitingDictation: false` (dictation already completed), show "You have already completed this step"
@@ -166,9 +172,9 @@ No new permissions needed. The dictation action is authenticated via the recipie
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Dictate next signer | No | Yes |
+| Feature             | Free | Pro |
+| ------------------- | ---- | --- |
+| Dictate next signer | No   | Yes |
 
 Free plan: the toggle is hidden in document settings. Sequential signing itself is available on all plans.
 
@@ -185,21 +191,22 @@ Free plan: the toggle is hidden in document settings. Sequential signing itself 
 ### Interaction with Document Expiration
 
 If a document has both `allowDictateNextSigner` and `expirationPeriod` configured:
+
 - The expiration clock ticks regardless of dictation state — if the document expires while awaiting dictation, the document transitions to `expired` status
 - The expiration gate on the signing page takes priority over dictation (see "Signing Page Interaction Order" in document-expiration design)
 - The sender notification for a blocked dictation chain should mention the expiration deadline if one exists: "...the document will expire on [date] if not completed"
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/documents.ts` | Modify — add `allowDictateNextSigner` field |
-| `apps/backend/convex/schemas/recipients.ts` | Modify — add `isPlaceholder`, `dictatedBy`, `dictatedAt`, `awaitingDictation` fields |
-| `apps/backend/convex/schemas/audit_logs.ts` | Modify — add `recipient.dictated` action |
-| `apps/backend/convex/documents/mutations.ts` | Modify — add `dictateNextRecipient` mutation, adjust send flow |
-| `apps/backend/convex/documents/actions.ts` | Modify — adjust sequential email logic for placeholders |
-| `apps/web/src/routes/sign.$token.tsx` | Modify — show dictation dialog after signing |
-| `apps/web/src/components/signing/dictate-next-signer-dialog.tsx` | Create — dictation dialog component |
-| `apps/web/src/components/documents/document-settings-panel.tsx` | Modify — add dictation toggle |
-| `apps/web/src/components/documents/recipient-list.tsx` | Modify — placeholder recipient UI |
-| `packages/transactional/emails/dictation-reminder.tsx` | Create — reminder email for pending dictation |
+| File                                                             | Action                                                                               |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `apps/backend/convex/schemas/documents.ts`                       | Modify — add `allowDictateNextSigner` field                                          |
+| `apps/backend/convex/schemas/recipients.ts`                      | Modify — add `isPlaceholder`, `dictatedBy`, `dictatedAt`, `awaitingDictation` fields |
+| `apps/backend/convex/schemas/audit_logs.ts`                      | Modify — add `recipient.dictated` action                                             |
+| `apps/backend/convex/documents/mutations.ts`                     | Modify — add `dictateNextRecipient` mutation, adjust send flow                       |
+| `apps/backend/convex/documents/actions.ts`                       | Modify — adjust sequential email logic for placeholders                              |
+| `apps/web/src/routes/sign.$token.tsx`                            | Modify — show dictation dialog after signing                                         |
+| `apps/web/src/components/signing/dictate-next-signer-dialog.tsx` | Create — dictation dialog component                                                  |
+| `apps/web/src/components/documents/document-settings-panel.tsx`  | Modify — add dictation toggle                                                        |
+| `apps/web/src/components/documents/recipient-list.tsx`           | Modify — placeholder recipient UI                                                    |
+| `packages/transactional/emails/dictation-reminder.tsx`           | Create — reminder email for pending dictation                                        |

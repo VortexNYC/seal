@@ -31,11 +31,13 @@ openapi.json (generated artifact)
 ### User Flow
 
 **For API consumers:**
+
 1. Visit `https://app.seal.co/api/docs` — interactive Swagger UI with all endpoints, schemas, and "Try It Out" functionality
 2. Download the spec at `/api/v1/openapi.json` for code generation in any language
 3. Install `@seal/sdk` from npm for TypeScript/JavaScript projects
 
 **For Seal developers:**
+
 1. Define or update Zod schemas in `validations/` as usual
 2. Annotate schemas with OpenAPI metadata (descriptions, examples) using `zod-openapi` extensions
 3. Run `bun run generate:openapi` to regenerate the spec
@@ -54,11 +56,13 @@ import { z } from "zod";
 extendZodWithOpenApi(z);
 
 // Example: existing schema with OpenAPI extensions
-export const createDocumentSchema = z.object({
-  title: z.string().openapi({ description: "Document title", example: "Employment Agreement" }),
-  templateId: z.string().optional().openapi({ description: "Template ID to create from" }),
-  recipients: z.array(recipientSchema).openapi({ description: "List of recipients" }),
-}).openapi("CreateDocumentRequest");
+export const createDocumentSchema = z
+  .object({
+    title: z.string().openapi({ description: "Document title", example: "Employment Agreement" }),
+    templateId: z.string().optional().openapi({ description: "Template ID to create from" }),
+    recipients: z.array(recipientSchema).openapi({ description: "List of recipients" }),
+  })
+  .openapi("CreateDocumentRequest");
 ```
 
 #### API Route Registry
@@ -83,8 +87,14 @@ registry.registerPath({
     body: { content: { "application/json": { schema: createDocumentSchema } } },
   },
   responses: {
-    200: { description: "Document created", content: { "application/json": { schema: documentResponseSchema } } },
-    400: { description: "Validation error", content: { "application/json": { schema: errorResponseSchema } } },
+    200: {
+      description: "Document created",
+      content: { "application/json": { schema: documentResponseSchema } },
+    },
+    400: {
+      description: "Validation error",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
     401: { description: "Unauthorized" },
     403: { description: "Insufficient permissions" },
   },
@@ -110,9 +120,7 @@ const spec = generator.generateDocument({
     description: "Document signing and workflow management API",
     contact: { name: "Seal Support", url: "https://seal.co/support" },
   },
-  servers: [
-    { url: "https://api.seal.co", description: "Production" },
-  ],
+  servers: [{ url: "https://api.seal.co", description: "Production" }],
   security: [{ apiKey: [] }],
 });
 
@@ -123,6 +131,7 @@ Bun.write("apps/backend/convex/api/openapi.json", JSON.stringify(spec, null, 2))
 Run with: `bun run scripts/generate-openapi.ts`
 
 Add to `package.json`:
+
 ```json
 "generate:openapi": "bun run scripts/generate-openapi.ts"
 ```
@@ -141,7 +150,7 @@ http.route({
     return new Response(JSON.stringify(openapiSpec), {
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",  // Public spec
+        "Access-Control-Allow-Origin": "*", // Public spec
       },
     });
   }),
@@ -156,13 +165,13 @@ The spec JSON should be stored in **Convex Storage** and served via a storage UR
 
 All existing v1 endpoints need OpenAPI annotations:
 
-| Tag | Endpoints |
-|-----|-----------|
-| **Documents** | POST /documents, GET /documents, GET /documents/{id}, POST /documents/{id}/send, DELETE /documents/{id} |
+| Tag            | Endpoints                                                                                                        |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Documents**  | POST /documents, GET /documents, GET /documents/{id}, POST /documents/{id}/send, DELETE /documents/{id}          |
 | **Recipients** | POST /documents/{id}/recipients, GET /documents/{id}/recipients, PATCH /recipients/{id}, DELETE /recipients/{id} |
-| **Templates** | GET /templates, GET /templates/{id} |
-| **Signatures** | GET /documents/{id}/signatures |
-| **Webhooks** | POST /webhooks, GET /webhooks, DELETE /webhooks/{id} |
+| **Templates**  | GET /templates, GET /templates/{id}                                                                              |
+| **Signatures** | GET /documents/{id}/signatures                                                                                   |
+| **Webhooks**   | POST /webhooks, GET /webhooks, DELETE /webhooks/{id}                                                             |
 
 Each endpoint needs: summary, description, request schema (body + path params + query params), response schemas (success + each error type), and example values.
 
@@ -201,6 +210,7 @@ function ApiDocsPage() {
 ```
 
 Customizations:
+
 - Seal branding in the header (logo, colors)
 - "Try It Out" enabled by default
 - API key input field in the auth section
@@ -271,12 +281,12 @@ await seal.documents.send(doc.id);
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| View API docs | Yes | Yes |
-| Download OpenAPI spec | Yes | Yes |
-| Use API (requires key) | No | Yes |
-| SDK usage | No (no key) | Yes |
+| Feature                | Free        | Pro |
+| ---------------------- | ----------- | --- |
+| View API docs          | Yes         | Yes |
+| Download OpenAPI spec  | Yes         | Yes |
+| Use API (requires key) | No          | Yes |
+| SDK usage              | No (no key) | Yes |
 
 The docs and spec are public to encourage adoption. Actual API usage requires a Pro plan API key.
 
@@ -292,15 +302,15 @@ The docs and spec are public to encourage adoption. Actual API usage requires a 
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/api/openapi/registry.ts` | Create — endpoint registry with OpenAPI metadata |
-| `apps/backend/convex/api/openapi/schemas.ts` | Create — Zod schemas with `.openapi()` extensions |
-| `apps/backend/convex/api/openapi.json` | Create (generated) — the OpenAPI 3.1 spec |
-| `apps/backend/convex/http.ts` | Modify — add GET /api/v1/openapi.json route |
-| `apps/backend/convex/validations/*.ts` | Modify — add `.openapi()` metadata to existing Zod schemas |
-| `scripts/generate-openapi.ts` | Create — build script for spec generation |
-| `apps/web/src/routes/api.docs.tsx` | Create — Swagger UI page |
-| `packages/sdk/` | Create — generated TypeScript SDK package |
-| `packages/sdk/package.json` | Create — npm package config for @seal/sdk |
-| `package.json` (root) | Modify — add `generate:openapi` script |
+| File                                          | Action                                                     |
+| --------------------------------------------- | ---------------------------------------------------------- |
+| `apps/backend/convex/api/openapi/registry.ts` | Create — endpoint registry with OpenAPI metadata           |
+| `apps/backend/convex/api/openapi/schemas.ts`  | Create — Zod schemas with `.openapi()` extensions          |
+| `apps/backend/convex/api/openapi.json`        | Create (generated) — the OpenAPI 3.1 spec                  |
+| `apps/backend/convex/http.ts`                 | Modify — add GET /api/v1/openapi.json route                |
+| `apps/backend/convex/validations/*.ts`        | Modify — add `.openapi()` metadata to existing Zod schemas |
+| `scripts/generate-openapi.ts`                 | Create — build script for spec generation                  |
+| `apps/web/src/routes/api.docs.tsx`            | Create — Swagger UI page                                   |
+| `packages/sdk/`                               | Create — generated TypeScript SDK package                  |
+| `packages/sdk/package.json`                   | Create — npm package config for @seal/sdk                  |
+| `package.json` (root)                         | Modify — add `generate:openapi` script                     |
