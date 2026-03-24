@@ -32,7 +32,7 @@
     "typecheck": "turbo run typecheck --filter=@seal/backend --filter=@seal/landing --filter=@seal/mcp-server --filter=@seal/react --filter=@seal/transactional --filter=@seal/web",
     "knip": "turbo run knip --continue --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/react --filter=@seal/transactional --filter=@seal/web",
     "knip:fix": "turbo run knip:fix --continue --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/react --filter=@seal/transactional --filter=@seal/web",
-    "static-analysis": "bun run lint && bun run format:check && bun run typecheck && bun run knip",
+    "static-analysis": "turbo run lint format:check typecheck knip --continue",
     "test": "turbo run test --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/web",
     "clean": "bunx turbo run clean --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/web && git clean -xdf .cache .turbo dist node_modules",
     "eval": "cd evals && npx promptfoo eval",
