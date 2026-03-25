@@ -74,7 +74,9 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run frontend tests
-        run: cd apps/web && bun --bun run test
+        # Avoid `bun --bun run` here: jsdom relies on Node-specific modules
+        # (http-proxy-agent, ws, etc.) that hang under Bun's Node shim.
+        run: cd apps/web && bun run test
 
   test-web-e2e:
     name: Web E2E
