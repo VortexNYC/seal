@@ -19,7 +19,7 @@ import { SealApiClient, SealApiError } from "./client";
 // Configuration — reads from env so CI can inject credentials
 // ---------------------------------------------------------------------------
 
-const API_KEY = process.env.SEAL_API_KEY ?? "ak_H20JEZ7R12KTQEQPCTWJ3VN7NB75JQQH";
+const API_KEY = process.env.SEAL_API_KEY ?? "";
 const BASE_URL = process.env.SEAL_BASE_URL ?? "https://wooden-poodle-362.convex.site";
 
 const SKIP_INTEGRATION = !API_KEY || API_KEY === "skip";
