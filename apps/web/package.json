@@ -104,7 +104,7 @@
     "@types/react-dom": "catalog:",
     "@types/react-signature-canvas": "^1.0.7",
     "@vitejs/plugin-react": "^5.1.2",
-    "happy-dom": "^20.6.1",
+    "jsdom": "^26.1.0",
     "react-grab": "^0.1.7",
     "typescript": "catalog:",
     "vite": "catalog:",
