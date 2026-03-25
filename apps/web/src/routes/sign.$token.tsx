@@ -6,6 +6,7 @@
  * This is an unauthenticated route - no Clerk login required.
  */
 
+import { capitalize } from "@/lib/string";
 import { convexQuery } from "@convex-dev/react-query";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import {
@@ -174,7 +175,7 @@ const capitalizeFieldLabel = (label: string): string => {
   // Otherwise, capitalize first letter of each word
   return label
     .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => capitalize(word))
     .join(" ");
 };
 
