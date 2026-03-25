@@ -11,6 +11,8 @@ export function canUseClerkTestingHelpers(
 ): boolean {
   const hasPublishableKey = CLERK_PUBLISHABLE_KEY_ENV_NAMES.some((name) => Boolean(env[name]));
   const hasTestingCredential = Boolean(env.CLERK_SECRET_KEY || env.CLERK_TESTING_TOKEN);
+  const testEmail = env.E2E_TEST_USER_EMAIL || env.TEST_USER_EMAIL;
+  const isClerkTestEmail = testEmail?.includes("+clerk_test") ?? false;
 
-  return hasPublishableKey && hasTestingCredential;
+  return hasPublishableKey && hasTestingCredential && isClerkTestEmail;
 }
