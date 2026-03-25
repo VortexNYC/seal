@@ -1,0 +1,9 @@
+/**
+ * String utility functions for text transformation and formatting.
+ */
+
+/** Capitalize the first letter of a string */
+export function capitalize(value: string): string {
+  if (value.length === 0) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
