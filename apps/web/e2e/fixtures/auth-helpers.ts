@@ -1,6 +1,9 @@
-import type { Page } from "@playwright/test";
+import { clerk } from "@clerk/testing/playwright";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
+
+import { canUseClerkTestingHelpers } from "./clerk-testing-env";
 
 type ClerkWindow = Window & {
   Clerk?: {
@@ -35,6 +38,65 @@ export function getTestWorkspaceConfig(): TestWorkspaceConfig {
     organizationSlug:
       process.env.E2E_TEST_ORGANIZATION_SLUG || process.env.TEST_ORGANIZATION_SLUG || defaultSlug,
   };
+}
+
+export async function performLogin(page: Page): Promise<void> {
+  const { email: testEmail, emailCode: testEmailCode } = getTestWorkspaceConfig();
+
+  await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
+
+  if (isAuthenticatedUrl(page.url())) {
+    return;
+  }
+
+  const shouldUseClerkTesting = canUseClerkTestingHelpers();
+
+  if (shouldUseClerkTesting) {
+    await clerk.loaded({ page });
+    await clerk.signIn({
+      page,
+      signInParams: {
+        strategy: "email_code",
+        identifier: testEmail,
+      },
+    });
+    await page.goto("/app", { waitUntil: "domcontentloaded" });
+  } else {
+    await waitForElementWithFallback(page, [
+      page.getByRole("heading", { name: /sign in/i }),
+      page.getByText(/sign in to seal/i),
+      page.getByText(/sign in/i),
+    ]);
+
+    if (isAuthenticatedUrl(page.url())) {
+      return;
+    }
+
+    await fillFieldWithFallback(page, testEmail);
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+
+    await waitForElementWithFallback(page, [
+      page.getByRole("heading", { name: /check your email/i }),
+      page.getByText(/check your email/i),
+      page.getByText(/verification code/i),
+    ]);
+
+    await page.waitForTimeout(500);
+    await fillOtpCode(page, testEmailCode);
+  }
+
+  await page.waitForURL(/\/(app|.*\/home|.*\/onboarding\/choose-organization)/, {
+    timeout: 30000,
+  });
+}
+
+export function isAuthenticatedUrl(url: string): boolean {
+  try {
+    const pathname = new URL(url).pathname;
+    return /\/(app|[\w-]+\/home|[\w-]+\/onboarding\/choose-organization)/.test(pathname);
+  } catch {
+    return false;
+  }
 }
 
 export async function ensureWorkspaceForAuthenticatedUser(page: Page): Promise<string> {
@@ -139,6 +201,83 @@ async function retry<T>(
   }
 
   throw new Error("Retry operation did not complete successfully");
+}
+
+async function fillFieldWithFallback(page: Page, value: string): Promise<void> {
+  const candidates: Locator[] = [
+    page.getByLabel(/email address/i),
+    page.getByLabel(/email/i),
+    page.getByRole("textbox", { name: /email/i }),
+    page.locator('input[type="email"]'),
+  ];
+
+  for (const locator of candidates) {
+    if ((await locator.count()) > 0) {
+      await locator.first().fill(value);
+      return;
+    }
+  }
+
+  await page.locator("input").first().fill(value);
+}
+
+async function fillOtpCode(page: Page, code: string): Promise<void> {
+  const singleInputs = page.locator('input[name="code"], input[autocomplete="one-time-code"]');
+  const digitInputs = page.locator(
+    '[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]',
+  );
+  const roleInputs = page.getByRole("textbox", { name: /code/i });
+
+  const singleCount = await singleInputs.count();
+  if (singleCount > 0) {
+    await singleInputs.first().fill(code);
+    return;
+  }
+
+  const digitCount = await digitInputs.count();
+  if (digitCount >= 2) {
+    for (let index = 0; index < Math.min(digitCount, code.length); index++) {
+      await digitInputs.nth(index).fill(code[index] ?? "");
+    }
+    return;
+  }
+
+  const roleCount = await roleInputs.count();
+  if (roleCount > 0) {
+    await roleInputs.first().fill(code);
+    return;
+  }
+
+  await page.keyboard.type(code);
+}
+
+async function waitForElementWithFallback(page: Page, candidates: Locator[]): Promise<void> {
+  const start = Date.now();
+  const timeoutMs = 30000;
+
+  while (Date.now() - start < timeoutMs) {
+    if (isAuthenticatedUrl(page.url())) {
+      return;
+    }
+
+    for (const locator of candidates) {
+      if (
+        await locator
+          .first()
+          .isVisible()
+          .catch(() => false)
+      ) {
+        return;
+      }
+    }
+    await page.waitForTimeout(250);
+  }
+
+  if (isAuthenticatedUrl(page.url())) {
+    return;
+  }
+
+  await expect(candidates[0]).toBeVisible({ timeout: 1000 });
 }
 
 function buildDefaultOrganizationSlug(email: string): string {
