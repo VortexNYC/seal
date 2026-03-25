@@ -1,4 +1,6 @@
 import { useUser } from "@clerk/clerk-react";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAction, useQuery } from "convex/react";
 import { ArrowLeft, Calendar, Mail, Shield, Trash2 } from "lucide-react";
@@ -22,8 +24,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/team/$memberId")({
   component: MemberDetails,

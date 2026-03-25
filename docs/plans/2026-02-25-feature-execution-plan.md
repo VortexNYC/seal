@@ -15,10 +15,10 @@
 
 These unblock everything else. Build first.
 
-| # | Feature | Design Doc | Status |
-|---|---------|-----------|--------|
-| 1 | Org Settings Inheritance | `2026-02-25-org-settings-inheritance-design.md` | DONE |
-| 2 | Folders | `2026-02-25-folders-design.md` | DONE |
+| #   | Feature                  | Design Doc                                      | Status |
+| --- | ------------------------ | ----------------------------------------------- | ------ |
+| 1   | Org Settings Inheritance | `2026-02-25-org-settings-inheritance-design.md` | DONE   |
+| 2   | Folders                  | `2026-02-25-folders-design.md`                  | DONE   |
 
 **Why first:** Org Settings provides the settings infrastructure consumed by 6+ other features. Folders touches documents/templates schemas early so later features build on top.
 
@@ -28,12 +28,12 @@ These unblock everything else. Build first.
 
 Signing page + document schema core. Sequential — each depends on the previous.
 
-| # | Feature | Design Doc | Status |
-|---|---------|-----------|--------|
-| 3 | Document Expiration | `2026-02-25-document-expiration-design.md` | DONE |
-| 4 | Custom Redirect | `2026-02-25-custom-redirect-design.md` | DONE |
-| 5 | Dictate Next Signer | `2026-02-25-dictate-next-signer-design.md` | DONE |
-| 6 | Assistant Recipient Role | `2026-02-25-assistant-recipient-role-design.md` | NOT STARTED |
+| #   | Feature                  | Design Doc                                      | Status      |
+| --- | ------------------------ | ----------------------------------------------- | ----------- |
+| 3   | Document Expiration      | `2026-02-25-document-expiration-design.md`      | DONE        |
+| 4   | Custom Redirect          | `2026-02-25-custom-redirect-design.md`          | DONE        |
+| 5   | Dictate Next Signer      | `2026-02-25-dictate-next-signer-design.md`      | DONE        |
+| 6   | Assistant Recipient Role | `2026-02-25-assistant-recipient-role-design.md` | NOT STARTED |
 
 **Why this order:** Document Expiration defines the signing page interaction order that features 4-6 follow. It also adds the `"expired"` workflow status that other features must handle. Custom Redirect is small and depends on that interaction order. Dictation and Assistant both touch the signing page and recipients schema.
 
@@ -43,13 +43,13 @@ Signing page + document schema core. Sequential — each depends on the previous
 
 All 5 features are independent — zero file conflicts. Can run as parallel worktrees.
 
-| # | Feature | Design Doc | Status |
-|---|---------|-----------|--------|
-| 7 | QR Code Certificate | `2026-02-25-qr-code-certificate-design.md` | DONE |
-| 8 | Direct Link Templates | `2026-02-25-direct-link-templates-design.md` | NOT STARTED |
-| 9 | Delegate Ownership | `2026-02-25-delegate-ownership-design.md` | NOT STARTED |
-| 10 | Custom Email Domain | `2026-02-25-custom-email-domain-design.md` | NOT STARTED |
-| 11 | User Security Audit Logs | `2026-02-25-audit-logs-design.md` | NOT STARTED |
+| #   | Feature                  | Design Doc                                   | Status      |
+| --- | ------------------------ | -------------------------------------------- | ----------- |
+| 7   | QR Code Certificate      | `2026-02-25-qr-code-certificate-design.md`   | DONE        |
+| 8   | Direct Link Templates    | `2026-02-25-direct-link-templates-design.md` | NOT STARTED |
+| 9   | Delegate Ownership       | `2026-02-25-delegate-ownership-design.md`    | NOT STARTED |
+| 10  | Custom Email Domain      | `2026-02-25-custom-email-domain-design.md`   | NOT STARTED |
+| 11  | User Security Audit Logs | `2026-02-25-audit-logs-design.md`            | NOT STARTED |
 
 **Why parallel:** Each feature has its own schema, its own backend module, its own frontend route. No shared hot files.
 
@@ -59,10 +59,10 @@ All 5 features are independent — zero file conflicts. Can run as parallel work
 
 Depend on all other features being in place.
 
-| # | Feature | Design Doc | Status |
-|---|---------|-----------|--------|
-| 12 | OpenAPI Spec & SDK | `2026-02-25-openapi-spec-design.md` | NOT STARTED |
-| 13 | Zapier Integration | `2026-02-25-zapier-integration-design.md` | NOT STARTED |
+| #   | Feature            | Design Doc                                | Status      |
+| --- | ------------------ | ----------------------------------------- | ----------- |
+| 12  | OpenAPI Spec & SDK | `2026-02-25-openapi-spec-design.md`       | NOT STARTED |
+| 13  | Zapier Integration | `2026-02-25-zapier-integration-design.md` | NOT STARTED |
 
 **Why last:** OpenAPI needs all API endpoints finalized. Zapier needs webhook events from other features to exist.
 
@@ -72,15 +72,15 @@ Depend on all other features being in place.
 
 These files are touched by multiple features. Wave ordering prevents conflicts:
 
-| File | Features That Touch It |
-|------|----------------------|
-| `schemas/documents.ts` | Expiration, Redirect, Dictation, QR Code, Folders |
-| `schemas/recipients.ts` | Expiration, Dictation, Assistant |
-| `sign.$token.tsx` | Expiration, Redirect, Dictation, Assistant |
-| `document-settings-panel.tsx` | Expiration, Redirect, Dictation |
-| `crons.ts` | Expiration, Email Domain, Audit Logs |
-| `schemas/audit_logs.ts` | Expiration, Dictation, Delegate, Assistant |
-| `schema.ts` | Folders, Email Domain, Audit Logs, Zapier |
+| File                          | Features That Touch It                            |
+| ----------------------------- | ------------------------------------------------- |
+| `schemas/documents.ts`        | Expiration, Redirect, Dictation, QR Code, Folders |
+| `schemas/recipients.ts`       | Expiration, Dictation, Assistant                  |
+| `sign.$token.tsx`             | Expiration, Redirect, Dictation, Assistant        |
+| `document-settings-panel.tsx` | Expiration, Redirect, Dictation                   |
+| `crons.ts`                    | Expiration, Email Domain, Audit Logs              |
+| `schemas/audit_logs.ts`       | Expiration, Dictation, Delegate, Assistant        |
+| `schema.ts`                   | Folders, Email Domain, Audit Logs, Zapier         |
 
 ---
 

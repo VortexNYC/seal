@@ -77,7 +77,8 @@ Extends the existing `pipeline.ts` orchestrator. After field analysis, a new ste
 
 ```ts
 searchDocuments: createTool({
-  description: "Search across all workspace documents for relevant content. Returns document excerpts with citations.",
+  description:
+    "Search across all workspace documents for relevant content. Returns document excerpts with citations.",
   args: z.object({
     query: z.string().describe("The search query — what to look for across documents"),
   }),
@@ -86,18 +87,22 @@ searchDocuments: createTool({
 
     // 1. RAG vector search (semantic)
     const ragResults = await documentRag.search(ctx, {
-      namespace, query, limit: 10, vectorScoreThreshold: 0.5,
+      namespace,
+      query,
+      limit: 10,
+      vectorScoreThreshold: 0.5,
     });
 
     // 2. Convex text search (BM25) on documents.extractedText
-    const textResults = await ctx.runQuery(
-      internal.documents.queries.searchDocumentText,
-      { organizationId: ctx.organizationId, query, limit: 10 },
-    );
+    const textResults = await ctx.runQuery(internal.documents.queries.searchDocumentText, {
+      organizationId: ctx.organizationId,
+      query,
+      limit: 10,
+    });
 
     // 3. Hybrid rank merge via reciprocal rank fusion
-    const ragKeys = ragResults.results.map(r => r.key);
-    const textIds = textResults.map(d => d._id.toString());
+    const ragKeys = ragResults.results.map((r) => r.key);
+    const textIds = textResults.map((d) => d._id.toString());
     const ranked = hybridRank([ragKeys, textIds], { k: 60, weights: [1.2, 1.0] });
 
     // 4. Format as citations
@@ -148,18 +153,19 @@ Add `searchDocuments` to `sealAgent.tools`. Update system instructions to descri
 
 ## Key Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| RAG approach | Tool-based | Agent decides when to search, more flexible for conversation |
-| Embedding model | text-embedding-005 (768 dims) | Same as Plasma, good quality/cost ratio |
-| Chunking | Per-page | Natural boundaries for PDFs, citations map to page numbers |
-| Search merge | hybridRank (RRF) | Proven in Plasma, combines semantic + keyword strengths |
-| Namespace | Per-organization | Tenant isolation, simple scope |
-| Indexing trigger | Automatic on upload | Consistent with field analysis pipeline pattern |
+| Decision         | Choice                        | Rationale                                                    |
+| ---------------- | ----------------------------- | ------------------------------------------------------------ |
+| RAG approach     | Tool-based                    | Agent decides when to search, more flexible for conversation |
+| Embedding model  | text-embedding-005 (768 dims) | Same as Plasma, good quality/cost ratio                      |
+| Chunking         | Per-page                      | Natural boundaries for PDFs, citations map to page numbers   |
+| Search merge     | hybridRank (RRF)              | Proven in Plasma, combines semantic + keyword strengths      |
+| Namespace        | Per-organization              | Tenant isolation, simple scope                               |
+| Indexing trigger | Automatic on upload           | Consistent with field analysis pipeline pattern              |
 
 ## Reference Implementation
 
 The Plasma repo (`/Users/shlomokabareti/Projects/plasma`) has working implementations of:
+
 - RAG setup with filters: `convex/ai/memory.ts`
 - Hybrid search with `hybridRank`: `convex/ai/memory.ts`
 - Agent with `contextOptions.searchOptions`: `convex/ai/agent.ts`

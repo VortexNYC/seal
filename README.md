@@ -4,16 +4,16 @@ Seal is a Bun + Turborepo monorepo for the Seal document-signing platform. It co
 
 ## Workspace Overview
 
-| Path | Purpose | Stack |
-| --- | --- | --- |
-| `apps/web` | Main product app | React 19, TanStack Router, Vite, Clerk, Convex |
-| `apps/landing` | Marketing site and published developer docs | TanStack Start, Fumadocs, local content |
-| `apps/backend` | Convex backend, REST API, webhooks, jobs | Convex, TypeScript |
-| `apps/mcp-server` | MCP server for Seal tools/resources | Bun, Express, MCP SDK |
-| `packages/transactional` | Transactional email templates | React Email |
-| `packages/react-sdk` | Embeddable React SDK | TypeScript |
-| `packages/tokens` | Shared theme/font tokens | CSS, TypeScript |
-| `tooling/typescript` | Shared TS config | TypeScript |
+| Path                     | Purpose                                     | Stack                                          |
+| ------------------------ | ------------------------------------------- | ---------------------------------------------- |
+| `apps/web`               | Main product app                            | React 19, TanStack Router, Vite, Clerk, Convex |
+| `apps/landing`           | Marketing site and published developer docs | TanStack Start, Fumadocs, local content        |
+| `apps/backend`           | Convex backend, REST API, webhooks, jobs    | Convex, TypeScript                             |
+| `apps/mcp-server`        | MCP server for Seal tools/resources         | Bun, Express, MCP SDK                          |
+| `packages/transactional` | Transactional email templates               | React Email                                    |
+| `packages/react-sdk`     | Embeddable React SDK                        | TypeScript                                     |
+| `packages/tokens`        | Shared theme/font tokens                    | CSS, TypeScript                                |
+| `tooling/typescript`     | Shared TS config                            | TypeScript                                     |
 
 ## Prerequisites
 
@@ -63,7 +63,7 @@ Notes:
 - `apps/landing` defaults to port `3001`.
 - `packages/transactional` also defaults to port `3001`.
 - `apps/mcp-server` defaults to port `5183`.
-- Playwright E2E assumes the product app is available at `http://localhost:5173`.
+- Playwright E2E assumes the product app is available at `http://localhost:5180`.
 
 ## Environment Variables
 

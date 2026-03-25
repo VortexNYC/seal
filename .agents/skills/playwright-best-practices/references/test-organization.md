@@ -229,11 +229,7 @@ test("page with dynamic content", async ({ page }) => {
 
   // Mask elements that change
   await expect(page).toHaveScreenshot("profile.png", {
-    mask: [
-      page.getByTestId("timestamp"),
-      page.getByTestId("avatar"),
-      page.getByRole("img"),
-    ],
+    mask: [page.getByTestId("timestamp"), page.getByTestId("avatar"), page.getByRole("img")],
   });
 });
 

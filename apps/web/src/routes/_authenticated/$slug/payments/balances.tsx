@@ -1,3 +1,5 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import {
   ConnectBalances,
   ConnectInstantPayoutsPromotion,
@@ -9,8 +11,6 @@ import { useQuery } from "convex/react";
 import { PageWrapper } from "@/components/page-wrapper";
 import { StripeConnectProvider } from "@/components/stripe/connect-provider";
 import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/payments/balances")({
   component: BalancesPage,

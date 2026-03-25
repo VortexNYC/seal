@@ -99,4 +99,100 @@ export class DashboardPage {
   async hasDocumentActivity(): Promise<boolean> {
     return !(await this.noActivityMessage.isVisible());
   }
+
+  async navigateToSidebarItem(sectionTitle: string, itemTitle: string): Promise<void> {
+    if (await this.navigateViaQuickActionIfAvailable(itemTitle)) {
+      return;
+    }
+
+    const sectionButton = this.page.getByRole("button", { name: sectionTitle, exact: true });
+    const itemLink = this.page.getByRole("link", { name: itemTitle, exact: true });
+
+    if (!(await itemLink.isVisible().catch(() => false))) {
+      await this.openMobileSidebarIfNeeded(sectionButton, itemLink);
+    }
+
+    if (!(await itemLink.isVisible().catch(() => false))) {
+      await sectionButton.waitFor({ state: "visible", timeout: 5000 });
+      await sectionButton.click();
+    }
+
+    await itemLink.waitFor({ state: "visible", timeout: 5000 });
+    await itemLink.click();
+  }
+
+  private async openMobileSidebarIfNeeded(
+    sectionButton: Locator,
+    itemLink: Locator,
+  ): Promise<void> {
+    const viewportWidth = this.page.viewportSize()?.width;
+
+    if (viewportWidth && viewportWidth < 768) {
+      if (
+        (await sectionButton.isVisible().catch(() => false)) ||
+        (await itemLink.isVisible().catch(() => false))
+      ) {
+        return;
+      }
+
+      const mobileTrigger = this.page.getByRole("button", { name: "Toggle Sidebar" });
+
+      await mobileTrigger.waitFor({ state: "visible", timeout: 5000 });
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await mobileTrigger.click();
+
+        if (await this.waitForAnyVisible([sectionButton, itemLink], 2000)) {
+          return;
+        }
+
+        await this.page.waitForTimeout(500);
+      }
+    }
+  }
+
+  private async navigateViaQuickActionIfAvailable(itemTitle: string): Promise<boolean> {
+    const viewportWidth = this.page.viewportSize()?.width;
+
+    if (!viewportWidth || viewportWidth >= 768) {
+      return false;
+    }
+
+    const quickActionMatchers: Record<string, RegExp> = {
+      Analytics: /^Analytics\b/i,
+      Documents: /^Documents\b/i,
+      Templates: /^Templates\b/i,
+    };
+
+    const quickActionMatcher = quickActionMatchers[itemTitle];
+
+    if (!quickActionMatcher) {
+      return false;
+    }
+
+    const quickActionButton = this.page.getByRole("button", { name: quickActionMatcher }).first();
+
+    if (!(await quickActionButton.isVisible().catch(() => false))) {
+      return false;
+    }
+
+    await quickActionButton.click();
+    return true;
+  }
+
+  private async waitForAnyVisible(locators: Locator[], timeoutMs: number): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      for (const locator of locators) {
+        if (await locator.isVisible().catch(() => false)) {
+          return true;
+        }
+      }
+
+      await this.page.waitForTimeout(100);
+    }
+
+    return false;
+  }
 }

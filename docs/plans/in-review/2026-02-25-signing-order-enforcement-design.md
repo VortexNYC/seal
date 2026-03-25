@@ -83,12 +83,12 @@ if (document.signingMode === "sequential") {
   const myOrder = recipient.order ?? 0;
   const allRecipients = await ctx.db
     .query("document_recipients")
-    .withIndex("by_document_order", q => q.eq("documentId", document._id))
+    .withIndex("by_document_order", (q) => q.eq("documentId", document._id))
     .collect();
 
   const previousGroupsComplete = allRecipients
-    .filter(r => (r.order ?? 0) < myOrder)
-    .every(r => isRecipientTerminal(r.status));
+    .filter((r) => (r.order ?? 0) < myOrder)
+    .every((r) => isRecipientTerminal(r.status));
 
   if (!previousGroupsComplete) {
     // Return a "not your turn yet" state instead of the document
@@ -102,6 +102,7 @@ if (document.signingMode === "sequential") {
 ```
 
 The signing page renders a **"waiting" state** instead of the document when `waitingForPreviousGroup` is true:
+
 - "This document requires other recipients to complete their action first."
 - "You'll receive an email when it's your turn."
 - No document content shown — prevents premature access
@@ -115,11 +116,11 @@ if (document.signingMode === "sequential") {
   const myOrder = recipient.order ?? 0;
   const previousRecipients = await ctx.db
     .query("document_recipients")
-    .withIndex("by_document_order", q => q.eq("documentId", document._id))
+    .withIndex("by_document_order", (q) => q.eq("documentId", document._id))
     .collect()
-    .then(rs => rs.filter(r => (r.order ?? 0) < myOrder));
+    .then((rs) => rs.filter((r) => (r.order ?? 0) < myOrder));
 
-  if (!previousRecipients.every(r => isRecipientTerminal(r.status))) {
+  if (!previousRecipients.every((r) => isRecipientTerminal(r.status))) {
     throw new ConvexError("Previous recipients must complete their action first");
   }
 }
@@ -134,18 +135,19 @@ After `submitRecipientSignature` updates recipient status:
 if (document.signingMode === "sequential") {
   const allRecipients = await getRecipientsByDocumentOrdered(ctx, document._id);
   const myOrder = recipient.order ?? 0;
-  const myGroup = allRecipients.filter(r => (r.order ?? 0) === myOrder);
+  const myGroup = allRecipients.filter((r) => (r.order ?? 0) === myOrder);
 
   // Is my entire group now complete?
-  if (myGroup.every(r => isRecipientTerminal(r.status))) {
-    const nextGroup = allRecipients
-      .filter(r => (r.order ?? 0) === myOrder + 1 && r.status === "pending");
+  if (myGroup.every((r) => isRecipientTerminal(r.status))) {
+    const nextGroup = allRecipients.filter(
+      (r) => (r.order ?? 0) === myOrder + 1 && r.status === "pending",
+    );
 
     if (nextGroup.length > 0) {
       // Notify next group
       await ctx.scheduler.runAfter(0, internal.documents.email.sendGroupNotification, {
         documentId: document._id,
-        recipientIds: nextGroup.map(r => r._id),
+        recipientIds: nextGroup.map((r) => r._id),
       });
     }
   }
@@ -172,7 +174,7 @@ function groupRecipientsByOrder(recipients: Doc<"document_recipients">[]) {
 function findFirstIncompleteGroup(recipients: Doc<"document_recipients">[]) {
   const groups = groupRecipientsByOrder(recipients);
   for (const [order, group] of groups) {
-    if (!group.every(r => isRecipientTerminal(r.status))) {
+    if (!group.every((r) => isRecipientTerminal(r.status))) {
       return group;
     }
   }
@@ -180,11 +182,14 @@ function findFirstIncompleteGroup(recipients: Doc<"document_recipients">[]) {
 }
 
 // Check if a specific recipient's group is active
-function isGroupActive(recipient: Doc<"document_recipients">, allRecipients: Doc<"document_recipients">[]) {
+function isGroupActive(
+  recipient: Doc<"document_recipients">,
+  allRecipients: Doc<"document_recipients">[],
+) {
   const myOrder = recipient.order ?? 0;
   return allRecipients
-    .filter(r => (r.order ?? 0) < myOrder)
-    .every(r => isRecipientTerminal(r.status));
+    .filter((r) => (r.order ?? 0) < myOrder)
+    .every((r) => isRecipientTerminal(r.status));
 }
 ```
 
@@ -241,15 +246,15 @@ No document content is shown — the recipient only sees progress information. T
 
 ### Edge Cases
 
-| Scenario | Behavior |
-|----------|----------|
-| Recipient in group N declines | Document status → `declined`. Groups N+1, N+2, etc. are never notified. Sender can cancel or void. |
-| Sender cancels mid-workflow | All pending groups receive cancellation email. Document status → `cancelled`. |
-| Sender adds recipient to active group | New recipient immediately receives invitation email. |
-| Sender removes recipient from completed group | If group was the gate for the next group, re-evaluate. If still complete, no change. |
-| Recipient's token expires while waiting | They receive a fresh email when their group activates with a new token. |
-| Single recipient per group | Functions identically — group of 1 completes when that 1 recipient is terminal. |
-| All recipients in order 0 | Behaves like parallel mode — everyone gets emails at once. |
+| Scenario                                      | Behavior                                                                                           |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Recipient in group N declines                 | Document status → `declined`. Groups N+1, N+2, etc. are never notified. Sender can cancel or void. |
+| Sender cancels mid-workflow                   | All pending groups receive cancellation email. Document status → `cancelled`.                      |
+| Sender adds recipient to active group         | New recipient immediately receives invitation email.                                               |
+| Sender removes recipient from completed group | If group was the gate for the next group, re-evaluate. If still complete, no change.               |
+| Recipient's token expires while waiting       | They receive a fresh email when their group activates with a new token.                            |
+| Single recipient per group                    | Functions identically — group of 1 completes when that 1 recipient is terminal.                    |
+| All recipients in order 0                     | Behaves like parallel mode — everyone gets emails at once.                                         |
 
 ### What We Skip (v1)
 
@@ -265,25 +270,25 @@ No new permissions. Sequential mode is configured by whoever has `documents:edit
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Sequential signing (2 groups) | Yes | Yes |
-| Sequential signing (3+ groups) | No | Yes |
-| Workflow progress visualization | No | Yes |
+| Feature                         | Free | Pro |
+| ------------------------------- | ---- | --- |
+| Sequential signing (2 groups)   | Yes  | Yes |
+| Sequential signing (3+ groups)  | No   | Yes |
+| Workflow progress visualization | No   | Yes |
 
 Free plan supports basic two-step sequential (e.g., signer then countersigner). Pro plan supports unlimited groups with the visual workflow builder.
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/documents.ts` | Modify — add `signingMode` field |
-| `apps/backend/convex/documents/send_document_action.ts` | Modify — sequential email dispatch |
-| `apps/backend/convex/documents/recipients_mutations.ts` | Modify — order enforcement gate in `submitRecipientSignature` |
-| `apps/backend/convex/documents/recipients_queries.ts` | Modify — `getRecipientByToken` returns waiting state |
-| `apps/backend/convex/documents/recipient_helpers.ts` | Modify — add group helper functions |
-| `apps/backend/convex/documents/email.ts` | Modify — `sendGroupNotification` for next-group activation |
-| `apps/web/src/routes/sign.$token.tsx` | Modify — render "waiting" state when group not active |
-| `apps/web/src/components/documents/add-recipient-dialog.tsx` | Modify — sequential mode UI, order group assignment |
-| `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` | Modify — workflow progress visualization |
-| `packages/transactional/` | Modify — "your turn" notification email template |
+| File                                                                 | Action                                                        |
+| -------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `apps/backend/convex/schemas/documents.ts`                           | Modify — add `signingMode` field                              |
+| `apps/backend/convex/documents/send_document_action.ts`              | Modify — sequential email dispatch                            |
+| `apps/backend/convex/documents/recipients_mutations.ts`              | Modify — order enforcement gate in `submitRecipientSignature` |
+| `apps/backend/convex/documents/recipients_queries.ts`                | Modify — `getRecipientByToken` returns waiting state          |
+| `apps/backend/convex/documents/recipient_helpers.ts`                 | Modify — add group helper functions                           |
+| `apps/backend/convex/documents/email.ts`                             | Modify — `sendGroupNotification` for next-group activation    |
+| `apps/web/src/routes/sign.$token.tsx`                                | Modify — render "waiting" state when group not active         |
+| `apps/web/src/components/documents/add-recipient-dialog.tsx`         | Modify — sequential mode UI, order group assignment           |
+| `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` | Modify — workflow progress visualization                      |
+| `packages/transactional/`                                            | Modify — "your turn" notification email template              |

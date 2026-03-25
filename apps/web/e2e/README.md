@@ -73,18 +73,21 @@ e2e/
 Create `.env.test` file (see `.env.test.example`):
 
 ```bash
-TEST_USER_EMAIL=test@seal-test.com
-TEST_EMAIL_CODE=424242
+E2E_TEST_USER_EMAIL=seal-e2e+clerk_test@example.com
+E2E_TEST_EMAIL_CODE=424242
+# Optional, for deterministic workspace recovery in setup:
+# E2E_TEST_ORGANIZATION_NAME="Seal E2E Workspace"
+# E2E_TEST_ORGANIZATION_SLUG=seal-e2e-clerk-test
 VITE_CONVEX_URL=https://test-deployment.convex.cloud
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-PLAYWRIGHT_BASE_URL=http://localhost:5173
+PLAYWRIGHT_BASE_URL=http://localhost:5180
 ```
 
 ### Playwright Configuration
 
 Configuration is in `playwright.config.ts`:
 
-- Base URL: `http://localhost:5173`
+- Base URL: `http://localhost:5180`
 - Browsers: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
 - Auto-starts dev server
 - Captures screenshots/videos on failure
@@ -213,9 +216,12 @@ See `.github/workflows/ci.yml` for CI configuration.
 Configure these in GitHub repository settings:
 
 - `TEST_USER_EMAIL`
-- `TEST_EMAIL_CODE`
+- `E2E_TEST_EMAIL_CODE`
 - `VITE_CONVEX_URL_TEST`
 - `VITE_CLERK_PUBLISHABLE_KEY_TEST`
+- `CLERK_TESTING_TOKEN` (if your Clerk test environment requires it)
+- `CLERK_SECRET_KEY` (alternative to `CLERK_TESTING_TOKEN` for some setups)
+- `E2E_TEST_USER_EMAIL`
 
 ## 🎨 Best Practices
 

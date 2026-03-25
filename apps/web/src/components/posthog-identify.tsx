@@ -9,10 +9,10 @@
  */
 
 import { useUser } from "@clerk/clerk-react";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useEffect } from "react";
 
 import { useAnalytics } from "@/hooks/use-analytics";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 interface PostHogIdentifyProps {
   organization: {

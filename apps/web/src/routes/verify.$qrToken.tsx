@@ -7,12 +7,11 @@
  */
 
 import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2Icon, CopyIcon, ShieldXIcon } from "lucide-react";
 import { useState } from "react";
-
-import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/verify/$qrToken")({
   component: VerifyPage,

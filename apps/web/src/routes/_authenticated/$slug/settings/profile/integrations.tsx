@@ -1,3 +1,5 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Activity, Clock, Link2, Unplug } from "lucide-react";
@@ -18,8 +20,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/profile/integrations")({
   component: IntegrationsSettings,

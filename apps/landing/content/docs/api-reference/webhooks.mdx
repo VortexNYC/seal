@@ -11,18 +11,18 @@ The Webhooks API allows you to configure HTTP endpoints that receive real-time n
 
 ### Attributes
 
-| Attribute       | Type   | Description                                                       |
-| --------------- | ------ | ----------------------------------------------------------------- |
-| `id`            | string | Unique webhook identifier                                         |
-| `name`          | string | Human-readable label for this endpoint                            |
-| `url`           | string | HTTPS endpoint URL                                                |
-| `events`        | array  | Array of subscribed event types                                   |
-| `status`        | string | Status: `active`, `paused`, `disabled`                            |
+| Attribute       | Type   | Description                                                                 |
+| --------------- | ------ | --------------------------------------------------------------------------- |
+| `id`            | string | Unique webhook identifier                                                   |
+| `name`          | string | Human-readable label for this endpoint                                      |
+| `url`           | string | HTTPS endpoint URL                                                          |
+| `events`        | array  | Array of subscribed event types                                             |
+| `status`        | string | Status: `active`, `paused`, `disabled`                                      |
 | `secret_prefix` | string | First 12 characters of the HMAC secret (full secret shown once at creation) |
-| `description`   | string | Optional description                                              |
-| `stats`         | object | Delivery stats: `total_deliveries`, `successful`, `failed`, `success_rate` |
-| `created_at`    | string | ISO 8601 creation timestamp                                       |
-| `updated_at`    | string | ISO 8601 last update timestamp                                    |
+| `description`   | string | Optional description                                                        |
+| `stats`         | object | Delivery stats: `total_deliveries`, `successful`, `failed`, `success_rate`  |
+| `created_at`    | string | ISO 8601 creation timestamp                                                 |
+| `updated_at`    | string | ISO 8601 last update timestamp                                              |
 
 ### Example Object
 
@@ -47,7 +47,9 @@ The Webhooks API allows you to configure HTTP endpoints that receive real-time n
 ```
 
 <Callout type="info">
-  **Security**: The full HMAC secret (`whsec_...`) is only returned once, at creation time. Subsequent reads show only `secret_prefix` (the first 12 characters) for identification. Store the secret securely — if lost, use the rotate-secret endpoint to generate a new one.
+  **Security**: The full HMAC secret (`whsec_...`) is only returned once, at creation time.
+  Subsequent reads show only `secret_prefix` (the first 12 characters) for identification. Store the
+  secret securely — if lost, use the rotate-secret endpoint to generate a new one.
 </Callout>
 
 ## List Webhooks

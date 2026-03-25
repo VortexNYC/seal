@@ -81,8 +81,7 @@ test.describe("Dashboard Navigation", () => {
 
     await dashboardPage.goto(organizationSlug);
 
-    // Click Documents link in sidebar
-    await authenticatedPage.getByRole("link", { name: "Documents" }).click();
+    await dashboardPage.navigateToSidebarItem("Workspace", "Documents");
 
     await expect(authenticatedPage).toHaveURL(`/${organizationSlug}/documents`);
   });
@@ -95,8 +94,7 @@ test.describe("Dashboard Navigation", () => {
 
     await dashboardPage.goto(organizationSlug);
 
-    // Click Templates link in sidebar
-    await authenticatedPage.getByRole("link", { name: "Templates" }).click();
+    await dashboardPage.navigateToSidebarItem("Workspace", "Templates");
 
     await expect(authenticatedPage).toHaveURL(`/${organizationSlug}/templates`);
   });
@@ -109,8 +107,7 @@ test.describe("Dashboard Navigation", () => {
 
     await dashboardPage.goto(organizationSlug);
 
-    // Click Analytics link in sidebar
-    await authenticatedPage.getByRole("link", { name: "Analytics" }).click();
+    await dashboardPage.navigateToSidebarItem("Workspace", "Analytics");
 
     await expect(authenticatedPage).toHaveURL(`/${organizationSlug}/analytics`);
   });
@@ -123,10 +120,8 @@ test.describe("Dashboard Navigation", () => {
 
     await dashboardPage.goto(organizationSlug);
 
-    // Click Settings button in sidebar
-    await authenticatedPage.getByRole("button", { name: "Settings" }).click();
+    await dashboardPage.navigateToSidebarItem("Settings", "General");
 
-    // Settings might be a dropdown or direct link
-    await authenticatedPage.waitForTimeout(500);
+    await expect(authenticatedPage).toHaveURL(`/${organizationSlug}/settings`);
   });
 });

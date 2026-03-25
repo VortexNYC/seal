@@ -10,6 +10,7 @@ Allow senders to set an expiration period on documents so that unsigned document
 ## Current State (as of 2026-02-26)
 
 **Already exists:**
+
 - `documents.deadline` field (optional timestamp) — informational only, no enforcement
 - `documents.expirationAlertsSent` array — tracks which day-counts have been alerted
 - `expiration_alerts.ts` — cron that sends owner alert emails when docs approach deadline (daily at 10am UTC)
@@ -18,6 +19,7 @@ Allow senders to set an expiration period on documents so that unsigned document
 - Org settings: `defaultDeadlineDays`, `expirationAlertDays`, `reminderSchedule`
 
 **Does NOT exist (what this feature adds):**
+
 - No automated enforcement — recipients can sign past deadline
 - No `"expired"` workflow status
 - No `"expired"` recipient status
@@ -105,6 +107,7 @@ v.literal("recipient.expired"),
 #### Expiration Computation (in send flow)
 
 The `sendDocumentEmailsInternal` action (in `send_document_action.ts`) is called after `sendDocument` mutation transitions to "sent". This action should:
+
 1. Read the document's `expirationPeriod`
 2. Compute `expiresAt = sentAt + convertToMs(amount, unit)`
 3. Patch each recipient with `expiresAt`
@@ -115,6 +118,7 @@ Conversion: `day` = 86400000ms, `week` = 604800000ms, `month` = 2592000000ms (30
 #### Expiration Sweep Cron (new)
 
 Create `apps/backend/convex/documents/expiration_sweep.ts`:
+
 - Register in `crons.ts`: every 15 minutes, call `internal.documents.expiration_sweep.sweepExpiredRecipients`
 - Query: all `document_recipients` where `expiresAt < Date.now()` AND `status === "pending"` AND `expirationNotifiedAt IS NULL`
 - Process up to 100 recipients per run (Convex mutation time budget)
@@ -144,6 +148,7 @@ This provides instant feedback even between cron sweeps.
 #### Re-send Expired Document
 
 Extend existing resend functionality:
+
 - Reset `expiresAt` on all pending/expired recipients (recompute from now + expirationPeriod)
 - Clear `expirationNotifiedAt`
 - If document is `"expired"`, transition back to `"sent"` (add `expired → sent` to WORKFLOW_TRANSITIONS)
@@ -154,6 +159,7 @@ Extend existing resend functionality:
 #### Send Document Dialog (`send-document-dialog.tsx`)
 
 Replace the raw calendar deadline picker with a preset dropdown:
+
 - Options: None / 7 days / 14 days / 30 days / 60 days / 90 days / Custom
 - Custom: number input (1-365) + unit selector (days/weeks/months)
 - Helper text: "Recipients will have X days to sign after the document is sent"
@@ -163,6 +169,7 @@ Replace the raw calendar deadline picker with a preset dropdown:
 #### Document Expired Page (`document-expired-page.tsx`)
 
 New component — full-screen message for expired signing links:
+
 - Seal logo
 - "This document has expired"
 - "The sender set an expiration date that has passed. Please contact them for a new signing link."
@@ -204,17 +211,17 @@ When multiple features modify the signing page (`sign.$token.tsx`), they must be
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/documents.ts` | Modify — add `expirationPeriod` field |
-| `apps/backend/convex/schemas/recipients.ts` | Modify — add `expiresAt`, `expirationNotifiedAt` fields, add `"expired"` to `recipientStatusTuple` |
-| `apps/backend/convex/schemas/document_workflow_status.ts` | Modify — add `"expired"` literal, update `WORKFLOW_TRANSITIONS`, labels, terminal check |
-| `apps/backend/convex/schemas/audit_logs.ts` | Modify — add `document.expired`, `recipient.expired` actions |
-| `apps/backend/convex/documents/expiration_sweep.ts` | Create — sweep mutation + cron handler |
-| `apps/backend/convex/crons.ts` | Modify — register 15-minute sweep cron |
-| `apps/backend/convex/documents/send_document_action.ts` | Modify — compute `expiresAt` per recipient in send flow |
-| `apps/backend/convex/documents/workflow_helpers.ts` | Modify — update `isTerminalWorkflowStatus` to include `"expired"` |
-| `apps/web/src/routes/sign.$token.tsx` | Modify — add expiration gate before signing flow |
-| `apps/web/src/components/signing/document-expired-page.tsx` | Create — expired message page |
-| `apps/web/src/components/documents/send-document-dialog.tsx` | Modify — replace calendar with preset dropdown |
-| `packages/transactional/emails/document-expired.tsx` | Create — sender notification email |
+| File                                                         | Action                                                                                             |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `apps/backend/convex/schemas/documents.ts`                   | Modify — add `expirationPeriod` field                                                              |
+| `apps/backend/convex/schemas/recipients.ts`                  | Modify — add `expiresAt`, `expirationNotifiedAt` fields, add `"expired"` to `recipientStatusTuple` |
+| `apps/backend/convex/schemas/document_workflow_status.ts`    | Modify — add `"expired"` literal, update `WORKFLOW_TRANSITIONS`, labels, terminal check            |
+| `apps/backend/convex/schemas/audit_logs.ts`                  | Modify — add `document.expired`, `recipient.expired` actions                                       |
+| `apps/backend/convex/documents/expiration_sweep.ts`          | Create — sweep mutation + cron handler                                                             |
+| `apps/backend/convex/crons.ts`                               | Modify — register 15-minute sweep cron                                                             |
+| `apps/backend/convex/documents/send_document_action.ts`      | Modify — compute `expiresAt` per recipient in send flow                                            |
+| `apps/backend/convex/documents/workflow_helpers.ts`          | Modify — update `isTerminalWorkflowStatus` to include `"expired"`                                  |
+| `apps/web/src/routes/sign.$token.tsx`                        | Modify — add expiration gate before signing flow                                                   |
+| `apps/web/src/components/signing/document-expired-page.tsx`  | Create — expired message page                                                                      |
+| `apps/web/src/components/documents/send-document-dialog.tsx` | Modify — replace calendar with preset dropdown                                                     |
+| `packages/transactional/emails/document-expired.tsx`         | Create — sender notification email                                                                 |

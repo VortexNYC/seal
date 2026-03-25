@@ -27,7 +27,7 @@ export const sendWelcomeEmail = internalAction({
     messageId?: string;
     error?: string;
   }> => {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
     const dashboardUrl = `${baseUrl}/dashboard`;
 
     const result = await sendWelcome(ctx, {
@@ -70,7 +70,7 @@ export const sendTeamInvitationEmail = internalAction({
   }> => {
     // Build invite URL - Clerk handles the actual invitation acceptance
     // The URL should point to Clerk's invitation acceptance flow
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
     // Clerk invitation URLs are typically handled through their system
     // We'll create a redirect URL that works with Clerk
     const inviteUrl = `${baseUrl}/sign-in?redirect_url=/accept-invitation/${args.clerkInvitationId}`;

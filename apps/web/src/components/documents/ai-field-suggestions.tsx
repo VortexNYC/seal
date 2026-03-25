@@ -1,3 +1,6 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 import { useMutation, useQuery } from "convex/react";
 import {
   CalendarIcon,
@@ -28,9 +31,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
 
 import { Button } from "../ui/button";
 

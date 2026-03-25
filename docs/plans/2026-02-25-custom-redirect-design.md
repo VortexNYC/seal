@@ -56,6 +56,7 @@ function validateRedirectUrl(url: string): boolean {
 ```
 
 Reject URLs with:
+
 - Non-http/https protocols (`javascript:`, `data:`, `ftp:`, etc.)
 - URLs longer than 2048 characters
 
@@ -96,6 +97,7 @@ if (document.redirectUrl) {
 #### Redirect Countdown Component
 
 New component `RedirectCountdown`:
+
 - Shows: "Signing complete! You will be redirected to **[domain name only]** in 5 seconds..."
 - Countdown timer: 5, 4, 3, 2, 1, then `window.location.href = urlWithParams`
 - "Go now" link to skip countdown
@@ -121,9 +123,9 @@ No new permissions needed. Redirect URL is configured by whoever has `documents:
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Custom redirect URL | No | Yes |
+| Feature             | Free | Pro |
+| ------------------- | ---- | --- |
+| Custom redirect URL | No   | Yes |
 
 Free plan: the redirect URL input is visible but disabled with a "Pro" badge and upgrade prompt.
 
@@ -148,11 +150,11 @@ See the "Signing Page Interaction Order" section in the document-expiration desi
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/documents.ts` | Modify — add `redirectUrl` field |
-| `apps/backend/convex/documents/mutations.ts` | Modify — accept and validate `redirectUrl` |
-| `apps/backend/convex/api/v1/documents.ts` | Modify — accept `redirectUrl` in API |
-| `apps/web/src/routes/sign.$token.tsx` | Modify — check for redirect after signing |
-| `apps/web/src/components/signing/redirect-countdown.tsx` | Create — countdown + redirect component |
-| `apps/web/src/components/documents/document-settings-panel.tsx` | Modify — add redirect URL input |
+| File                                                            | Action                                     |
+| --------------------------------------------------------------- | ------------------------------------------ |
+| `apps/backend/convex/schemas/documents.ts`                      | Modify — add `redirectUrl` field           |
+| `apps/backend/convex/documents/mutations.ts`                    | Modify — accept and validate `redirectUrl` |
+| `apps/backend/convex/api/v1/documents.ts`                       | Modify — accept `redirectUrl` in API       |
+| `apps/web/src/routes/sign.$token.tsx`                           | Modify — check for redirect after signing  |
+| `apps/web/src/components/signing/redirect-countdown.tsx`        | Create — countdown + redirect component    |
+| `apps/web/src/components/documents/document-settings-panel.tsx` | Modify — add redirect URL input            |

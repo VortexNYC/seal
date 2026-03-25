@@ -1,3 +1,4 @@
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   CalendarIcon,
@@ -12,7 +13,6 @@ import {
 import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";

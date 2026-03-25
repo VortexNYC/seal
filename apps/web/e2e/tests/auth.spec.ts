@@ -9,9 +9,14 @@ function getOtpPromptMatcher() {
 }
 
 test.describe("Authentication", () => {
-  test("should redirect unauthenticated users to sign-in", async ({
-    page,
-  }) => {
+  test.use({
+    storageState: {
+      cookies: [],
+      origins: [],
+    },
+  });
+
+  test("should redirect unauthenticated users to sign-in", async ({ page }) => {
     await page.goto("/");
 
     // Users are now redirected to the sign-in flow when not authenticated.
@@ -22,13 +27,17 @@ test.describe("Authentication", () => {
   test("should keep unauthenticated users on sign-in when accessing app", async ({ page }) => {
     await page.goto("/app");
 
-    // Signed-out users should land on an unauthenticated route.
-    await expect(page).toHaveURL(/\/(app|sign-in)/, { timeout: 30000 });
+    await expect(page).toHaveURL("/sign-in", { timeout: 30000 });
+    await expect(page.getByRole("heading", { name: getSignInPromptMatcher() })).toBeVisible();
   });
 
   test("should login with valid credentials", async ({ page }) => {
-    const testEmail = process.env.TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
-    const testEmailCode = process.env.TEST_EMAIL_CODE || "424242";
+    const testEmail =
+      process.env.E2E_TEST_USER_EMAIL ||
+      process.env.TEST_USER_EMAIL ||
+      "sealtest001+clerk_test@example.com";
+    const testEmailCode =
+      process.env.E2E_TEST_EMAIL_CODE || process.env.TEST_EMAIL_CODE || "424242";
 
     // Navigate directly to sign-in page
     await page.goto("/sign-in");
@@ -36,7 +45,7 @@ test.describe("Authentication", () => {
     // Wait for Clerk sign-in component to load
     await expect(
       page.getByRole("heading", { name: getSignInPromptMatcher() }),
-      `Expected sign-in heading ${getSignInPromptMatcher()}`
+      `Expected sign-in heading ${getSignInPromptMatcher()}`,
     ).toBeVisible();
 
     // Fill in email
@@ -46,7 +55,7 @@ test.describe("Authentication", () => {
     // Wait for OTP code screen and inputs to be ready
     await expect(
       page.getByRole("heading", { name: getOtpPromptMatcher() }).first(),
-      `Expected OTP prompt ${getOtpPromptMatcher()}`
+      `Expected OTP prompt ${getOtpPromptMatcher()}`,
     ).toBeVisible();
 
     // Wait a moment for Clerk OTP to initialize
@@ -56,16 +65,18 @@ test.describe("Authentication", () => {
     const singleOtpInput = page
       .locator('input[name="code"], input[autocomplete="one-time-code"]')
       .first();
-    const multiOtpInputs = page.locator('[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]');
+    const multiOtpInputs = page.locator(
+      '[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]',
+    );
     const codeRoleInput = page.getByRole("textbox", { name: /code/i }).first();
 
-    if (await singleOtpInput.count() > 0) {
+    if ((await singleOtpInput.count()) > 0) {
       await singleOtpInput.fill(testEmailCode);
-    } else if (await multiOtpInputs.count() > 1) {
+    } else if ((await multiOtpInputs.count()) > 1) {
       for (let i = 0; i < Math.min(6, testEmailCode.length); i++) {
         await multiOtpInputs.nth(i).fill(testEmailCode[i] ?? "");
       }
-    } else if (await codeRoleInput.count() > 0) {
+    } else if ((await codeRoleInput.count()) > 0) {
       await codeRoleInput.fill(testEmailCode);
     } else {
       await page.keyboard.type(testEmailCode);
@@ -76,7 +87,10 @@ test.describe("Authentication", () => {
   });
 
   test("should show error with invalid credentials", async ({ page }) => {
-    const testEmail = process.env.TEST_USER_EMAIL || "sealtest001+clerk_test@example.com";
+    const testEmail =
+      process.env.E2E_TEST_USER_EMAIL ||
+      process.env.TEST_USER_EMAIL ||
+      "sealtest001+clerk_test@example.com";
 
     // Navigate directly to sign-in page
     await page.goto("/sign-in");
@@ -99,7 +113,9 @@ test.describe("Authentication", () => {
     await page.keyboard.type("000000");
 
     // Should show an auth error message (rate limits and invalid code are both expected).
-    await expect(page.getByText(/incorrect|invalid|wrong|too many requests|try again/i).first()).toBeVisible({
+    await expect(
+      page.getByText(/incorrect|invalid|wrong|too many requests|try again/i).first(),
+    ).toBeVisible({
       timeout: 10000,
     });
   });

@@ -66,8 +66,16 @@
             "Click chevron to collapse/expand"
           ],
           "bugs": [
-            { "id": "BUG-1", "description": "New Folder button always creates at root level — createFolder mutation never passed parentId (activeFolderId). Fixed: pass activeFolderId as parentId.", "fixed": true },
-            { "id": "BUG-2", "description": "Clicking folder chevron expands but doesn't select (navigate) because stopPropagation prevents outer button onClick. Fixed: chevron handler now also calls onFolderSelect, and handleClick also expands.", "fixed": true }
+            {
+              "id": "BUG-1",
+              "description": "New Folder button always creates at root level — createFolder mutation never passed parentId (activeFolderId). Fixed: pass activeFolderId as parentId.",
+              "fixed": true
+            },
+            {
+              "id": "BUG-2",
+              "description": "Clicking folder chevron expands but doesn't select (navigate) because stopPropagation prevents outer button onClick. Fixed: chevron handler now also calls onFolderSelect, and handleClick also expands.",
+              "fixed": true
+            }
           ],
           "notes": "2 bugs found and fixed. Re-tested after fix — nested folder creation and expand/collapse all working."
         },
@@ -133,7 +141,11 @@
             "Verify document disappears from current view and appears in target folder"
           ],
           "bugs": [
-            { "id": "BUG-3", "description": "MoveToFolderDialog has nested <button> inside <button> (chevron inside folder row) causing React warning. Fixed: changed inner <button> to <span role='button' tabIndex={-1}>.", "fixed": true }
+            {
+              "id": "BUG-3",
+              "description": "MoveToFolderDialog has nested <button> inside <button> (chevron inside folder row) causing React warning. Fixed: changed inner <button> to <span role='button' tabIndex={-1}>.",
+              "fixed": true
+            }
           ],
           "notes": "Move dialog works. Document moved from root to Contracts folder. Appears in Contracts view. Minor HTML nesting warning (button in button)."
         },
@@ -193,7 +205,14 @@
         "C": { "name": "Templates + edge cases", "priority": 2, "sessions": 2 },
         "D": { "name": "Layout + UX polish", "priority": 3, "sessions": 1 }
       },
-      "stats": { "total": 10, "pending": 0, "passed": 10, "failed": 0, "bugsFound": 3, "bugsFixed": 3 }
+      "stats": {
+        "total": 10,
+        "pending": 0,
+        "passed": 10,
+        "failed": 0,
+        "bugsFound": 3,
+        "bugsFixed": 3
+      }
     }
   }
 }

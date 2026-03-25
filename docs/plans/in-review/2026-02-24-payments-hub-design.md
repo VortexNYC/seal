@@ -7,6 +7,7 @@ Seal has comprehensive Stripe Connect integration (payouts, balances, disputes, 
 ## Solution
 
 Create a dedicated Payments section in the main workspace sidebar that:
+
 1. Promotes existing Stripe Connect pages from settings to main navigation
 2. Adds a Payments Overview page with revenue summary and transaction list
 3. Adds a Subscriptions page for managing recurring document payments
@@ -32,10 +33,12 @@ Add "Payments" to the workspace sidebar (between Documents and Templates). Uses 
 ### New Backend Queries
 
 **`stripe/revenue_queries.ts`**:
+
 - `getRevenueStats` — Aggregates from `document_invoices`: total revenue, paid count, pending count, monthly trend. Scoped to organization.
 - `getTransactionList` — Paginated list from `document_invoices` joined with document title. Filterable by status (paid/open/void).
 
 **`stripe/subscription_queries.ts`**:
+
 - `getActiveRecurringPayments` — Finds documents with `paymentType: "recurring"` payment fields that have active Stripe subscriptions. Returns subscription details (amount, interval, status, customer).
 - `pauseRecurringPayment` — Calls Stripe API to pause a subscription.
 - `cancelRecurringPayment` — Calls Stripe API to cancel a subscription.
@@ -43,12 +46,14 @@ Add "Payments" to the workspace sidebar (between Documents and Templates). Uses 
 ### New Frontend Pages
 
 **Payments Overview** (`/$slug/payments/index.tsx`):
+
 - 4 summary cards: Total Revenue, Paid Invoices, Pending Invoices, Monthly Revenue
 - Transaction table with columns: Document, Customer, Amount, Status, Date
 - Filters: status, date range
 - Uses existing `permissionQuery("payments:view")` wrapper
 
 **Subscriptions** (`/$slug/payments/subscriptions.tsx`):
+
 - Table of active recurring payments: Document, Customer, Amount, Interval, Status, Next Payment
 - Actions: Pause, Resume, Cancel (with confirmation dialog)
 - Empty state when no recurring payments exist
@@ -57,13 +62,13 @@ Add "Payments" to the workspace sidebar (between Documents and Templates). Uses 
 
 The following pages move from `settings/` to `payments/` with minimal code changes — primarily updating route paths and imports:
 
-| Current Route | New Route |
-|---|---|
-| `settings/payment-history` | `payments/history` |
-| `settings/payouts` | `payments/payouts` |
-| `settings/balances` | `payments/balances` |
-| `settings/disputes` | `payments/disputes` |
-| `settings/tax-documents` | `payments/tax` |
+| Current Route              | New Route           |
+| -------------------------- | ------------------- |
+| `settings/payment-history` | `payments/history`  |
+| `settings/payouts`         | `payments/payouts`  |
+| `settings/balances`        | `payments/balances` |
+| `settings/disputes`        | `payments/disputes` |
+| `settings/tax-documents`   | `payments/tax`      |
 
 The `settings/payments` page (Stripe Connect onboarding) stays in settings since it's a one-time setup flow.
 
@@ -73,25 +78,25 @@ Reuse existing payment-related permissions. Overview and subscriptions pages req
 
 ## Files to Create
 
-| File | Purpose |
-|---|---|
-| `routes/_authenticated/$slug/payments.tsx` | Layout route with sub-navigation |
-| `routes/_authenticated/$slug/payments/index.tsx` | Overview page |
-| `routes/_authenticated/$slug/payments/subscriptions.tsx` | Subscriptions management |
-| `routes/_authenticated/$slug/payments/history.tsx` | Moved from settings |
-| `routes/_authenticated/$slug/payments/payouts.tsx` | Moved from settings |
-| `routes/_authenticated/$slug/payments/balances.tsx` | Moved from settings |
-| `routes/_authenticated/$slug/payments/disputes.tsx` | Moved from settings |
-| `routes/_authenticated/$slug/payments/tax.tsx` | Moved from settings |
-| `convex/stripe/revenue_queries.ts` | Revenue stats and transaction list |
-| `convex/stripe/subscription_queries.ts` | Recurring payment management |
+| File                                                     | Purpose                            |
+| -------------------------------------------------------- | ---------------------------------- |
+| `routes/_authenticated/$slug/payments.tsx`               | Layout route with sub-navigation   |
+| `routes/_authenticated/$slug/payments/index.tsx`         | Overview page                      |
+| `routes/_authenticated/$slug/payments/subscriptions.tsx` | Subscriptions management           |
+| `routes/_authenticated/$slug/payments/history.tsx`       | Moved from settings                |
+| `routes/_authenticated/$slug/payments/payouts.tsx`       | Moved from settings                |
+| `routes/_authenticated/$slug/payments/balances.tsx`      | Moved from settings                |
+| `routes/_authenticated/$slug/payments/disputes.tsx`      | Moved from settings                |
+| `routes/_authenticated/$slug/payments/tax.tsx`           | Moved from settings                |
+| `convex/stripe/revenue_queries.ts`                       | Revenue stats and transaction list |
+| `convex/stripe/subscription_queries.ts`                  | Recurring payment management       |
 
 ## Files to Modify
 
-| File | Change |
-|---|---|
-| Sidebar component | Add Payments nav section |
-| `settings/payments.tsx` | Keep as-is (onboarding) |
+| File                       | Change                                                                |
+| -------------------------- | --------------------------------------------------------------------- |
+| Sidebar component          | Add Payments nav section                                              |
+| `settings/payments.tsx`    | Keep as-is (onboarding)                                               |
 | Remove old settings routes | `payment-history`, `payouts`, `balances`, `disputes`, `tax-documents` |
 
 ## Scope

@@ -2,7 +2,6 @@
  * @fileoverview Audit log tools for the Seal MCP server.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-
 import {
   type ApiAuditLogEntry,
   type ListAuditLogInput,

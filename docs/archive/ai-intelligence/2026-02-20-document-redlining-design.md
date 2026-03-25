@@ -66,6 +66,7 @@ Indexes: `by_document`, `by_organization`. Same pattern as `ai_field_suggestions
 ### Gemini Integration
 
 Extend existing `analyzeFieldsInternal` action:
+
 - Expand Zod schema to include `annotations[]` alongside `fields[]`
 - Expand prompt to request clause annotation with category, severity, bounding box, text, and summary
 - `FieldAnalysisResult` type gains optional `annotations` array
@@ -74,18 +75,21 @@ Extend existing `analyzeFieldsInternal` action:
 ### Pipeline Changes
 
 `processDocument` gains one new step after saving field suggestions:
+
 - Call `saveDocumentAnnotations` mutation with the annotations from the combined result
 - On PDF replace: dismiss existing annotations before saving new ones
 
 ### Frontend
 
 **PDF overlays** (inside TransformComponent):
+
 - Soft pastel semi-transparent highlight behind annotated text regions
 - Only `important` and `critical` severity shown on PDF
 - Muted colors: soft blue (obligations), soft green (payment), soft rose (risk), soft violet (dates), soft amber (terms)
 - Hover → small floating tooltip with one-line summary
 
 **Sidebar "Insights" panel** (right sidebar, collapsible section):
+
 - Flat list of ALL annotations (including informational)
 - Each row: colored severity dot + summary text + page number chip
 - Click → jump to page, annotation pulses once
@@ -94,6 +98,7 @@ Extend existing `analyzeFieldsInternal` action:
 - Master toggle to hide/show all highlights on PDF
 
 **Not building:**
+
 - Category grouping/headers in sidebar
 - Annotation editing or commenting
 - Per-annotation dismiss

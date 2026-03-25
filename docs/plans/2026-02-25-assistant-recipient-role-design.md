@@ -55,7 +55,7 @@ export const recipientRoleTuple = v.union(
   v.literal("signer"),
   v.literal("viewer"),
   v.literal("approver"),
-  v.literal("assistant"),  // New role
+  v.literal("assistant"), // New role
 );
 ```
 
@@ -104,11 +104,13 @@ For parallel signing mode, the system should still enforce that the assistant's 
 #### Email Template
 
 New transactional email: `AssistantRequestEmail`
+
 - Subject: "You've been asked to assist with a document"
 - Body: "Hi [Name], [Sender] has asked you to fill in details for [Document Name] on behalf of [Signer Name]. Please review and complete the required fields."
 - CTA button: "Fill in Fields"
 
 New transactional email: `AssistantCompletedEmail`
+
 - Subject: "Fields have been filled in for your review"
 - Body: "Hi [Signer Name], [Assistant Name] has filled in fields for [Document Name]. Please review the details and add your signature."
 - CTA button: "Review & Sign"
@@ -139,6 +141,7 @@ New transactional email: `AssistantCompletedEmail`
 ### Audit Trail
 
 New audit action types:
+
 - `recipient.assisted` — Assistant submitted fields for another recipient
 - `field.prefilled_by_assistant` — Individual field value set by assistant (optional granularity — may skip v1)
 
@@ -148,9 +151,9 @@ No new permissions needed. Who can add recipients (and thus assign assistants) i
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Assistant role | No | Yes |
+| Feature        | Free | Pro |
+| -------------- | ---- | --- |
+| Assistant role | No   | Yes |
 
 ### What We Skip (v1)
 
@@ -164,14 +167,14 @@ No new permissions needed. Who can add recipients (and thus assign assistants) i
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/document_recipients.ts` | Modify — add `assistant` to role tuple, add `assistingRecipientId` and `assistedAt` fields, add `assisted` status |
-| `apps/backend/convex/documents/mutations.ts` | Modify — update `addRecipient` to handle assistant role validation |
-| `apps/backend/convex/documents/assistant.ts` | Create — `submitAssistantFields` mutation, `getFieldsForAssistant` query |
-| `apps/backend/convex/schemas/audit_logs.ts` | Modify — add `recipient.assisted` action type |
-| `apps/web/src/routes/sign.$token.tsx` | Modify — detect assistant role, render assistant-specific UI |
-| `apps/web/src/components/signing/assistant-signing-view.tsx` | Create — assistant-specific signing page layout |
-| `apps/web/src/components/documents/add-recipient-dialog.tsx` | Modify — add assistant role option and "assisting" recipient picker |
-| `packages/transactional/emails/assistant-request.tsx` | Create — email template for assistant invitation |
-| `packages/transactional/emails/assistant-completed.tsx` | Create — email template for signer notification |
+| File                                                         | Action                                                                                                            |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `apps/backend/convex/schemas/document_recipients.ts`         | Modify — add `assistant` to role tuple, add `assistingRecipientId` and `assistedAt` fields, add `assisted` status |
+| `apps/backend/convex/documents/mutations.ts`                 | Modify — update `addRecipient` to handle assistant role validation                                                |
+| `apps/backend/convex/documents/assistant.ts`                 | Create — `submitAssistantFields` mutation, `getFieldsForAssistant` query                                          |
+| `apps/backend/convex/schemas/audit_logs.ts`                  | Modify — add `recipient.assisted` action type                                                                     |
+| `apps/web/src/routes/sign.$token.tsx`                        | Modify — detect assistant role, render assistant-specific UI                                                      |
+| `apps/web/src/components/signing/assistant-signing-view.tsx` | Create — assistant-specific signing page layout                                                                   |
+| `apps/web/src/components/documents/add-recipient-dialog.tsx` | Modify — add assistant role option and "assisting" recipient picker                                               |
+| `packages/transactional/emails/assistant-request.tsx`        | Create — email template for assistant invitation                                                                  |
+| `packages/transactional/emails/assistant-completed.tsx`      | Create — email template for signer notification                                                                   |

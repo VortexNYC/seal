@@ -72,10 +72,12 @@ bulk_send_recipients:
 Use `@convex-dev/workpool` (already in the project for AI jobs) to process bulk sends without overwhelming Resend rate limits or Convex function timeouts.
 
 **Step 1: Job creation** (mutation)
+
 - Parse CSV, validate all rows, create `bulk_send_jobs` + `bulk_send_recipients` records
 - Status: `preparing`
 
 **Step 2: Batch processing** (workpool action, 5 concurrent workers)
+
 - For each recipient row:
   1. Clone the template document → new document with `bulkSendJobId` reference
   2. Add recipient from CSV data
@@ -86,6 +88,7 @@ Use `@convex-dev/workpool` (already in the project for AI jobs) to process bulk 
 - On failure: set status to `failed`, store error, increment `failedCount`
 
 **Step 3: Completion** (triggered when all recipients processed)
+
 - Set job status to `completed`
 - Send summary email to the sender
 
@@ -109,17 +112,20 @@ Use `@convex-dev/workpool` (already in the project for AI jobs) to process bulk 
 Accessible from template actions dropdown ("Bulk Send") or a dedicated section in the sidebar.
 
 **Bulk Send Job List page** (`/{slug}/bulk-send/`):
+
 - Table of past/active bulk send jobs
 - Columns: Name, Template, Recipients, Progress (bar), Status, Created, Actions
 - Filter by status
 
 **Bulk Send Wizard** (`/{slug}/bulk-send/new?templateId=xxx`):
+
 - Step 1: CSV upload with drag-drop + file picker
 - Step 2: Preview table with inline validation
 - Step 3: Column mapping with dropdowns
 - Step 4: Confirm and send
 
 **Job Detail page** (`/{slug}/bulk-send/{jobId}`):
+
 - Real-time progress bar (Convex live queries)
 - Recipient table with status, link to individual document
 - Bulk actions: Cancel remaining, Retry failed, Export results CSV
@@ -147,13 +153,13 @@ Accessible from template actions dropdown ("Bulk Send") or a dedicated section i
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/bulk_send.ts` | Create — both tables |
-| `apps/backend/convex/schema.ts` | Modify — register tables |
-| `apps/backend/convex/bulk_send/mutations.ts` | Create — job CRUD, CSV parsing |
-| `apps/backend/convex/bulk_send/queries.ts` | Create — job list, detail, recipient list |
-| `apps/backend/convex/bulk_send/actions.ts` | Create — workpool processing |
-| `apps/backend/convex/auth/permissions.ts` | Modify — add bulk_send permissions |
-| `apps/web/src/routes/_authenticated/$slug/bulk-send/` | Create — list, new, detail pages |
-| `apps/web/src/components/app-sidebar.tsx` | Modify — add Bulk Send nav item |
+| File                                                  | Action                                    |
+| ----------------------------------------------------- | ----------------------------------------- |
+| `apps/backend/convex/schemas/bulk_send.ts`            | Create — both tables                      |
+| `apps/backend/convex/schema.ts`                       | Modify — register tables                  |
+| `apps/backend/convex/bulk_send/mutations.ts`          | Create — job CRUD, CSV parsing            |
+| `apps/backend/convex/bulk_send/queries.ts`            | Create — job list, detail, recipient list |
+| `apps/backend/convex/bulk_send/actions.ts`            | Create — workpool processing              |
+| `apps/backend/convex/auth/permissions.ts`             | Modify — add bulk_send permissions        |
+| `apps/web/src/routes/_authenticated/$slug/bulk-send/` | Create — list, new, detail pages          |
+| `apps/web/src/components/app-sidebar.tsx`             | Modify — add Bulk Send nav item           |

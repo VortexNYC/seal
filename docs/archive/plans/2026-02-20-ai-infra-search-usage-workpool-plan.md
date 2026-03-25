@@ -13,6 +13,7 @@
 ## Task 1: Install workpool + aggregate packages
 
 **Files:**
+
 - Modify: `apps/backend/package.json`
 - Modify: `apps/backend/convex/convex.config.ts`
 
@@ -54,6 +55,7 @@ feat(ai): install @convex-dev/workpool and @convex-dev/aggregate
 ## Task 2: Add `ai_usage_log` schema
 
 **Files:**
+
 - Create: `apps/backend/convex/schemas/ai_usage_log.ts`
 - Modify: `apps/backend/convex/schema.ts`
 
@@ -116,6 +118,7 @@ feat(ai): add ai_usage_log schema for usage tracking
 ## Task 3: Create usage tracking helpers
 
 **Files:**
+
 - Create: `apps/backend/convex/ai/usage.ts`
 
 **Step 1:** Create `apps/backend/convex/ai/usage.ts`:
@@ -152,13 +155,13 @@ export const aiUsageAggregate = new TableAggregate<{
 
 /** Estimated cost per 1M tokens by model (input + output blended average). */
 const MODEL_COST_PER_MILLION: Record<string, number> = {
-  "gemini-2.0-flash": 0.10,
-  "gemini-3-flash": 0.10,
+  "gemini-2.0-flash": 0.1,
+  "gemini-3-flash": 0.1,
   "gemini-3-pro": 1.25,
 };
 
 function estimateCost(tokensUsed: number, modelUsed: string): number {
-  const costPerMillion = MODEL_COST_PER_MILLION[modelUsed] ?? 0.10;
+  const costPerMillion = MODEL_COST_PER_MILLION[modelUsed] ?? 0.1;
   return (tokensUsed / 1_000_000) * costPerMillion;
 }
 
@@ -246,6 +249,7 @@ feat(ai): add usage tracking helpers with aggregate counters
 ## Task 4: Create workpool instances and enqueue helper
 
 **Files:**
+
 - Create: `apps/backend/convex/ai/workpool.ts`
 
 **Step 1:** Create `apps/backend/convex/ai/workpool.ts`:
@@ -340,6 +344,7 @@ feat(ai): add workpool instances with Pro/Free priority tiers
 ## Task 5: Replace scheduler.runAfter with workpool in document mutations
 
 **Files:**
+
 - Modify: `apps/backend/convex/documents/mutations.ts`
 
 **Step 1:** Add import at top of file:
@@ -351,46 +356,46 @@ import { enqueueAiPipeline } from "../ai/workpool";
 **Step 2:** In `createDocument` (around line 137-141), replace:
 
 ```ts
-      await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
-        documentId,
-        organizationId: args.organizationId,
-      });
+await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
+  documentId,
+  organizationId: args.organizationId,
+});
 ```
 
 With:
 
 ```ts
-      await enqueueAiPipeline(ctx, ctx.db, documentId, args.organizationId);
+await enqueueAiPipeline(ctx, ctx.db, documentId, args.organizationId);
 ```
 
 **Step 3:** In `replaceDocumentPdf` (around line 660-663), replace:
 
 ```ts
-      await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
-        documentId: args.documentId,
-        organizationId: document.organizationId,
-      });
+await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
+  documentId: args.documentId,
+  organizationId: document.organizationId,
+});
 ```
 
 With:
 
 ```ts
-      await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId);
+await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId);
 ```
 
 **Step 4:** In `restoreDocumentVersion` (around line 767-770), replace:
 
 ```ts
-      await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
-        documentId: args.documentId,
-        organizationId: document.organizationId,
-      });
+await ctx.scheduler.runAfter(0, internal.ai.pipeline.processDocument, {
+  documentId: args.documentId,
+  organizationId: document.organizationId,
+});
 ```
 
 With:
 
 ```ts
-      await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId);
+await enqueueAiPipeline(ctx, ctx.db, args.documentId, document.organizationId);
 ```
 
 **Step 5:** Remove the now-unused `internal` import for `internal.ai.pipeline.processDocument` if it was only used for these calls. Check if `internal` is still used elsewhere in the file — it likely is, so leave the import.
@@ -412,6 +417,7 @@ feat(ai): replace scheduler.runAfter with workpool priority queues
 ## Task 6: Instrument pipeline with usage logging
 
 **Files:**
+
 - Modify: `apps/backend/convex/ai/pipeline.ts`
 
 The pipeline needs to: (a) resolve the userId who triggered it, and (b) log usage after each AI step.
@@ -430,35 +436,35 @@ export const processDocument = internalAction({
 **Step 2:** After the field analysis completes (step 4, after `saveFieldSuggestions`), add usage logging:
 
 ```ts
-      // Log field analysis usage
-      if (args.userId) {
-        await ctx.runMutation(internal.ai.usage.logAiUsage, {
-          organizationId: args.organizationId,
-          userId: args.userId,
-          action: "field_analysis",
-          tokensUsed: result.tokensUsed,
-          durationMs: result.processingTimeMs,
-          documentId: args.documentId,
-          modelUsed: "gemini-3-flash",
-        });
-      }
+// Log field analysis usage
+if (args.userId) {
+  await ctx.runMutation(internal.ai.usage.logAiUsage, {
+    organizationId: args.organizationId,
+    userId: args.userId,
+    action: "field_analysis",
+    tokensUsed: result.tokensUsed,
+    durationMs: result.processingTimeMs,
+    documentId: args.documentId,
+    modelUsed: "gemini-3-flash",
+  });
+}
 ```
 
 **Step 3:** After the redlining step (step 5, after `saveDocumentAnnotations`), add:
 
 ```ts
-        // Log redlining usage
-        if (args.userId) {
-          await ctx.runMutation(internal.ai.usage.logAiUsage, {
-            organizationId: args.organizationId,
-            userId: args.userId,
-            action: "redlining",
-            tokensUsed: result.tokensUsed,
-            durationMs: result.processingTimeMs,
-            documentId: args.documentId,
-            modelUsed: "gemini-3-flash",
-          });
-        }
+// Log redlining usage
+if (args.userId) {
+  await ctx.runMutation(internal.ai.usage.logAiUsage, {
+    organizationId: args.organizationId,
+    userId: args.userId,
+    action: "redlining",
+    tokensUsed: result.tokensUsed,
+    durationMs: result.processingTimeMs,
+    documentId: args.documentId,
+    modelUsed: "gemini-3-flash",
+  });
+}
 ```
 
 **Step 4:** Update the three `enqueueAiPipeline` call sites in `documents/mutations.ts` to also pass `userId`. In the workpool helper `enqueueAiPipeline`, add `userId` parameter and pass it through:
@@ -507,6 +513,7 @@ feat(ai): instrument pipeline with usage logging
 ## Task 7: Instrument search with usage logging
 
 **Files:**
+
 - Modify: `apps/backend/convex/ai/search_queries.ts`
 
 **Step 1:** In `fullSearch`, after the `hybridSearchDocuments` call returns results, add usage logging. We need to estimate tokens (search is lighter — use a rough estimate based on query length + results).
@@ -597,6 +604,7 @@ feat(ai): instrument search with usage logging, remove quickSearch
 ## Task 8: Upgrade command palette — switch to fullSearch with filters
 
 **Files:**
+
 - Modify: `apps/web/src/components/command-palette.tsx`
 
 **Step 1:** Rewrite the command palette to use `fullSearch` instead of `quickSearch`, add filter state, and embed the `SearchFiltersBar` component.
@@ -897,6 +905,7 @@ feat(ai): upgrade Cmd+K to power palette with filters
 ## Task 9: Delete search page and sidebar link
 
 **Files:**
+
 - Delete: `apps/web/src/routes/_authenticated/$slug/search.tsx`
 - Delete: `apps/web/src/components/search/search-filters.tsx`
 - Delete: `apps/web/src/components/search/citation-chip.tsx`
@@ -917,6 +926,7 @@ rm -rf apps/web/src/components/search/
 **Step 3:** In `apps/web/src/components/app-sidebar.tsx`, remove the search nav entry (around line 139-142):
 
 Remove:
+
 ```ts
     {
       title: "Search",
@@ -968,29 +978,32 @@ fix: resolve remaining type/lint issues from AI infra changes
 ## Files Summary
 
 ### New Files
-| File | Purpose |
-|------|---------|
-| `convex/schemas/ai_usage_log.ts` | Schema for AI usage tracking table |
-| `convex/ai/usage.ts` | Usage logging mutations + aggregate counters |
-| `convex/ai/workpool.ts` | Pro/Free workpool instances + enqueue helper |
+
+| File                             | Purpose                                      |
+| -------------------------------- | -------------------------------------------- |
+| `convex/schemas/ai_usage_log.ts` | Schema for AI usage tracking table           |
+| `convex/ai/usage.ts`             | Usage logging mutations + aggregate counters |
+| `convex/ai/workpool.ts`          | Pro/Free workpool instances + enqueue helper |
 
 ### Modified Files
-| File | Changes |
-|------|---------|
-| `convex/convex.config.ts` | Register aggregate + 2 workpool components |
-| `convex/schema.ts` | Add `ai_usage_log` table |
-| `convex/ai/pipeline.ts` | Add userId arg, log usage after each AI step |
-| `convex/ai/search_queries.ts` | Delete quickSearch, add usage logging to fullSearch |
-| `convex/documents/mutations.ts` | Replace scheduler.runAfter with workpool enqueue |
-| `web/components/command-palette.tsx` | Full rewrite — filters, fullSearch, more results |
-| `web/components/app-sidebar.tsx` | Remove search nav link |
+
+| File                                 | Changes                                             |
+| ------------------------------------ | --------------------------------------------------- |
+| `convex/convex.config.ts`            | Register aggregate + 2 workpool components          |
+| `convex/schema.ts`                   | Add `ai_usage_log` table                            |
+| `convex/ai/pipeline.ts`              | Add userId arg, log usage after each AI step        |
+| `convex/ai/search_queries.ts`        | Delete quickSearch, add usage logging to fullSearch |
+| `convex/documents/mutations.ts`      | Replace scheduler.runAfter with workpool enqueue    |
+| `web/components/command-palette.tsx` | Full rewrite — filters, fullSearch, more results    |
+| `web/components/app-sidebar.tsx`     | Remove search nav link                              |
 
 ### Deleted Files
-| File | Reason |
-|------|--------|
-| `web/routes/_authenticated/$slug/search.tsx` | Cmd+K replaces search page |
-| `web/components/search/search-filters.tsx` | Was only used by search page |
-| `web/components/search/citation-chip.tsx` | Was only used by search page |
+
+| File                                         | Reason                       |
+| -------------------------------------------- | ---------------------------- |
+| `web/routes/_authenticated/$slug/search.tsx` | Cmd+K replaces search page   |
+| `web/components/search/search-filters.tsx`   | Was only used by search page |
+| `web/components/search/citation-chip.tsx`    | Was only used by search page |
 
 ---
 

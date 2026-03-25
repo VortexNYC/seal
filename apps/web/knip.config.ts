@@ -17,8 +17,10 @@ const config: KnipConfig = {
     "@radix-ui/*",
     // Design tokens (imported via @seal/tokens/theme subpath — knip can't trace workspace subpath exports)
     "@seal/tokens",
+    // E2E-only dependency used in Playwright auth fixtures outside src/**
+    "@clerk/testing",
   ],
-  ignoreBinaries: ["oxlint", "oxfmt", "knip", "vite", "vitest", "playwright"],
+  ignoreBinaries: ["knip", "oxfmt", "oxlint", "playwright", "vite", "vitest"],
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };

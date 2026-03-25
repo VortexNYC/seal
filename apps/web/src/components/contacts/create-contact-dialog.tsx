@@ -6,6 +6,8 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -38,8 +40,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
 
 interface CreateContactDialogProps {
   open: boolean;

@@ -90,13 +90,9 @@ Add comprehensive event logging to expose timing issues:
 
 ```typescript
 test.beforeEach(async ({ page }) => {
-  page.on("console", (msg) =>
-    console.log(`CONSOLE [${msg.type()}]:`, msg.text()),
-  );
+  page.on("console", (msg) => console.log(`CONSOLE [${msg.type()}]:`, msg.text()));
   page.on("pageerror", (err) => console.error("PAGE ERROR:", err.message));
-  page.on("requestfailed", (req) =>
-    console.error(`REQUEST FAILED: ${req.url()}`),
-  );
+  page.on("requestfailed", (req) => console.error(`REQUEST FAILED: ${req.url()}`));
 });
 ```
 
@@ -189,10 +185,7 @@ await expect(page.locator(".data-row")).toHaveCount(10, { timeout: 10000 });
 
 // ✅ BETTER: Wait for network response, then assert
 const responsePromise = page.waitForResponse(
-  (r) =>
-    r.url().includes("/api/data") &&
-    r.request().method() === "GET" &&
-    r.ok(),
+  (r) => r.url().includes("/api/data") && r.request().method() === "GET" && r.ok(),
 );
 await page.click("#load-data");
 await responsePromise;
@@ -229,10 +222,7 @@ const testUser = { email: "test@example.com", password: "pass123" };
 // ✅ GOOD: Unique data per worker
 import { test as base } from "@playwright/test";
 
-export const test = base.extend<
-  {},
-  { testUser: { email: string; id: string } }
->({
+export const test = base.extend<{}, { testUser: { email: string; id: string } }>({
   testUser: [
     async ({}, use, workerInfo) => {
       const email = `test-${workerInfo.workerIndex}-${Date.now()}@example.com`;
@@ -362,9 +352,7 @@ export default defineConfig({
 // Eliminate external API flakiness
 test.beforeEach(async ({ page }) => {
   // Stub unstable third-party APIs
-  await page.route("**/api.analytics.com/**", (route) =>
-    route.fulfill({ body: "" }),
-  );
+  await page.route("**/api.analytics.com/**", (route) => route.fulfill({ body: "" }));
   await page.route("**/api.payment-provider.com/**", (route) =>
     route.fulfill({ json: { status: "ok" } }),
   );

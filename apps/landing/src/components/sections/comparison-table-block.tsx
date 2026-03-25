@@ -1,5 +1,4 @@
 import { Check, X } from "lucide-react";
-
 import type { ComparisonTableBlock } from "~/lib/content/types";
 
 export function ComparisonTableBlockComponent({ block }: { block: ComparisonTableBlock }) {

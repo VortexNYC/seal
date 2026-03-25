@@ -349,9 +349,7 @@ export const test = base.extend<EmailFixtures>({
       const message = await msgResponse.json();
 
       // Extract verification link from HTML
-      const linkMatch = message.parts[0].body.match(
-        /href="([^"]*verify[^"]*)"/,
-      );
+      const linkMatch = message.parts[0].body.match(/href="([^"]*verify[^"]*)"/);
       return { link: linkMatch?.[1] || "" };
     });
   },

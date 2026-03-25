@@ -192,10 +192,7 @@ test("handles going offline", async ({ page, context }) => {
 ### Test Network Recovery
 
 ```typescript
-test("recovers gracefully when connection returns", async ({
-  page,
-  context,
-}) => {
+test("recovers gracefully when connection returns", async ({ page, context }) => {
   await page.goto("/dashboard");
 
   // Simulate connection drop
@@ -272,9 +269,7 @@ test("shows empty state when no data", async ({ page }) => {
   await page.goto("/items");
 
   await expect(page.getByText("No items yet")).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Create First Item" }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create First Item" })).toBeVisible();
 });
 ```
 

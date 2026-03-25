@@ -13,16 +13,19 @@
 **Last completed work**: Full compliance & security sprint — 9 structured commits pushed covering schemas, crypto (SHA-256 + AES-256-GCM), audit trail hardening, webhook delivery system, document compliance (ESIGN consent, retention, certificates, download tokens), email actions + API wiring, signatures + recipient mutations, frontend improvements (analytics dashboard, ESIGN consent dialog, advanced field types), and CI/CD + docs.
 
 **Next up**: Mobile optimization (#13). We did a full audit of mobile readiness and found:
+
 - **Signing page (recipient side)**: Already mobile-ready (responsive layout, touch signature capture, safe-area padding)
 - **Document editor (sender side)**: NOT mobile-ready — field placement uses HTML5 Drag & Drop which doesn't work on touch devices
 
 **Agreed plan for mobile fixes** (in priority order):
+
 1. **Tap-to-place fields** (HIGH) — Tap a field type in toolbar → tap on canvas to place it. Sidesteps HTML5 DnD limitation entirely.
 2. **Bottom sheet for field toolbar on mobile** (MEDIUM) — Replace sidebar toolbar with a bottom sheet on small screens so users don't have to scroll past the document.
 3. **Larger Konva transform handles on touch** (LOW) — Make resize handles bigger for finger targets.
 4. **Touch-drag for placed fields** (LOW) — Already works via Konva's built-in touch support.
 
 **Files to modify**:
+
 - `apps/web/src/components/documents/field-toolbar.tsx` — Add tap-to-select mode alongside drag
 - `apps/web/src/components/documents/pdf-canvas-layer.tsx` — Add tap-to-place handler on canvas
 - `apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx` — Wire up tap-to-place state, add mobile bottom sheet
@@ -311,25 +314,25 @@
 
 ## Summary Stats
 
-*Updated: 2026-02-18*
+_Updated: 2026-02-18_
 
-| Category | Total Items | Done | Blockers Left |
-|----------|-------------|------|---------------|
-| Crypto / Signatures (#9) | 6 | 6 | 0 |
-| Mobile (#13) | 6 | 2 | 0 |
-| Notifications & Onboarding (#14) | 5 | 1 | 0 |
-| REST API (#15) | 1 | 1 | 0 |
-| Webhooks (#16) | 6 | 6 | 0 |
-| Testing (#17) | 10 | 0 | 0 |
-| Security & Compliance (#18) | 28 | 26 | 0 |
-| Production Deployment (#19) | 5 | 3 | 0 |
-| Launch Prep (#20) | 6 | 2 | 0 |
-| Advanced Field Types | 4 | 4 | 0 |
-| Other (sharing, analytics) | 2 | 1 | 0 |
-| **Total** | **79** | **52** | **0** |
+| Category                         | Total Items | Done   | Blockers Left |
+| -------------------------------- | ----------- | ------ | ------------- |
+| Crypto / Signatures (#9)         | 6           | 6      | 0             |
+| Mobile (#13)                     | 6           | 2      | 0             |
+| Notifications & Onboarding (#14) | 5           | 1      | 0             |
+| REST API (#15)                   | 1           | 1      | 0             |
+| Webhooks (#16)                   | 6           | 6      | 0             |
+| Testing (#17)                    | 10          | 0      | 0             |
+| Security & Compliance (#18)      | 28          | 26     | 0             |
+| Production Deployment (#19)      | 5           | 3      | 0             |
+| Launch Prep (#20)                | 6           | 2      | 0             |
+| Advanced Field Types             | 4           | 4      | 0             |
+| Other (sharing, analytics)       | 2           | 1      | 0             |
+| **Total**                        | **79**      | **52** | **0**         |
 
 **All 16 blockers resolved.**
 
 ---
 
-*Generated from codebase audit on 2026-02-18. Cross-referenced against `development-roadmap.md`, `compliance-implementation-checklist.md`, `CLAUDE.md` Known Issues, and `future-work.md`.*
+_Generated from codebase audit on 2026-02-18. Cross-referenced against `development-roadmap.md`, `compliance-implementation-checklist.md`, `CLAUDE.md` Known Issues, and `future-work.md`._

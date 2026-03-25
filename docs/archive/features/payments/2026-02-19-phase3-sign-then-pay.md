@@ -14,14 +14,14 @@
 
 ### Approved Decisions (from gap analysis)
 
-| Hole | Decision | Option |
-|------|----------|--------|
-| 1. `waiting_for_payment` cascades | Full new workflow status | A |
-| 2. Shared `retrieveClientSecret` helper | Extract into `payment_field_actions.ts` | A |
-| 3. `send_invoice` + PaymentIntent | Confirmed NOT a blocker — `confirmation_secret` works | — |
-| 4. `client_secret` storage | On-demand retrieval (no DB storage) | B |
-| 5. Signing page auth for `client_secret` | New public action `getPaymentSecret` with token auth | A |
-| 6. Multi-signer timing | Payment after ALL signers complete | A |
+| Hole                                     | Decision                                              | Option |
+| ---------------------------------------- | ----------------------------------------------------- | ------ |
+| 1. `waiting_for_payment` cascades        | Full new workflow status                              | A      |
+| 2. Shared `retrieveClientSecret` helper  | Extract into `payment_field_actions.ts`               | A      |
+| 3. `send_invoice` + PaymentIntent        | Confirmed NOT a blocker — `confirmation_secret` works | —      |
+| 4. `client_secret` storage               | On-demand retrieval (no DB storage)                   | B      |
+| 5. Signing page auth for `client_secret` | New public action `getPaymentSecret` with token auth  | A      |
+| 6. Multi-signer timing                   | Payment after ALL signers complete                    | A      |
 
 ### Key Stripe API Facts (validated via Stripe MCP)
 
@@ -60,6 +60,7 @@
 ## Task 1: Add `waiting_for_payment` to Workflow Status Schema
 
 **Files:**
+
 - Modify: `apps/backend/convex/schemas/document_workflow_status.ts`
 
 **Step 1: Add the new status literal to the union**
@@ -81,6 +82,7 @@ export const documentWorkflowStatusTuple = v.union(
 **Step 2: Update the transitions map**
 
 Add `waiting_for_payment` transitions:
+
 - `in_progress` can now transition to `waiting_for_payment`
 - `waiting_for_payment` can transition to `completed` or `cancelled`
 
@@ -127,6 +129,7 @@ Expected: Compile errors in other files that reference `DocumentWorkflowStatus` 
 ## Task 2: Update Workflow Helper Functions
 
 **Files:**
+
 - Modify: `apps/backend/convex/documents/workflow_helpers.ts`
 
 **Step 1: Update `isTerminalWorkflowStatus`**
@@ -168,6 +171,7 @@ Run: `cd /Users/shlomokabareti/Projects/Seal && bun --bun run typecheck`
 ## Task 3: Update Frontend Status Displays
 
 **Files:**
+
 - Modify: `apps/web/src/components/documents/workflow-status-badge.tsx`
 - Modify: `apps/web/src/components/documents/document-status-hero.tsx`
 - Modify: `apps/web/src/lib/formatting.ts`
@@ -188,6 +192,7 @@ export type DocumentWorkflowStatus =
 ```
 
 Add to `STATUS_CONFIG`:
+
 ```typescript
 waiting_for_payment: {
   label: "Awaiting Payment",
@@ -231,6 +236,7 @@ export function getStatusLabel(
 ```
 
 Add the case:
+
 ```typescript
 waiting_for_payment: "Awaiting Payment",
 ```
@@ -262,6 +268,7 @@ git commit -m "feat: add waiting_for_payment workflow status for sign-then-pay f
 ## Task 4: Modify Workflow Completion to Check Payment Fields
 
 **Files:**
+
 - Modify: `apps/backend/convex/documents/workflow_mutations.ts` (lines ~330-392, `checkAndCompleteWorkflow`)
 
 **Step 1: Add payment field check before completing**
@@ -325,6 +332,7 @@ git commit -m "feat: route to waiting_for_payment when document has unpaid payme
 ## Task 5: Add `getPaymentSecret` Action for Signing Page
 
 **Files:**
+
 - Create or modify: `apps/backend/convex/stripe/payment_field_actions.ts`
 
 This is the critical action that retrieves the `client_secret` on-demand from Stripe for the PaymentElement. It uses token-based authentication (same as the signing page) rather than requiring a logged-in user.
@@ -348,10 +356,9 @@ export const getPaymentSecret = action({
   },
   handler: async (ctx, { token, configId }) => {
     // 1. Validate the recipient token
-    const recipient = await ctx.runQuery(
-      internal.recipients.queries.findRecipientByToken,
-      { token },
-    );
+    const recipient = await ctx.runQuery(internal.recipients.queries.findRecipientByToken, {
+      token,
+    });
     if (!recipient) {
       throw new ConvexError("Invalid or expired token");
     }
@@ -380,10 +387,9 @@ export const getPaymentSecret = action({
     }
 
     // 5. Get the connected account's Stripe account ID
-    const stripeAccount = await ctx.runQuery(
-      internal.stripe.connect_mutations.getAccountByOrgId,
-      { organizationId: config.organizationId },
-    );
+    const stripeAccount = await ctx.runQuery(internal.stripe.connect_mutations.getAccountByOrgId, {
+      organizationId: config.organizationId,
+    });
     if (!stripeAccount?.stripeAccountId) {
       throw new ConvexError("Stripe account not found for this organization");
     }
@@ -397,8 +403,9 @@ export const getPaymentSecret = action({
     );
 
     // The confirmation_secret contains the PaymentIntent's client_secret
-    const clientSecret = (invoice as Stripe.Invoice & { confirmation_secret?: { client_secret: string } })
-      .confirmation_secret?.client_secret;
+    const clientSecret = (
+      invoice as Stripe.Invoice & { confirmation_secret?: { client_secret: string } }
+    ).confirmation_secret?.client_secret;
 
     if (!clientSecret) {
       throw new ConvexError("Unable to retrieve payment secret — invoice may not be finalized");
@@ -462,10 +469,12 @@ git commit -m "feat: add getPaymentSecret action for inline payment on signing p
 ## Task 6: Extend `invoice.paid` Webhook to Complete Documents
 
 **Files:**
+
 - Modify: `apps/backend/convex/stripe/connect_webhook_handlers.ts`
 - Modify: `apps/backend/convex/payment_fields/mutations.ts`
 
 When `invoice.paid` fires:
+
 1. Update the payment config status to `paid` (already works)
 2. Check if ALL payment configs for the document are now paid
 3. If yes AND document is `waiting_for_payment`, transition to `completed`
@@ -518,10 +527,9 @@ async function handleInvoicePaid(ctx: HttpActionCtx, invoice: Stripe.Invoice): P
 
   // If a payment config was updated, check if the document can now complete
   if (result?.documentId) {
-    await ctx.runMutation(
-      internal.documents.workflow_mutations.checkPaymentCompletionAndFinalize,
-      { documentId: result.documentId },
-    );
+    await ctx.runMutation(internal.documents.workflow_mutations.checkPaymentCompletionAndFinalize, {
+      documentId: result.documentId,
+    });
   }
 }
 ```
@@ -635,6 +643,7 @@ git commit -m "feat: complete document when all payments collected via invoice.p
 ## Task 7: Create Inline PaymentElement Component
 
 **Files:**
+
 - Create: `apps/web/src/components/documents/field-inputs/payment-field-inline.tsx`
 - Modify: `apps/web/src/components/documents/field-inputs/payment-field-summary.tsx`
 - Modify: `apps/web/src/components/documents/field-inputs/index.ts`
@@ -642,6 +651,7 @@ git commit -m "feat: complete document when all payments collected via invoice.p
 **Step 1: Create `payment-field-inline.tsx`**
 
 This component:
+
 1. Fetches the `client_secret` from `getPaymentSecret` action
 2. Initializes Stripe.js with the connected account
 3. Renders PaymentElement
@@ -876,9 +886,11 @@ git commit -m "feat: add inline PaymentElement for signing page payment flow"
 ## Task 8: Wire Up Signing Page to Show Inline Payment
 
 **Files:**
+
 - Modify: `apps/web/src/routes/sign.$token.tsx`
 
 The signing page already queries `payment_field_configs` (line 113). When the document is in `waiting_for_payment` state:
+
 1. Show a banner: "All signatures collected. Please complete payment below."
 2. Render `PaymentFieldSummary` with `showInlinePayment={true}` and `token={token}`
 3. After successful payment, the `invoice.paid` webhook handles the transition automatically — the Convex reactive query will update the UI in real-time.
@@ -886,6 +898,7 @@ The signing page already queries `payment_field_configs` (line 113). When the do
 **Step 1: Pass token and payment context to field rendering**
 
 The signing page renders fields through `field-input-manager`. Thread through:
+
 - `token` from the URL params
 - `showInlinePayment` based on document `workflowStatus === "waiting_for_payment"`
 

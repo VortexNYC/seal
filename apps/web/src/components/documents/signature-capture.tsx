@@ -11,6 +11,8 @@
  */
 
 import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 import { useQuery } from "@tanstack/react-query";
 import { useMutation } from "convex/react";
 import {
@@ -51,8 +53,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 
 type SignatureType = "drawn" | "typed" | "uploaded";
 type TabType = SignatureType | "saved";

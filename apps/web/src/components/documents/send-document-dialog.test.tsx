@@ -1,7 +1,6 @@
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 // Mock convex/react — must be hoisted before importing the component
 const mockUseAction = vi.fn();

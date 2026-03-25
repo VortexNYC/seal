@@ -5,6 +5,8 @@
  * Route: /{slug}/*
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { type ErrorComponentProps, createFileRoute, Outlet } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
@@ -19,8 +21,6 @@ import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout
 import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/_authenticated/$slug")({
   component: WorkspaceLayout,

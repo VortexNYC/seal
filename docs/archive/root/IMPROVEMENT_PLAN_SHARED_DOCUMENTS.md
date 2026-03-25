@@ -8,13 +8,13 @@ Enhance the document sharing experience by consolidating duplicate UI components
 
 ## Status Summary
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| Phase 1: UI Consolidation | ✅ Complete | ShareDocumentDialog integrated, old dialog removed |
-| Phase 2: Notifications | ✅ Complete | In-app + email notifications, retry logic |
-| Phase 3: Access Control | ✅ Complete | Subscription gates, lapse handling, member removal |
-| Phase 4: Testing | ✅ Complete | E2E + integration tests; advanced edge cases deferred |
-| Phase 5: Code Quality | ✅ Core complete | Extracted access control, validation, audit trail; performance/real-time deferred |
+| Phase                     | Status           | Notes                                                                             |
+| ------------------------- | ---------------- | --------------------------------------------------------------------------------- |
+| Phase 1: UI Consolidation | ✅ Complete      | ShareDocumentDialog integrated, old dialog removed                                |
+| Phase 2: Notifications    | ✅ Complete      | In-app + email notifications, retry logic                                         |
+| Phase 3: Access Control   | ✅ Complete      | Subscription gates, lapse handling, member removal                                |
+| Phase 4: Testing          | ✅ Complete      | E2E + integration tests; advanced edge cases deferred                             |
+| Phase 5: Code Quality     | ✅ Core complete | Extracted access control, validation, audit trail; performance/real-time deferred |
 
 ## Development Priority
 

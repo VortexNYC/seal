@@ -13,9 +13,11 @@
 ### Task 1: Add Payments section to sidebar navigation
 
 **Files:**
+
 - Modify: `apps/web/src/components/app-sidebar.tsx:113-272`
 
 **Context:** The sidebar in `app-sidebar.tsx` has a `buildNavSections()` function (line 113) that returns an array of nav sections. Currently there are 3 sections: Workspace, Settings, Developer. Each section has `title`, `icon`, and `items[]` (each item: `title`, `url`, `visible`, optional `exactMatch`). Payment-related items are currently inside the `settingsItems` array (lines 183-207) gated by `hasStripeConnect`. We need to:
+
 1. Move payment items out of `settingsItems` into a new `paymentsItems` array
 2. Add a new "Payments" section between Workspace and Settings
 3. Point URLs to new `/$slug/payments/*` routes instead of `/$slug/settings/*`
@@ -27,50 +29,58 @@
 In `apps/web/src/components/app-sidebar.tsx`, add `CreditCard` to the lucide-react import on line 6:
 
 ```typescript
-import { Code2, CreditCard, LayoutTemplate, type LucideIcon, Moon, Settings, Sun } from "lucide-react";
+import {
+  Code2,
+  CreditCard,
+  LayoutTemplate,
+  type LucideIcon,
+  Moon,
+  Settings,
+  Sun,
+} from "lucide-react";
 ```
 
 Then in `buildNavSections()`, after the `workspaceItems` array (line 148) and before the `settingsItems` array (line 150), add:
 
 ```typescript
-  const paymentsItems = [
-    {
-      title: "Overview",
-      url: buildOrganizationPath(slug, "/payments"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-      exactMatch: true,
-    },
-    {
-      title: "Subscriptions",
-      url: buildOrganizationPath(slug, "/payments/subscriptions"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "History",
-      url: buildOrganizationPath(slug, "/payments/history"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Payouts",
-      url: buildOrganizationPath(slug, "/payments/payouts"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Balances",
-      url: buildOrganizationPath(slug, "/payments/balances"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Disputes",
-      url: buildOrganizationPath(slug, "/payments/disputes"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-    },
-    {
-      title: "Tax Documents",
-      url: buildOrganizationPath(slug, "/payments/tax"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
-    },
-  ].filter((item) => item.visible);
+const paymentsItems = [
+  {
+    title: "Overview",
+    url: buildOrganizationPath(slug, "/payments"),
+    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+    exactMatch: true,
+  },
+  {
+    title: "Subscriptions",
+    url: buildOrganizationPath(slug, "/payments/subscriptions"),
+    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+  },
+  {
+    title: "History",
+    url: buildOrganizationPath(slug, "/payments/history"),
+    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+  },
+  {
+    title: "Payouts",
+    url: buildOrganizationPath(slug, "/payments/payouts"),
+    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+  },
+  {
+    title: "Balances",
+    url: buildOrganizationPath(slug, "/payments/balances"),
+    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+  },
+  {
+    title: "Disputes",
+    url: buildOrganizationPath(slug, "/payments/disputes"),
+    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+  },
+  {
+    title: "Tax Documents",
+    url: buildOrganizationPath(slug, "/payments/tax"),
+    visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+  },
+].filter((item) => item.visible);
 ```
 
 Then remove the 5 payment items from `settingsItems` (lines 183-207 — Payment History, Payouts, Balances, Disputes, Tax Documents). Keep the "Payments" item (line 179-182) that links to `settings/payments` for Stripe Connect onboarding, but rename it to "Stripe Connect" so it's clear:
@@ -86,28 +96,28 @@ Then remove the 5 payment items from `settingsItems` (lines 183-207 — Payment 
 Finally, add the Payments section to the `sections` array (line 229). Insert it between Workspace and Settings:
 
 ```typescript
-  const sections = [
-    {
-      title: "Workspace",
-      icon: LayoutTemplate,
-      items: workspaceItems,
-    },
-    {
-      title: "Payments",
-      icon: CreditCard,
-      items: paymentsItems,
-    },
-    {
-      title: "Settings",
-      icon: Settings,
-      items: settingsItems,
-    },
-    {
-      title: "Developer",
-      icon: Code2,
-      items: developerItems,
-    },
-  ];
+const sections = [
+  {
+    title: "Workspace",
+    icon: LayoutTemplate,
+    items: workspaceItems,
+  },
+  {
+    title: "Payments",
+    icon: CreditCard,
+    items: paymentsItems,
+  },
+  {
+    title: "Settings",
+    icon: Settings,
+    items: settingsItems,
+  },
+  {
+    title: "Developer",
+    icon: Code2,
+    items: developerItems,
+  },
+];
 ```
 
 **Step 2: Verify typecheck**
@@ -127,6 +137,7 @@ git commit -m "feat: add Payments section to sidebar navigation"
 ### Task 2: Create payments layout route
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/payments.tsx`
 
 **Context:** TanStack Router file-based routing uses a layout route file (e.g., `payments.tsx`) to wrap all child routes under `/$slug/payments/*`. This file renders an `<Outlet />` for child routes. Currently, settings pages do NOT have a layout route — each page is standalone. But the design calls for the payments pages to be grouped under a single `/$slug/payments/` prefix. The layout route just passes through to child routes without adding extra UI.
@@ -164,6 +175,7 @@ git commit -m "feat: add payments layout route"
 ### Task 3: Move existing payment pages to new route group
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/payments/history.tsx`
 - Create: `apps/web/src/routes/_authenticated/$slug/payments/payouts.tsx`
 - Create: `apps/web/src/routes/_authenticated/$slug/payments/balances.tsx`
@@ -442,6 +454,7 @@ git commit -m "feat: move payment pages from settings to payments route group"
 ### Task 4: Create backend revenue queries
 
 **Files:**
+
 - Create: `apps/backend/convex/stripe/revenue_queries.ts`
 
 **Context:** Revenue data lives in the `document_invoices` table which has an `by_organization` index. We need two queries: `getRevenueStats` (aggregate cards) and `getTransactionList` (paginated table). Both use `memberQuery` wrapper (same as `connect_queries.ts`) which ensures the user is a member of the organization. The `memberQuery` wrapper provides `ctx.auth.organization._id` for scoping.
@@ -577,6 +590,7 @@ git commit -m "feat: add revenue stats and transaction list queries"
 ### Task 5: Create backend subscription queries and actions
 
 **Files:**
+
 - Create: `apps/backend/convex/stripe/subscription_queries.ts`
 
 **Context:** Active subscriptions are tracked in `payment_field_configs` where `paymentType === "recurring"` and `stripeSubscriptionId` is set. There's a `by_organization` index on that table. For pause/cancel we need Stripe API calls, which must run in `"use node"` actions. The existing `connect_actions.ts` pattern shows how to initialize Stripe and use `createAccountSession`. We follow the same pattern.
@@ -761,6 +775,7 @@ git commit -m "feat: add subscription queries and Stripe management actions"
 ### Task 6: Create Payments Overview page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/payments/index.tsx`
 
 **Context:** This is the main landing page for `/$slug/payments/`. It shows 4 revenue summary cards and a transactions table. It uses the `getRevenueStats` and `getTransactionList` queries from Task 4. The page gates on Stripe Connect status (same pattern as all other payment pages). Uses `PageWrapper` for the page layout.
@@ -1025,6 +1040,7 @@ git commit -m "feat: add payments overview page with revenue cards and transacti
 ### Task 7: Create Subscriptions management page
 
 **Files:**
+
 - Create: `apps/web/src/routes/_authenticated/$slug/payments/subscriptions.tsx`
 
 **Context:** This page lists active recurring payment configs with their Stripe subscription IDs. Users can pause, resume, or cancel subscriptions. Uses the `getActiveSubscriptions` query from Task 5 and the `pauseSubscription`, `resumeSubscription`, `cancelSubscription` actions. Needs an `AlertDialog` for destructive cancel action (per ui-skills: "MUST use AlertDialog for destructive or irreversible actions"). The `stripeAccountId` needed for actions comes from the `connectedAccount` query's `account.stripeAccountId`.
@@ -1320,6 +1336,7 @@ Expected: PASS — all workspaces build successfully
 **Step 4: Verify route tree generation**
 
 Check that `apps/web/src/routeTree.gen.ts` includes the new payment routes. Look for:
+
 - `/_authenticated/$slug/payments`
 - `/_authenticated/$slug/payments/history`
 - `/_authenticated/$slug/payments/payouts`
@@ -1329,6 +1346,7 @@ Check that `apps/web/src/routeTree.gen.ts` includes the new payment routes. Look
 - `/_authenticated/$slug/payments/subscriptions`
 
 And that old settings routes are removed:
+
 - NO `/_authenticated/$slug/settings/payment-history`
 - NO `/_authenticated/$slug/settings/payouts`
 - NO `/_authenticated/$slug/settings/balances`
@@ -1359,9 +1377,9 @@ Expected: All commits pushed successfully
 
 ## Summary of Changes
 
-| Area | What Changed |
-|------|-------------|
+| Area        | What Changed                                                                                                                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Sidebar** | New "Payments" section with CreditCard icon between Workspace and Settings. 7 items: Overview, Subscriptions, History, Payouts, Balances, Disputes, Tax Documents. Existing "Payments" in Settings renamed to "Stripe Connect". |
-| **Routes** | 8 new route files under `payments/`. 5 old settings routes deleted. 1 layout route. |
-| **Backend** | 2 new query files: `revenue_queries.ts` (stats + transactions), `subscription_queries.ts` (active subscriptions). 1 new action file: `subscription_actions.ts` (pause/resume/cancel). |
-| **Pages** | Payments Overview with 4 revenue cards + filterable transaction table. Subscriptions page with pause/resume/cancel. 5 moved Stripe Connect pages. |
+| **Routes**  | 8 new route files under `payments/`. 5 old settings routes deleted. 1 layout route.                                                                                                                                             |
+| **Backend** | 2 new query files: `revenue_queries.ts` (stats + transactions), `subscription_queries.ts` (active subscriptions). 1 new action file: `subscription_actions.ts` (pause/resume/cancel).                                           |
+| **Pages**   | Payments Overview with 4 revenue cards + filterable transaction table. Subscriptions page with pause/resume/cancel. 5 moved Stripe Connect pages.                                                                               |

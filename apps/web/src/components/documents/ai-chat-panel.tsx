@@ -1,6 +1,7 @@
 import { useUIMessages } from "@convex-dev/agent/react";
 import { optimisticallySendMessage } from "@convex-dev/agent/react";
 import { useSmoothText } from "@convex-dev/agent/react";
+import { api } from "@seal/backend/convex/_generated/api";
 import { useMutation } from "convex/react";
 import {
   BotIcon,
@@ -15,7 +16,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
 
 import { Button } from "../ui/button";
 import { parseTextWithCitations } from "./citation-chip";

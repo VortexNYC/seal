@@ -1,6 +1,5 @@
-import { useState } from "react";
-
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useState } from "react";
 
 type RecipientToRemove = {
   id: Id<"document_recipients">;

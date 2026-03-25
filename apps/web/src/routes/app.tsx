@@ -1,11 +1,11 @@
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
+import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 
 import Loader from "@/components/loader";
 import { buildOrganizationPath } from "@/lib/organization-path";
-import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/app")({
   component: AppRedirect,

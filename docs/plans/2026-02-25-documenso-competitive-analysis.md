@@ -17,23 +17,24 @@ Documenso is a well-funded, VC-backed open-source e-signing platform built on Ne
 
 ## Tech Stack Comparison
 
-| Dimension | Documenso | Seal |
-|-----------|-----------|------|
-| **Frontend** | Remix (migrated from Next.js) | React 19 + TanStack Router + Vite |
-| **Backend** | Next.js API / tRPC | Convex (serverless BaaS) |
-| **Database** | PostgreSQL + Prisma + Kysely | Convex (built-in) |
-| **Auth** | Custom (next-auth → Remix auth) | Clerk |
-| **Payments** | Stripe subscriptions | Stripe (Connect + subscriptions) |
-| **PDF** | LibPDF (their own library!) | pdf-lib + pdfjs-dist + @signpdf |
-| **Email** | React Email + custom SMTP | Resend + React Email |
-| **Webhooks** | Built-in with call logging | Svix-based with HMAC-SHA256 |
-| **API** | REST V1 (deprecated) + V2 | REST V1 with Clerk API keys |
-| **Hosting** | Self-hosted + Cloud | Cloud only (Convex) |
-| **License** | AGPL-3.0 | Proprietary |
-| **Language** | TypeScript | TypeScript |
-| **Stars** | 12.4K | N/A (private) |
+| Dimension    | Documenso                       | Seal                              |
+| ------------ | ------------------------------- | --------------------------------- |
+| **Frontend** | Remix (migrated from Next.js)   | React 19 + TanStack Router + Vite |
+| **Backend**  | Next.js API / tRPC              | Convex (serverless BaaS)          |
+| **Database** | PostgreSQL + Prisma + Kysely    | Convex (built-in)                 |
+| **Auth**     | Custom (next-auth → Remix auth) | Clerk                             |
+| **Payments** | Stripe subscriptions            | Stripe (Connect + subscriptions)  |
+| **PDF**      | LibPDF (their own library!)     | pdf-lib + pdfjs-dist + @signpdf   |
+| **Email**    | React Email + custom SMTP       | Resend + React Email              |
+| **Webhooks** | Built-in with call logging      | Svix-based with HMAC-SHA256       |
+| **API**      | REST V1 (deprecated) + V2       | REST V1 with Clerk API keys       |
+| **Hosting**  | Self-hosted + Cloud             | Cloud only (Convex)               |
+| **License**  | AGPL-3.0                        | Proprietary                       |
+| **Language** | TypeScript                      | TypeScript                        |
+| **Stars**    | 12.4K                           | N/A (private)                     |
 
 ### Architecture Insight
+
 Documenso uses a **traditional monolith** (PostgreSQL + Prisma ORM) which means they handle their own scaling, migrations, and infra. Seal's Convex backend gives us **real-time by default**, automatic scaling, and no database management. This is a significant operational advantage.
 
 They built **LibPDF** — their own TypeScript PDF library that replaces pdf-lib. This is impressive and worth watching. It handles parsing, generation, forms, encryption, and digital signatures.
@@ -43,6 +44,7 @@ They built **LibPDF** — their own TypeScript PDF library that replaces pdf-lib
 ## Feature-by-Feature Gap Analysis
 
 ### Legend
+
 - ✅ = Has feature
 - ❌ = Missing
 - 🟡 = Partial / In progress
@@ -50,148 +52,148 @@ They built **LibPDF** — their own TypeScript PDF library that replaces pdf-lib
 
 ### Core Signing
 
-| Feature | Documenso | Seal | Gap Owner |
-|---------|-----------|------|-----------|
-| Draw signature | ✅ | ✅ | Parity |
-| Type signature | ✅ | ✅ | Parity |
-| Upload signature | ✅ | ✅ | Parity |
-| Saved signatures | ❌ | ✅ | **Seal wins** |
-| Initials field | ✅ | ✅ | Parity |
-| Text field | ✅ | ✅ | Parity |
-| Date field | ✅ | ✅ | Parity |
-| Number field | ✅ | ✅ | Parity |
-| Checkbox field | ✅ | ✅ | Parity |
-| Radio field | ✅ | ✅ | Parity |
-| Dropdown field | ✅ | ✅ | Parity |
-| Email field | ✅ | ✅ | Parity |
-| Name field | ✅ | ✅ | Parity |
-| File upload field | ❌ | ✅ | **Seal wins** |
-| Payment field | ❌ | ✅ | **Seal wins** |
-| Digital signatures (cert-based) | ✅ | ✅ | Parity |
-| ESIGN consent flow | ❌ (implied) | ✅ | **Seal wins** |
+| Feature                         | Documenso    | Seal | Gap Owner     |
+| ------------------------------- | ------------ | ---- | ------------- |
+| Draw signature                  | ✅           | ✅   | Parity        |
+| Type signature                  | ✅           | ✅   | Parity        |
+| Upload signature                | ✅           | ✅   | Parity        |
+| Saved signatures                | ❌           | ✅   | **Seal wins** |
+| Initials field                  | ✅           | ✅   | Parity        |
+| Text field                      | ✅           | ✅   | Parity        |
+| Date field                      | ✅           | ✅   | Parity        |
+| Number field                    | ✅           | ✅   | Parity        |
+| Checkbox field                  | ✅           | ✅   | Parity        |
+| Radio field                     | ✅           | ✅   | Parity        |
+| Dropdown field                  | ✅           | ✅   | Parity        |
+| Email field                     | ✅           | ✅   | Parity        |
+| Name field                      | ✅           | ✅   | Parity        |
+| File upload field               | ❌           | ✅   | **Seal wins** |
+| Payment field                   | ❌           | ✅   | **Seal wins** |
+| Digital signatures (cert-based) | ✅           | ✅   | Parity        |
+| ESIGN consent flow              | ❌ (implied) | ✅   | **Seal wins** |
 
 ### Document Workflow
 
-| Feature | Documenso | Seal | Gap Owner |
-|---------|-----------|------|-----------|
-| Draft → Sent → Completed | ✅ | ✅ | Parity |
-| Sequential signing order | ✅ | ✅ | Parity |
-| Parallel signing | ✅ | ✅ | Parity |
-| "Dictate next signer" | ✅ | ❌ | **Documenso wins** |
-| Recipient roles (Signer) | ✅ | ✅ | Parity |
-| Recipient roles (CC) | ✅ | ✅ | Parity |
-| Recipient roles (Viewer) | ✅ | ✅ | Parity |
-| Recipient roles (Approver) | ✅ | ✅ (approval workflows) | Parity |
-| Recipient roles (Assistant) | ✅ | ❌ | **Documenso wins** |
-| Document decline/reject | ✅ | ✅ | Parity |
-| Document cancel/void | ✅ (implied) | ✅ | Parity |
-| Document reminders | ❌ | ✅ | **Seal wins** |
-| Document expiration | ✅ | ❌ | **Documenso wins** |
-| Custom redirect after signing | ✅ | ❌ | **Documenso wins** |
-| Envelopes (multi-doc packages) | ✅ | ❌ | **Documenso wins** |
-| Approval workflows | ❌ | 🔜 (designed) | **Seal ahead** |
-| Bulk send | ❌ | 🔜 (designed) | **Seal ahead** |
+| Feature                        | Documenso    | Seal                    | Gap Owner          |
+| ------------------------------ | ------------ | ----------------------- | ------------------ |
+| Draft → Sent → Completed       | ✅           | ✅                      | Parity             |
+| Sequential signing order       | ✅           | ✅                      | Parity             |
+| Parallel signing               | ✅           | ✅                      | Parity             |
+| "Dictate next signer"          | ✅           | ❌                      | **Documenso wins** |
+| Recipient roles (Signer)       | ✅           | ✅                      | Parity             |
+| Recipient roles (CC)           | ✅           | ✅                      | Parity             |
+| Recipient roles (Viewer)       | ✅           | ✅                      | Parity             |
+| Recipient roles (Approver)     | ✅           | ✅ (approval workflows) | Parity             |
+| Recipient roles (Assistant)    | ✅           | ❌                      | **Documenso wins** |
+| Document decline/reject        | ✅           | ✅                      | Parity             |
+| Document cancel/void           | ✅ (implied) | ✅                      | Parity             |
+| Document reminders             | ❌           | ✅                      | **Seal wins**      |
+| Document expiration            | ✅           | ❌                      | **Documenso wins** |
+| Custom redirect after signing  | ✅           | ❌                      | **Documenso wins** |
+| Envelopes (multi-doc packages) | ✅           | ❌                      | **Documenso wins** |
+| Approval workflows             | ❌           | 🔜 (designed)           | **Seal ahead**     |
+| Bulk send                      | ❌           | 🔜 (designed)           | **Seal ahead**     |
 
 ### Templates
 
-| Feature | Documenso | Seal | Gap Owner |
-|---------|-----------|------|-----------|
-| Create/duplicate/reuse | ✅ | ✅ | Parity |
-| Direct link (public signing URL) | ✅ | ❌ | **Documenso wins** |
-| Public templates | ✅ | ❌ | **Documenso wins** |
-| Template visibility (private/team) | ✅ | ✅ | Parity |
-| Generate document from template via API | ✅ | ✅ | Parity |
+| Feature                                 | Documenso | Seal | Gap Owner          |
+| --------------------------------------- | --------- | ---- | ------------------ |
+| Create/duplicate/reuse                  | ✅        | ✅   | Parity             |
+| Direct link (public signing URL)        | ✅        | ❌   | **Documenso wins** |
+| Public templates                        | ✅        | ❌   | **Documenso wins** |
+| Template visibility (private/team)      | ✅        | ✅   | Parity             |
+| Generate document from template via API | ✅        | ✅   | Parity             |
 
 ### Organization & Teams
 
-| Feature | Documenso | Seal | Gap Owner |
-|---------|-----------|------|-----------|
-| Multi-team organizations | ✅ | ✅ (via Clerk orgs) | Parity |
-| Role-based access (Admin/Manager/Member) | ✅ | ✅ | Parity |
-| Team switching | ✅ | ✅ (workspace switcher) | Parity |
-| Organization groups | ✅ | ❌ | **Documenso wins** |
-| Team URL / custom subdomain | ✅ | ✅ (slug-based) | Parity |
-| Document visibility (Everyone/Manager/Admin) | ✅ | ✅ (private/workspace/specific) | Parity |
-| SSO (OIDC) | ✅ | ✅ (via Clerk) | Parity |
-| Public team profile | ✅ | ❌ | **Documenso wins** |
-| Delegate document ownership | ✅ | ❌ | **Documenso wins** |
-| Organization-level settings inheritance | ✅ | ❌ | **Documenso wins** |
-| Team-level settings override | ✅ | ❌ | **Documenso wins** |
+| Feature                                      | Documenso | Seal                            | Gap Owner          |
+| -------------------------------------------- | --------- | ------------------------------- | ------------------ |
+| Multi-team organizations                     | ✅        | ✅ (via Clerk orgs)             | Parity             |
+| Role-based access (Admin/Manager/Member)     | ✅        | ✅                              | Parity             |
+| Team switching                               | ✅        | ✅ (workspace switcher)         | Parity             |
+| Organization groups                          | ✅        | ❌                              | **Documenso wins** |
+| Team URL / custom subdomain                  | ✅        | ✅ (slug-based)                 | Parity             |
+| Document visibility (Everyone/Manager/Admin) | ✅        | ✅ (private/workspace/specific) | Parity             |
+| SSO (OIDC)                                   | ✅        | ✅ (via Clerk)                  | Parity             |
+| Public team profile                          | ✅        | ❌                              | **Documenso wins** |
+| Delegate document ownership                  | ✅        | ❌                              | **Documenso wins** |
+| Organization-level settings inheritance      | ✅        | ❌                              | **Documenso wins** |
+| Team-level settings override                 | ✅        | ❌                              | **Documenso wins** |
 
 ### API & Integrations
 
-| Feature | Documenso | Seal | Gap Owner |
-|---------|-----------|------|-----------|
-| REST API | ✅ (V1 + V2) | ✅ (V1) | Parity |
-| API tokens | ✅ | ✅ (Clerk API keys) | Parity |
-| OpenAPI spec / client generation | ✅ | ❌ | **Documenso wins** |
-| Zapier integration | ✅ | ❌ | **Documenso wins** |
-| Webhooks | ✅ | ✅ | Parity |
-| Webhook call logging | ✅ | ✅ | Parity |
-| Embedded signing (iframe) | ✅ | 🔜 (designed) | **Documenso wins** |
-| React/Vue embed components | ✅ | ❌ | **Documenso wins** |
+| Feature                          | Documenso    | Seal                | Gap Owner          |
+| -------------------------------- | ------------ | ------------------- | ------------------ |
+| REST API                         | ✅ (V1 + V2) | ✅ (V1)             | Parity             |
+| API tokens                       | ✅           | ✅ (Clerk API keys) | Parity             |
+| OpenAPI spec / client generation | ✅           | ❌                  | **Documenso wins** |
+| Zapier integration               | ✅           | ❌                  | **Documenso wins** |
+| Webhooks                         | ✅           | ✅                  | Parity             |
+| Webhook call logging             | ✅           | ✅                  | Parity             |
+| Embedded signing (iframe)        | ✅           | 🔜 (designed)       | **Documenso wins** |
+| React/Vue embed components       | ✅           | ❌                  | **Documenso wins** |
 
 ### White-Label & Branding
 
-| Feature | Documenso | Seal | Gap Owner |
-|---------|-----------|------|-----------|
-| Custom logo | ✅ | ❌ | **Documenso wins** |
-| Custom colors/CSS | ✅ | ❌ | **Documenso wins** |
-| Custom email sender domain | ✅ | ❌ | **Documenso wins** |
-| Custom email templates | ✅ | ✅ (React Email) | Parity |
-| White-labeled embedded signing | ✅ | ❌ | **Documenso wins** |
-| Email reply-to customization | ✅ | ❌ | **Documenso wins** |
-| Branding at org + team level | ✅ | ❌ | **Documenso wins** |
+| Feature                        | Documenso | Seal             | Gap Owner          |
+| ------------------------------ | --------- | ---------------- | ------------------ |
+| Custom logo                    | ✅        | ❌               | **Documenso wins** |
+| Custom colors/CSS              | ✅        | ❌               | **Documenso wins** |
+| Custom email sender domain     | ✅        | ❌               | **Documenso wins** |
+| Custom email templates         | ✅        | ✅ (React Email) | Parity             |
+| White-labeled embedded signing | ✅        | ❌               | **Documenso wins** |
+| Email reply-to customization   | ✅        | ❌               | **Documenso wins** |
+| Branding at org + team level   | ✅        | ❌               | **Documenso wins** |
 
 ### Compliance & Security
 
-| Feature | Documenso | Seal | Gap Owner |
-|---------|-----------|------|-----------|
-| ESIGN Act | ✅ | ✅ | Parity |
-| UETA | ✅ | ✅ | Parity |
-| 21 CFR Part 11 | ✅ | ❌ | **Documenso wins** |
-| SOC2 | ✅ | ❌ | **Documenso wins** |
-| Audit trail | ✅ | ✅ | Parity |
-| IP address tracking | ✅ | ✅ | Parity |
-| Security audit logs (login/2FA/etc) | ✅ | ❌ | **Documenso wins** |
-| 2FA (TOTP) | ✅ | ✅ (via Clerk) | Parity |
-| Passkeys | ✅ | ✅ (via Clerk) | Parity |
-| Rate limiting | ✅ | ✅ | Parity |
-| Recipient token hashing | ❌ (plaintext in schema) | ✅ (SHA-256) | **Seal wins** |
-| Row-level security | ❌ | ✅ | **Seal wins** |
-| Recipient auth (SMS/ID verification) | ✅ (auth options on recipient) | 🔜 (designed) | **Documenso wins** |
+| Feature                              | Documenso                      | Seal           | Gap Owner          |
+| ------------------------------------ | ------------------------------ | -------------- | ------------------ |
+| ESIGN Act                            | ✅                             | ✅             | Parity             |
+| UETA                                 | ✅                             | ✅             | Parity             |
+| 21 CFR Part 11                       | ✅                             | ❌             | **Documenso wins** |
+| SOC2                                 | ✅                             | ❌             | **Documenso wins** |
+| Audit trail                          | ✅                             | ✅             | Parity             |
+| IP address tracking                  | ✅                             | ✅             | Parity             |
+| Security audit logs (login/2FA/etc)  | ✅                             | ❌             | **Documenso wins** |
+| 2FA (TOTP)                           | ✅                             | ✅ (via Clerk) | Parity             |
+| Passkeys                             | ✅                             | ✅ (via Clerk) | Parity             |
+| Rate limiting                        | ✅                             | ✅             | Parity             |
+| Recipient token hashing              | ❌ (plaintext in schema)       | ✅ (SHA-256)   | **Seal wins**      |
+| Row-level security                   | ❌                             | ✅             | **Seal wins**      |
+| Recipient auth (SMS/ID verification) | ✅ (auth options on recipient) | 🔜 (designed)  | **Documenso wins** |
 
 ### Payments & Monetization
 
-| Feature | Documenso | Seal | Gap Owner |
-|---------|-----------|------|-----------|
-| Stripe subscriptions | ✅ | ✅ | Parity |
-| Stripe Connect (collect payments in docs) | ❌ | ✅ | **Seal wins** |
-| Payment fields in documents | ❌ | ✅ | **Seal wins** |
-| Payments hub/dashboard | ❌ | 🔜 (designed) | **Seal wins** |
+| Feature                                   | Documenso | Seal          | Gap Owner     |
+| ----------------------------------------- | --------- | ------------- | ------------- |
+| Stripe subscriptions                      | ✅        | ✅            | Parity        |
+| Stripe Connect (collect payments in docs) | ❌        | ✅            | **Seal wins** |
+| Payment fields in documents               | ❌        | ✅            | **Seal wins** |
+| Payments hub/dashboard                    | ❌        | 🔜 (designed) | **Seal wins** |
 
 ### AI Features
 
-| Feature | Documenso | Seal | Gap Owner |
-|---------|-----------|------|-----------|
-| AI recipient detection | ✅ | ✅ | Parity |
-| AI field detection/placement | ✅ | ✅ | Parity |
-| AI document annotations | ❌ | ✅ | **Seal wins** |
-| AI assistant threads | ❌ | ✅ | **Seal wins** |
+| Feature                      | Documenso | Seal | Gap Owner     |
+| ---------------------------- | --------- | ---- | ------------- |
+| AI recipient detection       | ✅        | ✅   | Parity        |
+| AI field detection/placement | ✅        | ✅   | Parity        |
+| AI document annotations      | ❌        | ✅   | **Seal wins** |
+| AI assistant threads         | ❌        | ✅   | **Seal wins** |
 
 ### Platform / Enterprise
 
-| Feature | Documenso | Seal | Gap Owner |
-|---------|-----------|------|-----------|
-| Self-hosting (Docker) | ✅ | ❌ | **Documenso wins** |
-| i18n (multi-language) | ✅ (EN/FR/ES/DE) | ❌ | **Documenso wins** |
-| Background job system | ✅ | ✅ (Convex crons/scheduled) | Parity |
-| Folders | ✅ | ❌ | **Documenso wins** |
-| QR code on signing certificate | ✅ | ❌ | **Documenso wins** |
-| Document analytics | ❌ | 🔜 (designed) | **Seal ahead** |
-| Contacts/CRM | ❌ | ✅ | **Seal wins** |
-| Data exports | ❌ | ✅ | **Seal wins** |
-| Notifications system | ❌ | ✅ | **Seal wins** |
+| Feature                        | Documenso        | Seal                        | Gap Owner          |
+| ------------------------------ | ---------------- | --------------------------- | ------------------ |
+| Self-hosting (Docker)          | ✅               | ❌                          | **Documenso wins** |
+| i18n (multi-language)          | ✅ (EN/FR/ES/DE) | ❌                          | **Documenso wins** |
+| Background job system          | ✅               | ✅ (Convex crons/scheduled) | Parity             |
+| Folders                        | ✅               | ❌                          | **Documenso wins** |
+| QR code on signing certificate | ✅               | ❌                          | **Documenso wins** |
+| Document analytics             | ❌               | 🔜 (designed)               | **Seal ahead**     |
+| Contacts/CRM                   | ❌               | ✅                          | **Seal wins**      |
+| Data exports                   | ❌               | ✅                          | **Seal wins**      |
+| Notifications system           | ❌               | ✅                          | **Seal wins**      |
 
 ---
 
@@ -277,17 +279,17 @@ Since Documenso is AGPL-3.0, we can study their implementation but **cannot copy
 
 ### Worth Studying
 
-| Area | What to Look At | Why |
-|------|-----------------|-----|
-| **Envelopes** | `packages/prisma/schema.prisma` (Envelope, EnvelopeItem models) | Understand multi-document package data model |
-| **LibPDF** | `libpdf.documenso.com` | Their PDF library might be worth using (check license) |
-| **White-label** | `OrganisationGlobalSettings` model | See how they structured branding config inheritance |
-| **Embedded signing** | `apps/remix/app/types/embed-*-schema.ts` | Understand their embed API contract |
-| **AI field detection** | `packages/lib/server-only/ai/envelope/detect-fields/` | See their AI prompts/schemas for field placement |
-| **Direct links** | `TemplateDirectLink` model | Simple token-based direct template access |
-| **Document expiration** | `EnvelopeExpirationPeriod` in DocumentMeta | How they handle expiry config |
-| **Background jobs** | `BackgroundJob` + `BackgroundJobTask` models | Their job queue implementation |
-| **Rate limiting** | `RateLimit` model with key/action/bucket | Sliding window approach, similar to ours |
+| Area                    | What to Look At                                                 | Why                                                    |
+| ----------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
+| **Envelopes**           | `packages/prisma/schema.prisma` (Envelope, EnvelopeItem models) | Understand multi-document package data model           |
+| **LibPDF**              | `libpdf.documenso.com`                                          | Their PDF library might be worth using (check license) |
+| **White-label**         | `OrganisationGlobalSettings` model                              | See how they structured branding config inheritance    |
+| **Embedded signing**    | `apps/remix/app/types/embed-*-schema.ts`                        | Understand their embed API contract                    |
+| **AI field detection**  | `packages/lib/server-only/ai/envelope/detect-fields/`           | See their AI prompts/schemas for field placement       |
+| **Direct links**        | `TemplateDirectLink` model                                      | Simple token-based direct template access              |
+| **Document expiration** | `EnvelopeExpirationPeriod` in DocumentMeta                      | How they handle expiry config                          |
+| **Background jobs**     | `BackgroundJob` + `BackgroundJobTask` models                    | Their job queue implementation                         |
+| **Rate limiting**       | `RateLimit` model with key/action/bucket                        | Sliding window approach, similar to ours               |
 
 ### Their Weaknesses (Exploit These)
 
@@ -341,28 +343,30 @@ Based on this analysis, here's what Seal should build next to close critical gap
 ## Competitive Positioning
 
 ### Documenso's Pitch
+
 > "Open source, self-hostable, transparent. The DocuSign alternative you can trust because you can see the code."
 
 ### Seal's Counter-Pitch
+
 > "Modern, real-time, AI-powered document signing with built-in payments. Ship faster with Seal — no infrastructure to manage, no AGPL restrictions, and features DocuSign and Documenso don't have."
 
 ### Where Seal Wins the Deal
 
-| Buyer Persona | Why They Choose Seal |
-|---------------|---------------------|
-| **SaaS founders** | Payment collection in docs, real-time updates, modern stack, no AGPL |
-| **SMB owners** | Contacts/CRM, document reminders, simpler UX |
-| **Freelancers/consultants** | Payment fields (get paid when they sign), saved signatures |
-| **AI-forward teams** | AI field detection + document annotations + assistant |
+| Buyer Persona               | Why They Choose Seal                                                 |
+| --------------------------- | -------------------------------------------------------------------- |
+| **SaaS founders**           | Payment collection in docs, real-time updates, modern stack, no AGPL |
+| **SMB owners**              | Contacts/CRM, document reminders, simpler UX                         |
+| **Freelancers/consultants** | Payment fields (get paid when they sign), saved signatures           |
+| **AI-forward teams**        | AI field detection + document annotations + assistant                |
 
 ### Where Documenso Wins the Deal
 
-| Buyer Persona | Why They Choose Documenso |
-|---------------|--------------------------|
-| **Enterprise (self-host)** | On-premise deployment, SOC2, 21 CFR Part 11 |
-| **Platform builders** | White-label + embedded signing (mature) |
-| **Open-source advocates** | AGPL, community, transparency |
-| **Regulated industries** | Compliance certifications, audit trail depth |
+| Buyer Persona              | Why They Choose Documenso                    |
+| -------------------------- | -------------------------------------------- |
+| **Enterprise (self-host)** | On-premise deployment, SOC2, 21 CFR Part 11  |
+| **Platform builders**      | White-label + embedded signing (mature)      |
+| **Open-source advocates**  | AGPL, community, transparency                |
+| **Regulated industries**   | Compliance certifications, audit trail depth |
 
 ---
 

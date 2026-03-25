@@ -39,27 +39,27 @@ The Settings API lets you read and update your workspace's configuration program
 
 ### Signing Settings
 
-| Field                    | Type     | Description                                                        |
-| ------------------------ | -------- | ------------------------------------------------------------------ |
-| `allowed_signature_types` | string[] | Accepted methods: `draw`, `type`, `upload`                        |
-| `default_deadline_days`  | number   | Days until a sent document expires (1–365, default 30)             |
-| `esign_consent_text`     | string   | Custom ESIGN Act consent text shown before signing (`null` = default) |
+| Field                     | Type     | Description                                                           |
+| ------------------------- | -------- | --------------------------------------------------------------------- |
+| `allowed_signature_types` | string[] | Accepted methods: `draw`, `type`, `upload`                            |
+| `default_deadline_days`   | number   | Days until a sent document expires (1–365, default 30)                |
+| `esign_consent_text`      | string   | Custom ESIGN Act consent text shown before signing (`null` = default) |
 
 ### Notification Settings
 
-| Field                     | Type     | Description                                                        |
-| ------------------------- | -------- | ------------------------------------------------------------------ |
-| `reminder_schedule`       | number[] | Days after sending to auto-send reminders (e.g., `[3, 7, 14]`)    |
-| `expiration_alert_days`   | number   | Days before deadline to send an expiration warning (1–30)          |
-| `send_completion_email`   | boolean  | Notify the document owner when all parties have signed             |
-| `send_viewed_notification`| boolean  | Notify the owner when a recipient opens the document               |
+| Field                      | Type     | Description                                                    |
+| -------------------------- | -------- | -------------------------------------------------------------- |
+| `reminder_schedule`        | number[] | Days after sending to auto-send reminders (e.g., `[3, 7, 14]`) |
+| `expiration_alert_days`    | number   | Days before deadline to send an expiration warning (1–30)      |
+| `send_completion_email`    | boolean  | Notify the document owner when all parties have signed         |
+| `send_viewed_notification` | boolean  | Notify the owner when a recipient opens the document           |
 
 ### AI Settings
 
-| Field         | Type    | Description                                       |
-| ------------- | ------- | ------------------------------------------------- |
-| `enabled`     | boolean | Whether AI features are enabled for the workspace |
-| `auto_analyze`| boolean | Automatically analyze new documents with AI       |
+| Field          | Type    | Description                                       |
+| -------------- | ------- | ------------------------------------------------- |
+| `enabled`      | boolean | Whether AI features are enabled for the workspace |
+| `auto_analyze` | boolean | Automatically analyze new documents with AI       |
 
 ### Security Settings
 
@@ -220,11 +220,14 @@ curl -X PATCH "https://seal.convex.site/api/v1/settings" \
 ```
 
 <Callout type="info">
-  **Partial updates**: You can update a single field inside a category without specifying the rest. For example, setting only `signing.default_deadline_days` leaves `allowed_signature_types` and `esign_consent_text` unchanged.
+  **Partial updates**: You can update a single field inside a category without specifying the rest.
+  For example, setting only `signing.default_deadline_days` leaves `allowed_signature_types` and
+  `esign_consent_text` unchanged.
 </Callout>
 
 <Callout type="warn">
-  **Clearing a field**: To clear `esign_consent_text` or `session_timeout_minutes`, pass `null` explicitly. Omitting the field preserves the current value.
+  **Clearing a field**: To clear `esign_consent_text` or `session_timeout_minutes`, pass `null`
+  explicitly. Omitting the field preserves the current value.
 </Callout>
 
 ## Next Steps

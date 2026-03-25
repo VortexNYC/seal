@@ -1,6 +1,5 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-
 import { FadeIn } from "~/components/ui/fade-in";
 import type { FaqSectionBlock } from "~/lib/content/types";
 

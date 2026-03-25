@@ -5,12 +5,12 @@
  * If user has no organization, redirects to organization selection/creation flow.
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
 import { Navigate, useLocation } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { buildOrganizationPath, isPathWithinOrganization } from "@/lib/organization-path";
-import { api } from "@seal/backend/convex/_generated/api";
 
 interface EnforceOrganizationProps {
   children: ReactNode;

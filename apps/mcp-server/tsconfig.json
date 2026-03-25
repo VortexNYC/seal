@@ -8,6 +8,12 @@
     "types": ["bun"],
     "baseUrl": ".",
     "paths": {
+      "@modelcontextprotocol/sdk": [
+        "../../node_modules/@clerk/mcp-tools/node_modules/@modelcontextprotocol/sdk/dist/esm/index.d.ts"
+      ],
+      "@modelcontextprotocol/sdk/*": [
+        "../../node_modules/@clerk/mcp-tools/node_modules/@modelcontextprotocol/sdk/dist/esm/*"
+      ],
       "zod": ["../../node_modules/zod"],
       "zod/*": ["../../node_modules/zod/*"]
     },

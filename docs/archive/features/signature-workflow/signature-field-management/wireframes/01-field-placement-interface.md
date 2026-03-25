@@ -21,7 +21,7 @@
 ║ ║ ║ ║
 ║ ║ ▓▓ SERVICE AGREEMENT ▓▓ ║ ║
 ║ ║ ║ ║
-║ ║ This agreement between ******\_\_\_\_****** ║ ║
+║ ║ This agreement between **\*\***\_\_\_\_**\*\*** ║ ║
 ║ ║ and Your Company ║ ║
 ║ ║ ║ ║
 ║ ║ Client Signature: ░░[____________________]░░ ║ ║
@@ -64,7 +64,7 @@
 ║ ║ ║ ║
 ║ ║ ▓▓ SERVICE AGREEMENT ▓▓ ║ ║
 ║ ║ ║ ║
-║ ║ This agreement between ******\_\_\_\_****** ║ ║
+║ ║ This agreement between **\*\***\_\_\_\_**\*\*** ║ ║
 ║ ║ and Your Company ║ ║
 ║ ║ ║ ║
 ║ ║ Client Signature: ╔═══════════════════════╗ ║ ║

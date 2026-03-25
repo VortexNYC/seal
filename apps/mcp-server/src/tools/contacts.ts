@@ -2,7 +2,6 @@
  * @fileoverview Contact directory tools for the Seal MCP server.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-
 import {
   type ApiContact,
   type CreateContactInput,

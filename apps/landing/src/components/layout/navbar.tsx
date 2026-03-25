@@ -2,7 +2,6 @@ import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
-
 import { Button } from "~/components/ui/button";
 import { APP_URL } from "~/lib/constants";
 import { cn } from "~/utils/cn";
@@ -104,7 +103,10 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <nav className="bg-background border-border border-t px-6 pt-4 pb-6 md:hidden" data-testid="mobile-nav">
+        <nav
+          className="bg-background border-border border-t px-6 pt-4 pb-6 md:hidden"
+          data-testid="mobile-nav"
+        >
           <div className="flex flex-col gap-1">
             {navItems.map((item) => (
               <Link

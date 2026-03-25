@@ -76,10 +76,7 @@ export function createProduct(
 ): Product {
   productIdCounter++;
 
-  const appliedTraits = traitNames.reduce(
-    (acc, trait) => ({ ...acc, ...traits[trait] }),
-    {},
-  );
+  const appliedTraits = traitNames.reduce((acc, trait) => ({ ...acc, ...traits[trait] }), {});
 
   return {
     id: `prod-${productIdCounter}`,
@@ -127,10 +124,7 @@ export function createOrder(overrides: Partial<Order> = {}): Order {
 
   const user = overrides.user ?? createUser();
   const items = overrides.items ?? [{ product: createProduct(), quantity: 1 }];
-  const total = items.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0,
-  );
+  const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
   return {
     id: `order-${orderIdCounter}`,
@@ -331,9 +325,7 @@ interface TestCase {
 }
 
 // Load test data from JSON
-const testCases: TestCase[] = JSON.parse(
-  fs.readFileSync("./data/search-tests.json", "utf-8"),
-);
+const testCases: TestCase[] = JSON.parse(fs.readFileSync("./data/search-tests.json", "utf-8"));
 
 test.describe("search functionality", () => {
   for (const { input, expected } of testCases) {
@@ -383,9 +375,7 @@ export const test = base.extend<DataFixtures>({
 test("add product to cart", async ({ page, testUser, testProducts }) => {
   // Mock API with test data
   await page.route("**/api/user", (route) => route.fulfill({ json: testUser }));
-  await page.route("**/api/products", (route) =>
-    route.fulfill({ json: testProducts }),
-  );
+  await page.route("**/api/products", (route) => route.fulfill({ json: testProducts }));
 
   await page.goto("/products");
   await expect(page.getByText(testProducts[0].name)).toBeVisible();

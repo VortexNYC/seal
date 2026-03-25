@@ -11,22 +11,22 @@ The Contacts API provides full CRUD access to your workspace's contact directory
 
 ### Attributes
 
-| Attribute           | Type     | Description                                              |
-| ------------------- | -------- | -------------------------------------------------------- |
-| `id`                | string   | Unique contact identifier                                |
-| `first_name`        | string   | First name                                               |
-| `last_name`         | string   | Last name                                                |
-| `full_name`         | string   | Full name (first + last)                                 |
-| `email`             | string   | Email address                                            |
-| `phone`             | string   | Phone number (optional)                                  |
-| `company`           | string   | Company or organization (optional)                       |
-| `title`             | string   | Job title (optional)                                     |
-| `status`            | string   | Contact status: `active`, `inactive`, or `lead`          |
-| `notes`             | string   | Free-form notes (optional)                               |
-| `tags`              | string[] | Tags for categorization (optional)                       |
-| `last_contacted_at` | string   | ISO 8601 timestamp of last contact (optional)            |
-| `created_at`        | string   | ISO 8601 creation timestamp                              |
-| `updated_at`        | string   | ISO 8601 last update timestamp                           |
+| Attribute           | Type     | Description                                     |
+| ------------------- | -------- | ----------------------------------------------- |
+| `id`                | string   | Unique contact identifier                       |
+| `first_name`        | string   | First name                                      |
+| `last_name`         | string   | Last name                                       |
+| `full_name`         | string   | Full name (first + last)                        |
+| `email`             | string   | Email address                                   |
+| `phone`             | string   | Phone number (optional)                         |
+| `company`           | string   | Company or organization (optional)              |
+| `title`             | string   | Job title (optional)                            |
+| `status`            | string   | Contact status: `active`, `inactive`, or `lead` |
+| `notes`             | string   | Free-form notes (optional)                      |
+| `tags`              | string[] | Tags for categorization (optional)              |
+| `last_contacted_at` | string   | ISO 8601 timestamp of last contact (optional)   |
+| `created_at`        | string   | ISO 8601 creation timestamp                     |
+| `updated_at`        | string   | ISO 8601 last update timestamp                  |
 
 ### Example Object
 
@@ -51,11 +51,11 @@ The Contacts API provides full CRUD access to your workspace's contact directory
 
 ## Contact Status
 
-| Status     | Description                                       |
-| ---------- | ------------------------------------------------- |
-| `active`   | Current contact you send documents to regularly   |
-| `inactive` | Former contact, kept for historical reference     |
-| `lead`     | Prospect you haven't yet sent a document to       |
+| Status     | Description                                     |
+| ---------- | ----------------------------------------------- |
+| `active`   | Current contact you send documents to regularly |
+| `inactive` | Former contact, kept for historical reference   |
+| `lead`     | Prospect you haven't yet sent a document to     |
 
 ## List Contacts
 
@@ -73,12 +73,12 @@ GET /api/v1/contacts
 
 ### Query Parameters
 
-| Parameter | Type   | Description                                             |
-| --------- | ------ | ------------------------------------------------------- |
-| `limit`   | number | Number of results (max 100, default 20)                 |
-| `cursor`  | string | Pagination cursor from previous response                |
-| `status`  | string | Filter by status: `active`, `inactive`, or `lead`       |
-| `search`  | string | Search by name or email (case-insensitive, partial match)|
+| Parameter | Type   | Description                                               |
+| --------- | ------ | --------------------------------------------------------- |
+| `limit`   | number | Number of results (max 100, default 20)                   |
+| `cursor`  | string | Pagination cursor from previous response                  |
+| `status`  | string | Filter by status: `active`, `inactive`, or `lead`         |
+| `search`  | string | Search by name or email (case-insensitive, partial match) |
 
 ### TypeScript Example
 
@@ -142,21 +142,18 @@ GET /api/v1/contacts/get?id={id}
 
 ### Query Parameters
 
-| Parameter | Type   | Description               |
-| --------- | ------ | ------------------------- |
-| `id`      | string | **Required.** Contact ID  |
+| Parameter | Type   | Description              |
+| --------- | ------ | ------------------------ |
+| `id`      | string | **Required.** Contact ID |
 
 ### TypeScript Example
 
 ```typescript
-const response = await fetch(
-  "https://seal.convex.site/api/v1/contacts/get?id=con_abc123",
-  {
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-    },
+const response = await fetch("https://seal.convex.site/api/v1/contacts/get?id=con_abc123", {
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
   },
-);
+});
 
 const contact = await response.json();
 ```
@@ -184,17 +181,17 @@ POST /api/v1/contacts
 
 ### Request Body
 
-| Field        | Type     | Required | Description                               |
-| ------------ | -------- | -------- | ----------------------------------------- |
-| `first_name` | string   | Yes      | First name                                |
-| `last_name`  | string   | Yes      | Last name                                 |
-| `email`      | string   | Yes      | Email address                             |
-| `phone`      | string   | No       | Phone number                              |
-| `company`    | string   | No       | Company or organization                   |
-| `title`      | string   | No       | Job title                                 |
+| Field        | Type     | Required | Description                                         |
+| ------------ | -------- | -------- | --------------------------------------------------- |
+| `first_name` | string   | Yes      | First name                                          |
+| `last_name`  | string   | Yes      | Last name                                           |
+| `email`      | string   | Yes      | Email address                                       |
+| `phone`      | string   | No       | Phone number                                        |
+| `company`    | string   | No       | Company or organization                             |
+| `title`      | string   | No       | Job title                                           |
 | `status`     | string   | No       | `active`, `inactive`, or `lead` (default: `active`) |
-| `notes`      | string   | No       | Free-form notes                           |
-| `tags`       | string[] | No       | Tags for categorization                   |
+| `notes`      | string   | No       | Free-form notes                                     |
+| `tags`       | string[] | No       | Tags for categorization                             |
 
 ### TypeScript Example
 
@@ -264,15 +261,12 @@ DELETE /api/v1/contacts/delete?id={id}
 ### TypeScript Example
 
 ```typescript
-const response = await fetch(
-  "https://seal.convex.site/api/v1/contacts/delete?id=con_abc123",
-  {
-    method: "DELETE",
-    headers: {
-      Authorization: "Bearer ak_your_api_key_here",
-    },
+const response = await fetch("https://seal.convex.site/api/v1/contacts/delete?id=con_abc123", {
+  method: "DELETE",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
   },
-);
+});
 
 const result = await response.json();
 // { "success": true }
@@ -294,7 +288,8 @@ curl -X DELETE "https://seal.convex.site/api/v1/contacts/delete?id=con_abc123" \
 ```
 
 <Callout type="warn">
-  **Warning**: Deleting a contact is permanent. Historical documents that referenced this contact's email are not affected — only the contact directory entry is removed.
+  **Warning**: Deleting a contact is permanent. Historical documents that referenced this contact's
+  email are not affected — only the contact directory entry is removed.
 </Callout>
 
 ## Next Steps

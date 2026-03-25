@@ -15,6 +15,7 @@
 ### Task 1: Add "expired" to document workflow status schema
 
 **Files:**
+
 - Modify: `apps/backend/convex/schemas/document_workflow_status.ts`
 
 **Step 1: Add "expired" literal to the union (line 16–24)**
@@ -72,6 +73,7 @@ git commit -m "feat: add 'expired' to document workflow status schema"
 ### Task 2: Add "expired" to recipient status + new fields on recipients table
 
 **Files:**
+
 - Modify: `apps/backend/convex/schemas/recipients.ts`
 
 **Step 1: Add "expired" to recipientStatusTuple (line 23–28)**
@@ -113,6 +115,7 @@ git commit -m "feat: add 'expired' recipient status and expiresAt fields"
 ### Task 3: Add expirationPeriod to documents schema + audit log actions
 
 **Files:**
+
 - Modify: `apps/backend/convex/schemas/documents.ts`
 - Modify: `apps/backend/convex/schemas/audit_logs.ts`
 
@@ -161,13 +164,19 @@ git commit -m "feat: add expirationPeriod to documents schema, audit actions for
 ### Task 4: Update workflow helpers to handle "expired" status
 
 **Files:**
+
 - Modify: `apps/backend/convex/documents/workflow_helpers.ts`
 
 **Step 1: Update isTerminalWorkflowStatus (line 73–75)**
 
 ```typescript
 export function isTerminalWorkflowStatus(status: DocumentWorkflowStatus): boolean {
-  return status === "completed" || status === "cancelled" || status === "declined" || status === "expired";
+  return (
+    status === "completed" ||
+    status === "cancelled" ||
+    status === "declined" ||
+    status === "expired"
+  );
 }
 ```
 
@@ -176,37 +185,37 @@ export function isTerminalWorkflowStatus(status: DocumentWorkflowStatus): boolea
 Add `expiredAt?: number;` to the `updateData` type, and add a case for `"expired"`:
 
 ```typescript
-  const updateData: {
-    workflowStatus: DocumentWorkflowStatus;
-    updatedAt: number;
-    sentAt?: number;
-    completedAt?: number;
-    cancelledAt?: number;
-    declinedAt?: number;
-    expiredAt?: number;
-  } = {
-    workflowStatus: newStatus,
-    updatedAt: Date.now(),
-  };
+const updateData: {
+  workflowStatus: DocumentWorkflowStatus;
+  updatedAt: number;
+  sentAt?: number;
+  completedAt?: number;
+  cancelledAt?: number;
+  declinedAt?: number;
+  expiredAt?: number;
+} = {
+  workflowStatus: newStatus,
+  updatedAt: Date.now(),
+};
 
-  const now = Date.now();
-  switch (newStatus) {
-    case "sent":
-      updateData.sentAt = now;
-      break;
-    case "completed":
-      updateData.completedAt = now;
-      break;
-    case "cancelled":
-      updateData.cancelledAt = now;
-      break;
-    case "declined":
-      updateData.declinedAt = now;
-      break;
-    case "expired":
-      updateData.expiredAt = now;
-      break;
-  }
+const now = Date.now();
+switch (newStatus) {
+  case "sent":
+    updateData.sentAt = now;
+    break;
+  case "completed":
+    updateData.completedAt = now;
+    break;
+  case "cancelled":
+    updateData.cancelledAt = now;
+    break;
+  case "declined":
+    updateData.declinedAt = now;
+    break;
+  case "expired":
+    updateData.expiredAt = now;
+    break;
+}
 ```
 
 **Step 3: Update canCancelDocument to include expired (line 87–89)**
@@ -231,6 +240,7 @@ git commit -m "feat: update workflow helpers for expired status handling"
 ### Task 5: Update workflow helpers tests
 
 **Files:**
+
 - Modify: `apps/backend/convex/documents/__tests__/workflow_helpers.test.ts`
 
 **Step 1: Add "expired" to isTerminalWorkflowStatus test (line 18–28)**
@@ -252,46 +262,46 @@ Add `"expired"` to the test.each array.
 **Step 5: Add transition test: sent → expired**
 
 ```typescript
-  test("sent -> expired sets expiredAt timestamp", async () => {
-    await t.run(async (ctx) => {
-      await transitionWorkflowStatus(ctx, documentId, "sent");
-    });
-    await t.run(async (ctx) => {
-      await transitionWorkflowStatus(ctx, documentId, "expired");
-    });
-
-    const doc = await t.run(async (ctx) => {
-      return await ctx.db.get(documentId);
-    });
-
-    expect(doc).not.toBeNull();
-    expect(doc!.workflowStatus).toBe("expired");
-    expect(doc!.expiredAt).toBeTypeOf("number");
+test("sent -> expired sets expiredAt timestamp", async () => {
+  await t.run(async (ctx) => {
+    await transitionWorkflowStatus(ctx, documentId, "sent");
   });
+  await t.run(async (ctx) => {
+    await transitionWorkflowStatus(ctx, documentId, "expired");
+  });
+
+  const doc = await t.run(async (ctx) => {
+    return await ctx.db.get(documentId);
+  });
+
+  expect(doc).not.toBeNull();
+  expect(doc!.workflowStatus).toBe("expired");
+  expect(doc!.expiredAt).toBeTypeOf("number");
+});
 ```
 
 **Step 6: Add transition test: expired → sent (re-send)**
 
 ```typescript
-  test("expired -> sent re-enables document (re-send flow)", async () => {
-    // Transition draft → sent → expired
-    await t.run(async (ctx) => {
-      await transitionWorkflowStatus(ctx, documentId, "sent");
-    });
-    await t.run(async (ctx) => {
-      await transitionWorkflowStatus(ctx, documentId, "expired");
-    });
-    // Re-send: expired → sent
-    await t.run(async (ctx) => {
-      await transitionWorkflowStatus(ctx, documentId, "sent");
-    });
-
-    const doc = await t.run(async (ctx) => {
-      return await ctx.db.get(documentId);
-    });
-
-    expect(doc!.workflowStatus).toBe("sent");
+test("expired -> sent re-enables document (re-send flow)", async () => {
+  // Transition draft → sent → expired
+  await t.run(async (ctx) => {
+    await transitionWorkflowStatus(ctx, documentId, "sent");
   });
+  await t.run(async (ctx) => {
+    await transitionWorkflowStatus(ctx, documentId, "expired");
+  });
+  // Re-send: expired → sent
+  await t.run(async (ctx) => {
+    await transitionWorkflowStatus(ctx, documentId, "sent");
+  });
+
+  const doc = await t.run(async (ctx) => {
+    return await ctx.db.get(documentId);
+  });
+
+  expect(doc!.workflowStatus).toBe("sent");
+});
 ```
 
 **Step 7: Run tests**
@@ -311,6 +321,7 @@ git commit -m "test: add workflow helpers tests for expired status"
 ### Task 6: Compute expiresAt per recipient in send flow
 
 **Files:**
+
 - Modify: `apps/backend/convex/documents/send_document_action.ts`
 
 **Step 1: Add expirationPeriod arg to markDocumentAsSent (line 65–71)**
@@ -331,9 +342,12 @@ Add to args:
 function expirationPeriodToMs(amount: number, unit: "day" | "week" | "month"): number {
   const MS_PER_DAY = 86_400_000;
   switch (unit) {
-    case "day": return amount * MS_PER_DAY;
-    case "week": return amount * 7 * MS_PER_DAY;
-    case "month": return amount * 30 * MS_PER_DAY;
+    case "day":
+      return amount * MS_PER_DAY;
+    case "week":
+      return amount * 7 * MS_PER_DAY;
+    case "month":
+      return amount * 30 * MS_PER_DAY;
   }
 }
 ```
@@ -343,14 +357,15 @@ function expirationPeriodToMs(amount: number, unit: "day" | "week" | "month"): n
 After the sharing loop ends (line ~143) and before the status patch (line ~154), add:
 
 ```typescript
-    // Compute expiresAt for all recipients if expiration period is set
-    if (args.expirationPeriod) {
-      const now = Date.now();
-      const expiresAt = now + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
-      for (const recipient of recipients) {
-        await ctx.db.patch(recipient._id, { expiresAt, updatedAt: now });
-      }
-    }
+// Compute expiresAt for all recipients if expiration period is set
+if (args.expirationPeriod) {
+  const now = Date.now();
+  const expiresAt =
+    now + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
+  for (const recipient of recipients) {
+    await ctx.db.patch(recipient._id, { expiresAt, updatedAt: now });
+  }
+}
 ```
 
 **Step 4: Save expirationPeriod on document (in the status patch, line ~154)**
@@ -358,15 +373,15 @@ After the sharing loop ends (line ~143) and before the status patch (line ~154),
 Update the patch to include:
 
 ```typescript
-    await ctx.db.patch(args.documentId, {
-      status: "active",
-      workflowStatus: "sent",
-      sentAt: Date.now(),
-      updatedAt: Date.now(),
-      ...(args.deadline && { deadline: args.deadline }),
-      ...(args.expirationPeriod && { expirationPeriod: args.expirationPeriod }),
-      ...(args.signingMode && { signingMode: args.signingMode }),
-    });
+await ctx.db.patch(args.documentId, {
+  status: "active",
+  workflowStatus: "sent",
+  sentAt: Date.now(),
+  updatedAt: Date.now(),
+  ...(args.deadline && { deadline: args.deadline }),
+  ...(args.expirationPeriod && { expirationPeriod: args.expirationPeriod }),
+  ...(args.signingMode && { signingMode: args.signingMode }),
+});
 ```
 
 **Step 5: Pass expirationPeriod from sendDocumentEmails action**
@@ -383,23 +398,24 @@ In `sendDocumentEmails` args (line ~197), add:
 In the handler where `markDocumentAsSent` is called (line ~395-403), pass it through:
 
 ```typescript
-      await ctx.runMutation(internal.documents.send_document_action.markDocumentAsSent, {
-        documentId: args.documentId,
-        deadline: args.deadline,
-        userId: senderUser?.clerkId,
-        signingMode: args.signingMode,
-        expirationPeriod: args.expirationPeriod,
-      });
+await ctx.runMutation(internal.documents.send_document_action.markDocumentAsSent, {
+  documentId: args.documentId,
+  deadline: args.deadline,
+  userId: senderUser?.clerkId,
+  signingMode: args.signingMode,
+  expirationPeriod: args.expirationPeriod,
+});
 ```
 
 Also compute `deadline` from `expirationPeriod` if deadline not explicitly set — for existing alert cron compatibility. In the handler, before calling markDocumentAsSent:
 
 ```typescript
-    // Compute deadline from expirationPeriod for alert cron compatibility
-    let deadline = args.deadline;
-    if (!deadline && args.expirationPeriod) {
-      deadline = Date.now() + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
-    }
+// Compute deadline from expirationPeriod for alert cron compatibility
+let deadline = args.deadline;
+if (!deadline && args.expirationPeriod) {
+  deadline =
+    Date.now() + expirationPeriodToMs(args.expirationPeriod.amount, args.expirationPeriod.unit);
+}
 ```
 
 Then pass `deadline` (computed) instead of `args.deadline`.
@@ -420,6 +436,7 @@ git commit -m "feat: compute expiresAt per recipient when sending with expiratio
 ### Task 7: Create expiration sweep cron
 
 **Files:**
+
 - Create: `apps/backend/convex/documents/expiration_sweep.ts`
 - Modify: `apps/backend/convex/crons.ts`
 
@@ -460,8 +477,9 @@ export const sweepExpiredRecipients = internalMutation({
       .withIndex("by_status", (q) => q.eq("status", "viewed"))
       .collect();
 
-    const candidates = [...pendingRecipients, ...viewedRecipients]
-      .filter((r) => r.expiresAt !== undefined && r.expiresAt < now && r.expirationNotifiedAt === undefined);
+    const candidates = [...pendingRecipients, ...viewedRecipients].filter(
+      (r) => r.expiresAt !== undefined && r.expiresAt < now && r.expirationNotifiedAt === undefined,
+    );
 
     // Process up to BATCH_SIZE
     const toProcess = candidates.slice(0, BATCH_SIZE);
@@ -509,7 +527,7 @@ export const sweepExpiredRecipients = internalMutation({
 
       // Check if all recipients are in terminal states (signed, expired, declined)
       const allTerminal = allRecipients.every(
-        (r) => r.status === "signed" || r.status === "expired" || r.status === "declined"
+        (r) => r.status === "signed" || r.status === "expired" || r.status === "declined",
       );
       const hasExpired = allRecipients.some((r) => r.status === "expired");
 
@@ -611,6 +629,7 @@ git commit -m "feat: add expiration sweep cron (15min interval) with sender noti
 ### Task 8: Add signing page expiration gate
 
 **Files:**
+
 - Modify: `apps/backend/convex/documents/recipients_queries.ts` (return `expiresAt` in `getRecipientByToken`)
 - Modify: `apps/web/src/routes/sign.$token.tsx` (add expiration check before rendering)
 - Create: `apps/web/src/components/signing/document-expired-page.tsx`
@@ -660,9 +679,9 @@ Actually, getting the owner name requires a user lookup. To keep things simple, 
 Let's add a lookup for the owner. After getting the document (line ~120), add:
 
 ```typescript
-    // Get owner name for expired page display
-    const owner = await ctx.db.get(document.ownerId);
-    const ownerName = owner?.name ?? "the sender";
+// Get owner name for expired page display
+const owner = await ctx.db.get(document.ownerId);
+const ownerName = owner?.name ?? "the sender";
 ```
 
 Then add to return:
@@ -713,10 +732,10 @@ export function DocumentExpiredPage({ ownerName }: DocumentExpiredPageProps) {
 In the `SigningPage` component (line ~135), after destructuring `data` (line ~148-155), add the expiration check before the ESIGN consent state:
 
 ```tsx
-  // Expiration gate — block access if recipient's deadline has passed
-  if (recipient.expiresAt && recipient.expiresAt < Date.now()) {
-    return <DocumentExpiredPage ownerName={data.ownerName} />;
-  }
+// Expiration gate — block access if recipient's deadline has passed
+if (recipient.expiresAt && recipient.expiresAt < Date.now()) {
+  return <DocumentExpiredPage ownerName={data.ownerName} />;
+}
 ```
 
 Add the import at the top of the file:
@@ -741,74 +760,79 @@ git commit -m "feat: add signing page expiration gate with DocumentExpiredPage"
 ### Task 9: Replace calendar deadline picker with expiration dropdown
 
 **Files:**
+
 - Modify: `apps/web/src/components/documents/send-document-dialog.tsx`
 
 **Step 1: Replace deadline state with expirationPeriod state (line 80–83)**
 
 Remove:
+
 ```typescript
-  const [deadline, setDeadline] = useState<Date | undefined>(
-    defaultDeadlineDays ? addDays(new Date(), defaultDeadlineDays) : undefined,
-  );
+const [deadline, setDeadline] = useState<Date | undefined>(
+  defaultDeadlineDays ? addDays(new Date(), defaultDeadlineDays) : undefined,
+);
 ```
 
 Replace with:
+
 ```typescript
-  // Expiration period: preset or custom
-  type ExpirationPreset = "none" | "7" | "14" | "30" | "60" | "90" | "custom";
-  const [expirationPreset, setExpirationPreset] = useState<ExpirationPreset>(
-    defaultDeadlineDays ? (
-      [7, 14, 30, 60, 90].includes(defaultDeadlineDays)
-        ? (String(defaultDeadlineDays) as ExpirationPreset)
-        : "custom"
-    ) : "none"
-  );
-  const [customAmount, setCustomAmount] = useState(defaultDeadlineDays ?? 30);
-  const [customUnit, setCustomUnit] = useState<"day" | "week" | "month">("day");
+// Expiration period: preset or custom
+type ExpirationPreset = "none" | "7" | "14" | "30" | "60" | "90" | "custom";
+const [expirationPreset, setExpirationPreset] = useState<ExpirationPreset>(
+  defaultDeadlineDays
+    ? [7, 14, 30, 60, 90].includes(defaultDeadlineDays)
+      ? (String(defaultDeadlineDays) as ExpirationPreset)
+      : "custom"
+    : "none",
+);
+const [customAmount, setCustomAmount] = useState(defaultDeadlineDays ?? 30);
+const [customUnit, setCustomUnit] = useState<"day" | "week" | "month">("day");
 ```
 
 **Step 2: Add helper to compute expirationPeriod from state**
 
 ```typescript
-  const getExpirationPeriod = () => {
-    if (expirationPreset === "none") return undefined;
-    if (expirationPreset === "custom") {
-      return { amount: customAmount, unit: customUnit };
-    }
-    return { amount: Number(expirationPreset), unit: "day" as const };
-  };
+const getExpirationPeriod = () => {
+  if (expirationPreset === "none") return undefined;
+  if (expirationPreset === "custom") {
+    return { amount: customAmount, unit: customUnit };
+  }
+  return { amount: Number(expirationPreset), unit: "day" as const };
+};
 
-  // Compute human-readable expiration text
-  const getExpirationText = () => {
-    const period = getExpirationPeriod();
-    if (!period) return null;
-    const { amount, unit } = period;
-    const unitLabel = amount === 1 ? unit : `${unit}s`;
-    return `Recipients will have ${amount} ${unitLabel} to sign after the document is sent`;
-  };
+// Compute human-readable expiration text
+const getExpirationText = () => {
+  const period = getExpirationPeriod();
+  if (!period) return null;
+  const { amount, unit } = period;
+  const unitLabel = amount === 1 ? unit : `${unit}s`;
+  return `Recipients will have ${amount} ${unitLabel} to sign after the document is sent`;
+};
 ```
 
 **Step 3: Update handleSend to pass expirationPeriod**
 
 Replace the deadline validation (line 122–129) with:
+
 ```typescript
-    // Validate custom expiration amount
-    const expirationPeriod = getExpirationPeriod();
-    if (expirationPeriod && expirationPeriod.amount < 1) {
-      toast.error("Expiration period must be at least 1");
-      return;
-    }
+// Validate custom expiration amount
+const expirationPeriod = getExpirationPeriod();
+if (expirationPeriod && expirationPeriod.amount < 1) {
+  toast.error("Expiration period must be at least 1");
+  return;
+}
 ```
 
 Update the `sendDocumentEmails` call (line 142–148):
+
 ```typescript
-      const result = await sendDocumentEmails({
-        documentId,
-        customMessage: customMessage.trim() || undefined,
-        recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
-        expirationPeriod,
-        signingMode: signingMode === "sequential" ? "sequential" : undefined,
-      });
+const result = await sendDocumentEmails({
+  documentId,
+  customMessage: customMessage.trim() || undefined,
+  recipientMessages: perRecipientMessages.length > 0 ? perRecipientMessages : undefined,
+  expirationPeriod,
+  signingMode: signingMode === "sequential" ? "sequential" : undefined,
+});
 ```
 
 Remove `deadline: deadline?.getTime(),` from the call args.
@@ -818,60 +842,62 @@ Remove `deadline: deadline?.getTime(),` from the call args.
 Replace the entire `{/* SEA-119: Deadline picker */}` block with:
 
 ```tsx
-          {/* Expiration Period */}
-          <div>
-            <Label className="text-sm font-medium">Expiration (Optional)</Label>
-            <p className="text-muted-foreground mb-2 text-xs">
-              Set how long recipients have to sign after sending
-            </p>
-            <Select
-              value={expirationPreset}
-              onValueChange={(val: ExpirationPreset) => setExpirationPreset(val)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="No expiration" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No expiration</SelectItem>
-                <SelectItem value="7">7 days</SelectItem>
-                <SelectItem value="14">14 days</SelectItem>
-                <SelectItem value="30">30 days</SelectItem>
-                <SelectItem value="60">60 days</SelectItem>
-                <SelectItem value="90">90 days</SelectItem>
-                <SelectItem value="custom">Custom...</SelectItem>
-              </SelectContent>
-            </Select>
+{
+  /* Expiration Period */
+}
+<div>
+  <Label className="text-sm font-medium">Expiration (Optional)</Label>
+  <p className="text-muted-foreground mb-2 text-xs">
+    Set how long recipients have to sign after sending
+  </p>
+  <Select
+    value={expirationPreset}
+    onValueChange={(val: ExpirationPreset) => setExpirationPreset(val)}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="No expiration" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="none">No expiration</SelectItem>
+      <SelectItem value="7">7 days</SelectItem>
+      <SelectItem value="14">14 days</SelectItem>
+      <SelectItem value="30">30 days</SelectItem>
+      <SelectItem value="60">60 days</SelectItem>
+      <SelectItem value="90">90 days</SelectItem>
+      <SelectItem value="custom">Custom...</SelectItem>
+    </SelectContent>
+  </Select>
 
-            {expirationPreset === "custom" && (
-              <div className="mt-2 flex gap-2">
-                <Input
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={customAmount}
-                  onChange={(e) => setCustomAmount(Number(e.target.value))}
-                  className="w-24"
-                />
-                <Select
-                  value={customUnit}
-                  onValueChange={(val: "day" | "week" | "month") => setCustomUnit(val)}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="day">Days</SelectItem>
-                    <SelectItem value="week">Weeks</SelectItem>
-                    <SelectItem value="month">Months</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+  {expirationPreset === "custom" && (
+    <div className="mt-2 flex gap-2">
+      <Input
+        type="number"
+        min={1}
+        max={365}
+        value={customAmount}
+        onChange={(e) => setCustomAmount(Number(e.target.value))}
+        className="w-24"
+      />
+      <Select
+        value={customUnit}
+        onValueChange={(val: "day" | "week" | "month") => setCustomUnit(val)}
+      >
+        <SelectTrigger className="w-32">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="day">Days</SelectItem>
+          <SelectItem value="week">Weeks</SelectItem>
+          <SelectItem value="month">Months</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  )}
 
-            {getExpirationText() && (
-              <p className="text-muted-foreground mt-1.5 text-xs">{getExpirationText()}</p>
-            )}
-          </div>
+  {getExpirationText() && (
+    <p className="text-muted-foreground mt-1.5 text-xs">{getExpirationText()}</p>
+  )}
+</div>;
 ```
 
 **Step 5: Update imports**
@@ -885,9 +911,9 @@ Add: `Select, SelectContent, SelectItem, SelectTrigger, SelectValue` from `../ui
 Replace the deadline reference in the info box (line ~426-428) with expiration info:
 
 ```tsx
-                {getExpirationText() && (
-                  <span className="mt-1 block">{getExpirationText()}</span>
-                )}
+{
+  getExpirationText() && <span className="mt-1 block">{getExpirationText()}</span>;
+}
 ```
 
 **Step 7: Update the SendDocumentDialogProps interface**
@@ -910,6 +936,7 @@ git commit -m "feat: replace calendar deadline picker with expiration dropdown p
 ### Task 10: Create document-expired email template + email function
 
 **Files:**
+
 - Create: `packages/transactional/src/emails/document-expired.tsx`
 - Modify: `packages/transactional/src/index.ts` (export new template)
 - Modify: `apps/backend/convex/documents/email.ts` (add sendDocumentExpiredNotification)
@@ -951,16 +978,14 @@ export function DocumentExpiredEmail({
           <Heading style={heading}>Document Expired</Heading>
           <Text style={text}>Hi {ownerName},</Text>
           <Text style={text}>
-            Your document <strong>{documentName}</strong> has expired as of {expiredAt}.
-            All unsigned recipients have been marked as expired.
+            Your document <strong>{documentName}</strong> has expired as of {expiredAt}. All
+            unsigned recipients have been marked as expired.
           </Text>
           <Text style={text}>
             You can re-send this document to give recipients a new expiration period.
           </Text>
           <Section style={footer}>
-            <Text style={footerText}>
-              This is an automated message from Seal.
-            </Text>
+            <Text style={footerText}>This is an automated message from Seal.</Text>
           </Section>
         </Container>
       </Body>
@@ -968,8 +993,16 @@ export function DocumentExpiredEmail({
   );
 }
 
-const main = { backgroundColor: "#f6f9fc", fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif' };
-const container = { backgroundColor: "#ffffff", margin: "0 auto", padding: "20px 48px", borderRadius: "5px" };
+const main = {
+  backgroundColor: "#f6f9fc",
+  fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
+};
+const container = {
+  backgroundColor: "#ffffff",
+  margin: "0 auto",
+  padding: "20px 48px",
+  borderRadius: "5px",
+};
 const heading = { fontSize: "24px", fontWeight: "bold", marginBottom: "20px", color: "#1a1a1a" };
 const text = { fontSize: "16px", lineHeight: "26px", color: "#484848" };
 const footer = { marginTop: "32px", paddingTop: "16px", borderTop: "1px solid #e6e6e6" };
@@ -1051,6 +1084,7 @@ git commit -m "feat: add document-expired email template and notification functi
 ### Task 11: Update workflow status badge + documents list filter
 
 **Files:**
+
 - Modify: `apps/web/src/components/documents/workflow-status-badge.tsx`
 - Modify: `apps/web/src/routes/_authenticated/$slug/documents/index.tsx`
 
@@ -1083,19 +1117,26 @@ Add `expired` config to the `config` record (after `declined`, line ~57-60):
 **Step 2: Add "expired" to WorkflowStatusFilter (documents/index.tsx, line 95)**
 
 ```typescript
-type WorkflowStatusFilter = "all" | "draft" | "sent" | "in_progress" | "completed" | "cancelled" | "expired";
+type WorkflowStatusFilter =
+  | "all"
+  | "draft"
+  | "sent"
+  | "in_progress"
+  | "completed"
+  | "cancelled"
+  | "expired";
 ```
 
 **Step 3: Add "Expired" filter button (after the Cancelled button, line ~1044-1050)**
 
 ```tsx
-                <Button
-                  size="sm"
-                  variant={workflowStatusFilter === "expired" ? "default" : "outline"}
-                  onClick={() => setWorkflowStatusFilter("expired")}
-                >
-                  Expired
-                </Button>
+<Button
+  size="sm"
+  variant={workflowStatusFilter === "expired" ? "default" : "outline"}
+  onClick={() => setWorkflowStatusFilter("expired")}
+>
+  Expired
+</Button>
 ```
 
 **Step 4: Verify**
@@ -1114,6 +1155,7 @@ git commit -m "feat: add expired status to workflow badge and documents list fil
 ### Task 12: Add re-send flow for expired documents
 
 **Files:**
+
 - Modify: `apps/backend/convex/documents/send_document_action.ts` (update `resendRecipientEmail` to handle expired recipients)
 
 **Step 1: Update resendRecipientEmail to handle expired status**
@@ -1121,13 +1163,13 @@ git commit -m "feat: add expired status to workflow badge and documents list fil
 In the status check (line ~459-468), allow resending to expired recipients:
 
 ```typescript
-    // 4. Verify recipient hasn't completed their action (allow re-send for expired)
-    if (recipient.status === "signed" || recipient.status === "approved") {
-      return {
-        success: false,
-        error: `Cannot resend - recipient has already ${recipient.status}`,
-      };
-    }
+// 4. Verify recipient hasn't completed their action (allow re-send for expired)
+if (recipient.status === "signed" || recipient.status === "approved") {
+  return {
+    success: false,
+    error: `Cannot resend - recipient has already ${recipient.status}`,
+  };
+}
 ```
 
 Remove `recipient.status === "declined"` from the block — declined recipients shouldn't be re-sent either. Actually, keep declined blocked. Just remove the expired block:
@@ -1139,30 +1181,31 @@ The current code blocks signed, approved, and declined. It doesn't block expired
 After verifying the recipient and before sending the email (line ~470), add:
 
 ```typescript
-    // 5a. If recipient is expired, reset their status and expiration
-    if (recipient.status === "expired") {
-      const document_latest = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
-        documentId: args.documentId,
-      });
-      const expiresAt = document_latest?.expirationPeriod
-        ? Date.now() + expirationPeriodToMs(
-            document_latest.expirationPeriod.amount,
-            document_latest.expirationPeriod.unit,
-          )
-        : undefined;
+// 5a. If recipient is expired, reset their status and expiration
+if (recipient.status === "expired") {
+  const document_latest = await ctx.runQuery(internal.documents.queries.getDocumentInternal, {
+    documentId: args.documentId,
+  });
+  const expiresAt = document_latest?.expirationPeriod
+    ? Date.now() +
+      expirationPeriodToMs(
+        document_latest.expirationPeriod.amount,
+        document_latest.expirationPeriod.unit,
+      )
+    : undefined;
 
-      await ctx.runMutation(internal.documents.send_document_action.resetExpiredRecipient, {
-        recipientId: args.recipientId,
-        expiresAt,
-      });
+  await ctx.runMutation(internal.documents.send_document_action.resetExpiredRecipient, {
+    recipientId: args.recipientId,
+    expiresAt,
+  });
 
-      // If document is expired, transition back to sent
-      if (document_latest?.workflowStatus === "expired") {
-        await ctx.runMutation(internal.documents.send_document_action.reactivateExpiredDocument, {
-          documentId: args.documentId,
-        });
-      }
-    }
+  // If document is expired, transition back to sent
+  if (document_latest?.workflowStatus === "expired") {
+    await ctx.runMutation(internal.documents.send_document_action.reactivateExpiredDocument, {
+      documentId: args.documentId,
+    });
+  }
+}
 ```
 
 **Step 3: Create internal mutations for resetting expired state**
@@ -1225,6 +1268,7 @@ git commit -m "feat: add re-send flow for expired documents and recipients"
 ### Task 13: Write expiration sweep tests
 
 **Files:**
+
 - Create: `apps/backend/convex/documents/__tests__/expiration_sweep.test.ts`
 
 **Step 1: Write tests**
@@ -1500,6 +1544,7 @@ git commit -m "test: add expiration sweep cron tests"
 ### Task 14: Fix type errors + regenerate Convex types + full verification
 
 **Files:**
+
 - Various files that may have type errors from the new "expired" status
 - `apps/backend/convex/_generated/` (regenerated)
 
@@ -1509,6 +1554,7 @@ Run: `bun --bun run typecheck`
 Expected: Identify and fix any remaining type errors caused by the expanded status unions.
 
 Common fixes needed:
+
 - Any exhaustive switch/case on `RecipientStatus` or `DocumentWorkflowStatus` needs `"expired"` case
 - The `resendRecipientEmail` status check in `send_document_action.ts` (already handled in Task 12)
 - Any frontend component that uses a narrower type union for recipient status
@@ -1516,6 +1562,7 @@ Common fixes needed:
 **Step 2: Fix each error**
 
 Address each type error individually. Common patterns:
+
 - Add `case "expired":` to switch statements
 - Add `|| status === "expired"` to conditional checks
 - Update type unions in frontend components
@@ -1548,6 +1595,7 @@ git commit -m "fix: resolve type errors and regenerate Convex types for document
 ### Task 15: Update feature execution plan
 
 **Files:**
+
 - Modify: `docs/plans/2026-02-25-feature-execution-plan.md`
 
 **Step 1: Update Feature #3 status to DONE**

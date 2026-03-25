@@ -488,7 +488,7 @@ http.route({
     }
 
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2025-12-15.clover",
+      apiVersion: "2026-02-25.clover",
     });
 
     const signature = request.headers.get("stripe-signature");
@@ -533,7 +533,7 @@ http.route({
     }
 
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2025-12-15.clover",
+      apiVersion: "2026-02-25.clover",
     });
 
     const signature = request.headers.get("stripe-signature");

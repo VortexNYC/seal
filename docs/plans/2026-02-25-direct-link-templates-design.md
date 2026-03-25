@@ -97,6 +97,7 @@ All direct link state lives on the template record. No separate `template_direct
 #### Template Settings: Direct Link Section
 
 Located in the template detail/settings page:
+
 - Toggle switch: "Enable Direct Link"
 - When enabled: shows the generated URL with copy button
 - Recipient selector dropdown: "Visitor fills the role of: [Signer 1]"
@@ -118,9 +119,9 @@ No new permissions. Direct link management uses existing `templates:edit` permis
 
 ### Plan Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Direct link templates | No | Yes |
+| Feature               | Free | Pro |
+| --------------------- | ---- | --- |
+| Direct link templates | No   | Yes |
 
 ### What We Skip (v1)
 
@@ -136,12 +137,12 @@ No new permissions. Direct link management uses existing `templates:edit` permis
 
 ### Key Files to Modify/Create
 
-| File | Action |
-|------|--------|
-| `apps/backend/convex/schemas/templates.ts` | Modify — add direct link fields, `structureUpdatedAt`, and index |
-| `apps/backend/convex/templates/mutations.ts` | Modify — add enable/disable/regenerate mutations |
-| `apps/backend/convex/templates/actions.ts` | Create or modify — `createDocumentFromDirectLink` action |
-| `apps/backend/convex/templates/queries.ts` | Modify — add `getDirectLinkTemplate` public query |
-| `apps/web/src/routes/d.$token.tsx` | Create — public direct link landing page |
-| `apps/web/src/components/templates/direct-link-settings.tsx` | Create — settings section component |
-| `apps/web/src/routes/_authenticated/$slug/templates.tsx` | Modify — integrate direct link settings in template detail |
+| File                                                         | Action                                                           |
+| ------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `apps/backend/convex/schemas/templates.ts`                   | Modify — add direct link fields, `structureUpdatedAt`, and index |
+| `apps/backend/convex/templates/mutations.ts`                 | Modify — add enable/disable/regenerate mutations                 |
+| `apps/backend/convex/templates/actions.ts`                   | Create or modify — `createDocumentFromDirectLink` action         |
+| `apps/backend/convex/templates/queries.ts`                   | Modify — add `getDirectLinkTemplate` public query                |
+| `apps/web/src/routes/d.$token.tsx`                           | Create — public direct link landing page                         |
+| `apps/web/src/components/templates/direct-link-settings.tsx` | Create — settings section component                              |
+| `apps/web/src/routes/_authenticated/$slug/templates.tsx`     | Modify — integrate direct link settings in template detail       |

@@ -3,14 +3,14 @@
  * Displays a document thumbnail with lazy generation for documents without thumbnails
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { FileIcon, Loader2Icon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { generateThumbnailFromUrl } from "@/lib/pdf-utils";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 interface DocumentThumbnailProps {
   documentId: Id<"documents">;

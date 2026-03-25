@@ -73,7 +73,8 @@
 
         const isSystem = storedTheme !== "light" && storedTheme !== "dark";
         const nextResolvedTheme =
-          storedTheme === "dark" || (isSystem && window.matchMedia("(prefers-color-scheme: dark)").matches)
+          storedTheme === "dark" ||
+          (isSystem && window.matchMedia("(prefers-color-scheme: dark)").matches)
             ? "dark"
             : "light";
         const fallbackBackground = nextResolvedTheme === "dark" ? "#09090b" : "#f8fafc";

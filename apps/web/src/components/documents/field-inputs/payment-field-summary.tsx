@@ -1,8 +1,7 @@
-import { useQuery } from "convex/react";
-import { CreditCardIcon, Loader2Icon } from "lucide-react";
-
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { CreditCardIcon, Loader2Icon } from "lucide-react";
 
 import { Badge } from "../../ui/badge";
 import { PaymentFieldInline } from "./payment-field-inline";

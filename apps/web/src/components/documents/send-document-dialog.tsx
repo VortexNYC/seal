@@ -4,6 +4,8 @@
  * and optional expiration period
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useAction, useQuery } from "convex/react";
 import {
   ChevronDownIcon,
@@ -19,8 +21,6 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { cn, getErrorMessage } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";

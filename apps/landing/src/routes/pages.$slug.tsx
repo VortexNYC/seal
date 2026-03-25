@@ -1,11 +1,17 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-
 import { PageBuilder } from "~/components/page-builder";
 import { getPage } from "~/lib/content/pages";
 import { generateJsonLd } from "~/lib/content/structured-data";
 import type { LandingPage } from "~/lib/content/types";
 
 export const Route = createFileRoute("/pages/$slug")({
+  loader: async ({ params }): Promise<{ page: LandingPage }> => {
+    const page = getPage(params.slug);
+    if (!page) {
+      throw notFound();
+    }
+    return { page };
+  },
   head: ({ loaderData }) => {
     const data = loaderData as { page: LandingPage } | undefined;
     const page = data?.page;
@@ -29,14 +35,6 @@ export const Route = createFileRoute("/pages/$slug")({
         children: JSON.stringify(schema),
       })),
     };
-  },
-  // @ts-expect-error — TanStack Router generic inference limitation with $slug param routes
-  loader: async ({ params }) => {
-    const page = getPage(params.slug);
-    if (!page) {
-      throw notFound();
-    }
-    return { page };
   },
   component: PageContent,
 });

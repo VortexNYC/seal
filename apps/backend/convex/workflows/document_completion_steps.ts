@@ -59,7 +59,7 @@ async function notifySequentialRecipients(
     userId: document.ownerId,
   });
   const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
 
   const brandingSettings = await ctx.runQuery(
     internal.organizations.queries.getBrandingSettingsInternal,
@@ -272,7 +272,7 @@ export const sendCompletionEmails = internalAction({
       { documentId: document._id, issuedTo: owner.email },
     );
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
     const convexSiteUrl = process.env.CONVEX_SITE_URL || baseUrl;
     const documentUrl = `${baseUrl}/documents/${document._id}`;
     const downloadUrl = `${convexSiteUrl}/download?token=${downloadToken}`;

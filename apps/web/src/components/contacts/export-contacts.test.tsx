@@ -1,8 +1,7 @@
+import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { ExportContacts } from "./export-contacts";
 
