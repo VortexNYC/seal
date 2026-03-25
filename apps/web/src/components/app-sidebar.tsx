@@ -26,10 +26,10 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
@@ -430,10 +430,6 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
-  const handleThemeToggle = () => {
-    setTheme(isDark ? "light" : "dark");
-  };
-
   const handleTeamSelect = React.useCallback(
     (nextSlug: string) => {
       if (!nextSlug || nextSlug === slug) {
@@ -485,30 +481,22 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
           <SidebarMenuItem>
             <div className="flex items-center justify-between px-2">
               <NotificationsPopover slug={slug} />
-              <SidebarMenuButton
-                className="ml-2 flex-1 justify-between"
-                onClick={handleThemeToggle}
-                aria-pressed={isDark}
+              <label
+                htmlFor="dark-mode-toggle"
+                className="ml-2 flex flex-1 cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-sm"
               >
-                <div className="flex items-center gap-2">
+                <span className="flex items-center gap-2">
                   {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
                   <span className="group-data-[collapsible=icon]:hidden">Dark mode</span>
-                </div>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "group-data-[collapsible=icon]:hidden inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
-                    isDark ? "bg-primary border-primary justify-end" : "bg-muted border-border",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "bg-background block h-4 w-4 rounded-full shadow-sm transition-transform",
-                      isDark ? "-translate-x-0.5" : "translate-x-0.5",
-                    )}
-                  />
                 </span>
-              </SidebarMenuButton>
+                <Switch
+                  id="dark-mode-toggle"
+                  checked={isDark}
+                  onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                  aria-label="Toggle dark mode"
+                  className="group-data-[collapsible=icon]:hidden"
+                />
+              </label>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
