@@ -1,4 +1,4 @@
-import { clerk } from "@clerk/testing/playwright";
+import { clerk, clerkSetup } from "@clerk/testing/playwright";
 import { expect, type Locator, type Page } from "@playwright/test";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
@@ -19,6 +19,8 @@ type TestWorkspaceConfig = {
   organizationName: string;
   organizationSlug: string;
 };
+
+let clerkTestingSetupPromise: Promise<void> | null = null;
 
 export function getTestWorkspaceConfig(): TestWorkspaceConfig {
   const email =
@@ -52,6 +54,7 @@ export async function performLogin(page: Page): Promise<void> {
   const shouldUseClerkTesting = canUseClerkTestingHelpers();
 
   if (shouldUseClerkTesting) {
+    await ensureClerkTestingSetup();
     await clerk.loaded({ page });
     await clerk.signIn({
       page,
@@ -169,6 +172,11 @@ export async function waitForClerkConvexToken(page: Page): Promise<string> {
   }
 
   return token;
+}
+
+async function ensureClerkTestingSetup(): Promise<void> {
+  clerkTestingSetupPromise ??= clerkSetup();
+  await clerkTestingSetupPromise;
 }
 
 async function retry<T>(
