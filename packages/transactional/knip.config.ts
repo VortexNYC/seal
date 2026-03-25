@@ -6,8 +6,10 @@ const config: KnipConfig = {
   ignoreDependencies: [
     // Design tokens (imported via @seal/tokens/theme subpath — knip can't trace workspace subpath exports)
     "@seal/tokens",
+    // CLI-only package used by the local email preview/export scripts.
+    "react-email",
   ],
-  ignoreBinaries: ["oxlint", "oxfmt", "knip"],
+  ignoreBinaries: ["email", "knip", "oxfmt", "oxlint", "tsc"],
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };

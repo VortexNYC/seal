@@ -10,6 +10,13 @@ import {
 } from "~/lib/changelog/manifest";
 
 export const Route = createFileRoute("/changelog/$slug")({
+  loader: async ({ params }): Promise<{ entry: ChangelogManifestEntry }> => {
+    const entry = getChangelogEntry(params.slug);
+    if (!entry) {
+      throw notFound();
+    }
+    return { entry };
+  },
   head: ({ loaderData }) => {
     const data = loaderData as { entry: ChangelogManifestEntry } | undefined;
     return {
@@ -25,13 +32,6 @@ export const Route = createFileRoute("/changelog/$slug")({
         },
       ],
     };
-  },
-  loader: async ({ params }) => {
-    const entry = getChangelogEntry(params.slug);
-    if (!entry) {
-      throw notFound();
-    }
-    return { entry };
   },
   component: ChangelogDetailPage,
 });

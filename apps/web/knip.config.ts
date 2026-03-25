@@ -20,7 +20,7 @@ const config: KnipConfig = {
     // E2E-only dependency used in Playwright auth fixtures outside src/**
     "@clerk/testing",
   ],
-  ignoreBinaries: ["oxlint", "oxfmt", "knip"],
+  ignoreBinaries: ["knip", "oxfmt", "oxlint", "playwright", "vite", "vitest"],
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };
