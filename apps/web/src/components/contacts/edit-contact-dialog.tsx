@@ -5,6 +5,9 @@
  * Calls api.contacts.mutations.update with the changed fields.
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Doc } from "@seal/backend/convex/_generated/dataModel";
+import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -28,9 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc } from "@seal/backend/convex/_generated/dataModel";
-import type { ContactStatus } from "@seal/backend/convex/schemas/contacts";
 
 interface EditContactDialogProps {
   open: boolean;

@@ -3,8 +3,8 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../fixtures/auth";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
-import { waitForToast } from "../utils/test-helpers";
 import { testData } from "../utils/test-data";
+import { waitForToast } from "../utils/test-helpers";
 
 async function gotoDocumentsList(
   authenticatedPage: Page,
@@ -105,9 +105,7 @@ test.describe("Document Actions", () => {
     await authenticatedPage.getByRole("menuitem", { name: /^download$/i }).click();
 
     const popup = await popupPromise;
-    await expect
-      .poll(async () => popup.url(), { timeout: 10000 })
-      .not.toBe("about:blank");
+    await expect.poll(async () => popup.url(), { timeout: 10000 }).not.toBe("about:blank");
   });
 
   test("should navigate back from document editor", async ({

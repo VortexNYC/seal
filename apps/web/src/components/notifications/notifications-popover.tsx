@@ -1,3 +1,5 @@
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -16,8 +18,6 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";

@@ -1,6 +1,8 @@
 "use client";
 
 import { useClerk, useUser } from "@clerk/clerk-react";
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import {
@@ -33,8 +35,6 @@ import {
 import { useAnalytics } from "@/hooks/use-analytics";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 type SidebarOrganization = {
   _id: Id<"organizations">;
@@ -497,7 +497,7 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "group-data-[collapsible=icon]:hidden inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
+                    "inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors group-data-[collapsible=icon]:hidden",
                     isDark ? "bg-primary border-primary justify-end" : "bg-muted border-border",
                   )}
                 >

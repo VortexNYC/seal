@@ -5,6 +5,7 @@
  * Route: /{slug}/settings/branding
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Building2Icon, ImageIcon, PaletteIcon, Save, Trash2Icon, UploadIcon } from "lucide-react";
@@ -18,7 +19,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/branding")({
   component: BrandingSettings,

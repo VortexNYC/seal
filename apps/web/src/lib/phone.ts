@@ -24,9 +24,7 @@
  */
 export function formatPhoneNumber(phoneString: string): string {
   if (!/^\d{10}$/.test(phoneString)) {
-    throw new Error(
-      `Invalid phone number: expected exactly 10 digits, received "${phoneString}"`,
-    );
+    throw new Error(`Invalid phone number: expected exactly 10 digits, received "${phoneString}"`);
   }
 
   const area = phoneString.slice(0, 3);

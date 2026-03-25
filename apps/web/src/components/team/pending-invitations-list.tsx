@@ -4,6 +4,8 @@
  * Displays pending invitations with option to cancel
  */
 
+import { api } from "@seal/backend/convex/_generated/api";
+import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useAction } from "convex/react";
 import { Ban, MailIcon, RefreshCw } from "lucide-react";
 import { useState } from "react";
@@ -21,8 +23,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn, getErrorMessage } from "@/lib/utils";
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 interface Invitation {
   id: Id<"organization_invitations">;

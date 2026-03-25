@@ -106,18 +106,20 @@ async function fillFieldWithFallback(page: Page, value: string): Promise<void> {
   ];
 
   for (const locator of candidates) {
-    if (await locator.count() > 0) {
+    if ((await locator.count()) > 0) {
       await locator.first().fill(value);
       return;
     }
   }
 
-  await page.locator('input').first().fill(value);
+  await page.locator("input").first().fill(value);
 }
 
 async function fillOtpCode(page: Page, code: string): Promise<void> {
   const singleInputs = page.locator('input[name="code"], input[autocomplete="one-time-code"]');
-  const digitInputs = page.locator('[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]');
+  const digitInputs = page.locator(
+    '[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]',
+  );
   const roleInputs = page.getByRole("textbox", { name: /code/i });
 
   const singleCount = await singleInputs.count();

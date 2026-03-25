@@ -1,9 +1,10 @@
-import { expect, test } from "../fixtures/auth";
 import type { Page } from "@playwright/test";
+
+import { expect, test } from "../fixtures/auth";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { ShareDialogPage } from "../pages/documents/share-dialog-page";
-import { waitForToast } from "../utils/test-helpers";
 import { testData } from "../utils/test-data";
+import { waitForToast } from "../utils/test-helpers";
 
 test.describe("Document Sharing", () => {
   let documentsPage: DocumentsListPage;

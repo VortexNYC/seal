@@ -1,6 +1,5 @@
-import { useQuery } from "convex/react";
-
 import { api } from "@seal/backend/convex/_generated/api";
+import { useQuery } from "convex/react";
 
 /**
  * Hook for checking subscription plan limits in the UI.

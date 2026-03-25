@@ -2,7 +2,6 @@
  * @fileoverview Account/organization info tool for the Seal MCP server.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-
 import { type ApiAccountInfo, getAccountInfoSchema } from "@seal/backend/convex/validations/api";
 
 import type { SealApiClient } from "../client";

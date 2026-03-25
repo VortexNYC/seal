@@ -36,9 +36,7 @@ export async function waitForConvexMutation(
   try {
     if (mutationName) {
       await page.waitForResponse(
-        (response) =>
-          isConvexRequest(response.url()) &&
-          response.url().includes(mutationName),
+        (response) => isConvexRequest(response.url()) && response.url().includes(mutationName),
         { timeout: timeout * 0.6 },
       );
       return;
@@ -48,10 +46,7 @@ export async function waitForConvexMutation(
   }
 
   try {
-    await page.waitForResponse(
-      (response) => isConvexRequest(response.url()),
-      { timeout: timeout },
-    );
+    await page.waitForResponse((response) => isConvexRequest(response.url()), { timeout: timeout });
   } catch (_error) {
     // If Convex doesn't emit a matching request (for example due local no-op
     // transitions), let the call continue and rely on subsequent UI assertions.

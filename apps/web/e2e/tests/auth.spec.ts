@@ -9,9 +9,7 @@ function getOtpPromptMatcher() {
 }
 
 test.describe("Authentication", () => {
-  test("should redirect unauthenticated users to sign-in", async ({
-    page,
-  }) => {
+  test("should redirect unauthenticated users to sign-in", async ({ page }) => {
     await page.goto("/");
 
     // Users are now redirected to the sign-in flow when not authenticated.
@@ -36,7 +34,7 @@ test.describe("Authentication", () => {
     // Wait for Clerk sign-in component to load
     await expect(
       page.getByRole("heading", { name: getSignInPromptMatcher() }),
-      `Expected sign-in heading ${getSignInPromptMatcher()}`
+      `Expected sign-in heading ${getSignInPromptMatcher()}`,
     ).toBeVisible();
 
     // Fill in email
@@ -46,7 +44,7 @@ test.describe("Authentication", () => {
     // Wait for OTP code screen and inputs to be ready
     await expect(
       page.getByRole("heading", { name: getOtpPromptMatcher() }).first(),
-      `Expected OTP prompt ${getOtpPromptMatcher()}`
+      `Expected OTP prompt ${getOtpPromptMatcher()}`,
     ).toBeVisible();
 
     // Wait a moment for Clerk OTP to initialize
@@ -56,16 +54,18 @@ test.describe("Authentication", () => {
     const singleOtpInput = page
       .locator('input[name="code"], input[autocomplete="one-time-code"]')
       .first();
-    const multiOtpInputs = page.locator('[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]');
+    const multiOtpInputs = page.locator(
+      '[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]',
+    );
     const codeRoleInput = page.getByRole("textbox", { name: /code/i }).first();
 
-    if (await singleOtpInput.count() > 0) {
+    if ((await singleOtpInput.count()) > 0) {
       await singleOtpInput.fill(testEmailCode);
-    } else if (await multiOtpInputs.count() > 1) {
+    } else if ((await multiOtpInputs.count()) > 1) {
       for (let i = 0; i < Math.min(6, testEmailCode.length); i++) {
         await multiOtpInputs.nth(i).fill(testEmailCode[i] ?? "");
       }
-    } else if (await codeRoleInput.count() > 0) {
+    } else if ((await codeRoleInput.count()) > 0) {
       await codeRoleInput.fill(testEmailCode);
     } else {
       await page.keyboard.type(testEmailCode);
@@ -99,7 +99,9 @@ test.describe("Authentication", () => {
     await page.keyboard.type("000000");
 
     // Should show an auth error message (rate limits and invalid code are both expected).
-    await expect(page.getByText(/incorrect|invalid|wrong|too many requests|try again/i).first()).toBeVisible({
+    await expect(
+      page.getByText(/incorrect|invalid|wrong|too many requests|try again/i).first(),
+    ).toBeVisible({
       timeout: 10000,
     });
   });
