@@ -1,9 +1,7 @@
-import { clerk, clerkSetup } from "@clerk/testing/playwright";
-import { expect, type Locator, type Page } from "@playwright/test";
+import { clerk } from "@clerk/testing/playwright";
+import { expect, type Page } from "@playwright/test";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
-
-import { canUseClerkTestingHelpers } from "./clerk-testing-env";
 
 type ClerkWindow = Window & {
   Clerk?: {
@@ -20,13 +18,11 @@ type TestWorkspaceConfig = {
   organizationSlug: string;
 };
 
-let clerkTestingSetupPromise: Promise<void> | null = null;
-
 export function getTestWorkspaceConfig(): TestWorkspaceConfig {
   const email =
     process.env.E2E_TEST_USER_EMAIL ||
     process.env.TEST_USER_EMAIL ||
-    "sealtest001+clerk_test@example.com";
+    "seal-e2e+clerk_test@example.com";
   const emailCode = process.env.E2E_TEST_EMAIL_CODE || process.env.TEST_EMAIL_CODE || "424242";
   const defaultSlug = buildDefaultOrganizationSlug(email);
 
@@ -42,55 +38,44 @@ export function getTestWorkspaceConfig(): TestWorkspaceConfig {
   };
 }
 
-export async function performLogin(page: Page): Promise<void> {
-  const { email: testEmail, emailCode: testEmailCode } = getTestWorkspaceConfig();
+/**
+ * Sign in a test user following Clerk's official Playwright testing protocol:
+ * 1. Navigate to an unprotected page that loads Clerk (/)
+ * 2. Use clerk.signIn() which internally calls setupClerkTestingToken()
+ * 3. Navigate to the app after sign-in
+ *
+ * Requires clerkSetup() to have run first (done in global.setup.ts).
+ */
+export async function signInTestUser(page: Page): Promise<void> {
+  const { email: testEmail } = getTestWorkspaceConfig();
 
-  await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
+  // Clerk docs: "Before calling clerk.signIn(), navigate to an unprotected
+  // page that loads Clerk. For example, the index (/) page."
+  await page.goto("/", { waitUntil: "domcontentloaded" });
 
-  if (isAuthenticatedUrl(page.url())) {
-    return;
-  }
+  // clerk.signIn() internally calls setupClerkTestingToken() — no need to
+  // call it separately. The Testing Token bypasses Cloudflare bot detection.
+  await clerk.signIn({
+    page,
+    signInParams: {
+      strategy: "email_code",
+      identifier: testEmail,
+    },
+  });
 
-  const shouldUseClerkTesting = canUseClerkTestingHelpers();
+  // Navigate to the authenticated app area
+  await page.goto("/app", { waitUntil: "domcontentloaded" });
 
-  if (shouldUseClerkTesting) {
-    await ensureClerkTestingSetup();
-    await clerk.loaded({ page });
-    await clerk.signIn({
-      page,
-      signInParams: {
-        strategy: "email_code",
-        identifier: testEmail,
-      },
-    });
-    await page.goto("/app", { waitUntil: "domcontentloaded" });
-  } else {
-    await waitForElementWithFallback(page, [
-      page.getByRole("heading", { name: /sign in/i }),
-      page.getByText(/sign in to seal/i),
-      page.getByText(/sign in/i),
-    ]);
-
-    if (isAuthenticatedUrl(page.url())) {
-      return;
-    }
-
-    await fillFieldWithFallback(page, testEmail);
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
-
-    await waitForElementWithFallback(page, [
-      page.getByRole("heading", { name: /check your email/i }),
-      page.getByText(/check your email/i),
-      page.getByText(/verification code/i),
-    ]);
-
-    await page.waitForTimeout(500);
-    await fillOtpCode(page, testEmailCode);
-  }
-
+  // Wait for the app to land on a workspace page
   await page.waitForURL(/\/(app|.*\/home|.*\/onboarding\/choose-organization)/, {
     timeout: 30000,
   });
+
+  const organizationSlug = await ensureWorkspaceForAuthenticatedUser(page);
+
+  await page.goto("/app", { waitUntil: "domcontentloaded" });
+  await page.waitForURL(new RegExp(`/${organizationSlug}/home$`), { timeout: 30000 });
+  await expect(page).toHaveURL(new RegExp(`/${organizationSlug}/home$`), { timeout: 30000 });
 }
 
 export function isAuthenticatedUrl(url: string): boolean {
@@ -174,11 +159,6 @@ export async function waitForClerkConvexToken(page: Page): Promise<string> {
   return token;
 }
 
-async function ensureClerkTestingSetup(): Promise<void> {
-  clerkTestingSetupPromise ??= clerkSetup();
-  await clerkTestingSetupPromise;
-}
-
 async function retry<T>(
   fn: () => Promise<T>,
   options: {
@@ -209,83 +189,6 @@ async function retry<T>(
   }
 
   throw new Error("Retry operation did not complete successfully");
-}
-
-async function fillFieldWithFallback(page: Page, value: string): Promise<void> {
-  const candidates: Locator[] = [
-    page.getByLabel(/email address/i),
-    page.getByLabel(/email/i),
-    page.getByRole("textbox", { name: /email/i }),
-    page.locator('input[type="email"]'),
-  ];
-
-  for (const locator of candidates) {
-    if ((await locator.count()) > 0) {
-      await locator.first().fill(value);
-      return;
-    }
-  }
-
-  await page.locator("input").first().fill(value);
-}
-
-async function fillOtpCode(page: Page, code: string): Promise<void> {
-  const singleInputs = page.locator('input[name="code"], input[autocomplete="one-time-code"]');
-  const digitInputs = page.locator(
-    '[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]',
-  );
-  const roleInputs = page.getByRole("textbox", { name: /code/i });
-
-  const singleCount = await singleInputs.count();
-  if (singleCount > 0) {
-    await singleInputs.first().fill(code);
-    return;
-  }
-
-  const digitCount = await digitInputs.count();
-  if (digitCount >= 2) {
-    for (let index = 0; index < Math.min(digitCount, code.length); index++) {
-      await digitInputs.nth(index).fill(code[index] ?? "");
-    }
-    return;
-  }
-
-  const roleCount = await roleInputs.count();
-  if (roleCount > 0) {
-    await roleInputs.first().fill(code);
-    return;
-  }
-
-  await page.keyboard.type(code);
-}
-
-async function waitForElementWithFallback(page: Page, candidates: Locator[]): Promise<void> {
-  const start = Date.now();
-  const timeoutMs = 30000;
-
-  while (Date.now() - start < timeoutMs) {
-    if (isAuthenticatedUrl(page.url())) {
-      return;
-    }
-
-    for (const locator of candidates) {
-      if (
-        await locator
-          .first()
-          .isVisible()
-          .catch(() => false)
-      ) {
-        return;
-      }
-    }
-    await page.waitForTimeout(250);
-  }
-
-  if (isAuthenticatedUrl(page.url())) {
-    return;
-  }
-
-  await expect(candidates[0]).toBeVisible({ timeout: 1000 });
 }
 
 function buildDefaultOrganizationSlug(email: string): string {

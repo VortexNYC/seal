@@ -2,9 +2,8 @@
 import { expect, test as base, type Page } from "@playwright/test";
 
 import {
-  ensureWorkspaceForAuthenticatedUser,
   isAuthenticatedUrl,
-  performLogin,
+  signInTestUser,
   waitForClerkConvexToken,
 } from "./auth-helpers";
 
@@ -27,7 +26,8 @@ export const test = base.extend<AuthFixtures>({
     await page.goto("/app", { waitUntil: "domcontentloaded" });
 
     if (!isAuthenticatedUrl(page.url())) {
-      await performLogin(page);
+      // signInTestUser handles sign-in + workspace setup per Clerk's protocol
+      await signInTestUser(page);
     }
 
     const landedOnWorkspaceHome = await page
@@ -36,7 +36,6 @@ export const test = base.extend<AuthFixtures>({
       .catch(() => false);
 
     if (!landedOnWorkspaceHome) {
-      await ensureWorkspaceForAuthenticatedUser(page);
       await page.goto("/app", { waitUntil: "domcontentloaded" });
       await page.waitForURL(/\/[\w-]+\/home/, { timeout: 15000 });
     }
