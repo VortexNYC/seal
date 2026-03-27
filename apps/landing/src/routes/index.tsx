@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-
 import { StaticCta } from "~/components/sections/cta-block";
 import { StaticDevelopers } from "~/components/sections/developers-block";
 import { staticFaqs, StaticFaq } from "~/components/sections/faq-block";

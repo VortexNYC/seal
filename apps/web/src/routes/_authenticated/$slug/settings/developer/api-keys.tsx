@@ -28,6 +28,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { FeatureGate } from "@/components/feature-gate";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import {
@@ -56,7 +57,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FeatureGate } from "@/components/feature-gate";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/developer/api-keys")({
@@ -321,255 +321,255 @@ function ApiKeysPage() {
         feature="API access"
         description="Create API keys to integrate Seal with your systems."
       >
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Key className="text-info h-5 w-5" />
-                <CardTitle>Your API Keys</CardTitle>
-              </div>
-              <Dialog
-                open={isCreating}
-                onOpenChange={(open) => {
-                  if (!open) handleCloseDialog();
-                  else setIsCreating(true);
-                }}
-              >
-                <DialogTrigger asChild>
-                  <Button size="sm" className="bg-info hover:bg-info/90 text-white">
-                    <Plus className="mr-1 h-4 w-4" />
-                    Create API Key
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {newKeySecret ? "API Key Created" : "Create API Key"}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {newKeySecret
-                        ? "Copy your API key now. You won't be able to see it again."
-                        : "Generate a new API key for programmatic access."}
-                    </DialogDescription>
-                  </DialogHeader>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Key className="text-info h-5 w-5" />
+                  <CardTitle>Your API Keys</CardTitle>
+                </div>
+                <Dialog
+                  open={isCreating}
+                  onOpenChange={(open) => {
+                    if (!open) handleCloseDialog();
+                    else setIsCreating(true);
+                  }}
+                >
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="bg-info hover:bg-info/90 text-white">
+                      <Plus className="mr-1 h-4 w-4" />
+                      Create API Key
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {newKeySecret ? "API Key Created" : "Create API Key"}
+                      </DialogTitle>
+                      <DialogDescription>
+                        {newKeySecret
+                          ? "Copy your API key now. You won't be able to see it again."
+                          : "Generate a new API key for programmatic access."}
+                      </DialogDescription>
+                    </DialogHeader>
 
-                  {newKeySecret ? (
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <div className="from-info/20 to-info/10 absolute -inset-1 rounded-lg bg-gradient-to-r blur" />
-                        <div className="bg-muted border-info/30 relative flex items-center gap-2 rounded-lg border p-3">
-                          <Input
-                            value={newKeySecret}
-                            readOnly
-                            className="text-info flex-1 border-0 bg-transparent font-mono text-sm focus-visible:ring-0"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Copy API key"
-                            onClick={handleCopyKey}
-                            className="shrink-0"
-                          >
-                            {copiedKey ? (
-                              <Check className="text-success h-4 w-4" />
-                            ) : (
-                              <Copy className="h-4 w-4" />
-                            )}
-                          </Button>
+                    {newKeySecret ? (
+                      <div className="space-y-4">
+                        <div className="relative">
+                          <div className="from-info/20 to-info/10 absolute -inset-1 rounded-lg bg-gradient-to-r blur" />
+                          <div className="bg-muted border-info/30 relative flex items-center gap-2 rounded-lg border p-3">
+                            <Input
+                              value={newKeySecret}
+                              readOnly
+                              className="text-info flex-1 border-0 bg-transparent font-mono text-sm focus-visible:ring-0"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Copy API key"
+                              onClick={handleCopyKey}
+                              className="shrink-0"
+                            >
+                              {copiedKey ? (
+                                <Check className="text-success h-4 w-4" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
+                        <div className="border-warning/30 bg-warning-surface flex items-start gap-3 rounded-lg border p-4">
+                          <AlertTriangle className="text-warning mt-0.5 h-5 w-5 shrink-0" />
+                          <div>
+                            <p className="text-warning font-medium">Save this key securely</p>
+                            <p className="text-warning text-sm">
+                              This is the only time you'll see this key. Store it in a secure
+                              location.
+                            </p>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            onClick={handleCloseDialog}
+                            className="bg-info hover:bg-info/90 text-white"
+                          >
+                            Done
+                          </Button>
+                        </DialogFooter>
                       </div>
-                      <div className="border-warning/30 bg-warning-surface flex items-start gap-3 rounded-lg border p-4">
-                        <AlertTriangle className="text-warning mt-0.5 h-5 w-5 shrink-0" />
-                        <div>
-                          <p className="text-warning font-medium">Save this key securely</p>
-                          <p className="text-warning text-sm">
-                            This is the only time you'll see this key. Store it in a secure
-                            location.
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="key-name">Key Name</Label>
+                          <Input
+                            id="key-name"
+                            placeholder="e.g., Production API Key"
+                            value={newKeyName}
+                            onChange={(e) => setNewKeyName(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-3">
+                          <Label>Permissions</Label>
+                          <div className="bg-muted/30 grid max-h-64 grid-cols-2 gap-3 overflow-y-auto rounded-lg border p-4">
+                            {AVAILABLE_SCOPES.map((scope) => {
+                              const IconComponent = scope.icon;
+                              const isSelected = selectedScopes.includes(scope.value);
+                              return (
+                                <button
+                                  key={scope.value}
+                                  type="button"
+                                  onClick={() => toggleScope(scope.value)}
+                                  className={cn(
+                                    "group relative flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-colors",
+                                    isSelected
+                                      ? "border-info/50 bg-info-surface"
+                                      : "border-border bg-background hover:border-info/30",
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className={cn(
+                                        "flex h-8 w-8 items-center justify-center rounded-md",
+                                        isSelected
+                                          ? "bg-info/20 text-info"
+                                          : "bg-muted text-muted-foreground group-hover:text-foreground",
+                                      )}
+                                    >
+                                      <IconComponent className="h-4 w-4" />
+                                    </div>
+                                    <Checkbox
+                                      checked={isSelected}
+                                      className="data-[state=checked]:border-info data-[state=checked]:bg-info"
+                                    />
+                                  </div>
+                                  <div>
+                                    <p
+                                      className={cn(
+                                        "text-sm font-medium",
+                                        isSelected && "text-info",
+                                      )}
+                                    >
+                                      {scope.label}
+                                    </p>
+                                    <p className="text-muted-foreground line-clamp-2 text-xs">
+                                      {scope.description}
+                                    </p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="text-muted-foreground text-xs">
+                            Selected: {selectedScopes.length} permission
+                            {selectedScopes.length !== 1 ? "s" : ""}
                           </p>
                         </div>
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          onClick={handleCloseDialog}
-                          className="bg-info hover:bg-info/90 text-white"
-                        >
-                          Done
-                        </Button>
-                      </DialogFooter>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="key-name">Key Name</Label>
-                        <Input
-                          id="key-name"
-                          placeholder="e.g., Production API Key"
-                          value={newKeyName}
-                          onChange={(e) => setNewKeyName(e.target.value)}
-                        />
-                      </div>
 
-                      <div className="space-y-3">
-                        <Label>Permissions</Label>
-                        <div className="bg-muted/30 grid max-h-64 grid-cols-2 gap-3 overflow-y-auto rounded-lg border p-4">
-                          {AVAILABLE_SCOPES.map((scope) => {
-                            const IconComponent = scope.icon;
-                            const isSelected = selectedScopes.includes(scope.value);
-                            return (
-                              <button
-                                key={scope.value}
-                                type="button"
-                                onClick={() => toggleScope(scope.value)}
-                                className={cn(
-                                  "group relative flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-colors",
-                                  isSelected
-                                    ? "border-info/50 bg-info-surface"
-                                    : "border-border bg-background hover:border-info/30",
-                                )}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className={cn(
-                                      "flex h-8 w-8 items-center justify-center rounded-md",
-                                      isSelected
-                                        ? "bg-info/20 text-info"
-                                        : "bg-muted text-muted-foreground group-hover:text-foreground",
-                                    )}
-                                  >
-                                    <IconComponent className="h-4 w-4" />
-                                  </div>
-                                  <Checkbox
-                                    checked={isSelected}
-                                    className="data-[state=checked]:border-info data-[state=checked]:bg-info"
-                                  />
-                                </div>
-                                <div>
-                                  <p
-                                    className={cn(
-                                      "text-sm font-medium",
-                                      isSelected && "text-info",
-                                    )}
-                                  >
-                                    {scope.label}
-                                  </p>
-                                  <p className="text-muted-foreground line-clamp-2 text-xs">
-                                    {scope.description}
-                                  </p>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="text-muted-foreground text-xs">
-                          Selected: {selectedScopes.length} permission
-                          {selectedScopes.length !== 1 ? "s" : ""}
-                        </p>
+                        <DialogFooter className="gap-2">
+                          <Button variant="outline" onClick={handleCloseDialog}>
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleCreateKey}
+                            className="bg-info hover:bg-info/90 text-white"
+                          >
+                            Create Key
+                          </Button>
+                        </DialogFooter>
                       </div>
-
-                      <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={handleCloseDialog}>
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={handleCreateKey}
-                          className="bg-info hover:bg-info/90 text-white"
-                        >
-                          Create Key
-                        </Button>
-                      </DialogFooter>
-                    </div>
-                  )}
-                </DialogContent>
-              </Dialog>
-            </div>
-            <CardDescription>
-              API keys allow secure programmatic access to the Seal API
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {activeKeys.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="relative">
-                  <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-2xl border">
-                    <Key className="text-muted-foreground h-10 w-10" />
-                  </div>
-                  <div className="border-background bg-info absolute -right-1 -bottom-1 h-4 w-4 animate-pulse rounded-full border-2" />
-                </div>
-                <p className="mt-6 font-mono">No API keys configured</p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Create an API key to access the Seal API programmatically
-                </p>
-                <Button
-                  onClick={() => setIsCreating(true)}
-                  className="bg-info hover:bg-info/90 mt-6 text-white"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create your first API key
-                </Button>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {activeKeys.map((key, index) => (
-                  <div
-                    key={key.id}
-                    style={{ animationDelay: `${index * 50}ms` }}
-                    className="animate-in fade-in slide-in-from-bottom-2"
+              <CardDescription>
+                API keys allow secure programmatic access to the Seal API
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {activeKeys.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="relative">
+                    <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-2xl border">
+                      <Key className="text-muted-foreground h-10 w-10" />
+                    </div>
+                    <div className="border-background bg-info absolute -right-1 -bottom-1 h-4 w-4 animate-pulse rounded-full border-2" />
+                  </div>
+                  <p className="mt-6 font-mono">No API keys configured</p>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    Create an API key to access the Seal API programmatically
+                  </p>
+                  <Button
+                    onClick={() => setIsCreating(true)}
+                    className="bg-info hover:bg-info/90 mt-6 text-white"
                   >
-                    <ApiKeyRow apiKey={key} onRevoke={() => handleRevokeKey(key.id)} />
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create your first API key
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activeKeys.map((key, index) => (
+                    <div
+                      key={key.id}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                      className="animate-in fade-in slide-in-from-bottom-2"
+                    >
+                      <ApiKeyRow apiKey={key} onRevoke={() => handleRevokeKey(key.id)} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ExternalLink className="text-info h-5 w-5" />
+                <CardTitle>API Documentation</CardTitle>
+              </div>
+              <CardDescription>
+                Learn how to use the Seal API to automate document workflows
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-muted relative overflow-hidden rounded-lg border">
+                  <div className="bg-muted/50 flex items-center gap-2 border-b px-4 py-2">
+                    <div className="bg-destructive/80 h-3 w-3 rounded-full" />
+                    <div className="bg-warning/80 h-3 w-3 rounded-full" />
+                    <div className="bg-success/80 h-3 w-3 rounded-full" />
+                    <span className="text-muted-foreground ml-2 font-mono text-xs">terminal</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <ExternalLink className="text-info h-5 w-5" />
-              <CardTitle>API Documentation</CardTitle>
-            </div>
-            <CardDescription>
-              Learn how to use the Seal API to automate document workflows
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="bg-muted relative overflow-hidden rounded-lg border">
-                <div className="bg-muted/50 flex items-center gap-2 border-b px-4 py-2">
-                  <div className="bg-destructive/80 h-3 w-3 rounded-full" />
-                  <div className="bg-warning/80 h-3 w-3 rounded-full" />
-                  <div className="bg-success/80 h-3 w-3 rounded-full" />
-                  <span className="text-muted-foreground ml-2 font-mono text-xs">terminal</span>
+                  <div className="p-4">
+                    <pre className="overflow-x-auto font-mono text-sm">
+                      <code>
+                        <span className="text-info">curl</span>
+                        <span className="text-foreground"> -X GET </span>
+                        <span className="text-success">"https://api.seal.app/v1/documents"</span>
+                        <span className="text-foreground"> \</span>
+                        {"\n"}
+                        <span className="text-foreground">{"  "}-H </span>
+                        <span className="text-warning">"Authorization: Bearer YOUR_API_KEY"</span>
+                      </code>
+                    </pre>
+                  </div>
                 </div>
-                <div className="p-4">
-                  <pre className="overflow-x-auto font-mono text-sm">
-                    <code>
-                      <span className="text-info">curl</span>
-                      <span className="text-foreground"> -X GET </span>
-                      <span className="text-success">"https://api.seal.app/v1/documents"</span>
-                      <span className="text-foreground"> \</span>
-                      {"\n"}
-                      <span className="text-foreground">{"  "}-H </span>
-                      <span className="text-warning">"Authorization: Bearer YOUR_API_KEY"</span>
-                    </code>
-                  </pre>
+
+                <div className="flex items-center gap-4">
+                  <Button variant="outline" asChild>
+                    <a href="/docs/api" target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View API Docs
+                    </a>
+                  </Button>
                 </div>
               </div>
-
-              <div className="flex items-center gap-4">
-                <Button variant="outline" asChild>
-                  <a href="/docs/api" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    View API Docs
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
       </FeatureGate>
     </PageWrapper>
   );

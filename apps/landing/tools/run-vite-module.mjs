@@ -15,7 +15,9 @@ function toModuleId(root, entryPath) {
 const [entryArg, exportNameArg] = process.argv.slice(2);
 
 if (!entryArg) {
-  throw new Error("Missing module path. Usage: node tools/run-vite-module.mjs <module> [exportName]");
+  throw new Error(
+    "Missing module path. Usage: node tools/run-vite-module.mjs <module> [exportName]",
+  );
 }
 
 const root = path.resolve(import.meta.dirname, "..");

@@ -1,9 +1,8 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
-import type { CtaSectionBlock } from "~/lib/content/types";
-
 import { APP_URL } from "~/lib/constants";
+import type { CtaSectionBlock } from "~/lib/content/types";
 
 export function StaticCta() {
   return (

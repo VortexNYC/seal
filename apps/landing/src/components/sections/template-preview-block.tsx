@@ -1,5 +1,4 @@
 import { FileText } from "lucide-react";
-
 import type { TemplatePreviewBlock } from "~/lib/content/types";
 
 export function TemplatePreviewBlockComponent({ block }: { block: TemplatePreviewBlock }) {

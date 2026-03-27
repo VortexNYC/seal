@@ -103,7 +103,10 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <nav className="bg-background border-border border-t px-6 pt-4 pb-6 md:hidden" data-testid="mobile-nav">
+        <nav
+          className="bg-background border-border border-t px-6 pt-4 pb-6 md:hidden"
+          data-testid="mobile-nav"
+        >
           <div className="flex flex-col gap-1">
             {navItems.map((item) => (
               <Link

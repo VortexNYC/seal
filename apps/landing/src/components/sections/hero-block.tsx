@@ -1,5 +1,4 @@
 import { ArrowRight } from "lucide-react";
-
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 import { APP_URL } from "~/lib/constants";
@@ -44,12 +43,7 @@ export function StaticHero() {
                 />
               </a>
             </Button>
-            <Button
-              asChild
-              className="h-12 px-8 text-base font-medium"
-              size="lg"
-              variant="outline"
-            >
+            <Button asChild className="h-12 px-8 text-base font-medium" size="lg" variant="outline">
               <a href="#features">See how it works</a>
             </Button>
           </div>
