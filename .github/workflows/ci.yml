@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main]
   push:
@@ -13,7 +14,7 @@ concurrency:
 jobs:
   quality:
     name: Quality Checks
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
 
     steps:
@@ -36,7 +37,7 @@ jobs:
 
   test-backend:
     name: Backend Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     needs: quality
 
@@ -57,7 +58,7 @@ jobs:
 
   test-frontend:
     name: Frontend Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     needs: quality
 
@@ -74,11 +75,14 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run frontend tests
-        run: cd apps/web && bun --bun run test
+        # Avoid `bun --bun run` here as well: the React/Vitest suite can hit
+        # invalid-hook-call failures under Bun's Node shim on GitHub runners,
+        # while the normal workspace script execution is stable.
+        run: cd apps/web && bun run test
 
   test-web-e2e:
     name: Web E2E
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 20
     needs: quality
 
@@ -95,23 +99,36 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: cd apps/web && bunx playwright install --with-deps chromium firefox webkit
+        run: cd apps/web && bunx playwright install --with-deps chromium
 
       - name: Run web E2E tests
+        # Only run chromium in CI — other browsers run locally.
         # Avoid `bun --bun run` here: Playwright's config loader fails under
         # Bun's Node shim, while the normal workspace script execution works
         # locally and in CI-compatible environments.
-        run: cd apps/web && bun run test:e2e
+        run: cd apps/web && bun run test:e2e --project=setup --project=chromium
         env:
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_EMAIL_CODE: ${{ secrets.TEST_EMAIL_CODE }}
+          CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          E2E_TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER_EMAIL }}
+          E2E_TEST_EMAIL_CODE: ${{ secrets.E2E_TEST_EMAIL_CODE }}
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL_TEST }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
           NODE_OPTIONS: "--max-old-space-size=4096"
 
+      - name: Upload web E2E artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-e2e-artifacts
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          if-no-files-found: ignore
+
   test-landing-e2e:
     name: Landing E2E
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 20
     needs: quality
 
@@ -140,7 +157,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 15
     needs: [quality, test-backend, test-frontend, test-web-e2e, test-landing-e2e]
 
