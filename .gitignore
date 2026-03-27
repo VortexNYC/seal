@@ -99,3 +99,15 @@ apps/backend/*.pdf
 docs/app-feature-map.md
 
 .firecrawl/
+
+# Local dev logs and config
+.openlogs/
+**/.openlogs/
+.test-env
+.pi/
+docs/test-sessions/
+apps/backend/--annotate
+apps/node_modules/
+.claude/hookify.*.local.md
+.claude/skills/openlogs-server-logs
+.agents/skills/openlogs-server-logs/
