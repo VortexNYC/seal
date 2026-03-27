@@ -6,6 +6,7 @@ const config: KnipConfig = {
   ignore: [
     // shadcn/ui components (often used but not directly imported)
     "src/components/ui/**",
+    "playwright.config.ts",
   ],
   ignoreDependencies: [
     // Tailwind CSS (used by Vite plugin)
@@ -16,8 +17,10 @@ const config: KnipConfig = {
     "@radix-ui/*",
     // Design tokens (imported via @seal/tokens/theme subpath — knip can't trace workspace subpath exports)
     "@seal/tokens",
+    // E2E-only dependency used in Playwright auth fixtures outside src/**
+    "@clerk/testing",
   ],
-  ignoreBinaries: ["oxlint", "oxfmt", "knip"],
+  ignoreBinaries: ["knip", "oxfmt", "oxlint", "playwright", "vite", "vitest"],
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };
