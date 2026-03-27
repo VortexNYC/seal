@@ -1,8 +1,8 @@
-import { clerkSetup } from "@clerk/testing/playwright";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { clerkSetup } from "@clerk/testing/playwright";
 import { test as setup } from "@playwright/test";
 
 import { signInTestUser } from "../fixtures/auth-helpers";

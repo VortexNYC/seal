@@ -1,11 +1,7 @@
 /* oxlint-disable react-hooks/rules-of-hooks */
 import { expect, test as base, type Page } from "@playwright/test";
 
-import {
-  isAuthenticatedUrl,
-  signInTestUser,
-  waitForClerkConvexToken,
-} from "./auth-helpers";
+import { isAuthenticatedUrl, signInTestUser, waitForClerkConvexToken } from "./auth-helpers";
 
 type AuthFixtures = {
   authenticatedPage: Page;
