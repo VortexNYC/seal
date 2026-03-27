@@ -191,9 +191,11 @@ describe("api/v1/members", () => {
 
       // Still 3 — system member excluded (only owner, admin, member returned)
       expect(results).toHaveLength(3);
-      expect(results.every((m: (typeof results)[number]) => ["owner", "admin", "member", "viewer"].includes(m.role))).toBe(
-        true,
-      );
+      expect(
+        results.every((m: (typeof results)[number]) =>
+          ["owner", "admin", "member", "viewer"].includes(m.role),
+        ),
+      ).toBe(true);
     });
 
     test("returns empty array for org with no members", async () => {

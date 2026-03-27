@@ -68,9 +68,9 @@ describe("Contact mutations", () => {
         email: "jane@example.com",
       });
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.fullName).toBe("Jane Smith");
     });
@@ -82,9 +82,9 @@ describe("Contact mutations", () => {
         email: "  Test@EXAMPLE.COM  ",
       });
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.email).toBe("test@example.com");
     });
@@ -96,9 +96,9 @@ describe("Contact mutations", () => {
         email: "default@example.com",
       });
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.status).toBe("active");
     });
@@ -116,9 +116,9 @@ describe("Contact mutations", () => {
         tags: ["vip", "conference-2026"],
       });
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.phone).toBe("+1-555-0100");
       expect(contact?.company).toBe("ACME Inc");
@@ -153,9 +153,9 @@ describe("Contact mutations", () => {
         email: "created@example.com",
       });
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.createdBy).toBe(userId);
     });
@@ -169,9 +169,9 @@ describe("Contact mutations", () => {
       });
       const after = Date.now();
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.createdAt).toBeGreaterThanOrEqual(before);
       expect(contact?.createdAt).toBeLessThanOrEqual(after);
@@ -198,9 +198,9 @@ describe("Contact mutations", () => {
         company: "New Company",
       });
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(contactId);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.company).toBe("New Company");
       // Other fields unchanged
@@ -213,9 +213,9 @@ describe("Contact mutations", () => {
         firstName: "Updated",
       });
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(contactId);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.fullName).toBe("Updated Name");
     });
@@ -226,9 +226,9 @@ describe("Contact mutations", () => {
         lastName: "Changed",
       });
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(contactId);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.fullName).toBe("Original Changed");
     });
@@ -239,9 +239,9 @@ describe("Contact mutations", () => {
         email: "  UPPER@CASE.COM  ",
       });
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(contactId);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.email).toBe("upper@case.com");
     });
@@ -252,9 +252,9 @@ describe("Contact mutations", () => {
         status: "inactive",
       });
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(contactId);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact?.status).toBe("inactive");
     });
@@ -285,9 +285,9 @@ describe("Contact mutations", () => {
 
       expect(result).toBe(_id);
 
-      const contact = await t.run(async (ctx) => {
+      const contact = (await t.run(async (ctx) => {
         return await ctx.db.get(_id);
-      }) as Doc<"contacts"> | null;
+      })) as Doc<"contacts"> | null;
 
       expect(contact).toBeNull();
     });

@@ -11,8 +11,7 @@ import { v } from "convex/values";
 import Stripe from "stripe";
 
 import { internal } from "../_generated/api";
-import type { Doc, Id } from "../_generated/dataModel";
-import { internalAction, internalMutation, type ActionCtx } from "../_generated/server";
+import { internalAction, internalMutation } from "../_generated/server";
 import { getOrCreateStripeCustomer } from "./helpers";
 
 function initializeStripe(): Stripe {
@@ -96,7 +95,6 @@ export const createSubscriptionRecord = internalMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Check if subscription already exists
     const existing = await ctx.db
       .query("subscriptions")
       .withIndex("by_external_subscription_id", (q) =>
@@ -129,7 +127,9 @@ export const createSubscriptionRecord = internalMutation({
       updatedAt: now,
     });
 
-    console.warn(`Created subscription ${args.stripeSubscriptionId} for org ${args.organizationId}`);
+    console.warn(
+      `Created subscription ${args.stripeSubscriptionId} for org ${args.organizationId}`,
+    );
     return subscriptionId;
   },
 });
@@ -137,134 +137,6 @@ export const createSubscriptionRecord = internalMutation({
 // =====================
 // INTERNAL ACTIONS
 // =====================
-
-async function getOrCreateCustomerId(
-  ctx: ActionCtx,
-  stripe: Stripe,
-  userId: Id<"users">,
-  user: Doc<"users">,
-): Promise<string> {
-  if (user.stripeCustomerId) {
-    return user.stripeCustomerId;
-  }
-
-  const stripeCustomerId = await getOrCreateStripeCustomer(
-    stripe,
-    userId,
-    user.email,
-    user.name || user.email,
-    undefined,
-  );
-
-  await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
-    userId,
-    stripeCustomerId,
-  });
-
-  return stripeCustomerId;
-}
-
-async function findExistingStripeSubscription(
-  stripe: Stripe,
-  userId: Id<"users">,
-  stripeCustomerId: string,
-): Promise<{ subscriptionId: string; stripePriceId: string } | null> {
-  try {
-    const stripeSubscriptions = await stripe.subscriptions.list({
-      customer: stripeCustomerId,
-      limit: 10,
-    });
-
-    const existingSubscription = stripeSubscriptions.data.find(
-      (subscription) =>
-        subscription.status !== "canceled" && subscription.status !== "incomplete_expired",
-    );
-
-    return existingSubscription
-      ? {
-          subscriptionId: existingSubscription.id,
-          stripePriceId: existingSubscription.items.data[0]?.price?.id ?? "unknown_price_id",
-        }
-      : null;
-  } catch (error) {
-    console.error("Failed to check Stripe subscriptions", {
-      userId,
-      stripeCustomerId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return null;
-  }
-}
-
-async function createDefaultPlanSubscription(
-  ctx: ActionCtx,
-  stripe: Stripe,
-  userId: Id<"users">,
-  stripeCustomerId: string,
-  lookupKey: string,
-  stripePriceId: string,
-): Promise<SubscribeUserToDefaultPlanResult> {
-  const hourWindow = Math.floor(Date.now() / (1000 * 60 * 60));
-  const idempotencyKey = `sub_default_${stripeCustomerId}_${hourWindow}`;
-
-  try {
-    const subscription = await stripe.subscriptions.create(
-      {
-        customer: stripeCustomerId,
-        items: [{ price: stripePriceId }],
-        metadata: {
-          userId,
-          lookupKey,
-          source: "auto_enroll",
-        },
-        collection_method: "charge_automatically",
-      },
-      {
-        idempotencyKey,
-      },
-    );
-
-    const firstItem = subscription.items.data[0];
-    const currentPeriodStart = firstItem?.current_period_start
-      ? firstItem.current_period_start * 1000
-      : Date.now();
-    const currentPeriodEnd = firstItem?.current_period_end
-      ? firstItem.current_period_end * 1000
-      : Date.now() + 30 * 24 * 60 * 60 * 1000;
-
-    await ctx.runMutation(internal.stripe.subscription_actions.createSubscriptionRecord, {
-      userId,
-      stripeCustomerId,
-      stripeSubscriptionId: subscription.id,
-      stripePriceId,
-      status: subscription.status,
-      currentPeriodStart,
-      currentPeriodEnd,
-    });
-
-    console.warn(
-      `Auto-enrolled user ${userId} to plan ${lookupKey} with subscription ${subscription.id}`,
-    );
-
-    return {
-      status: "subscription_created",
-      stripeSubscriptionId: subscription.id,
-      stripeCustomerId,
-      stripePriceId,
-    };
-  } catch (error) {
-    console.error("Failed to create subscription in Stripe", {
-      userId,
-      stripeCustomerId,
-      lookupKey,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return {
-      status: "error",
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
 
 /**
  * Handle new organization creation — creates Stripe customer and enrolls to Free plan.
@@ -278,10 +150,12 @@ export const handleNewOrgCreated = internalAction({
     orgName: v.string(),
     adminEmail: v.string(),
   },
-  handler: async (ctx, { organizationId, orgName, adminEmail }): Promise<{ stripeCustomerId: string; enrolled: boolean; subscriptionId?: string }> => {
+  handler: async (
+    ctx,
+    { organizationId, orgName, adminEmail },
+  ): Promise<{ stripeCustomerId: string; enrolled: boolean; subscriptionId?: string }> => {
     const stripe = initializeStripe();
 
-    // 1. Create Stripe customer for the org
     const stripeCustomerId = await getOrCreateStripeCustomer(
       stripe,
       organizationId,
@@ -290,7 +164,6 @@ export const handleNewOrgCreated = internalAction({
       undefined,
     );
 
-    // 2. Save customer ID to org
     await ctx.runMutation(internal.stripe.subscription_actions.updateOrgStripeCustomerId, {
       organizationId,
       stripeCustomerId,
@@ -298,51 +171,25 @@ export const handleNewOrgCreated = internalAction({
 
     console.warn(`Created Stripe customer ${stripeCustomerId} for org ${organizationId}`);
 
-    // 3. Auto-enroll to free plan
     const lookupKey = getDefaultPlanLookupKey();
     if (!lookupKey) {
       console.warn("DEFAULT_PLAN_LOOKUP_KEY not configured, skipping free plan enrollment");
       return { stripeCustomerId, enrolled: false };
     }
 
-    // Check for existing subscription
-    const existingSub = await ctx.runQuery(
-      internal.auth.subscription_helpers.checkProFeature,
-      { organizationId },
-    );
+    const existingSub = await ctx.runQuery(internal.auth.subscription_helpers.checkProFeature, {
+      organizationId,
+    });
     if (existingSub.plan !== "free" || existingSub.isPro) {
       console.warn(`Org ${organizationId} already has a paid subscription, skipping enrollment`);
       return { stripeCustomerId, enrolled: false };
     }
 
-<<<<<<< HEAD
-    // Get or create Stripe customer
-    const stripeCustomerId = await getOrCreateCustomerId(ctx, stripe, userId, user);
-
-    // Check 2: Check Stripe for existing subscriptions (race condition protection)
-    const stripeSubscription = await findExistingStripeSubscription(
-      stripe,
-      userId,
-      stripeCustomerId,
-    );
-    if (stripeSubscription) {
-      console.warn(
-        `Found existing Stripe subscription ${stripeSubscription.subscriptionId} for user ${userId}`,
-      );
-      return {
-        status: "already_subscribed",
-        subscriptionId: stripeSubscription.subscriptionId,
-        stripePriceId: stripeSubscription.stripePriceId,
-      };
-    }
-
-    // Get the default plan price
-=======
-    // Get the free plan price
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     const priceData = await ctx.runMutation(
       internal.stripe.subscription_actions.getPriceByLookupKey,
-      { lookupKey },
+      {
+        lookupKey,
+      },
     );
 
     if (!priceData?.price) {
@@ -350,17 +197,6 @@ export const handleNewOrgCreated = internalAction({
       return { stripeCustomerId, enrolled: false };
     }
 
-<<<<<<< HEAD
-    return await createDefaultPlanSubscription(
-      ctx,
-      stripe,
-      userId,
-      stripeCustomerId,
-      lookupKey,
-      priceData.price.externalPriceId,
-    );
-=======
-    // Create the free subscription
     try {
       const subscription = await stripe.subscriptions.create({
         customer: stripeCustomerId,
@@ -369,7 +205,6 @@ export const handleNewOrgCreated = internalAction({
         collection_method: "charge_automatically",
       });
 
-      // Save subscription record
       const firstItem = subscription.items.data[0];
       const periodStart = firstItem?.current_period_start
         ? firstItem.current_period_start * 1000
@@ -397,7 +232,6 @@ export const handleNewOrgCreated = internalAction({
       });
       return { stripeCustomerId, enrolled: false };
     }
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   },
 });
 
@@ -414,7 +248,6 @@ export const syncSeatCount = internalAction({
   handler: async (ctx, { organizationId }) => {
     const stripe = initializeStripe();
 
-    // Get org's Stripe customer ID
     const org = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
       organizationId,
     });
@@ -423,14 +256,12 @@ export const syncSeatCount = internalAction({
       return;
     }
 
-    // Get active member count
     const memberCount: number = await ctx.runQuery(
       internal.organizations.helpers.getActiveMemberCount,
       { organizationId },
     );
     const quantity = Math.max(memberCount, 1);
 
-    // Find the active Stripe subscription for this customer
     const subscriptions = await stripe.subscriptions.list({
       customer: org.stripeCustomerId,
       status: "active",
@@ -449,12 +280,11 @@ export const syncSeatCount = internalAction({
       return;
     }
 
-    // Only update if quantity changed
     if (item.quantity === quantity) {
       return;
     }
 
     await stripe.subscriptionItems.update(item.id, { quantity });
-    console.warn(`Updated seat count for org ${organizationId}: ${item.quantity} → ${quantity}`);
+    console.warn(`Updated seat count for org ${organizationId}: ${item.quantity} -> ${quantity}`);
   },
 });

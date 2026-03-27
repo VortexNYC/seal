@@ -156,10 +156,9 @@ async function getOrgMemberCount(
   ctx: ActionCtx,
   organizationId: Id<"organizations">,
 ): Promise<number> {
-  const count: number = await ctx.runQuery(
-    internal.organizations.helpers.getActiveMemberCount,
-    { organizationId },
-  );
+  const count: number = await ctx.runQuery(internal.organizations.helpers.getActiveMemberCount, {
+    organizationId,
+  });
   return Math.max(count, 1); // At least 1 seat (the owner)
 }
 

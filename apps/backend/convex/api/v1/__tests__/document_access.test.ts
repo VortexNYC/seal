@@ -294,7 +294,9 @@ describe("api/v1/documents — access and bulk operations", () => {
       expect(result.succeeded).toBe(1);
       expect(result.failed).toBe(1);
 
-      const completedResult = result.results.find((r: (typeof result.results)[number]) => r.id === completedDoc);
+      const completedResult = result.results.find(
+        (r: (typeof result.results)[number]) => r.id === completedDoc,
+      );
       expect(completedResult?.success).toBe(false);
       expect(completedResult?.error).toContain("Cannot void");
     });

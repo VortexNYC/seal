@@ -229,8 +229,7 @@ export const downgradeOrgSharing = internalMutation({
             documentId: document._id,
             documentName: document.name,
             reason: "subscription_lapsed",
-            message:
-              "Your access was revoked because the organization's subscription ended",
+            message: "Your access was revoked because the organization's subscription ended",
           },
         });
       }
