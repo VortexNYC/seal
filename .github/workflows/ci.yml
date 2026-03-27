@@ -13,7 +13,7 @@ concurrency:
 jobs:
   quality:
     name: Quality Checks
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
 
     steps:
@@ -36,7 +36,7 @@ jobs:
 
   test-backend:
     name: Backend Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     needs: quality
 
@@ -57,7 +57,7 @@ jobs:
 
   test-frontend:
     name: Frontend Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     needs: quality
 
@@ -81,7 +81,7 @@ jobs:
 
   test-web-e2e:
     name: Web E2E
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 20
     needs: quality
 
@@ -98,13 +98,14 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: cd apps/web && bunx playwright install --with-deps chromium firefox webkit
+        run: cd apps/web && bunx playwright install --with-deps chromium
 
       - name: Run web E2E tests
+        # Only run chromium in CI — other browsers run locally.
         # Avoid `bun --bun run` here: Playwright's config loader fails under
         # Bun's Node shim, while the normal workspace script execution works
         # locally and in CI-compatible environments.
-        run: cd apps/web && bun run test:e2e
+        run: cd apps/web && bun run test:e2e --project=setup --project=chromium
         env:
           CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
@@ -126,7 +127,7 @@ jobs:
 
   test-landing-e2e:
     name: Landing E2E
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 20
     needs: quality
 
@@ -155,7 +156,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 15
     needs: [quality, test-backend, test-frontend, test-web-e2e, test-landing-e2e]
 

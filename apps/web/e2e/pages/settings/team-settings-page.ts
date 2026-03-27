@@ -12,14 +12,18 @@ export class TeamSettingsPage {
     this.page = page;
     this.heading = page.getByRole("heading", { name: /team/i });
     this.inviteMemberButton = page.getByRole("button", {
-      name: /invite|add member/i,
+      name: /invite member/i,
     });
-    this.membersList = page.locator('[data-testid="team-members-list"]');
+    // The members list is rendered as a Table inside a Card — no data-testid.
+    // Use the table element directly.
+    this.membersList = page.locator("table").first();
   }
 
   async goto(slug: string): Promise<void> {
     await this.page.goto(`/${slug}/settings/team`);
     await this.page.waitForLoadState("domcontentloaded");
+    // Wait for the page heading to appear (Convex data must resolve first)
+    await this.heading.waitFor({ state: "visible", timeout: 15000 });
   }
 
   async inviteMember(email: string, role: "Owner" | "Admin" | "Member"): Promise<void> {
@@ -54,7 +58,12 @@ export class TeamSettingsPage {
   }
 
   async getMemberCount(): Promise<number> {
-    const members = await this.membersList.locator("[data-member]").count();
+    // Wait for the members table to render with at least one row
+    await this.membersList
+      .locator("tbody tr")
+      .first()
+      .waitFor({ state: "visible", timeout: 15000 });
+    const members = await this.membersList.locator("tbody tr").count();
     return members;
   }
 
