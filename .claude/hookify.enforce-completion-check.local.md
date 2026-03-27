@@ -1,1 +1,0 @@
-/Users/shlomokabareti/.claude/hookify.enforce-completion-check.local.md

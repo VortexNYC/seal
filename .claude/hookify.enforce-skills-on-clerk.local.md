@@ -1,1 +1,0 @@
-/Users/shlomokabareti/.claude/hookify.enforce-skills-on-clerk.local.md
