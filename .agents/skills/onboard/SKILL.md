@@ -38,32 +38,47 @@ Understand what users need to learn and why:
 Follow these core principles:
 
 ### Show, Don't Tell
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Demonstrate with working examples, not just descriptions
 - Provide real functionality in onboarding, not separate tutorial mode
 - Use progressive disclosure - teach one thing at a time
 
 ### Make It Optional (When Possible)
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Let experienced users skip onboarding
 - Don't block access to product
 - Provide "Skip" or "I'll explore on my own" options
 
 ### Time to Value
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Get users to their "aha moment" ASAP
 - Front-load most important concepts
 - Teach 20% that delivers 80% of value
 - Save advanced features for contextual discovery
 
 ### Context Over Ceremony
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Teach features when users need them, not upfront
 - Empty states are onboarding opportunities
 - Tooltips and hints at point of use
 
 ### Respect User Intelligence
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Don't patronize or over-explain
 - Be concise and clear
 - Assume users can figure out standard patterns
@@ -75,28 +90,40 @@ Create appropriate onboarding for the context:
 ### Initial Product Onboarding
 
 **Welcome Screen**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Clear value proposition (what is this product?)
 - What users will learn/accomplish
 - Time estimate (honest about commitment)
 - Option to skip (for experienced users)
 
 **Account Setup**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Minimal required information (collect more later)
 - Explain why you're asking for each piece of information
 - Smart defaults where possible
 - Social login when appropriate
 
 **Core Concept Introduction**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Introduce 1-3 core concepts (not everything)
 - Use simple language and examples
 - Interactive when possible (do, don't just read)
 - Progress indication (step 1 of 3)
 
 **First Success**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Guide users to accomplish something real
 - Pre-populated examples or templates
 - Celebrate completion (but don't overdo it)
@@ -106,14 +133,20 @@ Create appropriate onboarding for the context:
 
 **Empty States**:
 Instead of blank space, show:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - What will appear here (description + screenshot/illustration)
 - Why it's valuable
 - Clear CTA to create first item
 - Example or template option
 
 Example:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 No projects yet
 Projects help you organize your work and collaborate with your team.
@@ -121,7 +154,10 @@ Projects help you organize your work and collaborate with your team.
 ```
 
 **Contextual Tooltips**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Appear at relevant moment (first time user sees feature)
 - Point directly at relevant UI element
 - Brief explanation + benefit
@@ -129,14 +165,20 @@ Projects help you organize your work and collaborate with your team.
 - Optional "Learn more" link
 
 **Feature Announcements**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Highlight new features when they're released
 - Show what's new and why it matters
 - Let users try immediately
 - Dismissable
 
 **Progressive Onboarding**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Teach features when users encounter them
 - Badges or indicators on new/unused features
 - Unlock complexity gradually (don't show all options immediately)
@@ -144,13 +186,19 @@ Projects help you organize your work and collaborate with your team.
 ### Guided Tours & Walkthroughs
 
 **When to use**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Complex interfaces with many features
 - Significant changes to existing product
 - Industry-specific tools needing domain knowledge
 
 **How to design**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Spotlight specific UI elements (dim rest of page)
 - Keep steps short (3-7 steps max per tour)
 - Allow users to click through tour freely
@@ -158,7 +206,10 @@ Projects help you organize your work and collaborate with your team.
 - Make replayable (help menu)
 
 **Best practices**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Interactive > passive (let users click real buttons)
 - Focus on workflow, not features ("Create a project" not "This is the project button")
 - Provide sample data so actions work
@@ -166,13 +217,19 @@ Projects help you organize your work and collaborate with your team.
 ### Interactive Tutorials
 
 **When to use**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Users need hands-on practice
 - Concepts are complex or unfamiliar
 - High stakes (better to practice in safe environment)
 
 **How to design**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Sandbox environment with sample data
 - Clear objectives ("Create a chart showing sales by region")
 - Step-by-step guidance
@@ -182,14 +239,20 @@ Projects help you organize your work and collaborate with your team.
 ### Documentation & Help
 
 **In-product help**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Contextual help links throughout interface
 - Keyboard shortcut reference
 - Search-able help center
 - Video tutorials for complex workflows
 
 **Help patterns**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - `?` icon near complex features
 - "Learn more" links in tooltips
 - Keyboard shortcut hints (`⌘K` shown on search box)
@@ -199,6 +262,7 @@ Projects help you organize your work and collaborate with your team.
 Every empty state needs:
 
 ### What Will Be Here
+<<<<<<< HEAD
 
 "Your recent projects will appear here"
 
@@ -220,6 +284,23 @@ Illustration or icon (not just text on blank page)
 
 **Empty state types**:
 
+=======
+"Your recent projects will appear here"
+
+### Why It Matters  
+"Projects help you organize your work and collaborate with your team"
+
+### How to Get Started
+[Create project] or [Import from template]
+
+### Visual Interest
+Illustration or icon (not just text on blank page)
+
+### Contextual Help
+"Need help getting started? [Watch 2-min tutorial]"
+
+**Empty state types**:
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - **First use**: Never used this feature (emphasize value, provide template)
 - **User cleared**: Intentionally deleted everything (light touch, easy to recreate)
 - **No results**: Search or filter returned nothing (suggest different query, clear filters)
@@ -237,17 +318,27 @@ Illustration or icon (not just text on blank page)
 **Analytics**: Track completion, drop-off points
 
 **Storage patterns**:
+<<<<<<< HEAD
 
 ```javascript
 // Track which onboarding steps user has seen
 localStorage.setItem("onboarding-completed", "true");
 localStorage.setItem("feature-tooltip-seen-reports", "true");
+=======
+```javascript
+// Track which onboarding steps user has seen
+localStorage.setItem('onboarding-completed', 'true');
+localStorage.setItem('feature-tooltip-seen-reports', 'true');
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 **IMPORTANT**: Don't show same onboarding twice (annoying). Track completion and respect dismissals.
 
 **NEVER**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Force users through long onboarding before they can use product
 - Patronize users with obvious explanations
 - Show same tooltip repeatedly (respect dismissals)
@@ -268,4 +359,8 @@ Test with real users:
 - **Completion rate**: Are users completing? (If low, simplify)
 - **Time to value**: How long until users get first value?
 
+<<<<<<< HEAD
 Remember: You're a product educator with excellent teaching instincts. Get users to their "aha moment" as quickly as possible. Teach the essential, make it contextual, respect user time and intelligence.
+=======
+Remember: You're a product educator with excellent teaching instincts. Get users to their "aha moment" as quickly as possible. Teach the essential, make it contextual, respect user time and intelligence.
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))

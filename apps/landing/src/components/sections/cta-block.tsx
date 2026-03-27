@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
+<<<<<<< HEAD
 import { APP_URL } from "~/lib/constants";
 import type { CtaSectionBlock } from "~/lib/content/types";
 
@@ -35,6 +36,43 @@ export function StaticCta() {
   );
 }
 
+=======
+import type { CtaSectionBlock } from "~/lib/content/types";
+
+import { APP_URL } from "~/lib/constants";
+
+export function StaticCta() {
+  return (
+    <section className="border-border border-t px-6 py-32 sm:py-40">
+      <div className="mx-auto max-w-3xl text-center">
+        <FadeIn>
+          <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
+            Ready to stop signing contracts you haven&apos;t read?
+          </h2>
+          <p className="text-muted-foreground mt-6 text-lg text-pretty">
+            Free to start. No credit card required. Set up your first document in under two minutes.
+          </p>
+          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
+              <a href={`${APP_URL}/sign-up`}>
+                Request access
+                <ArrowRight
+                  aria-hidden="true"
+                  className="ml-2 size-4 transition-transform group-hover:translate-x-0.5"
+                />
+              </a>
+            </Button>
+            <Button asChild className="h-12 px-8 text-base font-medium" size="lg" variant="outline">
+              <a href="mailto:sales@seal.co">Talk to sales</a>
+            </Button>
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 /* ── Legacy CMS-driven component ───────────────────────────────────────── */
 export function CtaBlockComponent({ block }: { block: CtaSectionBlock }) {
   return (

@@ -359,7 +359,13 @@ test("debug timeout", async ({ page }) => {
 
   // Log network activity
   page.on("request", (request) => console.log(">>", request.url()));
+<<<<<<< HEAD
   page.on("response", (response) => console.log("<<", response.url(), response.status()));
+=======
+  page.on("response", (response) =>
+    console.log("<<", response.url(), response.status()),
+  );
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 });
 ```
 

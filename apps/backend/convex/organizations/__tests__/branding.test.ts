@@ -45,6 +45,44 @@ describe("Branding settings", () => {
         isPrimary: true,
       });
     });
+
+    // Pro subscription required for branding features
+    const now = Date.now();
+    await t.run(async (ctx) => {
+      const productId = await ctx.db.insert("subscription_products", {
+        externalProductId: "prod_branding_test",
+        name: "Seal Professional",
+        status: "active",
+        metadata: { tier: "pro" },
+        createdAt: now,
+        updatedAt: now,
+      });
+      await ctx.db.insert("subscription_prices", {
+        externalPriceId: "price_branding_test",
+        externalProductId: "prod_branding_test",
+        subscriptionProductId: productId,
+        type: "recurring",
+        billingScheme: "per_unit",
+        currency: "usd",
+        unitAmount: 1900,
+        recurring: { interval: "month", intervalCount: 1 },
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+      });
+      await ctx.db.insert("subscriptions", {
+        organizationId,
+        externalCustomerId: "cus_branding_test",
+        externalSubscriptionId: "sub_branding_test",
+        externalPriceId: "price_branding_test",
+        status: "active",
+        currentPeriodStart: now - 30 * 24 * 60 * 60 * 1000,
+        currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+        cancelAtPeriodEnd: false,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
   });
 
   describe("getBrandingSettings", () => {

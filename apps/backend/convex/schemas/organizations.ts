@@ -62,7 +62,7 @@ export const organizationsTable = defineTable({
   type: organizationTypeTuple,
   logo: v.optional(v.string()),
   metadata: v.optional(v.string()),
-  currency: v.optional(v.string()), // default "BRL"
+  currency: v.optional(v.string()), // default "USD"
   currencyKind: v.optional(v.string()), // default "normal"
   timezone: v.string(), // default "UTC"
   isActive: v.boolean(),
@@ -95,10 +95,14 @@ export const organizationsTable = defineTable({
   // Allow document owners/admins to transfer document ownership to another org member
   delegateOwnership: v.optional(v.boolean()),
 
+  // Stripe billing customer for this organization
+  stripeCustomerId: v.optional(v.string()),
+
   updatedAt: v.number(),
 })
   .index("by_slug", ["slug"])
   .index("by_type", ["type"])
   .index("by_active", ["isActive"])
   .index("by_clerk_id", ["clerkId"])
+  .index("by_stripe_customer_id", ["stripeCustomerId"])
   .index("by_status", ["status"]);

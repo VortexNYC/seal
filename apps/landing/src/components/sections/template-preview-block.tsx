@@ -1,4 +1,8 @@
 import { FileText } from "lucide-react";
+<<<<<<< HEAD
+=======
+
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 import type { TemplatePreviewBlock } from "~/lib/content/types";
 
 export function TemplatePreviewBlockComponent({ block }: { block: TemplatePreviewBlock }) {

@@ -44,14 +44,20 @@ Create context-appropriate strategy:
 ### Mobile Adaptation (Desktop → Mobile)
 
 **Layout Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Single column instead of multi-column
 - Vertical stacking instead of side-by-side
 - Full-width components instead of fixed widths
 - Bottom navigation instead of top/side navigation
 
 **Interaction Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Touch targets 44x44px minimum (not hover-dependent)
 - Swipe gestures where appropriate (lists, carousels)
 - Bottom sheets instead of dropdowns
@@ -59,14 +65,20 @@ Create context-appropriate strategy:
 - Larger tap areas with more spacing
 
 **Content Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Progressive disclosure (don't show everything at once)
 - Prioritize primary content (secondary content in tabs/accordions)
 - Shorter text (more concise)
 - Larger text (16px minimum)
 
 **Navigation Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Hamburger menu or bottom navigation
 - Reduce navigation complexity
 - Sticky headers for context
@@ -75,14 +87,20 @@ Create context-appropriate strategy:
 ### Tablet Adaptation (Hybrid Approach)
 
 **Layout Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Two-column layouts (not single or three-column)
 - Side panels for secondary content
 - Master-detail views (list + detail)
 - Adaptive based on orientation (portrait vs landscape)
 
 **Interaction Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Support both touch and pointer
 - Touch targets 44x44px but allow denser layouts than phone
 - Side navigation drawers
@@ -91,14 +109,20 @@ Create context-appropriate strategy:
 ### Desktop Adaptation (Mobile → Desktop)
 
 **Layout Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Multi-column layouts (use horizontal space)
 - Side navigation always visible
 - Multiple information panels simultaneously
 - Fixed widths with max-width constraints (don't stretch to 4K)
 
 **Interaction Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Hover states for additional information
 - Keyboard shortcuts
 - Right-click context menus
@@ -106,7 +130,10 @@ Create context-appropriate strategy:
 - Multi-select with Shift/Cmd
 
 **Content Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Show more information upfront (less progressive disclosure)
 - Data tables with many columns
 - Richer visualizations
@@ -115,14 +142,20 @@ Create context-appropriate strategy:
 ### Print Adaptation (Screen → Print)
 
 **Layout Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Page breaks at logical points
 - Remove navigation, footer, interactive elements
 - Black and white (or limited color)
 - Proper margins for binding
 
 **Content Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Expand shortened content (show full URLs, hidden sections)
 - Add page numbers, headers, footers
 - Include metadata (print date, page title)
@@ -131,14 +164,20 @@ Create context-appropriate strategy:
 ### Email Adaptation (Web → Email)
 
 **Layout Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Narrow width (600px max)
 - Single column only
 - Inline CSS (no external stylesheets)
 - Table-based layouts (for email client compatibility)
 
 **Interaction Strategy**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Large, obvious CTAs (buttons not text links)
 - No hover states (not reliable)
 - Deep links to web app for complex interactions
@@ -150,7 +189,10 @@ Apply changes systematically:
 ### Responsive Breakpoints
 
 Choose appropriate breakpoints:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Mobile: 320px-767px
 - Tablet: 768px-1023px
 - Desktop: 1024px+
@@ -189,7 +231,10 @@ Choose appropriate breakpoints:
 **IMPORTANT**: Test on real devices, not just browser DevTools. Device emulation is helpful but not perfect.
 
 **NEVER**:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Hide core functionality on mobile (if it matters, make it work)
 - Assume desktop = powerful device (consider accessibility, older machines)
 - Use different information architecture across contexts (confusing)
@@ -210,4 +255,8 @@ Test thoroughly across contexts:
 - **Edge cases**: Very small screens (320px), very large screens (4K)
 - **Slow connections**: Test on throttled network
 
+<<<<<<< HEAD
 Remember: You're a cross-platform design expert. Make experiences that feel native to each context while maintaining brand and functionality consistency. Adapt intentionally, test thoroughly.
+=======
+Remember: You're a cross-platform design expert. Make experiences that feel native to each context while maintaining brand and functionality consistency. Adapt intentionally, test thoroughly.
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))

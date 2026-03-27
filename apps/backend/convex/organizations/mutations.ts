@@ -8,6 +8,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx, mutation } from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
 import { adminMutation, authMutation } from "../auth";
+import { ensureProFeature, ensureSeatLimit } from "../auth/subscription_guards";
 import { seedSystemRoles } from "../organization_roles/helpers";
 import { organizationBaseSchema } from "../validations/organizations";
 
@@ -310,7 +311,7 @@ export const createWorkspace = authMutation({
       type: args.type,
       logo: args.logo,
       metadata: args.metadata,
-      currency: args.currency || "BRL",
+      currency: args.currency || "USD",
       currencyKind: args.currencyKind || "normal",
       timezone: args.timezone || "UTC",
     });
@@ -451,6 +452,8 @@ export const addMember = adminMutation({
   },
   handler: async (ctx, args) => {
     const { organization } = ctx.auth;
+
+    await ensureSeatLimit(ctx.db, organization._id);
 
     // Check if user exists
     const user = await ctx.db.get(args.userId);
@@ -630,6 +633,8 @@ export const createInvitation = adminMutation({
   },
   handler: async (ctx, args) => {
     const { organization, user: currentUser } = ctx.auth;
+
+    await ensureSeatLimit(ctx.db, organization._id);
 
     // Validate email
     const email = args.email.trim().toLowerCase();
@@ -1046,6 +1051,7 @@ export const updateAiSettings = adminMutation({
 export const generateLogoUploadUrl = adminMutation({
   args: {},
   handler: async (ctx) => {
+    await ensureProFeature(ctx.db, ctx.auth.organization._id, "Custom branding");
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -1065,6 +1071,8 @@ export const updateBrandingSettings = adminMutation({
     enabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await ensureProFeature(ctx.db, ctx.auth.organization._id, "Custom branding");
+
     const org = await ctx.db.get(ctx.auth.organization._id);
     if (!org) throw new ConvexError("Organization not found");
 

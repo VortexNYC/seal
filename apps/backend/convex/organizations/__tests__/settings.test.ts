@@ -69,6 +69,44 @@ describe("Organization settings", () => {
         isPrimary: true,
       });
     });
+
+    // Pro subscription (required for branding features)
+    const now = Date.now();
+    await t.run(async (ctx) => {
+      const productId = await ctx.db.insert("subscription_products", {
+        externalProductId: "prod_settings_test",
+        name: "Seal Professional",
+        status: "active",
+        metadata: { tier: "pro" },
+        createdAt: now,
+        updatedAt: now,
+      });
+      await ctx.db.insert("subscription_prices", {
+        externalPriceId: "price_settings_test",
+        externalProductId: "prod_settings_test",
+        subscriptionProductId: productId,
+        type: "recurring",
+        billingScheme: "per_unit",
+        currency: "usd",
+        unitAmount: 1900,
+        recurring: { interval: "month", intervalCount: 1 },
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+      });
+      await ctx.db.insert("subscriptions", {
+        organizationId,
+        externalCustomerId: "cus_settings_test",
+        externalSubscriptionId: "sub_settings_test",
+        externalPriceId: "price_settings_test",
+        status: "active",
+        currentPeriodStart: now - 30 * 24 * 60 * 60 * 1000,
+        currentPeriodEnd: now + 30 * 24 * 60 * 60 * 1000,
+        cancelAtPeriodEnd: false,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
   });
 
   // =========================================================================

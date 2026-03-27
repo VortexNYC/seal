@@ -376,7 +376,13 @@ test("handles push notification", async ({ context, page }) => {
   await sw.evaluate(async () => {
     // Dispatch push event
     const pushEvent = new PushEvent("push", {
+<<<<<<< HEAD
       data: new PushMessageData(JSON.stringify({ title: "Test", body: "Push message" })),
+=======
+      data: new PushMessageData(
+        JSON.stringify({ title: "Test", body: "Push message" }),
+      ),
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     });
     self.dispatchEvent(pushEvent);
   });

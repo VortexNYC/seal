@@ -183,7 +183,13 @@ test("copy button works", async ({ page, context }) => {
   await page.getByRole("button", { name: "Copy Link" }).click();
 
   // Read clipboard content
+<<<<<<< HEAD
   const clipboardContent = await page.evaluate(() => navigator.clipboard.readText());
+=======
+  const clipboardContent = await page.evaluate(() =>
+    navigator.clipboard.readText(),
+  );
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   expect(clipboardContent).toContain("https://example.com/share/");
 });
@@ -368,7 +374,13 @@ test("handles camera access error", async ({ page }) => {
   await page.getByRole("button", { name: "Join Call" }).click();
 
   await expect(page.getByText("Camera access denied")).toBeVisible();
+<<<<<<< HEAD
   await expect(page.getByRole("button", { name: "Join Audio Only" })).toBeVisible();
+=======
+  await expect(
+    page.getByRole("button", { name: "Join Audio Only" }),
+  ).toBeVisible();
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 });
 ```
 

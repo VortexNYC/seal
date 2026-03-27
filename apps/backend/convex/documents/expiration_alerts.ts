@@ -128,8 +128,8 @@ export const processExpirationAlerts = internalAction({
         { documentId: candidate.documentId },
       );
       const pendingRecipients = recipients
-        .filter((r) => r.status === "pending" || r.status === "viewed")
-        .map((r) => ({ name: r.name || r.email, email: r.email }));
+        .filter((r: (typeof recipients)[number]) => r.status === "pending" || r.status === "viewed")
+        .map((r: (typeof recipients)[number]) => ({ name: r.name || r.email, email: r.email }));
 
       if (pendingRecipients.length === 0) continue;
 

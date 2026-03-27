@@ -56,7 +56,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import { FeatureGate } from "@/components/feature-gate";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/developer/api-keys")({
@@ -204,7 +204,6 @@ function formatRelativeTime(date: Date): string {
 }
 
 function ApiKeysPage() {
-  const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
   const createApiKey = useAction(api.api_keys.actions.createClerkApiKey);
   const listApiKeys = useAction(api.api_keys.actions.listClerkApiKeys);
   const revokeApiKey = useAction(api.api_keys.actions.revokeClerkApiKey);
@@ -317,6 +316,11 @@ function ApiKeysPage() {
 
   return (
     <PageWrapper title="API Keys" description="Manage API keys for programmatic access to Seal">
+      <FeatureGate
+        tier="pro"
+        feature="API access"
+        description="Create API keys to integrate Seal with your systems."
+      >
       <div className="space-y-6">
         <Card>
           <CardHeader>
@@ -325,6 +329,7 @@ function ApiKeysPage() {
                 <Key className="text-info h-5 w-5" />
                 <CardTitle>Your API Keys</CardTitle>
               </div>
+<<<<<<< HEAD
               {isPro ? (
                 <Dialog
                   open={isCreating}
@@ -485,17 +490,170 @@ function ApiKeysPage() {
                     Pro
                   </Badge>
                   <Button size="sm" variant="outline" disabled>
+=======
+              <Dialog
+                open={isCreating}
+                onOpenChange={(open) => {
+                  if (!open) handleCloseDialog();
+                  else setIsCreating(true);
+                }}
+              >
+                <DialogTrigger asChild>
+                  <Button size="sm" className="bg-info hover:bg-info/90 text-white">
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
                     <Plus className="mr-1 h-4 w-4" />
                     Create API Key
                   </Button>
-                </div>
-              )}
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {newKeySecret ? "API Key Created" : "Create API Key"}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {newKeySecret
+                        ? "Copy your API key now. You won't be able to see it again."
+                        : "Generate a new API key for programmatic access."}
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  {newKeySecret ? (
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <div className="from-info/20 to-info/10 absolute -inset-1 rounded-lg bg-gradient-to-r blur" />
+                        <div className="bg-muted border-info/30 relative flex items-center gap-2 rounded-lg border p-3">
+                          <Input
+                            value={newKeySecret}
+                            readOnly
+                            className="text-info flex-1 border-0 bg-transparent font-mono text-sm focus-visible:ring-0"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Copy API key"
+                            onClick={handleCopyKey}
+                            className="shrink-0"
+                          >
+                            {copiedKey ? (
+                              <Check className="text-success h-4 w-4" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="border-warning/30 bg-warning-surface flex items-start gap-3 rounded-lg border p-4">
+                        <AlertTriangle className="text-warning mt-0.5 h-5 w-5 shrink-0" />
+                        <div>
+                          <p className="text-warning font-medium">Save this key securely</p>
+                          <p className="text-warning text-sm">
+                            This is the only time you'll see this key. Store it in a secure
+                            location.
+                          </p>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          onClick={handleCloseDialog}
+                          className="bg-info hover:bg-info/90 text-white"
+                        >
+                          Done
+                        </Button>
+                      </DialogFooter>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="key-name">Key Name</Label>
+                        <Input
+                          id="key-name"
+                          placeholder="e.g., Production API Key"
+                          value={newKeyName}
+                          onChange={(e) => setNewKeyName(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label>Permissions</Label>
+                        <div className="bg-muted/30 grid max-h-64 grid-cols-2 gap-3 overflow-y-auto rounded-lg border p-4">
+                          {AVAILABLE_SCOPES.map((scope) => {
+                            const IconComponent = scope.icon;
+                            const isSelected = selectedScopes.includes(scope.value);
+                            return (
+                              <button
+                                key={scope.value}
+                                type="button"
+                                onClick={() => toggleScope(scope.value)}
+                                className={cn(
+                                  "group relative flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition-colors",
+                                  isSelected
+                                    ? "border-info/50 bg-info-surface"
+                                    : "border-border bg-background hover:border-info/30",
+                                )}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={cn(
+                                      "flex h-8 w-8 items-center justify-center rounded-md",
+                                      isSelected
+                                        ? "bg-info/20 text-info"
+                                        : "bg-muted text-muted-foreground group-hover:text-foreground",
+                                    )}
+                                  >
+                                    <IconComponent className="h-4 w-4" />
+                                  </div>
+                                  <Checkbox
+                                    checked={isSelected}
+                                    className="data-[state=checked]:border-info data-[state=checked]:bg-info"
+                                  />
+                                </div>
+                                <div>
+                                  <p
+                                    className={cn(
+                                      "text-sm font-medium",
+                                      isSelected && "text-info",
+                                    )}
+                                  >
+                                    {scope.label}
+                                  </p>
+                                  <p className="text-muted-foreground line-clamp-2 text-xs">
+                                    {scope.description}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                          Selected: {selectedScopes.length} permission
+                          {selectedScopes.length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+
+                      <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={handleCloseDialog}>
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleCreateKey}
+                          className="bg-info hover:bg-info/90 text-white"
+                        >
+                          Create Key
+                        </Button>
+                      </DialogFooter>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
             <CardDescription>
               API keys allow secure programmatic access to the Seal API
+<<<<<<< HEAD
               {!isPro && !isLoadingPlan && (
                 <span className="text-warning mt-1 block">API keys require a Pro plan.</span>
               )}
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -514,14 +672,20 @@ function ApiKeysPage() {
                 <Button
                   onClick={() => setIsCreating(true)}
                   className="bg-info hover:bg-info/90 mt-6 text-white"
+<<<<<<< HEAD
                   disabled={!isPro}
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create your first API key
                 </Button>
+<<<<<<< HEAD
                 {!isPro && !isLoadingPlan && (
                   <p className="text-warning mt-2 text-sm">Requires a Pro plan</p>
                 )}
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
               </div>
             ) : (
               <div className="space-y-3">
@@ -585,6 +749,7 @@ function ApiKeysPage() {
           </CardContent>
         </Card>
       </div>
+      </FeatureGate>
     </PageWrapper>
   );
 }

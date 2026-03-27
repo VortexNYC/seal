@@ -3,6 +3,10 @@ name: tanstack-devtools
 description: Centralized, extensible devtools panel for TanStack libraries with a plugin architecture.
 ---
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ## Overview
 
 TanStack Devtools provides a unified debugging interface that consolidates devtools for TanStack Query, Router, and other libraries into a single panel. It features a framework-agnostic plugin architecture, real-time state inspection, and support for custom plugins. Built with Solid.js for lightweight performance.
@@ -20,10 +24,17 @@ npm install @tanstack/react-devtools
 ## Basic Setup
 
 ```tsx
+<<<<<<< HEAD
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
+=======
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient()
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 function App() {
   return (
@@ -32,7 +43,11 @@ function App() {
       {/* Your app content */}
       <MyApp />
     </QueryClientProvider>
+<<<<<<< HEAD
   );
+=======
+  )
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -41,8 +56,13 @@ function App() {
 ### Query Devtools
 
 ```tsx
+<<<<<<< HEAD
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
+=======
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 function App() {
   return (
@@ -50,45 +70,74 @@ function App() {
       <TanStackDevtools
         plugins={[
           {
+<<<<<<< HEAD
             id: "react-query",
             name: "React Query",
+=======
+            id: 'react-query',
+            name: 'React Query',
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
             render: () => <ReactQueryDevtoolsPanel />,
           },
         ]}
       />
       <MyApp />
     </QueryClientProvider>
+<<<<<<< HEAD
   );
+=======
+  )
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
 ### Router Devtools
 
 ```tsx
+<<<<<<< HEAD
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+=======
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 function App() {
   return (
     <TanStackDevtools
       plugins={[
         {
+<<<<<<< HEAD
           id: "router",
           name: "Router",
+=======
+          id: 'router',
+          name: 'Router',
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
           render: () => <TanStackRouterDevtoolsPanel router={router} />,
         },
       ]}
     />
+<<<<<<< HEAD
   );
+=======
+  )
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
 ### Combined Setup
 
 ```tsx
+<<<<<<< HEAD
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+=======
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 function App() {
   return (
@@ -96,6 +145,7 @@ function App() {
       <TanStackDevtools
         plugins={[
           {
+<<<<<<< HEAD
             id: "react-query",
             name: "React Query",
             render: () => <ReactQueryDevtoolsPanel />,
@@ -103,13 +153,26 @@ function App() {
           {
             id: "router",
             name: "Router",
+=======
+            id: 'react-query',
+            name: 'React Query',
+            render: () => <ReactQueryDevtoolsPanel />,
+          },
+          {
+            id: 'router',
+            name: 'Router',
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
             render: () => <TanStackRouterDevtoolsPanel router={router} />,
           },
         ]}
       />
       <MyApp />
     </QueryClientProvider>
+<<<<<<< HEAD
   );
+=======
+  )
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -118,26 +181,43 @@ function App() {
 For debugging TanStack AI workflows:
 
 ```tsx
+<<<<<<< HEAD
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { AIDevtoolsPanel } from "@tanstack/ai-react/devtools";
+=======
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import { AIDevtoolsPanel } from '@tanstack/ai-react/devtools'
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 function App() {
   return (
     <TanStackDevtools
       plugins={[
         {
+<<<<<<< HEAD
           id: "ai",
           name: "AI",
+=======
+          id: 'ai',
+          name: 'AI',
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
           render: () => <AIDevtoolsPanel />,
         },
       ]}
     />
+<<<<<<< HEAD
   );
+=======
+  )
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
 AI Devtools features:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - **Message Inspector** - View full conversation history with metadata
 - **Token Usage** - Track input/output tokens and costs per request
 - **Streaming Visualization** - Real-time view of streaming chunks
@@ -151,15 +231,22 @@ AI Devtools features:
 
 ```typescript
 interface DevtoolsPlugin {
+<<<<<<< HEAD
   id: string; // Unique identifier
   name: string; // Display name in the devtools panel
   render: () => JSX.Element; // React component to render
+=======
+  id: string          // Unique identifier
+  name: string        // Display name in the devtools panel
+  render: () => JSX.Element  // React component to render
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
 ### Custom Plugins
 
 ```tsx
+<<<<<<< HEAD
 import { TanStackDevtools } from "@tanstack/react-devtools";
 
 // Custom state inspector plugin
@@ -168,10 +255,21 @@ const stateInspectorPlugin = {
   name: "State",
   render: () => (
     <div style={{ padding: "16px" }}>
+=======
+import { TanStackDevtools } from '@tanstack/react-devtools'
+
+// Custom state inspector plugin
+const stateInspectorPlugin = {
+  id: 'state-inspector',
+  name: 'State',
+  render: () => (
+    <div style={{ padding: '16px' }}>
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       <h3>Application State</h3>
       <pre>{JSON.stringify(appState, null, 2)}</pre>
     </div>
   ),
+<<<<<<< HEAD
 };
 
 // Custom network logger plugin
@@ -183,6 +281,26 @@ const networkLoggerPlugin = {
 
 function App() {
   return <TanStackDevtools plugins={[stateInspectorPlugin, networkLoggerPlugin]} />;
+=======
+}
+
+// Custom network logger plugin
+const networkLoggerPlugin = {
+  id: 'network-logger',
+  name: 'Network',
+  render: () => <NetworkLoggerPanel />,
+}
+
+function App() {
+  return (
+    <TanStackDevtools
+      plugins={[
+        stateInspectorPlugin,
+        networkLoggerPlugin,
+      ]}
+    />
+  )
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -190,6 +308,7 @@ function App() {
 
 ```tsx
 function App() {
+<<<<<<< HEAD
   const [plugins, setPlugins] = useState<DevtoolsPlugin[]>([]);
 
   useEffect(() => {
@@ -208,6 +327,26 @@ function App() {
   }, []);
 
   return <TanStackDevtools plugins={plugins} />;
+=======
+  const [plugins, setPlugins] = useState<DevtoolsPlugin[]>([])
+
+  useEffect(() => {
+    // Register plugins conditionally
+    const activePlugins: DevtoolsPlugin[] = []
+
+    if (process.env.NODE_ENV === 'development') {
+      activePlugins.push({
+        id: 'debug',
+        name: 'Debug',
+        render: () => <DebugPanel />,
+      })
+    }
+
+    setPlugins(activePlugins)
+  }, [])
+
+  return <TanStackDevtools plugins={plugins} />
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -215,12 +354,23 @@ function App() {
 
 ```typescript
 // vite.config.ts
+<<<<<<< HEAD
 import { defineConfig } from "vite";
 import { tanstackDevtools } from "@tanstack/devtools/vite";
 
 export default defineConfig({
   plugins: [tanstackDevtools()],
 });
+=======
+import { defineConfig } from 'vite'
+import { tanstackDevtools } from '@tanstack/devtools/vite'
+
+export default defineConfig({
+  plugins: [
+    tanstackDevtools(),
+  ],
+})
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Production Considerations
@@ -230,26 +380,49 @@ export default defineConfig({
 function App() {
   return (
     <>
+<<<<<<< HEAD
       {process.env.NODE_ENV === "development" && <TanStackDevtools plugins={plugins} />}
       <MyApp />
     </>
   );
+=======
+      {process.env.NODE_ENV === 'development' && (
+        <TanStackDevtools plugins={plugins} />
+      )}
+      <MyApp />
+    </>
+  )
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 
 // Or use lazy loading
 const TanStackDevtools = lazy(() =>
+<<<<<<< HEAD
   import("@tanstack/react-devtools").then((m) => ({ default: m.TanStackDevtools })),
 );
+=======
+  import('@tanstack/react-devtools').then((m) => ({ default: m.TanStackDevtools }))
+)
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Framework Support
 
+<<<<<<< HEAD
 | Framework | Package                      | Status  |
 | --------- | ---------------------------- | ------- |
 | React     | `@tanstack/react-devtools`   | Alpha   |
 | Solid     | `@tanstack/solid-devtools`   | Planned |
 | Vue       | `@tanstack/vue-devtools`     | Planned |
 | Angular   | `@tanstack/angular-devtools` | Planned |
+=======
+| Framework | Package | Status |
+|-----------|---------|--------|
+| React | `@tanstack/react-devtools` | Alpha |
+| Solid | `@tanstack/solid-devtools` | Planned |
+| Vue | `@tanstack/vue-devtools` | Planned |
+| Angular | `@tanstack/angular-devtools` | Planned |
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 ## Features
 

@@ -78,7 +78,12 @@ export const test = base.extend<ExtensionFixtures>({
 
     // Wait for service worker to be registered
     const serviceWorker =
+<<<<<<< HEAD
       context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
+=======
+      context.serviceWorkers()[0] ||
+      (await context.waitForEvent("serviceworker"));
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
     extensionId = serviceWorker.url().split("/")[2];
 
@@ -88,7 +93,12 @@ export const test = base.extend<ExtensionFixtures>({
   backgroundPage: async ({ context }, use) => {
     // For Manifest V2 extensions
     const backgroundPage =
+<<<<<<< HEAD
       context.backgroundPages()[0] || (await context.waitForEvent("backgroundpage"));
+=======
+      context.backgroundPages()[0] ||
+      (await context.waitForEvent("backgroundpage"));
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
     await use(backgroundPage);
   },
@@ -107,7 +117,14 @@ test("load MV3 extension", async () => {
 
   const context = await chromium.launchPersistentContext("", {
     headless: false,
+<<<<<<< HEAD
     args: [`--disable-extensions-except=${pathToExtension}`, `--load-extension=${pathToExtension}`],
+=======
+    args: [
+      `--disable-extensions-except=${pathToExtension}`,
+      `--load-extension=${pathToExtension}`,
+    ],
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   });
 
   // Wait for service worker
@@ -126,7 +143,14 @@ test("load MV2 extension", async () => {
 
   const context = await chromium.launchPersistentContext("", {
     headless: false,
+<<<<<<< HEAD
     args: [`--disable-extensions-except=${pathToExtension}`, `--load-extension=${pathToExtension}`],
+=======
+    args: [
+      `--disable-extensions-except=${pathToExtension}`,
+      `--load-extension=${pathToExtension}`,
+    ],
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   });
 
   // Wait for background page
@@ -194,7 +218,13 @@ test("popup remembers state", async ({ context, extensionId }) => {
   await popup2.goto(`chrome-extension://${extensionId}/popup.html`);
 
   // State should persist
+<<<<<<< HEAD
   await expect(popup2.getByRole("checkbox", { name: "Dark Mode" })).toBeChecked();
+=======
+  await expect(
+    popup2.getByRole("checkbox", { name: "Dark Mode" }),
+  ).toBeChecked();
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 });
 ```
 
@@ -248,7 +278,12 @@ test("service worker handles messages", async ({ context, extensionId }) => {
 ```typescript
 test("background script logic", async ({ context }) => {
   const serviceWorker =
+<<<<<<< HEAD
     context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
+=======
+    context.serviceWorkers()[0] ||
+    (await context.waitForEvent("serviceworker"));
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   // Evaluate in service worker context
   const result = await serviceWorker.evaluate(async () => {
@@ -305,14 +340,27 @@ test("content script injects UI", async ({ context }) => {
 
   // Interact with injected UI
   await page.locator("#my-extension-widget button").click();
+<<<<<<< HEAD
   await expect(page.locator("#my-extension-widget .result")).toHaveText("Success");
+=======
+  await expect(page.locator("#my-extension-widget .result")).toHaveText(
+    "Success",
+  );
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 });
 ```
 
 ### Content Script Communication
 
 ```typescript
+<<<<<<< HEAD
 test("content script communicates with background", async ({ context, extensionId }) => {
+=======
+test("content script communicates with background", async ({
+  context,
+  extensionId,
+}) => {
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   const page = await context.newPage();
   await page.goto("https://example.com");
 
@@ -341,7 +389,13 @@ test("content script modifies page", async ({ context }) => {
   expect(hasModification).toBe(true);
 
   // Check DOM modifications
+<<<<<<< HEAD
   const modifiedElements = await page.locator("[data-modified-by-extension]").count();
+=======
+  const modifiedElements = await page
+    .locator("[data-modified-by-extension]")
+    .count();
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   expect(modifiedElements).toBeGreaterThan(0);
 });
 ```

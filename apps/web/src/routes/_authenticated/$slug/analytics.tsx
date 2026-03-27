@@ -1400,7 +1400,7 @@ function TemplatePerformanceTab() {
         <CardContent className="flex h-[200px] flex-col items-center justify-center gap-2">
           <TrendingUpIcon className="text-muted-foreground h-8 w-8" />
           <p className="text-muted-foreground text-sm">
-            Template Performance is available on the Pro plan
+            Template Performance is available on the Professional plan
           </p>
         </CardContent>
       </Card>

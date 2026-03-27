@@ -9,7 +9,11 @@
     "lint": "oxlint -c ../../.oxlintrc.json -A eslint/complexity -A eslint/max-lines-per-function",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
+<<<<<<< HEAD
     "typecheck": "bunx tsc -p tsconfig.typecheck.json --noEmit",
+=======
+    "typecheck": "bunx tsc -p tsconfig.json --noEmit",
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     "knip": "knip",
     "knip:fix": "knip --fix --allow-remove-files",
     "clean": "git clean -xdf .cache .tanstack .turbo node_modules dist",

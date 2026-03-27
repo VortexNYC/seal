@@ -17,13 +17,19 @@ Compact element references that reduce context usage dramatically for AI agents.
 ## How Refs Work
 
 Traditional approach:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 Full DOM/HTML → AI parses → CSS selector → Action (~3000-5000 tokens)
 ```
 
 agent-browser approach:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 Compact snapshot → @refs assigned → Direct interaction (~200-400 tokens)
 ```

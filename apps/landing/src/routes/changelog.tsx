@@ -1,7 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Calendar, Tag } from "lucide-react";
+<<<<<<< HEAD
 import { Badge } from "~/components/ui/badge";
 import { getChangelogEntries, type ChangelogManifestEntry } from "~/lib/changelog/manifest";
+=======
+
+import { getChangelogEntries, type ChangelogManifestEntry } from "~/lib/changelog/manifest";
+import { Badge } from "~/components/ui/badge";
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 export const Route = createFileRoute("/changelog")({
   head: () => ({

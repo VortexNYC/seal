@@ -23,6 +23,7 @@ apps/landing/
 
 ## WHERE TO LOOK
 
+<<<<<<< HEAD
 | Task                  | Location                                    | Notes                                  |
 | --------------------- | ------------------------------------------- | -------------------------------------- |
 | Router setup          | `apps/landing/src/router.tsx`               | Registers generated route tree         |
@@ -37,6 +38,22 @@ apps/landing/
 | Changelog source      | `apps/landing/content/changelog/`           | MDX entries + frontmatter              |
 | Local page data       | `apps/landing/src/lib/content/pages.ts`     | Repo-managed `/pages/$slug` content    |
 | Generators            | `apps/landing/tools/`                       | Docs/search/sitemap generation scripts |
+=======
+| Task              | Location                                   | Notes                                  |
+| ----------------- | ------------------------------------------ | -------------------------------------- |
+| Router setup      | `apps/landing/src/router.tsx`              | Registers generated route tree         |
+| Root route        | `apps/landing/src/routes/__root.tsx`       | App shell + providers                  |
+| Marketing pages   | `apps/landing/src/routes/index.tsx`        | Homepage entry                         |
+| Dynamic landing pages | `apps/landing/src/routes/pages.$slug.tsx`  | Renders local page-builder content    |
+| Docs layout       | `apps/landing/src/routes/docs.tsx`         | Fumadocs layout                        |
+| Docs page         | `apps/landing/src/routes/docs/$.tsx`       | Renders MDX docs pages                 |
+| API reference     | `apps/landing/src/routes/api-reference.tsx` | Scalar embed fed by OpenAPI spec      |
+| E2E tests         | `apps/landing/e2e/tests/`                  | Landing smoke coverage via Playwright |
+| Docs source       | `apps/landing/content/docs/`               | MDX + `meta.json` sidebar config       |
+| Changelog source  | `apps/landing/content/changelog/`          | MDX entries + frontmatter              |
+| Local page data   | `apps/landing/src/lib/content/pages.ts`    | Repo-managed `/pages/$slug` content    |
+| Generators        | `apps/landing/tools/`                      | Docs/search/sitemap generation scripts |
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 ## CONVENTIONS
 

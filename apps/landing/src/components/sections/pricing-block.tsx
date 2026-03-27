@@ -1,5 +1,6 @@
 import { ArrowRight, Check, Minus } from "lucide-react";
 import { useState } from "react";
+<<<<<<< HEAD
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
 import { APP_URL } from "~/lib/constants";
@@ -17,6 +18,27 @@ interface Plan {
   highlighted?: boolean;
 }
 
+=======
+
+import { Button } from "~/components/ui/button";
+import { FadeIn } from "~/components/ui/fade-in";
+import { cn } from "~/utils/cn";
+import type { PricingSectionBlock } from "~/lib/content/types";
+
+import { APP_URL } from "~/lib/constants";
+
+interface Plan {
+  name: string;
+  price: { monthly: string; annual: string };
+  period: string;
+  subtitle: string;
+  features: Array<{ text: string; included: boolean }>;
+  cta: string;
+  ctaLink: string;
+  highlighted?: boolean;
+}
+
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 const plans: Plan[] = [
   {
     name: "Free",
@@ -82,7 +104,11 @@ export function StaticPricing() {
             <div className="bg-muted inline-flex items-center gap-1 rounded-full p-1">
               <button
                 className={cn(
+<<<<<<< HEAD
                   "focus-visible:ring-ring rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+=======
+                  "rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
                   !annual
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -94,7 +120,11 @@ export function StaticPricing() {
               </button>
               <button
                 className={cn(
+<<<<<<< HEAD
                   "focus-visible:ring-ring rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
+=======
+                  "rounded-full px-5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
                   annual
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -118,11 +148,21 @@ export function StaticPricing() {
               <div
                 className={cn(
                   "relative flex h-full flex-col rounded-2xl border p-8 sm:p-10",
+<<<<<<< HEAD
                   plan.highlighted ? "border-primary/30 bg-primary/5" : "border-border bg-card",
                 )}
               >
                 {plan.highlighted && (
                   <div className="bg-card text-foreground absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full border px-4 py-1 text-xs font-semibold tracking-wider uppercase shadow-sm">
+=======
+                  plan.highlighted
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-border bg-card",
+                )}
+              >
+                {plan.highlighted && (
+                  <div className="bg-card text-foreground absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-wider shadow-sm">
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
                     Most Popular
                   </div>
                 )}

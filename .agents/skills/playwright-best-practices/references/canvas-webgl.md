@@ -312,7 +312,12 @@ test("WebGL is supported", async ({ page }) => {
 
   const hasWebGL = await page.evaluate(() => {
     const canvas = document.createElement("canvas");
+<<<<<<< HEAD
     const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+=======
+    const gl =
+      canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     return !!gl;
   });
 
@@ -336,7 +341,19 @@ test("3D scene renders", async ({ page }) => {
 
     // Check if something has been drawn
     const pixels = new Uint8Array(4);
+<<<<<<< HEAD
     gl.readPixels(canvas.width / 2, canvas.height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+=======
+    gl.readPixels(
+      canvas.width / 2,
+      canvas.height / 2,
+      1,
+      1,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      pixels,
+    );
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     return pixels.some((p) => p > 0);
   });
 
@@ -363,9 +380,19 @@ test("Three.js scene interaction", async ({ page }) => {
   // Rotate camera by dragging
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
   await page.mouse.down();
+<<<<<<< HEAD
   await page.mouse.move(box!.x + box!.width / 2 + 100, box!.y + box!.height / 2, {
     steps: 10,
   });
+=======
+  await page.mouse.move(
+    box!.x + box!.width / 2 + 100,
+    box!.y + box!.height / 2,
+    {
+      steps: 10,
+    },
+  );
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   await page.mouse.up();
 
   // Verify camera position changed

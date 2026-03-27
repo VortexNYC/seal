@@ -15,30 +15,46 @@ Don't chase device sizes—let content tell you where to break. Start narrow, st
 ```css
 /* Fine pointer (mouse, trackpad) */
 @media (pointer: fine) {
+<<<<<<< HEAD
   .button {
     padding: 8px 16px;
   }
+=======
+  .button { padding: 8px 16px; }
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 
 /* Coarse pointer (touch, stylus) */
 @media (pointer: coarse) {
+<<<<<<< HEAD
   .button {
     padding: 12px 20px;
   } /* Larger touch target */
+=======
+  .button { padding: 12px 20px; }  /* Larger touch target */
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 
 /* Device supports hover */
 @media (hover: hover) {
+<<<<<<< HEAD
   .card:hover {
     transform: translateY(-2px);
   }
+=======
+  .card:hover { transform: translateY(-2px); }
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 
 /* Device doesn't support hover (touch) */
 @media (hover: none) {
+<<<<<<< HEAD
   .card {
     /* No hover state - use active instead */
   }
+=======
+  .card { /* No hover state - use active instead */ }
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -63,9 +79,14 @@ body {
 ```
 
 **Enable viewport-fit** in your meta tag:
+<<<<<<< HEAD
 
 ```html
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+=======
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Responsive Images: Get It Right
@@ -75,6 +96,7 @@ body {
 ```html
 <img
   src="hero-800.jpg"
+<<<<<<< HEAD
   srcset="hero-400.jpg 400w, hero-800.jpg 800w, hero-1200.jpg 1200w"
   sizes="(max-width: 768px) 100vw, 50vw"
   alt="Hero image"
@@ -83,6 +105,19 @@ body {
 
 **How it works**:
 
+=======
+  srcset="
+    hero-400.jpg 400w,
+    hero-800.jpg 800w,
+    hero-1200.jpg 1200w
+  "
+  sizes="(max-width: 768px) 100vw, 50vw"
+  alt="Hero image"
+>
+```
+
+**How it works**:
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - `srcset` lists available images with their actual widths (`w` descriptors)
 - `sizes` tells the browser how wide the image will display
 - Browser picks the best file based on viewport width AND device pixel ratio
@@ -93,9 +128,15 @@ When you need different crops/compositions (not just resolutions):
 
 ```html
 <picture>
+<<<<<<< HEAD
   <source media="(min-width: 768px)" srcset="wide.jpg" />
   <source media="(max-width: 767px)" srcset="tall.jpg" />
   <img src="fallback.jpg" alt="..." />
+=======
+  <source media="(min-width: 768px)" srcset="wide.jpg">
+  <source media="(max-width: 767px)" srcset="tall.jpg">
+  <img src="fallback.jpg" alt="...">
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 </picture>
 ```
 

@@ -192,11 +192,19 @@ function validateMemberStatus(user: Doc<"users">, member: Doc<"organization_memb
 
 async function getActiveSubscription(
   ctx: QueryCtx | MutationCtx,
+<<<<<<< HEAD
   userId: Id<"users">,
 ): Promise<Doc<"subscriptions"> | undefined> {
   const subscription = await ctx.db
     .query("subscriptions")
     .withIndex("by_user_id", (q) => q.eq("userId", userId))
+=======
+  organizationId: Id<"organizations">,
+): Promise<Doc<"subscriptions"> | undefined> {
+  const subscription = await ctx.db
+    .query("subscriptions")
+    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     .filter((q) => q.eq(q.field("status"), "active"))
     .first();
 
@@ -239,7 +247,11 @@ export async function getAuthContext(ctx: QueryCtx | MutationCtx): Promise<AuthC
 
   validateMemberStatus(user, member);
 
+<<<<<<< HEAD
   const subscription = await getActiveSubscription(ctx, user._id);
+=======
+  const subscription = await getActiveSubscription(ctx, organizationId);
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   return buildAuthContext(member, user, organization, subscription);
 }
 

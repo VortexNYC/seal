@@ -61,9 +61,13 @@ app.post("/webhooks/seal", express.raw({ type: "application/json" }), (req, res)
   const timestamp = req.headers["x-seal-timestamp"] as string;
   const payload = req.body.toString("utf8");
 
+<<<<<<< HEAD
   if (
     !verifyWebhookSignature(payload, signature, eventId, timestamp, process.env.WEBHOOK_SECRET!)
   ) {
+=======
+  if (!verifyWebhookSignature(payload, signature, eventId, timestamp, process.env.WEBHOOK_SECRET!)) {
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     return res.status(401).send("Invalid signature");
   }
 
@@ -311,10 +315,14 @@ function verifyWithFallback(
     return true;
   }
 
+<<<<<<< HEAD
   if (
     previousSecret &&
     verifyWebhookSignature(payload, signature, eventId, timestamp, previousSecret)
   ) {
+=======
+  if (previousSecret && verifyWebhookSignature(payload, signature, eventId, timestamp, previousSecret)) {
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     console.warn("Webhook verified with old secret - update sender");
     return true;
   }

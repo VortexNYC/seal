@@ -1,5 +1,9 @@
 import { ArrowRight, Check, Circle, FileText } from "lucide-react";
 import type { ComponentType, ReactElement, SVGProps } from "react";
+<<<<<<< HEAD
+=======
+
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 import { FadeIn } from "~/components/ui/fade-in";
 import type { FeaturesSectionBlock } from "~/lib/content/types";
 
@@ -12,9 +16,13 @@ function AiReviewMockup() {
           <div className="bg-primary/15 flex size-5 items-center justify-center rounded">
             <FileText aria-hidden="true" className="text-primary size-3" />
           </div>
+<<<<<<< HEAD
           <span className="text-foreground text-sm font-medium">
             Series A Term Sheet — Vantage.pdf
           </span>
+=======
+          <span className="text-foreground text-sm font-medium">Series A Term Sheet — Vantage.pdf</span>
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
         </div>
         <span className="bg-success/15 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
           <Circle aria-hidden="true" className="size-1.5 fill-current" />
@@ -24,6 +32,7 @@ function AiReviewMockup() {
       <div className="space-y-2.5 p-4">
         <div className="bg-destructive/8 border-destructive/20 rounded-lg border p-3.5">
           <div className="flex items-start gap-2">
+<<<<<<< HEAD
             <Circle
               aria-hidden="true"
               className="text-destructive mt-0.5 size-2 shrink-0 fill-current"
@@ -36,12 +45,19 @@ function AiReviewMockup() {
                 Term sheets with multiple founders require all signatures. This document only
                 captures one. The agreement may be unenforceable.
               </p>
+=======
+            <Circle aria-hidden="true" className="text-destructive mt-0.5 size-2 shrink-0 fill-current" />
+            <div>
+              <p className="text-foreground text-sm font-medium">Missing co-founder signature block — Page 6</p>
+              <p className="text-muted-foreground mt-0.5 text-xs">Term sheets with multiple founders require all signatures. This document only captures one. The agreement may be unenforceable.</p>
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
               <p className="text-primary mt-1.5 text-xs font-medium">Fix this →</p>
             </div>
           </div>
         </div>
         <div className="bg-warning/8 border-warning/20 rounded-lg border p-3.5">
           <div className="flex items-start gap-2">
+<<<<<<< HEAD
             <Circle
               aria-hidden="true"
               className="text-warning mt-0.5 size-2 shrink-0 fill-current"
@@ -54,11 +70,18 @@ function AiReviewMockup() {
                 3× non-participating preference. Market standard is 1×. Significantly
                 investor-favorable. Consider negotiating.
               </p>
+=======
+            <Circle aria-hidden="true" className="text-warning mt-0.5 size-2 shrink-0 fill-current" />
+            <div>
+              <p className="text-foreground text-sm font-medium">Unusual liquidation preference — §4.3</p>
+              <p className="text-muted-foreground mt-0.5 text-xs">3× non-participating preference. Market standard is 1×. Significantly investor-favorable. Consider negotiating.</p>
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
             </div>
           </div>
         </div>
         <div className="bg-success/8 border-success/20 rounded-lg border p-3.5">
           <div className="flex items-start gap-2">
+<<<<<<< HEAD
             <Circle
               aria-hidden="true"
               className="text-success mt-0.5 size-2 shrink-0 fill-current"
@@ -68,6 +91,12 @@ function AiReviewMockup() {
               <p className="text-muted-foreground mt-0.5 text-xs">
                 Participation rights look market-standard. No flags.
               </p>
+=======
+            <Circle aria-hidden="true" className="text-success mt-0.5 size-2 shrink-0 fill-current" />
+            <div>
+              <p className="text-foreground text-sm font-medium">Pro-rata rights — standard</p>
+              <p className="text-muted-foreground mt-0.5 text-xs">Participation rights look market-standard. No flags.</p>
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
             </div>
           </div>
         </div>
@@ -87,9 +116,13 @@ function SigningMockup() {
   return (
     <div className="border-border bg-card w-full overflow-hidden rounded-xl border shadow-lg">
       <div className="border-border flex items-center justify-between border-b px-5 py-3">
+<<<<<<< HEAD
         <span className="text-foreground text-sm font-medium">
           ACME Corp — Service Agreement.pdf
         </span>
+=======
+        <span className="text-foreground text-sm font-medium">ACME Corp — Service Agreement.pdf</span>
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
         <span className="bg-success/15 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
           <Circle aria-hidden="true" className="size-1.5 fill-current" />
           Ready to sign
@@ -103,7 +136,11 @@ function SigningMockup() {
             <div className="bg-muted h-2.5 w-3/4 rounded" />
           </div>
           <div className="border-primary/30 bg-primary/5 mt-6 flex items-center justify-between rounded-lg border p-3">
+<<<<<<< HEAD
             <span className="text-foreground/70 font-serif text-lg italic">✓ Sarah Chen</span>
+=======
+            <span className="font-serif text-foreground/70 text-lg italic">✓ Sarah Chen</span>
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
             <span className="bg-success text-success-foreground rounded px-2 py-0.5 text-xs font-semibold uppercase">
               Signed
             </span>
@@ -128,6 +165,7 @@ function SigningMockup() {
 /* ── Audit Trail Mockup ────────────────────────────────────────────────── */
 function AuditTrailMockup() {
   const events = [
+<<<<<<< HEAD
     {
       status: "success",
       title: "Document completed",
@@ -158,6 +196,13 @@ function AuditTrailMockup() {
       detail: "Uploaded by jordan@vantage.co",
       time: "2:38 PM",
     },
+=======
+    { status: "success", title: "Document completed", detail: "All 2 signers signed. Certificate generated.", time: "2:43 PM" },
+    { status: "success", title: "Marcus Lee signed", detail: "192.168.1.42 · Safari 17 · iPhone 16", time: "2:43 PM" },
+    { status: "success", title: "Sarah Chen signed", detail: "203.0.113.12 · Chrome 122 · MacBook Pro", time: "2:40 PM" },
+    { status: "info", title: "Document sent for signing", detail: "Sent to sarah@acme.com, marcus@acme.com", time: "2:40 PM" },
+    { status: "muted", title: "Document created", detail: "Uploaded by jordan@vantage.co", time: "2:38 PM" },
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   ];
 
   return (
@@ -169,7 +214,11 @@ function AuditTrailMockup() {
           Completed
         </span>
       </div>
+<<<<<<< HEAD
       <div className="divide-border divide-y">
+=======
+      <div className="divide-y divide-border">
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
         {events.map((event) => (
           <div className="flex items-start justify-between px-5 py-3" key={event.title}>
             <div className="flex items-start gap-2.5">

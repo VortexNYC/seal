@@ -174,7 +174,13 @@ test("shows other user cursors", async ({ browser }) => {
   await page1.route("**/api/me", (route) =>
     route.fulfill({ json: { id: "user-1", name: "Alice" } }),
   );
+<<<<<<< HEAD
   await page2.route("**/api/me", (route) => route.fulfill({ json: { id: "user-2", name: "Bob" } }));
+=======
+  await page2.route("**/api/me", (route) =>
+    route.fulfill({ json: { id: "user-2", name: "Bob" } }),
+  );
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   await page1.goto("/whiteboard/123");
   await page2.goto("/whiteboard/123");
@@ -349,7 +355,13 @@ test("chat messages sync between users", async ({ browser }) => {
   const bobPage = await bobCtx.newPage();
 
   // Setup user identities
+<<<<<<< HEAD
   await alicePage.route("**/api/me", (r) => r.fulfill({ json: { name: "Alice" } }));
+=======
+  await alicePage.route("**/api/me", (r) =>
+    r.fulfill({ json: { name: "Alice" } }),
+  );
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   await bobPage.route("**/api/me", (r) => r.fulfill({ json: { name: "Bob" } }));
 
   await alicePage.goto("/chat/room-1");

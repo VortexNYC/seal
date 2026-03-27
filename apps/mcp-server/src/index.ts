@@ -118,6 +118,9 @@ app.get("/.well-known/oauth-authorization-server", authServerMetadataHandlerCler
  * Uses Clerk OAuth for authentication via mcpAuthClerk middleware
  * streamableHttpHandler properly passes auth info to tool handlers
  */
+// TODO: Add tier check — Free users should get 403 "MCP access requires a Professional plan"
+// This requires querying Convex for the org's subscription plan, which needs the MCP server
+// to have access to the Convex client. Deferring to when MCP server architecture is reviewed.
 app.post("/mcp", mcpAuthClerk, streamableHttpHandler(mcpServer));
 
 // =============================================================================

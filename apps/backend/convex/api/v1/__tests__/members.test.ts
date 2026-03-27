@@ -131,7 +131,7 @@ describe("api/v1/members", () => {
         organizationId,
       });
 
-      const owner = results.find((m) => m.role === "owner");
+      const owner = results.find((m: (typeof results)[number]) => m.role === "owner");
       expect(owner).toBeDefined();
       expect(owner?.email).toBe("owner@members-test.com");
       expect(owner?.name).toBe("Owner User");
@@ -147,7 +147,7 @@ describe("api/v1/members", () => {
         organizationId,
       });
 
-      const member = results.find((m) => m.role === "member");
+      const member = results.find((m: (typeof results)[number]) => m.role === "member");
       expect(member?.name).toBe("member@members-test.com");
     });
 
@@ -191,7 +191,7 @@ describe("api/v1/members", () => {
 
       // Still 3 — system member excluded (only owner, admin, member returned)
       expect(results).toHaveLength(3);
-      expect(results.every((m) => ["owner", "admin", "member", "viewer"].includes(m.role))).toBe(
+      expect(results.every((m: (typeof results)[number]) => ["owner", "admin", "member", "viewer"].includes(m.role))).toBe(
         true,
       );
     });

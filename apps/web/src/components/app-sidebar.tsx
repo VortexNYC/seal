@@ -33,6 +33,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
 
@@ -75,6 +76,7 @@ type NavMainItem = {
     title: string;
     url: string;
     isActive: boolean;
+    locked?: boolean;
   }[];
 };
 
@@ -123,11 +125,13 @@ function buildNavSections({
   currentPath,
   permissions,
   hasStripeConnect,
+  isPro,
 }: {
   slug: string;
   currentPath: string;
   permissions: PermissionSet | undefined;
   hasStripeConnect: boolean;
+  isPro: boolean;
 }): NavMainItem[] {
   const permissionFlags = permissions?.permissions;
   const canView = (flag?: boolean) => (flag === undefined ? true : Boolean(flag));
@@ -225,6 +229,7 @@ function buildNavSections({
       title: "Branding",
       url: buildOrganizationPath(slug, "/settings/branding"),
       visible: canView(permissionFlags?.canViewSettings),
+      proGated: true,
     },
     {
       title: "Signing",
@@ -265,11 +270,13 @@ function buildNavSections({
       url: buildOrganizationPath(slug, "/settings/developer/api-keys"),
       visible:
         canView(permissionFlags?.canManageAPIKeys) || canView(permissionFlags?.canManageWebhooks),
+      proGated: true,
     },
     {
       title: "Webhooks",
       url: buildOrganizationPath(slug, "/settings/developer/webhooks"),
       visible: canView(permissionFlags?.canManageWebhooks),
+      proGated: true,
     },
     {
       title: "Documentation",
@@ -307,7 +314,7 @@ function buildNavSections({
         return null;
       }
 
-      const items = section.items.map((item) => ({
+      const items: NavMainItem["items"] = section.items.map((item) => ({
         title: item.title,
         url: item.url,
         isActive: isPathActive(
@@ -315,6 +322,7 @@ function buildNavSections({
           item.url,
           "exactMatch" in item ? Boolean(item.exactMatch) : false,
         ),
+        locked: "proGated" in item && Boolean(item.proGated) && !isPro,
       }));
 
       return {
@@ -377,6 +385,7 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
   const organizations = useQuery(api.check_membership.listUserOrganizations);
   const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
   const hasStripeConnect = connectedAccount?.status === "connected";
+  const { isPro } = useSubscriptionLimits();
 
   // Wrapper to reset PostHog identity before signing out
   const handleSignOut = React.useCallback(async () => {
@@ -396,8 +405,9 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
         currentPath: location.pathname,
         permissions,
         hasStripeConnect,
+        isPro,
       }),
-    [slug, location.pathname, permissions, hasStripeConnect],
+    [slug, location.pathname, permissions, hasStripeConnect, isPro],
   );
 
   const activeTeamSlug = slug;
@@ -497,7 +507,11 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
                 <span
                   aria-hidden="true"
                   className={cn(
+<<<<<<< HEAD
                     "inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors group-data-[collapsible=icon]:hidden",
+=======
+                    "group-data-[collapsible=icon]:hidden inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
                     isDark ? "bg-primary border-primary justify-end" : "bg-muted border-border",
                   )}
                 >

@@ -310,7 +310,11 @@ export const hybridSearchDocuments = internalAction({
       const docs = await ctx.runQuery(internal.ai.search.getDocumentsByIds, {
         documentIds: extractDocumentIds(filtered),
       });
+<<<<<<< HEAD
       const docMap = new Map(docs.map((document) => [document._id.toString(), document]));
+=======
+      const docMap = new Map(docs.map((document: Doc<"documents">) => [document._id.toString(), document]));
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
       filtered = filtered.filter((entry) => {
         const documentId = entry.key?.split(":")[1];

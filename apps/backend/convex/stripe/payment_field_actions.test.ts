@@ -7,31 +7,36 @@ import {
 } from "./payment_field_actions";
 
 describe("calculatePlatformFee", () => {
-  test("free tier: 1% of 10000 → 100", () => {
-    expect(calculatePlatformFee(10000, false)).toBe(100);
+  test("free tier: 4.5% + 30¢ of 10000 → 480", () => {
+    // 10000 * 0.045 + 30 = 450 + 30 = 480
+    expect(calculatePlatformFee(10000, false)).toBe(480);
   });
 
-  test("pro tier: 0.25% of 10000 → 25", () => {
-    expect(calculatePlatformFee(10000, true)).toBe(25);
+  test("pro tier: 4% + 30¢ of 10000 → 430", () => {
+    // 10000 * 0.04 + 30 = 400 + 30 = 430
+    expect(calculatePlatformFee(10000, true)).toBe(430);
   });
 
-  test("rounds correctly: 1% of 333 → 3 (Math.round)", () => {
-    expect(calculatePlatformFee(333, false)).toBe(3);
+  test("free tier rounds correctly: 4.5% + 30¢ of 333 → 45", () => {
+    // 333 * 0.045 + 30 = 14.985 + 30 = 44.985 → 45
+    expect(calculatePlatformFee(333, false)).toBe(45);
   });
 
-  test("rounds up when fractional >= 0.5: 1% of 350 → 4", () => {
-    // 350 * 0.01 = 3.5 → Math.round → 4
-    expect(calculatePlatformFee(350, false)).toBe(4);
+  test("zero amount → 30 (fixed fee still applies)", () => {
+    // 0 * 0.045 + 30 = 30
+    expect(calculatePlatformFee(0, false)).toBe(30);
+    // 0 * 0.04 + 30 = 30
+    expect(calculatePlatformFee(0, true)).toBe(30);
   });
 
-  test("zero amount → 0", () => {
-    expect(calculatePlatformFee(0, false)).toBe(0);
-    expect(calculatePlatformFee(0, true)).toBe(0);
+  test("pro tier small amount: 4% + 30¢ of 100 → 34", () => {
+    // 100 * 0.04 + 30 = 4 + 30 = 34
+    expect(calculatePlatformFee(100, true)).toBe(34);
   });
 
-  test("pro tier small amount: 0.25% of 100 → 0", () => {
-    // 100 * 0.0025 = 0.25 → Math.round → 0
-    expect(calculatePlatformFee(100, true)).toBe(0);
+  test("free tier $100 payment: 4.5% + 30¢ of 10000 → 480", () => {
+    // $100 = 10000 cents. 10000 * 0.045 + 30 = 480
+    expect(calculatePlatformFee(10000, false)).toBe(480);
   });
 });
 

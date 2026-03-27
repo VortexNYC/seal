@@ -13,7 +13,11 @@ const config: KnipConfig = {
     "@signpdf/signpdf",
     "node-forge",
   ],
+<<<<<<< HEAD
   ignoreBinaries: ["convex", "knip", "oxfmt", "oxlint", "vitest"],
+=======
+  ignoreBinaries: ["oxlint", "oxfmt", "knip", "convex", "vitest"],
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };

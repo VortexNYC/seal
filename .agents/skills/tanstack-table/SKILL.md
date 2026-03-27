@@ -3,6 +3,10 @@ name: tanstack-table
 description: Headless UI for building powerful tables & datagrids for TS/JS, React, Vue, Solid, Svelte, Qwik, Angular, and Lit.
 ---
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ## Overview
 
 TanStack Table is a headless UI library for building data tables and datagrids. It provides logic for sorting, filtering, pagination, grouping, expanding, column pinning/ordering/visibility/resizing, and row selection - without rendering any markup or styles.
@@ -96,6 +100,7 @@ const columns = [
 
 ### Column Options
 
+<<<<<<< HEAD
 | Option            | Type                               | Description                                       |
 | ----------------- | ---------------------------------- | ------------------------------------------------- |
 | `id`              | `string`                           | Unique identifier (auto-derived from accessorKey) |
@@ -117,6 +122,29 @@ const columns = [
 | `enableResizing`  | `boolean`                          | Enable resizing                                   |
 | `enablePinning`   | `boolean`                          | Enable pinning                                    |
 | `meta`            | `any`                              | Custom metadata                                   |
+=======
+| Option | Type | Description |
+|--------|------|-------------|
+| `id` | `string` | Unique identifier (auto-derived from accessorKey) |
+| `accessorKey` | `string` | Dot-notation path to row data |
+| `accessorFn` | `(row) => any` | Custom accessor function |
+| `header` | `string \| (context) => ReactNode` | Header renderer |
+| `cell` | `(context) => ReactNode` | Cell renderer |
+| `footer` | `(context) => ReactNode` | Footer renderer |
+| `size` | `number` | Default width (default: 150) |
+| `minSize` | `number` | Min width (default: 20) |
+| `maxSize` | `number` | Max width |
+| `enableSorting` | `boolean` | Enable sorting |
+| `sortingFn` | `string \| SortingFn` | Sort function |
+| `enableFiltering` | `boolean` | Enable filtering |
+| `filterFn` | `string \| FilterFn` | Filter function |
+| `enableGrouping` | `boolean` | Enable grouping |
+| `aggregationFn` | `string \| AggregationFn` | Aggregation function |
+| `enableHiding` | `boolean` | Enable visibility toggle |
+| `enableResizing` | `boolean` | Enable resizing |
+| `enablePinning` | `boolean` | Enable pinning |
+| `meta` | `any` | Custom metadata |
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 ## Table Instance
 
@@ -194,7 +222,11 @@ const table = useReactTable({
   enableSorting: true,
   enableMultiSort: true,
   // manualSorting: true,  // For server-side sorting
+<<<<<<< HEAD
 });
+=======
+})
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 // Built-in sort functions: 'alphanumeric', 'text', 'datetime', 'basic'
 // Column-level: sortingFn: 'alphanumeric'
@@ -231,19 +263,30 @@ function Filter({ column }) {
 ### Global Filtering
 
 ```typescript
+<<<<<<< HEAD
 const [globalFilter, setGlobalFilter] = useState("");
+=======
+const [globalFilter, setGlobalFilter] = useState('')
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 const table = useReactTable({
   state: { globalFilter },
   onGlobalFilterChange: setGlobalFilter,
+<<<<<<< HEAD
   globalFilterFn: "includesString",
   getFilteredRowModel: getFilteredRowModel(),
 });
+=======
+  globalFilterFn: 'includesString',
+  getFilteredRowModel: getFilteredRowModel(),
+})
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Fuzzy Filtering
 
 ```typescript
+<<<<<<< HEAD
 import { rankItem } from "@tanstack/match-sorter-utils";
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
@@ -256,6 +299,20 @@ const table = useReactTable({
   filterFns: { fuzzy: fuzzyFilter },
   globalFilterFn: "fuzzy",
 });
+=======
+import { rankItem } from '@tanstack/match-sorter-utils'
+
+const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+  const itemRank = rankItem(row.getValue(columnId), value)
+  addMeta({ itemRank })
+  return itemRank.passed
+}
+
+const table = useReactTable({
+  filterFns: { fuzzy: fuzzyFilter },
+  globalFilterFn: 'fuzzy',
+})
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Pagination
@@ -268,6 +325,7 @@ const table = useReactTable({
   // For server-side:
   // manualPagination: true,
   // pageCount: serverPageCount,
+<<<<<<< HEAD
 });
 
 // Navigation
@@ -279,6 +337,19 @@ table.setPageSize(20);
 table.getCanNextPage(); // boolean
 table.getCanPreviousPage(); // boolean
 table.getPageCount(); // total pages
+=======
+})
+
+// Navigation
+table.nextPage()
+table.previousPage()
+table.firstPage()
+table.lastPage()
+table.setPageSize(20)
+table.getCanNextPage()     // boolean
+table.getCanPreviousPage() // boolean
+table.getPageCount()       // total pages
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Row Selection
@@ -344,20 +415,35 @@ const table = useReactTable({
 
 ```typescript
 const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
+<<<<<<< HEAD
   left: ["select", "name"],
   right: ["actions"],
 });
+=======
+  left: ['select', 'name'],
+  right: ['actions'],
+})
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 const table = useReactTable({
   state: { columnPinning },
   onColumnPinningChange: setColumnPinning,
   enableColumnPinning: true,
+<<<<<<< HEAD
 });
 
 // Render pinned sections separately
 row.getLeftVisibleCells(); // Left-pinned
 row.getCenterVisibleCells(); // Unpinned
 row.getRightVisibleCells(); // Right-pinned
+=======
+})
+
+// Render pinned sections separately
+row.getLeftVisibleCells()   // Left-pinned
+row.getCenterVisibleCells() // Unpinned
+row.getRightVisibleCells()  // Right-pinned
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Column Resizing
@@ -380,13 +466,18 @@ const table = useReactTable({
 ## Grouping & Aggregation
 
 ```typescript
+<<<<<<< HEAD
 const [grouping, setGrouping] = useState<GroupingState>([]);
+=======
+const [grouping, setGrouping] = useState<GroupingState>([])
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 const table = useReactTable({
   state: { grouping },
   onGroupingChange: setGrouping,
   getGroupedRowModel: getGroupedRowModel(),
   getExpandedRowModel: getExpandedRowModel(),
+<<<<<<< HEAD
 });
 
 // Built-in aggregation: 'sum', 'min', 'max', 'mean', 'median', 'count', 'unique', 'uniqueCount'
@@ -394,6 +485,15 @@ columnHelper.accessor("amount", {
   aggregationFn: "sum",
   aggregatedCell: ({ getValue }) => `Total: ${getValue()}`,
 });
+=======
+})
+
+// Built-in aggregation: 'sum', 'min', 'max', 'mean', 'median', 'count', 'unique', 'uniqueCount'
+columnHelper.accessor('amount', {
+  aggregationFn: 'sum',
+  aggregatedCell: ({ getValue }) => `Total: ${getValue()}`,
+})
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Row Expanding
@@ -486,12 +586,21 @@ const table = useReactTable({
   onPaginationChange: setPagination,
   getCoreRowModel: getCoreRowModel(),
   // Do NOT include getSortedRowModel, getFilteredRowModel, getPaginationRowModel
+<<<<<<< HEAD
 });
 
 // Fetch data based on state
 useEffect(() => {
   fetchData({ sorting, filters: columnFilters, pagination });
 }, [sorting, columnFilters, pagination]);
+=======
+})
+
+// Fetch data based on state
+useEffect(() => {
+  fetchData({ sorting, filters: columnFilters, pagination })
+}, [sorting, columnFilters, pagination])
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## TypeScript Patterns
@@ -499,10 +608,17 @@ useEffect(() => {
 ### Extending Column Meta
 
 ```typescript
+<<<<<<< HEAD
 declare module "@tanstack/react-table" {
   interface ColumnMeta<TData extends RowData, TValue> {
     filterVariant?: "text" | "range" | "select";
     align?: "left" | "center" | "right";
+=======
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData extends RowData, TValue> {
+    filterVariant?: 'text' | 'range' | 'select'
+    align?: 'left' | 'center' | 'right'
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   }
 }
 ```
@@ -510,12 +626,21 @@ declare module "@tanstack/react-table" {
 ### Custom Filter/Sort Function Registration
 
 ```typescript
+<<<<<<< HEAD
 declare module "@tanstack/react-table" {
   interface FilterFns {
     fuzzy: FilterFn<unknown>;
   }
   interface SortingFns {
     myCustomSort: SortingFn<unknown>;
+=======
+declare module '@tanstack/react-table' {
+  interface FilterFns {
+    fuzzy: FilterFn<unknown>
+  }
+  interface SortingFns {
+    myCustomSort: SortingFn<unknown>
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   }
 }
 ```
@@ -523,25 +648,41 @@ declare module "@tanstack/react-table" {
 ### Editable Cells via Table Meta
 
 ```typescript
+<<<<<<< HEAD
 declare module "@tanstack/react-table" {
   interface TableMeta<TData extends RowData> {
     updateData: (rowIndex: number, columnId: string, value: unknown) => void;
+=======
+declare module '@tanstack/react-table' {
+  interface TableMeta<TData extends RowData> {
+    updateData: (rowIndex: number, columnId: string, value: unknown) => void
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   }
 }
 
 const table = useReactTable({
   meta: {
     updateData: (rowIndex, columnId, value) => {
+<<<<<<< HEAD
       setData((old) => old.map((row, i) => (i === rowIndex ? { ...row, [columnId]: value } : row)));
     },
   },
 });
+=======
+      setData(old => old.map((row, i) =>
+        i === rowIndex ? { ...row, [columnId]: value } : row
+      ))
+    },
+  },
+})
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Key Imports
 
 ```typescript
 import {
+<<<<<<< HEAD
   createColumnHelper,
   flexRender,
   useReactTable,
@@ -570,6 +711,19 @@ import type {
   FilterFn,
   SortingFn,
 } from "@tanstack/react-table";
+=======
+  createColumnHelper, flexRender, useReactTable,
+  getCoreRowModel, getSortedRowModel, getFilteredRowModel,
+  getPaginationRowModel, getGroupedRowModel, getExpandedRowModel,
+  getFacetedRowModel, getFacetedUniqueValues, getFacetedMinMaxValues,
+} from '@tanstack/react-table'
+
+import type {
+  ColumnDef, SortingState, ColumnFiltersState, VisibilityState,
+  PaginationState, ExpandedState, RowSelectionState, GroupingState,
+  ColumnOrderState, ColumnPinningState, FilterFn, SortingFn,
+} from '@tanstack/react-table'
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Best Practices

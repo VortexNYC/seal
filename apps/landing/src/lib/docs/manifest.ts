@@ -1,6 +1,9 @@
 import type { Root } from "fumadocs-core/page-tree";
 import { deserializePageTree } from "fumadocs-core/source/client";
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 import docsManifestData from "../../../.source/docs-manifest.json";
 
 interface SerializedPageTree {

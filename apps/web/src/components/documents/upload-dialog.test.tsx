@@ -113,7 +113,7 @@ describe("UploadDialog", () => {
     });
     renderDialog();
     expect(
-      screen.getByText(/Upgrade to Pro for up to 500 documents per month/),
+      screen.getByText(/Upgrade to Professional for up to 500 documents per month/),
     ).toBeInTheDocument();
   });
 
@@ -125,7 +125,7 @@ describe("UploadDialog", () => {
     });
     renderDialog();
     expect(
-      screen.queryByText(/Upgrade to Pro for up to 500 documents per month/),
+      screen.queryByText(/Upgrade to Professional for up to 500 documents per month/),
     ).not.toBeInTheDocument();
   });
 

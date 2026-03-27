@@ -215,9 +215,19 @@ test.fixme("broken feature", async ({ page }) => {
 ```typescript
 test.beforeEach(async ({ page }) => {
   // Mock slow/heavy endpoints
+<<<<<<< HEAD
   await page.route("**/api/analytics", (route) => route.fulfill({ json: { views: 1000 } }));
 
   await page.route("**/api/recommendations", (route) => route.fulfill({ json: [] }));
+=======
+  await page.route("**/api/analytics", (route) =>
+    route.fulfill({ json: { views: 1000 } }),
+  );
+
+  await page.route("**/api/recommendations", (route) =>
+    route.fulfill({ json: [] }),
+  );
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 });
 ```
 
@@ -228,7 +238,15 @@ test.beforeEach(async ({ page }) => {
   // Block analytics, ads, tracking
   await page.route("**/*", (route) => {
     const url = route.request().url();
+<<<<<<< HEAD
     if (url.includes("google-analytics") || url.includes("facebook") || url.includes("hotjar")) {
+=======
+    if (
+      url.includes("google-analytics") ||
+      url.includes("facebook") ||
+      url.includes("hotjar")
+    ) {
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       return route.abort();
     }
     return route.continue();
@@ -381,9 +399,17 @@ test("collect metrics", async ({ page }) => {
 
   const metrics = await page.evaluate(() => ({
     // Navigation timing
+<<<<<<< HEAD
     loadTime: performance.timing.loadEventEnd - performance.timing.navigationStart,
     domContentLoaded:
       performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart,
+=======
+    loadTime:
+      performance.timing.loadEventEnd - performance.timing.navigationStart,
+    domContentLoaded:
+      performance.timing.domContentLoadedEventEnd -
+      performance.timing.navigationStart,
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
     // Performance entries
     resources: performance.getEntriesByType("resource").length,
@@ -417,7 +443,13 @@ test("lighthouse audit", async ({ page }) => {
     port: 9222,
   });
 
+<<<<<<< HEAD
   expect(audit.lhr.categories.performance.score * 100).toBeGreaterThanOrEqual(80);
+=======
+  expect(audit.lhr.categories.performance.score * 100).toBeGreaterThanOrEqual(
+    80,
+  );
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 });
 ```
 

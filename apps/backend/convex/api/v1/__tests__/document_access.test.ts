@@ -272,7 +272,7 @@ describe("api/v1/documents — access and bulk operations", () => {
       expect(result.total_requested).toBe(2);
       expect(result.succeeded).toBe(2);
       expect(result.failed).toBe(0);
-      expect(result.results.every((r) => r.success)).toBe(true);
+      expect(result.results.every((r: (typeof result.results)[number]) => r.success)).toBe(true);
 
       // Verify documents are now cancelled
       const updatedDoc1 = await t.run(async (ctx) => ctx.db.get(doc1));
@@ -294,7 +294,7 @@ describe("api/v1/documents — access and bulk operations", () => {
       expect(result.succeeded).toBe(1);
       expect(result.failed).toBe(1);
 
-      const completedResult = result.results.find((r) => r.id === completedDoc);
+      const completedResult = result.results.find((r: (typeof result.results)[number]) => r.id === completedDoc);
       expect(completedResult?.success).toBe(false);
       expect(completedResult?.error).toContain("Cannot void");
     });

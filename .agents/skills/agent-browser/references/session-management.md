@@ -33,7 +33,10 @@ agent-browser --session public get text body
 ## Session Isolation Properties
 
 Each session has independent:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Cookies
 - LocalStorage / SessionStorage
 - IndexedDB

@@ -77,9 +77,9 @@ describe("parseConvexError", () => {
 
   describe("subscription errors", () => {
     test("detects 'pro plan' message", () => {
-      const result = parseConvexError(new Error("This feature requires a Pro plan"));
+      const result = parseConvexError(new Error("This feature requires a Professional plan"));
       expect(result.type).toBe("subscription");
-      expect(result.userFriendlyMessage).toBe("This feature requires a Pro plan");
+      expect(result.userFriendlyMessage).toBe("This feature requires a Professional plan");
     });
 
     test("detects 'upgrade' message", () => {
@@ -93,7 +93,7 @@ describe("parseConvexError", () => {
     });
 
     test("preserves original message as userFriendlyMessage", () => {
-      const msg = "Upgrade to Pro to unlock this feature";
+      const msg = "Upgrade to Professional to unlock this feature";
       const result = parseConvexError(new Error(msg));
       expect(result.userFriendlyMessage).toBe(msg);
     });

@@ -183,6 +183,93 @@ export const downgradeUserSharing = internalMutation({
 });
 
 /**
+ * Downgrade all sharing for an entire organization when subscription lapses.
+ * Revokes all document_access records and sets sharingMode to 'private' across all org documents.
+ */
+export const downgradeOrgSharing = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    reason: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    const sharedDocuments = await ctx.db
+      .query("documents")
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .filter((q) =>
+        q.and(q.neq(q.field("sharingMode"), "private"), q.neq(q.field("status"), "deleted")),
+      )
+      .collect();
+
+    if (sharedDocuments.length === 0) {
+      console.warn(
+        `[downgradeOrgSharing] No shared documents found for org ${args.organizationId}`,
+      );
+      return { downgraded: 0, accessRevoked: 0 };
+    }
+
+    let totalAccessRevoked = 0;
+
+    for (const document of sharedDocuments) {
+      await ctx.db.patch(document._id, {
+        sharingMode: "private",
+        updatedAt: now,
+      });
+
+      const revokedUsers = await revokeAllDocumentAccess(ctx, document._id, args.reason);
+      totalAccessRevoked += revokedUsers.length;
+
+      for (const { userId } of revokedUsers) {
+        await createNotification(ctx, {
+          userId,
+          organizationId: args.organizationId,
+          type: "access_revoked",
+          data: {
+            documentId: document._id,
+            documentName: document.name,
+            reason: "subscription_lapsed",
+            message:
+              "Your access was revoked because the organization's subscription ended",
+          },
+        });
+      }
+    }
+
+    const adminId = await getOrganizationAdmin(ctx, args.organizationId);
+    if (adminId) {
+      await createNotification(ctx, {
+        userId: adminId,
+        organizationId: args.organizationId,
+        type: "sharing_disabled",
+        data: {
+          reason: args.reason,
+          documentsAffected: sharedDocuments.length,
+          message: `Sharing was disabled for ${sharedDocuments.length} document(s) due to subscription status change`,
+        },
+      });
+    }
+
+    console.warn(
+      JSON.stringify({
+        topic: "sharing_cleanup",
+        event: "org_sharing_downgraded",
+        organizationId: args.organizationId,
+        reason: args.reason,
+        documentsDowngraded: sharedDocuments.length,
+        accessRecordsRevoked: totalAccessRevoked,
+        timestamp: now,
+      }),
+    );
+
+    return {
+      downgraded: sharedDocuments.length,
+      accessRevoked: totalAccessRevoked,
+    };
+  },
+});
+
+/**
  * Clean up document access when a member is removed from an organization.
  * Called from Clerk webhook for organizationMembership.deleted event.
  */

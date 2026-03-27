@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { api } from "../../_generated/api";
-import type { Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 
 describe("Signature field mutations", () => {
@@ -102,7 +102,7 @@ describe("Signature field mutations", () => {
 
       const field = await t.run(async (ctx) => {
         return await ctx.db.get(fieldId);
-      });
+      }) as Doc<"signature_fields"> | null;
 
       expect(field).toBeDefined();
       expect(field?.fieldType).toBe("text");
@@ -137,7 +137,7 @@ describe("Signature field mutations", () => {
 
       const field = await t.run(async (ctx) => {
         return await ctx.db.get(fieldId);
-      });
+      }) as Doc<"signature_fields"> | null;
 
       expect(field?.isMainSignature).toBe(true);
     });
@@ -173,7 +173,7 @@ describe("Signature field mutations", () => {
 
       const secondField = await t.run(async (ctx) => {
         return await ctx.db.get(secondFieldId);
-      });
+      }) as Doc<"signature_fields"> | null;
 
       expect(secondField?.isMainSignature).toBeUndefined();
     });
@@ -304,7 +304,7 @@ describe("Signature field mutations", () => {
 
       const field = await t.run(async (ctx) => {
         return await ctx.db.get(fieldId);
-      });
+      }) as Doc<"signature_fields"> | null;
 
       expect(field?.label).toBe("Updated Label");
       expect(field?.isRequired).toBe(true);
@@ -354,7 +354,7 @@ describe("Signature field mutations", () => {
 
       const field = await t.run(async (ctx) => {
         return await ctx.db.get(fieldId);
-      });
+      }) as Doc<"signature_fields"> | null;
 
       expect(field).toBeNull();
     });
@@ -519,7 +519,7 @@ describe("Signature field mutations", () => {
 
       const field = await t.run(async (ctx) => {
         return await ctx.db.get(fieldId);
-      });
+      }) as Doc<"signature_fields"> | null;
 
       expect(field?.x).toBe(50);
       expect(field?.y).toBe(60);
@@ -585,7 +585,7 @@ describe("Signature field mutations", () => {
 
       const field = await t.run(async (ctx) => {
         return await ctx.db.get(fieldId);
-      });
+      }) as Doc<"signature_fields"> | null;
 
       expect(field?.recipientId).toBe(recipientId);
     });
@@ -614,7 +614,7 @@ describe("Signature field mutations", () => {
 
       const field = await t.run(async (ctx) => {
         return await ctx.db.get(fieldId);
-      });
+      }) as Doc<"signature_fields"> | null;
 
       expect(field?.recipientId).toBe(recipientId);
       expect(field?.isMainSignature).toBe(true);
@@ -705,7 +705,7 @@ describe("Signature field mutations", () => {
       for (const fieldId of result.fieldIds) {
         const field = await t.run(async (ctx) => {
           return await ctx.db.get(fieldId);
-        });
+        }) as Doc<"signature_fields"> | null;
         expect(field).toBeDefined();
         expect(field?.documentId).toBe(documentId);
       }
