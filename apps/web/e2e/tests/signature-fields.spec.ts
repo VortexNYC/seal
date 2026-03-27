@@ -124,6 +124,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
     // Drag signature button to canvas
     const signatureButton = authenticatedPage.getByRole("button", {
       name: "Signature",
+      exact: true,
     });
     const canvas = authenticatedPage.locator("canvas");
 
@@ -294,6 +295,7 @@ test.describe("Signature Fields - Toolbar Interactions", () => {
     // "Signature", "Text", "Date", "Checkbox" (plus Number, Select, etc.)
     const signatureButton = authenticatedPage.getByRole("button", {
       name: "Signature",
+      exact: true,
     });
     const textButton = authenticatedPage.getByRole("button", { name: "Text" });
     const dateButton = authenticatedPage.getByRole("button", { name: "Date" });
