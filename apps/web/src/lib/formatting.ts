@@ -87,3 +87,12 @@ export function getStatusLabel(
   };
   return labels[status ?? "draft"];
 }
+
+/**
+ * Truncate text to a maximum length, appending "..." if truncated
+ */
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  if (maxLength < 3) return text.slice(0, maxLength);
+  return text.slice(0, maxLength - 3) + "...";
+}

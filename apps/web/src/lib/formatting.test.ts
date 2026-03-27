@@ -6,6 +6,7 @@ import {
   formatRelativeTime,
   getInitials,
   getStatusLabel,
+  truncateText,
 } from "./formatting";
 
 describe("formatRelativeTime", () => {
@@ -178,5 +179,50 @@ describe("getStatusLabel", () => {
 
   test("defaults to 'Draft' when status is undefined", () => {
     expect(getStatusLabel(undefined)).toBe("Draft");
+  });
+});
+
+describe("truncateText", () => {
+  test("returns empty string for empty input", () => {
+    expect(truncateText("", 10)).toBe("");
+  });
+
+  test("returns text unchanged when within limit", () => {
+    expect(truncateText("hello", 5)).toBe("hello");
+    expect(truncateText("hello", 10)).toBe("hello");
+  });
+
+  test("truncates with ellipsis when exceeding limit", () => {
+    expect(truncateText("hello world", 8)).toBe("hello...");
+    expect(truncateText("abcdefghij", 7)).toBe("abcd...");
+  });
+
+  test("handles maxLength = 0", () => {
+    expect(truncateText("hello", 0)).toBe("");
+  });
+
+  test("handles maxLength = 1", () => {
+    expect(truncateText("hello", 1)).toBe("h");
+  });
+
+  test("handles maxLength = 2", () => {
+    expect(truncateText("hello", 2)).toBe("he");
+  });
+
+  test("handles maxLength = 3 (boundary for ellipsis)", () => {
+    expect(truncateText("hello", 3)).toBe("...");
+  });
+
+  test("handles maxLength = 4", () => {
+    expect(truncateText("hello world", 4)).toBe("h...");
+  });
+
+  test("handles maxLength = 5", () => {
+    expect(truncateText("hello world", 5)).toBe("he...");
+  });
+
+  test("returns text unchanged when length equals maxLength", () => {
+    expect(truncateText("abc", 3)).toBe("abc");
+    expect(truncateText("abcde", 5)).toBe("abcde");
   });
 });
