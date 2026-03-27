@@ -43,6 +43,14 @@ describe("formatCurrency", () => {
     // Just ensure it doesn't throw with lowercase
     expect(() => formatCurrency(100, "usd")).not.toThrow();
   });
+
+  test("respects minimumFractionDigits option", () => {
+    expect(formatCurrency(500, "USD", { minimumFractionDigits: 0, maximumFractionDigits: 2 })).toBe("$5");
+  });
+
+  test("respects maximumFractionDigits: 0 option", () => {
+    expect(formatCurrency(1299, "USD", { minimumFractionDigits: 0, maximumFractionDigits: 0 })).toBe("$13");
+  });
 });
 
 describe("formatRelativeTime", () => {

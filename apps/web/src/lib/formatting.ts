@@ -61,12 +61,19 @@ export function getInitials(name?: string, email?: string): string {
 }
 
 /**
- * Format an integer amount in cents as a currency string (e.g., 1234 → "$12.34")
+ * Format an integer amount in cents as a currency string (e.g., 1234 → "$12.34").
+ * Pass `options.minimumFractionDigits` / `options.maximumFractionDigits` to
+ * override the default two-decimal-place formatting.
  */
-export function formatCurrency(amountCents: number, currency = "USD"): string {
+export function formatCurrency(
+  amountCents: number,
+  currency = "USD",
+  options?: { minimumFractionDigits?: number; maximumFractionDigits?: number },
+): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency.toUpperCase(),
+    ...options,
   }).format(amountCents / 100);
 }
 

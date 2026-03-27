@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { forwardRef } from "react";
 
+import { formatCurrency } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import type { FieldType } from "@seal/backend/convex/schemas/signature_fields";
@@ -121,14 +122,6 @@ function formatSignatureDate(timestamp: number): {
   };
 }
 
-function formatCurrency(amountCents: number, currency: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amountCents / 100);
-}
 
 function getSealIconSize(height: number, width: number): number {
   const baseDimension = Math.min(height, width);
@@ -327,7 +320,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
           {fieldType === "payment" && paymentInfo && absoluteHeight > 25 && (
             <div className="text-field-payment text-[9px] font-semibold">
               {paymentInfo.paymentStatus === "paid" ? "✓ " : ""}
-              {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
+              {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
             </div>
           )}
           {isMainSignature && absoluteHeight > 30 && (
@@ -344,7 +337,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
             {fieldType === "payment" && paymentInfo && (
               <span className="text-field-payment ml-1 font-semibold">
                 • {paymentInfo.paymentStatus === "paid" ? "Paid " : ""}
-                {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency)}
+                {formatCurrency(paymentInfo.totalAmountCents, paymentInfo.currency, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </span>
             )}
           </div>
