@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { formatCurrency } from "@/lib/formatting";
 import { api } from "@seal/backend/convex/_generated/api";
 
 // Initialize Stripe.js once (lazy-loaded on first use)
@@ -61,15 +62,6 @@ function getStatusBadge(status: SubscriptionStatus, cancelAtPeriodEnd: boolean) 
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
-}
-
-function formatPrice(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
 }
 
 function formatInterval(interval: string, intervalCount: number) {
@@ -274,8 +266,8 @@ function BillingSettingsPage() {
                       {proPlan.pricing.monthly && (
                         <div className="mt-1 flex items-baseline gap-1">
                           <span className="text-3xl font-bold">
-                            {formatPrice(
-                              proPlan.pricing.monthly.amount,
+                            {formatCurrency(
+                              Math.round(proPlan.pricing.monthly.amount * 100),
                               proPlan.pricing.monthly.currency,
                             )}
                           </span>
@@ -311,7 +303,7 @@ function BillingSettingsPage() {
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl font-bold">
                         {subscription
-                          ? formatPrice(subscription.unitAmount / 100, subscription.currency)
+                          ? formatCurrency(subscription.unitAmount, subscription.currency)
                           : "$0"}
                       </span>
                       <span className="text-muted-foreground">

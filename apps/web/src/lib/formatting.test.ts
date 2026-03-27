@@ -1,12 +1,49 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
+  formatCurrency,
   formatDate,
   formatFileSize,
   formatRelativeTime,
   getInitials,
   getStatusLabel,
 } from "./formatting";
+
+describe("formatCurrency", () => {
+  test("formats zero cents as $0.00", () => {
+    expect(formatCurrency(0)).toBe("$0.00");
+  });
+
+  test("formats positive cents correctly", () => {
+    expect(formatCurrency(1234)).toBe("$12.34");
+  });
+
+  test("formats negative cents correctly", () => {
+    expect(formatCurrency(-1234)).toBe("-$12.34");
+  });
+
+  test("formats large amounts with thousands separators", () => {
+    expect(formatCurrency(1234567)).toBe("$12,345.67");
+  });
+
+  test("formats single cent", () => {
+    expect(formatCurrency(1)).toBe("$0.01");
+  });
+
+  test("formats whole dollar amounts", () => {
+    expect(formatCurrency(500)).toBe("$5.00");
+  });
+
+  test("respects custom currency parameter", () => {
+    const result = formatCurrency(1000, "eur");
+    expect(result).toContain("10");
+  });
+
+  test("uppercases currency code", () => {
+    // Just ensure it doesn't throw with lowercase
+    expect(() => formatCurrency(100, "usd")).not.toThrow();
+  });
+});
 
 describe("formatRelativeTime", () => {
   afterEach(() => {

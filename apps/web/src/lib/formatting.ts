@@ -61,6 +61,16 @@ export function getInitials(name?: string, email?: string): string {
 }
 
 /**
+ * Format an integer amount in cents as a currency string (e.g., 1234 → "$12.34")
+ */
+export function formatCurrency(amountCents: number, currency = "USD"): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(amountCents / 100);
+}
+
+/**
  * Get a human-readable label for a document workflow status
  */
 export function getStatusLabel(

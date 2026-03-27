@@ -23,18 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatCurrency } from "@/lib/formatting";
 import { api } from "@seal/backend/convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/$slug/payments/")({
   component: PaymentsOverviewPage,
 });
-
-function formatCurrency(amountCents: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(amountCents / 100);
-}
 
 function formatDate(timestamp: number) {
   return new Intl.DateTimeFormat("en-US", {
