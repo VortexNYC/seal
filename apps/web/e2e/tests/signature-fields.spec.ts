@@ -5,22 +5,22 @@ import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
 
-async function createAndOpenDocument(
+async function openExistingOrCreateDocument(
   authenticatedPage: Page,
   organizationSlug: string,
 ): Promise<void> {
   const documentsPage = new DocumentsListPage(authenticatedPage);
 
   await documentsPage.goto(organizationSlug);
-  const documentName = await documentsPage.createDocument(testData.samplePdfPath);
-  await documentsPage.openDocument(documentName);
+  await documentsPage.ensureAtLeastOneDocument(testData.samplePdfPath);
+  await documentsPage.openFirstDocument();
 }
 
 test.describe("Signature Fields - Selection", () => {
   test("should display all field type buttons", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -35,7 +35,7 @@ test.describe("Signature Fields - Selection", () => {
   test("should select signature field type", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -49,7 +49,7 @@ test.describe("Signature Fields - Selection", () => {
   test("should select text field type", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -60,7 +60,7 @@ test.describe("Signature Fields - Selection", () => {
   test("should select date field type", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -71,7 +71,7 @@ test.describe("Signature Fields - Selection", () => {
   test("should select checkbox field type", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -89,7 +89,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
     // Skip until we understand the exact implementation
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -113,7 +113,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -140,7 +140,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -174,7 +174,7 @@ test.describe("Signature Fields - Management", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -189,7 +189,7 @@ test.describe("Signature Fields - Management", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -203,7 +203,7 @@ test.describe("Signature Fields - Management", () => {
     // Skip until field creation is working
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -228,7 +228,7 @@ test.describe("Signature Fields - Management", () => {
     // Skip until field creation is working
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -251,7 +251,7 @@ test.describe("Signature Fields - Toolbar Interactions", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -266,7 +266,7 @@ test.describe("Signature Fields - Toolbar Interactions", () => {
   test("should show field icons with labels", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 

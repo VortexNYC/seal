@@ -6,22 +6,22 @@ import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
 import { waitForToast } from "../utils/test-helpers";
 
-async function createAndOpenDocument(
+async function openExistingOrCreateDocument(
   authenticatedPage: Page,
   organizationSlug: string,
 ): Promise<void> {
   const documentsPage = new DocumentsListPage(authenticatedPage);
 
   await documentsPage.goto(organizationSlug);
-  const documentName = await documentsPage.createDocument(testData.samplePdfPath);
-  await documentsPage.openDocument(documentName);
+  await documentsPage.ensureAtLeastOneDocument(testData.samplePdfPath);
+  await documentsPage.openFirstDocument();
 }
 
 test.describe("Recipients Management", () => {
   test("should display recipients section", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -39,7 +39,7 @@ test.describe("Recipients Management", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -53,7 +53,7 @@ test.describe("Recipients Management", () => {
   test.skip("should open add recipient dialog", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -68,7 +68,7 @@ test.describe("Recipients Management", () => {
   test.skip("should add recipient with email", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -93,7 +93,7 @@ test.describe("Recipients Management", () => {
   test.skip("should add multiple recipients", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -124,7 +124,7 @@ test.describe("Recipients Management", () => {
   test.skip("should remove recipient", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -151,7 +151,7 @@ test.describe("Recipients Management", () => {
   test.skip("should set recipient order", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -175,7 +175,7 @@ test.describe("Recipients Management", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -206,7 +206,7 @@ test.describe("Recipients - Authentication Methods", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -234,7 +234,7 @@ test.describe("Document Sending", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -261,7 +261,7 @@ test.describe("Document Sending", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
@@ -278,7 +278,7 @@ test.describe("Document Sending", () => {
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await createAndOpenDocument(authenticatedPage, organizationSlug);
+    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
