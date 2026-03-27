@@ -26,7 +26,9 @@ test.describe("Signature Fields - Selection", () => {
 
     // Verify core field type buttons are visible in the toolbar.
     // Labels match the FieldButton `label` props: "Signature", "Text", "Date", "Checkbox".
-    await expect(authenticatedPage.getByRole("button", { name: "Signature" })).toBeVisible();
+    await expect(
+      authenticatedPage.getByRole("button", { name: "Signature", exact: true }),
+    ).toBeVisible();
     await expect(authenticatedPage.getByRole("button", { name: "Text" })).toBeVisible();
     await expect(authenticatedPage.getByRole("button", { name: "Date" })).toBeVisible();
     await expect(authenticatedPage.getByRole("button", { name: "Checkbox" })).toBeVisible();
@@ -40,10 +42,12 @@ test.describe("Signature Fields - Selection", () => {
     await documentPage.waitForDocumentLoad();
 
     // Click Signature button
-    await authenticatedPage.getByRole("button", { name: "Signature" }).click();
+    await authenticatedPage.getByRole("button", { name: "Signature", exact: true }).click();
 
     // Button should remain visible (it's a drag-to-place paradigm, not a toggle)
-    await expect(authenticatedPage.getByRole("button", { name: "Signature" })).toBeVisible();
+    await expect(
+      authenticatedPage.getByRole("button", { name: "Signature", exact: true }),
+    ).toBeVisible();
   });
 
   test("should select text field type", async ({ authenticatedPage, organizationSlug }) => {
@@ -94,7 +98,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
     await documentPage.waitForDocumentLoad();
 
     // Select signature field type
-    await authenticatedPage.getByRole("button", { name: "Signature" }).click();
+    await authenticatedPage.getByRole("button", { name: "Signature", exact: true }).click();
 
     // Click on canvas to place field
     const canvas = authenticatedPage.locator("canvas");
@@ -147,7 +151,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
     const canvas = authenticatedPage.locator("canvas");
 
     // Add signature field
-    await authenticatedPage.getByRole("button", { name: "Signature" }).click();
+    await authenticatedPage.getByRole("button", { name: "Signature", exact: true }).click();
     await canvas.click({ position: { x: 100, y: 100 } });
     await authenticatedPage.waitForTimeout(500);
 
