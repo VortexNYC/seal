@@ -229,13 +229,19 @@ async function getPaymentInvoiceLinksForDocument(
     },
   );
 
-  if (!signatureFields.some((field: (typeof signatureFields)[number]) => field.fieldType === "signature")) {
+  if (
+    !signatureFields.some(
+      (field: (typeof signatureFields)[number]) => field.fieldType === "signature",
+    )
+  ) {
     throw new ConvexError(
       "Cannot send document without signature fields. Please add at least one signature field before sending.",
     );
   }
 
-  const paymentFields = signatureFields.filter((field: (typeof signatureFields)[number]) => field.fieldType === "payment");
+  const paymentFields = signatureFields.filter(
+    (field: (typeof signatureFields)[number]) => field.fieldType === "payment",
+  );
   if (paymentFields.length === 0) {
     return [];
   }
@@ -244,9 +250,15 @@ async function getPaymentInvoiceLinksForDocument(
     internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
     { documentId: params.documentId },
   );
-  const configuredFieldIds = new Set(paymentConfigs.map((config: (typeof paymentConfigs)[number]) => config.fieldId.toString()));
+  const configuredFieldIds = new Set(
+    paymentConfigs.map((config: (typeof paymentConfigs)[number]) => config.fieldId.toString()),
+  );
 
-  if (paymentFields.some((field: (typeof paymentFields)[number]) => !configuredFieldIds.has(field._id.toString()))) {
+  if (
+    paymentFields.some(
+      (field: (typeof paymentFields)[number]) => !configuredFieldIds.has(field._id.toString()),
+    )
+  ) {
     throw new ConvexError(
       "All payment fields must be configured before sending. Please configure payment details for each payment field.",
     );
