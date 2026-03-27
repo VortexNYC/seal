@@ -73,20 +73,14 @@ All webhook payloads follow this structure:
 
 ### Payload Fields
 
-<<<<<<< HEAD
-| Field | Type | Description |
+| Field             | Type   | Description                                          |
 | ----------------- | ------ | ---------------------------------------------------- |
-=======
-| Field | Type | Description |
-| ------------ | ------ | --------------------------------------- |
-
-> > > > > > > ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
-> > > > > > > | `id` | string | Unique event identifier (`evt_{timestamp}_{random}`) |
-> > > > > > > | `type` | string | Event type (e.g., `document.completed`) |
-> > > > > > > | `api_version` | string | API version for this payload (`2025-01-01`) |
-> > > > > > > | `created_at` | string | ISO 8601 timestamp when event occurred |
-> > > > > > > | `organization_id` | string | Organization that owns this event |
-> > > > > > > | `data` | object | Event-specific data payload |
+| `id`              | string | Unique event identifier (`evt_{timestamp}_{random}`) |
+| `type`            | string | Event type (e.g., `document.completed`)              |
+| `api_version`     | string | API version for this payload (`2025-01-01`)          |
+| `created_at`      | string | ISO 8601 timestamp when event occurred               |
+| `organization_id` | string | Organization that owns this event                    |
+| `data`            | object | Event-specific data payload                          |
 
 ## Quick Start
 

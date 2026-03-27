@@ -7,11 +7,35 @@ import viteReact from "@vitejs/plugin-react";
 import mdx from "fumadocs-mdx/vite";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
+import tsConfigPaths from "vite-tsconfig-paths";
 
 import * as SourceConfig from "./source.config";
 import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
+
+function matchesPackage(id: string, pkg: string): boolean {
+  return id.includes(`/node_modules/${pkg}/`) || id.endsWith(`/node_modules/${pkg}`);
+}
+
+function getManualChunkName(id: string): string | undefined {
+  if (!id.includes("node_modules")) {
+    return undefined;
+  }
+
+  if (
+    matchesPackage(id, "fumadocs-core") ||
+    matchesPackage(id, "fumadocs-mdx") ||
+    matchesPackage(id, "fumadocs-openapi") ||
+    matchesPackage(id, "fumadocs-ui") ||
+    id.includes("/node_modules/shiki/") ||
+    id.includes("/node_modules/refractor/")
+  ) {
+    return "vendor-docs";
+  }
+
+  return undefined;
+}
 
 export default defineConfig(async ({ command }) => ({
   server: {
@@ -42,8 +66,11 @@ export default defineConfig(async ({ command }) => ({
         }
       },
     },
-    await mdx(SourceConfig, { updateViteConfig: false }),
+    await mdx(SourceConfig, { updateViteConfig: true }),
     searchIndexPlugin(),
+    tsConfigPaths({
+      projects: ["./tsconfig.json"],
+    }),
     tailwindcss(),
     tanstackStart({
       srcDirectory: "src",
@@ -55,9 +82,6 @@ export default defineConfig(async ({ command }) => ({
   ],
 
   resolve: {
-    noExternal: ["fumadocs-core", "fumadocs-ui", "fumadocs-openapi", "@fumadocs/base-ui"],
-    dedupe: ["fumadocs-core", "fumadocs-ui", "fumadocs-openapi", "@fumadocs/base-ui"],
-    tsconfigPaths: true,
     alias: {
       "fumadocs-mdx:collections/server": path.resolve(import.meta.dirname, "./.source/server.ts"),
       "fumadocs-mdx:collections/browser": path.resolve(import.meta.dirname, "./.source/browser.ts"),
@@ -65,20 +89,38 @@ export default defineConfig(async ({ command }) => ({
     },
   },
 
+  // Prevent Fumadocs packages from being externalized during SSR.
+  // This avoids React context errors and hydration mismatches.
+  ssr: {
+    noExternal: ["fumadocs-core", "fumadocs-ui"],
+  },
+
   // Polyfill node:path → path-browserify only during browser dep pre-bundling.
   // fumadocs-core/source uses path.join/dirname which don't exist in browsers.
   optimizeDeps: {
-    rolldownOptions: {
+    esbuildOptions: {
       plugins: [
         {
           name: "polyfill-node-path",
-          resolveId(source: string) {
-            if (source === "node:path") {
-              return require.resolve("path-browserify");
-            }
+          setup(build: {
+            onResolve: (opts: { filter: RegExp }, cb: () => { path: string }) => void;
+          }) {
+            build.onResolve({ filter: /^node:path$/ }, () => ({
+              path: require.resolve("path-browserify"),
+            }));
           },
         },
       ],
+    },
+  },
+
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          return getManualChunkName(id);
+        },
+      },
     },
   },
 }));
