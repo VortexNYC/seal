@@ -26,10 +26,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-<<<<<<< HEAD
-=======
-import { api } from "@seal/backend/convex/_generated/api";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/profile/usage")({
   component: UsageSettings,
@@ -68,11 +64,7 @@ function UsageSettings() {
               <div>
                 <p className="text-warning font-medium">Approaching usage limits</p>
                 <p className="text-warning text-sm">
-<<<<<<< HEAD
-                  Upgrade to Pro for higher limits and more features
-=======
                   Upgrade to Professional for higher limits and more features
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
                 </p>
               </div>
             </div>

@@ -73,12 +73,8 @@
 
         const isSystem = storedTheme !== "light" && storedTheme !== "dark";
         const nextResolvedTheme =
-<<<<<<< HEAD
           storedTheme === "dark" ||
           (isSystem && window.matchMedia("(prefers-color-scheme: dark)").matches)
-=======
-          storedTheme === "dark" || (isSystem && window.matchMedia("(prefers-color-scheme: dark)").matches)
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
             ? "dark"
             : "light";
         const fallbackBackground = nextResolvedTheme === "dark" ? "#09090b" : "#f8fafc";

@@ -1,9 +1,6 @@
 import { api } from "@seal/backend/convex/_generated/api";
-<<<<<<< HEAD
-import { useQuery } from "convex/react";
-=======
 import { PLAN_LIMITS } from "@seal/backend/convex/auth/plan_limits";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
+import { useQuery } from "convex/react";
 
 /**
  * Hook for checking subscription plan limits in the UI.

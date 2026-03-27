@@ -21,14 +21,5 @@ export const Route = createFileRoute("/_auth/sign-up")({
 function RouteComponent() {
   const { resolvedTheme } = useTheme();
 
-<<<<<<< HEAD
   return <SignUp routing="virtual" appearance={getClerkAuthAppearance(resolvedTheme === "dark")} />;
-=======
-  return (
-    <SignUp
-      routing="virtual"
-      appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
-    />
-  );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }

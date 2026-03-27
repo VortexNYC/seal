@@ -53,11 +53,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-<<<<<<< HEAD
-=======
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Doc, Id } from "@seal/backend/convex/_generated/dataModel";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 type SignatureType = "drawn" | "typed" | "uploaded";
 type TabType = SignatureType | "saved";

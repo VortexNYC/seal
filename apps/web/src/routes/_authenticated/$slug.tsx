@@ -21,11 +21,6 @@ import { WorkspaceLayoutSkeleton } from "@/components/skeletons/workspace-layout
 import { DotPattern } from "@/components/ui/patterns";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useJamMetadata } from "@/hooks/use-jam-metadata";
-<<<<<<< HEAD
-=======
-import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 export const Route = createFileRoute("/_authenticated/$slug")({
   component: WorkspaceLayout,

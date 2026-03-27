@@ -19,10 +19,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-<<<<<<< HEAD
-=======
-import { api } from "@seal/backend/convex/_generated/api";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")({
   component: ProfileSettings,

@@ -74,13 +74,7 @@ if (shouldInitSentry) {
     environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || "production",
     release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
     sendDefaultPii: true,
-<<<<<<< HEAD
     integrations: [Sentry.tanstackRouterBrowserTracingIntegration(router)],
-=======
-    integrations: [
-      Sentry.tanstackRouterBrowserTracingIntegration(router),
-    ],
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     tracesSampleRate: 0.2,
     tracePropagationTargets: [/^\//, /convex\.cloud/],
     beforeSend(event) {

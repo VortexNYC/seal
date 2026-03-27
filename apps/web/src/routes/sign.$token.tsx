@@ -1780,7 +1780,9 @@ function SigningPage() {
             <Textarea
               id="decline-reason"
               value={declineReason}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDeclineReason(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setDeclineReason(e.target.value)
+              }
               placeholder="Enter your reason here..."
               rows={4}
               className="resize-none"

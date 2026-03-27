@@ -507,11 +507,7 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
                 <span
                   aria-hidden="true"
                   className={cn(
-<<<<<<< HEAD
                     "inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors group-data-[collapsible=icon]:hidden",
-=======
-                    "group-data-[collapsible=icon]:hidden inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
                     isDark ? "bg-primary border-primary justify-end" : "bg-muted border-border",
                   )}
                 >
