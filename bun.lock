@@ -206,6 +206,7 @@
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "@vitejs/plugin-react": "^5.1.2",
+        "dotenv": "^17.3.1",
         "happy-dom": "^20.6.1",
         "react-grab": "^0.1.7",
         "typescript": "catalog:",
