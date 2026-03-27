@@ -224,11 +224,11 @@ test.describe("Document Details Sidebar", () => {
 
     // Recipients section is open by default. On CI the Convex queries that
     // populate the sidebar may still be in flight, so give it extra time.
-    // Fresh documents show "No recipients"; documents with recipients show the list.
-    // Either state proves the section loaded.
+    // Fresh documents show "No recipients"; documents with recipients show the recipient name/email.
+    // The "Add Recipient" button is always rendered when canEdit is true.
     const noRecipients = authenticatedPage.getByText("No recipients");
-    const recipientList = authenticatedPage.locator("[data-recipient-email]").first();
-    await expect(noRecipients.or(recipientList)).toBeVisible({ timeout: 15000 });
+    const addRecipientButton = authenticatedPage.getByRole("button", { name: /add recipient/i });
+    await expect(noRecipients.or(addRecipientButton)).toBeVisible({ timeout: 15000 });
   });
 
   test("should display activity timeline", async ({ authenticatedPage, organizationSlug }) => {

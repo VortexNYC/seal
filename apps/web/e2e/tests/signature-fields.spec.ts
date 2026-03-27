@@ -25,11 +25,11 @@ test.describe("Signature Fields - Selection", () => {
     await documentPage.waitForDocumentLoad();
 
     // Verify core field type buttons are visible in the toolbar.
-    // Labels match the FieldToolbar FIELD_CONFIG: "Signature", "Text", "Date", "Check".
+    // Labels match the FieldButton `label` props: "Signature", "Text", "Date", "Checkbox".
     await expect(authenticatedPage.getByRole("button", { name: "Signature" })).toBeVisible();
     await expect(authenticatedPage.getByRole("button", { name: "Text" })).toBeVisible();
     await expect(authenticatedPage.getByRole("button", { name: "Date" })).toBeVisible();
-    await expect(authenticatedPage.getByRole("button", { name: "Check" })).toBeVisible();
+    await expect(authenticatedPage.getByRole("button", { name: "Checkbox" })).toBeVisible();
   });
 
   test("should select signature field type", async ({ authenticatedPage, organizationSlug }) => {
@@ -75,9 +75,9 @@ test.describe("Signature Fields - Selection", () => {
 
     await documentPage.waitForDocumentLoad();
 
-    // The field label in the toolbar is "Check", not "Checkbox"
-    await authenticatedPage.getByRole("button", { name: "Check" }).click();
-    await expect(authenticatedPage.getByRole("button", { name: "Check" })).toBeVisible();
+    // The FieldButton label prop is "Checkbox"
+    await authenticatedPage.getByRole("button", { name: "Checkbox" }).click();
+    await expect(authenticatedPage.getByRole("button", { name: "Checkbox" })).toBeVisible();
   });
 });
 
@@ -270,15 +270,15 @@ test.describe("Signature Fields - Toolbar Interactions", () => {
 
     await documentPage.waitForDocumentLoad();
 
-    // Each button should have a text label. Labels from FIELD_CONFIG:
-    // "Signature", "Text", "Number", "Date", "Check", "Select", "Choice", "File"
+    // Each button should have a text label. Labels from FieldButton props:
+    // "Signature", "Text", "Number", "Date", "Checkbox", "Select", "Choice", "File"
     const signatureButton = authenticatedPage.getByRole("button", {
       name: "Signature",
     });
     const textButton = authenticatedPage.getByRole("button", { name: "Text" });
     const dateButton = authenticatedPage.getByRole("button", { name: "Date" });
     const checkButton = authenticatedPage.getByRole("button", {
-      name: "Check",
+      name: "Checkbox",
     });
 
     await expect(signatureButton).toBeVisible();
