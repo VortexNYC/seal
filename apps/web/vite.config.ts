@@ -6,24 +6,24 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-function getManualChunkName(id: string): string | undefined {
-  if (id.includes("react-pdf") || id.includes("pdfjs-dist")) {
-    return "pdf-viewer";
-  }
-
-  if (id.includes("recharts")) {
-    return "charts";
-  }
-
-  if (id.includes("date-fns")) {
-    return "date-utils";
-  }
-
-  return undefined;
-}
-
 export default defineConfig(({ command }) => {
   const enableSentry = command === "build";
+  const defaultPort = Number(process.env.PORT || 5180);
+  const manualChunks = (moduleId: string): string | undefined => {
+    if (moduleId.includes("react-pdf") || moduleId.includes("pdfjs-dist")) {
+      return "pdf-viewer";
+    }
+
+    if (moduleId.includes("recharts")) {
+      return "charts";
+    }
+
+    if (moduleId.includes("date-fns")) {
+      return "date-utils";
+    }
+
+    return undefined;
+  };
 
   return {
     plugins: [
@@ -52,6 +52,8 @@ export default defineConfig(({ command }) => {
 
     // PostHog reverse proxy to bypass ad blockers
     server: {
+      port: defaultPort,
+      strictPort: true,
       proxy: {
         "/ingest/static": {
           target: "https://us-assets.i.posthog.com",
@@ -71,11 +73,14 @@ export default defineConfig(({ command }) => {
       // SEA-136: Mobile performance optimization - chunk splitting for lazy loading
       rollupOptions: {
         output: {
-          manualChunks(id: string) {
-            return getManualChunkName(id);
-          },
+          manualChunks,
         },
       },
+    },
+
+    preview: {
+      port: defaultPort,
+      strictPort: true,
     },
   };
 });
