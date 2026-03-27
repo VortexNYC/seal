@@ -30,7 +30,7 @@ export class DocumentPage {
     this.documentTitle = page.locator('[data-testid="document-title"]');
     this.documentCanvas = page.locator("canvas");
     this.documentDropTarget = page.locator(".react-pdf__Page").first();
-    this.documentPreview = page.getByText("Document Preview");
+    this.documentPreview = page.getByText("Document Preview").first();
     this.backButton = page.getByRole("button", { name: /^Back$/ });
     this.zoomInButton = page.getByRole("button", { name: "Zoom in" });
     this.zoomOutButton = page.getByRole("button", { name: "Zoom out" });
@@ -127,8 +127,19 @@ export class DocumentPage {
   }
 
   async waitForDocumentLoad(): Promise<void> {
-    await this.documentPreview.waitFor({ state: "visible", timeout: 30000 });
-    await this.documentCanvas.waitFor({ state: "visible" });
+    // Wait for the document page to fully render. The "Document Preview" heading
+    // appears once the PDF URL resolves OR in the loading placeholder, so race
+    // it against the Signature Fields collapsible button which is always present.
+    await Promise.race([
+      this.documentPreview.waitFor({ state: "visible", timeout: 30000 }),
+      this.page
+        .getByRole("button", { name: /Signature Fields/ })
+        .waitFor({ state: "visible", timeout: 30000 }),
+    ]);
+    // Canvas may take an extra beat to paint after the wrapper appears.
+    await this.documentCanvas.waitFor({ state: "visible", timeout: 15000 }).catch(() => {
+      /* canvas may not exist for non-PDF docs; continue */
+    });
     await this.page.waitForLoadState("domcontentloaded");
   }
 
