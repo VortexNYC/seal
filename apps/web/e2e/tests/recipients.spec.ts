@@ -25,11 +25,12 @@ test.describe("Recipients Management", () => {
 
     await documentPage.waitForDocumentLoad();
 
-    // Verify Recipients section is visible
+    // The Recipients collapsible trigger button is visible in the document sidebar
     await expect(documentPage.recipientsSectionButton).toBeVisible();
 
-    // Verify at least one recipient field state is displayed.
-    await expect(authenticatedPage.getByText("No recipients")).toBeVisible();
+    // Recipients section is open by default (via useSectionState). The empty
+    // state text "No recipients" should be visible for a fresh document.
+    await expect(authenticatedPage.getByText("No recipients")).toBeVisible({ timeout: 15000 });
   });
 
   test("should show empty state when no recipients", async ({
@@ -42,8 +43,11 @@ test.describe("Recipients Management", () => {
 
     await documentPage.waitForDocumentLoad();
 
-    // Verify empty state message
-    await expect(authenticatedPage.getByText(/no recipients/i)).toBeVisible();
+    // Verify empty state message and description
+    await expect(authenticatedPage.getByText(/No recipients/i)).toBeVisible({ timeout: 15000 });
+    await expect(
+      authenticatedPage.getByText(/Add recipients who need to sign or view/i),
+    ).toBeVisible();
   });
 
   test.skip("should open add recipient dialog", async ({ authenticatedPage, organizationSlug }) => {

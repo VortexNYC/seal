@@ -108,16 +108,20 @@ export class DashboardPage {
     const sectionButton = this.page.getByRole("button", { name: sectionTitle, exact: true });
     const itemLink = this.page.getByRole("link", { name: itemTitle, exact: true });
 
+    // Wait for the sidebar to populate — section buttons depend on Convex queries
+    // for permissions and org data that may not have resolved yet.
+    await sectionButton.waitFor({ state: "visible", timeout: 15000 });
+
     if (!(await itemLink.isVisible().catch(() => false))) {
       await this.openMobileSidebarIfNeeded(sectionButton, itemLink);
     }
 
     if (!(await itemLink.isVisible().catch(() => false))) {
-      await sectionButton.waitFor({ state: "visible", timeout: 5000 });
+      // Section is collapsed — click to expand
       await sectionButton.click();
     }
 
-    await itemLink.waitFor({ state: "visible", timeout: 5000 });
+    await itemLink.waitFor({ state: "visible", timeout: 10000 });
     await itemLink.click();
   }
 

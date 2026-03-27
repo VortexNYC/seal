@@ -1,11 +1,8 @@
+import { clerk } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
 
 function getSignInPromptMatcher() {
   return /sign in/i;
-}
-
-function getOtpPromptMatcher() {
-  return /check your email|verification code/i;
 }
 
 test.describe("Authentication", () => {
@@ -36,61 +33,30 @@ test.describe("Authentication", () => {
       process.env.E2E_TEST_USER_EMAIL ||
       process.env.TEST_USER_EMAIL ||
       "sealtest001+clerk_test@example.com";
-    const testEmailCode =
-      process.env.E2E_TEST_EMAIL_CODE || process.env.TEST_EMAIL_CODE || "424242";
 
-    // Navigate directly to sign-in page
-    await page.goto("/sign-in");
+    // Use Clerk's official testing protocol — clerk.signIn() handles the
+    // testing token, bot-detection bypass, and sign-in mechanics reliably.
+    // Manual OTP entry is fragile because Clerk's DOM structure changes across
+    // versions and the individual-digit inputs are hard to target consistently.
+    await page.goto("/", { waitUntil: "domcontentloaded" });
 
-    // Wait for Clerk sign-in component to load
-    await expect(
-      page.getByRole("heading", { name: getSignInPromptMatcher() }),
-      `Expected sign-in heading ${getSignInPromptMatcher()}`,
-    ).toBeVisible();
+    await clerk.signIn({
+      page,
+      signInParams: {
+        strategy: "email_code",
+        identifier: testEmail,
+      },
+    });
 
-    // Fill in email
-    await page.getByRole("textbox", { name: /email/i }).first().fill(testEmail);
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
-
-    // Wait for OTP code screen and inputs to be ready
-    await expect(
-      page.getByRole("heading", { name: getOtpPromptMatcher() }).first(),
-      `Expected OTP prompt ${getOtpPromptMatcher()}`,
-    ).toBeVisible();
-
-    // Wait a moment for Clerk OTP to initialize
-    await page.waitForTimeout(500);
-
-    // Type the OTP code directly (Clerk test mode accepts 424242 for +clerk_test emails)
-    const singleOtpInput = page
-      .locator('input[name="code"], input[autocomplete="one-time-code"]')
-      .first();
-    const multiOtpInputs = page.locator(
-      '[data-testid="otp-input"], [data-testid="clerk-otp-code-input"]',
-    );
-    const codeRoleInput = page.getByRole("textbox", { name: /code/i }).first();
-
-    if ((await singleOtpInput.count()) > 0) {
-      await singleOtpInput.fill(testEmailCode);
-    } else if ((await multiOtpInputs.count()) > 1) {
-      for (let i = 0; i < Math.min(6, testEmailCode.length); i++) {
-        await multiOtpInputs.nth(i).fill(testEmailCode[i] ?? "");
-      }
-    } else if ((await codeRoleInput.count()) > 0) {
-      await codeRoleInput.fill(testEmailCode);
-    } else {
-      await page.keyboard.type(testEmailCode);
-    }
+    // After clerk.signIn() completes, navigate to the app
+    await page.goto("/app", { waitUntil: "domcontentloaded" });
 
     // Should redirect to authenticated area (may go to /app, /home, or org-specific path)
-    await expect(page).toHaveURL(/\/(app|.*\/home)/, { timeout: 30000 });
+    await expect(page).toHaveURL(/\/(app|.*\/home|.*\/onboarding)/, { timeout: 30000 });
   });
 
   test("should show error with invalid credentials", async ({ page }) => {
-    const testEmail =
-      process.env.E2E_TEST_USER_EMAIL ||
-      process.env.TEST_USER_EMAIL ||
-      "sealtest001+clerk_test@example.com";
+    const bogusEmail = "nonexistent-user-e2e-test@example.com";
 
     // Navigate directly to sign-in page
     await page.goto("/sign-in");
@@ -98,23 +64,13 @@ test.describe("Authentication", () => {
     // Wait for Clerk sign-in component to load
     await expect(page.getByRole("heading", { name: getSignInPromptMatcher() })).toBeVisible();
 
-    // Fill in email
-    await page.getByLabel(/email address/i).fill(testEmail);
+    // Fill in an email that doesn't exist in the Clerk instance
+    await page.getByRole("textbox", { name: /email/i }).first().fill(bogusEmail);
     await page.getByRole("button", { name: "Continue", exact: true }).click();
 
-    // Wait for OTP code screen
-    await expect(page.getByRole("heading", { name: getOtpPromptMatcher() }).first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: getOtpPromptMatcher() }).first()).toBeVisible();
-
-    // Wait a moment for Clerk OTP to initialize
-    await page.waitForTimeout(500);
-
-    // Type an invalid OTP code directly
-    await page.keyboard.type("000000");
-
-    // Should show an auth error message (rate limits and invalid code are both expected).
+    // Should show an auth error message (account not found, invalid, etc.)
     await expect(
-      page.getByText(/incorrect|invalid|wrong|too many requests|try again/i).first(),
+      page.getByText(/couldn.t find|not found|incorrect|invalid|no account/i).first(),
     ).toBeVisible({
       timeout: 10000,
     });

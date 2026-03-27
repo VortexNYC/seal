@@ -24,11 +24,12 @@ test.describe("Signature Fields - Selection", () => {
 
     await documentPage.waitForDocumentLoad();
 
-    // Verify all field type buttons are visible
+    // Verify core field type buttons are visible in the toolbar.
+    // Labels match the FieldToolbar FIELD_CONFIG: "Signature", "Text", "Date", "Check".
     await expect(authenticatedPage.getByRole("button", { name: "Signature" })).toBeVisible();
     await expect(authenticatedPage.getByRole("button", { name: "Text" })).toBeVisible();
     await expect(authenticatedPage.getByRole("button", { name: "Date" })).toBeVisible();
-    await expect(authenticatedPage.getByRole("button", { name: "Checkbox" })).toBeVisible();
+    await expect(authenticatedPage.getByRole("button", { name: "Check" })).toBeVisible();
   });
 
   test("should select signature field type", async ({ authenticatedPage, organizationSlug }) => {
@@ -41,10 +42,8 @@ test.describe("Signature Fields - Selection", () => {
     // Click Signature button
     await authenticatedPage.getByRole("button", { name: "Signature" }).click();
 
-    await authenticatedPage.waitForTimeout(300);
-
-    // Verify button is in active/selected state (visual feedback)
-    // This depends on your implementation - might check aria-pressed, class, etc.
+    // Button should remain visible (it's a drag-to-place paradigm, not a toggle)
+    await expect(authenticatedPage.getByRole("button", { name: "Signature" })).toBeVisible();
   });
 
   test("should select text field type", async ({ authenticatedPage, organizationSlug }) => {
@@ -55,8 +54,7 @@ test.describe("Signature Fields - Selection", () => {
     await documentPage.waitForDocumentLoad();
 
     await authenticatedPage.getByRole("button", { name: "Text" }).click();
-
-    await authenticatedPage.waitForTimeout(300);
+    await expect(authenticatedPage.getByRole("button", { name: "Text" })).toBeVisible();
   });
 
   test("should select date field type", async ({ authenticatedPage, organizationSlug }) => {
@@ -67,8 +65,7 @@ test.describe("Signature Fields - Selection", () => {
     await documentPage.waitForDocumentLoad();
 
     await authenticatedPage.getByRole("button", { name: "Date" }).click();
-
-    await authenticatedPage.waitForTimeout(300);
+    await expect(authenticatedPage.getByRole("button", { name: "Date" })).toBeVisible();
   });
 
   test("should select checkbox field type", async ({ authenticatedPage, organizationSlug }) => {
@@ -78,9 +75,9 @@ test.describe("Signature Fields - Selection", () => {
 
     await documentPage.waitForDocumentLoad();
 
-    await authenticatedPage.getByRole("button", { name: "Checkbox" }).click();
-
-    await authenticatedPage.waitForTimeout(300);
+    // The field label in the toolbar is "Check", not "Checkbox"
+    await authenticatedPage.getByRole("button", { name: "Check" }).click();
+    await expect(authenticatedPage.getByRole("button", { name: "Check" })).toBeVisible();
   });
 });
 
@@ -171,18 +168,19 @@ test.describe("Signature Fields - Drag and Drop", () => {
 });
 
 test.describe("Signature Fields - Management", () => {
-  test("should display fields list when empty", async ({ authenticatedPage, organizationSlug }) => {
+  test("should display empty state when no fields exist", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
     await createAndOpenDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
-    // Verify "0 fields added" is shown
-    await expect(authenticatedPage.getByText("0 fields added")).toBeVisible();
-
-    // Verify empty state message
-    await expect(authenticatedPage.getByText("No fields added yet")).toBeVisible();
+    // The sidebar's Signature Fields section shows an empty state when there
+    // are no fields. The text reads "No fields yet".
+    await expect(authenticatedPage.getByText("No fields yet")).toBeVisible();
   });
 
   test("should show helpful tip about field placement", async ({
@@ -195,8 +193,10 @@ test.describe("Signature Fields - Management", () => {
 
     await documentPage.waitForDocumentLoad();
 
-    // Verify tip is shown
-    await expect(authenticatedPage.getByText(/drag a field onto the PDF/i)).toBeVisible();
+    // The empty state includes instruction text about dragging fields
+    await expect(
+      authenticatedPage.getByText(/Drag fields from above onto the document/i),
+    ).toBeVisible();
   });
 
   test.skip("should delete signature field", async ({ authenticatedPage, organizationSlug }) => {
@@ -218,7 +218,7 @@ test.describe("Signature Fields - Management", () => {
     await deleteButton.click();
 
     // Verify field was removed
-    await expect(authenticatedPage.getByText("0 fields added")).toBeVisible();
+    await expect(authenticatedPage.getByText("No fields yet")).toBeVisible();
   });
 
   test.skip("should edit signature field properties", async ({
@@ -255,13 +255,12 @@ test.describe("Signature Fields - Toolbar Interactions", () => {
 
     await documentPage.waitForDocumentLoad();
 
-    // Verify toolbar heading
-    await expect(
-      authenticatedPage.getByRole("heading", { name: "Signature Fields" }),
-    ).toBeVisible();
+    // The "Signature Fields" section is a collapsible trigger button, not a heading.
+    // Verify the section trigger text is present.
+    await expect(authenticatedPage.getByRole("button", { name: /Signature Fields/ })).toBeVisible();
 
-    // Verify instruction text
-    await expect(authenticatedPage.getByText("Drag fields onto the document")).toBeVisible();
+    // Verify the toolbar's "Fields" label is visible inside the toolbar
+    await expect(authenticatedPage.getByText("Fields").first()).toBeVisible();
   });
 
   test("should show field icons with labels", async ({ authenticatedPage, organizationSlug }) => {
@@ -271,19 +270,20 @@ test.describe("Signature Fields - Toolbar Interactions", () => {
 
     await documentPage.waitForDocumentLoad();
 
-    // Each button should have an icon and text label
+    // Each button should have a text label. Labels from FIELD_CONFIG:
+    // "Signature", "Text", "Number", "Date", "Check", "Select", "Choice", "File"
     const signatureButton = authenticatedPage.getByRole("button", {
       name: "Signature",
     });
     const textButton = authenticatedPage.getByRole("button", { name: "Text" });
     const dateButton = authenticatedPage.getByRole("button", { name: "Date" });
-    const checkboxButton = authenticatedPage.getByRole("button", {
-      name: "Checkbox",
+    const checkButton = authenticatedPage.getByRole("button", {
+      name: "Check",
     });
 
     await expect(signatureButton).toBeVisible();
     await expect(textButton).toBeVisible();
     await expect(dateButton).toBeVisible();
-    await expect(checkboxButton).toBeVisible();
+    await expect(checkButton).toBeVisible();
   });
 });

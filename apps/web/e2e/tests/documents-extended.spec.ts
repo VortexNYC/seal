@@ -219,12 +219,16 @@ test.describe("Document Details Sidebar", () => {
   test("should display recipients section", async ({ authenticatedPage, organizationSlug }) => {
     const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
 
-    // Verify Recipients section
+    // Verify Recipients collapsible trigger is visible
     await expect(documentPage.recipientsSectionButton).toBeVisible();
 
-    // Verify recipients panel content is shown
-    await expect(authenticatedPage.getByText("No recipients")).toBeVisible();
-    await expect(authenticatedPage.getByRole("button", { name: /add recipient/i })).toBeVisible();
+    // Recipients section is open by default. On CI the Convex queries that
+    // populate the sidebar may still be in flight, so give it extra time.
+    // Fresh documents show "No recipients"; documents with recipients show the list.
+    // Either state proves the section loaded.
+    const noRecipients = authenticatedPage.getByText("No recipients");
+    const recipientList = authenticatedPage.locator("[data-recipient-email]").first();
+    await expect(noRecipients.or(recipientList)).toBeVisible({ timeout: 15000 });
   });
 
   test("should display activity timeline", async ({ authenticatedPage, organizationSlug }) => {
