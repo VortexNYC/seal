@@ -78,20 +78,12 @@ async function getActiveAccessWithUsers(ctx: SharingQueryDbCtx, documentId: Id<"
 
 async function getSharingSubscriptionState(
   ctx: SharingQueryDbCtx,
-<<<<<<< HEAD
-  userId: Id<"users">,
-=======
   organizationId: Id<"organizations">,
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   hasSharedDocuments: boolean,
 ) {
   const subscription = await ctx.db
     .query("subscriptions")
-<<<<<<< HEAD
-    .withIndex("by_user_id", (q) => q.eq("userId", userId))
-=======
     .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     .first();
 
   const canUseTeamSharing =
@@ -594,11 +586,7 @@ export const getDocumentAccess = authQuery({
     );
     const owner = await ctx.db.get(document.ownerId);
     const hasSharedDocuments = document.sharingMode !== "private" || activeAccessRecords.length > 0;
-<<<<<<< HEAD
-    const subscriptionState = await getSharingSubscriptionState(ctx, userId, hasSharedDocuments);
-=======
     const subscriptionState = await getSharingSubscriptionState(ctx, document.organizationId, hasSharedDocuments);
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
     return {
       documentId: args.documentId,

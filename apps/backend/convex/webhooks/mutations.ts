@@ -452,11 +452,7 @@ export const createSlackEndpoint = permissionMutation("settings:integrations")({
       }
     }
 
-<<<<<<< HEAD
-    await ensureProFeature(ctx.db, ctx.auth.userId, "Slack notifications");
-=======
     await ensureProFeature(ctx.db, ctx.auth.organizationId, "Slack notifications");
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
     // Check endpoint limit (shared with regular webhooks)
     const existingEndpoints = await ctx.db

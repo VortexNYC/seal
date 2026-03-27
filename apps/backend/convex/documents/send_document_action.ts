@@ -164,11 +164,7 @@ async function sendInvitationBatch(
     deadline: number | undefined;
   },
 ): Promise<InvitationEmailResult[]> {
-<<<<<<< HEAD
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
-=======
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   const results: InvitationEmailResult[] = [];
 
   for (const recipient of params.recipients) {
@@ -233,21 +229,13 @@ async function getPaymentInvoiceLinksForDocument(
     },
   );
 
-<<<<<<< HEAD
-  if (!signatureFields.some((field) => field.fieldType === "signature")) {
-=======
   if (!signatureFields.some((field: (typeof signatureFields)[number]) => field.fieldType === "signature")) {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     throw new ConvexError(
       "Cannot send document without signature fields. Please add at least one signature field before sending.",
     );
   }
 
-<<<<<<< HEAD
-  const paymentFields = signatureFields.filter((field) => field.fieldType === "payment");
-=======
   const paymentFields = signatureFields.filter((field: (typeof signatureFields)[number]) => field.fieldType === "payment");
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   if (paymentFields.length === 0) {
     return [];
   }
@@ -256,15 +244,9 @@ async function getPaymentInvoiceLinksForDocument(
     internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
     { documentId: params.documentId },
   );
-<<<<<<< HEAD
-  const configuredFieldIds = new Set(paymentConfigs.map((config) => config.fieldId.toString()));
-
-  if (paymentFields.some((field) => !configuredFieldIds.has(field._id.toString()))) {
-=======
   const configuredFieldIds = new Set(paymentConfigs.map((config: (typeof paymentConfigs)[number]) => config.fieldId.toString()));
 
   if (paymentFields.some((field: (typeof paymentFields)[number]) => !configuredFieldIds.has(field._id.toString()))) {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     throw new ConvexError(
       "All payment fields must be configured before sending. Please configure payment details for each payment field.",
     );
@@ -684,11 +666,7 @@ export const resendRecipientEmail = action({
     }
 
     const newExpiresAt = await resetExpiredRecipientForResend(ctx, args.documentId, recipient);
-<<<<<<< HEAD
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
-=======
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
     const { senderName, emailBranding } = await getSenderEmailContext(
       ctx,

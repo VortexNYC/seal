@@ -201,11 +201,7 @@ async function handleClerkUserCreated(
   data: ClerkWebhookEvent["data"],
 ): Promise<void> {
   const profile = getClerkUserProfile(data);
-<<<<<<< HEAD
-  const result = await ctx.runMutation(api.clerk_webhooks.syncUser, {
-=======
   await ctx.runMutation(api.clerk_webhooks.syncUser, {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     clerkId: data.id,
     name: profile.name,
     email: profile.email,
@@ -213,24 +209,6 @@ async function handleClerkUserCreated(
     isEmailVerified: profile.isEmailVerified,
   });
   console.info(`[Clerk Webhook] User synced: ${data.id}`);
-<<<<<<< HEAD
-
-  if (!result.isNewUser || !result.userId) {
-    return;
-  }
-
-  try {
-    await ctx.runAction(internal.stripe.subscription_actions.handleNewUserSignup, {
-      userId: result.userId,
-      email: profile.email,
-      name: profile.name,
-    });
-    console.info(`[Clerk Webhook] Stripe customer created for user: ${data.id}`);
-  } catch (err) {
-    console.error(`[Clerk Webhook] Failed to setup Stripe for user ${data.id}:`, err);
-  }
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 
 async function handleClerkUserUpdated(
@@ -262,11 +240,7 @@ async function handleClerkOrganizationSynced(
   ctx: HttpActionCtx,
   data: ClerkWebhookEvent["data"],
 ): Promise<void> {
-<<<<<<< HEAD
-  await ctx.runMutation(api.clerk_webhooks.syncOrganization, {
-=======
   const result = await ctx.runMutation(api.clerk_webhooks.syncOrganization, {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     clerkId: data.id,
     name: data.name || "",
     slug: data.slug || undefined,
@@ -274,8 +248,6 @@ async function handleClerkOrganizationSynced(
     metadata: data.public_metadata ? JSON.stringify(data.public_metadata) : undefined,
   });
   console.info(`[Clerk Webhook] Organization synced: ${data.id}`);
-<<<<<<< HEAD
-=======
 
   // For new organizations, create Stripe customer + enroll in Free plan
   if (result?.organizationId) {
@@ -290,7 +262,6 @@ async function handleClerkOrganizationSynced(
       console.error(`[Clerk Webhook] Failed to setup Stripe for org ${data.id}:`, err);
     }
   }
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 
 async function handleClerkOrganizationDeleted(

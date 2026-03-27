@@ -1,21 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Bug, Calendar, Rocket, Sparkles, Tag, TriangleAlert } from "lucide-react";
 import { Suspense } from "react";
-<<<<<<< HEAD
-import { Badge } from "~/components/ui/badge";
-=======
 
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 import { renderChangelogContent } from "~/lib/changelog/client-loader";
 import {
   type ChangelogFeature,
   type ChangelogManifestEntry,
   getChangelogEntry,
 } from "~/lib/changelog/manifest";
-<<<<<<< HEAD
-=======
 import { Badge } from "~/components/ui/badge";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 export const Route = createFileRoute("/changelog/$slug")({
   loader: async ({ params }): Promise<{ entry: ChangelogManifestEntry }> => {
@@ -41,8 +34,6 @@ export const Route = createFileRoute("/changelog/$slug")({
       ],
     };
   },
-<<<<<<< HEAD
-=======
   // @ts-expect-error — TanStack Router generic inference limitation with $slug param routes
   loader: async ({ params }) => {
     const entry = getChangelogEntry(params.slug);
@@ -51,7 +42,6 @@ export const Route = createFileRoute("/changelog/$slug")({
     }
     return { entry };
   },
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   component: ChangelogDetailPage,
 });
 

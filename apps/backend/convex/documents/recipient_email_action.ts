@@ -135,11 +135,7 @@ async function notifyNextSequentialGroup(
     document.ownerId,
     document.organizationId,
   );
-<<<<<<< HEAD
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
-=======
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   for (const nextRecipient of nextGroup.filter(
     (groupRecipient) => groupRecipient.status === "pending",
@@ -212,11 +208,7 @@ async function sendCompletionEmailToOwner(
     internal.documents.download_tokens.generateTokenInternal,
     { documentId: document._id, issuedTo: owner.email },
   );
-<<<<<<< HEAD
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
-=======
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   const convexSiteUrl = process.env.CONVEX_SITE_URL || baseUrl;
   const completionResult = await sendDocumentCompleted(ctx, {
     to: owner.email,
@@ -352,11 +344,7 @@ export const sendNextRecipientInvitation = internalAction({
       document.ownerId,
       document.organizationId,
     );
-<<<<<<< HEAD
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
-=======
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
     await sendDocumentInvitation(ctx, {

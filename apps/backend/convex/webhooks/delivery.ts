@@ -25,10 +25,7 @@ import {
   internalMutation,
   internalQuery,
 } from "../_generated/server";
-<<<<<<< HEAD
-=======
 import { getSubscriptionPlan } from "../auth/subscription_guards";
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 import { formatSlackMessage } from "./slack_formatter";
 
 /** Maximum delivery attempts before abandoning */
@@ -329,8 +326,6 @@ async function deliverWebhook(
   return deliverJsonWebhook(ctx, delivery, endpoint, attemptCount);
 }
 
-<<<<<<< HEAD
-=======
 async function markDeliverySuspended(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
@@ -357,7 +352,6 @@ async function markDeliverySuspended(
   return { delivered: false };
 }
 
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 async function processPendingDelivery(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
@@ -371,8 +365,6 @@ async function processPendingDelivery(
     return markDeliveryInactiveEndpoint(ctx, delivery, endpoint, attemptCount);
   }
 
-<<<<<<< HEAD
-=======
   // Check org tier — Free tier orgs have webhooks suspended
   const orgTier = await ctx.runQuery(internal.webhooks.delivery.getOrgTier, {
     organizationId: delivery.organizationId,
@@ -381,7 +373,6 @@ async function processPendingDelivery(
     return markDeliverySuspended(ctx, delivery, attemptCount);
   }
 
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   return deliverWebhook(ctx, delivery, endpoint, attemptCount);
 }
 

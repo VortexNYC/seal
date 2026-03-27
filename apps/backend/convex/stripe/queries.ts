@@ -91,17 +91,10 @@ async function buildAvailablePlan(ctx: StripeQueryDbCtx, product: Doc<"subscript
   };
 }
 
-<<<<<<< HEAD
-async function getCurrentSubscription(ctx: StripeQueryDbCtx, userId: Id<"users">) {
-  return await ctx.db
-    .query("subscriptions")
-    .withIndex("by_user_id", (q) => q.eq("userId", userId))
-=======
 async function getCurrentSubscription(ctx: StripeQueryDbCtx, organizationId: Id<"organizations">) {
   return await ctx.db
     .query("subscriptions")
     .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     .order("desc")
     .first();
 }
@@ -150,13 +143,8 @@ function buildSubscriptionPriceDetails(price: Doc<"subscription_prices"> | null)
 export const getSubscriptionDetails = authQuery({
   args: {},
   handler: async (ctx) => {
-<<<<<<< HEAD
-    const userId = ctx.auth.userId;
-    const subscription = await getCurrentSubscription(ctx, userId);
-=======
     const organizationId = ctx.auth.organizationId;
     const subscription = await getCurrentSubscription(ctx, organizationId);
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
     if (!subscription) {
       return null;

@@ -2,10 +2,7 @@
 import { ClerkProvider } from "@clerk/clerk-react";
 import { createRootRoute, HeadContent, Outlet, Scripts, useLocation } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
-<<<<<<< HEAD
-=======
 
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 import appCss from "~/app/globals.css?url";
 import { Footer } from "~/components/layout/footer";
 import { Navbar } from "~/components/layout/navbar";
@@ -156,13 +153,9 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       </head>
       <body className="font-sans antialiased">
         {CLERK_PUBLISHABLE_KEY ? (
-<<<<<<< HEAD
-          <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>{children}</ClerkProvider>
-=======
           <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
             {children}
           </ClerkProvider>
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
         ) : (
           children
         )}

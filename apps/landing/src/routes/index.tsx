@@ -1,8 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-<<<<<<< HEAD
-=======
 
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 import { StaticCta } from "~/components/sections/cta-block";
 import { StaticDevelopers } from "~/components/sections/developers-block";
 import { staticFaqs, StaticFaq } from "~/components/sections/faq-block";

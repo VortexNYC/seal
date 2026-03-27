@@ -123,11 +123,6 @@ async function getAuditExports(ctx: QueryCtx, clerkUserId: string) {
 }
 
 async function getSubscriptionExport(ctx: QueryCtx, userId: Id<"users">) {
-<<<<<<< HEAD
-  const subscription = await ctx.db
-    .query("subscriptions")
-    .withIndex("by_user_id", (q) => q.eq("userId", userId))
-=======
   // Find the user's active org to look up org-scoped subscription
   const user = await ctx.db.get(userId);
   if (!user?.activeOrganizationId) return null;
@@ -135,7 +130,6 @@ async function getSubscriptionExport(ctx: QueryCtx, userId: Id<"users">) {
   const subscription = await ctx.db
     .query("subscriptions")
     .withIndex("by_organization_id", (q) => q.eq("organizationId", user.activeOrganizationId!))
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     .first();
 
   if (!subscription) {

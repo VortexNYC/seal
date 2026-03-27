@@ -567,8 +567,6 @@ export async function resolveApiAuth(
     ? await resolveOrganizationKeySubject(ctx, apiKey)
     : await resolveUserKeySubject(ctx, apiKey.subject);
 
-<<<<<<< HEAD
-=======
   // Tier check: Free-tier organizations cannot use the API
   const { plan } = await ctx.runQuery(internal.auth.subscription_helpers.checkProFeature, {
     organizationId: resolvedIdentity.organizationId,
@@ -577,7 +575,6 @@ export async function resolveApiAuth(
     throw new ApiError(403, "API access requires a Professional plan", "API_ACCESS_DISABLED");
   }
 
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   return buildAuthContext(ctx, {
     authType: "api_key",
     apiKeyId: apiKey.id,

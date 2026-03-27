@@ -4,11 +4,8 @@ import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
 import { getDocsPageTree } from "~/lib/docs/manifest";
 
-<<<<<<< HEAD
-=======
 import { getDocsPageTree } from "~/lib/docs/manifest";
 
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 const docsPageTree = getDocsPageTree();
 
 export const Route = createFileRoute("/docs")({

@@ -36,8 +36,6 @@ export const Route = createFileRoute("/pages/$slug")({
       })),
     };
   },
-<<<<<<< HEAD
-=======
   // @ts-expect-error — TanStack Router generic inference limitation with $slug param routes
   loader: async ({ params }) => {
     const page = getPage(params.slug);
@@ -46,7 +44,6 @@ export const Route = createFileRoute("/pages/$slug")({
     }
     return { page };
   },
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   component: PageContent,
 });
 

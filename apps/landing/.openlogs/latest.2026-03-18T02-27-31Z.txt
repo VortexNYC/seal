@@ -1,0 +1,36 @@
+[MDX] generated files in 3.661624999999958ms
+
+  VITE v7.3.1  ready in 1014 ms
+
+  ➜  Local:   http://localhost:4847/
+  ➜  Network: http://192.168.1.156:4847/
+  ➜  press h + enter to show help
+[vite] connected.
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+10:28:59 PM [vite] vite.config.ts changed, restarting server...
+[MDX] generated files in 2.9010830000042915ms
+10:28:59 PM [vite] server restarted.
+[vite] connected.

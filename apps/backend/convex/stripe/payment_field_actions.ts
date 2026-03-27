@@ -749,12 +749,8 @@ async function createRecurringSubscription(
   );
 
   const stripePaymentMethods = toStripePaymentMethodTypes(config.allowedPaymentMethods);
-<<<<<<< HEAD
-  const platformFeePercent = isPro ? 0.25 : 1;
-=======
   // Card rates: 4.5% (Free), 4% (Pro). Note: 30¢ fixed component not expressible via application_fee_percent.
   const platformFeePercent = isPro ? 4 : 4.5;
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   const commonMetadata = buildPaymentMetadata(config);
   const daysUntilDue = getDaysUntilDue(config.dueDateTerms, config.customDueDays);
   const price = await createRecurringPrice(
@@ -1100,11 +1096,7 @@ export const createStripeObjectsForPaymentFields = internalAction({
       throw new ConvexError("Stripe account is not enabled for charges");
     }
 
-<<<<<<< HEAD
-    const subscriptionStatus: { isPro: boolean; plan: "free" | "pro" } = await ctx.runQuery(
-=======
     const subscriptionStatus = await ctx.runQuery(
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       internal.auth.subscription_helpers.checkProFeature,
       { organizationId: args.organizationId },
     );

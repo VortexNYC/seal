@@ -1,8 +1,5 @@
 import { Check, X } from "lucide-react";
-<<<<<<< HEAD
-=======
 
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 import type { ComparisonTableBlock } from "~/lib/content/types";
 
 export function ComparisonTableBlockComponent({ block }: { block: ComparisonTableBlock }) {

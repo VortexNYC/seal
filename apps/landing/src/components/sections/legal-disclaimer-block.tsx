@@ -1,8 +1,5 @@
 import { Info, TriangleAlert } from "lucide-react";
-<<<<<<< HEAD
-=======
 
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 import type { LegalDisclaimerBlock } from "~/lib/content/types";
 
 export function LegalDisclaimerBlockComponent({ block }: { block: LegalDisclaimerBlock }) {

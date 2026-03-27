@@ -599,11 +599,7 @@ function getAuditAndBillingRules(
       read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-<<<<<<< HEAD
-        return doc.userId === rlsCtx.userId;
-=======
         return doc.organizationId === rlsCtx.orgId;
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       },
       modify: async () => false,
     },
