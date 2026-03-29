@@ -229,15 +229,7 @@ test("page with dynamic content", async ({ page }) => {
 
   // Mask elements that change
   await expect(page).toHaveScreenshot("profile.png", {
-<<<<<<< HEAD
     mask: [page.getByTestId("timestamp"), page.getByTestId("avatar"), page.getByRole("img")],
-=======
-    mask: [
-      page.getByTestId("timestamp"),
-      page.getByTestId("avatar"),
-      page.getByRole("img"),
-    ],
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   });
 });
 

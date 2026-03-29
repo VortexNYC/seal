@@ -108,14 +108,7 @@ import path from "path";
 
 type DownloadFixtures = {
   downloadDir: string;
-<<<<<<< HEAD
   downloadAndVerify: (trigger: () => Promise<void>, expectedFilename: string) => Promise<string>;
-=======
-  downloadAndVerify: (
-    trigger: () => Promise<void>,
-    expectedFilename: string,
-  ) => Promise<string>;
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 };
 
 export const test = base.extend<DownloadFixtures>({
@@ -150,13 +143,7 @@ test("upload profile picture", async ({ page }) => {
   await page.goto("/settings/profile");
 
   // Upload file
-<<<<<<< HEAD
   await page.getByLabel("Profile Picture").setInputFiles("./fixtures/avatar.png");
-=======
-  await page
-    .getByLabel("Profile Picture")
-    .setInputFiles("./fixtures/avatar.png");
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   // Verify preview
   await expect(page.getByAltText("Profile preview")).toBeVisible();
@@ -174,15 +161,7 @@ test("upload multiple documents", async ({ page }) => {
 
   await page
     .getByLabel("Documents")
-<<<<<<< HEAD
     .setInputFiles(["./fixtures/doc1.pdf", "./fixtures/doc2.pdf", "./fixtures/doc3.pdf"]);
-=======
-    .setInputFiles([
-      "./fixtures/doc1.pdf",
-      "./fixtures/doc2.pdf",
-      "./fixtures/doc3.pdf",
-    ]);
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   // Verify all files listed
   await expect(page.getByText("doc1.pdf")).toBeVisible();

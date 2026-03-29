@@ -21,10 +21,7 @@ Use `repeat(auto-fit, minmax(280px, 1fr))` for responsive grids without breakpoi
 ### The Squint Test
 
 Blur your eyes (or screenshot and blur). Can you still identify:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - The most important element?
 - The second most important?
 - Clear groupings?
@@ -35,7 +32,6 @@ If everything looks the same weight blurred, you have a hierarchy problem.
 
 Don't rely on size alone. Combine:
 
-<<<<<<< HEAD
 | Tool         | Strong Hierarchy          | Weak Hierarchy    |
 | ------------ | ------------------------- | ----------------- |
 | **Size**     | 3:1 ratio or more         | <2:1 ratio        |
@@ -43,15 +39,6 @@ Don't rely on size alone. Combine:
 | **Color**    | High contrast             | Similar tones     |
 | **Position** | Top/left (primary)        | Bottom/right      |
 | **Space**    | Surrounded by white space | Crowded           |
-=======
-| Tool | Strong Hierarchy | Weak Hierarchy |
-|------|------------------|----------------|
-| **Size** | 3:1 ratio or more | <2:1 ratio |
-| **Weight** | Bold vs Regular | Medium vs Regular |
-| **Color** | High contrast | Similar tones |
-| **Position** | Top/left (primary) | Bottom/right |
-| **Space** | Surrounded by white space | Crowded |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 **The best hierarchy uses 2-3 dimensions at once**: A heading that's larger, bolder, AND has more space above it.
 
@@ -93,25 +80,15 @@ Buttons can look small but need large touch targets (44px minimum). Use padding 
 
 ```css
 .icon-button {
-<<<<<<< HEAD
   width: 24px; /* Visual size */
-=======
-  width: 24px;  /* Visual size */
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   height: 24px;
   position: relative;
 }
 
 .icon-button::before {
-<<<<<<< HEAD
   content: "";
   position: absolute;
   inset: -10px; /* Expand tap target to 44px */
-=======
-  content: '';
-  position: absolute;
-  inset: -10px;  /* Expand tap target to 44px */
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 

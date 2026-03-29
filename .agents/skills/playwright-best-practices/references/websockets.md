@@ -87,13 +87,7 @@ test("displays incoming chat message", async ({ page }) => {
   await page.goto("/chat");
 
   // Wait for WebSocket to be ready
-<<<<<<< HEAD
   await page.waitForFunction(() => (window as any).chatSocket?.readyState === 1);
-=======
-  await page.waitForFunction(
-    () => (window as any).chatSocket?.readyState === 1,
-  );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   // Simulate incoming message
   await page.evaluate(() => {
@@ -213,13 +207,7 @@ test("chat with mocked websocket", async ({ page, mockWebSocket }) => {
 
   // Verify sent message
   const sent = await mockWebSocket.getSentMessages();
-<<<<<<< HEAD
   expect(sent).toContainEqual(expect.objectContaining({ content: "Hello Bob!" }));
-=======
-  expect(sent).toContainEqual(
-    expect.objectContaining({ content: "Hello Bob!" }),
-  );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 });
 ```
 
@@ -328,15 +316,7 @@ test("receives SSE updates", async ({ page }) => {
 test("handles multiple SSE events", async ({ page }) => {
   await page.route("**/api/events", async (route) => {
     const encoder = new TextEncoder();
-<<<<<<< HEAD
     const events = [`data: {"count":1}\n\n`, `data: {"count":2}\n\n`, `data: {"count":3}\n\n`];
-=======
-    const events = [
-      `data: {"count":1}\n\n`,
-      `data: {"count":2}\n\n`,
-      `data: {"count":3}\n\n`,
-    ];
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
     route.fulfill({
       status: 200,

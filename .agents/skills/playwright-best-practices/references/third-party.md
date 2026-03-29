@@ -349,13 +349,7 @@ export const test = base.extend<EmailFixtures>({
       const message = await msgResponse.json();
 
       // Extract verification link from HTML
-<<<<<<< HEAD
       const linkMatch = message.parts[0].body.match(/href="([^"]*verify[^"]*)"/);
-=======
-      const linkMatch = message.parts[0].body.match(
-        /href="([^"]*verify[^"]*)"/,
-      );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       return { link: linkMatch?.[1] || "" };
     });
   },

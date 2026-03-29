@@ -3,10 +3,6 @@ name: tanstack-config
 description: Opinionated toolkit for building, versioning, and publishing high-quality JavaScript/TypeScript packages.
 ---
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ## Overview
 
 TanStack Config provides an opinionated, minimal-configuration toolkit for JavaScript/TypeScript package development. It includes Vite-powered build configuration, ESLint presets, publish automation with semantic versioning, and integrations with TypeScript, Prettier, Changesets, and GitHub Actions. Designed for monorepo workflows with pnpm and Nx.
@@ -28,69 +24,38 @@ pnpm add @tanstack/config -D
 
 ```typescript
 // vite.config.ts
-<<<<<<< HEAD
 import { defineConfig, mergeConfig } from "vitest/config";
 import { tanstackViteConfig } from "@tanstack/config/vite";
 
 const config = defineConfig({
   // Your custom Vite config
 });
-=======
-import { defineConfig, mergeConfig } from 'vitest/config'
-import { tanstackViteConfig } from '@tanstack/config/vite'
-
-const config = defineConfig({
-  // Your custom Vite config
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 export default mergeConfig(
   config,
   tanstackViteConfig({
-<<<<<<< HEAD
     entry: "./src/index.ts",
     srcDir: "./src",
     exclude: ["./src/__tests__"],
   }),
 );
-=======
-    entry: './src/index.ts',
-    srcDir: './src',
-    exclude: ['./src/__tests__'],
-  })
-)
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Multiple Entry Points
 
 ```typescript
-<<<<<<< HEAD
 import { tanstackViteConfig } from "@tanstack/config/vite";
 
 export default tanstackViteConfig({
   entry: ["./src/index.ts", "./src/adapters.ts", "./src/utils.ts"],
   srcDir: "./src",
 });
-=======
-import { tanstackViteConfig } from '@tanstack/config/vite'
-
-export default tanstackViteConfig({
-  entry: [
-    './src/index.ts',
-    './src/adapters.ts',
-    './src/utils.ts',
-  ],
-  srcDir: './src',
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Build Options
 
 ```typescript
 tanstackViteConfig({
-<<<<<<< HEAD
   entry: "./src/index.ts",
   srcDir: "./src",
   exclude: ["./src/__tests__", "./src/**/*.test.ts"],
@@ -98,15 +63,6 @@ tanstackViteConfig({
   // Generates .d.ts declaration files
   // Handles tree-shaking configuration
 });
-=======
-  entry: './src/index.ts',
-  srcDir: './src',
-  exclude: ['./src/__tests__', './src/**/*.test.ts'],
-  // Generates ESM and CJS outputs
-  // Generates .d.ts declaration files
-  // Handles tree-shaking configuration
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## ESLint Configuration
@@ -115,43 +71,26 @@ tanstackViteConfig({
 
 ```javascript
 // eslint.config.js
-<<<<<<< HEAD
 import { tanstackEslintConfig } from "@tanstack/config/eslint";
 
 export default tanstackEslintConfig;
-=======
-import { tanstackEslintConfig } from '@tanstack/config/eslint'
-
-export default tanstackEslintConfig
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Extending the Config
 
 ```javascript
 // eslint.config.js
-<<<<<<< HEAD
 import { tanstackEslintConfig } from "@tanstack/config/eslint";
-=======
-import { tanstackEslintConfig } from '@tanstack/config/eslint'
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 export default [
   ...tanstackEslintConfig,
   {
     rules: {
       // Custom overrides
-<<<<<<< HEAD
       "@typescript-eslint/no-explicit-any": "warn",
     },
   },
 ];
-=======
-      '@typescript-eslint/no-explicit-any': 'warn',
-    },
-  },
-]
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Publishing
@@ -160,21 +99,13 @@ export default [
 
 ```typescript
 // publish.config.ts or used via CLI
-<<<<<<< HEAD
 import { tanstackPublishConfig } from "@tanstack/config/publish";
-=======
-import { tanstackPublishConfig } from '@tanstack/config/publish'
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 export default tanstackPublishConfig({
   // Publint-compliant defaults
   // Semantic versioning automation
   // Changelog generation
-<<<<<<< HEAD
 });
-=======
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Package.json Setup
@@ -287,11 +218,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-<<<<<<< HEAD
           cache: "pnpm"
-=======
-          cache: 'pnpm'
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       - run: pnpm install
       - run: pnpm build
       - run: pnpm lint
@@ -317,11 +244,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-<<<<<<< HEAD
           registry-url: "https://registry.npmjs.org"
-=======
-          registry-url: 'https://registry.npmjs.org'
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       - run: pnpm install
       - run: pnpm build
       - name: Create Release Pull Request or Publish
@@ -340,13 +263,8 @@ jobs:
 ```yaml
 # pnpm-workspace.yaml
 packages:
-<<<<<<< HEAD
   - "packages/*"
   - "examples/*"
-=======
-  - 'packages/*'
-  - 'examples/*'
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Nx Configuration

@@ -4,21 +4,12 @@
 
 Timing matters more than easing. These durations feel right for most UI:
 
-<<<<<<< HEAD
 | Duration      | Use Case            | Examples                           |
 | ------------- | ------------------- | ---------------------------------- |
 | **100-150ms** | Instant feedback    | Button press, toggle, color change |
 | **200-300ms** | State changes       | Menu open, tooltip, hover states   |
 | **300-500ms** | Layout changes      | Accordion, modal, drawer           |
 | **500-800ms** | Entrance animations | Page load, hero reveals            |
-=======
-| Duration | Use Case | Examples |
-|----------|----------|----------|
-| **100-150ms** | Instant feedback | Button press, toggle, color change |
-| **200-300ms** | State changes | Menu open, tooltip, hover states |
-| **300-500ms** | Layout changes | Accordion, modal, drawer |
-| **500-800ms** | Entrance animations | Page load, hero reveals |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 **Exit animations are faster than entrances**—use ~75% of enter duration.
 
@@ -26,17 +17,10 @@ Timing matters more than easing. These durations feel right for most UI:
 
 **Don't use `ease`.** It's a compromise that's rarely optimal. Instead:
 
-<<<<<<< HEAD
 | Curve           | Use For                      | CSS                              |
 | --------------- | ---------------------------- | -------------------------------- |
 | **ease-out**    | Elements entering            | `cubic-bezier(0.16, 1, 0.3, 1)`  |
 | **ease-in**     | Elements leaving             | `cubic-bezier(0.7, 0, 0.84, 0)`  |
-=======
-| Curve | Use For | CSS |
-|-------|---------|-----|
-| **ease-out** | Elements entering | `cubic-bezier(0.16, 1, 0.3, 1)` |
-| **ease-in** | Elements leaving | `cubic-bezier(0.7, 0, 0.84, 0)` |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 | **ease-in-out** | State toggles (there → back) | `cubic-bezier(0.65, 0, 0.35, 1)` |
 
 **For micro-interactions, use exponential curves**—they feel natural because they mimic real physics (friction, deceleration):
@@ -75,23 +59,15 @@ This is not optional. Vestibular disorders affect ~35% of adults over 40.
 /* Provide alternative for reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .card {
-<<<<<<< HEAD
     animation: fade-in 200ms ease-out; /* Crossfade instead of motion */
-=======
-    animation: fade-in 200ms ease-out;  /* Crossfade instead of motion */
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   }
 }
 
 /* Or disable entirely */
 @media (prefers-reduced-motion: reduce) {
-<<<<<<< HEAD
   *,
   *::before,
   *::after {
-=======
-  *, *::before, *::after {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }

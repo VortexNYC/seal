@@ -153,14 +153,7 @@ test("collect CSS coverage", async ({ page }) => {
   // Find unused CSS
   for (const entry of cssCoverage) {
     const totalBytes = entry.text?.length || 0;
-<<<<<<< HEAD
     const usedBytes = entry.ranges.reduce((sum, range) => sum + (range.end - range.start), 0);
-=======
-    const usedBytes = entry.ranges.reduce(
-      (sum, range) => sum + (range.end - range.start),
-      0,
-    );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     const unusedPercentage = ((totalBytes - usedBytes) / totalBytes) * 100;
 
     if (unusedPercentage > 50) {
@@ -188,13 +181,7 @@ async function convertCoverage() {
   const istanbulCoverage: any = {};
 
   for (const file of files) {
-<<<<<<< HEAD
     const coverageData = JSON.parse(fs.readFileSync(path.join(coverageDir, file), "utf-8"));
-=======
-    const coverageData = JSON.parse(
-      fs.readFileSync(path.join(coverageDir, file), "utf-8"),
-    );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
     for (const entry of coverageData) {
       if (!entry.url.startsWith("file://")) continue;
@@ -210,14 +197,7 @@ async function convertCoverage() {
     }
   }
 
-<<<<<<< HEAD
   fs.writeFileSync(path.join(coverageDir, "coverage-final.json"), JSON.stringify(istanbulCoverage));
-=======
-  fs.writeFileSync(
-    path.join(coverageDir, "coverage-final.json"),
-    JSON.stringify(istanbulCoverage),
-  );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 
 convertCoverage();
@@ -255,21 +235,10 @@ class CoverageReporter implements Reporter {
   onEnd(result: FullResult) {
     // Aggregate all coverage files
     const coverageDir = "./coverage";
-<<<<<<< HEAD
     const files = fs.readdirSync(coverageDir).filter((f) => f.endsWith(".json"));
 
     for (const file of files) {
       const data = JSON.parse(fs.readFileSync(path.join(coverageDir, file), "utf-8"));
-=======
-    const files = fs
-      .readdirSync(coverageDir)
-      .filter((f) => f.endsWith(".json"));
-
-    for (const file of files) {
-      const data = JSON.parse(
-        fs.readFileSync(path.join(coverageDir, file), "utf-8"),
-      );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       this.coverageData.push(...data);
     }
 
@@ -294,14 +263,7 @@ class CoverageReporter implements Reporter {
       if (entry.url.includes("/src/")) {
         files.add(entry.url);
         totalBytes += entry.text?.length || 0;
-<<<<<<< HEAD
         coveredBytes += entry.ranges.reduce((sum: number, r: any) => sum + (r.end - r.start), 0);
-=======
-        coveredBytes += entry.ranges.reduce(
-          (sum: number, r: any) => sum + (r.end - r.start),
-          0,
-        );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       }
     }
 
@@ -334,25 +296,12 @@ test.afterAll(async () => {
   let coveredBytes = 0;
 
   for (const file of files) {
-<<<<<<< HEAD
     const coverage = JSON.parse(fs.readFileSync(path.join(coverageDir, file), "utf-8"));
-=======
-    const coverage = JSON.parse(
-      fs.readFileSync(path.join(coverageDir, file), "utf-8"),
-    );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
     for (const entry of coverage) {
       if (!entry.url.includes("/src/")) continue;
       totalBytes += entry.text?.length || 0;
-<<<<<<< HEAD
       coveredBytes += entry.ranges.reduce((sum: number, r: any) => sum + (r.end - r.start), 0);
-=======
-      coveredBytes += entry.ranges.reduce(
-        (sum: number, r: any) => sum + (r.end - r.start),
-        0,
-      );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     }
   }
 
@@ -390,26 +339,13 @@ function checkThresholds(coverage: any[]): string[] {
 
     for (const file of matchingFiles) {
       total += file.text?.length || 0;
-<<<<<<< HEAD
       covered += file.ranges.reduce((sum: number, r: any) => sum + (r.end - r.start), 0);
-=======
-      covered += file.ranges.reduce(
-        (sum: number, r: any) => sum + (r.end - r.start),
-        0,
-      );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     }
 
     const percent = total > 0 ? (covered / total) * 100 : 0;
 
     if (percent < threshold.minCoverage) {
-<<<<<<< HEAD
       violations.push(`${threshold.pattern}: ${percent.toFixed(1)}% < ${threshold.minCoverage}%`);
-=======
-      violations.push(
-        `${threshold.pattern}: ${percent.toFixed(1)}% < ${threshold.minCoverage}%`,
-      );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     }
   }
 
@@ -442,14 +378,7 @@ async function mergeCoverage() {
     }
   }
 
-<<<<<<< HEAD
   fs.writeFileSync("./coverage/merged.json", JSON.stringify([...merged.values()]));
-=======
-  fs.writeFileSync(
-    "./coverage/merged.json",
-    JSON.stringify([...merged.values()]),
-  );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 
 mergeCoverage();

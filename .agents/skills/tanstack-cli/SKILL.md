@@ -3,10 +3,6 @@ name: tanstack-cli
 description: Project scaffolding CLI with 30+ integrations, custom templates, and MCP server for AI agents.
 ---
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ## Overview
 
 TanStack CLI is an interactive scaffolding tool for creating TanStack Start applications. It provides guided project creation with 30+ pre-built integrations covering authentication, databases, deployment, and developer tools. It also includes an MCP (Model Context Protocol) server for AI agent assistance and supports custom templates for team-standardized setups.
@@ -57,7 +53,6 @@ npx @tanstack/cli create my-app --integrations tanstack-query,tanstack-form,tans
 
 ### TanStack Libraries
 
-<<<<<<< HEAD
 | Integration        | Description                     |
 | ------------------ | ------------------------------- |
 | `tanstack-query`   | Async state management          |
@@ -102,57 +97,10 @@ npx @tanstack/cli create my-app --integrations tanstack-query,tanstack-form,tans
 | `eslint`    | ESLint configuration            |
 | `biome`     | Biome linting/formatting        |
 | `shadcn-ui` | shadcn/ui component library     |
-=======
-| Integration | Description |
-|-------------|-------------|
-| `tanstack-query` | Async state management |
-| `tanstack-form` | Type-safe form management |
-| `tanstack-table` | Headless table/datagrid |
-| `tanstack-store` | Reactive data store |
-| `tanstack-virtual` | List virtualization |
-| `tanstack-ai` | AI SDK integration |
-| `tanstack-db` | Client-side database |
-| `tanstack-pacer` | Debouncing/throttling utilities |
-
-### Authentication
-
-| Integration | Description |
-|-------------|-------------|
-| `clerk` | Clerk authentication |
-| `better-auth` | Better Auth integration |
-| `workos` | WorkOS identity management |
-
-### Databases & ORMs
-
-| Integration | Description |
-|-------------|-------------|
-| `drizzle` | Drizzle ORM |
-| `prisma` | Prisma ORM |
-| `neon` | Neon serverless Postgres |
-| `convex` | Convex backend platform |
-
-### Deployment
-
-| Integration | Description |
-|-------------|-------------|
-| `vercel` | Vercel deployment |
-| `netlify` | Netlify deployment |
-| `cloudflare` | Cloudflare Workers/Pages |
-| `nitro` | Nitro server engine |
-
-### Developer Tools
-
-| Integration | Description |
-|-------------|-------------|
-| `eslint` | ESLint configuration |
-| `biome` | Biome linting/formatting |
-| `shadcn-ui` | shadcn/ui component library |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 | `storybook` | Storybook component development |
 
 ### API & Backend
 
-<<<<<<< HEAD
 | Integration | Description        |
 | ----------- | ------------------ |
 | `trpc`      | tRPC type-safe API |
@@ -165,20 +113,6 @@ npx @tanstack/cli create my-app --integrations tanstack-query,tanstack-form,tans
 | `sentry`    | Error monitoring            |
 | `paraglide` | Internationalization (i18n) |
 | `strapi`    | Strapi CMS                  |
-=======
-| Integration | Description |
-|-------------|-------------|
-| `trpc` | tRPC type-safe API |
-| `orpc` | oRPC integration |
-
-### Services
-
-| Integration | Description |
-|-------------|-------------|
-| `sentry` | Error monitoring |
-| `paraglide` | Internationalization (i18n) |
-| `strapi` | Strapi CMS |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 ## Custom Templates
 
@@ -231,10 +165,7 @@ The TanStack CLI includes an MCP (Model Context Protocol) server for AI agent in
 ### Usage with Claude
 
 The MCP server enables Claude and other AI assistants to:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Search TanStack docs for accurate, up-to-date information
 - Help scaffold new projects with appropriate integrations
 - Provide context-aware recommendations
@@ -291,21 +222,12 @@ TanStack CLI also provides an interactive web-based builder:
 
 ## CLI Commands Reference
 
-<<<<<<< HEAD
 | Command                               | Description                       |
 | ------------------------------------- | --------------------------------- |
 | `create <name>`                       | Create a new project              |
 | `create <name> --integrations <list>` | Create with specific integrations |
 | `create <name> --template <path>`     | Create from template              |
 | `mcp`                                 | Start the MCP server              |
-=======
-| Command | Description |
-|---------|-------------|
-| `create <name>` | Create a new project |
-| `create <name> --integrations <list>` | Create with specific integrations |
-| `create <name> --template <path>` | Create from template |
-| `mcp` | Start the MCP server |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 ## Best Practices
 

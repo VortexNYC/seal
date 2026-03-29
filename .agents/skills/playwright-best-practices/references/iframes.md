@@ -89,13 +89,7 @@ test("Stripe payment iframe", async ({ page }) => {
   await page.goto("/checkout");
 
   // Stripe uses multiple iframes for each field
-<<<<<<< HEAD
   const cardFrame = page.frameLocator('iframe[name*="__privateStripeFrame"]').first();
-=======
-  const cardFrame = page
-    .frameLocator('iframe[name*="__privateStripeFrame"]')
-    .first();
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   // Wait for Stripe to initialize
   await expect(cardFrame.locator('[placeholder="Card number"]')).toBeVisible({
@@ -103,13 +97,7 @@ test("Stripe payment iframe", async ({ page }) => {
   });
 
   // Fill card details
-<<<<<<< HEAD
   await cardFrame.locator('[placeholder="Card number"]').fill("4242424242424242");
-=======
-  await cardFrame
-    .locator('[placeholder="Card number"]')
-    .fill("4242424242424242");
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   await cardFrame.locator('[placeholder="MM / YY"]').fill("12/30");
   await cardFrame.locator('[placeholder="CVC"]').fill("123");
 });
@@ -154,14 +142,7 @@ await level3.getByText("Deep content").click();
 
 ```typescript
 // Helper to search all frames for an element
-<<<<<<< HEAD
 async function findInAnyFrame(page: Page, selector: string): Promise<Locator | null> {
-=======
-async function findInAnyFrame(
-  page: Page,
-  selector: string,
-): Promise<Locator | null> {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   // Check main page first
   const mainCount = await page.locator(selector).count();
   if (mainCount > 0) return page.locator(selector);
@@ -280,14 +261,7 @@ test("track iframe navigation", async ({ page }) => {
   });
 
   await page.goto("/with-iframe");
-<<<<<<< HEAD
   await page.frameLocator("#nav-frame").getByRole("link", { name: "Page 2" }).click();
-=======
-  await page
-    .frameLocator("#nav-frame")
-    .getByRole("link", { name: "Page 2" })
-    .click();
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   // Verify navigation occurred
   expect(navigations.some((url) => url.includes("page2"))).toBe(true);
@@ -362,13 +336,7 @@ test("handle iframe load failure", async ({ page }) => {
   } catch (error) {
     // Fallback: refresh iframe
     await page.evaluate(() => {
-<<<<<<< HEAD
       const iframe = document.querySelector("#unreliable-frame") as HTMLIFrameElement;
-=======
-      const iframe = document.querySelector(
-        "#unreliable-frame",
-      ) as HTMLIFrameElement;
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       if (iframe) iframe.src = iframe.src;
     });
 

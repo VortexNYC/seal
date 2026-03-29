@@ -240,13 +240,7 @@ export default defineConfig({
 
 ```typescript
 export default defineConfig({
-<<<<<<< HEAD
   reporter: process.env.CI ? [["github"], ["blob"], ["html"]] : [["list"], ["html"]],
-=======
-  reporter: process.env.CI
-    ? [["github"], ["blob"], ["html"]]
-    : [["list"], ["html"]],
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 });
 ```
 
@@ -392,13 +386,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-<<<<<<< HEAD
   reporter: process.env.CI ? [["github"], ["blob"], ["html"]] : [["list"], ["html"]],
-=======
-  reporter: process.env.CI
-    ? [["github"], ["blob"], ["html"]]
-    : [["list"], ["html"]],
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   use: {
     baseURL: process.env.BASE_URL || "http://localhost:3000",
     trace: "on-first-retry",

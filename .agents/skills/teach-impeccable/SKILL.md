@@ -24,37 +24,25 @@ Note what you've learned and what remains unclear.
 STOP and call the AskUserQuestionTool to clarify. Focus only on what you couldn't infer from the codebase:
 
 ### Users & Purpose
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Who uses this? What's their context when using it?
 - What job are they trying to get done?
 - What emotions should the interface evoke? (confidence, delight, calm, urgency, etc.)
 
 ### Brand & Personality
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - How would you describe the brand personality in 3 words?
 - Any reference sites or apps that capture the right feel? What specifically about them?
 - What should this explicitly NOT look like? Any anti-references?
 
 ### Aesthetic Preferences
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Any strong preferences for visual direction? (minimal, bold, elegant, playful, technical, organic, etc.)
 - Light mode, dark mode, or both?
 - Any colors that must be used or avoided?
 
 ### Accessibility & Inclusion
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Specific accessibility requirements? (WCAG level, known user needs)
 - Considerations for reduced motion, color blindness, or other accommodations?
 
@@ -68,7 +56,6 @@ Synthesize your findings and the user's answers into a `## Design Context` secti
 ## Design Context
 
 ### Users
-<<<<<<< HEAD
 
 [Who they are, their context, the job to be done]
 
@@ -82,24 +69,9 @@ Synthesize your findings and the user's answers into a `## Design Context` secti
 
 ### Design Principles
 
-=======
-[Who they are, their context, the job to be done]
-
-### Brand Personality
-[Voice, tone, 3-word personality, emotional goals]
-
-### Aesthetic Direction
-[Visual tone, references, anti-references, theme]
-
-### Design Principles
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 [3-5 principles derived from the conversation that should guide all design decisions]
 ```
 
 Write this section to CLAUDE.md in the project root. If the file exists, append or update the Design Context section.
 
-<<<<<<< HEAD
 Confirm completion and summarize the key design principles that will now guide all future work.
-=======
-Confirm completion and summarize the key design principles that will now guide all future work.
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))

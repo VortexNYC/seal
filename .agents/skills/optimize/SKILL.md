@@ -36,10 +36,7 @@ Create systematic improvement plan:
 ### Loading Performance
 
 **Optimize Images**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Use modern formats (WebP, AVIF)
 - Proper sizing (don't load 3000px image for 300px display)
 - Lazy loading for below-fold images
@@ -48,11 +45,7 @@ Create systematic improvement plan:
 - Use CDN for faster delivery
 
 ```html
-<<<<<<< HEAD
 <img
-=======
-<img 
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   src="hero.webp"
   srcset="hero-400.webp 400w, hero-800.webp 800w, hero-1200.webp 1200w"
   sizes="(max-width: 400px) 400px, (max-width: 800px) 800px, 1200px"
@@ -62,10 +55,7 @@ Create systematic improvement plan:
 ```
 
 **Reduce JavaScript Bundle**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Code splitting (route-based, component-based)
 - Tree shaking (remove unused code)
 - Remove unused dependencies
@@ -74,28 +64,18 @@ Create systematic improvement plan:
 
 ```javascript
 // Lazy load heavy component
-<<<<<<< HEAD
 const HeavyChart = lazy(() => import("./HeavyChart"));
 ```
 
 **Optimize CSS**:
 
-=======
-const HeavyChart = lazy(() => import('./HeavyChart'));
-```
-
-**Optimize CSS**:
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Remove unused CSS
 - Critical CSS inline, rest async
 - Minimize CSS files
 - Use CSS containment for independent regions
 
 **Optimize Fonts**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Use `font-display: swap` or `optional`
 - Subset fonts (only characters you need)
 - Preload critical fonts
@@ -104,23 +84,15 @@ const HeavyChart = lazy(() => import('./HeavyChart'));
 
 ```css
 @font-face {
-<<<<<<< HEAD
   font-family: "CustomFont";
   src: url("/fonts/custom.woff2") format("woff2");
-=======
-  font-family: 'CustomFont';
-  src: url('/fonts/custom.woff2') format('woff2');
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   font-display: swap; /* Show fallback immediately */
   unicode-range: U+0020-007F; /* Basic Latin only */
 }
 ```
 
 **Optimize Loading Strategy**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Critical resources first (async/defer non-critical)
 - Preload critical assets
 - Prefetch likely next pages
@@ -130,36 +102,23 @@ const HeavyChart = lazy(() => import('./HeavyChart'));
 ### Rendering Performance
 
 **Avoid Layout Thrashing**:
-<<<<<<< HEAD
 
 ```javascript
 // ❌ Bad: Alternating reads and writes (causes reflows)
 elements.forEach((el) => {
-=======
-```javascript
-// ❌ Bad: Alternating reads and writes (causes reflows)
-elements.forEach(el => {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   const height = el.offsetHeight; // Read (forces layout)
   el.style.height = height * 2; // Write
 });
 
 // ✅ Good: Batch reads, then batch writes
-<<<<<<< HEAD
 const heights = elements.map((el) => el.offsetHeight); // All reads
-=======
-const heights = elements.map(el => el.offsetHeight); // All reads
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 elements.forEach((el, i) => {
   el.style.height = heights[i] * 2; // All writes
 });
 ```
 
 **Optimize Rendering**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Use CSS `contain` property for independent regions
 - Minimize DOM depth (flatter is faster)
 - Reduce DOM size (fewer elements)
@@ -167,10 +126,7 @@ elements.forEach((el, i) => {
 - Virtual scrolling for very long lists (react-window, react-virtualized)
 
 **Reduce Paint & Composite**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Use `transform` and `opacity` for animations (GPU-accelerated)
 - Avoid animating layout properties (width, height, top, left)
 - Use `will-change` sparingly for known expensive operations
@@ -179,10 +135,7 @@ elements.forEach((el, i) => {
 ### Animation Performance
 
 **GPU Acceleration**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```css
 /* ✅ GPU-accelerated (fast) */
 .animated {
@@ -198,10 +151,7 @@ elements.forEach((el, i) => {
 ```
 
 **Smooth 60fps**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Target 16ms per frame (60fps)
 - Use `requestAnimationFrame` for JS animations
 - Debounce/throttle scroll handlers
@@ -209,18 +159,11 @@ elements.forEach((el, i) => {
 - Avoid long-running JavaScript during animations
 
 **Intersection Observer**:
-<<<<<<< HEAD
 
 ```javascript
 // Efficiently detect when elements enter viewport
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
-=======
-```javascript
-// Efficiently detect when elements enter viewport
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     if (entry.isIntersecting) {
       // Element is visible, lazy load or animate
     }
@@ -231,10 +174,7 @@ const observer = new IntersectionObserver((entries) => {
 ### React/Framework Optimization
 
 **React-specific**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Use `memo()` for expensive components
 - `useMemo()` and `useCallback()` for expensive computations
 - Virtualize long lists
@@ -243,10 +183,7 @@ const observer = new IntersectionObserver((entries) => {
 - Use React DevTools Profiler
 
 **Framework-agnostic**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Minimize re-renders
 - Debounce expensive operations
 - Memoize computed values
@@ -255,20 +192,14 @@ const observer = new IntersectionObserver((entries) => {
 ### Network Optimization
 
 **Reduce Requests**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Combine small files
 - Use SVG sprites for icons
 - Inline small critical assets
 - Remove unused third-party scripts
 
 **Optimize APIs**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Use pagination (don't load everything)
 - GraphQL to request only needed fields
 - Response compression (gzip, brotli)
@@ -276,10 +207,7 @@ const observer = new IntersectionObserver((entries) => {
 - CDN for static assets
 
 **Optimize for Slow Connections**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Adaptive loading based on connection (navigator.connection)
 - Optimistic UI updates
 - Request prioritization
@@ -288,10 +216,7 @@ const observer = new IntersectionObserver((entries) => {
 ## Core Web Vitals Optimization
 
 ### Largest Contentful Paint (LCP < 2.5s)
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Optimize hero images
 - Inline critical CSS
 - Preload key resources
@@ -299,20 +224,14 @@ const observer = new IntersectionObserver((entries) => {
 - Server-side rendering
 
 ### First Input Delay (FID < 100ms) / INP (< 200ms)
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Break up long tasks
 - Defer non-critical JavaScript
 - Use web workers for heavy computation
 - Reduce JavaScript execution time
 
 ### Cumulative Layout Shift (CLS < 0.1)
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Set dimensions on images and videos
 - Don't inject content above existing content
 - Use `aspect-ratio` CSS property
@@ -329,10 +248,7 @@ const observer = new IntersectionObserver((entries) => {
 ## Performance Monitoring
 
 **Tools to use**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Chrome DevTools (Lighthouse, Performance panel)
 - WebPageTest
 - Core Web Vitals (Chrome UX Report)
@@ -340,10 +256,7 @@ const observer = new IntersectionObserver((entries) => {
 - Performance monitoring (Sentry, DataDog, New Relic)
 
 **Key metrics**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - LCP, FID/INP, CLS (Core Web Vitals)
 - Time to Interactive (TTI)
 - First Contentful Paint (FCP)
@@ -354,10 +267,7 @@ const observer = new IntersectionObserver((entries) => {
 **IMPORTANT**: Measure on real devices with real network conditions. Desktop Chrome with fast connection isn't representative.
 
 **NEVER**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Optimize without measuring (premature optimization)
 - Sacrifice accessibility for performance
 - Break functionality while optimizing
@@ -375,12 +285,6 @@ Test that optimizations worked:
 - **Different devices**: Test on low-end Android, not just flagship iPhone
 - **Slow connections**: Throttle to 3G, test experience
 - **No regressions**: Ensure functionality still works
-<<<<<<< HEAD
 - **User perception**: Does it _feel_ faster?
 
 Remember: Performance is a feature. Fast experiences feel more responsive, more polished, more professional. Optimize systematically, measure ruthlessly, and prioritize user-perceived performance.
-=======
-- **User perception**: Does it *feel* faster?
-
-Remember: Performance is a feature. Fast experiences feel more responsive, more polished, more professional. Optimize systematically, measure ruthlessly, and prioritize user-perceived performance.
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))

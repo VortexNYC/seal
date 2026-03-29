@@ -3,10 +3,6 @@ name: tanstack-form
 description: Headless, performant, and type-safe form state management for TS/JS, React, Vue, Angular, Solid, Lit, and Svelte.
 ---
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ## Overview
 
 TanStack Form is a headless form library with deep TypeScript integration. It provides field-level and form-level validation (sync/async), array fields, linked/dependent fields, fine-grained reactivity, and schema validation adapter support (Zod, Valibot, Yup).
@@ -27,56 +23,31 @@ npm install @tanstack/valibot-form-adapter valibot
 ## Core: useForm
 
 ```tsx
-<<<<<<< HEAD
 import { useForm } from "@tanstack/react-form";
-=======
-import { useForm } from '@tanstack/react-form'
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 function MyForm() {
   const form = useForm({
     defaultValues: {
-<<<<<<< HEAD
       firstName: "",
       lastName: "",
       email: "",
-=======
-      firstName: '',
-      lastName: '',
-      email: '',
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       age: 0,
     },
     onSubmit: async ({ value }) => {
       // value is fully typed
-<<<<<<< HEAD
       await submitToServer(value);
     },
     onSubmitInvalid: ({ value, formApi }) => {
       console.log("Validation failed:", formApi.state.errors);
     },
   });
-=======
-      await submitToServer(value)
-    },
-    onSubmitInvalid: ({ value, formApi }) => {
-      console.log('Validation failed:', formApi.state.errors)
-    },
-  })
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   return (
     <form
       onSubmit={(e) => {
-<<<<<<< HEAD
         e.preventDefault();
         e.stopPropagation();
         form.handleSubmit();
-=======
-        e.preventDefault()
-        e.stopPropagation()
-        form.handleSubmit()
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       }}
     >
       {/* Fields */}
@@ -84,20 +55,12 @@ function MyForm() {
         selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
         children={({ canSubmit, isSubmitting }) => (
           <button type="submit" disabled={!canSubmit}>
-<<<<<<< HEAD
             {isSubmitting ? "Submitting..." : "Submit"}
-=======
-            {isSubmitting ? 'Submitting...' : 'Submit'}
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
           </button>
         )}
       />
     </form>
-<<<<<<< HEAD
   );
-=======
-  )
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -143,21 +106,12 @@ function MyForm() {
 
 ### Validation Timing
 
-<<<<<<< HEAD
 | Cause      | When                     |
 | ---------- | ------------------------ |
 | `onChange` | After every value change |
 | `onBlur`   | When field loses focus   |
 | `onSubmit` | During submission        |
 | `onMount`  | When field mounts        |
-=======
-| Cause | When |
-|-------|------|
-| `onChange` | After every value change |
-| `onBlur` | When field loses focus |
-| `onSubmit` | During submission |
-| `onMount` | When field mounts |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 ### Synchronous Validation
 
@@ -166,21 +120,12 @@ function MyForm() {
   name="age"
   validators={{
     onChange: ({ value }) => {
-<<<<<<< HEAD
       if (value < 18) return "Must be 18 or older";
       return undefined; // undefined = valid
     },
     onBlur: ({ value }) => {
       if (!value) return "Required";
       return undefined;
-=======
-      if (value < 18) return 'Must be 18 or older'
-      return undefined // undefined = valid
-    },
-    onBlur: ({ value }) => {
-      if (!value) return 'Required'
-      return undefined
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     },
   }}
 />
@@ -194,17 +139,10 @@ function MyForm() {
   asyncDebounceMs={500}
   validators={{
     onChangeAsync: async ({ value }) => {
-<<<<<<< HEAD
       const res = await fetch(`/api/check-username?q=${value}`);
       const { available } = await res.json();
       if (!available) return "Username taken";
       return undefined;
-=======
-      const res = await fetch(`/api/check-username?q=${value}`)
-      const { available } = await res.json()
-      if (!available) return 'Username taken'
-      return undefined
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     },
   }}
 >
@@ -249,7 +187,6 @@ const form = useForm({
 
 ```tsx
 const form = useForm({
-<<<<<<< HEAD
   defaultValues: { password: "", confirmPassword: "" },
   validators: {
     onChange: ({ value }) => {
@@ -260,18 +197,6 @@ const form = useForm({
     },
   },
 });
-=======
-  defaultValues: { password: '', confirmPassword: '' },
-  validators: {
-    onChange: ({ value }) => {
-      if (value.password !== value.confirmPassword) {
-        return 'Passwords do not match'
-      }
-      return undefined
-    },
-  },
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Linked/Dependent Fields
@@ -280,19 +205,11 @@ const form = useForm({
 <form.Field
   name="confirmPassword"
   validators={{
-<<<<<<< HEAD
     onChangeListenTo: ["password"], // Re-validate when password changes
     onChange: ({ value, fieldApi }) => {
       const password = fieldApi.form.getFieldValue("password");
       if (value !== password) return "Passwords do not match";
       return undefined;
-=======
-    onChangeListenTo: ['password'], // Re-validate when password changes
-    onChange: ({ value, fieldApi }) => {
-      const password = fieldApi.form.getFieldValue('password')
-      if (value !== password) return 'Passwords do not match'
-      return undefined
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     },
   }}
 />
@@ -319,11 +236,7 @@ const form = useForm({
           </button>
         </div>
       ))}
-<<<<<<< HEAD
       <button type="button" onClick={() => field.pushValue({ name: "", age: 0 })}>
-=======
-      <button type="button" onClick={() => field.pushValue({ name: '', age: 0 })}>
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
         Add Person
       </button>
     </div>
@@ -334,21 +247,12 @@ const form = useForm({
 ### Array Methods
 
 ```typescript
-<<<<<<< HEAD
 field.pushValue(item); // Add to end
 field.insertValue(index, item); // Insert at index
 field.replaceValue(index, item); // Replace at index
 field.removeValue(index); // Remove at index
 field.swapValues(indexA, indexB); // Swap positions
 field.moveValue(from, to); // Move position
-=======
-field.pushValue(item)              // Add to end
-field.insertValue(index, item)     // Insert at index
-field.replaceValue(index, item)    // Replace at index
-field.removeValue(index)           // Remove at index
-field.swapValues(indexA, indexB)    // Swap positions
-field.moveValue(from, to)          // Move position
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Listeners (Side Effects)
@@ -359,13 +263,8 @@ field.moveValue(from, to)          // Move position
   listeners={{
     onChange: ({ value }) => {
       // Side effect: reset dependent fields
-<<<<<<< HEAD
       form.setFieldValue("state", "");
       form.setFieldValue("postalCode", "");
-=======
-      form.setFieldValue('state', '')
-      form.setFieldValue('postalCode', '')
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     },
   }}
 />
@@ -383,21 +282,12 @@ field.moveValue(from, to)          // Move position
       <button disabled={!canSubmit}>Save</button>
     </div>
   )}
-<<<<<<< HEAD
 />;
 
 // Hook-based subscription
 function FormStatus() {
   const isValid = form.useStore((s) => s.isValid);
   return isValid ? null : <p>Fix errors</p>;
-=======
-/>
-
-// Hook-based subscription
-function FormStatus() {
-  const isValid = form.useStore((s) => s.isValid)
-  return isValid ? null : <p>Fix errors</p>
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -405,7 +295,6 @@ function FormStatus() {
 
 ```typescript
 interface FormState {
-<<<<<<< HEAD
   values: TFormData;
   errors: ValidationError[];
   errorMap: Record<string, ValidationError>;
@@ -420,22 +309,6 @@ interface FormState {
   isSubmitSuccessful: boolean;
   submissionAttempts: number;
   canSubmit: boolean; // isValid && !isSubmitting
-=======
-  values: TFormData
-  errors: ValidationError[]
-  errorMap: Record<string, ValidationError>
-  isFormValid: boolean
-  isFieldsValid: boolean
-  isValid: boolean               // isFormValid && isFieldsValid
-  isTouched: boolean
-  isPristine: boolean
-  isDirty: boolean
-  isSubmitting: boolean
-  isSubmitted: boolean
-  isSubmitSuccessful: boolean
-  submissionAttempts: number
-  canSubmit: boolean             // isValid && !isSubmitting
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -443,7 +316,6 @@ interface FormState {
 
 ```typescript
 interface FieldState<TData> {
-<<<<<<< HEAD
   value: TData;
   meta: {
     isTouched: boolean;
@@ -453,24 +325,12 @@ interface FieldState<TData> {
     errors: ValidationError[];
     errorMap: Record<ValidationCause, ValidationError>;
   };
-=======
-  value: TData
-  meta: {
-    isTouched: boolean
-    isDirty: boolean
-    isPristine: boolean
-    isValidating: boolean
-    errors: ValidationError[]
-    errorMap: Record<ValidationCause, ValidationError>
-  }
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
 ## FormApi Methods
 
 ```typescript
-<<<<<<< HEAD
 form.handleSubmit();
 form.reset();
 form.getFieldValue(field);
@@ -480,55 +340,30 @@ form.setFieldMeta(field, updater);
 form.validateAllFields(cause);
 form.validateField(field, cause);
 form.deleteField(field);
-=======
-form.handleSubmit()
-form.reset()
-form.getFieldValue(field)
-form.setFieldValue(field, value)
-form.getFieldMeta(field)
-form.setFieldMeta(field, updater)
-form.validateAllFields(cause)
-form.validateField(field, cause)
-form.deleteField(field)
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Shared Form Options (formOptions)
 
 ```tsx
-<<<<<<< HEAD
 import { formOptions } from "@tanstack/react-form";
 
 const sharedOpts = formOptions({
   defaultValues: { firstName: "", lastName: "" },
 });
-=======
-import { formOptions } from '@tanstack/react-form'
-
-const sharedOpts = formOptions({
-  defaultValues: { firstName: '', lastName: '' },
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 // Reuse across components
 const form = useForm({
   ...sharedOpts,
-<<<<<<< HEAD
   onSubmit: async ({ value }) => {
     /* ... */
   },
 });
-=======
-  onSubmit: async ({ value }) => { /* ... */ },
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Server-Side Validation
 
 ```tsx
 // TanStack Start / Next.js server action
-<<<<<<< HEAD
 import { ServerValidateError } from "@tanstack/react-form/nextjs";
 
 export async function validateForm(data: FormData) {
@@ -538,17 +373,6 @@ export async function validateForm(data: FormData) {
       form: "Submission failed",
       fields: { email: "Email already registered" },
     });
-=======
-import { ServerValidateError } from '@tanstack/react-form/nextjs'
-
-export async function validateForm(data: FormData) {
-  const email = data.get('email') as string
-  if (await checkEmailExists(email)) {
-    throw new ServerValidateError({
-      form: 'Submission failed',
-      fields: { email: 'Email already registered' },
-    })
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   }
 }
 ```

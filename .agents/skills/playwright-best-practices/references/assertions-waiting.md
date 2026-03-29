@@ -174,14 +174,7 @@ await page.waitForURL("/dashboard");
 await page.waitForURL(/\/dashboard/);
 
 // Wait for navigation after action
-<<<<<<< HEAD
 await Promise.all([page.waitForURL("**/dashboard"), page.click('a[href="/dashboard"]')]);
-=======
-await Promise.all([
-  page.waitForURL("**/dashboard"),
-  page.click('a[href="/dashboard"]'),
-]);
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 // Or without Promise.all
 const urlPromise = page.waitForURL("**/dashboard");

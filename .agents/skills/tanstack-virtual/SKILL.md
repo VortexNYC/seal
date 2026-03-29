@@ -3,10 +3,6 @@ name: tanstack-virtual
 description: Headless UI for virtualizing large element lists at 60FPS in TS/JS, React, Vue, Solid, Svelte, Lit & Angular.
 ---
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ## Overview
 
 TanStack Virtual provides virtualization logic for rendering only visible items in large lists, grids, and tables. It calculates which items are in the viewport and positions them with absolute positioning, keeping DOM node count minimal regardless of dataset size.
@@ -23,24 +19,16 @@ npm install @tanstack/react-virtual
 ## Core Pattern
 
 ```tsx
-<<<<<<< HEAD
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 function VirtualList() {
   const parentRef = useRef<HTMLDivElement>(null);
-=======
-import { useVirtualizer } from '@tanstack/react-virtual'
-
-function VirtualList() {
-  const parentRef = useRef<HTMLDivElement>(null)
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   const virtualizer = useVirtualizer({
     count: 10000,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 35, // estimated row height in px
     overscan: 5,
-<<<<<<< HEAD
   });
 
   return (
@@ -50,34 +38,16 @@ function VirtualList() {
           height: `${virtualizer.getTotalSize()}px`,
           width: "100%",
           position: "relative",
-=======
-  })
-
-  return (
-    <div ref={parentRef} style={{ height: '400px', overflow: 'auto' }}>
-      <div
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-          width: '100%',
-          position: 'relative',
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
         }}
       >
         {virtualizer.getVirtualItems().map((virtualItem) => (
           <div
             key={virtualItem.key}
             style={{
-<<<<<<< HEAD
               position: "absolute",
               top: 0,
               left: 0,
               width: "100%",
-=======
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
               height: `${virtualItem.size}px`,
               transform: `translateY(${virtualItem.start}px)`,
             }}
@@ -87,11 +57,7 @@ function VirtualList() {
         ))}
       </div>
     </div>
-<<<<<<< HEAD
   );
-=======
-  )
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -99,7 +65,6 @@ function VirtualList() {
 
 ### Required
 
-<<<<<<< HEAD
 | Option             | Type                    | Description                                    |
 | ------------------ | ----------------------- | ---------------------------------------------- |
 | `count`            | `number`                | Total number of items                          |
@@ -127,35 +92,6 @@ function VirtualList() {
 | `measureElement`        | `(el, entry, instance) => number`     | default    | Custom measurement                   |
 | `onChange`              | `(instance, sync) => void`            | -          | State change callback                |
 | `isScrollingResetDelay` | `number`                              | `150`      | Delay before scroll complete         |
-=======
-| Option | Type | Description |
-|--------|------|-------------|
-| `count` | `number` | Total number of items |
-| `getScrollElement` | `() => Element \| null` | Returns scroll container |
-| `estimateSize` | `(index) => number` | Estimated item size (overestimate recommended) |
-
-### Optional
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `overscan` | `number` | `1` | Extra items rendered beyond viewport |
-| `horizontal` | `boolean` | `false` | Horizontal virtualization |
-| `gap` | `number` | `0` | Gap between items (px) |
-| `lanes` | `number` | `1` | Number of lanes (masonry/grid) |
-| `paddingStart` | `number` | `0` | Padding before first item |
-| `paddingEnd` | `number` | `0` | Padding after last item |
-| `scrollPaddingStart` | `number` | `0` | Offset for scrollTo positioning |
-| `scrollPaddingEnd` | `number` | `0` | Offset for scrollTo positioning |
-| `initialOffset` | `number` | `0` | Starting scroll position |
-| `initialRect` | `Rect` | - | Initial dimensions (SSR) |
-| `enabled` | `boolean` | `true` | Enable/disable |
-| `getItemKey` | `(index) => Key` | `(i) => i` | Stable key for items |
-| `rangeExtractor` | `(range) => number[]` | default | Custom visible indices |
-| `scrollToFn` | `(offset, options, instance) => void` | default | Custom scroll behavior |
-| `measureElement` | `(el, entry, instance) => number` | default | Custom measurement |
-| `onChange` | `(instance, sync) => void` | - | State change callback |
-| `isScrollingResetDelay` | `number` | `150` | Delay before scroll complete |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 ## Virtualizer API
 
@@ -180,21 +116,12 @@ virtualizer.measure()
 
 ```typescript
 interface VirtualItem {
-<<<<<<< HEAD
   key: Key; // Unique key
   index: number; // Index in source data
   start: number; // Pixel offset (use for transform)
   end: number; // End pixel offset
   size: number; // Item dimension
   lane: number; // Lane index (multi-column)
-=======
-  key: Key           // Unique key
-  index: number      // Index in source data
-  start: number      // Pixel offset (use for transform)
-  end: number        // End pixel offset
-  size: number       // Item dimension
-  lane: number       // Lane index (multi-column)
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -207,7 +134,6 @@ const virtualizer = useVirtualizer({
   count: items.length,
   getScrollElement: () => parentRef.current,
   estimateSize: () => 50, // overestimate
-<<<<<<< HEAD
 });
 
 {
@@ -229,27 +155,6 @@ const virtualizer = useVirtualizer({
     </div>
   ));
 }
-=======
-})
-
-{virtualizer.getVirtualItems().map((virtualItem) => (
-  <div
-    key={virtualItem.key}
-    data-index={virtualItem.index}  // REQUIRED for measurement
-    ref={virtualizer.measureElement} // Attach for dynamic measurement
-    style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      transform: `translateY(${virtualItem.start}px)`,
-      // Do NOT set fixed height - let content determine it
-    }}
-  >
-    {items[virtualItem.index].content}
-  </div>
-))}
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Horizontal Virtualization
@@ -281,22 +186,14 @@ const virtualizer = useVirtualizer({
 
 ```tsx
 function VirtualGrid() {
-<<<<<<< HEAD
   const parentRef = useRef<HTMLDivElement>(null);
-=======
-  const parentRef = useRef<HTMLDivElement>(null)
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   const rowVirtualizer = useVirtualizer({
     count: 10000,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 35,
     overscan: 5,
-<<<<<<< HEAD
   });
-=======
-  })
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   const columnVirtualizer = useVirtualizer({
     count: 10000,
@@ -304,7 +201,6 @@ function VirtualGrid() {
     estimateSize: () => 100,
     horizontal: true,
     overscan: 5,
-<<<<<<< HEAD
   });
 
   return (
@@ -316,28 +212,13 @@ function VirtualGrid() {
           position: "relative",
         }}
       >
-=======
-  })
-
-  return (
-    <div ref={parentRef} style={{ height: '500px', width: '500px', overflow: 'auto' }}>
-      <div style={{
-        height: `${rowVirtualizer.getTotalSize()}px`,
-        width: `${columnVirtualizer.getTotalSize()}px`,
-        position: 'relative',
-      }}>
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
         {rowVirtualizer.getVirtualItems().map((virtualRow) => (
           <Fragment key={virtualRow.key}>
             {columnVirtualizer.getVirtualItems().map((virtualColumn) => (
               <div
                 key={virtualColumn.key}
                 style={{
-<<<<<<< HEAD
                   position: "absolute",
-=======
-                  position: 'absolute',
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
                   width: `${virtualColumn.size}px`,
                   height: `${virtualRow.size}px`,
                   transform: `translateX(${virtualColumn.start}px) translateY(${virtualRow.start}px)`,
@@ -350,35 +231,23 @@ function VirtualGrid() {
         ))}
       </div>
     </div>
-<<<<<<< HEAD
   );
-=======
-  )
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
 ## Window Scrolling
 
 ```tsx
-<<<<<<< HEAD
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 
 function WindowList() {
   const listRef = useRef<HTMLDivElement>(null);
-=======
-import { useWindowVirtualizer } from '@tanstack/react-virtual'
-
-function WindowList() {
-  const listRef = useRef<HTMLDivElement>(null)
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   const virtualizer = useWindowVirtualizer({
     count: 10000,
     estimateSize: () => 45,
     overscan: 5,
     scrollMargin: listRef.current?.offsetTop ?? 0,
-<<<<<<< HEAD
   });
 
   return (
@@ -389,25 +258,11 @@ function WindowList() {
           position: "relative",
         }}
       >
-=======
-  })
-
-  return (
-    <div ref={listRef}>
-      <div style={{
-        height: `${virtualizer.getTotalSize()}px`,
-        position: 'relative',
-      }}>
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
         {virtualizer.getVirtualItems().map((item) => (
           <div
             key={item.key}
             style={{
-<<<<<<< HEAD
               position: "absolute",
-=======
-              position: 'absolute',
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
               height: `${item.size}px`,
               transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)`,
             }}
@@ -417,18 +272,13 @@ function WindowList() {
         ))}
       </div>
     </div>
-<<<<<<< HEAD
   );
-=======
-  )
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
 ## Infinite Scrolling
 
 ```tsx
-<<<<<<< HEAD
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
@@ -440,26 +290,12 @@ function InfiniteList() {
   });
 
   const allItems = data?.pages.flatMap((page) => page.items) ?? [];
-=======
-import { useVirtualizer } from '@tanstack/react-virtual'
-import { useInfiniteQuery } from '@tanstack/react-query'
-
-function InfiniteList() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ['items'],
-    queryFn: ({ pageParam = 0 }) => fetchItems(pageParam),
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-  })
-
-  const allItems = data?.pages.flatMap((page) => page.items) ?? []
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   const virtualizer = useVirtualizer({
     count: hasNextPage ? allItems.length + 1 : allItems.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 50,
     overscan: 5,
-<<<<<<< HEAD
   });
 
   useEffect(() => {
@@ -469,17 +305,6 @@ function InfiniteList() {
       fetchNextPage();
     }
   }, [virtualizer.getVirtualItems(), hasNextPage, isFetchingNextPage, allItems.length]);
-=======
-  })
-
-  useEffect(() => {
-    const items = virtualizer.getVirtualItems()
-    const lastItem = items[items.length - 1]
-    if (lastItem && lastItem.index >= allItems.length - 1 && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage()
-    }
-  }, [virtualizer.getVirtualItems(), hasNextPage, isFetchingNextPage, allItems.length])
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   // Render virtual items, show loader row for last item if loading
 }
@@ -488,21 +313,14 @@ function InfiniteList() {
 ## Sticky Items
 
 ```tsx
-<<<<<<< HEAD
 import { defaultRangeExtractor, Range } from "@tanstack/react-virtual";
 
 const stickyIndexes = [0, 10, 20, 30]; // Header indices
-=======
-import { defaultRangeExtractor, Range } from '@tanstack/react-virtual'
-
-const stickyIndexes = [0, 10, 20, 30] // Header indices
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 const virtualizer = useVirtualizer({
   count: 1000,
   getScrollElement: () => parentRef.current,
   estimateSize: () => 50,
-<<<<<<< HEAD
   rangeExtractor: useCallback(
     (range: Range) => {
       const next = new Set([...stickyIndexes, ...defaultRangeExtractor(range)]);
@@ -511,13 +329,6 @@ const virtualizer = useVirtualizer({
     [stickyIndexes],
   ),
 });
-=======
-  rangeExtractor: useCallback((range: Range) => {
-    const next = new Set([...stickyIndexes, ...defaultRangeExtractor(range)])
-    return [...next].sort((a, b) => a - b)
-  }, [stickyIndexes]),
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 // Render sticky items with position: sticky; top: 0; zIndex: 1
 ```
@@ -527,7 +338,6 @@ const virtualizer = useVirtualizer({
 ```tsx
 const virtualizer = useVirtualizer({
   scrollToFn: (offset, { behavior }, instance) => {
-<<<<<<< HEAD
     if (behavior === "smooth") {
       // Custom easing animation
       instance.scrollElement?.scrollTo({ top: offset, behavior: "smooth" });
@@ -539,19 +349,6 @@ const virtualizer = useVirtualizer({
 
 // Usage
 virtualizer.scrollToIndex(500, { align: "center", behavior: "smooth" });
-=======
-    if (behavior === 'smooth') {
-      // Custom easing animation
-      instance.scrollElement?.scrollTo({ top: offset, behavior: 'smooth' })
-    } else {
-      instance.scrollElement?.scrollTo({ top: offset })
-    }
-  },
-})
-
-// Usage
-virtualizer.scrollToIndex(500, { align: 'center', behavior: 'smooth' })
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Best Practices

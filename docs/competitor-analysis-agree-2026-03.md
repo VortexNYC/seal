@@ -21,10 +21,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 ## Agree Product Map (Post-Rebrand)
 
 ### 1. Agreements (E-Signatures)
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - E-signatures (free tier)
 - Basic + advanced templates
 - Redlining & negotiation (Growth+)
@@ -38,10 +35,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - Audit trail
 
 ### 2. Billing
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Auto-generate invoices from signed contracts
 - Recurring billing schedules (weekly, monthly, custom)
 - Usage-based invoicing
@@ -50,10 +44,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - Accounting software sync (QuickBooks, Xero, NetSuite, Sage)
 
 ### 3. Payments
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Embedded payments (card, ACH, bank)
 - Auto-charge on saved payment methods
 - Payment surcharges (pass fees to customer)
@@ -63,10 +54,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - Multi-currency (enterprise tier)
 
 ### 4. Recovery (Dunning)
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Automated payment reminders
 - Smart dunning sequences
 - Adaptive escalation
@@ -77,10 +65,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - Collection analytics
 
 ### 5. Reporting
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Live ARR / MRR dashboards
 - DSO (Days Sales Outstanding) tracking
 - Cash flow forecasting (30/60/90 day)
@@ -91,10 +76,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - Real-time (not batch)
 
 ### 6. Integrations
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - HubSpot (CRM, bidirectional)
 - Salesforce (CRM, bidirectional)
 - QuickBooks (accounting, with PDF sync)
@@ -107,7 +89,6 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - Integration health monitoring
 
 ### 7. AI Agents (6 named agents — really automation modules with agent branding)
-<<<<<<< HEAD
 
 | Agent            | Function                                       | Reality Check            |
 | ---------------- | ---------------------------------------------- | ------------------------ |
@@ -117,52 +98,28 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 | Recovery Agent   | Pursues overdue revenue with reminders/retries | Dunning automation       |
 | Reconcile Agent  | Keeps payments and books in sync               | Integration sync         |
 | Insight Agent    | Surfaces ARR, MRR, DSO, cash flow in real time | Dashboard/reporting      |
-=======
-| Agent | Function | Reality Check |
-|-------|----------|---------------|
-| Signature Agent | Triggers billing/payment at contract sign | Workflow trigger, not AI |
-| Billing Agent | Schedules & generates recurring invoices | Automation, not AI |
-| Collection Agent | Charges saved methods, manages subscriptions | Payment processor logic |
-| Recovery Agent | Pursues overdue revenue with reminders/retries | Dunning automation |
-| Reconcile Agent | Keeps payments and books in sync | Integration sync |
-| Insight Agent | Surfaces ARR, MRR, DSO, cash flow in real time | Dashboard/reporting |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 **Codex assessment**: "Real contract-to-cash automation, but the '6 AI agents' look more like repackaged workflow modules than six independently differentiated AI products."
 
 ### 8. Solutions Pages (Persona-Based)
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Finance leaders
 - Sales leaders
 - Revenue Operations
 - Founders & CEOs
 
 ### 9. Pricing
-<<<<<<< HEAD
 
 | Tier       | Price   | Users     | Key Features                                                               |
 | ---------- | ------- | --------- | -------------------------------------------------------------------------- |
 | Starter    | $0/mo   | 2         | E-signatures, basic templates, basic reporting                             |
 | Growth     | $599/mo | 10        | Unlimited agreements, billing, payments, recovery, integrations, analytics |
 | Enterprise | Custom  | Unlimited | Custom workflows, API, SSO, SLA, dedicated AM                              |
-=======
-| Tier | Price | Users | Key Features |
-|------|-------|-------|-------------|
-| Starter | $0/mo | 2 | E-signatures, basic templates, basic reporting |
-| Growth | $599/mo | 10 | Unlimited agreements, billing, payments, recovery, integrations, analytics |
-| Enterprise | Custom | Unlimited | Custom workflows, API, SSO, SLA, dedicated AM |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 **Note**: API access appears gated to Enterprise tier despite strong developer marketing.
 
 ### 10. Social Proof — UNVERIFIED
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Claims "75,000+ teams" (TechCrunch May 2025 said 25K users — 3x inflation in ~10 months or metric change from users→teams)
 - Logos: Google, Deel, Perplexity, Anthropic, Rippling, Stripe, Meta, Amazon, Rho, Beehiiv
 - No third-party verification of broad enterprise deployment
@@ -171,10 +128,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - TechCrunch press banner links to May 2025 article (not a new article for the rebrand)
 
 ### 11. Developer Experience
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - REST API with quick start guides
 - Bearer token auth
 - Webhook subscriptions (all events)
@@ -183,10 +137,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - **Inconsistency**: Developer page pushes strong API story, but pricing gates API to Enterprise
 
 ### 12. Company Intel
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Founded: February 2024
 - Launched: September 2024
 - Team: ~7 employees
@@ -200,10 +151,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 ## Seal Product Map (Current)
 
 ### 1. Agreements (E-Signatures)
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - E-signatures (draw, type, upload) -- FREE
 - Templates with pre-configured fields
 - 8 field types: signature, text, number, date, checkbox, dropdown, radio, attachment, payment
@@ -216,10 +164,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - iFrame SDK embedding
 
 ### 2. Payments (Stripe Connect)
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - One-time payments
 - Recurring billing (week/month/year intervals)
 - Installment plans (split into N payments)
@@ -234,10 +179,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - Stripe Connect for payouts
 
 ### 3. AI Features
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - AI document analysis (one-click)
 - Field detection & auto-placement (position, type, label)
 - Payment term extraction from contract text
@@ -249,30 +191,21 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - AI auto-analyze on upload (configurable)
 
 ### 4. Invoicing
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Auto-generated invoices from payment fields
 - Invoice status tracking (draft, open, paid, void, uncollectible)
 - Hosted invoice URLs
 - Invoice PDF generation
 
 ### 5. Notifications & Reminders
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Automated signing reminders (configurable schedule: e.g., 3, 7, 14 days)
 - Expiration alerts (configurable days before)
 - Email notifications: shared, signed, completed, declined, reminder
 - Email delivery tracking (Resend)
 
 ### 6. Webhooks & API
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - 17 webhook event types
 - HMAC-SHA256 signing
 - Exponential backoff retry
@@ -281,10 +214,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - Connected app OAuth
 
 ### 7. Compliance & Audit
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - ESIGN Act + UETA compliant
 - SHA-256 document & signature hashing
 - Full immutable audit trail (26 action types)
@@ -293,28 +223,18 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 - Data export (GDPR/CCPA)
 
 ### 8. Organization & Team
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Workspace roles (owner, admin, member)
 - Custom branding (logo, colors, email)
 - Security settings (IP allowlist, MFA, session timeout)
 - Contact management (CRM-lite)
 
 ### 9. Pricing
-<<<<<<< HEAD
 
 | Tier | Price               | Key Features                                                  |
 | ---- | ------------------- | ------------------------------------------------------------- |
 | Free | $0/mo               | 5 docs/month, unlimited recipients, audit trail, PDF download |
 | Pro  | $15/mo ($12 annual) | Unlimited docs, team workspaces, templates, payments, API     |
-=======
-| Tier | Price | Key Features |
-|------|-------|-------------|
-| Free | $0/mo | 5 docs/month, unlimited recipients, audit trail, PDF download |
-| Pro | $15/mo ($12 annual) | Unlimited docs, team workspaces, templates, payments, API |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 ---
 
@@ -322,7 +242,6 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 
 ### CRITICAL GAPS (They have it, we don't, and it matters for our market)
 
-<<<<<<< HEAD
 | #   | Feature                                  | Agree                                                                            | Seal                                                 | Impact                                                                                                                 | Priority |
 | --- | ---------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------- |
 | 1   | **Redlining / negotiation**              | Built-in contract editing, tracked changes, comments, @mentions, version history | AI annotations only (read-only)                      | HIGH — biggest product disqualifier in B2B workflows. If we lose before signature, payment flexibility doesn't matter. | P0       |
@@ -356,40 +275,6 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 
 ### CLAIMS TO STOP MAKING
 
-=======
-| # | Feature | Agree | Seal | Impact | Priority |
-|---|---------|-------|------|--------|----------|
-| 1 | **Redlining / negotiation** | Built-in contract editing, tracked changes, comments, @mentions, version history | AI annotations only (read-only) | HIGH — biggest product disqualifier in B2B workflows. If we lose before signature, payment flexibility doesn't matter. | P0 |
-| 2 | **Auto-invoicing from signed contracts** | Billing agent auto-generates invoices at signature | Manual — payment fields must be pre-configured | HIGH — "sign and get paid" is their core pitch | P1 |
-| 3 | **Clause library** | Reusable clause snippets | None | MEDIUM — templates partially cover this | P2 |
-| 4 | **Recurring invoice scheduling** | Automatic schedule from contract terms | Stripe recurring exists but no invoice UI/automation | MEDIUM — we have recurring payments, need the invoice layer | P2 |
-| 5 | **Payment recovery / dunning** | Automated reminders, retries, stalled invoice detection, collection analytics | None — no dunning system | MEDIUM — matters more as users scale | P2 |
-| 6 | **Accounting sync** | QuickBooks, Xero, NetSuite, Sage | None | MEDIUM — SMBs live in QuickBooks | P2 |
-| 7 | **Real-time collaboration** | Inline comments, @mentions, version history in agreements | None | MEDIUM — expected in modern B2B tools | P2 |
-| 8 | **CRM sync** | HubSpot + Salesforce bidirectional, CRM auto-population | None | LOW for our market — startups/SMBs use less CRM | P3 |
-| 9 | **Revenue reporting dashboard** | ARR, MRR, DSO, cash flow, aging, concentration risk | None — no analytics UI | LOW — nice differentiator but not launch-blocking | P3 |
-| 10 | **Slack notifications** | Real-time Slack alerts | None | LOW — easy to add via webhooks | P3 |
-| 11 | **Developer docs site** | Full API docs with quick start, auth guides (but gated to Enterprise) | OpenAPI spec exists, docs pages exist but limited | MEDIUM — devs are a Seal audience, and our API is available at Pro | P2 |
-
-### WHAT SEAL HAS THAT AGREE DOESN'T
-
-| # | Feature | Details | Defensibility |
-|---|---------|---------|---------------|
-| 1 | **AI helps signers understand risk before execution** | Seal's AI flags obligations, risks, payment terms, and critical clauses for the SIGNER before they sign. Agree's AI is focused on post-signature automation (billing, collection, reconciliation). | STRONG — but don't claim "Agree has no AI before signing" (they use AI in agreement setup/extraction). Claim: "Seal's AI is signer-facing — it helps YOU understand the contract." |
-| 2 | **40x lower starting price** | $15/mo vs $599/mo for unlimited docs + payments. | STRONG — but qualify as "starting price" since scope differs. |
-| 3 | **5 free docs/month** | Agree's free tier is 2 users, basic templates only. No payments. | STRONG |
-| 4 | **Installment plans** | Split payments into N installments — Agree doesn't mention this. | STRONG |
-| 5 | **Deposit + balance** | Initial deposit with balance due later — unique to Seal. | STRONG |
-| 6 | **Apple Pay / Google Pay / Link** | 5 payment methods vs Agree's card/ACH/bank. | MODERATE — matters for consumer-facing use cases |
-| 7 | **iFrame SDK embedding** | Embed signing in any app — Agree has payment links but no signing embed. | STRONG |
-| 8 | **QR code verification** | Physical verification of completed documents. | MODERATE |
-| 9 | **Dictate next signer** | Dynamic signing order — current signer picks who's next. | MODERATE |
-| 10 | **ESIGN consent tracking** | Per-recipient consent with opt-out — stronger compliance story. | STRONG |
-| 11 | **IP allowlisting at $15/mo** | Enterprise security feature available in Pro. | STRONG |
-| 12 | **API available at $15/mo** | Agree gates API to Enterprise tier. Seal includes it in Pro. | STRONG — major developer advantage |
-
-### CLAIMS TO STOP MAKING
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - ~~"Agree doesn't have AI before signing"~~ — Too strong. They use AI in agreement setup. Better: "Seal's AI is signer-facing — it helps you understand risk before you sign."
 - ~~"Payments in the document" as unique~~ — Agree also does sign-and-pay embedded flow. Better: "Flexible payment structures (installments, deposits, 5 methods) built into the signing flow."
 - ~~"40x cheaper"~~ without qualifier — True on headline but misleading on scope. Better: "40x lower starting price."
@@ -399,10 +284,7 @@ Their homepage claims "75,000+ teams" — but the TechCrunch article (May 2025) 
 ## Strategic Assessment
 
 ### Where Agree Is Going
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 They're building the **"Stripe for contracts"** — a revenue operations platform. Their moat is the contract-to-cash pipeline: sign a contract, auto-generate invoices, collect payments, chase overdue, reconcile books, report metrics. All automated by workflow modules marketed as AI agents.
 
 **Their bet**: Mid-market companies ($1M-$100M annual volume) will pay $599/mo to automate their entire revenue cycle.
@@ -410,13 +292,9 @@ They're building the **"Stripe for contracts"** — a revenue operations platfor
 **Their real threat** (per Codex): Not "better signatures." It's **category expansion** — free signatures to get in, then upsell into billing, collections, reporting, CRM/accounting sync. The risk is Seal gets typecast as "cheap signing + payment widget" while Agree captures the higher-value B2B workflow buyer.
 
 ### Where Seal Should Go
-<<<<<<< HEAD
 
 Own the **signer-first contract and payment platform**. Seal is for people who:
 
-=======
-Own the **signer-first contract and payment platform**. Seal is for people who:
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Can't afford $599/mo (or even $25/mo for DocuSign)
 - Want AI that helps them **understand the contract before they sign**
 - Need flexible payment structures built into the signing flow
@@ -429,10 +307,7 @@ Own the **signer-first contract and payment platform**. Seal is for people who:
 **New**: "The signer-first contract and payment platform."
 
 Key pillars:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 1. **AI helps you understand before you sign** — Risk flags, obligation highlights, payment term extraction. Nobody else focuses AI on the signer's experience.
 2. **Flexible payments built into signing** — Installments, deposits, 5 payment methods, late fees. Not a separate invoice — the payment IS the document.
 3. **40x lower starting price** — $15/mo vs $599/mo. API included. No enterprise gating.
@@ -446,7 +321,6 @@ Key pillars:
 Each feature ships as its own branch/PR. No breaking main. Surgical.
 
 ### Phase 1 — XS: This Week
-<<<<<<< HEAD
 
 | #   | Feature                   | Size | Notes                                                                                                                        |
 | --- | ------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -487,42 +361,6 @@ Each feature ships as its own branch/PR. No breaking main. Surgical.
 
 ### Don't Build (Agree's Territory, Not Ours)
 
-=======
-| # | Feature | Size | Notes |
-|---|---------|------|-------|
-| 1 | **Slack notifications** | XS | Pre-built webhook template. Config page + Slack incoming webhook URL. |
-| 2 | **Developer docs polish** | XS | Content work. OpenAPI spec + docs pages exist, need polish + examples. API at Pro = advantage over Agree (Enterprise-gated). |
-
-### Phase 2 — S: Next Week
-| # | Feature | Size | Notes |
-|---|---------|------|-------|
-| 3 | **Auto-invoice on signature** | S | document.completed → Stripe invoice from payment fields. Convex mutation. We're 80% there. |
-| 4 | **Payment recovery / dunning** | S | 3-email overdue sequence. Convex cron + Resend. Not an AI agent — just automation. |
-| 5 | **Recurring invoice scheduling** | S | Convex cron → invoice generation per contract schedule. We have Stripe recurring, need invoice layer. |
-| 6 | **Revenue dashboard** | S | Aggregate existing invoice/payment data. Query + render. Data already exists. |
-| 7 | **Collection analytics** | S | Aging dashboard, stalled invoice detection. Extension of revenue dashboard. |
-
-### Phase 3 — M: Week 3-4
-| # | Feature | Size | Notes |
-|---|---------|------|-------|
-| 8 | **Clause library** | M | New table, CRUD UI, insert-into-template flow. |
-| 9 | **Version history** | M | Document snapshots, diff UI. New table + storage. |
-
-### Phase 4 — L/XL: Week 5-8
-| # | Feature | Size | Notes |
-|---|---------|------|-------|
-| 10 | **Real-time collaboration** | L | Inline comments, @mentions, notification plumbing. Convex real-time is built for this. |
-| 11 | **Redlining / collaborative negotiation** | XL | Full tracked-changes editor. Biggest product gap, needs architecture. |
-
-### Phase 5 — Integrations: After
-| # | Feature | Size | Notes |
-|---|---------|------|-------|
-| 12 | **QuickBooks sync** | M | #1 SMB integration. OAuth + invoice/payment sync. |
-| 13 | **HubSpot sync** | M | Contact/deal bidirectional sync. |
-| 14 | **Xero/NetSuite/Sage** | L | Each is separate. NetSuite is painful. |
-
-### Don't Build (Agree's Territory, Not Ours)
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Recovery AI agents (overkill for SMBs)
 - Usage-based billing (enterprise feature)
 - CRM bidirectional sync with Salesforce (our users don't have it)

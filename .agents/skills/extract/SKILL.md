@@ -19,11 +19,7 @@ Analyze the target area to identify extraction opportunities:
    - Design token structure (if any)
    - Documentation patterns
    - Import/export conventions
-<<<<<<< HEAD
 
-=======
-   
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
    **CRITICAL**: If no design system exists, ask before creating one. Understand the preferred location and structure first.
 
 2. **Identify patterns**: Look for:
@@ -59,28 +55,17 @@ Build improved, reusable versions:
   - Proper variants for different use cases
   - Accessibility built in (ARIA, keyboard navigation, focus management)
   - Documentation and usage examples
-<<<<<<< HEAD
-=======
-  
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - **Design tokens**: Create tokens with:
   - Clear naming (primitive vs semantic)
   - Proper hierarchy and organization
   - Documentation of when to use each token
-<<<<<<< HEAD
-=======
-  
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - **Patterns**: Document patterns with:
   - When to use this pattern
   - Code examples
   - Variations and combinations
 
 **NEVER**:
-<<<<<<< HEAD
 
-=======
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - Extract one-off, context-specific implementations without generalization
 - Create components so generic they're useless
 - Extract without considering existing design system conventions
@@ -105,8 +90,4 @@ Update design system documentation:
 - Add examples and guidelines
 - Update any Storybook or component catalog
 
-<<<<<<< HEAD
 Remember: A good design system is a living system. Extract patterns as they emerge, enrich them thoughtfully, and maintain them consistently.
-=======
-Remember: A good design system is a living system. Extract patterns as they emerge, enrich them thoughtfully, and maintain them consistently.
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))

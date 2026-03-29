@@ -3,10 +3,6 @@ name: tanstack-router
 description: Type-safe routing for React and Solid applications with first-class search params, data loading, and seamless integration with the React ecosystem.
 ---
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ## Overview
 
 TanStack Router is a fully type-safe router for React (and Solid) applications. It provides file-based routing, first-class search parameter management, built-in data loading, code splitting, and deep TypeScript integration. It serves as the routing foundation for TanStack Start (the full-stack framework).
@@ -32,7 +28,6 @@ npm install -D @tanstack/router-cli
 Routes are organized in a tree structure. The root route is the top-level layout, and child routes nest underneath.
 
 ```tsx
-<<<<<<< HEAD
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 
 const rootRoute = createRootRoute({
@@ -53,28 +48,6 @@ const aboutRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([indexRoute, aboutRoute]);
 const router = createRouter({ routeTree });
-=======
-import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
-
-const rootRoute = createRootRoute({
-  component: RootLayout,
-})
-
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/',
-  component: HomePage,
-})
-
-const aboutRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/about',
-  component: AboutPage,
-})
-
-const routeTree = rootRoute.addChildren([indexRoute, aboutRoute])
-const router = createRouter({ routeTree })
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### File-Based Routing
@@ -83,29 +56,19 @@ File-based routing automatically generates the route tree from your file structu
 
 ```ts
 // vite.config.ts
-<<<<<<< HEAD
 import { defineConfig } from "vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
-=======
-import { defineConfig } from 'vite'
-import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 export default defineConfig({
   plugins: [
     TanStackRouterVite(),
     // ... other plugins
   ],
-<<<<<<< HEAD
 });
-=======
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 #### File Naming Conventions
 
-<<<<<<< HEAD
 | File Pattern             | Route Type      | Example Path                    |
 | ------------------------ | --------------- | ------------------------------- |
 | `__root.tsx`             | Root layout     | N/A (wraps all)                 |
@@ -123,24 +86,6 @@ export default defineConfig({
 
 #### Special Prefixes
 
-=======
-| File Pattern | Route Type | Example Path |
-|---|---|---|
-| `__root.tsx` | Root layout | N/A (wraps all) |
-| `index.tsx` | Index route | `/` |
-| `about.tsx` | Static route | `/about` |
-| `$postId.tsx` | Dynamic param | `/posts/$postId` |
-| `posts.tsx` | Layout route | `/posts/*` (layout) |
-| `posts/index.tsx` | Nested index | `/posts` |
-| `posts/$postId.tsx` | Nested dynamic | `/posts/123` |
-| `posts_.$postId.tsx` | Pathless layout | `/posts/123` (different layout) |
-| `_layout.tsx` | Pathless layout | N/A (groups routes) |
-| `_layout/dashboard.tsx` | Grouped route | `/dashboard` |
-| `$.tsx` | Splat/catch-all | `/*` |
-| `posts.$postId.edit.tsx` | Dot notation | `/posts/123/edit` |
-
-#### Special Prefixes
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 - `_` prefix: Pathless routes (layout groups without URL segment)
 - `$` prefix: Dynamic path parameters
 - `(folder)` parentheses: Route groups (organizational, no URL impact)
@@ -151,15 +96,9 @@ Each route can define:
 
 ```tsx
 // routes/posts.$postId.tsx
-<<<<<<< HEAD
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/posts/$postId")({
-=======
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/posts/$postId')({
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   // Validation for path params
   params: {
     parse: (params) => ({ postId: Number(params.postId) }),
@@ -170,22 +109,13 @@ export const Route = createFileRoute('/posts/$postId')({
   validateSearch: (search: Record<string, unknown>) => {
     return {
       page: Number(search.page ?? 1),
-<<<<<<< HEAD
       filter: (search.filter as string) || "",
     };
-=======
-      filter: (search.filter as string) || '',
-    }
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   },
 
   // Data loading
   loader: async ({ params, context, abortController }) => {
-<<<<<<< HEAD
     return fetchPost(params.postId);
-=======
-    return fetchPost(params.postId)
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   },
 
   // Loader dependencies (re-run loader when these change)
@@ -210,30 +140,19 @@ export const Route = createFileRoute('/posts/$postId')({
   beforeLoad: async ({ context, location }) => {
     if (!context.auth.isAuthenticated) {
       throw redirect({
-<<<<<<< HEAD
         to: "/login",
         search: { redirect: location.href },
       });
-=======
-        to: '/login',
-        search: { redirect: location.href },
-      })
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     }
   },
 
   // Head/meta management
   head: () => ({
-<<<<<<< HEAD
     meta: [{ title: "Post Details" }],
-=======
-    meta: [{ title: 'Post Details' }],
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   }),
 
   // Component
   component: PostComponent,
-<<<<<<< HEAD
 });
 
 function PostComponent() {
@@ -242,16 +161,6 @@ function PostComponent() {
   const { page, filter } = Route.useSearch();
 
   return <div>{post.title}</div>;
-=======
-})
-
-function PostComponent() {
-  const { postId } = Route.useParams()
-  const post = Route.useLoaderData()
-  const { page, filter } = Route.useSearch()
-
-  return <div>{post.title}</div>
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -260,7 +169,6 @@ function PostComponent() {
 ### Route Loaders
 
 ```tsx
-<<<<<<< HEAD
 export const Route = createFileRoute("/posts")({
   loader: async ({ context }) => {
     // Access router context (e.g., queryClient)
@@ -275,22 +183,6 @@ export const Route = createFileRoute("/posts")({
 
 function PostsComponent() {
   const { posts } = Route.useLoaderData();
-=======
-export const Route = createFileRoute('/posts')({
-  loader: async ({ context }) => {
-    // Access router context (e.g., queryClient)
-    const posts = await context.queryClient.ensureQueryData({
-      queryKey: ['posts'],
-      queryFn: fetchPosts,
-    })
-    return { posts }
-  },
-  component: PostsComponent,
-})
-
-function PostsComponent() {
-  const { posts } = Route.useLoaderData()
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   // ...
 }
 ```
@@ -300,21 +192,12 @@ function PostsComponent() {
 Control when loaders re-execute:
 
 ```tsx
-<<<<<<< HEAD
 export const Route = createFileRoute("/posts")({
   loaderDeps: ({ search: { page, filter } }) => ({ page, filter }),
   loader: async ({ deps: { page, filter } }) => {
     return fetchPosts({ page, filter });
   },
 });
-=======
-export const Route = createFileRoute('/posts')({
-  loaderDeps: ({ search: { page, filter } }) => ({ page, filter }),
-  loader: async ({ deps: { page, filter } }) => {
-    return fetchPosts({ page, filter })
-  },
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Deferred Data Loading
@@ -322,7 +205,6 @@ export const Route = createFileRoute('/posts')({
 Stream non-critical data:
 
 ```tsx
-<<<<<<< HEAD
 import { Await, defer } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/dashboard")({
@@ -336,39 +218,15 @@ export const Route = createFileRoute("/dashboard")({
 
 function DashboardComponent() {
   const { criticalData, deferredData } = Route.useLoaderData();
-=======
-import { Await, defer } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/dashboard')({
-  loader: async () => {
-    const criticalData = await fetchCriticalData()
-    const deferredData = defer(fetchSlowData())
-    return { criticalData, deferredData }
-  },
-  component: DashboardComponent,
-})
-
-function DashboardComponent() {
-  const { criticalData, deferredData } = Route.useLoaderData()
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   return (
     <div>
       <CriticalSection data={criticalData} />
       <Suspense fallback={<Loading />}>
-<<<<<<< HEAD
         <Await promise={deferredData}>{(data) => <SlowSection data={data} />}</Await>
       </Suspense>
     </div>
   );
-=======
-        <Await promise={deferredData}>
-          {(data) => <SlowSection data={data} />}
-        </Await>
-      </Suspense>
-    </div>
-  )
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
@@ -384,7 +242,6 @@ const router = createRouter({
     queryClient,
     auth: undefined!, // Will be provided by RouterProvider
   },
-<<<<<<< HEAD
 });
 
 // In root/app component
@@ -402,25 +259,6 @@ export const Route = createFileRoute("/protected")({
     return context.queryClient.ensureQueryData(userQueryOptions());
   },
 });
-=======
-})
-
-// In root/app component
-function App() {
-  const auth = useAuth()
-  return <RouterProvider router={router} context={{ auth }} />
-}
-
-// In routes
-export const Route = createFileRoute('/protected')({
-  beforeLoad: ({ context }) => {
-    if (!context.auth.user) throw redirect({ to: '/login' })
-  },
-  loader: ({ context }) => {
-    return context.queryClient.ensureQueryData(userQueryOptions())
-  },
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Search Parameters
@@ -428,7 +266,6 @@ export const Route = createFileRoute('/protected')({
 ### Validation
 
 ```tsx
-<<<<<<< HEAD
 import { z } from "zod";
 
 const postSearchSchema = z.object({
@@ -442,21 +279,6 @@ export const Route = createFileRoute("/posts")({
   // Or manual validation:
   // validateSearch: (search) => postSearchSchema.parse(search),
 });
-=======
-import { z } from 'zod'
-
-const postSearchSchema = z.object({
-  page: z.number().default(1),
-  filter: z.string().default(''),
-  sort: z.enum(['date', 'title']).default('date'),
-})
-
-export const Route = createFileRoute('/posts')({
-  validateSearch: postSearchSchema,
-  // Or manual validation:
-  // validateSearch: (search) => postSearchSchema.parse(search),
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Reading Search Params
@@ -464,36 +286,21 @@ export const Route = createFileRoute('/posts')({
 ```tsx
 function PostsComponent() {
   // From route
-<<<<<<< HEAD
   const { page, filter, sort } = Route.useSearch();
 
   // Or from any component with useSearch hook
   const search = useSearch({ from: "/posts" });
-=======
-  const { page, filter, sort } = Route.useSearch()
-
-  // Or from any component with useSearch hook
-  const search = useSearch({ from: '/posts' })
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
 ### Updating Search Params
 
 ```tsx
-<<<<<<< HEAD
 import { useNavigate } from "@tanstack/react-router";
 
 function Pagination() {
   const navigate = useNavigate();
   const { page } = Route.useSearch();
-=======
-import { useNavigate } from '@tanstack/react-router'
-
-function Pagination() {
-  const navigate = useNavigate()
-  const { page } = Route.useSearch()
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   return (
     <button
@@ -505,7 +312,6 @@ function Pagination() {
     >
       Next Page
     </button>
-<<<<<<< HEAD
   );
 }
 
@@ -513,18 +319,6 @@ function Pagination() {
 <Link to="/posts" search={(prev) => ({ ...prev, page: 2 })}>
   Page 2
 </Link>;
-=======
-  )
-}
-
-// Or via Link component
-<Link
-  to="/posts"
-  search={(prev) => ({ ...prev, page: 2 })}
->
-  Page 2
-</Link>
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Search Param Options
@@ -539,11 +333,7 @@ const router = createRouter({
   // Default search param serializer
   stringifySearch: defaultStringifySearch,
   parseSearch: defaultParseSearch,
-<<<<<<< HEAD
 });
-=======
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Navigation
@@ -587,7 +377,6 @@ import { Link } from '@tanstack/react-router'
 ### Programmatic Navigation
 
 ```tsx
-<<<<<<< HEAD
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
 function MyComponent() {
@@ -609,36 +398,12 @@ function MyComponent() {
 
   // Invalidate and reload current route
   router.invalidate();
-=======
-import { useNavigate, useRouter } from '@tanstack/react-router'
-
-function MyComponent() {
-  const navigate = useNavigate()
-  const router = useRouter()
-
-  // Navigate to a route
-  navigate({ to: '/posts', search: { page: 1 } })
-
-  // Navigate with replace
-  navigate({ to: '/posts', replace: true })
-
-  // Relative navigation
-  navigate({ to: '.', search: (prev) => ({ ...prev, page: 2 }) })
-
-  // Go back/forward
-  router.history.back()
-  router.history.forward()
-
-  // Invalidate and reload current route
-  router.invalidate()
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
 ### Redirects
 
 ```tsx
-<<<<<<< HEAD
 import { redirect } from "@tanstack/react-router";
 
 // In beforeLoad or loader
@@ -648,66 +413,34 @@ throw redirect({
   // Optional status code
   statusCode: 301, // Permanent redirect (SSR)
 });
-=======
-import { redirect } from '@tanstack/react-router'
-
-// In beforeLoad or loader
-throw redirect({
-  to: '/login',
-  search: { redirect: location.href },
-  // Optional status code
-  statusCode: 301, // Permanent redirect (SSR)
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Navigation Blocking
 
 ```tsx
-<<<<<<< HEAD
 import { useBlocker } from "@tanstack/react-router";
 
 function FormComponent() {
   const [isDirty, setIsDirty] = useState(false);
-=======
-import { useBlocker } from '@tanstack/react-router'
-
-function FormComponent() {
-  const [isDirty, setIsDirty] = useState(false)
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   useBlocker({
     shouldBlockFn: () => isDirty,
     withResolver: true, // Shows confirm dialog
-<<<<<<< HEAD
   });
-=======
-  })
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   // Or with custom UI
   const { proceed, reset, status } = useBlocker({
     shouldBlockFn: () => isDirty,
-<<<<<<< HEAD
   });
 
   if (status === "blocked") {
-=======
-  })
-
-  if (status === 'blocked') {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
     return (
       <div>
         <p>Are you sure you want to leave?</p>
         <button onClick={proceed}>Leave</button>
         <button onClick={reset}>Stay</button>
       </div>
-<<<<<<< HEAD
     );
-=======
-    )
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   }
 }
 ```
@@ -726,7 +459,6 @@ routes/
 
 ```tsx
 // posts.tsx (loaded eagerly)
-<<<<<<< HEAD
 export const Route = createFileRoute("/posts")({
   loader: () => fetchPosts(),
 });
@@ -739,20 +471,6 @@ export const Route = createLazyFileRoute("/posts")({
   pendingComponent: PostsLoading,
   errorComponent: PostsError,
 });
-=======
-export const Route = createFileRoute('/posts')({
-  loader: () => fetchPosts(),
-})
-
-// posts.lazy.tsx (loaded lazily)
-import { createLazyFileRoute } from '@tanstack/react-router'
-
-export const Route = createLazyFileRoute('/posts')({
-  component: PostsComponent,
-  pendingComponent: PostsLoading,
-  errorComponent: PostsError,
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Manual Code Splitting
@@ -760,15 +478,9 @@ export const Route = createLazyFileRoute('/posts')({
 ```tsx
 const postsRoute = createRoute({
   getParentRoute: () => rootRoute,
-<<<<<<< HEAD
   path: "/posts",
   loader: () => fetchPosts(),
 }).lazy(() => import("./posts.lazy").then((d) => d.Route));
-=======
-  path: '/posts',
-  loader: () => fetchPosts(),
-}).lazy(() => import('./posts.lazy').then((d) => d.Route))
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Preloading
@@ -801,15 +513,9 @@ export const Route = createFileRoute('/posts/$postId')({
 
 ```tsx
 // Declare module for type inference
-<<<<<<< HEAD
 declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
-=======
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   }
 }
 ```
@@ -820,7 +526,6 @@ All hooks are fully typed based on the route tree:
 
 ```tsx
 // useParams - typed to route's params
-<<<<<<< HEAD
 const { postId } = useParams({ from: "/posts/$postId" });
 
 // useSearch - typed to route's search schema
@@ -831,42 +536,20 @@ const data = useLoaderData({ from: "/posts/$postId" });
 
 // useRouteContext - typed to route context
 const { auth } = useRouteContext({ from: "/protected" });
-=======
-const { postId } = useParams({ from: '/posts/$postId' })
-
-// useSearch - typed to route's search schema
-const { page } = useSearch({ from: '/posts' })
-
-// useLoaderData - typed to loader return
-const data = useLoaderData({ from: '/posts/$postId' })
-
-// useRouteContext - typed to route context
-const { auth } = useRouteContext({ from: '/protected' })
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ### Route Generics
 
 ```tsx
-<<<<<<< HEAD
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/posts/$postId")({
-=======
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/posts/$postId')({
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
   // TypeScript infers:
   // params: { postId: string }
   // search: validated search schema type
   // loaderData: return type of loader
   // context: router context type
-<<<<<<< HEAD
 });
-=======
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Authenticated Routes
@@ -874,7 +557,6 @@ export const Route = createFileRoute('/posts/$postId')({
 ```tsx
 // __root.tsx
 export const Route = createRootRouteWithContext<{
-<<<<<<< HEAD
   auth: AuthContext;
 }>()({
   component: RootComponent,
@@ -896,29 +578,6 @@ export const Route = createFileRoute("/_authenticated")({
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard, // Only accessible when authenticated
 });
-=======
-  auth: AuthContext
-}>()({
-  component: RootComponent,
-})
-
-// _authenticated.tsx (pathless layout for auth)
-export const Route = createFileRoute('/_authenticated')({
-  beforeLoad: ({ context, location }) => {
-    if (!context.auth.isAuthenticated) {
-      throw redirect({
-        to: '/login',
-        search: { redirect: location.href },
-      })
-    }
-  },
-})
-
-// _authenticated/dashboard.tsx
-export const Route = createFileRoute('/_authenticated/dashboard')({
-  component: Dashboard, // Only accessible when authenticated
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Scroll Restoration
@@ -950,7 +609,6 @@ Display a different URL than the actual route:
 <Link
   to="/photos/$photoId"
   params={{ photoId: photo.id }}
-<<<<<<< HEAD
   mask={{ to: "/photos", search: { photoId: photo.id } }}
 >
   View Photo
@@ -962,19 +620,6 @@ navigate({
   params: { photoId: photo.id },
   mask: { to: "/photos", search: { photoId: photo.id } },
 });
-=======
-  mask={{ to: '/photos', search: { photoId: photo.id } }}
->
-  View Photo
-</Link>
-
-// Or programmatically
-navigate({
-  to: '/photos/$photoId',
-  params: { photoId: photo.id },
-  mask: { to: '/photos', search: { photoId: photo.id } },
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Not Found Handling
@@ -984,7 +629,6 @@ navigate({
 const router = createRouter({
   routeTree,
   defaultNotFoundComponent: () => <div>Page not found</div>,
-<<<<<<< HEAD
 });
 
 // Route-level 404
@@ -996,25 +640,11 @@ export const Route = createFileRoute("/posts/$postId")({
   },
   notFoundComponent: () => <div>Post not found</div>,
 });
-=======
-})
-
-// Route-level 404
-export const Route = createFileRoute('/posts/$postId')({
-  loader: async ({ params }) => {
-    const post = await fetchPost(params.postId)
-    if (!post) throw notFound()
-    return post
-  },
-  notFoundComponent: () => <div>Post not found</div>,
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Head Management
 
 ```tsx
-<<<<<<< HEAD
 export const Route = createFileRoute("/posts/$postId")({
   head: ({ loaderData }) => ({
     meta: [
@@ -1025,26 +655,11 @@ export const Route = createFileRoute("/posts/$postId")({
     links: [{ rel: "canonical", href: `https://example.com/posts/${loaderData.id}` }],
   }),
 });
-=======
-export const Route = createFileRoute('/posts/$postId')({
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: loaderData.title },
-      { name: 'description', content: loaderData.excerpt },
-      { property: 'og:title', content: loaderData.title },
-    ],
-    links: [
-      { rel: 'canonical', href: `https://example.com/posts/${loaderData.id}` },
-    ],
-  }),
-})
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 ```
 
 ## Integration with TanStack Query
 
 ```tsx
-<<<<<<< HEAD
 import { queryOptions } from "@tanstack/react-query";
 
 const postsQueryOptions = queryOptions({
@@ -1064,33 +679,11 @@ function PostsComponent() {
   // Use the same query options for reactive updates
   const { data: posts } = useSuspenseQuery(postsQueryOptions);
   return <PostsList posts={posts} />;
-=======
-import { queryOptions } from '@tanstack/react-query'
-
-const postsQueryOptions = queryOptions({
-  queryKey: ['posts'],
-  queryFn: fetchPosts,
-})
-
-export const Route = createFileRoute('/posts')({
-  loader: ({ context: { queryClient } }) => {
-    // Ensure data is in cache, won't refetch if fresh
-    return queryClient.ensureQueryData(postsQueryOptions)
-  },
-  component: PostsComponent,
-})
-
-function PostsComponent() {
-  // Use the same query options for reactive updates
-  const { data: posts } = useSuspenseQuery(postsQueryOptions)
-  return <PostsList posts={posts} />
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 }
 ```
 
 ## Router Hooks Reference
 
-<<<<<<< HEAD
 | Hook                | Purpose                              |
 | ------------------- | ------------------------------------ |
 | `useRouter()`       | Access router instance               |
@@ -1106,23 +699,6 @@ function PostsComponent() {
 | `useBlocker()`      | Block navigation                     |
 | `useLinkProps()`    | Get link props for custom components |
 | `useMatchRoute()`   | Check if a route matches             |
-=======
-| Hook | Purpose |
-|------|---------|
-| `useRouter()` | Access router instance |
-| `useRouterState()` | Subscribe to router state |
-| `useParams()` | Get route path params |
-| `useSearch()` | Get validated search params |
-| `useLoaderData()` | Get route loader data |
-| `useRouteContext()` | Get route context |
-| `useNavigate()` | Get navigate function |
-| `useLocation()` | Get current location |
-| `useMatches()` | Get all matched routes |
-| `useMatch()` | Get specific route match |
-| `useBlocker()` | Block navigation |
-| `useLinkProps()` | Get link props for custom components |
-| `useMatchRoute()` | Check if a route matches |
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
 ## Best Practices
 

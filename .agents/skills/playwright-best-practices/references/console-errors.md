@@ -68,13 +68,7 @@ test("capture errors with location", async ({ page }) => {
       const location = msg.location();
       errors.push({
         message: msg.text(),
-<<<<<<< HEAD
         location: location ? `${location.url}:${location.lineNumber}` : undefined,
-=======
-        location: location
-          ? `${location.url}:${location.lineNumber}`
-          : undefined,
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       });
     }
   });
@@ -115,14 +109,7 @@ test("no console errors allowed", async ({ page }) => {
 
 ```typescript
 test("no unexpected console errors", async ({ page }) => {
-<<<<<<< HEAD
   const allowedErrors = [/Failed to load resource.*favicon/, /ResizeObserver loop/];
-=======
-  const allowedErrors = [
-    /Failed to load resource.*favicon/,
-    /ResizeObserver loop/,
-  ];
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 
   const unexpectedErrors: string[] = [];
 
@@ -263,14 +250,7 @@ test("no deprecation warnings", async ({ page }) => {
 
   page.on("console", (msg) => {
     const text = msg.text();
-<<<<<<< HEAD
     if (msg.type() === "warning" && (text.includes("deprecated") || text.includes("Deprecation"))) {
-=======
-    if (
-      msg.type() === "warning" &&
-      (text.includes("deprecated") || text.includes("Deprecation"))
-    ) {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       deprecations.push(text);
     }
   });
@@ -295,14 +275,7 @@ test("no React warnings", async ({ page }) => {
 
   page.on("console", (msg) => {
     const text = msg.text();
-<<<<<<< HEAD
     if (msg.type() === "warning" && (text.includes("Warning:") || text.includes("React"))) {
-=======
-    if (
-      msg.type() === "warning" &&
-      (text.includes("Warning:") || text.includes("React"))
-    ) {
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       reactWarnings.push(text);
     }
   });
@@ -317,14 +290,7 @@ test("no React warnings", async ({ page }) => {
       w.includes("Can't perform a React state update"),
   );
 
-<<<<<<< HEAD
   expect(criticalWarnings, `React warnings:\n${criticalWarnings.join("\n")}`).toHaveLength(0);
-=======
-  expect(
-    criticalWarnings,
-    `React warnings:\n${criticalWarnings.join("\n")}`,
-  ).toHaveLength(0);
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
 });
 ```
 
@@ -357,13 +323,7 @@ export const test = base.extend<ConsoleFixtures>({
       messages.push({
         type: msg.type(),
         text: msg.text(),
-<<<<<<< HEAD
         location: location ? { url: location.url, line: location.lineNumber } : undefined,
-=======
-        location: location
-          ? { url: location.url, line: location.lineNumber }
-          : undefined,
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
         timestamp: Date.now(),
       });
     });
@@ -382,21 +342,10 @@ export const test = base.extend<ConsoleFixtures>({
   assertNoErrors: async ({ getConsoleErrors }, use) => {
     await use((allowedPatterns = []) => {
       const errors = getConsoleErrors();
-<<<<<<< HEAD
       const unexpected = errors.filter((e) => !allowedPatterns.some((p) => p.test(e.text)));
 
       if (unexpected.length > 0) {
         throw new Error(`Unexpected console errors:\n${unexpected.map((e) => e.text).join("\n")}`);
-=======
-      const unexpected = errors.filter(
-        (e) => !allowedPatterns.some((p) => p.test(e.text)),
-      );
-
-      if (unexpected.length > 0) {
-        throw new Error(
-          `Unexpected console errors:\n${unexpected.map((e) => e.text).join("\n")}`,
-        );
->>>>>>> ddc9cdc (feat: pricing tier enforcement — Free/Professional/Enterprise (#72))
       }
     });
   },
