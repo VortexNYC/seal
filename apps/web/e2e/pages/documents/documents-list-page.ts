@@ -212,20 +212,9 @@ export class DocumentsListPage {
     timeoutMs = 15000,
   ): Promise<void> {
     const selectedFile = uploadDialog.getByText(fileName, { exact: true });
-    const monthlyLimitMessage = uploadDialog.getByText(
-      /You've reached your monthly document limit/i,
-    );
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline) {
-      if (await monthlyLimitMessage.isVisible().catch(() => false)) {
-        await this.page.keyboard.press("Escape").catch(() => {});
-        await uploadDialog.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
-        throw new Error(
-          "Cannot create an E2E document because the workspace reached its monthly document limit.",
-        );
-      }
-
       const fileIsListed = await selectedFile.isVisible().catch(() => false);
       if (fileIsListed && (await uploadPdfButton.isEnabled().catch(() => false))) {
         return;
