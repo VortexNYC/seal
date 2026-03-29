@@ -27,7 +27,7 @@ export const test = base.extend<AuthFixtures>({
     }
 
     const landedOnWorkspaceHome = await page
-      .waitForURL(/\/[\w-]+\/home/, { timeout: 15000 })
+      .waitForURL(/\/[\w-]+\/home/, { timeout: 15000, waitUntil: "domcontentloaded" })
       .then(() => true)
       .catch(() => false);
 
@@ -83,7 +83,7 @@ async function ensureAuthenticatedAppReady(page: Page): Promise<void> {
     }
 
     await page.goto("/app", { waitUntil: "domcontentloaded" });
-    await page.waitForURL(/\/[\w-]+\/home/, { timeout: 15000 });
+    await page.waitForURL(/\/[\w-]+\/home/, { timeout: 15000, waitUntil: "domcontentloaded" });
   }
 
   await expect(page.getByText(/authentication required/i).first()).not.toBeVisible();

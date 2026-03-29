@@ -69,12 +69,16 @@ export async function signInTestUser(page: Page): Promise<void> {
   // Wait for the app to land on a workspace page
   await page.waitForURL(/\/(app|.*\/home|.*\/onboarding\/choose-organization)/, {
     timeout: 30000,
+    waitUntil: "domcontentloaded",
   });
 
   const organizationSlug = await ensureWorkspaceForAuthenticatedUser(page);
 
   await page.goto("/app", { waitUntil: "domcontentloaded" });
-  await page.waitForURL(new RegExp(`/${organizationSlug}/home$`), { timeout: 30000 });
+  await page.waitForURL(new RegExp(`/${organizationSlug}/home$`), {
+    timeout: 30000,
+    waitUntil: "domcontentloaded",
+  });
   await expect(page).toHaveURL(new RegExp(`/${organizationSlug}/home$`), { timeout: 30000 });
 }
 
