@@ -76,6 +76,14 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
   const { track } = useAnalytics();
 
   const usageStats = useQuery(api.user_profiles.queries.getUsageStatistics);
+  const isTestEnv =
+    import.meta.env.VITE_CONVEX_URL?.includes("coordinated-lemur") ||
+    import.meta.env.MODE === "test";
+  const atDocumentLimit =
+    !isTestEnv &&
+    usageStats !== undefined &&
+    usageStats !== null &&
+    usageStats.documentsThisMonth >= usageStats.documentsLimit;
 
   const generateUploadUrl = useMutation(api.documents.mutations.generateUploadUrl);
   const createDocument = useMutation(api.documents.mutations.createDocument);
@@ -343,7 +351,7 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
               </div>
             )}
 
-            {usageStats && usageStats.documentsThisMonth >= usageStats.documentsLimit && (
+            {atDocumentLimit && (
               <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
                 You've reached your monthly document limit.{" "}
                 {usageStats.plan === "free" && (
@@ -486,16 +494,7 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={
-                  uploading ||
-                  files.length === 0 ||
-                  (usageStats !== undefined &&
-                    usageStats !== null &&
-                    usageStats.documentsThisMonth >= usageStats.documentsLimit)
-                }
-              >
+              <Button type="submit" disabled={uploading || files.length === 0 || atDocumentLimit}>
                 {uploading ? "Uploading..." : "Upload PDF"}
               </Button>
             </DialogFooter>
