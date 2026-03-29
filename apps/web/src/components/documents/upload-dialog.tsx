@@ -76,11 +76,9 @@ export function UploadDialog({ organizationId, open, onOpenChange, onSuccess }: 
   const { track } = useAnalytics();
 
   const usageStats = useQuery(api.user_profiles.queries.getUsageStatistics);
-  const isTestEnv =
-    import.meta.env.VITE_CONVEX_URL?.includes("coordinated-lemur") ||
-    import.meta.env.MODE === "test";
+  const isTestDeployment = import.meta.env.VITE_CONVEX_URL?.includes("coordinated-lemur");
   const atDocumentLimit =
-    !isTestEnv &&
+    !isTestDeployment &&
     usageStats !== undefined &&
     usageStats !== null &&
     usageStats.documentsThisMonth >= usageStats.documentsLimit;
