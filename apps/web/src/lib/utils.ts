@@ -100,3 +100,21 @@ export function parseConvexError(error: unknown): ParsedError {
 export function getErrorMessage(error: unknown): string {
   return parseConvexError(error).userFriendlyMessage;
 }
+
+/**
+ * Sort an array of objects by a date field in descending order (newest first).
+ *
+ * @param items - Array of objects containing a date field
+ * @param key - The key of the date field to sort by
+ * @returns A new array sorted by the specified date field, newest first
+ */
+export function sortByDate<T extends Record<K, string | number | Date>, K extends string>(
+  items: T[],
+  key: K,
+): T[] {
+  return [...items].sort((a, b) => {
+    const dateA = new Date(a[key] as string | number | Date);
+    const dateB = new Date(b[key] as string | number | Date);
+    return dateB.getTime() - dateA.getTime();
+  });
+}
