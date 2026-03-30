@@ -100,3 +100,14 @@ export function parseConvexError(error: unknown): ParsedError {
 export function getErrorMessage(error: unknown): string {
   return parseConvexError(error).userFriendlyMessage;
 }
+
+/**
+ * Format a Date as a short date string with abbreviated month (e.g. 'Mar 30, 2026').
+ */
+export function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(date);
+}

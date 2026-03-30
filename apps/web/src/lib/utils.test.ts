@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 
-import { cn, parseConvexError, getErrorMessage } from "./utils";
+import { cn, parseConvexError, getErrorMessage, formatDate } from "./utils";
 
 describe("cn", () => {
   test("merges simple class names", () => {
@@ -233,5 +233,32 @@ describe("getErrorMessage", () => {
   test("returns fallback for empty error", () => {
     const msg = getErrorMessage(new Error(""));
     expect(msg).toBe("An unexpected error occurred. Please try again.");
+  });
+});
+
+describe("formatDate", () => {
+  test("formats the reference date 2026-03-30 correctly", () => {
+    const result = formatDate(new Date(2026, 2, 30));
+    expect(result).toBe("Mar 30, 2026");
+  });
+
+  test("formats a date in January", () => {
+    const result = formatDate(new Date(2024, 0, 5));
+    expect(result).toBe("Jan 05, 2024");
+  });
+
+  test("formats a date in December", () => {
+    const result = formatDate(new Date(2025, 11, 25));
+    expect(result).toBe("Dec 25, 2025");
+  });
+
+  test("formats a date in June", () => {
+    const result = formatDate(new Date(2023, 5, 1));
+    expect(result).toBe("Jun 01, 2023");
+  });
+
+  test("formats a date in November", () => {
+    const result = formatDate(new Date(2024, 10, 15));
+    expect(result).toBe("Nov 15, 2024");
   });
 });
