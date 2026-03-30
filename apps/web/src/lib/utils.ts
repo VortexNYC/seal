@@ -100,3 +100,13 @@ export function parseConvexError(error: unknown): ParsedError {
 export function getErrorMessage(error: unknown): string {
   return parseConvexError(error).userFriendlyMessage;
 }
+
+/**
+ * Clamp a numeric value between a minimum and maximum bound.
+ *
+ * Returns `min` when `value < min`, `max` when `value > max`,
+ * and `value` itself when it falls within the range.
+ */
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
