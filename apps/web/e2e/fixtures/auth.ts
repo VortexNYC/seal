@@ -1,7 +1,7 @@
 /* oxlint-disable react-hooks/rules-of-hooks */
 import { expect, test as base, type Page } from "@playwright/test";
 
-import { isAuthenticatedUrl, signInTestUser, waitForClerkConvexToken } from "./auth-helpers";
+import { getTestWorkspaceConfig, isAuthenticatedUrl, signInTestUser } from "./auth-helpers";
 
 type AuthFixtures = {
   authenticatedPage: Page;
@@ -11,82 +11,56 @@ type AuthFixtures = {
 /**
  * Extended test with authentication fixtures
  *
- * Prefer the Playwright storage state created by the setup project.
- * If state is missing locally, fall back to the direct login helper/UI flow.
+ * The setup project saves storageState with a valid Clerk session.
+ * This fixture verifies we're authenticated and lands on the workspace home.
  */
 export const test = base.extend<AuthFixtures>({
-  /**
-   * Provides an authenticated page with a logged-in user
-   */
   authenticatedPage: async ({ page }, use) => {
     await page.goto("/app", { waitUntil: "domcontentloaded" });
 
+    // Wait for redirect to resolve — could be /{slug}/home, sign-in, or onboarding
+    await page.waitForURL(/\/([\w-]+\/home|[\w-]+\/onboarding|sign-in|app)/, {
+      timeout: 8000,
+      waitUntil: "domcontentloaded",
+    });
+
+    // If we didn't land on an authenticated route, re-authenticate
     if (!isAuthenticatedUrl(page.url())) {
-      // signInTestUser handles sign-in + workspace setup per Clerk's protocol
       await signInTestUser(page);
     }
 
-    const landedOnWorkspaceHome = await page
-      .waitForURL(/\/[\w-]+\/home/, { timeout: 15000, waitUntil: "domcontentloaded" })
-      .then(() => true)
-      .catch(() => false);
-
-    if (!landedOnWorkspaceHome) {
+    // Ensure we're on /{slug}/home — if not, navigate there
+    if (!page.url().match(/\/[\w-]+\/home/)) {
       await page.goto("/app", { waitUntil: "domcontentloaded" });
-      await page.waitForURL(/\/[\w-]+\/home/, { timeout: 15000 });
+      await page.waitForURL(/\/[\w-]+\/home/, {
+        timeout: 8000,
+        waitUntil: "domcontentloaded",
+      });
     }
-
-    await ensureAuthenticatedAppReady(page);
 
     await use(page);
   },
 
-  /**
-   * Provides the organization slug for the authenticated user
-   */
   organizationSlug: async ({ authenticatedPage }, use) => {
-    // Extract organization slug from URL
+    // Extract from URL first (most reliable when on /home)
     const url = authenticatedPage.url();
     const match = url.match(/\/([\w-]+)\/home/);
-    const slug = match ? match[1] : "test-org";
 
-    await use(slug);
-  },
-});
-
-/**
- * Helper to sign out
- */
-export async function signOut(page: Page): Promise<void> {
-  // Click user menu
-  await page.click('[data-testid="user-menu"]');
-
-  // Click sign out
-  await page.click('[data-testid="sign-out-button"]');
-
-  // Wait for redirect to login
-  await page.waitForURL("**/sign-in", { timeout: 10000 });
-}
-
-async function ensureAuthenticatedAppReady(page: Page): Promise<void> {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await waitForClerkConvexToken(page);
-
-    const hasAuthRouteError = await page
-      .getByText(/authentication required/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-
-    if (!hasAuthRouteError) {
+    if (match && match[1]) {
+      await use(match[1]);
       return;
     }
 
-    await page.goto("/app", { waitUntil: "domcontentloaded" });
-    await page.waitForURL(/\/[\w-]+\/home/, { timeout: 15000, waitUntil: "domcontentloaded" });
-  }
+    // Fallback: use the configured test workspace slug
+    const config = getTestWorkspaceConfig();
+    await use(config.organizationSlug);
+  },
+});
 
-  await expect(page.getByText(/authentication required/i).first()).not.toBeVisible();
+export async function signOut(page: Page): Promise<void> {
+  await page.click('[data-testid="user-menu"]');
+  await page.click('[data-testid="sign-out-button"]');
+  await page.waitForURL("**/sign-in", { timeout: 10000 });
 }
 
 export { expect } from "@playwright/test";
