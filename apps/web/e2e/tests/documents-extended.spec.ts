@@ -21,7 +21,10 @@ async function openFirstDocumentEditor(
   authenticatedPage: Page,
   organizationSlug: string,
 ): Promise<{ documentPage: DocumentPage; documentsPage: DocumentsListPage }> {
-  const documentsPage = await gotoDocumentsList(authenticatedPage, organizationSlug);
+  const documentsPage = await gotoDocumentsList(
+    authenticatedPage,
+    organizationSlug,
+  );
   await documentsPage.openFirstDocument();
 
   const documentPage = new DocumentPage(authenticatedPage);
@@ -63,7 +66,9 @@ test.describe("Document Filtering", () => {
   }) => {
     await gotoDocumentsList(authenticatedPage, organizationSlug);
 
-    await authenticatedPage.getByRole("button", { name: "In Progress" }).click();
+    await authenticatedPage
+      .getByRole("button", { name: "In Progress" })
+      .click();
 
     await authenticatedPage.waitForTimeout(500);
   });
@@ -79,40 +84,63 @@ test.describe("Document Filtering", () => {
     await authenticatedPage.waitForTimeout(500);
   });
 
-  test("should switch between document tabs", async ({ authenticatedPage, organizationSlug }) => {
+  test("should switch between document tabs", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     await gotoDocumentsList(authenticatedPage, organizationSlug);
 
     // My Documents
-    await authenticatedPage.getByRole("button", { name: "My Documents" }).click();
+    await authenticatedPage
+      .getByRole("button", { name: "My Documents" })
+      .click();
     await authenticatedPage.waitForTimeout(500);
 
     // Shared with Me
-    await authenticatedPage.getByRole("button", { name: "Shared with Me" }).click();
+    await authenticatedPage
+      .getByRole("button", { name: "Shared with Me" })
+      .click();
     await authenticatedPage.waitForTimeout(500);
 
-    await authenticatedPage.getByRole("button", { name: "All Documents" }).last().click();
+    await authenticatedPage
+      .getByRole("button", { name: "All Documents" })
+      .last()
+      .click();
     await authenticatedPage.waitForTimeout(500);
   });
 });
 
 test.describe("Document Actions", () => {
-  test("should download document", async ({ authenticatedPage, organizationSlug }) => {
-    const documentsPage = await gotoDocumentsList(authenticatedPage, organizationSlug);
+  test("should download document", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    const documentsPage = await gotoDocumentsList(
+      authenticatedPage,
+      organizationSlug,
+    );
 
     await documentsPage.openFirstDocumentActionsMenu();
 
     const popupPromise = authenticatedPage.waitForEvent("popup");
-    await authenticatedPage.getByRole("menuitem", { name: /^download$/i }).click();
+    await authenticatedPage
+      .getByRole("menuitem", { name: /^download$/i })
+      .click();
 
     const popup = await popupPromise;
-    await expect.poll(async () => popup.url(), { timeout: 5000 }).not.toBe("about:blank");
+    await expect
+      .poll(async () => popup.url(), { timeout: 5000 })
+      .not.toBe("about:blank");
   });
 
   test("should navigate back from document editor", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
-    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
+    const { documentPage } = await openFirstDocumentEditor(
+      authenticatedPage,
+      organizationSlug,
+    );
 
     // Click back button
     await documentPage.backButton.click();
@@ -121,7 +149,10 @@ test.describe("Document Actions", () => {
     await expect(authenticatedPage).toHaveURL(`/${organizationSlug}/documents`);
   });
 
-  test.skip("should delete document", async ({ authenticatedPage, organizationSlug }) => {
+  test.skip("should delete document", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     // Skip until we implement proper test data cleanup
     const documentsPage = new DocumentsListPage(authenticatedPage);
 
@@ -138,7 +169,9 @@ test.describe("Document Actions", () => {
     await deleteButton.click();
 
     // Confirm deletion
-    await authenticatedPage.getByRole("button", { name: /confirm|yes/i }).click();
+    await authenticatedPage
+      .getByRole("button", { name: /confirm|yes/i })
+      .click();
 
     await waitForToast(authenticatedPage, /deleted|removed/i);
 
@@ -150,8 +183,14 @@ test.describe("Document Actions", () => {
 test.describe("Document Editor - Zoom Controls", () => {
   test.describe.configure({ mode: "serial" });
 
-  test("should zoom in on document", async ({ authenticatedPage, organizationSlug }) => {
-    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
+  test("should zoom in on document", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    const { documentPage } = await openFirstDocumentEditor(
+      authenticatedPage,
+      organizationSlug,
+    );
 
     // Click zoom in button
     const initialZoom = await documentPage.getVisibleZoomText();
@@ -162,16 +201,28 @@ test.describe("Document Editor - Zoom Controls", () => {
       .not.toBe(initialZoom);
   });
 
-  test("should zoom out on document", async ({ authenticatedPage, organizationSlug }) => {
-    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
+  test("should zoom out on document", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    const { documentPage } = await openFirstDocumentEditor(
+      authenticatedPage,
+      organizationSlug,
+    );
 
     await documentPage.zoomOutButton.click();
 
     await authenticatedPage.waitForTimeout(500);
   });
 
-  test("should reset zoom on document", async ({ authenticatedPage, organizationSlug }) => {
-    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
+  test("should reset zoom on document", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    const { documentPage } = await openFirstDocumentEditor(
+      authenticatedPage,
+      organizationSlug,
+    );
 
     if (!(await documentPage.hasDesktopOnlyZoomControls())) {
       test.skip(true, "Reset zoom control is hidden on mobile layouts.");
@@ -187,8 +238,14 @@ test.describe("Document Editor - Zoom Controls", () => {
     await authenticatedPage.waitForTimeout(500);
   });
 
-  test("should fit document to viewport", async ({ authenticatedPage, organizationSlug }) => {
-    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
+  test("should fit document to viewport", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    const { documentPage } = await openFirstDocumentEditor(
+      authenticatedPage,
+      organizationSlug,
+    );
 
     if (!(await documentPage.hasDesktopOnlyZoomControls())) {
       test.skip(true, "Fit control is hidden on mobile layouts.");
@@ -203,8 +260,14 @@ test.describe("Document Editor - Zoom Controls", () => {
 test.describe("Document Details Sidebar", () => {
   test.describe.configure({ mode: "serial" });
 
-  test("should display document details", async ({ authenticatedPage, organizationSlug }) => {
-    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
+  test("should display document details", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    const { documentPage } = await openFirstDocumentEditor(
+      authenticatedPage,
+      organizationSlug,
+    );
 
     await documentPage.detailsSectionButton.click();
 
@@ -214,8 +277,14 @@ test.describe("Document Details Sidebar", () => {
     await expect(authenticatedPage.getByText(/^Uploaded$/)).toBeVisible();
   });
 
-  test("should display recipients section", async ({ authenticatedPage, organizationSlug }) => {
-    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
+  test("should display recipients section", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    const { documentPage } = await openFirstDocumentEditor(
+      authenticatedPage,
+      organizationSlug,
+    );
 
     // Verify Recipients collapsible trigger is visible
     await expect(documentPage.recipientsSectionButton).toBeVisible();
@@ -225,18 +294,30 @@ test.describe("Document Details Sidebar", () => {
     // Fresh documents show "No recipients"; documents with recipients show the recipient name/email.
     // The "Add Recipient" button is always rendered when canEdit is true.
     const noRecipients = authenticatedPage.getByText("No recipients");
-    const addRecipientButton = authenticatedPage.getByRole("button", { name: /add recipient/i });
-    await expect(noRecipients.or(addRecipientButton)).toBeVisible({ timeout: 15000 });
+    const addRecipientButton = authenticatedPage.getByRole("button", {
+      name: /add recipient/i,
+    });
+    await expect(noRecipients.or(addRecipientButton)).toBeVisible({
+      timeout: 15000,
+    });
   });
 
-  test("should display activity timeline", async ({ authenticatedPage, organizationSlug }) => {
-    const { documentPage } = await openFirstDocumentEditor(authenticatedPage, organizationSlug);
+  test("should display activity timeline", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    const { documentPage } = await openFirstDocumentEditor(
+      authenticatedPage,
+      organizationSlug,
+    );
 
     await documentPage.activitySectionButton.click();
 
     // Verify Activity section
     await expect(documentPage.activitySectionButton).toBeVisible();
 
-    await expect(authenticatedPage.getByText(/was created/i).first()).toBeVisible();
+    await expect(
+      authenticatedPage.getByText(/was created/i).first(),
+    ).toBeVisible();
   });
 });

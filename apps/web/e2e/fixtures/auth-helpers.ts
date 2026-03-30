@@ -13,7 +13,8 @@ export function getTestWorkspaceConfig(): TestWorkspaceConfig {
     process.env.E2E_TEST_USER_EMAIL ||
     process.env.TEST_USER_EMAIL ||
     "seal-e2e+clerk_test@example.com";
-  const emailCode = process.env.E2E_TEST_EMAIL_CODE || process.env.TEST_EMAIL_CODE || "424242";
+  const emailCode =
+    process.env.E2E_TEST_EMAIL_CODE || process.env.TEST_EMAIL_CODE || "424242";
   const defaultSlug = buildDefaultOrganizationSlug(email);
 
   return {
@@ -24,7 +25,9 @@ export function getTestWorkspaceConfig(): TestWorkspaceConfig {
       process.env.TEST_ORGANIZATION_NAME ||
       "Seal E2E Workspace",
     organizationSlug:
-      process.env.E2E_TEST_ORGANIZATION_SLUG || process.env.TEST_ORGANIZATION_SLUG || defaultSlug,
+      process.env.E2E_TEST_ORGANIZATION_SLUG ||
+      process.env.TEST_ORGANIZATION_SLUG ||
+      defaultSlug,
   };
 }
 
@@ -70,7 +73,9 @@ export async function signInTestUser(page: Page): Promise<void> {
 export function isAuthenticatedUrl(url: string): boolean {
   try {
     const pathname = new URL(url).pathname;
-    return /\/(app|[\w-]+\/home|[\w-]+\/onboarding\/choose-organization)/.test(pathname);
+    return /\/(app|[\w-]+\/home|[\w-]+\/onboarding\/choose-organization)/.test(
+      pathname,
+    );
   } catch {
     return false;
   }
@@ -87,7 +92,8 @@ export async function ensureConvexAuth(page: Page): Promise<void> {
   // First wait for the Convex client and API to be exposed on window
   try {
     await page.waitForFunction(
-      () => window.__convexClient !== undefined && window.__convexApi !== undefined,
+      () =>
+        window.__convexClient !== undefined && window.__convexApi !== undefined,
       { timeout: 8000 },
     );
   } catch {
@@ -110,7 +116,10 @@ export async function ensureConvexAuth(page: Page): Promise<void> {
 
         if (!client || !api) return false;
 
-        const result = await client.query(api.check_membership.hasOrganization, {});
+        const result = await client.query(
+          api.check_membership.hasOrganization,
+          {},
+        );
         return result !== undefined && result !== null;
       } catch {
         return false;
@@ -141,7 +150,9 @@ export async function ensureWorkspace(page: Page): Promise<void> {
     (async () => {
       try {
         await page.waitForFunction(
-          () => window.__convexClient !== undefined && window.__convexApi !== undefined,
+          () =>
+            window.__convexClient !== undefined &&
+            window.__convexApi !== undefined,
           { timeout: 10000 },
         );
 
@@ -152,12 +163,18 @@ export async function ensureWorkspace(page: Page): Promise<void> {
 
             if (!client || !api) throw new Error("Convex not ready");
 
-            await client.mutation(api.organizations.mutations.ensurePersonalOrganization, {
-              organizationName: orgName,
-              organizationSlug: orgSlug,
-            });
+            await client.mutation(
+              api.organizations.mutations.ensurePersonalOrganization,
+              {
+                organizationName: orgName,
+                organizationSlug: orgSlug,
+              },
+            );
           },
-          { orgName: workspace.organizationName, orgSlug: workspace.organizationSlug },
+          {
+            orgName: workspace.organizationName,
+            orgSlug: workspace.organizationSlug,
+          },
         );
       } catch {
         // Org may already exist or Convex not ready — both acceptable
@@ -186,7 +203,12 @@ export async function waitForClerkConvexToken(page: Page): Promise<string> {
             };
           }
         ).Clerk;
-        return (await clerk?.session?.getToken({ template: "convex", skipCache: true })) ?? null;
+        return (
+          (await clerk?.session?.getToken({
+            template: "convex",
+            skipCache: true,
+          })) ?? null
+        );
       }),
     {
       attempts: 10,
@@ -196,7 +218,9 @@ export async function waitForClerkConvexToken(page: Page): Promise<string> {
   );
 
   if (!token) {
-    throw new Error("Failed to fetch Clerk Convex token for E2E workspace setup");
+    throw new Error(
+      "Failed to fetch Clerk Convex token for E2E workspace setup",
+    );
   }
 
   return token;

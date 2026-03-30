@@ -4,7 +4,9 @@ import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
 
 function isDocumentQuotaLimitError(error: unknown): boolean {
-  return error instanceof Error && error.message.includes("monthly document limit");
+  return (
+    error instanceof Error && error.message.includes("monthly document limit")
+  );
 }
 
 async function createDocumentOrFallback(
@@ -29,7 +31,10 @@ async function createDocumentOrFallback(
 }
 
 test.describe("Document Management", () => {
-  test("should create a new document", async ({ authenticatedPage, organizationSlug }) => {
+  test("should create a new document", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const documentsPage = new DocumentsListPage(authenticatedPage);
 
     await documentsPage.goto(organizationSlug);
@@ -53,15 +58,22 @@ test.describe("Document Management", () => {
     expect(newCount).toBeGreaterThan(initialCount);
   });
 
-  test("should search for documents", async ({ authenticatedPage, organizationSlug }) => {
+  test("should search for documents", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const documentsPage = new DocumentsListPage(authenticatedPage);
 
     await documentsPage.goto(organizationSlug);
-    const { createdName, existingName } = await createDocumentOrFallback(documentsPage);
+    const { createdName, existingName } =
+      await createDocumentOrFallback(documentsPage);
     const documentName = createdName ?? existingName;
 
     if (!documentName) {
-      test.skip(true, "No searchable documents are available in the E2E workspace.");
+      test.skip(
+        true,
+        "No searchable documents are available in the E2E workspace.",
+      );
       return;
     }
 
@@ -75,18 +87,27 @@ test.describe("Document Management", () => {
 
     // Verify search results are displayed
     expect(await documentsPage.getDocumentCount()).toBeGreaterThan(0);
-    await expect(documentsPage.getDocumentRowByName(documentName)).toBeVisible();
+    await expect(
+      documentsPage.getDocumentRowByName(documentName),
+    ).toBeVisible();
   });
 
-  test("should open document editor", async ({ authenticatedPage, organizationSlug }) => {
+  test("should open document editor", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
     const documentsPage = new DocumentsListPage(authenticatedPage);
 
     await documentsPage.goto(organizationSlug);
-    const { createdName, existingName } = await createDocumentOrFallback(documentsPage);
+    const { createdName, existingName } =
+      await createDocumentOrFallback(documentsPage);
     const documentName = createdName ?? existingName;
 
     if (!documentName) {
-      test.skip(true, "No documents are available to open in the E2E workspace.");
+      test.skip(
+        true,
+        "No documents are available to open in the E2E workspace.",
+      );
       return;
     }
 
@@ -109,11 +130,15 @@ test.describe("Document Editing", () => {
     const documentPage = new DocumentPage(authenticatedPage);
 
     await documentsPage.goto(organizationSlug);
-    const { createdName, existingName } = await createDocumentOrFallback(documentsPage);
+    const { createdName, existingName } =
+      await createDocumentOrFallback(documentsPage);
     const documentName = createdName ?? existingName;
 
     if (!documentName) {
-      test.skip(true, "No documents are available to edit in the E2E workspace.");
+      test.skip(
+        true,
+        "No documents are available to edit in the E2E workspace.",
+      );
       return;
     }
 
@@ -127,7 +152,9 @@ test.describe("Document Editing", () => {
 
     // Verify field was added
     await expect(
-      authenticatedPage.getByRole("button", { name: /open field properties/i }).first(),
+      authenticatedPage
+        .getByRole("button", { name: /open field properties/i })
+        .first(),
     ).toBeVisible();
   });
 
@@ -168,11 +195,15 @@ test.describe("Document Lifecycle", () => {
 
     // 1. Create document
     await documentsPage.goto(organizationSlug);
-    const { createdName, existingName } = await createDocumentOrFallback(documentsPage);
+    const { createdName, existingName } =
+      await createDocumentOrFallback(documentsPage);
     const documentName = createdName ?? existingName;
 
     if (!documentName) {
-      test.skip(true, "No documents are available for lifecycle checks in the E2E workspace.");
+      test.skip(
+        true,
+        "No documents are available for lifecycle checks in the E2E workspace.",
+      );
       return;
     }
 
@@ -188,6 +219,8 @@ test.describe("Document Lifecycle", () => {
     // 4. Return to list and confirm row exists
     await documentsPage.goto(organizationSlug);
     await documentsPage.waitForAnyDocumentRow();
-    await expect(documentsPage.getDocumentRowByName(documentName)).toBeVisible();
+    await expect(
+      documentsPage.getDocumentRowByName(documentName),
+    ).toBeVisible();
   });
 });

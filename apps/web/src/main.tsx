@@ -35,8 +35,11 @@ const convexQueryClient = new ConvexQueryClient(convex);
 
 // Expose Convex client & API on `window` in dev/test/staging/preview so E2E
 // tests (and agent-browser sessions) can call mutations/queries directly.
-const isPreviewDeployment = typeof window !== "undefined" && window.location.hostname.includes("vercel.app");
-const isStagingDomain = typeof window !== "undefined" && window.location.hostname.includes("staging");
+const isPreviewDeployment =
+  typeof window !== "undefined" &&
+  window.location.hostname.includes("vercel.app");
+const isStagingDomain =
+  typeof window !== "undefined" && window.location.hostname.includes("staging");
 const shouldExposeConvexApi =
   import.meta.env.DEV ||
   import.meta.env.MODE === "test" ||
@@ -44,10 +47,12 @@ const shouldExposeConvexApi =
   (import.meta.env.VITE_EXPOSE_CONVEX_API === "true" && isPreviewDeployment);
 
 if (shouldExposeConvexApi) {
-  (window as Window & { __convexClient?: typeof convex }).__convexClient = convex;
+  (window as Window & { __convexClient?: typeof convex }).__convexClient =
+    convex;
   import("@seal/backend/convex/_generated/api")
     .then((apiModule) => {
-      (window as Window & { __convexApi?: typeof apiModule.api }).__convexApi = apiModule.api;
+      (window as Window & { __convexApi?: typeof apiModule.api }).__convexApi =
+        apiModule.api;
     })
     .catch((error) => {
       console.error("[E2E] Failed to load Convex API:", error);
@@ -80,7 +85,9 @@ const router = createRouter({
       <ThemeProvider>
         <ThemedClerkProvider>
           <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+            <QueryClientProvider client={queryClient}>
+              {children}
+            </QueryClientProvider>
           </ConvexProviderWithClerk>
         </ThemedClerkProvider>
       </ThemeProvider>

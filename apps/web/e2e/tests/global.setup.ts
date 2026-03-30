@@ -8,7 +8,10 @@ import { test as setup } from "@playwright/test";
 import { ensureWorkspace, signInTestUser } from "../fixtures/auth-helpers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const authStatePath = path.resolve(__dirname, "../../playwright/.clerk/user.json");
+const authStatePath = path.resolve(
+  __dirname,
+  "../../playwright/.clerk/user.json",
+);
 
 // Clerk's official protocol: clerkSetup() must run first, serially, to obtain
 // a Testing Token that bypasses Cloudflare bot detection for all subsequent tests.

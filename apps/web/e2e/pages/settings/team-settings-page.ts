@@ -26,7 +26,10 @@ export class TeamSettingsPage {
     await this.heading.waitFor({ state: "visible", timeout: 5000 });
   }
 
-  async inviteMember(email: string, role: "Owner" | "Admin" | "Member"): Promise<void> {
+  async inviteMember(
+    email: string,
+    role: "Owner" | "Admin" | "Member",
+  ): Promise<void> {
     await this.inviteMemberButton.click();
 
     // Fill invitation form
@@ -49,7 +52,10 @@ export class TeamSettingsPage {
     await waitForConvexMutation(this.page, "removeTeamMember");
   }
 
-  async updateMemberRole(email: string, role: "Owner" | "Admin" | "Member"): Promise<void> {
+  async updateMemberRole(
+    email: string,
+    role: "Owner" | "Admin" | "Member",
+  ): Promise<void> {
     const memberRow = this.page.locator(`[data-member-email="${email}"]`);
     await memberRow.getByRole("button", { name: /change role/i }).click();
     await this.page.getByRole("option", { name: role }).click();
