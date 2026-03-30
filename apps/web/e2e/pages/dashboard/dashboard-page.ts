@@ -25,9 +25,9 @@ export class DashboardPage {
     this.page = page;
     this.heading = page.getByRole("heading", { name: "Dashboard" });
     // The sidebar toggle is the icon button near the Dashboard heading
-    this.toggleSidebarButton = page.locator(
-      'button[aria-label="Toggle Sidebar"], [data-testid="sidebar-toggle"]',
-    );
+    this.toggleSidebarButton = page
+      .locator('button[aria-label="Toggle Sidebar"], [data-testid="sidebar-toggle"]')
+      .first();
 
     // Metric cards
     this.totalDocumentsCard = page.getByText("Total Documents").locator("..");

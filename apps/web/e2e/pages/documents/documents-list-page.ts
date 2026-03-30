@@ -126,7 +126,15 @@ export class DocumentsListPage {
     const initialState = await this.waitForDocumentListResolution();
     if (initialState === "rows") return;
 
-    await this.createDocument(pdfPath);
+    try {
+      await this.createDocument(pdfPath);
+    } catch (error) {
+      if (!(error instanceof Error && error.message.includes("monthly document limit"))) {
+        throw error;
+      }
+      // Quota exceeded — existing documents should be present from previous runs
+    }
+
     await this.documentRows.first().waitFor({ state: "visible", timeout: 10000 });
   }
 
