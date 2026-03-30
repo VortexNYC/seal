@@ -10,7 +10,7 @@ export class TeamSettingsPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.heading = page.getByRole("heading", { name: /team/i });
+    this.heading = page.getByRole("heading", { name: "Team", exact: true });
     this.inviteMemberButton = page.getByRole("button", {
       name: /invite member/i,
     });
@@ -23,7 +23,7 @@ export class TeamSettingsPage {
     await this.page.goto(`/${slug}/settings/team`);
     await this.page.waitForLoadState("domcontentloaded");
     // Wait for the page heading to appear (Convex data must resolve first)
-    await this.heading.waitFor({ state: "visible", timeout: 15000 });
+    await this.heading.waitFor({ state: "visible", timeout: 5000 });
   }
 
   async inviteMember(email: string, role: "Owner" | "Admin" | "Member"): Promise<void> {
@@ -62,7 +62,7 @@ export class TeamSettingsPage {
     await this.membersList
       .locator("tbody tr")
       .first()
-      .waitFor({ state: "visible", timeout: 15000 });
+      .waitFor({ state: "visible", timeout: 5000 });
     const members = await this.membersList.locator("tbody tr").count();
     return members;
   }

@@ -46,11 +46,11 @@ export default defineConfig({
     /* Video on failure */
     video: "retain-on-failure",
 
-    /* Navigation timeout */
-    navigationTimeout: 30000,
+    /* Navigation timeout — fail fast, don't burn 30s waiting */
+    navigationTimeout: 10000,
 
-    /* Action timeout */
-    actionTimeout: 15000,
+    /* Action timeout — clicks/fills should resolve in <5s */
+    actionTimeout: 5000,
   },
 
   /* Configure projects for major browsers */
@@ -126,12 +126,12 @@ export default defineConfig({
     timeout: 120000,
   },
 
-  /* Global timeout for each test */
-  timeout: 60000,
+  /* Global timeout — 20s per test, not 60s */
+  timeout: 20000,
 
-  /* Expect timeout */
+  /* Expect timeout — assertions fail in 5s, not 10s */
   expect: {
-    timeout: 10000,
+    timeout: 5000,
   },
 
   /* Output folder for test artifacts */

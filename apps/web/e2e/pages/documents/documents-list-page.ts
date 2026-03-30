@@ -51,6 +51,16 @@ export class DocumentsListPage {
     await this.createDocumentButton.click();
 
     const uploadDialog = this.page.getByRole("dialog", { name: /upload documents/i });
+
+    // Fail fast: check for quota limit error before attempting upload
+    const quotaError = uploadDialog.getByText(/monthly document limit/i);
+    if (await quotaError.isVisible({ timeout: 1000 }).catch(() => false)) {
+      // Close dialog and throw identifiable error for createDocumentOrFallback
+      const cancelButton = uploadDialog.getByRole("button", { name: /cancel|close/i }).first();
+      await cancelButton.click().catch(() => {});
+      throw new Error("monthly document limit");
+    }
+
     const dialogFileInput = uploadDialog.locator('input[type="file"]');
 
     // Keep document names unique so repeated runs create new rows even with seeded files.
@@ -62,17 +72,24 @@ export class DocumentsListPage {
       buffer: fileBuffer,
     });
 
+    // Check again after file selection — quota error can appear after file is selected
+    if (await quotaError.isVisible({ timeout: 500 }).catch(() => false)) {
+      const cancelButton = uploadDialog.getByRole("button", { name: /cancel|close/i }).first();
+      await cancelButton.click().catch(() => {});
+      throw new Error("monthly document limit");
+    }
+
     const uploadPdfButton = uploadDialog.getByRole("button", { name: /upload pdf/i });
     if ((await uploadPdfButton.count()) > 0) {
       await this.waitForUploadDialogReady(uploadDialog, uploadPdfButton, fileName);
       await uploadPdfButton.click();
-      await uploadDialog.waitFor({ state: "hidden", timeout: 30000 }).catch(() => {
+      await uploadDialog.waitFor({ state: "hidden", timeout: 10000 }).catch(() => {
         // Fallback if the dialog remains open; continue to wait on row creation.
       });
     }
 
     const start = Date.now();
-    const timeout = 30000;
+    const timeout = 10000;
     let rowDetectedWithName = false;
     while (Date.now() - start < timeout) {
       const isFileVisible = await this.page
@@ -92,7 +109,7 @@ export class DocumentsListPage {
     }
 
     if (!rowDetectedWithName) {
-      await this.waitForAnyDocumentRow(30000).catch(() => {
+      await this.waitForAnyDocumentRow(10000).catch(() => {
         // Keep the behavior explicit if rows still do not appear.
         throw new Error("Timed out waiting for document row to appear after upload.");
       });
@@ -106,7 +123,7 @@ export class DocumentsListPage {
     if (initialState === "rows") return;
 
     await this.createDocument(pdfPath);
-    await this.documentRows.first().waitFor({ state: "visible", timeout: 30000 });
+    await this.documentRows.first().waitFor({ state: "visible", timeout: 10000 });
   }
 
   getDocumentRows(): Locator {
@@ -117,7 +134,7 @@ export class DocumentsListPage {
     return await this.documentRows.count();
   }
 
-  async waitForAnyDocumentRow(timeoutMs = 30000): Promise<void> {
+  async waitForAnyDocumentRow(timeoutMs = 10000): Promise<void> {
     await this.documentRows.first().waitFor({ state: "visible", timeout: timeoutMs });
   }
 
@@ -127,7 +144,7 @@ export class DocumentsListPage {
 
   async getFirstDocumentName(): Promise<string | null> {
     const firstRow = this.documentRows.first();
-    await firstRow.waitFor({ state: "visible", timeout: 30000 });
+    await firstRow.waitFor({ state: "visible", timeout: 10000 });
 
     const name = await firstRow.locator("td").nth(1).locator("p").first().textContent();
     return name?.trim() ?? null;
@@ -141,20 +158,20 @@ export class DocumentsListPage {
   async openDocument(documentName: string): Promise<void> {
     const namedRows = this.page.locator("table tbody tr").filter({ hasText: documentName });
     const row = (await namedRows.count()) > 0 ? namedRows.first() : this.documentRows.first();
-    await row.waitFor({ state: "visible", timeout: 30000 });
+    await row.waitFor({ state: "visible", timeout: 10000 });
     await row.click();
     await this.page.waitForLoadState("domcontentloaded");
   }
 
   async openFirstDocument(): Promise<void> {
-    await this.documentRows.first().waitFor({ state: "visible", timeout: 30000 });
+    await this.documentRows.first().waitFor({ state: "visible", timeout: 10000 });
     await this.documentRows.first().click();
     await this.page.waitForLoadState("domcontentloaded");
   }
 
   async openFirstDocumentActionsMenu(): Promise<void> {
     const firstRow = this.documentRows.first();
-    await firstRow.waitFor({ state: "visible", timeout: 30000 });
+    await firstRow.waitFor({ state: "visible", timeout: 10000 });
     await firstRow.getByRole("button", { name: /document actions for/i }).click();
   }
 
@@ -163,7 +180,7 @@ export class DocumentsListPage {
     return rows;
   }
 
-  private async waitForDocumentListResolution(timeoutMs = 15000): Promise<"rows" | "empty"> {
+  private async waitForDocumentListResolution(timeoutMs = 5000): Promise<"rows" | "empty"> {
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline) {
@@ -209,7 +226,7 @@ export class DocumentsListPage {
     uploadDialog: Locator,
     uploadPdfButton: Locator,
     fileName: string,
-    timeoutMs = 15000,
+    timeoutMs = 5000,
   ): Promise<void> {
     const selectedFile = uploadDialog.getByText(fileName, { exact: true });
     const deadline = Date.now() + timeoutMs;

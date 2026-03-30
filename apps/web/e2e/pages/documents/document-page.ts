@@ -62,7 +62,7 @@ export class DocumentPage {
     const fieldButton = this.page.getByRole("button", {
       name: new RegExp(`^${this.selectedFieldLabel}$`, "i"),
     });
-    await fieldButton.waitFor({ state: "visible", timeout: 15000 });
+    await fieldButton.waitFor({ state: "visible", timeout: 5000 });
     await expect(fieldButton).toBeEnabled();
     const dropTargetBox = await this.documentDropTarget.boundingBox();
     if (!dropTargetBox) {
@@ -85,12 +85,12 @@ export class DocumentPage {
       clientY: dropClientY,
     });
 
-    await this.recipientSelectorDialog.waitFor({ state: "visible", timeout: 15000 });
+    await this.recipientSelectorDialog.waitFor({ state: "visible", timeout: 5000 });
     await this.placeFieldButton.click();
 
     // Wait for field to be created
     await waitForConvexMutation(this.page, "createField");
-    await this.recipientSelectorDialog.waitFor({ state: "hidden", timeout: 15000 }).catch(() => {});
+    await this.recipientSelectorDialog.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
   }
 
   async selectFieldType(fieldType: "signature" | "text" | "date" | "checkbox"): Promise<void> {
@@ -100,7 +100,7 @@ export class DocumentPage {
     const fieldButton = this.page.getByRole("button", {
       name: new RegExp(`^${this.selectedFieldLabel}$`, "i"),
     });
-    await fieldButton.waitFor({ state: "visible", timeout: 15000 });
+    await fieldButton.waitFor({ state: "visible", timeout: 5000 });
     await expect(fieldButton).toBeEnabled();
   }
 
@@ -118,7 +118,19 @@ export class DocumentPage {
       return ((await this.zoomLevelSelect.textContent()) || "").trim();
     }
 
-    await this.mobileZoomLevel.waitFor({ state: "visible", timeout: 15000 });
+    if (await this.mobileZoomLevel.isVisible().catch(() => false)) {
+      return ((await this.mobileZoomLevel.textContent()) || "").trim();
+    }
+
+    // Neither visible yet — wait briefly for either
+    await this.zoomLevelSelect
+      .or(this.mobileZoomLevel)
+      .first()
+      .waitFor({ state: "visible", timeout: 3000 });
+
+    if (await this.zoomLevelSelect.isVisible().catch(() => false)) {
+      return ((await this.zoomLevelSelect.textContent()) || "").trim();
+    }
     return ((await this.mobileZoomLevel.textContent()) || "").trim();
   }
 
@@ -131,13 +143,13 @@ export class DocumentPage {
     // appears once the PDF URL resolves OR in the loading placeholder, so race
     // it against the Signature Fields collapsible button which is always present.
     await Promise.race([
-      this.documentPreview.waitFor({ state: "visible", timeout: 30000 }),
+      this.documentPreview.waitFor({ state: "visible", timeout: 10000 }),
       this.page
         .getByRole("button", { name: /Signature Fields/ })
-        .waitFor({ state: "visible", timeout: 30000 }),
+        .waitFor({ state: "visible", timeout: 10000 }),
     ]);
     // Canvas may take an extra beat to paint after the wrapper appears.
-    await this.documentCanvas.waitFor({ state: "visible", timeout: 15000 }).catch(() => {
+    await this.documentCanvas.waitFor({ state: "visible", timeout: 5000 }).catch(() => {
       /* canvas may not exist for non-PDF docs; continue */
     });
     await this.page.waitForLoadState("domcontentloaded");
@@ -165,7 +177,7 @@ export class DocumentPage {
 
     await this.addMyselfAsSignerButton.click();
     await this.page.getByRole("button", { name: /add as signer/i }).click();
-    await this.addMyselfAsSignerButton.waitFor({ state: "hidden", timeout: 15000 }).catch(() => {});
+    await this.addMyselfAsSignerButton.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
     await this.page.waitForTimeout(500);
   }
 }
