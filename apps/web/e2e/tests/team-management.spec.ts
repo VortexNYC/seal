@@ -45,10 +45,7 @@ test.describe("Team Management - Invite Members", () => {
     await expect(authenticatedPage.getByRole("dialog", { name: /invite/i })).toBeVisible();
   });
 
-  test("should invite team member as Admin", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
+  test("should invite team member as Admin", async ({ authenticatedPage, organizationSlug }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
@@ -64,10 +61,7 @@ test.describe("Team Management - Invite Members", () => {
     await expect(authenticatedPage.getByText(memberEmail)).toBeVisible();
   });
 
-  test("should invite team member as Member", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
+  test("should invite team member as Member", async ({ authenticatedPage, organizationSlug }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
@@ -274,10 +268,7 @@ test.describe("Team Management - Member Details", () => {
 });
 
 test.describe("Team Management - Pending Invitations", () => {
-  test("should display pending invitations", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
+  test("should display pending invitations", async ({ authenticatedPage, organizationSlug }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);

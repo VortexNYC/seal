@@ -21,10 +21,7 @@ async function openDocumentWithSigner(
 }
 
 test.describe("Signature Fields - Selection", () => {
-  test("should display all field type buttons", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
+  test("should display all field type buttons", async ({ authenticatedPage, organizationSlug }) => {
     await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     // Verify core field type buttons are visible in the toolbar.
@@ -42,14 +39,8 @@ test.describe("Signature Fields - Selection", () => {
     ).toBeVisible();
   });
 
-  test("should select signature field type", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
-    const documentPage = await openDocumentWithSigner(
-      authenticatedPage,
-      organizationSlug,
-    );
+  test("should select signature field type", async ({ authenticatedPage, organizationSlug }) => {
+    const documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     // Use documentPage.selectFieldType to ensure a signer is available (buttons are disabled without one)
     await documentPage.selectFieldType("signature");
@@ -59,14 +50,8 @@ test.describe("Signature Fields - Selection", () => {
     ).toBeVisible();
   });
 
-  test("should select text field type", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
-    const documentPage = await openDocumentWithSigner(
-      authenticatedPage,
-      organizationSlug,
-    );
+  test("should select text field type", async ({ authenticatedPage, organizationSlug }) => {
+    const documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     await documentPage.selectFieldType("text");
     await expect(
@@ -74,14 +59,8 @@ test.describe("Signature Fields - Selection", () => {
     ).toBeVisible();
   });
 
-  test("should select date field type", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
-    const documentPage = await openDocumentWithSigner(
-      authenticatedPage,
-      organizationSlug,
-    );
+  test("should select date field type", async ({ authenticatedPage, organizationSlug }) => {
+    const documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     await documentPage.selectFieldType("date");
     await expect(
@@ -89,14 +68,8 @@ test.describe("Signature Fields - Selection", () => {
     ).toBeVisible();
   });
 
-  test("should select checkbox field type", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
-    const documentPage = await openDocumentWithSigner(
-      authenticatedPage,
-      organizationSlug,
-    );
+  test("should select checkbox field type", async ({ authenticatedPage, organizationSlug }) => {
+    const documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     await documentPage.selectFieldType("checkbox");
     await expect(
@@ -111,14 +84,9 @@ test.describe("Signature Fields - Drag and Drop", () => {
     organizationSlug,
   }) => {
     // TODO: Canvas interactions depend on PDF viewer internals — needs investigation before enabling.
-    const _documentPage = await openDocumentWithSigner(
-      authenticatedPage,
-      organizationSlug,
-    );
+    const _documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
-    await authenticatedPage
-      .getByRole("button", { name: "Signature", exact: true })
-      .click();
+    await authenticatedPage.getByRole("button", { name: "Signature", exact: true }).click();
 
     const canvas = authenticatedPage.locator("canvas");
     await canvas.click({ position: { x: 100, y: 100 } });
@@ -134,10 +102,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
     organizationSlug,
   }) => {
     // TODO: Canvas drag interactions depend on PDF viewer internals — needs investigation.
-    const _documentPage = await openDocumentWithSigner(
-      authenticatedPage,
-      organizationSlug,
-    );
+    const _documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     const signatureButton = authenticatedPage.getByRole("button", {
       name: "Signature",
@@ -160,28 +125,19 @@ test.describe("Signature Fields - Drag and Drop", () => {
     organizationSlug,
   }) => {
     // TODO: Same as above — canvas interaction investigation needed.
-    const _documentPage = await openDocumentWithSigner(
-      authenticatedPage,
-      organizationSlug,
-    );
+    const _documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     const canvas = authenticatedPage.locator("canvas");
 
-    await authenticatedPage
-      .getByRole("button", { name: "Signature", exact: true })
-      .click();
+    await authenticatedPage.getByRole("button", { name: "Signature", exact: true }).click();
     await canvas.click({ position: { x: 100, y: 100 } });
     await authenticatedPage.waitForTimeout(500);
 
-    await authenticatedPage
-      .getByRole("button", { name: "Text", exact: true })
-      .click();
+    await authenticatedPage.getByRole("button", { name: "Text", exact: true }).click();
     await canvas.click({ position: { x: 100, y: 200 } });
     await authenticatedPage.waitForTimeout(500);
 
-    await authenticatedPage
-      .getByRole("button", { name: "Date", exact: true })
-      .click();
+    await authenticatedPage.getByRole("button", { name: "Date", exact: true }).click();
     await canvas.click({ position: { x: 100, y: 300 } });
     await authenticatedPage.waitForTimeout(500);
 
@@ -191,10 +147,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
 });
 
 test.describe("Signature Fields - Management", () => {
-  test("should display fields section", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
+  test("should display fields section", async ({ authenticatedPage, organizationSlug }) => {
     await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     // The Signature Fields collapsible section should be visible
@@ -221,10 +174,7 @@ test.describe("Signature Fields - Management", () => {
     ).toBeVisible({ timeout: 5000 });
   });
 
-  test.skip("should delete signature field", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
+  test.skip("should delete signature field", async ({ authenticatedPage, organizationSlug }) => {
     // BLOCKED: requires `data-testid="signature-field"` on rendered field elements and a pre-placed field.
     await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
@@ -256,17 +206,12 @@ test.describe("Signature Fields - Toolbar Interactions", () => {
   }) => {
     await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
-    await expect(
-      authenticatedPage.getByRole("button", { name: /Signature Fields/ }),
-    ).toBeVisible();
+    await expect(authenticatedPage.getByRole("button", { name: /Signature Fields/ })).toBeVisible();
 
     await expect(authenticatedPage.getByText("Fields").first()).toBeVisible();
   });
 
-  test("should show field icons with labels", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
+  test("should show field icons with labels", async ({ authenticatedPage, organizationSlug }) => {
     await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     const sectionButton = authenticatedPage.getByRole("button", {
