@@ -28,14 +28,12 @@ test.describe("Recipients Management", () => {
     // The Recipients collapsible trigger button is visible in the document sidebar
     await expect(documentPage.recipientsSectionButton).toBeVisible();
 
-    // Recipients section is open by default (via useSectionState). Depending on
-    // whether this is a fresh document or one reused from a prior test run, we
-    // may see the "No recipients" empty state OR an existing recipients list.
+    // Recipients section is open by default. Verify the section rendered
+    // by checking for either the empty state text or the "Add Recipient" button.
     const noRecipients = authenticatedPage.getByText("No recipients");
-    const recipientCard = authenticatedPage
-      .locator("[class*='bg-muted'][class*='rounded-xl']")
-      .first();
-    await expect(noRecipients.or(recipientCard)).toBeVisible({ timeout: 15000 });
+    const addRecipientButton = authenticatedPage.getByRole("button", { name: /add recipient/i });
+    // Use first() to avoid strict mode when both are visible simultaneously
+    await expect(noRecipients.or(addRecipientButton).first()).toBeVisible({ timeout: 5000 });
   });
 
   test("should show empty state or recipients list", async ({
@@ -52,7 +50,7 @@ test.describe("Recipients Management", () => {
     // state ("No recipients" + helper text) or a populated recipients list.
     const noRecipients = authenticatedPage.getByText(/No recipients/i);
     const hasRecipients = documentPage.recipientsSectionButton;
-    await expect(hasRecipients).toBeVisible({ timeout: 15000 });
+    await expect(hasRecipients).toBeVisible({ timeout: 5000 });
 
     if (await noRecipients.isVisible().catch(() => false)) {
       await expect(
@@ -61,7 +59,7 @@ test.describe("Recipients Management", () => {
     }
   });
 
-  test.skip("should open add recipient dialog", async ({ authenticatedPage, organizationSlug }) => {
+  test("should open add recipient dialog", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -77,6 +75,7 @@ test.describe("Recipients Management", () => {
   });
 
   test.skip("should add recipient with email", async ({ authenticatedPage, organizationSlug }) => {
+    // TODO: Unskip once the add-recipient dialog tab behavior is confirmed (team vs. outsider tab defaults).
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -102,6 +101,7 @@ test.describe("Recipients Management", () => {
   });
 
   test.skip("should add multiple recipients", async ({ authenticatedPage, organizationSlug }) => {
+    // TODO: Depends on "should add recipient with email" being stable first.
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -133,6 +133,7 @@ test.describe("Recipients Management", () => {
   });
 
   test.skip("should remove recipient", async ({ authenticatedPage, organizationSlug }) => {
+    // BLOCKED: incomplete — needs `data-recipient-email` on recipient rows and a working add step first.
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -160,6 +161,7 @@ test.describe("Recipients Management", () => {
   });
 
   test.skip("should set recipient order", async ({ authenticatedPage, organizationSlug }) => {
+    // BLOCKED: incomplete stub — drag-to-reorder logic and `data-recipient-order` testids not implemented.
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -184,6 +186,7 @@ test.describe("Recipients Management", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
+    // BLOCKED: incomplete stub — requires adding both a field and a recipient first.
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -215,6 +218,7 @@ test.describe("Recipients - Authentication Methods", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
+    // BLOCKED: incomplete stub — `[data-testid="recipient"]` not in app, add recipient step missing.
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -243,6 +247,7 @@ test.describe("Document Sending", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
+    // BLOCKED: requires full prerequisite chain (add fields → add recipients → assign) before send.
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -270,6 +275,7 @@ test.describe("Document Sending", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
+    // TODO: Unskip once we confirm the send button is visible and the validation message text.
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -287,6 +293,7 @@ test.describe("Document Sending", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
+    // BLOCKED: incomplete stub — add field + add recipient steps missing before the send check.
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);

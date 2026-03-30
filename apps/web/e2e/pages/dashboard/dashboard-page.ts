@@ -47,8 +47,7 @@ export class DashboardPage {
     );
     this.completionRateValue = this.completionRateCard.locator('div:has-text("%")');
 
-    // Document activity section - use partial text match
-    this.documentActivitySection = page.locator("text=Document Activity");
+    this.documentActivitySection = page.locator('[data-testid="document-activity-section"]');
     this.noActivityMessage = page.getByText("No document activity yet");
   }
 
@@ -110,7 +109,7 @@ export class DashboardPage {
 
     // Wait for the sidebar to populate — section buttons depend on Convex queries
     // for permissions and org data that may not have resolved yet.
-    await sectionButton.waitFor({ state: "visible", timeout: 15000 });
+    await sectionButton.waitFor({ state: "visible", timeout: 5000 });
 
     if (!(await itemLink.isVisible().catch(() => false))) {
       await this.openMobileSidebarIfNeeded(sectionButton, itemLink);

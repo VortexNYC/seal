@@ -41,13 +41,11 @@ test.describe("Dashboard", () => {
     expect(completionRate).toMatch(/\d+%/);
   });
 
-  test.skip("should display document activity section", async ({
+  test("should display document activity section", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
-    // SKIPPED: Locator for "Document Activity" heading needs investigation
-    // The text is visible on the page but standard locators don't find it
-    // TODO: Add data-testid to the Document Activity section
+    // data-testid="document-activity-section" added to TrendChart Card in trend-chart.tsx
     const dashboardPage = new DashboardPage(authenticatedPage);
 
     await dashboardPage.goto(organizationSlug);
@@ -55,9 +53,8 @@ test.describe("Dashboard", () => {
     await expect(dashboardPage.documentActivitySection).toBeVisible();
   });
 
-  test.skip("should toggle sidebar", async ({ authenticatedPage, organizationSlug }) => {
-    // SKIPPED: Sidebar toggle button lacks accessible name/test-id
-    // TODO: Add data-testid="sidebar-toggle" to the toggle button
+  test("should toggle sidebar", async ({ authenticatedPage, organizationSlug }) => {
+    // aria-label="Toggle Sidebar" added to SidebarTrigger in page-wrapper.tsx
     const dashboardPage = new DashboardPage(authenticatedPage);
 
     await dashboardPage.goto(organizationSlug);

@@ -62,7 +62,7 @@ export function PageWrapper({
               headerCenter ? "lg:min-w-0" : "flex-1",
             )}
           >
-            <SidebarTrigger />
+            <SidebarTrigger aria-label="Toggle Sidebar" />
             <Separator orientation="vertical" className="hidden h-6 sm:block" />
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-base font-semibold sm:text-lg">{title}</h1>

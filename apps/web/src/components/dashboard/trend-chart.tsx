@@ -32,6 +32,7 @@ export function TrendChart(): React.ReactElement {
 
   return (
     <Card
+      data-testid="document-activity-section"
       className="lg:col-span-2"
       style={{
         animation: "fadeInUp var(--duration-slow) var(--ease-enter) both",
