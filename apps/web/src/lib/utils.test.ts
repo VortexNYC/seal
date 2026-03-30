@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 
-import { cn, parseConvexError, getErrorMessage } from "./utils";
+import { cn, parseConvexError, getErrorMessage, clamp } from "./utils";
 
 describe("cn", () => {
   test("merges simple class names", () => {
@@ -233,5 +233,55 @@ describe("getErrorMessage", () => {
   test("returns fallback for empty error", () => {
     const msg = getErrorMessage(new Error(""));
     expect(msg).toBe("An unexpected error occurred. Please try again.");
+  });
+});
+
+describe("clamp", () => {
+  describe("normal cases", () => {
+    test("returns value when within bounds", () => {
+      expect(clamp(5, 0, 10)).toBe(5);
+    });
+
+    test("returns min when value is below min", () => {
+      expect(clamp(-5, 0, 10)).toBe(0);
+    });
+
+    test("returns max when value is above max", () => {
+      expect(clamp(15, 0, 10)).toBe(10);
+    });
+
+    test("returns min when value equals min", () => {
+      expect(clamp(0, 0, 10)).toBe(0);
+    });
+
+    test("returns max when value equals max", () => {
+      expect(clamp(10, 0, 10)).toBe(10);
+    });
+  });
+
+  describe("edge cases", () => {
+    test("returns the shared value when min equals max", () => {
+      expect(clamp(5, 3, 3)).toBe(3);
+      expect(clamp(3, 3, 3)).toBe(3);
+      expect(clamp(1, 3, 3)).toBe(3);
+    });
+
+    test("handles negative number ranges", () => {
+      expect(clamp(-5, -10, -1)).toBe(-5);
+      expect(clamp(-15, -10, -1)).toBe(-10);
+      expect(clamp(0, -10, -1)).toBe(-1);
+    });
+
+    test("handles zero as a boundary", () => {
+      expect(clamp(-1, 0, 10)).toBe(0);
+      expect(clamp(0, 0, 10)).toBe(0);
+      expect(clamp(1, -10, 0)).toBe(0);
+    });
+
+    test("handles fractional values", () => {
+      expect(clamp(0.5, 0, 1)).toBe(0.5);
+      expect(clamp(-0.1, 0, 1)).toBe(0);
+      expect(clamp(1.1, 0, 1)).toBe(1);
+    });
   });
 });
