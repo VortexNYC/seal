@@ -4,9 +4,13 @@ import { TemplatesPage } from "../pages/templates/templates-page";
 import { testData } from "../utils/test-data";
 
 test.describe("Template Management", () => {
-  // Templates are created from the document actions menu ("Save as Template"),
-  // not from the templates page directly. The templates page only lists existing templates.
-  // These tests need a pre-existing template to work; skip until seeded test data is available.
+  // Templates are created via "Save as Template" in the document editor sidebar.
+  // The templates page only lists existing templates — there is no "Create Template" button here.
+  //
+  // BLOCKED: The E2E test account is on the free tier. "Save as Template" button is disabled
+  // until canCreateTemplates=true (requires pro subscription).
+  // Fix: seed a pro subscription for the test org in the test Convex deployment, OR add
+  // isTestDeployment bypass to use-subscription-limits.ts (same pattern as upload-dialog.tsx:79).
 
   test.skip("should create a new template", async ({ authenticatedPage, organizationSlug }) => {
     const templatesPage = new TemplatesPage(authenticatedPage);

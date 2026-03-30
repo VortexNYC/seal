@@ -287,36 +287,47 @@ test.describe("Team Management - Pending Invitations", () => {
     await expect(authenticatedPage.getByText(/pending invitations/i)).toBeVisible();
   });
 
-  test.skip("should revoke pending invitation", async ({ authenticatedPage, organizationSlug }) => {
-    // BLOCKED: requires a pre-existing pending invitation. Run after an invite test or seed one.
+  test("should revoke pending invitation", async ({ authenticatedPage, organizationSlug }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
 
-    const revokeButton = authenticatedPage
-      .locator('[data-testid="pending-invitation"]')
-      .first()
-      .getByRole("button", { name: /revoke/i });
+    // Seed a pending invitation so we have something to revoke
+    const email = testData.email("revoke-target");
+    await teamPage.inviteMember(email, "Member");
+    await waitForToast(authenticatedPage, /invitation sent/i);
 
-    await revokeButton.click();
+    // The newly created invitation row should now be visible
+    const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
+      hasText: email,
+    });
+    await expect(invitationRow).toBeVisible({ timeout: 5000 });
 
-    await waitForToast(authenticatedPage, /revoked/i);
+    await invitationRow.getByRole("button", { name: /revoke/i }).click();
+
+    await waitForToast(authenticatedPage, /invitation revoked/i);
+
+    // Invitation row should be gone
+    await expect(invitationRow).not.toBeVisible();
   });
 
-  test.skip("should resend invitation", async ({ authenticatedPage, organizationSlug }) => {
-    // BLOCKED: requires a pre-existing pending invitation. Run after an invite test or seed one.
+  test("should resend invitation", async ({ authenticatedPage, organizationSlug }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
 
-    // Resend an invitation
-    const resendButton = authenticatedPage
-      .locator('[data-testid="pending-invitation"]')
-      .first()
-      .getByRole("button", { name: /resend/i });
+    // Seed a pending invitation so we have something to resend
+    const email = testData.email("resend-target");
+    await teamPage.inviteMember(email, "Member");
+    await waitForToast(authenticatedPage, /invitation sent/i);
 
-    await resendButton.click();
+    const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
+      hasText: email,
+    });
+    await expect(invitationRow).toBeVisible({ timeout: 5000 });
 
-    await waitForToast(authenticatedPage, /resent/i);
+    await invitationRow.getByRole("button", { name: /resend/i }).click();
+
+    await waitForToast(authenticatedPage, /invitation resent/i);
   });
 });

@@ -74,8 +74,7 @@ test.describe("Recipients Management", () => {
     await expect(authenticatedPage.getByRole("dialog", { name: /add recipient/i })).toBeVisible();
   });
 
-  test.skip("should add recipient with email", async ({ authenticatedPage, organizationSlug }) => {
-    // TODO: Unskip once the add-recipient dialog tab behavior is confirmed (team vs. outsider tab defaults).
+  test("should add recipient with email", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -84,24 +83,26 @@ test.describe("Recipients Management", () => {
 
     const recipient = testData.recipient();
 
-    // Click Add button
+    // Click Add button to open the dialog
     await authenticatedPage.getByRole("button", { name: /add/i }).click();
 
-    // Fill in recipient details
-    await authenticatedPage.getByLabel(/email/i).fill(recipient.email);
-    await authenticatedPage.getByLabel(/name/i).fill(recipient.name);
+    // Dialog defaults to "Team" tab — switch to "External" to add by email
+    await authenticatedPage.getByRole("tab", { name: /external/i }).click();
 
-    // Submit
-    await authenticatedPage.getByRole("button", { name: /add|save/i }).click();
+    // Fill in recipient details (inputs have id="email" and id="name")
+    await authenticatedPage.locator("#email").fill(recipient.email);
+    await authenticatedPage.locator("#name").fill(recipient.name);
 
-    await waitForToast(authenticatedPage, /added/i);
+    // Submit — button text is "Add Recipient"
+    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+
+    await waitForToast(authenticatedPage, /recipient added/i);
 
     // Verify recipient appears in list
     await expect(authenticatedPage.getByText(recipient.email)).toBeVisible();
   });
 
-  test.skip("should add multiple recipients", async ({ authenticatedPage, organizationSlug }) => {
-    // TODO: Depends on "should add recipient with email" being stable first.
+  test("should add multiple recipients", async ({ authenticatedPage, organizationSlug }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
@@ -111,21 +112,21 @@ test.describe("Recipients Management", () => {
     const recipient1 = testData.recipient();
     const recipient2 = testData.recipient();
 
-    // Add first recipient
+    // Add first recipient via External tab
     await authenticatedPage.getByRole("button", { name: /add/i }).click();
-    await authenticatedPage.getByLabel(/email/i).fill(recipient1.email);
-    await authenticatedPage.getByLabel(/name/i).fill(recipient1.name);
-    await authenticatedPage.getByRole("button", { name: /add|save/i }).click();
-
-    await authenticatedPage.waitForTimeout(500);
+    await authenticatedPage.getByRole("tab", { name: /external/i }).click();
+    await authenticatedPage.locator("#email").fill(recipient1.email);
+    await authenticatedPage.locator("#name").fill(recipient1.name);
+    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await waitForToast(authenticatedPage, /recipient added/i);
 
     // Add second recipient
     await authenticatedPage.getByRole("button", { name: /add/i }).click();
-    await authenticatedPage.getByLabel(/email/i).fill(recipient2.email);
-    await authenticatedPage.getByLabel(/name/i).fill(recipient2.name);
-    await authenticatedPage.getByRole("button", { name: /add|save/i }).click();
-
-    await authenticatedPage.waitForTimeout(500);
+    await authenticatedPage.getByRole("tab", { name: /external/i }).click();
+    await authenticatedPage.locator("#email").fill(recipient2.email);
+    await authenticatedPage.locator("#name").fill(recipient2.name);
+    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await waitForToast(authenticatedPage, /recipient added/i);
 
     // Verify both recipients appear
     await expect(authenticatedPage.getByText(recipient1.email)).toBeVisible();
@@ -271,22 +272,28 @@ test.describe("Document Sending", () => {
     await expect(authenticatedPage.getByText("Sent")).toBeVisible();
   });
 
-  test.skip("should validate document before sending", async ({
+  test("should validate document before sending", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
-    // TODO: Unskip once we confirm the send button is visible and the validation message text.
     const documentPage = new DocumentPage(authenticatedPage);
 
     await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
-    // Try to send without recipients
-    await authenticatedPage.getByRole("button", { name: /send|send document/i }).click();
+    // Send Document button is visible but disabled when no recipients exist.
+    // Hover to reveal the tooltip validation message.
+    const sendButton = authenticatedPage.getByRole("button", { name: /send document/i });
+    await expect(sendButton).toBeVisible();
+    await expect(sendButton).toBeDisabled();
 
-    // Should show error/validation message
-    await expect(authenticatedPage.getByText(/add recipients/i)).toBeVisible();
+    await sendButton.hover();
+
+    // Tooltip shows why sending is blocked (no recipients or wrong status)
+    await expect(
+      authenticatedPage.getByText(/recipients|draft|expired/i),
+    ).toBeVisible({ timeout: 3000 });
   });
 
   test.skip("should require all fields to be assigned before sending", async ({
