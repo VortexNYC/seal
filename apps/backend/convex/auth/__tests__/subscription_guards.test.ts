@@ -348,8 +348,11 @@ describe("subscription_guards", () => {
     });
 
     test("does not count documents from previous months", async () => {
-      // Insert documents dated to last month
+      // Insert documents dated to last month.
+      // Set day to 1 first to avoid overflow when the current day doesn't exist
+      // in the previous month (e.g. March 30 → Feb 30 rolls over to March 2).
       const lastMonth = new Date();
+      lastMonth.setDate(1);
       lastMonth.setMonth(lastMonth.getMonth() - 1);
       const lastMonthTimestamp = lastMonth.getTime();
 
