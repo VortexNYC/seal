@@ -72,7 +72,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
     organizationSlug,
   }) => {
     // TODO: Canvas interactions depend on PDF viewer internals — needs investigation before enabling.
-    const documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
+    const _documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     await authenticatedPage.getByRole("button", { name: "Signature", exact: true }).click();
 
@@ -90,7 +90,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
     organizationSlug,
   }) => {
     // TODO: Canvas drag interactions depend on PDF viewer internals — needs investigation.
-    const documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
+    const _documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     const signatureButton = authenticatedPage.getByRole("button", {
       name: "Signature",
@@ -113,7 +113,7 @@ test.describe("Signature Fields - Drag and Drop", () => {
     organizationSlug,
   }) => {
     // TODO: Same as above — canvas interaction investigation needed.
-    const documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
+    const _documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
     const canvas = authenticatedPage.locator("canvas");
 

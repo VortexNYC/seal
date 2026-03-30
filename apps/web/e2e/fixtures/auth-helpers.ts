@@ -1,5 +1,5 @@
 import { clerk } from "@clerk/testing/playwright";
-import { expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
 type TestWorkspaceConfig = {
   email: string;
@@ -87,13 +87,11 @@ export async function ensureConvexAuth(page: Page): Promise<void> {
   // First wait for the Convex client and API to be exposed on window
   try {
     await page.waitForFunction(
-      // biome-ignore lint: window globals are untyped in browser evaluate context
-      () => (window as any).__convexClient !== undefined && (window as any).__convexApi !== undefined,
+      () => window.__convexClient !== undefined && window.__convexApi !== undefined,
       { timeout: 8000 },
     );
   } catch {
     // If __convexClient isn't exposed, fall back to Clerk token check
-    console.warn("[E2E] __convexClient not on window, falling back to Clerk token polling");
     await waitForClerkConvexToken(page);
     return;
   }
@@ -107,10 +105,8 @@ export async function ensureConvexAuth(page: Page): Promise<void> {
     // eslint-disable-next-line no-await-in-loop
     authenticated = await page.evaluate(async () => {
       try {
-        // biome-ignore lint: window globals are untyped in browser evaluate context
-        const client = (window as any).__convexClient;
-        // biome-ignore lint: window globals are untyped in browser evaluate context
-        const api = (window as any).__convexApi;
+        const client = window.__convexClient;
+        const api = window.__convexApi;
 
         if (!client || !api) return false;
 
@@ -140,21 +136,19 @@ export async function ensureConvexAuth(page: Page): Promise<void> {
 export async function ensureWorkspace(page: Page): Promise<void> {
   const workspace = getTestWorkspaceConfig();
 
-  const result = await Promise.race([
+  // Fire-and-forget with a 15s timeout — failure is acceptable (org may already exist)
+  await Promise.race([
     (async () => {
       try {
         await page.waitForFunction(
-          // biome-ignore lint: window globals are untyped in browser evaluate context
-          () => (window as any).__convexClient !== undefined && (window as any).__convexApi !== undefined,
+          () => window.__convexClient !== undefined && window.__convexApi !== undefined,
           { timeout: 10000 },
         );
 
         await page.evaluate(
           async ({ orgName, orgSlug }) => {
-            // biome-ignore lint: window globals are untyped in browser evaluate context
-            const client = (window as any).__convexClient;
-            // biome-ignore lint: window globals are untyped in browser evaluate context
-            const api = (window as any).__convexApi;
+            const client = window.__convexClient;
+            const api = window.__convexApi;
 
             if (!client || !api) throw new Error("Convex not ready");
 
@@ -165,28 +159,12 @@ export async function ensureWorkspace(page: Page): Promise<void> {
           },
           { orgName: workspace.organizationName, orgSlug: workspace.organizationSlug },
         );
-
-        return { success: true, message: "Workspace ensured" };
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        return { success: false, message: msg };
+      } catch {
+        // Org may already exist or Convex not ready — both acceptable
       }
     })(),
-    new Promise<{ success: false; message: string }>((resolve) =>
-      setTimeout(() => resolve({ success: false, message: "Workspace setup timeout (15s)" }), 15000),
-    ),
+    new Promise<void>((resolve) => setTimeout(resolve, 15000)),
   ]);
-
-  if (!result.success) {
-    const lowerMsg = result.message.toLowerCase();
-    if (lowerMsg.includes("already") || lowerMsg.includes("duplicate")) {
-      console.log("⚠️  Workspace setup skipped (already exists)");
-    } else {
-      console.log("⚠️  Workspace setup skipped:", result.message);
-    }
-  } else {
-    console.log("✅ Workspace ensured");
-  }
 }
 
 /**

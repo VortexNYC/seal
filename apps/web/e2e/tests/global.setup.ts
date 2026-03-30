@@ -26,10 +26,8 @@ setup("authenticate clerk test user", async ({ page }) => {
 
   // Save auth state FIRST — this is what tests depend on
   await page.context().storageState({ path: authStatePath });
-  console.log("✅ Auth state saved to", authStatePath);
 
   // Workspace setup happens AFTER auth is saved, never blocks tests.
   // The org is persistent in the test deployment so this is usually a no-op.
-  console.log("🏗️  Ensuring workspace exists...");
   await ensureWorkspace(page);
 });
