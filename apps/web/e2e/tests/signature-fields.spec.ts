@@ -20,6 +20,26 @@ async function openDocumentWithSigner(
   return documentPage;
 }
 
+/**
+ * Creates an isolated document, opens it, and returns both the document name
+ * (for cleanup) and the DocumentPage. The caller must delete the document in a
+ * finally block.
+ */
+async function createIsolatedDocument(
+  authenticatedPage: Page,
+  organizationSlug: string,
+): Promise<{ documentPage: DocumentPage; documentsPage: DocumentsListPage; documentName: string }> {
+  const documentsPage = new DocumentsListPage(authenticatedPage);
+  const documentPage = new DocumentPage(authenticatedPage);
+
+  await documentsPage.goto(organizationSlug);
+  const documentName = await documentsPage.createDocument(testData.samplePdfPath);
+  await documentsPage.openDocument(documentName);
+  await documentPage.waitForDocumentLoad();
+
+  return { documentPage, documentsPage, documentName };
+}
+
 test.describe("Signature Fields - Selection", () => {
   test("should display all field type buttons", async ({ authenticatedPage, organizationSlug }) => {
     await openDocumentWithSigner(authenticatedPage, organizationSlug);
@@ -79,70 +99,77 @@ test.describe("Signature Fields - Selection", () => {
 });
 
 test.describe("Signature Fields - Drag and Drop", () => {
-  test.skip("should add signature field by clicking on canvas", async ({
+  test("should add signature field by clicking on canvas", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
-    // TODO: Canvas interactions depend on PDF viewer internals — needs investigation before enabling.
-    const _documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
+    test.setTimeout(60000);
+    const documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
-    await authenticatedPage.getByRole("button", { name: "Signature", exact: true }).click();
+    await documentPage.selectFieldType("signature");
+    await documentPage.addSignatureField(100, 100);
 
-    const canvas = authenticatedPage.locator("canvas");
-    await canvas.click({ position: { x: 100, y: 100 } });
-
-    await authenticatedPage.waitForTimeout(1000);
-
-    const fieldsCount = authenticatedPage.getByText("1 fields added");
-    await expect(fieldsCount).toBeVisible();
+    // Field appears in the sidebar field list
+    await expect(
+      authenticatedPage.locator('[data-testid="signature-field"]').first(),
+    ).toBeVisible({ timeout: 5000 });
   });
 
-  test.skip("should drag signature field onto PDF", async ({
+  test("should drag signature field onto PDF", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
-    // TODO: Canvas drag interactions depend on PDF viewer internals — needs investigation.
-    const _documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
+    test.setTimeout(60000);
+    const documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
-    const signatureButton = authenticatedPage.getByRole("button", {
-      name: "Signature",
-      exact: true,
-    });
-    const canvas = authenticatedPage.locator("canvas");
+    await documentPage.selectFieldType("signature");
+    await documentPage.addSignatureField(150, 150);
 
-    await signatureButton.dragTo(canvas, {
-      targetPosition: { x: 150, y: 150 },
-    });
-
-    await authenticatedPage.waitForTimeout(1000);
-
-    const fieldsCount = authenticatedPage.getByText("1 fields added");
-    await expect(fieldsCount).toBeVisible();
+    await expect(
+      authenticatedPage.locator('[data-testid="signature-field"]').first(),
+    ).toBeVisible({ timeout: 5000 });
   });
 
-  test.skip("should add multiple fields of different types", async ({
+  test("should add multiple fields of different types", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
-    // TODO: Same as above — canvas interaction investigation needed.
-    const _documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
+    test.setTimeout(120000);
+    let documentName: string | null = null;
+    let documentsPage: DocumentsListPage | null = null;
+    try {
+      ({ documentsPage, documentName } = await createIsolatedDocument(
+        authenticatedPage,
+        organizationSlug,
+      ));
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("monthly document limit")) {
+        test.skip(true, "E2E workspace reached its monthly document limit.");
+        return;
+      }
+      throw err;
+    }
 
-    const canvas = authenticatedPage.locator("canvas");
+    try {
+      const documentPage = new DocumentPage(authenticatedPage);
 
-    await authenticatedPage.getByRole("button", { name: "Signature", exact: true }).click();
-    await canvas.click({ position: { x: 100, y: 100 } });
-    await authenticatedPage.waitForTimeout(500);
+      await documentPage.selectFieldType("signature");
+      await documentPage.addSignatureField(100, 100);
 
-    await authenticatedPage.getByRole("button", { name: "Text", exact: true }).click();
-    await canvas.click({ position: { x: 100, y: 200 } });
-    await authenticatedPage.waitForTimeout(500);
+      await documentPage.selectFieldType("text");
+      await documentPage.addSignatureField(100, 200);
 
-    await authenticatedPage.getByRole("button", { name: "Date", exact: true }).click();
-    await canvas.click({ position: { x: 100, y: 300 } });
-    await authenticatedPage.waitForTimeout(500);
+      await documentPage.selectFieldType("date");
+      await documentPage.addSignatureField(100, 300);
 
-    const fieldsCount = authenticatedPage.getByText("3 fields added");
-    await expect(fieldsCount).toBeVisible();
+      // All 3 fields appear in the sidebar field list
+      await expect(authenticatedPage.locator('[data-testid="signature-field"]')).toHaveCount(3, {
+        timeout: 5000,
+      });
+    } finally {
+      await documentsPage!.goto(organizationSlug).catch(() => {});
+      await documentsPage!.deleteDocument(documentName!).catch(() => {});
+    }
   });
 });
 
@@ -174,28 +201,66 @@ test.describe("Signature Fields - Management", () => {
     ).toBeVisible({ timeout: 5000 });
   });
 
-  test.skip("should delete signature field", async ({ authenticatedPage, organizationSlug }) => {
-    // BLOCKED: requires `data-testid="signature-field"` on rendered field elements and a pre-placed field.
-    await openDocumentWithSigner(authenticatedPage, organizationSlug);
+  test("should delete signature field", async ({ authenticatedPage, organizationSlug }) => {
+    test.setTimeout(60000);
+    let documentName: string | null = null;
+    let documentsPage: DocumentsListPage | null = null;
+    try {
+      ({ documentsPage, documentName } = await createIsolatedDocument(
+        authenticatedPage,
+        organizationSlug,
+      ));
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("monthly document limit")) {
+        test.skip(true, "E2E workspace reached its monthly document limit.");
+        return;
+      }
+      throw err;
+    }
 
-    const deleteButton = authenticatedPage
-      .locator('[data-testid="signature-field"]')
-      .getByRole("button", { name: /delete|remove/i });
+    try {
+      const documentPage = new DocumentPage(authenticatedPage);
 
-    await deleteButton.click();
+      await documentPage.selectFieldType("signature");
+      await documentPage.addSignatureField(150, 150);
 
-    await expect(authenticatedPage.getByText("No fields yet")).toBeVisible();
+      const field = authenticatedPage.locator('[data-testid="signature-field"]').first();
+      await expect(field).toBeVisible({ timeout: 5000 });
+
+      await field.getByRole("button", { name: "Delete this field" }).click();
+
+      // Confirmation dialog appears — scope to alertdialog to avoid matching other dialogs
+      const alertDialog = authenticatedPage.getByRole("alertdialog");
+      await expect(alertDialog).toBeVisible({ timeout: 5000 });
+      await alertDialog.getByRole("button", { name: "Remove" }).click();
+
+      await expect(authenticatedPage.getByText("No fields added yet")).toBeVisible({
+        timeout: 5000,
+      });
+    } finally {
+      await documentsPage!.goto(organizationSlug).catch(() => {});
+      await documentsPage!.deleteDocument(documentName!).catch(() => {});
+    }
   });
 
-  test.skip("should edit signature field properties", async ({
+  test("should edit signature field properties", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
-    // BLOCKED: requires `data-testid="signature-field"` on rendered field elements and a pre-placed field.
-    await openDocumentWithSigner(authenticatedPage, organizationSlug);
+    test.setTimeout(60000);
+    const documentPage = await openDocumentWithSigner(authenticatedPage, organizationSlug);
 
-    const field = authenticatedPage.locator('[data-testid="signature-field"]');
+    await documentPage.selectFieldType("signature");
+    await documentPage.addSignatureField(150, 150);
+
+    const field = authenticatedPage.locator('[data-testid="signature-field"]').first();
+    await expect(field).toBeVisible({ timeout: 5000 });
+
+    // Click the field row to select it
     await field.click();
+
+    // Field row highlights as selected (border-primary class applied)
+    await expect(field).toHaveClass(/border-primary/, { timeout: 3000 });
   });
 });
 

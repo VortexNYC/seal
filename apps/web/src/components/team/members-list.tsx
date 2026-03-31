@@ -276,6 +276,7 @@ export function MembersList({
                 {filteredMembers.map((member) => (
                   <TableRow
                     key={member.id}
+                    data-member-email={member.email}
                     className="hover:bg-muted/50 cursor-pointer"
                     onClick={() => {
                       if (!slug) return;

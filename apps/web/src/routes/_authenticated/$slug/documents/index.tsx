@@ -554,6 +554,7 @@ function DocumentsList({
                   {paginatedDocuments.map((doc) => (
                     <TableRow
                       key={doc._id}
+                      data-testid="document-row"
                       className="hover:bg-muted/50 cursor-pointer"
                       onClick={() => handleOpenDocument(doc._id)}
                     >
