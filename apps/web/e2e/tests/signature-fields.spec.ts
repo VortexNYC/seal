@@ -227,14 +227,35 @@ test.describe("Signature Fields - Management", () => {
       const field = authenticatedPage.locator('[data-testid="signature-field"]').first();
       await expect(field).toBeVisible({ timeout: 5000 });
 
-      await field.getByRole("button", { name: "Delete this field" }).click();
+      // After addSignatureField the field is auto-selected (border-primary applied).
+      // Ensure it's selected; if not already, click to select it.
+      const isAlreadySelected = await field.evaluate((el) =>
+        el.className.includes("border-primary"),
+      );
+      if (!isAlreadySelected) {
+        await field.click();
+        await expect(field).toHaveClass(/border-primary/, { timeout: 3000 });
+      }
 
-      // Confirmation dialog appears — scope to alertdialog to avoid matching other dialogs
+      // Use the Delete key shortcut — it calls requestFieldDelete() directly.
+      // Wait a tick first so the useEffect re-registers the keyboard handler with the
+      // current selectedFieldId after the React re-render.
+      await authenticatedPage.waitForTimeout(100);
+      await authenticatedPage.keyboard.press("Delete");
+
+      // Confirmation dialog appears — verify it's the field-delete dialog before clicking
       const alertDialog = authenticatedPage.getByRole("alertdialog");
       await expect(alertDialog).toBeVisible({ timeout: 5000 });
+      await expect(alertDialog).toContainText("This action cannot be undone");
       await alertDialog.getByRole("button", { name: "Remove" }).click();
 
-      await expect(authenticatedPage.getByText("No fields added yet")).toBeVisible({
+      // Wait for the field to be deleted (Convex mutation + reactive update).
+      // The sidebar shows "No fields yet" when all fields are removed
+      // (FieldList is only rendered when signatureFields.length > 0).
+      await expect(authenticatedPage.locator('[data-testid="signature-field"]')).toHaveCount(0, {
+        timeout: 10000,
+      });
+      await expect(authenticatedPage.getByText("No fields yet")).toBeVisible({
         timeout: 5000,
       });
     } finally {
