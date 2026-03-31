@@ -7,128 +7,120 @@ function isDocumentQuotaLimitError(error: unknown): boolean {
   return error instanceof Error && error.message.includes("monthly document limit");
 }
 
-async function createDocumentOrFallback(
-  documentsPage: DocumentsListPage,
-): Promise<{ createdName: string | null; existingName: string | null }> {
-  try {
-    return {
-      createdName: await documentsPage.createDocument(testData.samplePdfPath),
-      existingName: null,
-    };
-  } catch (error) {
-    if (!isDocumentQuotaLimitError(error)) {
-      throw error;
-    }
-
-    await documentsPage.waitForAnyDocumentRow();
-    return {
-      createdName: null,
-      existingName: await documentsPage.getFirstDocumentName(),
-    };
-  }
-}
-
 test.describe("Document Management", () => {
   test("should create a new document", async ({ authenticatedPage, organizationSlug }) => {
     const documentsPage = new DocumentsListPage(authenticatedPage);
-
     await documentsPage.goto(organizationSlug);
-    await documentsPage.waitForAnyDocumentRow();
 
     const initialCount = await documentsPage.getDocumentCount();
 
-    // Create document
-    const { createdName } = await createDocumentOrFallback(documentsPage);
-
-    if (!createdName) {
-      test.skip(true, "E2E workspace reached its monthly document limit.");
-      return;
+    let createdName: string | null = null;
+    try {
+      createdName = await documentsPage.createDocument(testData.samplePdfPath);
+    } catch (error) {
+      if (isDocumentQuotaLimitError(error)) {
+        test.skip(true, "E2E workspace reached its monthly document limit.");
+        return;
+      }
+      throw error;
     }
 
-    await documentsPage.waitForAnyDocumentRow();
-
-    // Verify document was created
-    const newCount = await documentsPage.getDocumentCount();
-    await expect(documentsPage.getDocumentRowByName(createdName)).toBeVisible();
-    expect(newCount).toBeGreaterThan(initialCount);
+    try {
+      await documentsPage.waitForAnyDocumentRow();
+      await expect(documentsPage.getDocumentRowByName(createdName)).toBeVisible();
+      expect(await documentsPage.getDocumentCount()).toBeGreaterThan(initialCount);
+    } finally {
+      await documentsPage.goto(organizationSlug);
+      await documentsPage.deleteDocument(createdName).catch(() => {});
+    }
   });
 
   test("should search for documents", async ({ authenticatedPage, organizationSlug }) => {
     const documentsPage = new DocumentsListPage(authenticatedPage);
-
     await documentsPage.goto(organizationSlug);
-    const { createdName, existingName } = await createDocumentOrFallback(documentsPage);
-    const documentName = createdName ?? existingName;
 
-    if (!documentName) {
-      test.skip(true, "No searchable documents are available in the E2E workspace.");
-      return;
+    let createdName: string | null = null;
+    try {
+      createdName = await documentsPage.createDocument(testData.samplePdfPath);
+    } catch (error) {
+      if (isDocumentQuotaLimitError(error)) {
+        test.skip(true, "E2E workspace reached its monthly document limit.");
+        return;
+      }
+      throw error;
     }
 
-    await documentsPage.waitForAnyDocumentRow();
+    try {
+      await documentsPage.waitForAnyDocumentRow();
+      await documentsPage.searchDocuments(createdName);
+      await authenticatedPage.waitForTimeout(1000);
 
-    // Search for a document
-    await documentsPage.searchDocuments(documentName);
-
-    // Wait for search results
-    await authenticatedPage.waitForTimeout(1000);
-
-    // Verify search results are displayed
-    expect(await documentsPage.getDocumentCount()).toBeGreaterThan(0);
-    await expect(documentsPage.getDocumentRowByName(documentName)).toBeVisible();
+      expect(await documentsPage.getDocumentCount()).toBeGreaterThan(0);
+      await expect(documentsPage.getDocumentRowByName(createdName)).toBeVisible();
+    } finally {
+      await documentsPage.goto(organizationSlug);
+      await documentsPage.deleteDocument(createdName).catch(() => {});
+    }
   });
 
   test("should open document editor", async ({ authenticatedPage, organizationSlug }) => {
     const documentsPage = new DocumentsListPage(authenticatedPage);
-
     await documentsPage.goto(organizationSlug);
-    const { createdName, existingName } = await createDocumentOrFallback(documentsPage);
-    const documentName = createdName ?? existingName;
 
-    if (!documentName) {
-      test.skip(true, "No documents are available to open in the E2E workspace.");
-      return;
+    let createdName: string | null = null;
+    try {
+      createdName = await documentsPage.createDocument(testData.samplePdfPath);
+    } catch (error) {
+      if (isDocumentQuotaLimitError(error)) {
+        test.skip(true, "E2E workspace reached its monthly document limit.");
+        return;
+      }
+      throw error;
     }
 
-    await documentsPage.waitForAnyDocumentRow();
-    await documentsPage.openDocument(documentName);
-
-    // Verify we're on the document page
-    await expect(authenticatedPage).toHaveURL(/\/documents\/[a-z0-9]+$/);
+    try {
+      await documentsPage.waitForAnyDocumentRow();
+      await documentsPage.openDocument(createdName);
+      await expect(authenticatedPage).toHaveURL(/\/documents\/[a-z0-9]+$/);
+    } finally {
+      await documentsPage.goto(organizationSlug);
+      await documentsPage.deleteDocument(createdName).catch(() => {});
+    }
   });
 });
 
 test.describe("Document Editing", () => {
-  // Drag-and-drop + recipient selector + Convex mutation is genuinely multi-step
-  test("should add signature field to document", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
+  test("should add signature field to document", async ({ authenticatedPage, organizationSlug }) => {
     test.setTimeout(60000);
     const documentsPage = new DocumentsListPage(authenticatedPage);
     const documentPage = new DocumentPage(authenticatedPage);
-
     await documentsPage.goto(organizationSlug);
-    const { createdName, existingName } = await createDocumentOrFallback(documentsPage);
-    const documentName = createdName ?? existingName;
 
-    if (!documentName) {
-      test.skip(true, "No documents are available to edit in the E2E workspace.");
-      return;
+    let createdName: string | null = null;
+    try {
+      createdName = await documentsPage.createDocument(testData.samplePdfPath);
+    } catch (error) {
+      if (isDocumentQuotaLimitError(error)) {
+        test.skip(true, "E2E workspace reached its monthly document limit.");
+        return;
+      }
+      throw error;
     }
 
-    await documentsPage.openDocument(documentName);
+    try {
+      await documentsPage.openDocument(createdName);
+      await documentPage.waitForDocumentLoad();
 
-    await documentPage.waitForDocumentLoad();
+      await documentPage.selectFieldType("signature");
+      await documentPage.addSignatureField(100, 100);
 
-    // Add signature field
-    await documentPage.selectFieldType("signature");
-    await documentPage.addSignatureField(100, 100);
-
-    // Verify field was added
-    await expect(
-      authenticatedPage.getByRole("button", { name: /open field properties/i }).first(),
-    ).toBeVisible();
+      await expect(
+        authenticatedPage.getByRole("button", { name: /open field properties/i }).first(),
+      ).toBeVisible();
+    } finally {
+      await documentsPage.goto(organizationSlug);
+      await documentsPage.deleteDocument(createdName).catch(() => {});
+    }
   });
 
   test.skip(
@@ -136,22 +128,7 @@ test.describe("Document Editing", () => {
     // STALE: send button requires at least one recipient; fresh drafts no longer
     // auto-add the creator as a signer. The Document Lifecycle test covers send
     // after a recipient is added.
-    async ({ authenticatedPage, organizationSlug }) => {
-      const documentsPage = new DocumentsListPage(authenticatedPage);
-      const documentPage = new DocumentPage(authenticatedPage);
-
-      await documentsPage.goto(organizationSlug);
-      const { createdName } = await createDocumentOrFallback(documentsPage);
-
-      if (!createdName) {
-        return;
-      }
-
-      await documentsPage.openDocument(createdName);
-      await documentPage.waitForDocumentLoad();
-
-      await expect(documentPage.sendButton).toBeEnabled();
-    },
+    async () => {},
   );
 });
 
@@ -163,37 +140,34 @@ test.describe("Document Lifecycle", () => {
     test.setTimeout(60000);
     const documentsPage = new DocumentsListPage(authenticatedPage);
     const documentPage = new DocumentPage(authenticatedPage);
-
-    // 1. Create document
     await documentsPage.goto(organizationSlug);
-    const { createdName, existingName } = await createDocumentOrFallback(documentsPage);
-    const documentName = createdName ?? existingName;
 
-    if (!documentName) {
-      test.skip(true, "No documents are available for lifecycle checks in the E2E workspace.");
-      return;
+    let createdName: string | null = null;
+    try {
+      createdName = await documentsPage.createDocument(testData.samplePdfPath);
+    } catch (error) {
+      if (isDocumentQuotaLimitError(error)) {
+        test.skip(true, "E2E workspace reached its monthly document limit.");
+        return;
+      }
+      throw error;
     }
 
-    // 2. Add signature field.
-    //    addSignatureField() internally waits for the Convex `createField` mutation
-    //    to complete, so if it does not throw the field was successfully persisted.
-    await documentsPage.openDocument(documentName);
-    await documentPage.waitForDocumentLoad();
+    try {
+      await documentsPage.openDocument(createdName);
+      await documentPage.waitForDocumentLoad();
 
-    await documentPage.selectFieldType("signature");
-    await documentPage.addSignatureField(100, 100);
+      await documentPage.selectFieldType("signature");
+      await documentPage.addSignatureField(100, 100);
 
-    // Only verify send-enabled on fresh documents. Existing documents accumulate
-    // signers across runs, and any signer without a field assigned keeps send disabled.
-    if (createdName) {
       await expect(documentPage.sendButton).toBeEnabled();
-    }
-    // Fallback path: addSignatureField() not throwing IS the assertion —
-    // the Convex mutation confirmed the field was created.
 
-    // 4. Return to list and confirm row exists
-    await documentsPage.goto(organizationSlug);
-    await documentsPage.waitForAnyDocumentRow();
-    await expect(documentsPage.getDocumentRowByName(documentName)).toBeVisible();
+      await documentsPage.goto(organizationSlug);
+      await documentsPage.waitForAnyDocumentRow();
+      await expect(documentsPage.getDocumentRowByName(createdName)).toBeVisible();
+    } finally {
+      await documentsPage.goto(organizationSlug);
+      await documentsPage.deleteDocument(createdName).catch(() => {});
+    }
   });
 });

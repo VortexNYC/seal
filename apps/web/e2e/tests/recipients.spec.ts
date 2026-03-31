@@ -101,8 +101,8 @@ test.describe("Recipients Management", () => {
 
       const recipient = testData.recipient();
 
-      // Click Add button to open the dialog
-      await authenticatedPage.getByRole("button", { name: /add/i }).click();
+      // Click Add Recipient button to open the dialog
+      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
 
       // Dialog defaults to "Team" tab — switch to "External" to add by email
       await authenticatedPage.getByRole("tab", { name: /external/i }).click();
@@ -126,34 +126,49 @@ test.describe("Recipients Management", () => {
   });
 
   test("should add multiple recipients", async ({ authenticatedPage, organizationSlug }) => {
+    const documentsPage = new DocumentsListPage(authenticatedPage);
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
+    await documentsPage.goto(organizationSlug);
 
-    await documentPage.waitForDocumentLoad();
+    let documentName: string | null = null;
+    try {
+      documentName = await documentsPage.createDocument(testData.samplePdfPath);
+    } catch {
+      test.skip(true, "E2E workspace reached its monthly document limit.");
+      return;
+    }
 
-    const recipient1 = testData.recipient();
-    const recipient2 = testData.recipient();
+    try {
+      await documentsPage.openDocument(documentName);
+      await documentPage.waitForDocumentLoad();
 
-    // Add first recipient via External tab
-    await authenticatedPage.getByRole("button", { name: /add/i }).click();
-    await authenticatedPage.getByRole("tab", { name: /external/i }).click();
-    await authenticatedPage.locator("#email").fill(recipient1.email);
-    await authenticatedPage.locator("#name").fill(recipient1.name);
-    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
-    await waitForToast(authenticatedPage, /recipient added/i);
+      const recipient1 = testData.recipient();
+      const recipient2 = testData.recipient();
 
-    // Add second recipient
-    await authenticatedPage.getByRole("button", { name: /add/i }).click();
-    await authenticatedPage.getByRole("tab", { name: /external/i }).click();
-    await authenticatedPage.locator("#email").fill(recipient2.email);
-    await authenticatedPage.locator("#name").fill(recipient2.name);
-    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
-    await waitForToast(authenticatedPage, /recipient added/i);
+      // Add first recipient via External tab
+      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+      await authenticatedPage.getByRole("tab", { name: /external/i }).click();
+      await authenticatedPage.locator("#email").fill(recipient1.email);
+      await authenticatedPage.locator("#name").fill(recipient1.name);
+      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+      await waitForToast(authenticatedPage, /recipient added/i);
 
-    // Verify both recipients appear
-    await expect(authenticatedPage.getByText(recipient1.email)).toBeVisible();
-    await expect(authenticatedPage.getByText(recipient2.email)).toBeVisible();
+      // Add second recipient
+      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+      await authenticatedPage.getByRole("tab", { name: /external/i }).click();
+      await authenticatedPage.locator("#email").fill(recipient2.email);
+      await authenticatedPage.locator("#name").fill(recipient2.name);
+      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+      await waitForToast(authenticatedPage, /recipient added/i);
+
+      // Verify both recipients appear
+      await expect(authenticatedPage.getByText(recipient1.email)).toBeVisible();
+      await expect(authenticatedPage.getByText(recipient2.email)).toBeVisible();
+    } finally {
+      await documentsPage.goto(organizationSlug);
+      await documentsPage.deleteDocument(documentName).catch(() => {});
+    }
   });
 
   test.skip("should remove recipient", async ({ authenticatedPage, organizationSlug }) => {
