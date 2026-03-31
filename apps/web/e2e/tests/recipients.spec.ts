@@ -79,31 +79,50 @@ test.describe("Recipients Management", () => {
   });
 
   test("should add recipient with email", async ({ authenticatedPage, organizationSlug }) => {
+    const documentsPage = new DocumentsListPage(authenticatedPage);
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
+    // Create an isolated document so recipient assertions are against a clean slate.
+    await documentsPage.goto(organizationSlug);
+    let documentName: string;
+    try {
+      documentName = await documentsPage.createDocument(testData.samplePdfPath);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("monthly document limit")) {
+        test.skip(true, "Monthly document quota exhausted — cannot create isolated test document.");
+        return;
+      }
+      throw err;
+    }
 
-    await documentPage.waitForDocumentLoad();
+    try {
+      await documentsPage.openDocument(documentName);
+      await documentPage.waitForDocumentLoad();
 
-    const recipient = testData.recipient();
+      const recipient = testData.recipient();
 
-    // Click Add button to open the dialog
-    await authenticatedPage.getByRole("button", { name: /add/i }).click();
+      // Click Add button to open the dialog
+      await authenticatedPage.getByRole("button", { name: /add/i }).click();
 
-    // Dialog defaults to "Team" tab — switch to "External" to add by email
-    await authenticatedPage.getByRole("tab", { name: /external/i }).click();
+      // Dialog defaults to "Team" tab — switch to "External" to add by email
+      await authenticatedPage.getByRole("tab", { name: /external/i }).click();
 
-    // Fill in recipient details (inputs have id="email" and id="name")
-    await authenticatedPage.locator("#email").fill(recipient.email);
-    await authenticatedPage.locator("#name").fill(recipient.name);
+      // Fill in recipient details (inputs have id="email" and id="name")
+      await authenticatedPage.locator("#email").fill(recipient.email);
+      await authenticatedPage.locator("#name").fill(recipient.name);
 
-    // Submit — button text is "Add Recipient"
-    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+      // Submit — button text is "Add Recipient"
+      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
 
-    await waitForToast(authenticatedPage, /recipient added/i);
+      await waitForToast(authenticatedPage, /recipient added/i);
 
-    // Verify recipient appears in list
-    await expect(authenticatedPage.getByText(recipient.email)).toBeVisible();
+      // Verify recipient appears in list
+      await expect(authenticatedPage.getByText(recipient.email)).toBeVisible();
+    } finally {
+      // Always clean up — even if the test fails
+      await documentsPage.goto(organizationSlug).catch(() => {});
+      await documentsPage.deleteDocument(documentName).catch(() => {});
+    }
   });
 
   test("should add multiple recipients", async ({ authenticatedPage, organizationSlug }) => {

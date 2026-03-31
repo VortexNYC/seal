@@ -187,6 +187,18 @@ export class DocumentsListPage {
     await firstRow.getByRole("button", { name: /document actions for/i }).click();
   }
 
+  async deleteDocument(documentName: string): Promise<void> {
+    const row = this.documentRows.filter({ hasText: documentName }).first();
+    await row.waitFor({ state: "visible", timeout: 10000 });
+    await row.getByRole("button", { name: /document actions for/i }).click();
+    await this.page.getByRole("menuitem", { name: /^delete$/i }).click();
+    // Confirm the AlertDialog
+    await this.page.getByRole("alertdialog").waitFor({ state: "visible", timeout: 5000 });
+    await this.page.getByRole("button", { name: /^delete$/i }).click();
+    // Wait for the row to disappear
+    await row.waitFor({ state: "hidden", timeout: 10000 });
+  }
+
   async getDocumentCount(): Promise<number> {
     const rows = await this.documentRows.count();
     return rows;
