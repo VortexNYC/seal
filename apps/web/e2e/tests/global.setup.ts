@@ -31,10 +31,58 @@ setup("authenticate clerk test user", async ({ page }) => {
   // The org is persistent in the test deployment so this is usually a no-op.
   await ensureWorkspace(page);
 
+  // Clean up pending Clerk invitations from previous test runs.
+  // The Clerk org has a membership quota (5). Stale pending invitations from
+  // previous runs will block new invitations until revoked.
+  const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+  const clerkOrgId = process.env.E2E_CLERK_ORG_ID || "org_3BLR7tViJcVbpYwfByrDfPhR0Bn";
+  if (clerkSecretKey) {
+    try {
+      const invRes = await fetch(
+        `https://api.clerk.com/v1/organizations/${clerkOrgId}/invitations?status=pending&limit=100`,
+        { headers: { Authorization: `Bearer ${clerkSecretKey}` } },
+      );
+      if (invRes.ok) {
+        const invData = (await invRes.json()) as { data: { id: string }[] };
+        for (const inv of invData.data) {
+          await fetch(
+            `https://api.clerk.com/v1/organizations/${clerkOrgId}/invitations/${inv.id}/revoke`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${clerkSecretKey}`,
+                "Content-Type": "application/json",
+              },
+            },
+          ).catch(() => {});
+        }
+        if (invData.data.length > 0) {
+          console.log(`[setup] Revoked ${invData.data.length} stale pending invitation(s)`);
+        }
+      }
+    } catch (err) {
+      console.warn("[setup] Failed to clean up pending invitations:", err);
+    }
+  }
+
   // Seed a pro subscription so invite button / document quota are enabled.
   // Calls test_e2e_helpers:seedProSubscriptionForE2E via Convex HTTP API.
   // Non-fatal — tests degrade gracefully without pro plan.
-  const { organizationSlug } = getTestWorkspaceConfig();
+  //
+  // Use the actual active org slug from the URL (the app may redirect to a Clerk
+  // org slug rather than the personal workspace slug derived from the email).
+  let organizationSlug = getTestWorkspaceConfig().organizationSlug;
+  try {
+    await page.goto("/app", { waitUntil: "domcontentloaded" });
+    await page.waitForURL(/\/[\w-]+\/home/, { timeout: 8000, waitUntil: "domcontentloaded" });
+    const urlMatch = page.url().match(/\/([\w-]+)\/home/);
+    if (urlMatch?.[1]) {
+      organizationSlug = urlMatch[1];
+    }
+  } catch {
+    // Fall back to config-derived slug — org may already be set up
+  }
+
   const convexUrl = process.env.VITE_CONVEX_URL || "https://coordinated-lemur-768.convex.cloud";
   const deployKey = process.env.CONVEX_DEPLOY_KEY;
   if (deployKey) {

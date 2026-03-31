@@ -7,7 +7,7 @@
  * These functions are NOT public API and should never be called in production.
  */
 
-import { internalMutation, mutation } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -104,6 +104,25 @@ export const seedProSubscriptionForE2E = mutation({
     });
 
     return { seeded: true, orgId: org._id };
+  },
+});
+
+/**
+ * Debug: get org info by slug (no auth required).
+ */
+export const getOrgDebugInfo = query({
+  args: { slug: v.string() },
+  handler: async (ctx, { slug }) => {
+    const org = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .first();
+    if (!org) return null;
+    const sub = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_organization_id", (q) => q.eq("organizationId", org._id))
+      .first();
+    return { slug: org.slug, clerkId: org.clerkId, hasSub: !!sub, subStatus: sub?.status };
   },
 });
 
