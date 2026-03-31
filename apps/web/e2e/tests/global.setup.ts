@@ -19,6 +19,7 @@ setup("initialize clerk testing environment", async () => {
 });
 
 setup("authenticate clerk test user", async ({ page }) => {
+  setup.setTimeout(60000);
   mkdirSync(path.dirname(authStatePath), { recursive: true });
 
   // Sign in and verify Convex auth is ready

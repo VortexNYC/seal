@@ -45,6 +45,9 @@ export async function signInTestUser(page: Page): Promise<void> {
   // Clerk docs: navigate to an unprotected page that loads Clerk first
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
+  // clerk.signIn() calls page.waitForFunction internally. The global actionTimeout
+  // (5s) is too tight on a cold app boot — bump to 30s for the sign-in only.
+  page.setDefaultTimeout(30000);
   // clerk.signIn() internally calls setupClerkTestingToken()
   await clerk.signIn({
     page,
@@ -53,6 +56,8 @@ export async function signInTestUser(page: Page): Promise<void> {
       identifier: testEmail,
     },
   });
+  // Restore default action timeout for the rest of the test
+  page.setDefaultTimeout(5000);
 
   // Navigate to the authenticated app area
   await page.goto("/app", { waitUntil: "domcontentloaded" });
