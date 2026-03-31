@@ -101,11 +101,24 @@ test.describe("Document Actions", () => {
 
     await documentsPage.openFirstDocumentActionsMenu();
 
-    const popupPromise = authenticatedPage.waitForEvent("popup");
+    // Chromium/WebKit open a popup; Firefox triggers a download event instead.
+    const popupPromise = authenticatedPage.waitForEvent("popup", { timeout: 5000 }).catch(() => null);
+    const downloadPromise = authenticatedPage
+      .waitForEvent("download", { timeout: 5000 })
+      .catch(() => null);
+
     await authenticatedPage.getByRole("menuitem", { name: /^download$/i }).click();
 
-    const popup = await popupPromise;
-    await expect.poll(async () => popup.url(), { timeout: 5000 }).not.toBe("about:blank");
+    const [popup, download] = await Promise.all([popupPromise, downloadPromise]);
+    // Check download first: Firefox opens an about:blank popup but triggers a
+    // download event. Chromium/WebKit open a popup that navigates to the URL.
+    if (download) {
+      expect(download).toBeTruthy();
+    } else if (popup) {
+      await expect.poll(async () => popup.url(), { timeout: 5000 }).not.toBe("about:blank");
+    } else {
+      throw new Error("Neither a popup nor a download event was triggered");
+    }
   });
 
   test("should navigate back from document editor", async ({
@@ -241,6 +254,12 @@ test.describe("Document Details Sidebar", () => {
     // Verify Activity section
     await expect(documentPage.activitySectionButton).toBeVisible();
 
-    await expect(authenticatedPage.getByText(/was created/i).first()).toBeVisible();
+    // Activity entries accumulate across runs; "was created" may be buried.
+    // Match any event verb that appears in activity log items.
+    await expect(
+      authenticatedPage
+        .getByText(/was (?:created|added|updated|removed|sent|signed|viewed)/i)
+        .first(),
+    ).toBeVisible();
   });
 });

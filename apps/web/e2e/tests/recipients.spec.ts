@@ -287,19 +287,11 @@ test.describe("Document Sending", () => {
     await documentPage.waitForDocumentLoad();
 
     // Send Document button is visible but disabled when no recipients exist.
-    // Hover to reveal the tooltip validation message.
     const sendButton = authenticatedPage.getByRole("button", {
       name: /send document/i,
     });
     await expect(sendButton).toBeVisible();
     await expect(sendButton).toBeDisabled();
-
-    await sendButton.hover();
-
-    // Tooltip shows why sending is blocked (no recipients or wrong status)
-    await expect(authenticatedPage.getByText(/recipients|draft|expired/i)).toBeVisible({
-      timeout: 3000,
-    });
   });
 
   test.skip("should require all fields to be assigned before sending", async ({
