@@ -156,7 +156,7 @@ export function MembersList({
     };
 
     return (
-      <Badge variant="outline" className={colors[role]}>
+      <Badge variant="outline" className={colors[role]} data-testid="member-role">
         {role}
       </Badge>
     );

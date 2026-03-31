@@ -164,7 +164,11 @@ describe("api/v1/audit", () => {
       });
 
       expect(result.entries).toHaveLength(2);
-      expect(result.entries.every((e) => e.action === "document.created")).toBe(true);
+      expect(
+        result.entries.every(
+          (e: (typeof result.entries)[number]) => e.action === "document.created",
+        ),
+      ).toBe(true);
     });
 
     test("filters by document_id", async () => {
@@ -180,7 +184,9 @@ describe("api/v1/audit", () => {
       });
 
       expect(result.entries).toHaveLength(2);
-      expect(result.entries.every((e) => e.document_id === documentId)).toBe(true);
+      expect(
+        result.entries.every((e: (typeof result.entries)[number]) => e.document_id === documentId),
+      ).toBe(true);
     });
 
     test("filters by created_after", async () => {
@@ -196,7 +202,10 @@ describe("api/v1/audit", () => {
 
       expect(result.entries).toHaveLength(2);
       expect(
-        result.entries.every((e) => new Date(e.created_at).getTime() >= BASE_TIME + 5000),
+        result.entries.every(
+          (e: (typeof result.entries)[number]) =>
+            new Date(e.created_at).getTime() >= BASE_TIME + 5000,
+        ),
       ).toBe(true);
     });
 
@@ -213,7 +222,10 @@ describe("api/v1/audit", () => {
 
       expect(result.entries).toHaveLength(2);
       expect(
-        result.entries.every((e) => new Date(e.created_at).getTime() <= BASE_TIME + 15000),
+        result.entries.every(
+          (e: (typeof result.entries)[number]) =>
+            new Date(e.created_at).getTime() <= BASE_TIME + 15000,
+        ),
       ).toBe(true);
     });
 
@@ -256,8 +268,8 @@ describe("api/v1/audit", () => {
 
       expect(page2.entries).toHaveLength(2);
       // No overlap between pages
-      const page1Ids = new Set(page1.entries.map((e) => e.id));
-      const page2Ids = new Set(page2.entries.map((e) => e.id));
+      const page1Ids = new Set(page1.entries.map((e: (typeof page1.entries)[number]) => e.id));
+      const page2Ids = new Set(page2.entries.map((e: (typeof page2.entries)[number]) => e.id));
       for (const id of page2Ids) {
         expect(page1Ids.has(id)).toBe(false);
       }

@@ -52,14 +52,14 @@ export function parseConvexError(error: unknown): ParsedError {
   // Subscription/plan errors
   if (
     lowerMessage.includes("subscription") ||
-    lowerMessage.includes("pro plan") ||
+    lowerMessage.includes("professional plan") ||
     lowerMessage.includes("upgrade")
   ) {
     return {
       type: "subscription",
       message,
       userFriendlyMessage:
-        message || "This feature requires a Pro plan. Please upgrade to continue.",
+        message || "This feature requires a Professional plan. Please upgrade to continue.",
     };
   }
 

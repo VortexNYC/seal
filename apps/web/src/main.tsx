@@ -33,6 +33,29 @@ if (!CLERK_URL) {
 const convex = new ConvexReactClient(CONVEX_URL);
 const convexQueryClient = new ConvexQueryClient(convex);
 
+// Expose Convex client & API on `window` in dev/test/staging/preview so E2E
+// tests (and agent-browser sessions) can call mutations/queries directly.
+const isPreviewDeployment =
+  typeof window !== "undefined" && window.location.hostname.includes("vercel.app");
+const isStagingDomain =
+  typeof window !== "undefined" && window.location.hostname.includes("staging");
+const shouldExposeConvexApi =
+  import.meta.env.DEV ||
+  import.meta.env.MODE === "test" ||
+  isStagingDomain ||
+  (import.meta.env.VITE_EXPOSE_CONVEX_API === "true" && isPreviewDeployment);
+
+if (shouldExposeConvexApi) {
+  (window as Window & { __convexClient?: typeof convex }).__convexClient = convex;
+  import("@seal/backend/convex/_generated/api")
+    .then((apiModule) => {
+      (window as Window & { __convexApi?: typeof apiModule.api }).__convexApi = apiModule.api;
+    })
+    .catch((error) => {
+      console.error("[E2E] Failed to load Convex API:", error);
+    });
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

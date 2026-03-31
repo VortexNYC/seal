@@ -185,7 +185,7 @@ function SlackNotificationsSection({
           ) : (
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs">
-                Pro
+                Professional
               </Badge>
               <Button size="sm" variant="outline" disabled>
                 <Plus className="mr-1 h-4 w-4" />
@@ -197,7 +197,9 @@ function SlackNotificationsSection({
         <CardDescription>
           Get notified in Slack when documents are signed, sent, or completed
           {!isPro && !isLoadingPlan && (
-            <span className="text-warning mt-1 block">Slack notifications require a Pro plan.</span>
+            <span className="text-warning mt-1 block">
+              Slack notifications require a Professional plan.
+            </span>
           )}
         </CardDescription>
       </CardHeader>
@@ -221,7 +223,7 @@ function SlackNotificationsSection({
               Connect Slack
             </Button>
             {!isPro && !isLoadingPlan && (
-              <p className="text-warning mt-2 text-sm">Requires a Pro plan</p>
+              <p className="text-warning mt-2 text-sm">Requires a Professional plan</p>
             )}
           </div>
         ) : (
@@ -473,7 +475,7 @@ function WebhookEndpointsSection({
           ) : (
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs">
-                Pro
+                Professional
               </Badge>
               <Button size="sm" variant="outline" disabled>
                 <Plus className="mr-1 h-4 w-4" />
@@ -485,7 +487,7 @@ function WebhookEndpointsSection({
         <CardDescription>
           Configure endpoints to receive webhook events
           {!isPro && !isLoadingPlan && (
-            <span className="text-warning mt-1 block">Webhooks require a Pro plan.</span>
+            <span className="text-warning mt-1 block">Webhooks require a Professional plan.</span>
           )}
         </CardDescription>
       </CardHeader>
@@ -516,7 +518,7 @@ function WebhookEndpointsSection({
               Add Endpoint
             </Button>
             {!isPro && !isLoadingPlan && (
-              <p className="text-warning mt-2 text-sm">Requires a Pro plan</p>
+              <p className="text-warning mt-2 text-sm">Requires a Professional plan</p>
             )}
           </div>
         ) : (

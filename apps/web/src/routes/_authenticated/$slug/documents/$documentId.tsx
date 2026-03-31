@@ -27,6 +27,7 @@ import { NotFoundPage } from "@/components/not-found-page";
 import { PageWrapper } from "@/components/page-wrapper";
 import { RouteErrorComponent } from "@/components/route-error-component";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { buildActivityEvents } from "@/lib/document-activity";
 import { countSignatureFields } from "@/lib/signature-fields";
 import { cn } from "@/lib/utils";
@@ -165,6 +166,8 @@ function DocumentDetailPage() {
   const signingSettings = useQuery(api.organizations.queries.getSigningSettings, {
     organizationId: documentData.organizationId,
   });
+
+  const { canCreateTemplates } = useSubscriptionLimits();
 
   // ── Memoized maps ───────────────────────────────────────────────────────
   const paymentConfigByFieldId = useMemo(() => {
@@ -518,16 +521,26 @@ function DocumentDetailPage() {
 
   const saveAsTemplateButton =
     canEdit && signatureFields.length > 0 ? (
-      <Button
-        key="save-template"
-        onClick={() => docState.setSaveAsTemplateOpen(true)}
-        size="sm"
-        variant="outline"
-        className="flex-1 sm:flex-none"
-      >
-        <SaveIcon className="mr-2 h-4 w-4" />
-        <span className="truncate">Save as Template</span>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="flex-1 sm:flex-none" tabIndex={!canCreateTemplates ? 0 : undefined}>
+            <Button
+              key="save-template"
+              onClick={() => docState.setSaveAsTemplateOpen(true)}
+              size="sm"
+              variant="outline"
+              className="w-full"
+              disabled={!canCreateTemplates}
+            >
+              <SaveIcon className="mr-2 h-4 w-4" />
+              <span className="truncate">Save as Template</span>
+            </Button>
+          </span>
+        </TooltipTrigger>
+        {!canCreateTemplates && (
+          <TooltipContent>Templates require a Professional plan</TooltipContent>
+        )}
+      </Tooltip>
     ) : null;
 
   const sendDocumentButton = sendDocumentValidation.canSend ? (

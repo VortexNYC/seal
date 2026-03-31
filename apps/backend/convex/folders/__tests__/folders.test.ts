@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { api } from "../../_generated/api";
-import type { Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 
 describe("Folders", () => {
@@ -110,9 +110,9 @@ describe("Folders", () => {
 
       expect(result.id).toBeDefined();
 
-      const folder = await t.run(async (ctx) => {
+      const folder = (await t.run(async (ctx) => {
         return await ctx.db.get(result.id);
-      });
+      })) as Doc<"folders"> | null;
 
       expect(folder).not.toBeNull();
       expect(folder!.name).toBe("Contracts");
@@ -138,9 +138,9 @@ describe("Folders", () => {
           parentId: parent.id,
         });
 
-      const childFolder = await t.run(async (ctx) => {
+      const childFolder = (await t.run(async (ctx) => {
         return await ctx.db.get(child.id);
-      });
+      })) as Doc<"folders"> | null;
 
       expect(childFolder!.parentId).toEqual(parent.id);
     });
@@ -225,9 +225,9 @@ describe("Folders", () => {
           name: "New Name",
         });
 
-      const folder = await t.run(async (ctx) => {
+      const folder = (await t.run(async (ctx) => {
         return await ctx.db.get(folderId);
-      });
+      })) as Doc<"folders"> | null;
 
       expect(folder!.name).toBe("New Name");
     });
@@ -247,9 +247,9 @@ describe("Folders", () => {
           visibility: "admin",
         });
 
-      const folder = await t.run(async (ctx) => {
+      const folder = (await t.run(async (ctx) => {
         return await ctx.db.get(folderId);
-      });
+      })) as Doc<"folders"> | null;
 
       expect(folder!.visibility).toBe("admin");
     });
@@ -400,7 +400,7 @@ describe("Folders", () => {
           newParentId: folderB,
         });
 
-      const moved = await t.run(async (ctx) => ctx.db.get(folderA));
+      const moved = (await t.run(async (ctx) => ctx.db.get(folderA))) as Doc<"folders"> | null;
       expect(moved!.parentId).toEqual(folderB);
     });
 
@@ -427,7 +427,7 @@ describe("Folders", () => {
           // newParentId omitted = move to root
         });
 
-      const moved = await t.run(async (ctx) => ctx.db.get(childId));
+      const moved = (await t.run(async (ctx) => ctx.db.get(childId))) as Doc<"folders"> | null;
       expect(moved!.parentId).toBeUndefined();
     });
 
@@ -682,8 +682,8 @@ describe("Folders", () => {
         });
 
       expect(folders.length).toBe(2);
-      expect(folders.map((f) => f.name)).toContain("Root A");
-      expect(folders.map((f) => f.name)).toContain("Root B");
+      expect(folders.map((f: (typeof folders)[number]) => f.name)).toContain("Root A");
+      expect(folders.map((f: (typeof folders)[number]) => f.name)).toContain("Root B");
     });
 
     test("returns child folders for a given parent", async () => {
@@ -719,7 +719,9 @@ describe("Folders", () => {
         });
 
       expect(children.length).toBe(2);
-      expect(children.map((f) => f.name)).toEqual(expect.arrayContaining(["Child 1", "Child 2"]));
+      expect(children.map((f: (typeof children)[number]) => f.name)).toEqual(
+        expect.arrayContaining(["Child 1", "Child 2"]),
+      );
     });
 
     test("filters admin-only folders from members", async () => {

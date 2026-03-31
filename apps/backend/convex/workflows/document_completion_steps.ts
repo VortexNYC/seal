@@ -59,7 +59,7 @@ async function notifySequentialRecipients(
     userId: document.ownerId,
   });
   const senderName = senderUser?.name ?? senderUser?.email ?? "Seal User";
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
 
   const brandingSettings = await ctx.runQuery(
     internal.organizations.queries.getBrandingSettingsInternal,

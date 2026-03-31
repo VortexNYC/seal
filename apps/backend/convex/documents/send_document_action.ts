@@ -164,7 +164,7 @@ async function sendInvitationBatch(
     deadline: number | undefined;
   },
 ): Promise<InvitationEmailResult[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
   const results: InvitationEmailResult[] = [];
 
   for (const recipient of params.recipients) {
@@ -229,13 +229,19 @@ async function getPaymentInvoiceLinksForDocument(
     },
   );
 
-  if (!signatureFields.some((field) => field.fieldType === "signature")) {
+  if (
+    !signatureFields.some(
+      (field: (typeof signatureFields)[number]) => field.fieldType === "signature",
+    )
+  ) {
     throw new ConvexError(
       "Cannot send document without signature fields. Please add at least one signature field before sending.",
     );
   }
 
-  const paymentFields = signatureFields.filter((field) => field.fieldType === "payment");
+  const paymentFields = signatureFields.filter(
+    (field: (typeof signatureFields)[number]) => field.fieldType === "payment",
+  );
   if (paymentFields.length === 0) {
     return [];
   }
@@ -244,9 +250,15 @@ async function getPaymentInvoiceLinksForDocument(
     internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
     { documentId: params.documentId },
   );
-  const configuredFieldIds = new Set(paymentConfigs.map((config) => config.fieldId.toString()));
+  const configuredFieldIds = new Set(
+    paymentConfigs.map((config: (typeof paymentConfigs)[number]) => config.fieldId.toString()),
+  );
 
-  if (paymentFields.some((field) => !configuredFieldIds.has(field._id.toString()))) {
+  if (
+    paymentFields.some(
+      (field: (typeof paymentFields)[number]) => !configuredFieldIds.has(field._id.toString()),
+    )
+  ) {
     throw new ConvexError(
       "All payment fields must be configured before sending. Please configure payment details for each payment field.",
     );
@@ -666,7 +678,7 @@ export const resendRecipientEmail = action({
     }
 
     const newExpiresAt = await resetExpiredRecipientForResend(ctx, args.documentId, recipient);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5173";
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
     const { senderName, emailBranding } = await getSenderEmailContext(
       ctx,

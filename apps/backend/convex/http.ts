@@ -118,6 +118,8 @@ interface ClerkWebhookEvent {
     status?: string;
     created_at?: number;
     updated_at?: number;
+    // For organization events — Clerk sends the creator's user ID
+    created_by?: string;
     // For session events
     user_id?: string;
     client_id?: string;
@@ -199,7 +201,7 @@ async function handleClerkUserCreated(
   data: ClerkWebhookEvent["data"],
 ): Promise<void> {
   const profile = getClerkUserProfile(data);
-  const result = await ctx.runMutation(api.clerk_webhooks.syncUser, {
+  await ctx.runMutation(api.clerk_webhooks.syncUser, {
     clerkId: data.id,
     name: profile.name,
     email: profile.email,
@@ -207,21 +209,6 @@ async function handleClerkUserCreated(
     isEmailVerified: profile.isEmailVerified,
   });
   console.info(`[Clerk Webhook] User synced: ${data.id}`);
-
-  if (!result.isNewUser || !result.userId) {
-    return;
-  }
-
-  try {
-    await ctx.runAction(internal.stripe.subscription_actions.handleNewUserSignup, {
-      userId: result.userId,
-      email: profile.email,
-      name: profile.name,
-    });
-    console.info(`[Clerk Webhook] Stripe customer created for user: ${data.id}`);
-  } catch (err) {
-    console.error(`[Clerk Webhook] Failed to setup Stripe for user ${data.id}:`, err);
-  }
 }
 
 async function handleClerkUserUpdated(
@@ -253,7 +240,7 @@ async function handleClerkOrganizationSynced(
   ctx: HttpActionCtx,
   data: ClerkWebhookEvent["data"],
 ): Promise<void> {
-  await ctx.runMutation(api.clerk_webhooks.syncOrganization, {
+  const result = await ctx.runMutation(api.clerk_webhooks.syncOrganization, {
     clerkId: data.id,
     name: data.name || "",
     slug: data.slug || undefined,
@@ -261,6 +248,20 @@ async function handleClerkOrganizationSynced(
     metadata: data.public_metadata ? JSON.stringify(data.public_metadata) : undefined,
   });
   console.info(`[Clerk Webhook] Organization synced: ${data.id}`);
+
+  // For new organizations, create Stripe customer + enroll in Free plan
+  if (result?.organizationId) {
+    try {
+      const adminEmail = data.created_by || "admin@seal.nyc";
+      await ctx.runAction(internal.stripe.subscription_actions.handleNewOrgCreated, {
+        organizationId: result.organizationId,
+        orgName: data.name || "",
+        adminEmail,
+      });
+    } catch (err) {
+      console.error(`[Clerk Webhook] Failed to setup Stripe for org ${data.id}:`, err);
+    }
+  }
 }
 
 async function handleClerkOrganizationDeleted(

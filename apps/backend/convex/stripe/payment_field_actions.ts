@@ -32,18 +32,16 @@ function initializeStripe(): Stripe {
 }
 
 /**
- * Platform fee rates for Seal.
- * Free tier: 1%, Pro tier: 0.25%
+ * Platform fee calculation using tier-aware rates from subscription_guards.
+ * Card: 4.5%+30¢ (Free), 4%+30¢ (Pro), custom (Enterprise)
+ * ACH: $0 (Stripe passthrough at cost)
  */
-const PLATFORM_FEE_RATES = {
-  free: 0.01,
-  pro: 0.0025,
-} as const;
+import { calculateApplicationFee, type TierPlan } from "../auth/subscription_guards";
 
 /** @internal Exported for testing only. */
 export function calculatePlatformFee(amountCents: number, isPro: boolean): number {
-  const feeRate = isPro ? PLATFORM_FEE_RATES.pro : PLATFORM_FEE_RATES.free;
-  return Math.round(amountCents * feeRate);
+  const plan: TierPlan = isPro ? "pro" : "free";
+  return calculateApplicationFee(amountCents, plan, false);
 }
 
 /** Map due-date terms to days_until_due for Stripe. */
@@ -751,7 +749,8 @@ async function createRecurringSubscription(
   );
 
   const stripePaymentMethods = toStripePaymentMethodTypes(config.allowedPaymentMethods);
-  const platformFeePercent = isPro ? 0.25 : 1;
+  // Card rates: 4.5% (Free), 4% (Pro). Note: 30¢ fixed component not expressible via application_fee_percent.
+  const platformFeePercent = isPro ? 4 : 4.5;
   const commonMetadata = buildPaymentMetadata(config);
   const daysUntilDue = getDaysUntilDue(config.dueDateTerms, config.customDueDays);
   const price = await createRecurringPrice(
@@ -843,7 +842,8 @@ async function createInstallmentSubscription(
   );
 
   const stripePaymentMethods = toStripePaymentMethodTypes(config.allowedPaymentMethods);
-  const platformFeePercent = isPro ? 0.25 : 1;
+  // Card rates: 4.5% (Free), 4% (Pro). Note: 30¢ fixed component not expressible via application_fee_percent.
+  const platformFeePercent = isPro ? 4 : 4.5;
   const daysUntilDue = getDaysUntilDue(config.dueDateTerms, config.customDueDays);
   const commonMetadata = buildPaymentMetadata(config);
 
@@ -1096,9 +1096,9 @@ export const createStripeObjectsForPaymentFields = internalAction({
       throw new ConvexError("Stripe account is not enabled for charges");
     }
 
-    const subscriptionStatus: { isPro: boolean; plan: "free" | "pro" } = await ctx.runQuery(
+    const subscriptionStatus = await ctx.runQuery(
       internal.auth.subscription_helpers.checkProFeature,
-      { userId: args.userId },
+      { organizationId: args.organizationId },
     );
 
     const recipients: Doc<"document_recipients">[] = await ctx.runQuery(

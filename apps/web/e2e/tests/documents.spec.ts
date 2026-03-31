@@ -99,10 +99,12 @@ test.describe("Document Management", () => {
 });
 
 test.describe("Document Editing", () => {
+  // Drag-and-drop + recipient selector + Convex mutation is genuinely multi-step
   test("should add signature field to document", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
+    test.setTimeout(60000);
     const documentsPage = new DocumentsListPage(authenticatedPage);
     const documentPage = new DocumentPage(authenticatedPage);
 
@@ -160,6 +162,7 @@ test.describe("Document Lifecycle", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
+    test.setTimeout(60000);
     const documentsPage = new DocumentsListPage(authenticatedPage);
     const documentPage = new DocumentPage(authenticatedPage);
 

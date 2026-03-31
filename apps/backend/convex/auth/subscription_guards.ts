@@ -4,44 +4,36 @@
  * Plain helper functions for enforcing subscription plan limits.
  * These are NOT Convex functions — they accept `ctx.db` directly
  * and are meant to be called inside mutations/queries.
+ *
+ * All lookups are scoped to the ORGANIZATION, not the user.
  */
 
 import { ConvexError } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
 import type { DatabaseReader } from "../_generated/server";
+import { PLAN_LIMITS, type TierPlan } from "./plan_limits";
+
+export { PLAN_LIMITS, type TierPlan };
 
 /**
- * Plan limits for Free and Pro tiers
- */
-export const PLAN_LIMITS = {
-  free: {
-    documentsPerMonth: 10,
-    storageBytes: 100 * 1024 * 1024, // 100 MB
-  },
-  pro: {
-    documentsPerMonth: 500,
-    storageBytes: 10 * 1024 * 1024 * 1024, // 10 GB
-  },
-} as const;
-
-/**
- * Determine the user's current subscription plan.
+ * Determine an organization's current subscription plan.
  *
- * Treats `"active"` and `"trialing"` statuses as Pro.
+ * Treats `"active"` and `"trialing"` statuses as paid tiers.
+ * Falls back to `"free"` when no active subscription exists.
  */
 export async function getSubscriptionPlan(
   db: DatabaseReader,
-  userId: Id<"users">,
-): Promise<{ isPro: boolean; plan: "free" | "pro" }> {
+  organizationId: Id<"organizations">,
+): Promise<{ isPro: boolean; isEnterprise: boolean; plan: TierPlan }> {
   const subscription = await db
     .query("subscriptions")
-    .withIndex("by_user_id", (q) => q.eq("userId", userId))
+    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
     .order("desc")
     .first();
 
   if (!subscription || (subscription.status !== "active" && subscription.status !== "trialing")) {
-    return { isPro: false, plan: "free" };
+    return { isPro: false, isEnterprise: false, plan: "free" };
   }
 
   // Resolve the tier by joining through price → product
@@ -51,95 +43,161 @@ export async function getSubscriptionPlan(
     .first();
 
   let tier: string | undefined;
-  if (price) {
+  if (!price) {
+    console.error(
+      JSON.stringify({
+        topic: "subscription_guards",
+        event: "price_not_found",
+        severity: "critical",
+        organizationId,
+        externalPriceId: subscription.externalPriceId,
+        subscriptionStatus: subscription.status,
+        timestamp: Date.now(),
+      }),
+    );
+  } else {
     const product = await db
       .query("subscription_products")
       .withIndex("by_external_product_id", (q) =>
         q.eq("externalProductId", price.externalProductId),
       )
       .first();
+    if (!product) {
+      console.error(
+        JSON.stringify({
+          topic: "subscription_guards",
+          event: "product_not_found",
+          severity: "critical",
+          organizationId,
+          externalProductId: price.externalProductId,
+          externalPriceId: subscription.externalPriceId,
+          timestamp: Date.now(),
+        }),
+      );
+    }
     tier = product?.metadata?.tier;
   }
 
-  const isPro = tier === "pro";
-  return { isPro, plan: isPro ? "pro" : "free" };
+  if (tier === "enterprise") {
+    return { isPro: true, isEnterprise: true, plan: "enterprise" };
+  }
+  if (tier === "pro") {
+    return { isPro: true, isEnterprise: false, plan: "pro" };
+  }
+
+  // Active subscription but unrecognized tier — likely missing product metadata
+  if (tier !== undefined) {
+    console.error(
+      JSON.stringify({
+        topic: "subscription_guards",
+        event: "unrecognized_tier_metadata",
+        severity: "critical",
+        organizationId,
+        tier,
+        subscriptionId: subscription.externalSubscriptionId,
+        priceId: subscription.externalPriceId,
+        timestamp: Date.now(),
+      }),
+    );
+  }
+  return { isPro: false, isEnterprise: false, plan: "free" };
 }
 
 /**
- * Throw if the user is not on a Pro plan.
+ * Throw if the organization is not on a Pro (or higher) plan.
  *
- * Error message intentionally contains "Pro plan" and "upgrade"
+ * Error message intentionally contains "Professional plan" and "upgrade"
  * so `parseConvexError()` classifies it as a subscription error.
  */
 export async function ensureProFeature(
   db: DatabaseReader,
-  userId: Id<"users">,
+  organizationId: Id<"organizations">,
   featureName: string,
 ): Promise<void> {
-  const { isPro } = await getSubscriptionPlan(db, userId);
+  const { isPro } = await getSubscriptionPlan(db, organizationId);
   if (!isPro) {
-    throw new ConvexError(`${featureName} requires a Pro plan. Please upgrade to continue.`);
-  }
-}
-
-/**
- * Throw if the user has reached their monthly document creation limit.
- */
-export async function ensureDocumentLimit(db: DatabaseReader, userId: Id<"users">): Promise<void> {
-  const { isPro } = await getSubscriptionPlan(db, userId);
-  const limit = isPro ? PLAN_LIMITS.pro.documentsPerMonth : PLAN_LIMITS.free.documentsPerMonth;
-
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfMonthTimestamp = startOfMonth.getTime();
-
-  const documents = await db
-    .query("documents")
-    .withIndex("by_owner", (q) => q.eq("ownerId", userId))
-    .collect();
-
-  const documentsThisMonth = documents.filter(
-    (doc) => doc.status !== "deleted" && doc.createdAt >= startOfMonthTimestamp,
-  );
-
-  if (documentsThisMonth.length >= limit) {
     throw new ConvexError(
-      `You've reached your monthly document limit (${documentsThisMonth.length}/${limit}). ` +
-        (isPro
-          ? "Please contact support to increase your limit."
-          : "Please upgrade to the Pro plan for up to 500 documents per month."),
+      `${featureName} requires a Professional plan. Please upgrade to continue.`,
     );
   }
 }
 
 /**
- * Throw if adding `additionalBytes` would exceed the user's storage limit.
+ * Throw if adding another member would exceed the org's seat limit.
  */
-export async function ensureStorageLimit(
+export async function ensureSeatLimit(
   db: DatabaseReader,
-  userId: Id<"users">,
-  additionalBytes: number,
+  organizationId: Id<"organizations">,
 ): Promise<void> {
-  const { isPro } = await getSubscriptionPlan(db, userId);
-  const limit = isPro ? PLAN_LIMITS.pro.storageBytes : PLAN_LIMITS.free.storageBytes;
+  const { plan } = await getSubscriptionPlan(db, organizationId);
+  const limits = PLAN_LIMITS[plan];
 
-  const documents = await db
-    .query("documents")
-    .withIndex("by_owner", (q) => q.eq("ownerId", userId))
+  const members = await db
+    .query("organization_members")
+    .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+    .filter((q) => q.eq(q.field("status"), "active"))
     .collect();
 
-  const totalBytes = documents
-    .filter((doc) => doc.status !== "deleted")
-    .reduce((sum, doc) => sum + (doc.fileSize || 0), 0);
-
-  if (totalBytes + additionalBytes > limit) {
-    const usedMB = Math.round(totalBytes / (1024 * 1024));
-    const limitMB = Math.round(limit / (1024 * 1024));
+  if (members.length >= limits.maxSeats) {
     throw new ConvexError(
-      `Storage limit exceeded (${usedMB} MB / ${limitMB} MB used). ` +
-        (isPro
-          ? "Please contact support to increase your storage."
-          : "Please upgrade to the Pro plan for up to 10 GB of storage."),
+      `You've reached the seat limit for your plan (${members.length}/${limits.maxSeats}). ` +
+        (plan === "free"
+          ? "Upgrade to Professional to add team members."
+          : plan === "pro"
+            ? "Upgrade to Enterprise for more than 20 seats."
+            : "Contact support to increase your seat limit."),
     );
   }
+}
+
+/**
+ * Seal's platform fee rates per tier.
+ * ACH is passthrough at cost — Seal takes $0 margin on ACH.
+ */
+const SEAL_FEE_RATES = {
+  free: { cardPercent: 0.045, cardFixedCents: 30 },
+  pro: { cardPercent: 0.04, cardFixedCents: 30 },
+  enterprise: { cardPercent: 0.04, cardFixedCents: 30 }, // Default — overridden by customPaymentRates
+} as const;
+
+/**
+ * Calculate Seal's application fee for a card payment.
+ * Returns 0 for ACH (passthrough at cost).
+ */
+export function calculateApplicationFee(
+  amountCents: number,
+  plan: TierPlan,
+  isAch: boolean,
+  customRates?: { cardRate: number; cardFixed: number },
+): number {
+  if (isAch) return 0;
+
+  if (customRates) {
+    return Math.round(amountCents * customRates.cardRate + customRates.cardFixed);
+  }
+
+  const rates = SEAL_FEE_RATES[plan];
+  return Math.round(amountCents * rates.cardPercent + rates.cardFixedCents);
+}
+
+/**
+ * Get the application fee for a payment, resolving the org's tier.
+ */
+export async function getApplicationFee(
+  db: DatabaseReader,
+  organizationId: Id<"organizations">,
+  amountCents: number,
+  isAch: boolean,
+): Promise<number> {
+  const { plan } = await getSubscriptionPlan(db, organizationId);
+
+  // Check for enterprise custom rates
+  const org = await db.get(organizationId);
+  const customRates =
+    plan === "enterprise"
+      ? (org as { customPaymentRates?: { cardRate: number; cardFixed: number } })
+          ?.customPaymentRates
+      : undefined;
+
+  return calculateApplicationFee(amountCents, plan, isAch, customRates);
 }

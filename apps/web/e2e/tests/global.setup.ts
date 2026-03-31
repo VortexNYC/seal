@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { clerkSetup } from "@clerk/testing/playwright";
 import { test as setup } from "@playwright/test";
 
-import { signInTestUser } from "../fixtures/auth-helpers";
+import { ensureWorkspace, signInTestUser } from "../fixtures/auth-helpers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const authStatePath = path.resolve(__dirname, "../../playwright/.clerk/user.json");
@@ -21,7 +21,13 @@ setup("initialize clerk testing environment", async () => {
 setup("authenticate clerk test user", async ({ page }) => {
   mkdirSync(path.dirname(authStatePath), { recursive: true });
 
+  // Sign in and verify Convex auth is ready
   await signInTestUser(page);
 
+  // Save auth state FIRST — this is what tests depend on
   await page.context().storageState({ path: authStatePath });
+
+  // Workspace setup happens AFTER auth is saved, never blocks tests.
+  // The org is persistent in the test deployment so this is usually a no-op.
+  await ensureWorkspace(page);
 });

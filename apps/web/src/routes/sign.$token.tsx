@@ -745,6 +745,7 @@ function SigningPage() {
       }, 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [unfilledFields, isCompleted, scrollToField]);
 
   // State for collapsible sections on mobile
@@ -1275,7 +1276,7 @@ function SigningPage() {
                           className="text-info hover:bg-info-surface mt-2 h-8 px-0"
                           onClick={() => {
                             if (unfilledFields.length > 0) {
-                              scrollToField(unfilledFields[0]._id);
+                              scrollToField(unfilledFields[0]!._id);
                             }
                           }}
                           aria-label="Jump to the next incomplete field"
@@ -1578,7 +1579,7 @@ function SigningPage() {
                               return (
                                 <FillableFieldOverlay
                                   key={field._id}
-                                  ref={(el) => {
+                                  ref={(el: HTMLButtonElement | null) => {
                                     if (el) {
                                       fieldRefs.current.set(field._id, el);
                                     } else {
@@ -1752,7 +1753,7 @@ function SigningPage() {
       {/* Signature Capture Modal */}
       <Dialog
         open={!isCompleted && showSignatureCapture}
-        onOpenChange={(open) => !open && handleCancelSignature()}
+        onOpenChange={(open: boolean) => !open && handleCancelSignature()}
       >
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
           <DialogTitle className="sr-only">Sign Document</DialogTitle>
@@ -1779,7 +1780,9 @@ function SigningPage() {
             <Textarea
               id="decline-reason"
               value={declineReason}
-              onChange={(e) => setDeclineReason(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setDeclineReason(e.target.value)
+              }
               placeholder="Enter your reason here..."
               rows={4}
               className="resize-none"

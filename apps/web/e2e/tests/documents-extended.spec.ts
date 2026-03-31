@@ -105,7 +105,7 @@ test.describe("Document Actions", () => {
     await authenticatedPage.getByRole("menuitem", { name: /^download$/i }).click();
 
     const popup = await popupPromise;
-    await expect.poll(async () => popup.url(), { timeout: 10000 }).not.toBe("about:blank");
+    await expect.poll(async () => popup.url(), { timeout: 5000 }).not.toBe("about:blank");
   });
 
   test("should navigate back from document editor", async ({
@@ -157,10 +157,8 @@ test.describe("Document Editor - Zoom Controls", () => {
     const initialZoom = await documentPage.getVisibleZoomText();
     await documentPage.zoomInButton.click();
 
-    await authenticatedPage.waitForTimeout(500);
-
     await expect
-      .poll(async () => documentPage.getVisibleZoomText(), { timeout: 10000 })
+      .poll(async () => documentPage.getVisibleZoomText(), { timeout: 8000 })
       .not.toBe(initialZoom);
   });
 
@@ -227,8 +225,12 @@ test.describe("Document Details Sidebar", () => {
     // Fresh documents show "No recipients"; documents with recipients show the recipient name/email.
     // The "Add Recipient" button is always rendered when canEdit is true.
     const noRecipients = authenticatedPage.getByText("No recipients");
-    const addRecipientButton = authenticatedPage.getByRole("button", { name: /add recipient/i });
-    await expect(noRecipients.or(addRecipientButton)).toBeVisible({ timeout: 15000 });
+    const addRecipientButton = authenticatedPage.getByRole("button", {
+      name: /add recipient/i,
+    });
+    await expect(noRecipients.or(addRecipientButton)).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test("should display activity timeline", async ({ authenticatedPage, organizationSlug }) => {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { api, internal } from "../_generated/api";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { createTestContext } from "../test.setup";
 
 /**
@@ -123,9 +123,9 @@ describe("Payment field mutations", () => {
 
       expect(configId).toBeDefined();
 
-      const config = await t.run(async (ctx) => {
+      const config = (await t.run(async (ctx) => {
         return await ctx.db.get(configId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
 
       expect(config).toBeDefined();
       expect(config?.paymentType).toBe("one_time");
@@ -151,9 +151,9 @@ describe("Payment field mutations", () => {
 
       expect(secondId).toBe(firstId);
 
-      const config = await t.run(async (ctx) => {
+      const config = (await t.run(async (ctx) => {
         return await ctx.db.get(firstId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.totalAmountCents).toBe(20000);
       expect(config?.items[0]?.description).toBe("Updated fee");
@@ -167,9 +167,9 @@ describe("Payment field mutations", () => {
           currency: "USD",
         });
 
-      const config = await t.run(async (ctx) => {
+      const config = (await t.run(async (ctx) => {
         return await ctx.db.get(configId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.currency).toBe("usd");
     });
@@ -257,9 +257,9 @@ describe("Payment field mutations", () => {
           },
         });
 
-      const config = await t.run(async (ctx) => {
+      const config = (await t.run(async (ctx) => {
         return await ctx.db.get(configId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.paymentType).toBe("recurring");
       expect(config?.recurringConfig?.interval).toBe("month");
@@ -313,9 +313,9 @@ describe("Payment field mutations", () => {
         stripeInvoiceId: "in_test_123",
       });
 
-      const config = await t.run(async (ctx) => {
+      const config = (await t.run(async (ctx) => {
         return await ctx.db.get(configId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.paymentStatus).toBe("created");
       expect(config?.stripeInvoiceId).toBe("in_test_123");
@@ -337,9 +337,9 @@ describe("Payment field mutations", () => {
         });
       }
 
-      const config = await t.run(async (ctx) => {
+      const config = (await t.run(async (ctx) => {
         return await ctx.db.get(configId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.paymentStatus).toBe("paid");
     });
@@ -363,9 +363,9 @@ describe("Payment field mutations", () => {
         });
       });
 
-      const config = await t.run(async (ctx) => {
+      const config = (await t.run(async (ctx) => {
         return await ctx.db.get(configId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.paymentStatus).toBe("created");
       expect(config?.stripeInvoiceId).toBe("in_internal_123");
@@ -389,9 +389,9 @@ describe("Payment field mutations", () => {
         });
       });
 
-      const config = await t.run(async (ctx) => {
+      const config = (await t.run(async (ctx) => {
         return await ctx.db.get(configId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.paymentStatus).toBe("awaiting");
       expect(config?.stripeInvoiceId).toBe("in_url_test_123");
@@ -430,9 +430,9 @@ describe("Payment field mutations", () => {
 
       expect(result).toBe(configId);
 
-      const config = await t.run(async (ctx) => {
+      const config = (await t.run(async (ctx) => {
         return await ctx.db.get(configId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
 
       expect(config?.paymentStatus).toBe("paid");
     });
@@ -467,9 +467,9 @@ describe("Payment field mutations", () => {
         });
       });
 
-      const beforeUpdate = await t.run(async (ctx) => {
+      const beforeUpdate = (await t.run(async (ctx) => {
         return await ctx.db.get(configId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
       const beforeTimestamp = beforeUpdate?.updatedAt;
 
       // Small delay to ensure timestamp advances
@@ -485,9 +485,9 @@ describe("Payment field mutations", () => {
         );
       });
 
-      const afterUpdate = await t.run(async (ctx) => {
+      const afterUpdate = (await t.run(async (ctx) => {
         return await ctx.db.get(configId);
-      });
+      })) as Doc<"payment_field_configs"> | null;
 
       expect(afterUpdate?.updatedAt).toBeGreaterThan(beforeTimestamp!);
       expect(afterUpdate?.paymentStatus).toBe("cancelled");

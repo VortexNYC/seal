@@ -1,5 +1,5 @@
 import { ArrowRight, Check, Circle, FileText } from "lucide-react";
-import type { ComponentType, ReactElement, SVGProps } from "react";
+import type { ReactElement } from "react";
 import { FadeIn } from "~/components/ui/fade-in";
 import type { FeaturesSectionBlock } from "~/lib/content/types";
 

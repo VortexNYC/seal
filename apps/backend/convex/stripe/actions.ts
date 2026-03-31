@@ -3,13 +3,15 @@
  *
  * Convex actions for interacting with Stripe API.
  * These run in Node.js runtime and can make external API calls.
+ *
+ * Billing is scoped to the ORGANIZATION, not the user.
  */
 
 import { ConvexError, v } from "convex/values";
 import Stripe from "stripe";
 
 import { internal } from "../_generated/api";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { type ActionCtx, action, internalAction } from "../_generated/server";
 import { getOrCreateStripeCustomer } from "./helpers";
 
@@ -82,10 +84,12 @@ export const retrievePromotionCode = internalAction({
 // =====================
 
 /**
- * Resolve the authenticated user from Clerk identity.
- * Used by public actions that need the user's Stripe customer ID.
+ * Resolve the authenticated user and their active organization.
  */
-async function resolveAuthenticatedUser(ctx: ActionCtx): Promise<Doc<"users">> {
+async function resolveAuthContext(ctx: ActionCtx): Promise<{
+  user: Doc<"users">;
+  organization: Doc<"organizations">;
+}> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new ConvexError("Authentication required");
@@ -100,7 +104,62 @@ async function resolveAuthenticatedUser(ctx: ActionCtx): Promise<Doc<"users">> {
     throw new ConvexError("User not found");
   }
 
-  return user;
+  if (!user.activeOrganizationId) {
+    throw new ConvexError("No active organization");
+  }
+
+  const organization: Doc<"organizations"> | null = await ctx.runQuery(
+    internal.organizations.helpers.getOrganizationById,
+    { organizationId: user.activeOrganizationId },
+  );
+
+  if (!organization) {
+    throw new ConvexError("Organization not found");
+  }
+
+  return { user, organization };
+}
+
+/**
+ * Resolve or create a Stripe customer for an organization.
+ */
+async function resolveOrgStripeCustomer(
+  ctx: ActionCtx,
+  stripe: Stripe,
+  organization: Doc<"organizations">,
+  adminEmail: string,
+): Promise<string> {
+  if (organization.stripeCustomerId) {
+    return organization.stripeCustomerId;
+  }
+
+  const stripeCustomerId = await getOrCreateStripeCustomer(
+    stripe,
+    organization._id,
+    adminEmail,
+    organization.name,
+    undefined,
+  );
+
+  await ctx.runMutation(internal.stripe.subscription_actions.updateOrgStripeCustomerId, {
+    organizationId: organization._id,
+    stripeCustomerId,
+  });
+
+  return stripeCustomerId;
+}
+
+/**
+ * Count active members in an organization for per-seat billing.
+ */
+async function getOrgMemberCount(
+  ctx: ActionCtx,
+  organizationId: Id<"organizations">,
+): Promise<number> {
+  const count: number = await ctx.runQuery(internal.organizations.helpers.getActiveMemberCount, {
+    organizationId,
+  });
+  return Math.max(count, 1); // At least 1 seat (the owner)
 }
 
 /**
@@ -117,24 +176,10 @@ export const createCheckoutSession = action({
   },
   handler: async (ctx, { lookupKey, successUrl, cancelUrl }): Promise<{ url: string }> => {
     const stripe = initializeStripe();
-    const user = await resolveAuthenticatedUser(ctx);
+    const { user, organization } = await resolveAuthContext(ctx);
 
-    // Resolve or create Stripe customer
-    let stripeCustomerId: string | undefined = user.stripeCustomerId;
-    if (!stripeCustomerId) {
-      stripeCustomerId = await getOrCreateStripeCustomer(
-        stripe,
-        user._id,
-        user.email,
-        user.name || user.email,
-        undefined,
-      );
-
-      await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
-        userId: user._id,
-        stripeCustomerId,
-      });
-    }
+    const stripeCustomerId = await resolveOrgStripeCustomer(ctx, stripe, organization, user.email);
+    const memberCount = await getOrgMemberCount(ctx, organization._id);
 
     // Look up the price by lookup key
     const priceData = await ctx.runMutation(
@@ -153,14 +198,14 @@ export const createCheckoutSession = action({
       line_items: [
         {
           price: priceData.price.externalPriceId,
-          quantity: 1,
+          quantity: memberCount,
         },
       ],
       success_url: successUrl,
       cancel_url: cancelUrl,
       subscription_data: {
         metadata: {
-          userId: user._id,
+          organizationId: organization._id,
           lookupKey,
         },
       },
@@ -188,24 +233,10 @@ export const createEmbeddedCheckoutSession = action({
   },
   handler: async (ctx, { lookupKey, returnUrl }): Promise<{ clientSecret: string }> => {
     const stripe = initializeStripe();
-    const user = await resolveAuthenticatedUser(ctx);
+    const { user, organization } = await resolveAuthContext(ctx);
 
-    // Resolve or create Stripe customer
-    let stripeCustomerId: string | undefined = user.stripeCustomerId;
-    if (!stripeCustomerId) {
-      stripeCustomerId = await getOrCreateStripeCustomer(
-        stripe,
-        user._id,
-        user.email,
-        user.name || user.email,
-        undefined,
-      );
-
-      await ctx.runMutation(internal.stripe.subscription_actions.updateUserStripeCustomerId, {
-        userId: user._id,
-        stripeCustomerId,
-      });
-    }
+    const stripeCustomerId = await resolveOrgStripeCustomer(ctx, stripe, organization, user.email);
+    const memberCount = await getOrgMemberCount(ctx, organization._id);
 
     // Look up the price by lookup key
     const priceData = await ctx.runMutation(
@@ -225,13 +256,13 @@ export const createEmbeddedCheckoutSession = action({
       line_items: [
         {
           price: priceData.price.externalPriceId,
-          quantity: 1,
+          quantity: memberCount,
         },
       ],
       return_url: returnUrl,
       subscription_data: {
         metadata: {
-          userId: user._id,
+          organizationId: organization._id,
           lookupKey,
         },
       },
@@ -248,7 +279,8 @@ export const createEmbeddedCheckoutSession = action({
 /**
  * Create a Stripe Customer Portal session for managing billing.
  *
- * Allows users to update payment methods, view invoices, and cancel subscriptions.
+ * Allows users to update payment methods and view invoices.
+ * Cancellation is disabled in portal config — handled through our own UI.
  * Frontend calls this action, gets back a URL, and redirects to the portal.
  */
 export const createCustomerPortalSession = action({
@@ -257,14 +289,14 @@ export const createCustomerPortalSession = action({
   },
   handler: async (ctx, { returnUrl }): Promise<{ url: string }> => {
     const stripe = initializeStripe();
-    const user = await resolveAuthenticatedUser(ctx);
+    const { organization } = await resolveAuthContext(ctx);
 
-    if (!user.stripeCustomerId) {
+    if (!organization.stripeCustomerId) {
       throw new ConvexError("No billing account found. Please contact support.");
     }
 
     const session = await stripe.billingPortal.sessions.create({
-      customer: user.stripeCustomerId,
+      customer: organization.stripeCustomerId,
       return_url: returnUrl,
     });
 

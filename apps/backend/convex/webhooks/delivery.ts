@@ -25,6 +25,7 @@ import {
   internalMutation,
   internalQuery,
 } from "../_generated/server";
+import { getSubscriptionPlan } from "../auth/subscription_guards";
 import { formatSlackMessage } from "./slack_formatter";
 
 /** Maximum delivery attempts before abandoning */
@@ -325,6 +326,32 @@ async function deliverWebhook(
   return deliverJsonWebhook(ctx, delivery, endpoint, attemptCount);
 }
 
+async function markDeliverySuspended(
+  ctx: ActionCtx,
+  delivery: Doc<"webhook_deliveries">,
+  attemptCount: number,
+): Promise<DeliveryProcessingResult> {
+  await ctx.runMutation(internal.webhooks.delivery.updateDeliveryResult, {
+    deliveryId: delivery._id,
+    status: "abandoned",
+    attemptCount,
+    errorMessage: "Webhooks suspended — organization on Free tier",
+  });
+
+  console.warn(
+    JSON.stringify({
+      topic: "webhook_delivery",
+      event: "delivery_suspended_free_tier",
+      deliveryId: delivery._id,
+      organizationId: delivery.organizationId,
+      eventType: delivery.eventType,
+      timestamp: Date.now(),
+    }),
+  );
+
+  return { delivered: false };
+}
+
 async function processPendingDelivery(
   ctx: ActionCtx,
   delivery: Doc<"webhook_deliveries">,
@@ -336,6 +363,14 @@ async function processPendingDelivery(
 
   if (!endpoint || endpoint.status !== "active") {
     return markDeliveryInactiveEndpoint(ctx, delivery, endpoint, attemptCount);
+  }
+
+  // Check org tier — Free tier orgs have webhooks suspended
+  const orgTier = await ctx.runQuery(internal.webhooks.delivery.getOrgTier, {
+    organizationId: delivery.organizationId,
+  });
+  if (orgTier === "free") {
+    return markDeliverySuspended(ctx, delivery, attemptCount);
   }
 
   return deliverWebhook(ctx, delivery, endpoint, attemptCount);
@@ -464,5 +499,45 @@ export const getEndpointById = internalQuery({
   },
   handler: async (ctx, args): Promise<Doc<"webhook_endpoints"> | null> => {
     return await ctx.db.get(args.endpointId);
+  },
+});
+
+/**
+ * Get an organization's subscription tier (internal query for the delivery action).
+ * Returns "free" | "pro" | "enterprise".
+ */
+/**
+ * Abandon all pending webhook deliveries for an organization.
+ * Called during downgrade cascade when org loses webhook access.
+ */
+export const abandonPendingDeliveriesForOrg = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args): Promise<number> => {
+    const pending = await ctx.db
+      .query("webhook_deliveries")
+      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+
+    for (const delivery of pending) {
+      await ctx.db.patch(delivery._id, {
+        status: "abandoned",
+        errorMessage: "Webhooks suspended — organization downgraded to Free tier",
+      });
+    }
+
+    return pending.length;
+  },
+});
+
+export const getOrgTier = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args): Promise<string> => {
+    const { plan } = await getSubscriptionPlan(ctx.db, args.organizationId);
+    return plan;
   },
 });

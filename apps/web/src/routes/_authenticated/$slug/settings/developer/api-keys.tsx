@@ -28,6 +28,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { FeatureGate } from "@/components/feature-gate";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import {
@@ -56,7 +57,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 import { cn, getErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/developer/api-keys")({
@@ -204,7 +204,6 @@ function formatRelativeTime(date: Date): string {
 }
 
 function ApiKeysPage() {
-  const { isPro, isLoading: isLoadingPlan } = useSubscriptionLimits();
   const createApiKey = useAction(api.api_keys.actions.createClerkApiKey);
   const listApiKeys = useAction(api.api_keys.actions.listClerkApiKeys);
   const revokeApiKey = useAction(api.api_keys.actions.revokeClerkApiKey);
@@ -317,15 +316,19 @@ function ApiKeysPage() {
 
   return (
     <PageWrapper title="API Keys" description="Manage API keys for programmatic access to Seal">
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Key className="text-info h-5 w-5" />
-                <CardTitle>Your API Keys</CardTitle>
-              </div>
-              {isPro ? (
+      <FeatureGate
+        tier="pro"
+        feature="API access"
+        description="Create API keys to integrate Seal with your systems."
+      >
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Key className="text-info h-5 w-5" />
+                  <CardTitle>Your API Keys</CardTitle>
+                </div>
                 <Dialog
                   open={isCreating}
                   onOpenChange={(open) => {
@@ -479,112 +482,95 @@ function ApiKeysPage() {
                     )}
                   </DialogContent>
                 </Dialog>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs">
-                    Pro
-                  </Badge>
-                  <Button size="sm" variant="outline" disabled>
-                    <Plus className="mr-1 h-4 w-4" />
-                    Create API Key
+              </div>
+              <CardDescription>
+                API keys allow secure programmatic access to the Seal API
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {activeKeys.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="relative">
+                    <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-2xl border">
+                      <Key className="text-muted-foreground h-10 w-10" />
+                    </div>
+                    <div className="border-background bg-info absolute -right-1 -bottom-1 h-4 w-4 animate-pulse rounded-full border-2" />
+                  </div>
+                  <p className="mt-6 font-mono">No API keys configured</p>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    Create an API key to access the Seal API programmatically
+                  </p>
+                  <Button
+                    onClick={() => setIsCreating(true)}
+                    className="bg-info hover:bg-info/90 mt-6 text-white"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create your first API key
                   </Button>
                 </div>
+              ) : (
+                <div className="space-y-3">
+                  {activeKeys.map((key, index) => (
+                    <div
+                      key={key.id}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                      className="animate-in fade-in slide-in-from-bottom-2"
+                    >
+                      <ApiKeyRow apiKey={key} onRevoke={() => handleRevokeKey(key.id)} />
+                    </div>
+                  ))}
+                </div>
               )}
-            </div>
-            <CardDescription>
-              API keys allow secure programmatic access to the Seal API
-              {!isPro && !isLoadingPlan && (
-                <span className="text-warning mt-1 block">API keys require a Pro plan.</span>
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {activeKeys.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="relative">
-                  <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-2xl border">
-                    <Key className="text-muted-foreground h-10 w-10" />
-                  </div>
-                  <div className="border-background bg-info absolute -right-1 -bottom-1 h-4 w-4 animate-pulse rounded-full border-2" />
-                </div>
-                <p className="mt-6 font-mono">No API keys configured</p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Create an API key to access the Seal API programmatically
-                </p>
-                <Button
-                  onClick={() => setIsCreating(true)}
-                  className="bg-info hover:bg-info/90 mt-6 text-white"
-                  disabled={!isPro}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create your first API key
-                </Button>
-                {!isPro && !isLoadingPlan && (
-                  <p className="text-warning mt-2 text-sm">Requires a Pro plan</p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {activeKeys.map((key, index) => (
-                  <div
-                    key={key.id}
-                    style={{ animationDelay: `${index * 50}ms` }}
-                    className="animate-in fade-in slide-in-from-bottom-2"
-                  >
-                    <ApiKeyRow apiKey={key} onRevoke={() => handleRevokeKey(key.id)} />
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <ExternalLink className="text-info h-5 w-5" />
-              <CardTitle>API Documentation</CardTitle>
-            </div>
-            <CardDescription>
-              Learn how to use the Seal API to automate document workflows
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="bg-muted relative overflow-hidden rounded-lg border">
-                <div className="bg-muted/50 flex items-center gap-2 border-b px-4 py-2">
-                  <div className="bg-destructive/80 h-3 w-3 rounded-full" />
-                  <div className="bg-warning/80 h-3 w-3 rounded-full" />
-                  <div className="bg-success/80 h-3 w-3 rounded-full" />
-                  <span className="text-muted-foreground ml-2 font-mono text-xs">terminal</span>
-                </div>
-                <div className="p-4">
-                  <pre className="overflow-x-auto font-mono text-sm">
-                    <code>
-                      <span className="text-info">curl</span>
-                      <span className="text-foreground"> -X GET </span>
-                      <span className="text-success">"https://api.seal.app/v1/documents"</span>
-                      <span className="text-foreground"> \</span>
-                      {"\n"}
-                      <span className="text-foreground">{"  "}-H </span>
-                      <span className="text-warning">"Authorization: Bearer YOUR_API_KEY"</span>
-                    </code>
-                  </pre>
-                </div>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ExternalLink className="text-info h-5 w-5" />
+                <CardTitle>API Documentation</CardTitle>
               </div>
+              <CardDescription>
+                Learn how to use the Seal API to automate document workflows
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-muted relative overflow-hidden rounded-lg border">
+                  <div className="bg-muted/50 flex items-center gap-2 border-b px-4 py-2">
+                    <div className="bg-destructive/80 h-3 w-3 rounded-full" />
+                    <div className="bg-warning/80 h-3 w-3 rounded-full" />
+                    <div className="bg-success/80 h-3 w-3 rounded-full" />
+                    <span className="text-muted-foreground ml-2 font-mono text-xs">terminal</span>
+                  </div>
+                  <div className="p-4">
+                    <pre className="overflow-x-auto font-mono text-sm">
+                      <code>
+                        <span className="text-info">curl</span>
+                        <span className="text-foreground"> -X GET </span>
+                        <span className="text-success">"https://api.seal.app/v1/documents"</span>
+                        <span className="text-foreground"> \</span>
+                        {"\n"}
+                        <span className="text-foreground">{"  "}-H </span>
+                        <span className="text-warning">"Authorization: Bearer YOUR_API_KEY"</span>
+                      </code>
+                    </pre>
+                  </div>
+                </div>
 
-              <div className="flex items-center gap-4">
-                <Button variant="outline" asChild>
-                  <a href="/docs/api" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    View API Docs
-                  </a>
-                </Button>
+                <div className="flex items-center gap-4">
+                  <Button variant="outline" asChild>
+                    <a href="/docs/api" target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View API Docs
+                    </a>
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      </FeatureGate>
     </PageWrapper>
   );
 }

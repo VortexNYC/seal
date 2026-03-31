@@ -226,7 +226,10 @@ describe("Payment field queries", () => {
       });
 
       expect(results).toHaveLength(2);
-      expect(results.map((r) => r.paymentType).sort()).toEqual(["one_time", "recurring"]);
+      expect(results.map((r: (typeof results)[number]) => r.paymentType).sort()).toEqual([
+        "one_time",
+        "recurring",
+      ]);
     });
 
     test("does not return configs from other documents", async () => {

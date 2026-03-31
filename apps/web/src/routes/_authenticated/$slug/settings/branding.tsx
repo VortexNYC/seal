@@ -12,6 +12,7 @@ import { Building2Icon, ImageIcon, PaletteIcon, Save, Trash2Icon, UploadIcon } f
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { FeatureGate } from "@/components/feature-gate";
 import { PageWrapper } from "@/components/page-wrapper";
 import { FormSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
@@ -180,273 +181,281 @@ function BrandingSettings() {
 
   return (
     <PageWrapper title="Branding">
-      <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
-        {/* Master Switch */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <PaletteIcon className="h-5 w-5" />
-              <CardTitle>Custom Branding</CardTitle>
-            </div>
-            <CardDescription>
-              Customize the signing experience with your brand. Recipients will see your logo,
-              colors, and messaging instead of Seal defaults.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="branding-enabled" className="text-sm font-medium">
-                  Enable custom branding
-                </Label>
-                <p className="text-muted-foreground text-xs">
-                  When enabled, your branding will appear on signing pages and email notifications.
-                </p>
+      <FeatureGate
+        tier="pro"
+        feature="Custom branding"
+        description="Add your logo and colors to signing pages and emails."
+      >
+        <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
+          {/* Master Switch */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <PaletteIcon className="h-5 w-5" />
+                <CardTitle>Custom Branding</CardTitle>
               </div>
-              <Switch
-                id="branding-enabled"
-                checked={formData.enabled}
-                onCheckedChange={(checked) => setFormData({ ...formData, enabled: checked })}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Company Information */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Building2Icon className="h-5 w-5" />
-              <CardTitle className="text-base">Company Information</CardTitle>
-            </div>
-            <CardDescription>
-              Your company details shown on signing pages and documents.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="company-name" className="text-sm">
-                Company name
-              </Label>
-              <Input
-                id="company-name"
-                placeholder="e.g. Acme Corp"
-                value={formData.companyName}
-                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company-website" className="text-sm">
-                Company website
-              </Label>
-              <Input
-                id="company-website"
-                type="url"
-                placeholder="https://acme.com"
-                value={formData.companyWebsite}
-                onChange={(e) => setFormData({ ...formData, companyWebsite: e.target.value })}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Logo Upload */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <ImageIcon className="h-5 w-5" />
-              <CardTitle className="text-base">Logo</CardTitle>
-            </div>
-            <CardDescription>
-              Upload your organization logo for the signing page header. Max 2MB, PNG/JPG/SVG/WebP.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {logoUrl ? (
-              <div className="space-y-3">
-                <div className="bg-muted/50 flex items-center justify-center rounded-lg border p-6">
-                  <img
-                    src={logoUrl}
-                    alt="Organization logo"
-                    className="h-12 max-w-[200px] object-contain"
-                  />
+              <CardDescription>
+                Customize the signing experience with your brand. Recipients will see your logo,
+                colors, and messaging instead of Seal defaults.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="branding-enabled" className="text-sm font-medium">
+                    Enable custom branding
+                  </Label>
+                  <p className="text-muted-foreground text-xs">
+                    When enabled, your branding will appear on signing pages and email
+                    notifications.
+                  </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRemoveLogo}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2Icon className="mr-2 h-3.5 w-3.5" />
-                  Remove logo
-                </Button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="border-border bg-muted/30 hover:bg-muted/50 flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed p-8 transition-colors"
-              >
-                <UploadIcon className="text-muted-foreground h-8 w-8" />
-                <span className="text-muted-foreground text-sm">
-                  {isUploading ? "Uploading..." : "Click to upload logo"}
-                </span>
-              </button>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/svg+xml,image/webp"
-              className="hidden"
-              onChange={handleLogoUpload}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Colors */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <PaletteIcon className="h-5 w-5" />
-              <CardTitle className="text-base">Colors</CardTitle>
-            </div>
-            <CardDescription>
-              Set your brand colors for buttons and accents on the signing page.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="brand-color" className="text-sm">
-                Primary brand color
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="brand-color"
-                  placeholder="#0d9488"
-                  value={formData.brandColor}
-                  onChange={(e) => setFormData({ ...formData, brandColor: e.target.value })}
-                  className="font-mono"
+                <Switch
+                  id="branding-enabled"
+                  checked={formData.enabled}
+                  onCheckedChange={(checked) => setFormData({ ...formData, enabled: checked })}
                 />
-                {formData.brandColor && /^#[0-9a-fA-F]{6}$/.test(formData.brandColor) && (
-                  <div
-                    className="size-9 shrink-0 rounded-md border"
-                    style={{ backgroundColor: formData.brandColor }}
-                  />
-                )}
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="accent-color" className="text-sm">
-                Accent color
-              </Label>
+            </CardContent>
+          </Card>
+
+          {/* Company Information */}
+          <Card className="md:col-span-2">
+            <CardHeader>
               <div className="flex items-center gap-2">
-                <Input
-                  id="accent-color"
-                  placeholder="#0d9488"
-                  value={formData.accentColor}
-                  onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
-                  className="font-mono"
-                />
-                {formData.accentColor && /^#[0-9a-fA-F]{6}$/.test(formData.accentColor) && (
-                  <div
-                    className="size-9 shrink-0 rounded-md border"
-                    style={{ backgroundColor: formData.accentColor }}
-                  />
-                )}
+                <Building2Icon className="h-5 w-5" />
+                <CardTitle className="text-base">Company Information</CardTitle>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Email Customization */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Email Customization</CardTitle>
-            <CardDescription>Customize how your emails appear to recipients.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email-from-name" className="text-sm">
-                From name
-              </Label>
-              <Input
-                id="email-from-name"
-                placeholder="e.g. Acme Legal"
-                value={formData.emailFromName}
-                onChange={(e) => setFormData({ ...formData, emailFromName: e.target.value })}
-              />
-              <p className="text-muted-foreground text-xs">
-                Shown as the sender name in email notifications.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email-reply-to" className="text-sm">
-                Reply-to address
-              </Label>
-              <Input
-                id="email-reply-to"
-                type="email"
-                placeholder="legal@acme.com"
-                value={formData.emailReplyTo}
-                onChange={(e) => setFormData({ ...formData, emailReplyTo: e.target.value })}
-              />
-              <p className="text-muted-foreground text-xs">
-                Recipients who reply will reach this address instead of no-reply.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Signing Page */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Signing Page</CardTitle>
-            <CardDescription>
-              Control what appears on the signing experience footer.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="hide-seal-branding" className="text-sm font-medium">
-                  Hide &quot;Powered by Seal&quot;
+              <CardDescription>
+                Your company details shown on signing pages and documents.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="company-name" className="text-sm">
+                  Company name
                 </Label>
+                <Input
+                  id="company-name"
+                  placeholder="e.g. Acme Corp"
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="company-website" className="text-sm">
+                  Company website
+                </Label>
+                <Input
+                  id="company-website"
+                  type="url"
+                  placeholder="https://acme.com"
+                  value={formData.companyWebsite}
+                  onChange={(e) => setFormData({ ...formData, companyWebsite: e.target.value })}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Logo Upload */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                <CardTitle className="text-base">Logo</CardTitle>
+              </div>
+              <CardDescription>
+                Upload your organization logo for the signing page header. Max 2MB,
+                PNG/JPG/SVG/WebP.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {logoUrl ? (
+                <div className="space-y-3">
+                  <div className="bg-muted/50 flex items-center justify-center rounded-lg border p-6">
+                    <img
+                      src={logoUrl}
+                      alt="Organization logo"
+                      className="h-12 max-w-[200px] object-contain"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemoveLogo}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2Icon className="mr-2 h-3.5 w-3.5" />
+                    Remove logo
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="border-border bg-muted/30 hover:bg-muted/50 flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed p-8 transition-colors"
+                >
+                  <UploadIcon className="text-muted-foreground h-8 w-8" />
+                  <span className="text-muted-foreground text-sm">
+                    {isUploading ? "Uploading..." : "Click to upload logo"}
+                  </span>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                className="hidden"
+                onChange={handleLogoUpload}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Colors */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <PaletteIcon className="h-5 w-5" />
+                <CardTitle className="text-base">Colors</CardTitle>
+              </div>
+              <CardDescription>
+                Set your brand colors for buttons and accents on the signing page.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="brand-color" className="text-sm">
+                  Primary brand color
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="brand-color"
+                    placeholder="#0d9488"
+                    value={formData.brandColor}
+                    onChange={(e) => setFormData({ ...formData, brandColor: e.target.value })}
+                    className="font-mono"
+                  />
+                  {formData.brandColor && /^#[0-9a-fA-F]{6}$/.test(formData.brandColor) && (
+                    <div
+                      className="size-9 shrink-0 rounded-md border"
+                      style={{ backgroundColor: formData.brandColor }}
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accent-color" className="text-sm">
+                  Accent color
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="accent-color"
+                    placeholder="#0d9488"
+                    value={formData.accentColor}
+                    onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
+                    className="font-mono"
+                  />
+                  {formData.accentColor && /^#[0-9a-fA-F]{6}$/.test(formData.accentColor) && (
+                    <div
+                      className="size-9 shrink-0 rounded-md border"
+                      style={{ backgroundColor: formData.accentColor }}
+                    />
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Email Customization */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Email Customization</CardTitle>
+              <CardDescription>Customize how your emails appear to recipients.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email-from-name" className="text-sm">
+                  From name
+                </Label>
+                <Input
+                  id="email-from-name"
+                  placeholder="e.g. Acme Legal"
+                  value={formData.emailFromName}
+                  onChange={(e) => setFormData({ ...formData, emailFromName: e.target.value })}
+                />
                 <p className="text-muted-foreground text-xs">
-                  Remove the Seal branding footer from signing pages.
+                  Shown as the sender name in email notifications.
                 </p>
               </div>
-              <Switch
-                id="hide-seal-branding"
-                checked={formData.hideSealBranding}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, hideSealBranding: checked })
-                }
-              />
-            </div>
-            <div className="space-y-2 border-t pt-4">
-              <Label htmlFor="custom-footer" className="text-sm">
-                Custom footer text
-              </Label>
-              <Input
-                id="custom-footer"
-                placeholder="e.g. Acme Corp — Confidential"
-                value={formData.customFooterText}
-                onChange={(e) => setFormData({ ...formData, customFooterText: e.target.value })}
-              />
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <Label htmlFor="email-reply-to" className="text-sm">
+                  Reply-to address
+                </Label>
+                <Input
+                  id="email-reply-to"
+                  type="email"
+                  placeholder="legal@acme.com"
+                  value={formData.emailReplyTo}
+                  onChange={(e) => setFormData({ ...formData, emailReplyTo: e.target.value })}
+                />
+                <p className="text-muted-foreground text-xs">
+                  Recipients who reply will reach this address instead of no-reply.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Save Button */}
-        <div className="flex justify-end md:col-span-2">
-          <Button type="submit" disabled={isSubmitting}>
-            <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
-      </form>
+          {/* Signing Page */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Signing Page</CardTitle>
+              <CardDescription>
+                Control what appears on the signing experience footer.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="hide-seal-branding" className="text-sm font-medium">
+                    Hide &quot;Powered by Seal&quot;
+                  </Label>
+                  <p className="text-muted-foreground text-xs">
+                    Remove the Seal branding footer from signing pages.
+                  </p>
+                </div>
+                <Switch
+                  id="hide-seal-branding"
+                  checked={formData.hideSealBranding}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, hideSealBranding: checked })
+                  }
+                />
+              </div>
+              <div className="space-y-2 border-t pt-4">
+                <Label htmlFor="custom-footer" className="text-sm">
+                  Custom footer text
+                </Label>
+                <Input
+                  id="custom-footer"
+                  placeholder="e.g. Acme Corp — Confidential"
+                  value={formData.customFooterText}
+                  onChange={(e) => setFormData({ ...formData, customFooterText: e.target.value })}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Save Button */}
+          <div className="flex justify-end md:col-span-2">
+            <Button type="submit" disabled={isSubmitting}>
+              <Save className="mr-2 h-4 w-4" />
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </form>
+      </FeatureGate>
     </PageWrapper>
   );
 }

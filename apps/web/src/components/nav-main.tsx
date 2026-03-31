@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, type LucideIcon } from "lucide-react";
+import { ChevronRight, LockIcon, type LucideIcon } from "lucide-react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -24,6 +24,7 @@ export function NavMain({
       title: string;
       url: string;
       isActive?: boolean;
+      locked?: boolean;
     }[];
   }[];
 }) {
@@ -52,6 +53,9 @@ export function NavMain({
                       <SidebarMenuSubButton asChild isActive={subItem.isActive}>
                         <Link to={subItem.url}>
                           <span>{subItem.title}</span>
+                          {subItem.locked && (
+                            <LockIcon className="text-muted-foreground ml-auto h-3 w-3" />
+                          )}
                         </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>

@@ -166,7 +166,9 @@ function PaymentsSettingsPage() {
           Connect Stripe to accept payments through documents. Only workspace owners and admins can
           manage payment settings.
           {!isPro && !isLoadingPlan && (
-            <span className="text-warning mt-1 block">Stripe Connect requires a Pro plan.</span>
+            <span className="text-warning mt-1 block">
+              Stripe Connect requires a Professional plan.
+            </span>
           )}
         </p>
 
@@ -184,14 +186,18 @@ function PaymentsSettingsPage() {
                 )}
               </span>
               <span className="text-sm font-medium">
-                {isRefreshing ? "Refreshing…" : isPro ? getStatusLabel(status) : "Pro Required"}
+                {isRefreshing
+                  ? "Refreshing…"
+                  : isPro
+                    ? getStatusLabel(status)
+                    : "Professional Required"}
               </span>
             </CardTitle>
             <CardDescription>
               Manage onboarding status, required actions, and connection health.
               {!isPro && !isLoadingPlan && (
                 <span className="text-warning mt-1 block">
-                  Upgrade to Pro to connect Stripe and accept payments.
+                  Upgrade to Professional to connect Stripe and accept payments.
                 </span>
               )}
             </CardDescription>
@@ -237,15 +243,14 @@ function PaymentsSettingsPage() {
                 </StripeConnectProvider>
               )}
 
-            {/* Not on Pro plan */}
             {status === "not_connected" && !isPro && !isLoadingPlan && (
               <div className="space-y-3">
                 <p className="text-sm">
-                  Stripe Connect is available on the Pro plan. Upgrade to accept payments through
-                  your documents.
+                  Stripe Connect is available on the Professional plan. Upgrade to accept payments
+                  through your documents.
                 </p>
                 <Button asChild>
-                  <a href={`/${slug}/settings/billing`}>Upgrade to Pro</a>
+                  <a href={`/${slug}/settings/billing`}>Upgrade to Professional</a>
                 </Button>
               </div>
             )}
@@ -267,8 +272,8 @@ function PaymentsSettingsPage() {
             <CardHeader>
               <CardTitle>Platform Fee</CardTitle>
               <CardDescription>
-                Seal charges a 0.25% platform fee on Pro plans for each invoice payment. Choose who
-                pays this fee.
+                Seal charges a 0.25% platform fee on Professional plans for each invoice payment.
+                Choose who pays this fee.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

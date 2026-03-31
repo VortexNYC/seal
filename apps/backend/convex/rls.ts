@@ -599,7 +599,7 @@ function getAuditAndBillingRules(
       read: async (_queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
-        return doc.userId === rlsCtx.userId;
+        return doc.organizationId === rlsCtx.orgId;
       },
       modify: async () => false,
     },

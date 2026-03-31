@@ -11,14 +11,14 @@ import { internalQuery } from "../_generated/server";
 import { getSubscriptionPlan } from "./subscription_guards";
 
 /**
- * Check whether a user is on a Pro plan.
+ * Check whether an organization is on a Pro (or higher) plan.
  * Designed to be called from actions via `ctx.runQuery(internal.auth.subscription_helpers.checkProFeature, ...)`.
  */
 export const checkProFeature = internalQuery({
   args: {
-    userId: v.id("users"),
+    organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    return await getSubscriptionPlan(ctx.db, args.userId);
+    return await getSubscriptionPlan(ctx.db, args.organizationId);
   },
 });

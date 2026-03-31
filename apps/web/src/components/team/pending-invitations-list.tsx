@@ -163,7 +163,7 @@ export function PendingInvitationsList({
       </TableHeader>
       <TableBody>
         {invitations.map((invitation) => (
-          <TableRow key={invitation.id}>
+          <TableRow key={invitation.id} data-testid="pending-invitation">
             <TableCell className="font-medium">{invitation.email}</TableCell>
             <TableCell>{getRoleBadge(invitation.role)}</TableCell>
             <TableCell>
