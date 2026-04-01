@@ -1,27 +1,66 @@
-import type { Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
+import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { expect, test } from "../fixtures/auth";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
 import { waitForToast } from "../utils/test-helpers";
 
-async function openExistingOrCreateDocument(
-  authenticatedPage: Page,
-  organizationSlug: string,
-): Promise<void> {
-  const documentsPage = new DocumentsListPage(authenticatedPage);
-
-  await documentsPage.goto(organizationSlug);
-  await documentsPage.ensureAtLeastOneDocument(testData.samplePdfPath);
-  await documentsPage.openFirstDocument();
+function getCachedStorageId(): string | null {
+  try {
+    const f = resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      "../../playwright/.clerk/e2e-pdf-storage-id.txt",
+    );
+    return readFileSync(f, "utf8").trim() || null;
+  } catch {
+    return null;
+  }
 }
 
 test.describe("Recipients Management", () => {
-  test("should display recipients section", async ({ authenticatedPage, organizationSlug }) => {
-    const documentPage = new DocumentPage(authenticatedPage);
+  let sharedDocId: string | null = null;
+  let sharedDocName = "";
 
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
+  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
+    const storageId = getCachedStorageId();
+    try {
+      if (storageId) {
+        const id = await apiCreateDocument(organizationSlug, storageId);
+        sharedDocId = id;
+        sharedDocName = `e2e-test-doc-${id}`;
+        await authenticatedPage.goto(`/${organizationSlug}/documents/${id}`);
+        await new DocumentPage(authenticatedPage).waitForDocumentLoad();
+      } else {
+        const documentsPage = new DocumentsListPage(authenticatedPage);
+        await documentsPage.goto(organizationSlug);
+        sharedDocName = await documentsPage.createDocument(testData.samplePdfPath);
+        await documentsPage.openDocument(sharedDocName);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("monthly document limit")) {
+        test.skip(true, "Monthly document quota exhausted.");
+        return;
+      }
+      throw err;
+    }
+  });
+
+  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
+    if (sharedDocId) {
+      await apiDeleteDocument(sharedDocId).catch(() => {});
+    } else if (sharedDocName) {
+      const documentsPage = new DocumentsListPage(authenticatedPage);
+      await documentsPage.goto(organizationSlug).catch(() => {});
+      await documentsPage.deleteDocument(sharedDocName).catch(() => {});
+    }
+  });
+
+  test("should display recipients section", async ({ authenticatedPage }) => {
+    const documentPage = new DocumentPage(authenticatedPage);
 
     await documentPage.waitForDocumentLoad();
 
@@ -40,53 +79,43 @@ test.describe("Recipients Management", () => {
     });
   });
 
-  test("should show empty state or recipients list", async ({
-    authenticatedPage,
-    organizationSlug,
-  }) => {
+  test("should show empty state or recipients list", async ({ authenticatedPage }) => {
     const documentPage = new DocumentPage(authenticatedPage);
-
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
-    // Reused documents may already have recipients. Accept either the empty
-    // state ("No recipients" + helper text) or a populated recipients list.
-    const noRecipients = authenticatedPage.getByText(/No recipients/i);
-    const hasRecipients = documentPage.recipientsSectionButton;
-    await expect(hasRecipients).toBeVisible({ timeout: 5000 });
-
-    if (await noRecipients.isVisible().catch(() => false)) {
-      await expect(
-        authenticatedPage.getByText(/Add recipients who need to sign or view/i),
-      ).toBeVisible();
-    }
+    // Fresh documents always start with no recipients.
+    await expect(documentPage.recipientsSectionButton).toBeVisible({ timeout: 5000 });
+    await expect(
+      authenticatedPage.getByText(/Add recipients who need to sign or view/i),
+    ).toBeVisible({ timeout: 5000 });
   });
 
-  test("should open add recipient dialog", async ({ authenticatedPage, organizationSlug }) => {
+  test("should open add recipient dialog", async ({ authenticatedPage }) => {
     const documentPage = new DocumentPage(authenticatedPage);
-
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
 
     await documentPage.waitForDocumentLoad();
 
-    // Click Add button
-    const addButton = authenticatedPage.getByRole("button", { name: /add/i });
+    // Click Add Recipient button
+    const addButton = authenticatedPage.getByRole("button", { name: /add recipient/i });
     await addButton.click();
 
     // Verify dialog/form appears
     await expect(authenticatedPage.getByRole("dialog", { name: /add recipient/i })).toBeVisible();
   });
 
-  test("should add recipient with email", async ({ authenticatedPage, organizationSlug }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
+  test("should add recipient with email", async ({
+    authenticatedPage,
+    organizationSlug,
+    createApiDocument,
+  }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
     // Create an isolated document so recipient assertions are against a clean slate.
-    await documentsPage.goto(organizationSlug);
-    let documentName: string;
+    let docId: string | null = null;
     try {
-      documentName = await documentsPage.createDocument(testData.samplePdfPath);
+      const doc = await createApiDocument();
+      docId = doc.id;
     } catch (err) {
       if (err instanceof Error && err.message.includes("monthly document limit")) {
         test.skip(true, "Monthly document quota exhausted — cannot create isolated test document.");
@@ -95,87 +124,80 @@ test.describe("Recipients Management", () => {
       throw err;
     }
 
-    try {
-      await documentsPage.openDocument(documentName);
-      await documentPage.waitForDocumentLoad();
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${docId}`);
+    await documentPage.waitForDocumentLoad();
 
-      const recipient = testData.recipient();
+    const recipient = testData.recipient();
 
-      // Click Add Recipient button to open the dialog
-      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    // Click Add Recipient button to open the dialog
+    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
 
-      // Dialog defaults to "Team" tab — switch to "External" to add by email
-      await authenticatedPage.getByRole("tab", { name: /external/i }).click();
+    // Dialog defaults to "Team" tab — switch to "External" to add by email
+    await authenticatedPage.getByRole("tab", { name: /external/i }).click();
 
-      // Fill in recipient details (inputs have id="email" and id="name")
-      await authenticatedPage.locator("#email").fill(recipient.email);
-      await authenticatedPage.locator("#name").fill(recipient.name);
+    // Fill in recipient details (inputs have id="email" and id="name")
+    await authenticatedPage.locator("#email").fill(recipient.email);
+    await authenticatedPage.locator("#name").fill(recipient.name);
 
-      // Submit — button text is "Add Recipient"
-      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    // Submit — button text is "Add Recipient"
+    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
 
-      await waitForToast(authenticatedPage, /recipient added/i);
+    await waitForToast(authenticatedPage, /recipient added/i);
 
-      // Verify recipient appears in list
-      await expect(authenticatedPage.getByText(recipient.email)).toBeVisible();
-    } finally {
-      // Always clean up — even if the test fails
-      await documentsPage.goto(organizationSlug).catch(() => {});
-      await documentsPage.deleteDocument(documentName).catch(() => {});
-    }
+    // Verify recipient appears in list
+    await expect(authenticatedPage.getByText(recipient.email)).toBeVisible();
+    // createApiDocument fixture auto-deletes after test
   });
 
-  test("should add multiple recipients", async ({ authenticatedPage, organizationSlug }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
+  test("should add multiple recipients", async ({
+    authenticatedPage,
+    organizationSlug,
+    createApiDocument,
+  }) => {
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await documentsPage.goto(organizationSlug);
-
-    let documentName: string | null = null;
+    let docId: string | null = null;
     try {
-      documentName = await documentsPage.createDocument(testData.samplePdfPath);
+      const doc = await createApiDocument();
+      docId = doc.id;
     } catch {
       test.skip(true, "E2E workspace reached its monthly document limit.");
       return;
     }
 
-    try {
-      await documentsPage.openDocument(documentName);
-      await documentPage.waitForDocumentLoad();
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${docId}`);
+    await documentPage.waitForDocumentLoad();
 
-      const recipient1 = testData.recipient();
-      const recipient2 = testData.recipient();
+    const recipient1 = testData.recipient();
+    const recipient2 = testData.recipient();
 
-      // Add first recipient via External tab
-      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
-      await authenticatedPage.getByRole("tab", { name: /external/i }).click();
-      await authenticatedPage.locator("#email").fill(recipient1.email);
-      await authenticatedPage.locator("#name").fill(recipient1.name);
-      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
-      await waitForToast(authenticatedPage, /recipient added/i);
+    // Add first recipient via External tab
+    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await authenticatedPage.getByRole("tab", { name: /external/i }).click();
+    await authenticatedPage.locator("#email").fill(recipient1.email);
+    await authenticatedPage.locator("#name").fill(recipient1.name);
+    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await waitForToast(authenticatedPage, /recipient added/i);
 
-      // Add second recipient
-      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
-      await authenticatedPage.getByRole("tab", { name: /external/i }).click();
-      await authenticatedPage.locator("#email").fill(recipient2.email);
-      await authenticatedPage.locator("#name").fill(recipient2.name);
-      await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
-      await waitForToast(authenticatedPage, /recipient added/i);
+    // Add second recipient
+    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await authenticatedPage.getByRole("tab", { name: /external/i }).click();
+    await authenticatedPage.locator("#email").fill(recipient2.email);
+    await authenticatedPage.locator("#name").fill(recipient2.name);
+    await authenticatedPage.getByRole("button", { name: /add recipient/i }).click();
+    await waitForToast(authenticatedPage, /recipient added/i);
 
-      // Verify both recipients appear
-      await expect(authenticatedPage.getByText(recipient1.email)).toBeVisible();
-      await expect(authenticatedPage.getByText(recipient2.email)).toBeVisible();
-    } finally {
-      await documentsPage.goto(organizationSlug);
-      await documentsPage.deleteDocument(documentName).catch(() => {});
-    }
+    // Verify both recipients appear
+    await expect(authenticatedPage.getByText(recipient1.email)).toBeVisible();
+    await expect(authenticatedPage.getByText(recipient2.email)).toBeVisible();
+    // createApiDocument fixture auto-deletes after test
   });
 
-  test.skip("should remove recipient", async ({ authenticatedPage, organizationSlug }) => {
+  test.skip("should remove recipient", async ({ authenticatedPage }) => {
     // BLOCKED: incomplete — needs `data-recipient-email` on recipient rows and a working add step first.
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
+
 
     await documentPage.waitForDocumentLoad();
 
@@ -199,11 +221,11 @@ test.describe("Recipients Management", () => {
     await expect(authenticatedPage.getByText(recipient.email)).not.toBeVisible();
   });
 
-  test.skip("should set recipient order", async ({ authenticatedPage, organizationSlug }) => {
+  test.skip("should set recipient order", async ({ authenticatedPage }) => {
     // BLOCKED: incomplete stub — drag-to-reorder logic and `data-recipient-order` testids not implemented.
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
+
 
     await documentPage.waitForDocumentLoad();
 
@@ -223,12 +245,11 @@ test.describe("Recipients Management", () => {
 
   test.skip("should assign fields to specific recipient", async ({
     authenticatedPage,
-    organizationSlug,
   }) => {
     // BLOCKED: incomplete stub — requires adding both a field and a recipient first.
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
+
 
     await documentPage.waitForDocumentLoad();
 
@@ -255,12 +276,11 @@ test.describe("Recipients Management", () => {
 test.describe("Recipients - Authentication Methods", () => {
   test.skip("should configure recipient authentication method", async ({
     authenticatedPage,
-    organizationSlug,
   }) => {
     // BLOCKED: incomplete stub — `[data-testid="recipient"]` not in app, add recipient step missing.
     const documentPage = new DocumentPage(authenticatedPage);
 
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
+
 
     await documentPage.waitForDocumentLoad();
 
@@ -282,15 +302,48 @@ test.describe("Recipients - Authentication Methods", () => {
 });
 
 test.describe("Document Sending", () => {
+  let sendingDocId: string | null = null;
+  let sendingDocName = "";
+
+  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
+    const storageId = getCachedStorageId();
+    try {
+      if (storageId) {
+        const id = await apiCreateDocument(organizationSlug, storageId);
+        sendingDocId = id;
+        sendingDocName = `e2e-test-doc-${id}`;
+        await authenticatedPage.goto(`/${organizationSlug}/documents/${id}`);
+        await new DocumentPage(authenticatedPage).waitForDocumentLoad();
+      } else {
+        const documentsPage = new DocumentsListPage(authenticatedPage);
+        await documentsPage.goto(organizationSlug);
+        sendingDocName = await documentsPage.createDocument(testData.samplePdfPath);
+        await documentsPage.openDocument(sendingDocName);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("monthly document limit")) {
+        test.skip(true, "Monthly document quota exhausted.");
+        return;
+      }
+      throw err;
+    }
+  });
+
+  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
+    if (sendingDocId) {
+      await apiDeleteDocument(sendingDocId).catch(() => {});
+    } else if (sendingDocName) {
+      const documentsPage = new DocumentsListPage(authenticatedPage);
+      await documentsPage.goto(organizationSlug).catch(() => {});
+      await documentsPage.deleteDocument(sendingDocName).catch(() => {});
+    }
+  });
+
   test.skip("should send document to recipients", async ({
     authenticatedPage,
-    organizationSlug,
   }) => {
     // BLOCKED: requires full prerequisite chain (add fields → add recipients → assign) before send.
     const documentPage = new DocumentPage(authenticatedPage);
-
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
-
     await documentPage.waitForDocumentLoad();
 
     // Prerequisites:
@@ -312,12 +365,8 @@ test.describe("Document Sending", () => {
 
   test("should validate document before sending", async ({
     authenticatedPage,
-    organizationSlug,
   }) => {
     const documentPage = new DocumentPage(authenticatedPage);
-
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
-
     await documentPage.waitForDocumentLoad();
 
     const sendButton = authenticatedPage.getByRole("button", {
@@ -339,13 +388,9 @@ test.describe("Document Sending", () => {
 
   test.skip("should require all fields to be assigned before sending", async ({
     authenticatedPage,
-    organizationSlug,
   }) => {
     // BLOCKED: incomplete stub — add field + add recipient steps missing before the send check.
     const documentPage = new DocumentPage(authenticatedPage);
-
-    await openExistingOrCreateDocument(authenticatedPage, organizationSlug);
-
     await documentPage.waitForDocumentLoad();
 
     // Add field but don't assign to recipient

@@ -7,6 +7,7 @@
  * These functions are NOT public API and should never be called in production.
  */
 
+import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -104,6 +105,125 @@ export const seedProSubscriptionForE2E = mutation({
     });
 
     return { seeded: true, orgId: org._id };
+  },
+});
+
+/**
+ * Purge all documents for the E2E workspace to prevent dashboard queries from
+ * hitting Convex's per-transaction task limit after many test runs.
+ *
+ * Deletes up to `batchSize` documents per call (idempotent, call multiple times
+ * if the org has accumulated many documents). Returns the number deleted and
+ * whether more remain.
+ */
+export const purgeE2EDocuments = mutation({
+  args: {
+    organizationSlug: v.string(),
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, { organizationSlug, batchSize = 200 }) => {
+    const org = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", organizationSlug))
+      .first();
+
+    if (!org) {
+      return { deleted: 0, hasMore: false, reason: "org_not_found" };
+    }
+
+    const docs = await ctx.db
+      .query("documents")
+      .withIndex("by_organization", (q) => q.eq("organizationId", org._id))
+      .take(batchSize + 1);
+
+    const hasMore = docs.length > batchSize;
+    const toDelete = docs.slice(0, batchSize);
+
+    for (const doc of toDelete) {
+      await ctx.db.delete(doc._id);
+    }
+
+    return { deleted: toDelete.length, hasMore };
+  },
+});
+
+/**
+ * Generate a Convex storage upload URL for E2E test PDF seeding.
+ */
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Create a minimal test document for E2E tests.
+ * Accepts a pre-uploaded storageId so the PDF only needs to be uploaded once.
+ * Returns the new document's _id.
+ */
+export const createTestDocument = mutation({
+  args: {
+    organizationSlug: v.string(),
+    storageId: v.string(),
+    name: v.optional(v.string()),
+  },
+  handler: async (ctx, { organizationSlug, storageId, name }) => {
+    const org = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", organizationSlug))
+      .first();
+    if (!org) throw new Error(`org_not_found: ${organizationSlug}`);
+
+    // Find any user in this org — try active org index first, then fall back to any user
+    let owner = await ctx.db
+      .query("users")
+      .withIndex("by_active_org", (q) => q.eq("activeOrganizationId", org._id))
+      .first();
+    if (!owner) {
+      // activeOrganizationId may not be set; find any user via org memberships
+      // Use the well-known E2E test user Clerk ID as a reliable fallback
+      const e2eClerkId = "user_3B4i0q60eWUsHUVSbdnnVPLmRT7"; // seal-e2e+clerk_test@example.com
+      owner =
+        (await ctx.db
+          .query("users")
+          .withIndex("by_clerk_id", (q) => q.eq("clerkId", e2eClerkId))
+          .first()) ??
+        (await ctx.db.query("users").first());
+    }
+    if (!owner) throw new Error("no_user_found_for_org");
+
+    const now = Date.now();
+    const docId = await ctx.db.insert("documents", {
+      organizationId: org._id,
+      ownerId: owner._id,
+      name: name ?? `e2e-test-doc-${now}`,
+      status: "active",
+      workflowStatus: "draft",
+      sharingMode: "private",
+      fileSize: 12345,
+      fileType: "application/pdf",
+      storageId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { id: docId };
+  },
+});
+
+/**
+ * Delete a test document by ID.
+ */
+export const deleteTestDocument = mutation({
+  args: {
+    documentId: v.string(),
+  },
+  handler: async (ctx, { documentId }) => {
+    const id = documentId as Id<"documents">;
+    const doc = await ctx.db.get(id);
+    if (doc) await ctx.db.delete(id);
+    return { deleted: !!doc };
   },
 });
 
@@ -213,3 +333,4 @@ export const seedProSubscription = internalMutation({
     return { seeded: true };
   },
 });
+

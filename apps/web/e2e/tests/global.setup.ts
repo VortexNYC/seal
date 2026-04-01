@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import { clerkSetup } from "@clerk/testing/playwright";
 import { test as setup } from "@playwright/test";
 
+import { ensurePdfStorageId } from "../fixtures/convex-test-api";
+
 import { ensureWorkspace, getTestWorkspaceConfig, signInTestUser } from "../fixtures/auth-helpers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -58,7 +60,7 @@ setup("authenticate clerk test user", async ({ page }) => {
           ).catch(() => {});
         }
         if (invData.data.length > 0) {
-          console.log(`[setup] Revoked ${invData.data.length} stale pending invitation(s)`);
+          console.info(`[setup] Revoked ${invData.data.length} stale pending invitation(s)`);
         }
       }
     } catch (err) {
@@ -86,6 +88,7 @@ setup("authenticate clerk test user", async ({ page }) => {
 
   const convexUrl = process.env.VITE_CONVEX_URL || "https://coordinated-lemur-768.convex.cloud";
   const deployKey = process.env.CONVEX_DEPLOY_KEY;
+
   if (deployKey) {
     try {
       const res = await fetch(`${convexUrl}/api/mutation`, {
@@ -108,5 +111,15 @@ setup("authenticate clerk test user", async ({ page }) => {
     }
   } else {
     console.warn("[setup] CONVEX_DEPLOY_KEY not set — skipping pro subscription seed");
+  }
+
+  // Upload the sample PDF to Convex storage once and cache the storageId.
+  // All tests reuse this storageId for API-level document creation (~300ms vs ~15s UI).
+  const pdfPath = path.resolve(__dirname, "../fixtures/sample-document.pdf");
+  try {
+    const storageId = await ensurePdfStorageId(pdfPath);
+    console.info(`[setup] PDF storageId cached: ${storageId}`);
+  } catch (err) {
+    console.warn("[setup] PDF upload failed — API document creation will fall back to UI:", err);
   }
 });

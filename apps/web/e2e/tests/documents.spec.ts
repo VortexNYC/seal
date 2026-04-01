@@ -14,6 +14,7 @@ test.describe("Document Management", () => {
 
     const initialCount = await documentsPage.getDocumentCount();
 
+    // This test explicitly validates the UI upload flow — must use UI creation.
     let createdName: string | null = null;
     try {
       createdName = await documentsPage.createDocument(testData.samplePdfPath);
@@ -35,13 +36,15 @@ test.describe("Document Management", () => {
     }
   });
 
-  test("should search for documents", async ({ authenticatedPage, organizationSlug }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
-    await documentsPage.goto(organizationSlug);
-
-    let createdName: string | null = null;
+  test("should search for documents", async ({
+    authenticatedPage,
+    organizationSlug,
+    createApiDocument,
+  }) => {
+    let docName = "";
     try {
-      createdName = await documentsPage.createDocument(testData.samplePdfPath);
+      const doc = await createApiDocument();
+      docName = doc.name;
     } catch (error) {
       if (isDocumentQuotaLimitError(error)) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
@@ -50,26 +53,26 @@ test.describe("Document Management", () => {
       throw error;
     }
 
-    try {
-      await documentsPage.waitForAnyDocumentRow();
-      await documentsPage.searchDocuments(createdName);
-      await authenticatedPage.waitForTimeout(1000);
+    const documentsPage = new DocumentsListPage(authenticatedPage);
+    await documentsPage.goto(organizationSlug);
+    await documentsPage.waitForAnyDocumentRow();
+    await documentsPage.searchDocuments(docName);
+    await authenticatedPage.waitForTimeout(1000);
 
-      expect(await documentsPage.getDocumentCount()).toBeGreaterThan(0);
-      await expect(documentsPage.getDocumentRowByName(createdName)).toBeVisible();
-    } finally {
-      await documentsPage.goto(organizationSlug);
-      await documentsPage.deleteDocument(createdName).catch(() => {});
-    }
+    expect(await documentsPage.getDocumentCount()).toBeGreaterThan(0);
+    await expect(documentsPage.getDocumentRowByName(docName)).toBeVisible();
+    // createApiDocument fixture auto-deletes after test
   });
 
-  test("should open document editor", async ({ authenticatedPage, organizationSlug }) => {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
-    await documentsPage.goto(organizationSlug);
-
-    let createdName: string | null = null;
+  test("should open document editor", async ({
+    authenticatedPage,
+    organizationSlug,
+    createApiDocument,
+  }) => {
+    let docId: string | null = null;
     try {
-      createdName = await documentsPage.createDocument(testData.samplePdfPath);
+      const doc = await createApiDocument();
+      docId = doc.id;
     } catch (error) {
       if (isDocumentQuotaLimitError(error)) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
@@ -78,27 +81,25 @@ test.describe("Document Management", () => {
       throw error;
     }
 
-    try {
-      await documentsPage.waitForAnyDocumentRow();
-      await documentsPage.openDocument(createdName);
-      await expect(authenticatedPage).toHaveURL(/\/documents\/[a-z0-9]+$/);
-    } finally {
-      await documentsPage.goto(organizationSlug);
-      await documentsPage.deleteDocument(createdName).catch(() => {});
-    }
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${docId}`);
+    await expect(authenticatedPage).toHaveURL(/\/documents\/[a-z0-9]+$/);
+    // createApiDocument fixture auto-deletes after test
   });
 });
 
 test.describe("Document Editing", () => {
-  test("should add signature field to document", async ({ authenticatedPage, organizationSlug }) => {
+  test("should add signature field to document", async ({
+    authenticatedPage,
+    organizationSlug,
+    createApiDocument,
+  }) => {
     test.setTimeout(60000);
-    const documentsPage = new DocumentsListPage(authenticatedPage);
     const documentPage = new DocumentPage(authenticatedPage);
-    await documentsPage.goto(organizationSlug);
 
-    let createdName: string | null = null;
+    let docId: string | null = null;
     try {
-      createdName = await documentsPage.createDocument(testData.samplePdfPath);
+      const doc = await createApiDocument();
+      docId = doc.id;
     } catch (error) {
       if (isDocumentQuotaLimitError(error)) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
@@ -107,20 +108,16 @@ test.describe("Document Editing", () => {
       throw error;
     }
 
-    try {
-      await documentsPage.openDocument(createdName);
-      await documentPage.waitForDocumentLoad();
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${docId}`);
+    await documentPage.waitForDocumentLoad();
 
-      await documentPage.selectFieldType("signature");
-      await documentPage.addSignatureField(100, 100);
+    await documentPage.selectFieldType("signature");
+    await documentPage.addSignatureField(100, 100);
 
-      await expect(
-        authenticatedPage.getByRole("button", { name: /open field properties/i }).first(),
-      ).toBeVisible();
-    } finally {
-      await documentsPage.goto(organizationSlug);
-      await documentsPage.deleteDocument(createdName).catch(() => {});
-    }
+    await expect(
+      authenticatedPage.getByRole("button", { name: /open field properties/i }).first(),
+    ).toBeVisible();
+    // createApiDocument fixture auto-deletes after test
   });
 
   test.skip(
@@ -136,15 +133,18 @@ test.describe("Document Lifecycle", () => {
   test("should add signature field and keep validation state for send", async ({
     authenticatedPage,
     organizationSlug,
+    createApiDocument,
   }) => {
     test.setTimeout(60000);
     const documentsPage = new DocumentsListPage(authenticatedPage);
     const documentPage = new DocumentPage(authenticatedPage);
-    await documentsPage.goto(organizationSlug);
 
-    let createdName: string | null = null;
+    let docId: string | null = null;
+    let docName = "";
     try {
-      createdName = await documentsPage.createDocument(testData.samplePdfPath);
+      const doc = await createApiDocument();
+      docId = doc.id;
+      docName = doc.name;
     } catch (error) {
       if (isDocumentQuotaLimitError(error)) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
@@ -153,21 +153,17 @@ test.describe("Document Lifecycle", () => {
       throw error;
     }
 
-    try {
-      await documentsPage.openDocument(createdName);
-      await documentPage.waitForDocumentLoad();
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${docId}`);
+    await documentPage.waitForDocumentLoad();
 
-      await documentPage.selectFieldType("signature");
-      await documentPage.addSignatureField(100, 100);
+    await documentPage.selectFieldType("signature");
+    await documentPage.addSignatureField(100, 100);
 
-      await expect(documentPage.sendButton).toBeEnabled();
+    await expect(documentPage.sendButton).toBeEnabled();
 
-      await documentsPage.goto(organizationSlug);
-      await documentsPage.waitForAnyDocumentRow();
-      await expect(documentsPage.getDocumentRowByName(createdName)).toBeVisible();
-    } finally {
-      await documentsPage.goto(organizationSlug);
-      await documentsPage.deleteDocument(createdName).catch(() => {});
-    }
+    await documentsPage.goto(organizationSlug);
+    await documentsPage.waitForAnyDocumentRow();
+    await expect(documentsPage.getDocumentRowByName(docName)).toBeVisible();
+    // createApiDocument fixture auto-deletes after test
   });
 });

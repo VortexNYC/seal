@@ -3,6 +3,7 @@ import { DashboardPage } from "../pages/dashboard/dashboard-page";
 
 test.describe("Dashboard", () => {
   test("should display dashboard with metrics", async ({ authenticatedPage, organizationSlug }) => {
+    test.setTimeout(45000);
     const dashboardPage = new DashboardPage(authenticatedPage);
 
     await dashboardPage.goto(organizationSlug);
@@ -18,6 +19,7 @@ test.describe("Dashboard", () => {
   });
 
   test("should display correct metric values", async ({ authenticatedPage, organizationSlug }) => {
+    test.setTimeout(45000);
     const dashboardPage = new DashboardPage(authenticatedPage);
 
     await dashboardPage.goto(organizationSlug);
@@ -45,12 +47,13 @@ test.describe("Dashboard", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
+    test.setTimeout(45000);
     // data-testid="document-activity-section" added to TrendChart Card in trend-chart.tsx
     const dashboardPage = new DashboardPage(authenticatedPage);
 
     await dashboardPage.goto(organizationSlug);
 
-    await expect(dashboardPage.documentActivitySection).toBeVisible();
+    await expect(dashboardPage.documentActivitySection).toBeVisible({ timeout: 10000 });
   });
 
   test("should toggle sidebar", async ({ authenticatedPage, organizationSlug }) => {

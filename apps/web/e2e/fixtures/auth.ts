@@ -1,12 +1,35 @@
 /* oxlint-disable react-hooks/rules-of-hooks */
 import { expect, test as base, type Page } from "@playwright/test";
 
+import { apiCreateDocument, apiDeleteDocument } from "./convex-test-api";
 import { getTestWorkspaceConfig, isAuthenticatedUrl, signInTestUser } from "./auth-helpers";
 
 type AuthFixtures = {
   authenticatedPage: Page;
   organizationSlug: string;
+  /** Create a document via Convex API (~300ms) and return its ID. Auto-deletes after test. */
+  createApiDocument: (name?: string) => Promise<{ id: string; name: string }>;
 };
+
+/** Shared in-memory cache of the PDF storageId across all workers in a process */
+let cachedStorageId: string | null = null;
+
+async function getStorageId(): Promise<string | null> {
+  if (cachedStorageId) return cachedStorageId;
+  try {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const storageFile = resolve(
+      fileURLToPath(import.meta.url),
+      "../../../playwright/.clerk/e2e-pdf-storage-id.txt",
+    );
+    cachedStorageId = readFileSync(storageFile, "utf8").trim() || null;
+    return cachedStorageId;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Extended test with authentication fixtures
@@ -39,6 +62,26 @@ export const test = base.extend<AuthFixtures>({
     }
 
     await use(page);
+  },
+
+  createApiDocument: async ({ organizationSlug }, use) => {
+    const created: Array<{ id: string }> = [];
+    const storageId = await getStorageId();
+
+    const factory = async (name?: string) => {
+      if (!storageId) throw new Error("PDF storageId not cached — check global.setup.ts ran");
+      const docName = name ?? `e2e-test-doc-${Date.now()}`;
+      const id = await apiCreateDocument(organizationSlug, storageId);
+      created.push({ id });
+      return { id, name: docName };
+    };
+
+    await use(factory);
+
+    // Auto-cleanup all docs created during this test
+    for (const { id } of created) {
+      await apiDeleteDocument(id).catch(() => {});
+    }
   },
 
   organizationSlug: async ({ authenticatedPage }, use) => {

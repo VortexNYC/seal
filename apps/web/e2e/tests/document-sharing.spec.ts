@@ -1,9 +1,9 @@
 import type { Page } from "@playwright/test";
 
+import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { expect, test } from "../fixtures/auth";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { ShareDialogPage } from "../pages/documents/share-dialog-page";
-import { testData } from "../utils/test-data";
 import { waitForToast } from "../utils/test-helpers";
 
 test.describe("Document Sharing", () => {
@@ -11,37 +11,74 @@ test.describe("Document Sharing", () => {
 
   let documentsPage: DocumentsListPage;
   let shareDialog: ShareDialogPage;
+  let sharedDocId: string;
+  let sharedDocName: string;
 
   test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
     documentsPage = new DocumentsListPage(authenticatedPage);
     shareDialog = new ShareDialogPage(authenticatedPage);
-    await documentsPage.goto(organizationSlug);
-    await documentsPage.ensureAtLeastOneDocument(testData.samplePdfPath);
-    await documentsPage.waitForAnyDocumentRow();
+    sharedDocId = "";
+    sharedDocName = `e2e-test-doc-${Date.now()}`;
+
+    // Read the cached storageId written by global.setup.ts
+    let storageId: string | null = null;
+    try {
+      const { readFileSync } = await import("node:fs");
+      const { resolve, dirname } = await import("node:path");
+      const { fileURLToPath } = await import("node:url");
+      const f = resolve(
+        dirname(fileURLToPath(import.meta.url)),
+        "../../playwright/.clerk/e2e-pdf-storage-id.txt",
+      );
+      storageId = readFileSync(f, "utf8").trim() || null;
+    } catch {}
+
+    if (storageId) {
+      // Fast path: create via API (~200ms, no browser)
+      sharedDocId = await apiCreateDocument(organizationSlug, storageId);
+      // Navigate to the documents list so UI is ready for the test
+      await documentsPage.goto(organizationSlug);
+    } else {
+      // Fallback: create via UI (slow but safe)
+      await documentsPage.goto(organizationSlug);
+      try {
+        sharedDocName = await documentsPage.createDocument(
+          "./e2e/fixtures/sample-document.pdf",
+        );
+      } catch (err) {
+        if (err instanceof Error && err.message.includes("monthly document limit")) {
+          test.skip(true, "E2E workspace reached its monthly document limit.");
+          return;
+        }
+        throw err;
+      }
+    }
   });
 
-  const openShareForFirstDocument = async (page: Page, documentsListPage: DocumentsListPage) => {
-    const firstRow = documentsListPage.getDocumentRows().first();
+  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
+    if (sharedDocId) {
+      await apiDeleteDocument(sharedDocId).catch(() => {});
+    } else if (sharedDocName) {
+      const dp = new DocumentsListPage(authenticatedPage);
+      await dp.goto(organizationSlug).catch(() => {});
+      await dp.deleteDocument(sharedDocName).catch(() => {});
+    }
+  });
 
-    await expect(firstRow).toBeVisible({ timeout: 10000 });
-
-    const rowActionsButton = firstRow.getByRole("button", {
-      name: /document actions for/i,
-    });
-
-    await rowActionsButton.click();
-
-    const shareMenuItem = page.getByRole("menuitem", { name: /^share$/i });
-    await expect(shareMenuItem).toBeVisible({ timeout: 10000 });
-    await shareMenuItem.first().click();
-  };
-
-  const openShareForDocumentByName = async (
+  const openShareForDocument = async (
     page: Page,
     documentsListPage: DocumentsListPage,
-    documentName: string,
+    docId: string,
+    docName: string,
   ) => {
-    const row = documentsListPage.getDocumentRowByName(documentName);
+    // If we have a real ID from the API, find the row by the name embedded in the DB
+    // The API creates the doc with name `e2e-test-doc-<timestamp>` — find by partial match
+    // or fall back to looking at the most recently created row
+    let row = docId
+      ? documentsListPage.getDocumentRows().filter({ hasText: "e2e-test-doc" }).first()
+      : documentsListPage.getDocumentRowByName(docName);
+
+    // Wait for row to appear (may take a moment for Convex to propagate)
     await expect(row).toBeVisible({ timeout: 10000 });
     await row.getByRole("button", { name: /document actions for/i }).click();
     const shareMenuItem = page.getByRole("menuitem", { name: /^share$/i });
@@ -56,7 +93,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
       expect(await shareDialog.isOpen()).toBe(true);
@@ -68,7 +105,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
       await shareDialog.close();
@@ -82,7 +119,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
       await shareDialog.closeWithX();
@@ -97,33 +134,19 @@ test.describe("Document Sharing", () => {
       organizationSlug,
     }) => {
       test.setTimeout(60000);
-      let docName: string | null = null;
-      try {
-        docName = await documentsPage.createDocument(testData.samplePdfPath);
-      } catch {
-        test.skip(true, "E2E workspace reached its monthly document limit.");
+      await documentsPage.goto(organizationSlug);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await shareDialog.waitForOpen();
+
+      if (await shareDialog.isTeamSharingDisabled()) {
+        test.skip();
         return;
       }
 
-      try {
-        await documentsPage.goto(organizationSlug);
-        await openShareForDocumentByName(authenticatedPage, documentsPage, docName);
-        await shareDialog.waitForOpen();
+      await shareDialog.selectSharingMode("specific");
 
-        if (await shareDialog.isTeamSharingDisabled()) {
-          test.skip();
-          return;
-        }
-
-        await shareDialog.selectSharingMode("specific");
-
-        expect(await shareDialog.isSharingModeSelected("specific")).toBe(true);
-        expect(await shareDialog.isAddMemberSectionVisible()).toBe(true);
-      } finally {
-        await shareDialog.close().catch(() => {});
-        await documentsPage.goto(organizationSlug).catch(() => {});
-        await documentsPage.deleteDocument(docName).catch(() => {});
-      }
+      expect(await shareDialog.isSharingModeSelected("specific")).toBe(true);
+      expect(await shareDialog.isAddMemberSectionVisible()).toBe(true);
     });
 
     test("should change sharing mode from specific to workspace", async ({
@@ -131,33 +154,19 @@ test.describe("Document Sharing", () => {
       organizationSlug,
     }) => {
       test.setTimeout(60000);
-      let docName: string | null = null;
-      try {
-        docName = await documentsPage.createDocument(testData.samplePdfPath);
-      } catch {
-        test.skip(true, "E2E workspace reached its monthly document limit.");
+      await documentsPage.goto(organizationSlug);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await shareDialog.waitForOpen();
+
+      if (await shareDialog.isTeamSharingDisabled()) {
+        test.skip();
         return;
       }
 
-      try {
-        await documentsPage.goto(organizationSlug);
-        await openShareForDocumentByName(authenticatedPage, documentsPage, docName);
-        await shareDialog.waitForOpen();
+      await shareDialog.selectSharingMode("specific");
+      await shareDialog.selectSharingMode("workspace");
 
-        if (await shareDialog.isTeamSharingDisabled()) {
-          test.skip();
-          return;
-        }
-
-        await shareDialog.selectSharingMode("specific");
-        await shareDialog.selectSharingMode("workspace");
-
-        expect(await shareDialog.isSharingModeSelected("workspace")).toBe(true);
-      } finally {
-        await shareDialog.close().catch(() => {});
-        await documentsPage.goto(organizationSlug).catch(() => {});
-        await documentsPage.deleteDocument(docName).catch(() => {});
-      }
+      expect(await shareDialog.isSharingModeSelected("workspace")).toBe(true);
     });
 
     test("should change sharing mode from workspace to private", async ({
@@ -165,28 +174,14 @@ test.describe("Document Sharing", () => {
       organizationSlug,
     }) => {
       test.setTimeout(60000);
-      let docName: string | null = null;
-      try {
-        docName = await documentsPage.createDocument(testData.samplePdfPath);
-      } catch {
-        test.skip(true, "E2E workspace reached its monthly document limit.");
-        return;
-      }
+      await documentsPage.goto(organizationSlug);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await shareDialog.waitForOpen();
 
-      try {
-        await documentsPage.goto(organizationSlug);
-        await openShareForDocumentByName(authenticatedPage, documentsPage, docName);
-        await shareDialog.waitForOpen();
+      await shareDialog.selectSharingMode("workspace");
+      await shareDialog.selectSharingMode("private");
 
-        await shareDialog.selectSharingMode("workspace");
-        await shareDialog.selectSharingMode("private");
-
-        expect(await shareDialog.isSharingModeSelected("private")).toBe(true);
-      } finally {
-        await shareDialog.close().catch(() => {});
-        await documentsPage.goto(organizationSlug).catch(() => {});
-        await documentsPage.deleteDocument(docName).catch(() => {});
-      }
+      expect(await shareDialog.isSharingModeSelected("private")).toBe(true);
     });
   });
 
@@ -197,7 +192,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -219,7 +214,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -243,7 +238,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -268,7 +263,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -305,7 +300,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -340,7 +335,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -355,7 +350,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -373,31 +368,17 @@ test.describe("Document Sharing", () => {
       organizationSlug,
     }) => {
       test.setTimeout(60000);
-      let docName: string | null = null;
-      try {
-        docName = await documentsPage.createDocument(testData.samplePdfPath);
-      } catch {
-        test.skip(true, "E2E workspace reached its monthly document limit.");
-        return;
-      }
+      await documentsPage.goto(organizationSlug);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await shareDialog.waitForOpen();
 
-      try {
-        await documentsPage.goto(organizationSlug);
-        await openShareForDocumentByName(authenticatedPage, documentsPage, docName);
-        await shareDialog.waitForOpen();
+      if (!(await shareDialog.isTeamSharingDisabled())) {
+        await shareDialog.selectSharingMode("specific");
 
-        if (!(await shareDialog.isTeamSharingDisabled())) {
-          await shareDialog.selectSharingMode("specific");
-
-          const sharedCount = await shareDialog.getSharedUserCount();
-          if (sharedCount === 0) {
-            expect(await shareDialog.showsEmptyState()).toBe(true);
-          }
+        const sharedCount = await shareDialog.getSharedUserCount();
+        if (sharedCount === 0) {
+          expect(await shareDialog.showsEmptyState()).toBe(true);
         }
-      } finally {
-        await shareDialog.close().catch(() => {});
-        await documentsPage.goto(organizationSlug).catch(() => {});
-        await documentsPage.deleteDocument(docName).catch(() => {});
       }
     });
   });
@@ -409,7 +390,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -424,7 +405,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -453,7 +434,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -474,7 +455,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -492,9 +473,10 @@ test.describe("Document Sharing", () => {
 
   test.describe("Edge Cases", () => {
     test("should prevent sharing with oneself", async ({ authenticatedPage, organizationSlug }) => {
+      test.setTimeout(60000);
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -520,7 +502,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -544,7 +526,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForFirstDocument(authenticatedPage, documentsPage);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
 
       await shareDialog.waitForOpen();
 
