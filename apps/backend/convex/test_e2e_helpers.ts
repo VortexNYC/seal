@@ -13,6 +13,21 @@ import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
 
 /**
+ * Gate all public test helpers behind an env var that is only set on the E2E
+ * test deployment (coordinated-lemur-768).  Without this, any unauthenticated
+ * caller who knows the Convex URL could invoke these mutations.
+ *
+ * To enable: `bunx convex env set E2E_DEPLOYMENT_SECRET <any-value> --deployment coordinated-lemur-768`
+ */
+function requireE2eDeployment(): void {
+  if (!process.env.E2E_DEPLOYMENT_SECRET) {
+    throw new Error(
+      "Test helper functions are disabled. E2E_DEPLOYMENT_SECRET is not set on this deployment.",
+    );
+  }
+}
+
+/**
  * Seed a pro subscription for the E2E workspace, looked up by its known slug.
  * Called from global.setup.ts via `bunx convex run` — no org ID required.
  *
@@ -24,6 +39,8 @@ export const seedProSubscriptionForE2E = mutation({
     organizationSlug: v.string(),
   },
   handler: async (ctx, { organizationSlug }) => {
+    requireE2eDeployment();
+
     const org = await ctx.db
       .query("organizations")
       .withIndex("by_slug", (q) => q.eq("slug", organizationSlug))
@@ -121,6 +138,8 @@ export const purgeE2EDocuments = mutation({
     batchSize: v.optional(v.number()),
   },
   handler: async (ctx, { organizationSlug, batchSize = 200 }) => {
+    requireE2eDeployment();
+
     const org = await ctx.db
       .query("organizations")
       .withIndex("by_slug", (q) => q.eq("slug", organizationSlug))
@@ -152,6 +171,7 @@ export const purgeE2EDocuments = mutation({
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
+    requireE2eDeployment();
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -168,6 +188,8 @@ export const createTestDocument = mutation({
     name: v.optional(v.string()),
   },
   handler: async (ctx, { organizationSlug, storageId, name }) => {
+    requireE2eDeployment();
+
     const org = await ctx.db
       .query("organizations")
       .withIndex("by_slug", (q) => q.eq("slug", organizationSlug))
@@ -218,6 +240,7 @@ export const deleteTestDocument = mutation({
     documentId: v.string(),
   },
   handler: async (ctx, { documentId }) => {
+    requireE2eDeployment();
     const id = documentId as Id<"documents">;
     const doc = await ctx.db.get(id);
     if (doc) await ctx.db.delete(id);
@@ -231,6 +254,8 @@ export const deleteTestDocument = mutation({
 export const getOrgDebugInfo = query({
   args: { slug: v.string() },
   handler: async (ctx, { slug }) => {
+    requireE2eDeployment();
+
     const org = await ctx.db
       .query("organizations")
       .withIndex("by_slug", (q) => q.eq("slug", slug))

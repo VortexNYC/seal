@@ -29,10 +29,10 @@ test.describe("Recipients Management", () => {
     const storageId = getCachedStorageId();
     try {
       if (storageId) {
-        const id = await apiCreateDocument(organizationSlug, storageId);
-        sharedDocId = id;
-        sharedDocName = `e2e-test-doc-${id}`;
-        await authenticatedPage.goto(`/${organizationSlug}/documents/${id}`);
+        const doc = await apiCreateDocument(organizationSlug, storageId);
+        sharedDocId = doc.id;
+        sharedDocName = doc.name;
+        await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
         await new DocumentPage(authenticatedPage).waitForDocumentLoad();
       } else {
         const documentsPage = new DocumentsListPage(authenticatedPage);
@@ -297,10 +297,10 @@ test.describe("Document Sending", () => {
     const storageId = getCachedStorageId();
     try {
       if (storageId) {
-        const id = await apiCreateDocument(organizationSlug, storageId);
-        sendingDocId = id;
-        sendingDocName = `e2e-test-doc-${id}`;
-        await authenticatedPage.goto(`/${organizationSlug}/documents/${id}`);
+        const doc = await apiCreateDocument(organizationSlug, storageId);
+        sendingDocId = doc.id;
+        sendingDocName = doc.name;
+        await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
         await new DocumentPage(authenticatedPage).waitForDocumentLoad();
       } else {
         const documentsPage = new DocumentsListPage(authenticatedPage);

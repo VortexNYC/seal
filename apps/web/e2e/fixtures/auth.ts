@@ -7,8 +7,8 @@ import { apiCreateDocument, apiDeleteDocument } from "./convex-test-api";
 type AuthFixtures = {
   authenticatedPage: Page;
   organizationSlug: string;
-  /** Create a document via Convex API (~300ms) and return its ID. Auto-deletes after test. */
-  createApiDocument: (name?: string) => Promise<{ id: string; name: string }>;
+  /** Create a document via Convex API (~300ms) and return its ID and name. Auto-deletes after test. */
+  createApiDocument: () => Promise<{ id: string; name: string }>;
 };
 
 /** Shared in-memory cache of the PDF storageId across all workers in a process */
@@ -68,12 +68,11 @@ export const test = base.extend<AuthFixtures>({
     const created: Array<{ id: string }> = [];
     const storageId = await getStorageId();
 
-    const factory = async (name?: string) => {
+    const factory = async () => {
       if (!storageId) throw new Error("PDF storageId not cached — check global.setup.ts ran");
-      const docName = name ?? `e2e-test-doc-${Date.now()}`;
-      const id = await apiCreateDocument(organizationSlug, storageId);
+      const { id, name } = await apiCreateDocument(organizationSlug, storageId);
       created.push({ id });
-      return { id, name: docName };
+      return { id, name };
     };
 
     await use(factory);

@@ -34,10 +34,10 @@ async function createAndOpenDocument(
   const storageId = getCachedStorageId();
 
   if (storageId) {
-    const id = await apiCreateDocument(organizationSlug, storageId);
-    await authenticatedPage.goto(`/${organizationSlug}/documents/${id}`);
+    const doc = await apiCreateDocument(organizationSlug, storageId);
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
     await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-    return { id, name: `e2e-test-doc-${id}` };
+    return { id: doc.id, name: doc.name };
   }
 
   // Fallback: UI path
@@ -225,9 +225,9 @@ test.describe("Document Editor - Zoom Controls", () => {
     const slug = page.url().match(/\/([\w-]+)\/home/)?.[1] ?? "";
 
     if (storageId) {
-      const id = await apiCreateDocument(slug, storageId);
-      zoomDocId = id;
-      zoomDocumentName = `e2e-test-doc-${id}`;
+      const doc = await apiCreateDocument(slug, storageId);
+      zoomDocId = doc.id;
+      zoomDocumentName = doc.name;
     } else {
       const documentsPage = new DocumentsListPage(page);
       await documentsPage.goto(slug);
