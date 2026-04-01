@@ -5,9 +5,8 @@ import { fileURLToPath } from "node:url";
 import { clerkSetup } from "@clerk/testing/playwright";
 import { test as setup } from "@playwright/test";
 
-import { ensurePdfStorageId } from "../fixtures/convex-test-api";
-
 import { ensureWorkspace, getTestWorkspaceConfig, signInTestUser } from "../fixtures/auth-helpers";
+import { ensurePdfStorageId } from "../fixtures/convex-test-api";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const authStatePath = path.resolve(__dirname, "../../playwright/.clerk/user.json");

@@ -1,8 +1,8 @@
 /* oxlint-disable react-hooks/rules-of-hooks */
 import { expect, test as base, type Page } from "@playwright/test";
 
-import { apiCreateDocument, apiDeleteDocument } from "./convex-test-api";
 import { getTestWorkspaceConfig, isAuthenticatedUrl, signInTestUser } from "./auth-helpers";
+import { apiCreateDocument, apiDeleteDocument } from "./convex-test-api";
 
 type AuthFixtures = {
   authenticatedPage: Page;
