@@ -120,8 +120,7 @@ test.describe("Document Editing", () => {
     // createApiDocument fixture auto-deletes after test
   });
 
-  test.skip("should keep send action enabled when a fresh draft already has a signer", // STALE: send button requires at least one recipient; fresh drafts no longer
-  // auto-add the creator as a signer. The Document Lifecycle test covers send
+  test.skip("should keep send action enabled when a fresh draft already has a signer", // auto-add the creator as a signer. The Document Lifecycle test covers send // STALE: send button requires at least one recipient; fresh drafts no longer
   // after a recipient is added.
   async () => {});
 });

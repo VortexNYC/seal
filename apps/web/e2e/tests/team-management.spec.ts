@@ -249,9 +249,7 @@ test.describe("Team Management - Pending Invitations", () => {
 
     // Match either the card title "Pending Invitations" or the empty state
     // "No pending invitations" — both confirm the section rendered correctly.
-    await expect(
-      authenticatedPage.getByText(/pending invitations/i).first(),
-    ).toBeVisible();
+    await expect(authenticatedPage.getByText(/pending invitations/i).first()).toBeVisible();
   });
 });
 
@@ -261,95 +259,92 @@ test.describe("Team Management - Pending Invitations", () => {
 test.describe("Team Management - Invitation Actions (chromium-serial)", () => {
   test.describe.configure({ mode: "serial" });
 
-  test(
-    "should invite team member as Admin",
-    async ({ authenticatedPage, organizationSlug }, testInfo) => {
-      if (testInfo.project.name !== "chromium") test.skip();
+  test("should invite team member as Admin", async ({
+    authenticatedPage,
+    organizationSlug,
+  }, testInfo) => {
+    if (testInfo.project.name !== "chromium") test.skip();
 
-      const teamPage = new TeamSettingsPage(authenticatedPage);
+    const teamPage = new TeamSettingsPage(authenticatedPage);
 
-      await teamPage.goto(organizationSlug);
+    await teamPage.goto(organizationSlug);
 
-      const memberEmail = testData.email("team-member");
+    const memberEmail = testData.email("team-member");
 
-      await teamPage.inviteMember(memberEmail, "Admin");
+    await teamPage.inviteMember(memberEmail, "Admin");
 
-      await waitForToast(authenticatedPage, /invitation sent/i);
+    await waitForToast(authenticatedPage, /invitation sent/i);
 
-      await expect(authenticatedPage.getByText(memberEmail)).toBeVisible();
-    },
-  );
+    await expect(authenticatedPage.getByText(memberEmail)).toBeVisible();
+  });
 
-  test(
-    "should invite team member as Member",
-    async ({ authenticatedPage, organizationSlug }, testInfo) => {
-      if (testInfo.project.name !== "chromium") test.skip();
+  test("should invite team member as Member", async ({
+    authenticatedPage,
+    organizationSlug,
+  }, testInfo) => {
+    if (testInfo.project.name !== "chromium") test.skip();
 
-      const teamPage = new TeamSettingsPage(authenticatedPage);
+    const teamPage = new TeamSettingsPage(authenticatedPage);
 
-      await teamPage.goto(organizationSlug);
+    await teamPage.goto(organizationSlug);
 
-      const memberEmail = testData.email("team-member");
+    const memberEmail = testData.email("team-member");
 
-      await teamPage.inviteMember(memberEmail, "Member");
+    await teamPage.inviteMember(memberEmail, "Member");
 
-      await waitForToast(authenticatedPage, /invitation sent/i);
-    },
-  );
+    await waitForToast(authenticatedPage, /invitation sent/i);
+  });
 
-  test(
-    "should revoke pending invitation",
-    async ({ authenticatedPage, organizationSlug }, testInfo) => {
-      if (testInfo.project.name !== "chromium") test.skip();
+  test("should revoke pending invitation", async ({
+    authenticatedPage,
+    organizationSlug,
+  }, testInfo) => {
+    if (testInfo.project.name !== "chromium") test.skip();
 
-      const teamPage = new TeamSettingsPage(authenticatedPage);
+    const teamPage = new TeamSettingsPage(authenticatedPage);
 
-      await teamPage.goto(organizationSlug);
+    await teamPage.goto(organizationSlug);
 
-      const email = testData.email("revoke-target");
-      await teamPage.inviteMember(email, "Member");
-      await waitForToast(authenticatedPage, /invitation sent/i);
+    const email = testData.email("revoke-target");
+    await teamPage.inviteMember(email, "Member");
+    await waitForToast(authenticatedPage, /invitation sent/i);
 
-      // Navigate to the Invitations tab where pending invitations are displayed
-      await authenticatedPage.getByRole("tab", { name: /invitations/i }).click();
+    // Navigate to the Invitations tab where pending invitations are displayed
+    await authenticatedPage.getByRole("tab", { name: /invitations/i }).click();
 
-      const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
-        hasText: email,
-      });
-      await expect(invitationRow).toBeVisible({ timeout: 5000 });
+    const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
+      hasText: email,
+    });
+    await expect(invitationRow).toBeVisible({ timeout: 5000 });
 
-      await invitationRow.getByRole("button", { name: /revoke/i }).click();
+    await invitationRow.getByRole("button", { name: /revoke/i }).click();
 
-      await waitForToast(authenticatedPage, /invitation revoked/i);
+    await waitForToast(authenticatedPage, /invitation revoked/i);
 
-      await expect(invitationRow).not.toBeVisible();
-    },
-  );
+    await expect(invitationRow).not.toBeVisible();
+  });
 
-  test(
-    "should resend invitation",
-    async ({ authenticatedPage, organizationSlug }, testInfo) => {
-      if (testInfo.project.name !== "chromium") test.skip();
+  test("should resend invitation", async ({ authenticatedPage, organizationSlug }, testInfo) => {
+    if (testInfo.project.name !== "chromium") test.skip();
 
-      const teamPage = new TeamSettingsPage(authenticatedPage);
+    const teamPage = new TeamSettingsPage(authenticatedPage);
 
-      await teamPage.goto(organizationSlug);
+    await teamPage.goto(organizationSlug);
 
-      const email = testData.email("resend-target");
-      await teamPage.inviteMember(email, "Member");
-      await waitForToast(authenticatedPage, /invitation sent/i);
+    const email = testData.email("resend-target");
+    await teamPage.inviteMember(email, "Member");
+    await waitForToast(authenticatedPage, /invitation sent/i);
 
-      // Navigate to the Invitations tab where pending invitations are displayed
-      await authenticatedPage.getByRole("tab", { name: /invitations/i }).click();
+    // Navigate to the Invitations tab where pending invitations are displayed
+    await authenticatedPage.getByRole("tab", { name: /invitations/i }).click();
 
-      const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
-        hasText: email,
-      });
-      await expect(invitationRow).toBeVisible({ timeout: 5000 });
+    const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
+      hasText: email,
+    });
+    await expect(invitationRow).toBeVisible({ timeout: 5000 });
 
-      await invitationRow.getByRole("button", { name: /resend/i }).click();
+    await invitationRow.getByRole("button", { name: /resend/i }).click();
 
-      await waitForToast(authenticatedPage, /invitation resent/i);
-    },
-  );
+    await waitForToast(authenticatedPage, /invitation resent/i);
+  });
 });

@@ -25,12 +25,12 @@ export const getDocumentStats = permissionQuery("documents:view")({
     // Non-admins are forced to personal scope regardless of what they request
     const scope = isAdmin ? (args.scope ?? "team") : "personal";
 
-    // Get all documents for the organization
+    // Get all documents for the organization (capped to avoid byte-read limits on large workspaces)
     let documents = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
       .filter((q) => q.neq(q.field("status"), "deleted"))
-      .collect();
+      .take(4096);
 
     if (scope === "personal") {
       documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
@@ -168,7 +168,7 @@ export const getDocumentTrends = permissionQuery("documents:view")({
     const scope = ctx.auth.isAdmin() ? (args.scope ?? "team") : "personal";
     const { startDate, endDate } = getTrendRange(args);
 
-    // Get documents created in the time range
+    // Get documents created in the time range (capped to avoid byte-read limits on large workspaces)
     let documents = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
@@ -179,7 +179,7 @@ export const getDocumentTrends = permissionQuery("documents:view")({
           q.lte(q.field("createdAt"), endDate),
         ),
       )
-      .collect();
+      .take(4096);
 
     if (scope === "personal") {
       documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
@@ -347,25 +347,25 @@ export const getPeriodStats = permissionQuery("documents:view")({
         break;
     }
 
-    // Get documents created in period
+    // Get documents created in period (capped to avoid byte-read limits on large workspaces)
     let documents = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
       .filter((q) =>
         q.and(q.neq(q.field("status"), "deleted"), q.gte(q.field("createdAt"), startDate)),
       )
-      .collect();
+      .take(4096);
 
     if (scope === "personal") {
       documents = documents.filter((d) => d.ownerId === ctx.auth.user._id);
     }
 
-    // Get documents completed in period
+    // Get documents completed in period (capped to avoid byte-read limits on large workspaces)
     let allDocs = await ctx.db
       .query("documents")
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
       .filter((q) => q.neq(q.field("status"), "deleted"))
-      .collect();
+      .take(4096);
 
     if (scope === "personal") {
       allDocs = allDocs.filter((d) => d.ownerId === ctx.auth.user._id);

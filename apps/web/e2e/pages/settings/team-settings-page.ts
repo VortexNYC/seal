@@ -1,6 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
 
-
 export class TeamSettingsPage {
   readonly page: Page;
   readonly heading: Locator;
