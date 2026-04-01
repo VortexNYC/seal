@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import type { Page } from "@playwright/test";
 
-import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { expect, test } from "../fixtures/auth";
+import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
@@ -154,7 +155,9 @@ test.describe("Document Actions", () => {
     await row.getByRole("button", { name: /document actions for/i }).click();
 
     // Chromium/WebKit open a popup; Firefox triggers a download event instead.
-    const popupPromise = authenticatedPage.waitForEvent("popup", { timeout: 5000 }).catch(() => null);
+    const popupPromise = authenticatedPage
+      .waitForEvent("popup", { timeout: 5000 })
+      .catch(() => null);
     const downloadPromise = authenticatedPage
       .waitForEvent("download", { timeout: 5000 })
       .catch(() => null);

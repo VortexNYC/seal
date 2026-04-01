@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import type { Page } from "@playwright/test";
 
-import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { expect, test } from "../fixtures/auth";
+import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
@@ -154,9 +155,9 @@ test.describe("Signature Fields - Drag and Drop", () => {
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.selectFieldType("signature");
     await documentPage.addSignatureField(100, 100);
-    await expect(
-      authenticatedPage.locator('[data-testid="signature-field"]').first(),
-    ).toBeVisible({ timeout: 5000 });
+    await expect(authenticatedPage.locator('[data-testid="signature-field"]').first()).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should drag signature field onto PDF", async ({ authenticatedPage }) => {
@@ -164,9 +165,9 @@ test.describe("Signature Fields - Drag and Drop", () => {
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.selectFieldType("signature");
     await documentPage.addSignatureField(150, 150);
-    await expect(
-      authenticatedPage.locator('[data-testid="signature-field"]').first(),
-    ).toBeVisible({ timeout: 5000 });
+    await expect(authenticatedPage.locator('[data-testid="signature-field"]').first()).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should add multiple fields of different types", async ({ authenticatedPage }) => {
@@ -211,17 +212,17 @@ test.describe("Signature Fields - Management", () => {
   });
 
   test("should display fields section", async ({ authenticatedPage }) => {
-    await expect(
-      authenticatedPage.getByRole("button", { name: /Signature Fields/ }),
-    ).toBeVisible({ timeout: 5000 });
+    await expect(authenticatedPage.getByRole("button", { name: /Signature Fields/ })).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should show field toolbar with drag instructions or existing fields", async ({
     authenticatedPage,
   }) => {
-    await expect(
-      authenticatedPage.getByRole("button", { name: /Signature Fields/ }),
-    ).toBeVisible({ timeout: 5000 });
+    await expect(authenticatedPage.getByRole("button", { name: /Signature Fields/ })).toBeVisible({
+      timeout: 5000,
+    });
     await expect(
       authenticatedPage.getByRole("button", { name: "Signature", exact: true }),
     ).toBeVisible({ timeout: 5000 });
@@ -237,9 +238,7 @@ test.describe("Signature Fields - Management", () => {
     const field = authenticatedPage.locator('[data-testid="signature-field"]').first();
     await expect(field).toBeVisible({ timeout: 5000 });
 
-    const isAlreadySelected = await field.evaluate((el) =>
-      el.className.includes("border-primary"),
-    );
+    const isAlreadySelected = await field.evaluate((el) => el.className.includes("border-primary"));
     if (!isAlreadySelected) {
       await field.click();
       await expect(field).toHaveClass(/border-primary/, { timeout: 3000 });

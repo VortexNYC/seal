@@ -108,6 +108,15 @@ docs/app-feature-map.md
 docs/test-sessions/
 apps/backend/--annotate
 apps/node_modules/
+
+# Local env variants and backups
+apps/backend/.env.local.bak
+apps/web/.env.production-env
+apps/web/.env.staging-custom
+apps/web/.env.staging-env
+
+# Convex generated files (web app mirrors backend — not source of truth)
+apps/web/convex/_generated/
 .claude/hookify.*.local.md
 .claude/skills/openlogs-server-logs
 .agents/skills/openlogs-server-logs/

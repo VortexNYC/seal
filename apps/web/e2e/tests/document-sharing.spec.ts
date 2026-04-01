@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 
-import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { expect, test } from "../fixtures/auth";
+import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { ShareDialogPage } from "../pages/documents/share-dialog-page";
 import { waitForToast } from "../utils/test-helpers";
@@ -42,9 +42,7 @@ test.describe("Document Sharing", () => {
       // Fallback: create via UI (slow but safe)
       await documentsPage.goto(organizationSlug);
       try {
-        sharedDocName = await documentsPage.createDocument(
-          "./e2e/fixtures/sample-document.pdf",
-        );
+        sharedDocName = await documentsPage.createDocument("./e2e/fixtures/sample-document.pdf");
       } catch (err) {
         if (err instanceof Error && err.message.includes("monthly document limit")) {
           test.skip(true, "E2E workspace reached its monthly document limit.");

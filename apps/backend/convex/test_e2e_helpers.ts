@@ -7,9 +7,10 @@
  * These functions are NOT public API and should never be called in production.
  */
 
+import { v } from "convex/values";
+
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { v } from "convex/values";
 
 /**
  * Seed a pro subscription for the E2E workspace, looked up by its known slug.
@@ -84,9 +85,7 @@ export const seedProSubscriptionForE2E = mutation({
     const existing = await ctx.db
       .query("subscriptions")
       .withIndex("by_organization_id", (q) => q.eq("organizationId", org._id))
-      .filter((q) =>
-        q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "trialing")),
-      )
+      .filter((q) => q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "trialing")))
       .first();
 
     if (existing) return { seeded: false, reason: "subscription_already_active" };
@@ -188,8 +187,7 @@ export const createTestDocument = mutation({
         (await ctx.db
           .query("users")
           .withIndex("by_clerk_id", (q) => q.eq("clerkId", e2eClerkId))
-          .first()) ??
-        (await ctx.db.query("users").first());
+          .first()) ?? (await ctx.db.query("users").first());
     }
     if (!owner) throw new Error("no_user_found_for_org");
 
@@ -259,9 +257,7 @@ export const seedProSubscription = internalMutation({
     const existing = await ctx.db
       .query("subscriptions")
       .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
-      .filter((q) =>
-        q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "trialing")),
-      )
+      .filter((q) => q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "trialing")))
       .first();
 
     if (existing) return { seeded: false, reason: "subscription_already_active" };
@@ -297,14 +293,10 @@ export const seedProSubscription = internalMutation({
       await ctx.db.insert("subscription_prices", {
         externalPriceId,
         externalProductId,
-        subscriptionProductId: (
-          await ctx.db
-            .query("subscription_products")
-            .withIndex("by_external_product_id", (q) =>
-              q.eq("externalProductId", externalProductId),
-            )
-            .first()
-        )!._id,
+        subscriptionProductId: (await ctx.db
+          .query("subscription_products")
+          .withIndex("by_external_product_id", (q) => q.eq("externalProductId", externalProductId))
+          .first())!._id,
         type: "recurring",
         billingScheme: "per_unit",
         currency: "usd",
@@ -333,4 +325,3 @@ export const seedProSubscription = internalMutation({
     return { seeded: true };
   },
 });
-

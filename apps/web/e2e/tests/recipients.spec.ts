@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { expect, test } from "../fixtures/auth";
+import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
@@ -197,8 +197,6 @@ test.describe("Recipients Management", () => {
     // BLOCKED: incomplete — needs `data-recipient-email` on recipient rows and a working add step first.
     const documentPage = new DocumentPage(authenticatedPage);
 
-
-
     await documentPage.waitForDocumentLoad();
 
     // Add a recipient first
@@ -225,8 +223,6 @@ test.describe("Recipients Management", () => {
     // BLOCKED: incomplete stub — drag-to-reorder logic and `data-recipient-order` testids not implemented.
     const documentPage = new DocumentPage(authenticatedPage);
 
-
-
     await documentPage.waitForDocumentLoad();
 
     // Add multiple recipients
@@ -243,13 +239,9 @@ test.describe("Recipients Management", () => {
     // Verify order changed
   });
 
-  test.skip("should assign fields to specific recipient", async ({
-    authenticatedPage,
-  }) => {
+  test.skip("should assign fields to specific recipient", async ({ authenticatedPage }) => {
     // BLOCKED: incomplete stub — requires adding both a field and a recipient first.
     const documentPage = new DocumentPage(authenticatedPage);
-
-
 
     await documentPage.waitForDocumentLoad();
 
@@ -274,13 +266,9 @@ test.describe("Recipients Management", () => {
 });
 
 test.describe("Recipients - Authentication Methods", () => {
-  test.skip("should configure recipient authentication method", async ({
-    authenticatedPage,
-  }) => {
+  test.skip("should configure recipient authentication method", async ({ authenticatedPage }) => {
     // BLOCKED: incomplete stub — `[data-testid="recipient"]` not in app, add recipient step missing.
     const documentPage = new DocumentPage(authenticatedPage);
-
-
 
     await documentPage.waitForDocumentLoad();
 
@@ -339,9 +327,7 @@ test.describe("Document Sending", () => {
     }
   });
 
-  test.skip("should send document to recipients", async ({
-    authenticatedPage,
-  }) => {
+  test.skip("should send document to recipients", async ({ authenticatedPage }) => {
     // BLOCKED: requires full prerequisite chain (add fields → add recipients → assign) before send.
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.waitForDocumentLoad();
@@ -363,9 +349,7 @@ test.describe("Document Sending", () => {
     await expect(authenticatedPage.getByText("Sent")).toBeVisible();
   });
 
-  test("should validate document before sending", async ({
-    authenticatedPage,
-  }) => {
+  test("should validate document before sending", async ({ authenticatedPage }) => {
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.waitForDocumentLoad();
 
