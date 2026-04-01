@@ -109,7 +109,7 @@ export function InviteMemberDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4" noValidate>
             {rootError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />

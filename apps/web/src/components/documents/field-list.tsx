@@ -126,6 +126,7 @@ function FieldRow({
 }) {
   return (
     <div
+      data-testid="signature-field"
       onClick={() => onFieldSelect?.(isSelected ? null : field._id)}
       className={cn(
         "w-full cursor-pointer rounded-lg border-2 p-3 transition-colors",

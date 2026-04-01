@@ -57,42 +57,47 @@ export class DashboardPage {
   }
 
   async getTotalDocuments(): Promise<number> {
-    // Get the value from the Total Documents card
-    const card = this.page.locator('[class*="card"]').filter({
+    // Wait for the card to appear (Suspense may delay it), then read the value
+    // Use [class*="bg-card"] to match only the Card root (not CardTitle which has text-card-foreground)
+    const card = this.page.locator('[class*="bg-card"]').filter({
       hasText: "Total Documents",
     });
+    await card.waitFor({ timeout: 15000 });
     const valueEl = card.locator("div").filter({ hasText: /^\d+$/ }).first();
-    const text = await valueEl.textContent();
+    const text = await valueEl.textContent({ timeout: 10000 });
     return Number.parseInt(text || "0", 10);
   }
 
   async getPendingSignatures(): Promise<number> {
-    const card = this.page.locator('[class*="card"]').filter({
+    const card = this.page.locator('[class*="bg-card"]').filter({
       hasText: "Pending Signatures",
     });
+    await card.waitFor({ timeout: 10000 });
     const valueEl = card.locator("div").filter({ hasText: /^\d+$/ }).first();
-    const text = await valueEl.textContent();
+    const text = await valueEl.textContent({ timeout: 10000 });
     return Number.parseInt(text || "0", 10);
   }
 
   async getCompleted(): Promise<number> {
     // Be specific to avoid matching "0 completed this month"
     const card = this.page
-      .locator('[class*="card"]')
+      .locator('[class*="bg-card"]')
       .filter({ hasText: "Completed" })
       .filter({ hasNotText: "Completion Rate" })
       .first();
+    await card.waitFor({ timeout: 10000 });
     const valueEl = card.locator("div").filter({ hasText: /^\d+$/ }).first();
-    const text = await valueEl.textContent();
+    const text = await valueEl.textContent({ timeout: 10000 });
     return Number.parseInt(text || "0", 10);
   }
 
   async getCompletionRate(): Promise<string> {
-    const card = this.page.locator('[class*="card"]').filter({
+    const card = this.page.locator('[class*="bg-card"]').filter({
       hasText: "Completion Rate",
     });
+    await card.waitFor({ timeout: 10000 });
     const valueEl = card.locator("div").filter({ hasText: /\d+%/ }).first();
-    return (await valueEl.textContent()) || "0%";
+    return (await valueEl.textContent({ timeout: 10000 })) || "0%";
   }
 
   async hasDocumentActivity(): Promise<boolean> {

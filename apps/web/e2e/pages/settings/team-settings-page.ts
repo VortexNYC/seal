@@ -1,6 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
 
-import { waitForConvexMutation } from "../../fixtures/convex-helpers";
 
 export class TeamSettingsPage {
   readonly page: Page;
@@ -23,7 +22,7 @@ export class TeamSettingsPage {
     await this.page.goto(`/${slug}/settings/team`);
     await this.page.waitForLoadState("domcontentloaded");
     // Wait for the page heading to appear (Convex data must resolve first)
-    await this.heading.waitFor({ state: "visible", timeout: 5000 });
+    await this.heading.waitFor({ state: "visible", timeout: 10000 });
   }
 
   async inviteMember(email: string, role: "Owner" | "Admin" | "Member"): Promise<void> {
@@ -36,7 +35,13 @@ export class TeamSettingsPage {
 
     await this.page.getByRole("button", { name: /send|invite/i }).click();
 
-    await waitForConvexMutation(this.page, "inviteTeamMember");
+    // Wait for the dialog to close (Convex mutation succeeded and dialog dismissed)
+    await this.page
+      .getByRole("dialog")
+      .waitFor({ state: "hidden", timeout: 10000 })
+      .catch(() => {
+        // Dialog may already be gone or mutation may have failed — let test assertions handle it
+      });
   }
 
   async removeMember(email: string): Promise<void> {
@@ -46,7 +51,7 @@ export class TeamSettingsPage {
     // Confirm deletion
     await this.page.getByRole("button", { name: /confirm|yes/i }).click();
 
-    await waitForConvexMutation(this.page, "removeTeamMember");
+    await this.page.waitForTimeout(500);
   }
 
   async updateMemberRole(email: string, role: "Owner" | "Admin" | "Member"): Promise<void> {
@@ -54,7 +59,7 @@ export class TeamSettingsPage {
     await memberRow.getByRole("button", { name: /change role/i }).click();
     await this.page.getByRole("option", { name: role }).click();
 
-    await waitForConvexMutation(this.page, "updateMemberRole");
+    await this.page.waitForTimeout(500);
   }
 
   async getMemberCount(): Promise<number> {

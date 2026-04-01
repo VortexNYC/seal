@@ -229,6 +229,7 @@ import type * as sync_external_data from "../sync_external_data.js";
 import type * as templates_index from "../templates/index.js";
 import type * as templates_mutations from "../templates/mutations.js";
 import type * as templates_queries from "../templates/queries.js";
+import type * as test_e2e_helpers from "../test_e2e_helpers.js";
 import type * as timeline from "../timeline.js";
 import type * as user_data_export from "../user_data_export.js";
 import type * as user_profiles_mutations from "../user_profiles/mutations.js";
@@ -474,6 +475,7 @@ declare const fullApi: ApiFromModules<{
   "templates/index": typeof templates_index;
   "templates/mutations": typeof templates_mutations;
   "templates/queries": typeof templates_queries;
+  test_e2e_helpers: typeof test_e2e_helpers;
   timeline: typeof timeline;
   user_data_export: typeof user_data_export;
   "user_profiles/mutations": typeof user_profiles_mutations;

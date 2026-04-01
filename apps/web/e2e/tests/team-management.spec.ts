@@ -38,39 +38,9 @@ test.describe("Team Management - Invite Members", () => {
 
     await teamPage.goto(organizationSlug);
 
-    // Click invite button
     await teamPage.inviteMemberButton.click();
 
-    // Verify dialog appears
     await expect(authenticatedPage.getByRole("dialog", { name: /invite/i })).toBeVisible();
-  });
-
-  test("should invite team member as Admin", async ({ authenticatedPage, organizationSlug }) => {
-    const teamPage = new TeamSettingsPage(authenticatedPage);
-
-    await teamPage.goto(organizationSlug);
-
-    const memberEmail = testData.email("team-member");
-
-    // Invite member
-    await teamPage.inviteMember(memberEmail, "Admin");
-
-    await waitForToast(authenticatedPage, /invitation sent/i);
-
-    // Verify invitation appears in pending invitations
-    await expect(authenticatedPage.getByText(memberEmail)).toBeVisible();
-  });
-
-  test("should invite team member as Member", async ({ authenticatedPage, organizationSlug }) => {
-    const teamPage = new TeamSettingsPage(authenticatedPage);
-
-    await teamPage.goto(organizationSlug);
-
-    const memberEmail = testData.email("team-member");
-
-    await teamPage.inviteMember(memberEmail, "Member");
-
-    await waitForToast(authenticatedPage, /invitation sent/i);
   });
 
   test("should validate email format when inviting", async ({
@@ -83,12 +53,10 @@ test.describe("Team Management - Invite Members", () => {
 
     await teamPage.inviteMemberButton.click();
 
-    // Enter invalid email
     await authenticatedPage.getByLabel(/email/i).fill("invalid-email");
 
     await authenticatedPage.getByRole("button", { name: /send|invite/i }).click();
 
-    // Should show validation error
     await expect(authenticatedPage.getByText(/valid email/i)).toBeVisible();
   });
 });
@@ -101,6 +69,8 @@ test.describe("Team Management - Member Roles", () => {
 
     // Each member should have a role badge (Owner, Admin, Member)
     const roleElements = authenticatedPage.locator('[data-testid="member-role"]');
+    // Wait for at least one role badge to render before counting
+    await roleElements.first().waitFor({ state: "visible", timeout: 5000 });
     const count = await roleElements.count();
 
     expect(count).toBeGreaterThan(0);
@@ -273,52 +243,113 @@ test.describe("Team Management - Pending Invitations", () => {
 
     await teamPage.goto(organizationSlug);
 
-    // Verify pending invitations section exists — shows "No pending invitations" empty state
-    // or an invitation count badge, both contain the phrase.
-    await expect(authenticatedPage.getByText(/pending invitations/i)).toBeVisible();
+    // The invitations section lives inside the Invitations tab,
+    // which is hidden by default — navigate to it first.
+    await authenticatedPage.getByRole("tab", { name: /invitations/i }).click();
+
+    // Match either the card title "Pending Invitations" or the empty state
+    // "No pending invitations" — both confirm the section rendered correctly.
+    await expect(
+      authenticatedPage.getByText(/pending invitations/i).first(),
+    ).toBeVisible();
   });
+});
 
-  test("should revoke pending invitation", async ({ authenticatedPage, organizationSlug }) => {
-    const teamPage = new TeamSettingsPage(authenticatedPage);
+// These tests call the Clerk invitation API which has a 5-member org quota.
+// Running in parallel across browsers or within a project would exhaust the quota —
+// run serially in chromium only.
+test.describe("Team Management - Invitation Actions (chromium-serial)", () => {
+  test.describe.configure({ mode: "serial" });
 
-    await teamPage.goto(organizationSlug);
+  test(
+    "should invite team member as Admin",
+    async ({ authenticatedPage, organizationSlug }, testInfo) => {
+      if (testInfo.project.name !== "chromium") test.skip();
 
-    // Seed a pending invitation so we have something to revoke
-    const email = testData.email("revoke-target");
-    await teamPage.inviteMember(email, "Member");
-    await waitForToast(authenticatedPage, /invitation sent/i);
+      const teamPage = new TeamSettingsPage(authenticatedPage);
 
-    // The newly created invitation row should now be visible
-    const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
-      hasText: email,
-    });
-    await expect(invitationRow).toBeVisible({ timeout: 5000 });
+      await teamPage.goto(organizationSlug);
 
-    await invitationRow.getByRole("button", { name: /revoke/i }).click();
+      const memberEmail = testData.email("team-member");
 
-    await waitForToast(authenticatedPage, /invitation revoked/i);
+      await teamPage.inviteMember(memberEmail, "Admin");
 
-    // Invitation row should be gone
-    await expect(invitationRow).not.toBeVisible();
-  });
+      await waitForToast(authenticatedPage, /invitation sent/i);
 
-  test("should resend invitation", async ({ authenticatedPage, organizationSlug }) => {
-    const teamPage = new TeamSettingsPage(authenticatedPage);
+      await expect(authenticatedPage.getByText(memberEmail)).toBeVisible();
+    },
+  );
 
-    await teamPage.goto(organizationSlug);
+  test(
+    "should invite team member as Member",
+    async ({ authenticatedPage, organizationSlug }, testInfo) => {
+      if (testInfo.project.name !== "chromium") test.skip();
 
-    // Seed a pending invitation so we have something to resend
-    const email = testData.email("resend-target");
-    await teamPage.inviteMember(email, "Member");
-    await waitForToast(authenticatedPage, /invitation sent/i);
+      const teamPage = new TeamSettingsPage(authenticatedPage);
 
-    const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
-      hasText: email,
-    });
-    await expect(invitationRow).toBeVisible({ timeout: 5000 });
+      await teamPage.goto(organizationSlug);
 
-    await invitationRow.getByRole("button", { name: /resend/i }).click();
+      const memberEmail = testData.email("team-member");
 
-    await waitForToast(authenticatedPage, /invitation resent/i);
-  });
+      await teamPage.inviteMember(memberEmail, "Member");
+
+      await waitForToast(authenticatedPage, /invitation sent/i);
+    },
+  );
+
+  test(
+    "should revoke pending invitation",
+    async ({ authenticatedPage, organizationSlug }, testInfo) => {
+      if (testInfo.project.name !== "chromium") test.skip();
+
+      const teamPage = new TeamSettingsPage(authenticatedPage);
+
+      await teamPage.goto(organizationSlug);
+
+      const email = testData.email("revoke-target");
+      await teamPage.inviteMember(email, "Member");
+      await waitForToast(authenticatedPage, /invitation sent/i);
+
+      // Navigate to the Invitations tab where pending invitations are displayed
+      await authenticatedPage.getByRole("tab", { name: /invitations/i }).click();
+
+      const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
+        hasText: email,
+      });
+      await expect(invitationRow).toBeVisible({ timeout: 5000 });
+
+      await invitationRow.getByRole("button", { name: /revoke/i }).click();
+
+      await waitForToast(authenticatedPage, /invitation revoked/i);
+
+      await expect(invitationRow).not.toBeVisible();
+    },
+  );
+
+  test(
+    "should resend invitation",
+    async ({ authenticatedPage, organizationSlug }, testInfo) => {
+      if (testInfo.project.name !== "chromium") test.skip();
+
+      const teamPage = new TeamSettingsPage(authenticatedPage);
+
+      await teamPage.goto(organizationSlug);
+
+      const email = testData.email("resend-target");
+      await teamPage.inviteMember(email, "Member");
+      await waitForToast(authenticatedPage, /invitation sent/i);
+
+      // Navigate to the Invitations tab where pending invitations are displayed
+      await authenticatedPage.getByRole("tab", { name: /invitations/i }).click();
+
+      const invitationRow = authenticatedPage.locator('[data-testid="pending-invitation"]', {
+        hasText: email,
+      });
+      await expect(invitationRow).toBeVisible({ timeout: 5000 });
+
+      await invitationRow.getByRole("button", { name: /resend/i }).click();
+
+      await waitForToast(authenticatedPage, /invitation resent/i);
+    },
+  );
 });
