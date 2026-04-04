@@ -1167,7 +1167,7 @@ function SecuritySettings() {
 
 **What to do:**
 
-1. Run full static analysis: `bun --bun run static-analysis`
+1. Run full static analysis: `bun --bun run verify`
 2. Fix any lint/format/type errors
 3. Verify all settings pages load and save correctly via the dev server
 4. Verify the unified `getOrgSettings` query returns all categories

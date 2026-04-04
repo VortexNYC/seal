@@ -1,13 +1,13 @@
 ---
-name: fix-static-analysis
-description: "Fix failures from `bun run static-analysis`, including lint, format, typecheck, and dead-code issues. Use when the user asks to fix static analysis, type errors, lint failures, or knip issues in this repository."
+name: fix-verify
+description: "Fix failures from `bun run verify`, including lint, format, typecheck, and dead-code issues. Use when the user asks to fix static analysis, type errors, lint failures, or knip issues in this repository."
 ---
 
-Identify and resolve issues reported by `bun run static-analysis`.
+Identify and resolve issues reported by `bun run verify`.
 
 ## Scope
 
-Treat this as a remediation workflow for the repository-wide static analysis suite:
+Treat this as a remediation workflow for the repository-wide verification suite:
 
 - Oxlint
 - Oxfmt
@@ -18,7 +18,7 @@ Run commands from the project root.
 
 ## Process
 
-1. Run `bun run static-analysis`.
+1. Run `bun run verify`.
 2. Categorize issues by type and file.
 3. Prioritize type errors and syntax errors before style issues.
 4. Apply automatic fixes where appropriate:
@@ -26,7 +26,7 @@ Run commands from the project root.
    - `bun run oxfmt:fix`
    - `bun run knip:fix`
 5. Fix remaining issues manually with targeted code changes.
-6. Re-run `bun run static-analysis`.
+6. Re-run `bun run verify`.
 7. Report any remaining issues that require manual intervention.
 
 ## Rules
@@ -51,5 +51,5 @@ Report:
 - initial issue categories
 - what was auto-fixed
 - what was fixed manually
-- whether `bun run static-analysis` passes cleanly
+- whether `bun run verify` passes cleanly
 - any remaining blockers

@@ -126,7 +126,7 @@ bun run format
 bun run format:check
 bun run typecheck
 bun run knip
-bun run static-analysis
+bun run verify
 bun run test
 ```
 

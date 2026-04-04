@@ -9,16 +9,16 @@
       "tooling/*"
     ],
     "catalog": {
-      "@types/bun": "^1.3.6",
-      "@types/node": "^25.0.10",
+      "@types/bun": "1.3.11",
+      "@types/node": "^25.5.2",
       "@types/react": "^19.2.14",
       "@types/react-dom": "^19.2.3",
-      "convex": "^1.34.0",
+      "convex": "^1.34.1",
       "react": "^19.2.4",
       "react-dom": "^19.2.4",
       "typescript": "^5.9.3",
       "vite": "^7.3.1",
-      "vitest": "^4.0.18",
+      "vitest": "^4.1.2",
       "zod": "^4.3.6"
     }
   },
@@ -32,7 +32,7 @@
     "typecheck": "turbo run typecheck --filter=@seal/backend --filter=@seal/landing --filter=@seal/mcp-server --filter=@seal/react --filter=@seal/transactional --filter=@seal/web",
     "knip": "turbo run knip --continue --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/react --filter=@seal/transactional --filter=@seal/web",
     "knip:fix": "turbo run knip:fix --continue --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/react --filter=@seal/transactional --filter=@seal/web",
-    "static-analysis": "turbo run lint format:check typecheck knip --continue",
+    "verify": "turbo run lint format:check typecheck knip --continue",
     "test": "turbo run test --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/web",
     "clean": "bunx turbo run clean --filter=@seal/backend --filter=@seal/mcp-server --filter=@seal/web && git clean -xdf .cache .turbo dist node_modules",
     "eval": "cd evals && npx promptfoo eval",
@@ -41,19 +41,19 @@
     "eval:view": "npx promptfoo view"
   },
   "dependencies": {
-    "posthog-js": "^1.360.1"
+    "posthog-js": "^1.364.7"
   },
   "devDependencies": {
     "@seal/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "baseline-browser-mapping": "^2.10.8",
-    "browserslist": "^4.28.1",
-    "knip": "^5.85.0",
-    "oxfmt": "^0.37.0",
-    "oxlint": "^1.52.0",
-    "promptfoo": "^0.121.2",
-    "turbo": "^2.8.15",
+    "baseline-browser-mapping": "^2.10.14",
+    "browserslist": "^4.28.2",
+    "knip": "^6.3.0",
+    "oxfmt": "^0.43.0",
+    "oxlint": "^1.58.0",
+    "promptfoo": "^0.121.3",
+    "turbo": "^2.9.3",
     "typescript": "catalog:"
   },
   "resolutions": {
@@ -63,5 +63,5 @@
     "unplugin": "2.1.2",
     "vite": "^7.3.1"
   },
-  "packageManager": "bun@1.3.0"
+  "packageManager": "bun@1.3.11"
 }
