@@ -14,12 +14,53 @@ export default defineConfig(({ command }) => {
       return "pdf-viewer";
     }
 
-    if (moduleId.includes("recharts")) {
+    if (
+      moduleId.includes("konva") ||
+      moduleId.includes("react-konva") ||
+      moduleId.includes("react-zoom-pan-pinch")
+    ) {
+      return "canvas";
+    }
+
+    if (moduleId.includes("recharts") || moduleId.includes("d3-")) {
       return "charts";
+    }
+
+    if (moduleId.includes("jspdf") || moduleId.includes("html2canvas")) {
+      return "pdf-export";
     }
 
     if (moduleId.includes("date-fns")) {
       return "date-utils";
+    }
+
+    if (
+      moduleId.includes("@radix-ui") ||
+      moduleId.includes("cmdk") ||
+      moduleId.includes("sonner") ||
+      moduleId.includes("react-day-picker")
+    ) {
+      return "ui";
+    }
+
+    if (moduleId.includes("@clerk") || moduleId.includes("posthog")) {
+      return "vendor-auth";
+    }
+
+    if (moduleId.includes("@stripe")) {
+      return "vendor-stripe";
+    }
+
+    if (
+      moduleId.includes("/convex/") &&
+      !moduleId.includes("_generated") &&
+      !moduleId.includes("convex-helpers")
+    ) {
+      return "vendor-convex";
+    }
+
+    if (moduleId.includes("@tanstack/react-query") || moduleId.includes("@tanstack/query")) {
+      return "vendor-query";
     }
 
     return undefined;
@@ -35,7 +76,9 @@ export default defineConfig(({ command }) => {
         ? sentryVitePlugin({
             org: "plasma-vh",
             project: "seal",
-            reactComponentAnnotation: { enabled: true },
+            // Disabled: adds significant build time with Rolldown and provides
+            // limited value — Sentry can infer component names from sourcemaps.
+            reactComponentAnnotation: { enabled: false },
             sourcemaps: {
               filesToDeleteAfterUpload: ["./dist/**/*.map"],
             },
@@ -70,6 +113,7 @@ export default defineConfig(({ command }) => {
 
     build: {
       sourcemap: "hidden",
+      chunkSizeWarningLimit: 1600,
       // SEA-136: Mobile performance optimization - chunk splitting for lazy loading
       rollupOptions: {
         output: {
