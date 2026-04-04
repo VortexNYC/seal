@@ -39,7 +39,7 @@ function getManualChunkName(id: string): string | undefined {
 
 export default defineConfig(async ({ command }) => ({
   server: {
-    port: 3001,
+    port: 5181,
     proxy: {
       "/ingest/static": {
         target: "https://us-assets.i.posthog.com",

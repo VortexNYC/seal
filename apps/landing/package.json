@@ -22,7 +22,7 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
-    "test:e2e:codegen": "playwright codegen http://localhost:3001"
+    "test:e2e:codegen": "playwright codegen http://localhost:5181"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.3",

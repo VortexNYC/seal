@@ -60,8 +60,8 @@ bunx turbo run dev --filter=@seal/transactional
 
 Notes:
 
-- `apps/landing` defaults to port `3001`.
-- `packages/transactional` also defaults to port `3001`.
+- `apps/landing` defaults to port `5181`.
+- `packages/transactional` defaults to port `3001`.
 - `apps/mcp-server` defaults to port `5183`.
 - Playwright E2E assumes the product app is available at `http://localhost:5180`.
 
