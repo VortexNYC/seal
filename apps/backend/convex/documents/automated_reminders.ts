@@ -114,9 +114,9 @@ export const processAutomatedReminders = internalMutation({
               updatedAt: now,
             });
 
-            // Schedule immediately (the interval has already passed)
+            // Stagger sends by 250ms each to stay under Resend's 5 req/s limit
             await ctx.scheduler.runAfter(
-              0,
+              remindersScheduled * 250,
               internal.documents.reminder_email_action.sendReminderEmail,
               { reminderId },
             );
