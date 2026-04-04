@@ -148,7 +148,8 @@
             "name": "oxfmt"
           }
         }
-      ]
+      ],
+      "semantic_tokens": "off"
     },
     "TOML": {
       "format_on_save": "on",
