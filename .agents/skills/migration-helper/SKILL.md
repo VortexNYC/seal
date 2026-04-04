@@ -30,13 +30,13 @@ Safely migrate Convex schemas and data when making breaking changes.
 // Before
 users: defineTable({
   name: v.string(),
-})
+});
 
 // After - Safe! New field is optional
 users: defineTable({
   name: v.string(),
   bio: v.optional(v.string()),
-})
+});
 ```
 
 ### Adding New Table
@@ -46,7 +46,7 @@ users: defineTable({
 posts: defineTable({
   userId: v.id("users"),
   title: v.string(),
-}).index("by_user", ["userId"])
+}).index("by_user", ["userId"]);
 ```
 
 ### Adding Index
@@ -56,8 +56,7 @@ posts: defineTable({
 users: defineTable({
   name: v.string(),
   email: v.string(),
-})
-  .index("by_email", ["email"]) // New index
+}).index("by_email", ["email"]); // New index
 ```
 
 ## Breaking Changes (Migration Required)
@@ -73,7 +72,7 @@ users: defineTable({
 users: defineTable({
   name: v.string(),
   email: v.optional(v.string()), // Start optional
-})
+});
 
 // Step 2: Create migration
 import { internalMutation } from "./_generated/server";
@@ -101,7 +100,7 @@ export const backfillEmails = internalMutation({
 users: defineTable({
   name: v.string(),
   email: v.string(), // Now required
-})
+});
 ```
 
 ### Changing Field Type
@@ -197,7 +196,7 @@ posts: defineTable({
 users: defineTable({
   name: v.string(),
   displayName: v.optional(v.string()), // New name
-})
+});
 
 // Step 2: Copy data
 export const renameField = internalMutation({
@@ -215,7 +214,7 @@ export const renameField = internalMutation({
 // Step 3: Update schema (remove old field)
 users: defineTable({
   displayName: v.string(),
-})
+});
 
 // Step 4: Update all code to use new field name
 ```
@@ -268,7 +267,7 @@ crons.interval(
   "migrate-batch",
   { minutes: 5 }, // Every 5 minutes
   internal.migrations.migrateBatch,
-  { batchSize: 100 }
+  { batchSize: 100 },
 );
 
 export default crons;
@@ -297,7 +296,7 @@ export const createPost = mutation({
     for (const tagName of args.tags) {
       let tag = await ctx.db
         .query("tags")
-        .withIndex("by_name", q => q.eq("name", tagName))
+        .withIndex("by_name", (q) => q.eq("name", tagName))
         .unique();
 
       if (!tag) {
@@ -327,10 +326,11 @@ export const verifyMigration = query({
   args: {},
   handler: async (ctx) => {
     const total = (await ctx.db.query("users").collect()).length;
-    const migrated = (await ctx.db
-      .query("users")
-      .filter(q => q.neq(q.field("newField"), undefined))
-      .collect()
+    const migrated = (
+      await ctx.db
+        .query("users")
+        .filter((q) => q.neq(q.field("newField"), undefined))
+        .collect()
     ).length;
 
     return {
@@ -378,10 +378,7 @@ export default defineSchema({
 export default defineSchema({
   users: defineTable({
     name: v.string(),
-    role: v.optional(v.union(
-      v.literal("user"),
-      v.literal("admin")
-    )),
+    role: v.optional(v.union(v.literal("user"), v.literal("admin"))),
   }),
 });
 
@@ -405,10 +402,7 @@ export const addDefaultRoles = internalMutation({
 export default defineSchema({
   users: defineTable({
     name: v.string(),
-    role: v.union(
-      v.literal("user"),
-      v.literal("admin")
-    ),
+    role: v.union(v.literal("user"), v.literal("admin")),
   }),
 });
 ```

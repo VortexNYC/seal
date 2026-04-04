@@ -10,6 +10,7 @@ Use components to encapsulate features and build maintainable, reusable backends
 ## What Are Convex Components?
 
 **Components are self-contained mini-backends** that bundle:
+
 - Their own database schema
 - Their own functions (queries, mutations, actions)
 - Their own data (isolated tables)
@@ -20,6 +21,7 @@ Use components to encapsulate features and build maintainable, reusable backends
 ## Why Use Components?
 
 ### Traditional Approach (Monolithic)
+
 ```
 convex/
 ├── users.ts           (500 lines)
@@ -32,6 +34,7 @@ Total: One big codebase, everything mixed together
 ```
 
 ### Component Approach (Encapsulated)
+
 ```
 convex/
 ├── components/
@@ -153,6 +156,7 @@ export const subscribe = mutation({
 ```
 
 **What this achieves:**
+
 - ✅ Each component is single-purpose
 - ✅ Components are reusable across features
 - ✅ Easy to swap implementations (change email provider)
@@ -164,20 +168,25 @@ export const subscribe = mutation({
 Browse [Component Directory](https://www.convex.dev/components):
 
 ### Authentication
+
 - **@convex-dev/better-auth** - Better Auth integration
 
 ### Storage
+
 - **@convex-dev/r2** - Cloudflare R2 file storage
 - **@convex-dev/storage** - File upload/download
 
 ### Payments
+
 - **@convex-dev/polar** - Polar billing & subscriptions
 
 ### AI
+
 - **@convex-dev/agent** - AI agent workflows
 - **@convex-dev/embeddings** - Vector storage & search
 
 ### Backend Utilities
+
 - **@convex-dev/ratelimiter** - Rate limiting
 - **@convex-dev/aggregate** - Data aggregations
 - **@convex-dev/action-cache** - Cache action results
@@ -190,6 +199,7 @@ Browse [Component Directory](https://www.convex.dev/components):
 ### When to Create a Component
 
 **Good reasons:**
+
 - Feature is self-contained
 - You'll reuse it across projects
 - Want to share with team/community
@@ -197,6 +207,7 @@ Browse [Component Directory](https://www.convex.dev/components):
 - Third-party integration wrapper
 
 **Not good reasons:**
+
 - One-off business logic
 - Tightly coupled to main app
 - Simple utility functions
@@ -269,7 +280,7 @@ export const list = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("notifications")
-      .withIndex("by_user", q => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .order("desc")
       .collect();
   },
@@ -280,9 +291,7 @@ export const unreadCount = query({
   handler: async (ctx, args) => {
     const unread = await ctx.db
       .query("notifications")
-      .withIndex("by_user_and_read", q =>
-        q.eq("userId", args.userId).eq("read", false)
-      )
+      .withIndex("by_user_and_read", (q) => q.eq("userId", args.userId).eq("read", false))
       .collect();
 
     return unread.length;
@@ -348,9 +357,9 @@ await components.notifications.send(ctx, message);
 ```typescript
 // Pass IDs from parent's tables to component
 await components.audit.log(ctx, {
-  userId: user._id,        // From parent's users table
+  userId: user._id, // From parent's users table
   action: "delete",
-  resourceId: task._id,    // From parent's tasks table
+  resourceId: task._id, // From parent's tasks table
 });
 
 // Component stores these as strings/IDs
@@ -387,6 +396,7 @@ export default defineApp({
 ```
 
 Each component:
+
 - `auth` - User authentication & sessions
 - `organizations` - Tenant isolation & permissions
 - `billing` - Stripe integration & subscriptions
@@ -426,6 +436,7 @@ export default defineApp({
 ## Migration from Monolithic
 
 **Step 1: Identify Features**
+
 ```
 Current monolith:
 - File uploads (mixed with main app)
@@ -434,6 +445,7 @@ Current monolith:
 ```
 
 **Step 2: Extract One Feature**
+
 ```bash
 # Create component
 mkdir -p convex/components/storage
@@ -443,6 +455,7 @@ mkdir -p convex/components/storage
 ```
 
 **Step 3: Test Independently**
+
 ```bash
 # Component has its own tests
 # No coupling to main app
@@ -454,12 +467,15 @@ Extract other features incrementally.
 ## Best Practices
 
 ### 1. Single Responsibility
+
 Each component does ONE thing well:
+
 - ✅ storage component handles files
 - ✅ auth component handles authentication
 - ❌ Don't create "utils" component with everything
 
 ### 2. Clear API Surface
+
 ```typescript
 // Export only what's needed
 export { upload, download, delete } from "./storage";
@@ -469,11 +485,12 @@ export { upload, download, delete } from "./storage";
 ```
 
 ### 3. Minimal Coupling
+
 ```typescript
 // ✅ Good: Pass data as arguments
 await components.audit.log(ctx, {
   userId: user._id,
-  action: "delete"
+  action: "delete",
 });
 
 // ❌ Bad: Component accesses parent tables
@@ -481,6 +498,7 @@ await components.audit.log(ctx, {
 ```
 
 ### 4. Version Your Components
+
 ```json
 {
   "name": "@yourteam/notifications-component",
@@ -489,7 +507,9 @@ await components.audit.log(ctx, {
 ```
 
 ### 5. Document Your Components
+
 Include README with:
+
 - What the component does
 - How to install
 - How to use
@@ -499,18 +519,21 @@ Include README with:
 ## Troubleshooting
 
 ### Component not found
+
 ```bash
 # Make sure component is in convex.config.ts
 # Run: npx convex dev
 ```
 
 ### Can't access parent tables
+
 ```
 This is by design! Components are sandboxed.
 Pass data as arguments instead.
 ```
 
 ### Component conflicts
+
 ```
 Each component has isolated tables.
 Components can't see each other's data.

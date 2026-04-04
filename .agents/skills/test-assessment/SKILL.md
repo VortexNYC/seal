@@ -13,13 +13,13 @@ Run every available test suite across the monorepo, collect results, and produce
 
 Confirm which suites exist by checking for the expected files and configs:
 
-| Suite | Type | Location | Command |
-|-------|------|----------|---------|
-| Backend Vitest | Unit + Integration | `apps/backend/convex/**/*.test.ts` | `cd apps/backend && bun run test` |
-| Web Vitest | Unit | `apps/web/src/**/*.test.{ts,tsx}` | `cd apps/web && bun run test` |
-| MCP Server | Unit | `apps/mcp-server/src/**/*.test.ts` | `cd apps/mcp-server && bun run test` |
-| Web E2E | E2E | `apps/web/e2e/tests/**/*.spec.ts` | `cd apps/web && bun run test:e2e` |
-| Landing E2E | E2E | `apps/landing/e2e/tests/**/*.spec.ts` | `cd apps/landing && bun run test:e2e` |
+| Suite          | Type               | Location                              | Command                               |
+| -------------- | ------------------ | ------------------------------------- | ------------------------------------- |
+| Backend Vitest | Unit + Integration | `apps/backend/convex/**/*.test.ts`    | `cd apps/backend && bun run test`     |
+| Web Vitest     | Unit               | `apps/web/src/**/*.test.{ts,tsx}`     | `cd apps/web && bun run test`         |
+| MCP Server     | Unit               | `apps/mcp-server/src/**/*.test.ts`    | `cd apps/mcp-server && bun run test`  |
+| Web E2E        | E2E                | `apps/web/e2e/tests/**/*.spec.ts`     | `cd apps/web && bun run test:e2e`     |
+| Landing E2E    | E2E                | `apps/landing/e2e/tests/**/*.spec.ts` | `cd apps/landing && bun run test:e2e` |
 
 If a location has zero matching test files, report that suite as `NO TESTS FOUND`.
 
@@ -32,6 +32,7 @@ If a location has zero matching test files, report that suite as `NO TESTS FOUND
 **MCP Server** — Always runnable. No special prerequisites.
 
 **Web E2E (Playwright)** — Check all of the following before attempting to run:
+
 1. Clerk testing env vars are set (check `apps/web/.env.test` or environment for `CLERK_PUBLISHABLE_KEY`)
 2. `VITE_CONVEX_URL` is set or the default `http://localhost:5180` is reachable (try `curl -s -o /dev/null -w "%{http_code}" http://localhost:5180`)
 3. Playwright browsers are installed (check `node_modules/.cache/ms-playwright` or `apps/web/node_modules/.cache/ms-playwright`)
@@ -39,6 +40,7 @@ If a location has zero matching test files, report that suite as `NO TESTS FOUND
 If any prerequisite is missing, mark E2E as `SKIPPED (prerequisites not met)` and list exactly which prerequisites failed. Do not attempt to install browsers or start servers.
 
 **Landing E2E (Playwright)** — Check the following:
+
 1. Playwright browsers are installed
 2. The landing dev server or build is available
 
@@ -49,6 +51,7 @@ If prerequisites are missing, mark as `SKIPPED (prerequisites not met)`.
 Run each locally-runnable suite sequentially. Capture exit codes and full output. Use a timeout of 5 minutes per suite (300000ms) to avoid hanging.
 
 **Execution order** (fastest first):
+
 1. MCP Server (`cd apps/mcp-server && bun run test`)
 2. Web Vitest (`cd apps/web && bun run test`)
 3. Backend Vitest (`cd apps/backend && bun run test`)
@@ -60,6 +63,7 @@ If the user passes an argument like `--unit-only`, `--e2e-only`, `--backend-only
 ### 4. Collect results
 
 For each suite, extract from the output:
+
 - Total test count
 - Passed count
 - Failed count

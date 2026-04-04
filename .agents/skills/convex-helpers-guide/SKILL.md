@@ -12,6 +12,7 @@ Use convex-helpers to add common patterns and utilities to your Convex backend w
 `convex-helpers` is the official collection of utilities that complement Convex. It provides battle-tested patterns for common backend needs.
 
 **Installation:**
+
 ```bash
 npm install convex-helpers
 ```
@@ -23,11 +24,13 @@ npm install convex-helpers
 Traverse relationships between tables in a readable, type-safe way.
 
 **Use when:**
+
 - Loading related data across tables
 - Following foreign key relationships
 - Building nested data structures
 
 **Example:**
+
 ```typescript
 import { getOneFrom, getManyFrom } from "convex-helpers/server/relationships";
 
@@ -38,22 +41,10 @@ export const getTaskWithUser = query({
     if (!task) return null;
 
     // Get related user
-    const user = await getOneFrom(
-      ctx.db,
-      "users",
-      "by_id",
-      task.userId,
-      "_id"
-    );
+    const user = await getOneFrom(ctx.db, "users", "by_id", task.userId, "_id");
 
     // Get related comments
-    const comments = await getManyFrom(
-      ctx.db,
-      "comments",
-      "by_task",
-      task._id,
-      "taskId"
-    );
+    const comments = await getManyFrom(ctx.db, "comments", "by_task", task._id, "taskId");
 
     return { ...task, user, comments };
   },
@@ -61,6 +52,7 @@ export const getTaskWithUser = query({
 ```
 
 **Key Functions:**
+
 - `getOneFrom` - Get single related document
 - `getManyFrom` - Get multiple related documents
 - `getManyVia` - Get many-to-many relationships through junction table
@@ -72,6 +64,7 @@ export const getTaskWithUser = query({
 Create wrapped versions of query/mutation/action with custom behavior.
 
 **Use when:**
+
 - **Data protection and access control** (PRIMARY USE CASE)
 - Want to add auth logic to all functions
 - Multi-tenant applications
@@ -81,6 +74,7 @@ Create wrapped versions of query/mutation/action with custom behavior.
 - Adding logging/monitoring to all functions
 
 **Why this instead of RLS:**
+
 - ✅ TypeScript, not SQL policies
 - ✅ Full type safety
 - ✅ Easy to test and debug
@@ -88,35 +82,31 @@ Create wrapped versions of query/mutation/action with custom behavior.
 - ✅ Works across your entire backend
 
 **Example: Custom Query with Auto-Auth**
+
 ```typescript
 // convex/lib/customFunctions.ts
 import { customQuery } from "convex-helpers/server/customFunctions";
 import { query } from "../_generated/server";
 
-export const authenticatedQuery = customQuery(
-  query,
-  {
-    args: {}, // No additional args required
-    input: async (ctx, args) => {
-      const identity = await ctx.auth.getUserIdentity();
-      if (!identity) {
-        throw new Error("Not authenticated");
-      }
+export const authenticatedQuery = customQuery(query, {
+  args: {}, // No additional args required
+  input: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
 
-      const user = await ctx.db
-        .query("users")
-        .withIndex("by_token", q =>
-          q.eq("tokenIdentifier", identity.tokenIdentifier)
-        )
-        .unique();
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
 
-      if (!user) throw new Error("User not found");
+    if (!user) throw new Error("User not found");
 
-      // Add user to context
-      return { ctx: { ...ctx, user }, args };
-    },
-  }
-);
+    // Add user to context
+    return { ctx: { ...ctx, user }, args };
+  },
+});
 
 // Usage in your functions
 export const getMyTasks = authenticatedQuery({
@@ -124,13 +114,14 @@ export const getMyTasks = authenticatedQuery({
     // ctx.user is automatically available!
     return await ctx.db
       .query("tasks")
-      .withIndex("by_user", q => q.eq("userId", ctx.user._id))
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
       .collect();
   },
 });
 ```
 
 **Example: Multi-Tenant Data Protection**
+
 ```typescript
 import { customQuery } from "convex-helpers/server/customFunctions";
 import { query } from "../_generated/server";
@@ -144,9 +135,7 @@ export const orgQuery = customQuery(query, {
     // Verify user is a member of this organization
     const member = await ctx.db
       .query("organizationMembers")
-      .withIndex("by_org_and_user", q =>
-        q.eq("orgId", args.orgId).eq("userId", user._id)
-      )
+      .withIndex("by_org_and_user", (q) => q.eq("orgId", args.orgId).eq("userId", user._id))
       .unique();
 
     if (!member) {
@@ -159,9 +148,9 @@ export const orgQuery = customQuery(query, {
         ...ctx,
         user,
         orgId: args.orgId,
-        role: member.role
+        role: member.role,
       },
-      args
+      args,
     };
   },
 });
@@ -173,13 +162,14 @@ export const getOrgProjects = orgQuery({
     // ctx.user and ctx.orgId automatically available and verified!
     return await ctx.db
       .query("projects")
-      .withIndex("by_org", q => q.eq("orgId", ctx.orgId))
+      .withIndex("by_org", (q) => q.eq("orgId", ctx.orgId))
       .collect();
   },
 });
 ```
 
 **Example: Role-Based Access Control**
+
 ```typescript
 import { customMutation } from "convex-helpers/server/customFunctions";
 import { mutation } from "../_generated/server";
@@ -212,11 +202,13 @@ export const deleteUser = adminMutation({
 Apply complex TypeScript filters to database queries.
 
 **Use when:**
+
 - Need to filter by computed values
 - Filtering logic is too complex for indexes
 - Working with small result sets
 
 **Example:**
+
 ```typescript
 import { filter } from "convex-helpers/server/filter";
 
@@ -227,10 +219,7 @@ export const getActiveTasks = query({
 
     return await filter(
       ctx.db.query("tasks"),
-      (task) =>
-        !task.completed &&
-        task.createdAt > threeDaysAgo &&
-        task.priority === "high"
+      (task) => !task.completed && task.createdAt > threeDaysAgo && task.priority === "high",
     ).collect();
   },
 });
@@ -243,12 +232,14 @@ export const getActiveTasks = query({
 Track users across requests even when not logged in.
 
 **Use when:**
+
 - Need to track anonymous users
 - Building shopping cart for guests
 - Tracking user behavior before signup
 - A/B testing without auth
 
 **Setup:**
+
 ```typescript
 // convex/sessions.ts
 import { SessionIdArg } from "convex-helpers/server/sessions";
@@ -270,6 +261,7 @@ export const trackView = query({
 ```
 
 **Client (React):**
+
 ```typescript
 import { useSessionId } from "convex-helpers/react/sessions";
 import { useQuery } from "convex/react";
@@ -291,11 +283,13 @@ function MyComponent() {
 Use Zod schemas instead of Convex validators.
 
 **Use when:**
+
 - Already using Zod in your project
 - Want more complex validation logic
 - Need custom error messages
 
 **Example:**
+
 ```typescript
 import { zCustomQuery } from "convex-helpers/server/zod";
 import { z } from "zod";
@@ -322,17 +316,20 @@ export const createUser = zCustomQuery(query, {
 Implement fine-grained access control with RLS-style rules.
 
 **Use when:**
+
 - Prefer RLS-style patterns from PostgreSQL
 - Need to apply same rules across many functions
 - Want centralized access control rules
 
 **However, custom functions are usually better because:**
+
 - ✅ Type-safe at compile time (RLS is runtime)
 - ✅ More explicit (easy to see what auth is applied)
 - ✅ Better error messages
 - ✅ Easier to test
 
 **Example (if you prefer RLS style):**
+
 ```typescript
 import { RowLevelSecurity } from "convex-helpers/server/rowLevelSecurity";
 
@@ -346,22 +343,20 @@ rules.addRule("tasks", async (ctx, task) => {
 
 export const getTasks = query({
   handler: async (ctx) => {
-    return await rules.applyRules(
-      ctx,
-      ctx.db.query("tasks").collect()
-    );
+    return await rules.applyRules(ctx, ctx.db.query("tasks").collect());
   },
 });
 ```
 
 **Recommended instead: Custom functions**
+
 ```typescript
 export const myQuery = authedQuery({
   handler: async (ctx) => {
     // More explicit, type-safe, better errors
     return await ctx.db
       .query("tasks")
-      .withIndex("by_user", q => q.eq("userId", ctx.user._id))
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
       .collect();
   },
 });
@@ -372,11 +367,13 @@ export const myQuery = authedQuery({
 Run data migrations safely.
 
 **Use when:**
+
 - Backfilling new fields
 - Transforming existing data
 - Moving between schema versions
 
 **Example:**
+
 ```typescript
 import { makeMigration } from "convex-helpers/server/migrations";
 
@@ -397,12 +394,14 @@ export const addDefaultPriority = makeMigration({
 Execute code automatically when data changes.
 
 **Use when:**
+
 - Sending notifications on data changes
 - Updating related records
 - Logging changes
 - Maintaining computed fields
 
 **Example:**
+
 ```typescript
 import { Triggers } from "convex-helpers/server/triggers";
 
@@ -423,20 +422,17 @@ triggers.register("tasks", "insert", async (ctx, task) => {
 Compute aggregates efficiently.
 
 **Example:**
+
 ```typescript
 import { aggregation } from "convex-helpers/server/aggregation";
 
 export const getTaskStats = query({
   handler: async (ctx) => {
-    const stats = await aggregation(
-      ctx.db.query("tasks"),
-      {
-        total: "count",
-        completed: (task) => task.completed ? 1 : 0,
-        totalPriority: (task) =>
-          task.priority === "high" ? 3 : task.priority === "medium" ? 2 : 1,
-      }
-    );
+    const stats = await aggregation(ctx.db.query("tasks"), {
+      total: "count",
+      completed: (task) => (task.completed ? 1 : 0),
+      totalPriority: (task) => (task.priority === "high" ? 3 : task.priority === "medium" ? 2 : 1),
+    });
 
     return {
       total: stats.total,
@@ -468,7 +464,7 @@ export const getMyData = authedQuery({
     // ctx.user is typed and available!
     return await ctx.db
       .query("data")
-      .withIndex("by_user", q => q.eq("userId", ctx.user._id))
+      .withIndex("by_user", (q) => q.eq("userId", ctx.user._id))
       .collect();
   },
 });
@@ -486,36 +482,16 @@ export const getPostWithDetails = query({
     if (!post) return null;
 
     // Load author
-    const author = await getOneFrom(
-      ctx.db,
-      "users",
-      "by_id",
-      post.authorId,
-      "_id"
-    );
+    const author = await getOneFrom(ctx.db, "users", "by_id", post.authorId, "_id");
 
     // Load comments
-    const comments = await getManyFrom(
-      ctx.db,
-      "comments",
-      "by_post",
-      post._id,
-      "postId"
-    );
+    const comments = await getManyFrom(ctx.db, "comments", "by_post", post._id, "postId");
 
     // Load tags (many-to-many)
-    const tagLinks = await getManyFrom(
-      ctx.db,
-      "postTags",
-      "by_post",
-      post._id,
-      "postId"
-    );
+    const tagLinks = await getManyFrom(ctx.db, "postTags", "by_post", post._id, "postId");
 
     const tags = await Promise.all(
-      tagLinks.map(link =>
-        getOneFrom(ctx.db, "tags", "by_id", link.tagId, "_id")
-      )
+      tagLinks.map((link) => getOneFrom(ctx.db, "tags", "by_id", link.tagId, "_id")),
     );
 
     return { ...post, author, comments, tags };
@@ -596,12 +572,12 @@ export const batchUpdateTasks = mutation({
 
 ## When to Use What
 
-| Need | Use | Import From |
-|------|-----|-------------|
-| Load related data | `getOneFrom`, `getManyFrom` | `convex-helpers/server/relationships` |
-| Auth in all functions | `customQuery` | `convex-helpers/server/customFunctions` |
-| Complex filters | `filter` | `convex-helpers/server/filter` |
-| Anonymous users | `useSessionId` | `convex-helpers/react/sessions` |
-| Zod validation | `zCustomQuery` | `convex-helpers/server/zod` |
-| Data migrations | `makeMigration` | `convex-helpers/server/migrations` |
-| Triggers | `Triggers` | `convex-helpers/server/triggers` |
+| Need                  | Use                         | Import From                             |
+| --------------------- | --------------------------- | --------------------------------------- |
+| Load related data     | `getOneFrom`, `getManyFrom` | `convex-helpers/server/relationships`   |
+| Auth in all functions | `customQuery`               | `convex-helpers/server/customFunctions` |
+| Complex filters       | `filter`                    | `convex-helpers/server/filter`          |
+| Anonymous users       | `useSessionId`              | `convex-helpers/react/sessions`         |
+| Zod validation        | `zCustomQuery`              | `convex-helpers/server/zod`             |
+| Data migrations       | `makeMigration`             | `convex-helpers/server/migrations`      |
+| Triggers              | `Triggers`                  | `convex-helpers/server/triggers`        |

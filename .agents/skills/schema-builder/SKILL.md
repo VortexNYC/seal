@@ -40,11 +40,7 @@ export default defineSchema({
     userId: v.id("users"),
 
     // Enums with union + literal
-    status: v.union(
-      v.literal("active"),
-      v.literal("pending"),
-      v.literal("archived")
-    ),
+    status: v.union(v.literal("active"), v.literal("pending"), v.literal("archived")),
 
     // Timestamps
     createdAt: v.number(),
@@ -123,11 +119,7 @@ export default defineSchema({
   users: defineTable({
     name: v.string(),
     // Small, bounded collections are fine
-    roles: v.array(v.union(
-      v.literal("admin"),
-      v.literal("editor"),
-      v.literal("viewer")
-    )),
+    roles: v.array(v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer"))),
     tags: v.array(v.string()), // e.g., max 10 tags
   }),
 });
@@ -137,32 +129,32 @@ export default defineSchema({
 
 ```typescript
 // Primitives
-v.string()
-v.number()
-v.boolean()
-v.null()
-v.id("tableName")
+v.string();
+v.number();
+v.boolean();
+v.null();
+v.id("tableName");
 
 // Optional
-v.optional(v.string())
+v.optional(v.string());
 
 // Union types (enums)
-v.union(v.literal("a"), v.literal("b"))
+v.union(v.literal("a"), v.literal("b"));
 
 // Objects
 v.object({
   key: v.string(),
   nested: v.number(),
-})
+});
 
 // Arrays
-v.array(v.string())
+v.array(v.string());
 
 // Records (arbitrary keys)
-v.record(v.string(), v.boolean())
+v.record(v.string(), v.boolean());
 
 // Any (avoid if possible)
-v.any()
+v.any();
 ```
 
 ## Index Strategy
@@ -191,16 +183,20 @@ v.any()
 If converting from nested structures:
 
 **Before:**
+
 ```typescript
 users: defineTable({
-  posts: v.array(v.object({
-    title: v.string(),
-    comments: v.array(v.object({ text: v.string() })),
-  })),
-})
+  posts: v.array(
+    v.object({
+      title: v.string(),
+      comments: v.array(v.object({ text: v.string() })),
+    }),
+  ),
+});
 ```
 
 **After:**
+
 ```typescript
 users: defineTable({
   name: v.string(),

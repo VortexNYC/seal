@@ -22,6 +22,7 @@ This monorepo uses bun workspaces with package globs defined in the root `packag
 ### Step 2: Build the dependency map
 
 For every dependency across all workspace packages, record:
+
 - Package name
 - Which workspace(s) use it and in which section (`dependencies`, `devDependencies`, `peerDependencies`, or `optionalDependencies`)
 - The version specifier in each workspace (`catalog:`, pinned, range, etc.)
@@ -33,18 +34,23 @@ For every dependency across all workspace packages, record:
 Categorize findings into these groups:
 
 #### A. Should move INTO catalog
+
 Dependencies used by **2 or more** workspaces with hardcoded external versions instead of `catalog:`. These are candidates for the catalog.
 
 #### B. Should move OUT of catalog
+
 Catalog entries used by **0 or 1** workspace. Single-use entries add indirection without benefit — the version should live in the workspace that uses it.
 
 #### C. Should switch to `catalog:` reference
+
 Dependencies that exist in the catalog but a workspace hardcodes the version instead of using `catalog:`. Exclude internal workspace dependencies that intentionally use `workspace:*`.
 
 #### D. Version mismatches
+
 The same dependency appears in multiple workspaces with different version specifiers (and at least one is not `catalog:`). Flag these even if ranges overlap — explicit alignment is the goal.
 
 #### E. Root dependency conflicts
+
 Root `dependencies`, `devDependencies`, `resolutions`, or `overrides` that contradict or duplicate catalog entries. The catalog should be the single source of truth for shared versions, with root-level pins called out explicitly when they are intentional.
 
 ### Step 4: Present findings
@@ -85,7 +91,7 @@ Catalog entries: X
 Workspace packages scanned: Y
 
 - Should move INTO catalog: A deps
-- Should move OUT of catalog: B entries  
+- Should move OUT of catalog: B entries
 - Should switch to `catalog:` references: C deps
 - Version mismatches: D deps
 - Root dependency conflicts: E deps
@@ -98,7 +104,7 @@ When fixes are applied, append:
 ```text
 Fixes Applied:
 - Added to catalog: [list]
-- Switched to catalog: [list]  
+- Switched to catalog: [list]
 - Removed from catalog: [list]
 - Root deps aligned: [list]
 - Lockfile regenerated: yes/no
