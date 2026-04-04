@@ -19,7 +19,8 @@ export const subscriptionStatus = v.union(
 export type SubscriptionStatus = Infer<typeof subscriptionStatus>;
 
 export const subscriptionsTable = defineTable({
-  organizationId: v.id("organizations"),
+  // TODO: Narrow back to v.id("organizations") after backfill migration runs
+  organizationId: v.optional(v.id("organizations")),
 
   externalCustomerId: v.string(), // Stripe customer ID
   externalSubscriptionId: v.string(), // Stripe subscription ID

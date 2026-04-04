@@ -209,7 +209,7 @@ export async function resolveOrgForSubscription(
     .query("subscriptions")
     .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", stripeCustomerId))
     .first();
-  if (existingSub) {
+  if (existingSub?.organizationId) {
     console.warn(
       `Resolved organizationId ${existingSub.organizationId} from existing subscription for customer ${stripeCustomerId}`,
     );
