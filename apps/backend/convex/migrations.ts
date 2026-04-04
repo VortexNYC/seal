@@ -41,7 +41,7 @@ export const backfillSubscriptionOrganizationId = migrations.define({
       return;
     }
 
-    await ctx.db.patch(doc._id, { organizationId: org._id });
+    await ctx.db.patch(doc._id, { organizationId: org._id, userId: undefined });
     console.info(`[migration] Backfilled subscription ${doc._id} → org ${org._id} (${org.name})`);
   },
 });

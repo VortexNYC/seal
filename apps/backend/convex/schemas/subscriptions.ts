@@ -19,8 +19,9 @@ export const subscriptionStatus = v.union(
 export type SubscriptionStatus = Infer<typeof subscriptionStatus>;
 
 export const subscriptionsTable = defineTable({
-  // TODO: Narrow back to v.id("organizations") after backfill migration runs
+  // TODO: Narrow back to v.id("organizations") and remove userId after backfill migration runs
   organizationId: v.optional(v.id("organizations")),
+  userId: v.optional(v.id("users")), // Legacy field — remove after migration
 
   externalCustomerId: v.string(), // Stripe customer ID
   externalSubscriptionId: v.string(), // Stripe subscription ID
