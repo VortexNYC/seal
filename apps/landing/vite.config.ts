@@ -7,7 +7,6 @@ import viteReact from "@vitejs/plugin-react";
 import mdx from "fumadocs-mdx/vite";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
-import tsConfigPaths from "vite-tsconfig-paths";
 
 import * as SourceConfig from "./source.config";
 import { searchIndexPlugin } from "./src/plugins/search-index";
@@ -68,9 +67,6 @@ export default defineConfig(async ({ command }) => ({
     },
     await mdx(SourceConfig, { updateViteConfig: true }),
     searchIndexPlugin(),
-    tsConfigPaths({
-      projects: ["./tsconfig.json"],
-    }),
     tailwindcss(),
     tanstackStart({
       srcDirectory: "src",
@@ -82,6 +78,7 @@ export default defineConfig(async ({ command }) => ({
   ],
 
   resolve: {
+    tsconfigPaths: true,
     alias: {
       "fumadocs-mdx:collections/server": path.resolve(import.meta.dirname, "./.source/server.ts"),
       "fumadocs-mdx:collections/browser": path.resolve(import.meta.dirname, "./.source/browser.ts"),
@@ -98,19 +95,12 @@ export default defineConfig(async ({ command }) => ({
   // Polyfill node:path → path-browserify only during browser dep pre-bundling.
   // fumadocs-core/source uses path.join/dirname which don't exist in browsers.
   optimizeDeps: {
-    esbuildOptions: {
-      plugins: [
-        {
-          name: "polyfill-node-path",
-          setup(build: {
-            onResolve: (opts: { filter: RegExp }, cb: () => { path: string }) => void;
-          }) {
-            build.onResolve({ filter: /^node:path$/ }, () => ({
-              path: require.resolve("path-browserify"),
-            }));
-          },
+    rolldownOptions: {
+      resolve: {
+        alias: {
+          "node:path": require.resolve("path-browserify"),
         },
-      ],
+      },
     },
   },
 
