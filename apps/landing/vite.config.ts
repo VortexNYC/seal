@@ -33,6 +33,18 @@ function getManualChunkName(id: string): string | undefined {
     return "vendor-docs";
   }
 
+  if (matchesPackage(id, "@scalar") || matchesPackage(id, "scalar")) {
+    return "vendor-api-ref";
+  }
+
+  if (matchesPackage(id, "motion") || matchesPackage(id, "framer-motion")) {
+    return "vendor-motion";
+  }
+
+  if (matchesPackage(id, "@clerk") || matchesPackage(id, "posthog")) {
+    return "vendor-services";
+  }
+
   return undefined;
 }
 
@@ -105,6 +117,7 @@ export default defineConfig(async ({ command }) => ({
   },
 
   build: {
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
         manualChunks(id: string) {
