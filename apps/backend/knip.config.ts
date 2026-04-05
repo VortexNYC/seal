@@ -13,7 +13,7 @@ const config: KnipConfig = {
     // Triple-slash reference in test.setup.ts — provided by vitest
     "vite",
   ],
-  ignoreBinaries: ["convex", "knip", "oxfmt", "oxlint"],
+  ignoreBinaries: ["knip", "oxfmt", "oxlint"],
   ignoreExportsUsedInFile: true,
   exclude: ["duplicates"],
 };
