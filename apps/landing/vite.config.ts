@@ -22,6 +22,13 @@ function getManualChunkName(id: string): string | undefined {
     return undefined;
   }
 
+  // Never reassign CSS files — Rolldown's CSS module codegen breaks when CSS
+  // imports are forced into a different chunk (generates `style_exports` before
+  // the variable is declared).
+  if (id.endsWith(".css")) {
+    return undefined;
+  }
+
   if (
     matchesPackage(id, "fumadocs-core") ||
     matchesPackage(id, "fumadocs-mdx") ||
