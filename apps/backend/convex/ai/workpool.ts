@@ -57,11 +57,19 @@ async function isProOrganization(
   db: DatabaseReader,
   organizationId: Id<"organizations">,
 ): Promise<boolean> {
-  const subscription = await db
-    .query("subscriptions")
-    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
-    .order("desc")
-    .first();
+  const subscription =
+    (await db
+      .query("subscriptions")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "active"),
+      )
+      .first()) ??
+    (await db
+      .query("subscriptions")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "trialing"),
+      )
+      .first());
 
-  return subscription?.status === "active" || subscription?.status === "trialing";
+  return !!subscription;
 }
