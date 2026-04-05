@@ -199,6 +199,7 @@ async function getActiveSubscription(
     .withIndex("by_organization_status", (q) =>
       q.eq("organizationId", organizationId).eq("status", "active"),
     )
+    .order("desc")
     .first();
 
   return subscription ?? undefined;
