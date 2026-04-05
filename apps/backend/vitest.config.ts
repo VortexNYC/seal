@@ -3,6 +3,10 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["convex/**/*.test.ts"],
+    // CI runners are significantly slower than local machines — the default 10s
+    // hook timeout causes beforeEach DB setup to fail in tests that insert
+    // multiple records (automated_reminders, expiration_sweep).
+    hookTimeout: 30_000,
     server: {
       deps: {
         // Force Vite to transform zod as ESM instead of letting bun's native
