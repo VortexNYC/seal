@@ -51,6 +51,11 @@
       "sourceType": "github",
       "computedHash": "a3a25fef9f51c15bb6c7c302ffb009a9040532bf51d999c648fcceaa9ab08841"
     },
+    "playwright-cli": {
+      "source": "microsoft/playwright-cli",
+      "sourceType": "github",
+      "computedHash": "45b90b409fb80cf08ee4e8b72377bddacfac3d1c1fac69bff5fd5342fad26adf"
+    },
     "schema-builder": {
       "source": "get-convex/convex-agent-plugins",
       "sourceType": "github",
@@ -86,6 +91,11 @@
       "sourceType": "github",
       "computedHash": "1eb9f9fc43ab2777f586f916b2234c5340ed98f296a98b22c75cbbafcbd29b86"
     },
+    "tanstack-integration-best-practices": {
+      "source": "deckardger/tanstack-agent-skills",
+      "sourceType": "github",
+      "computedHash": "f8454d0835f04539c0d90a5a481937bc0e1cd7e31ac8610f302abd3421f3d24a"
+    },
     "tanstack-pacer": {
       "source": "tanstack-skills/tanstack-skills",
       "sourceType": "github",
@@ -95,6 +105,11 @@
       "source": "tanstack-skills/tanstack-skills",
       "sourceType": "github",
       "computedHash": "b8a0477cd4d7bf8fa54d27f8e64d82388402f0d502591db50a357df5b9995c75"
+    },
+    "tanstack-query-best-practices": {
+      "source": "deckardger/tanstack-agent-skills",
+      "sourceType": "github",
+      "computedHash": "21d2e8b7468a81d772b6527ad8ca178cc2f3f08af777bb9061333013ee88a0c9"
     },
     "tanstack-ranger": {
       "source": "tanstack-skills/tanstack-skills",
@@ -106,10 +121,20 @@
       "sourceType": "github",
       "computedHash": "24beccc4016f91bab65547209cfd849ea5e66f3d5d92820683a9dd84669ced56"
     },
+    "tanstack-router-best-practices": {
+      "source": "deckardger/tanstack-agent-skills",
+      "sourceType": "github",
+      "computedHash": "65764bc7b90e47f6023cb7f89b3af93eaaafc517754f10b9382e184d4646a77d"
+    },
     "tanstack-start": {
       "source": "tanstack-skills/tanstack-skills",
       "sourceType": "github",
       "computedHash": "e9d8355fe3e47b118e739081f1123c52aa0ecde57da840722177e1ad5caf9908"
+    },
+    "tanstack-start-best-practices": {
+      "source": "deckardger/tanstack-agent-skills",
+      "sourceType": "github",
+      "computedHash": "8b073187405a10f9997158f9139a9664cc801595d2fe63d542a0bac9bf2152f5"
     },
     "tanstack-store": {
       "source": "tanstack-skills/tanstack-skills",

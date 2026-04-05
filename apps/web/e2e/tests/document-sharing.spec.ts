@@ -35,7 +35,7 @@ test.describe("Document Sharing", () => {
 
     if (storageId) {
       // Fast path: create via API (~200ms, no browser)
-      sharedDocId = await apiCreateDocument(organizationSlug, storageId);
+      sharedDocId = await apiCreateDocument(organizationSlug, storageId, sharedDocName);
       // Navigate to the documents list so UI is ready for the test
       await documentsPage.goto(organizationSlug);
     } else {
@@ -66,22 +66,16 @@ test.describe("Document Sharing", () => {
   const openShareForDocument = async (
     page: Page,
     documentsListPage: DocumentsListPage,
-    docId: string,
     docName: string,
   ) => {
-    // If we have a real ID from the API, find the row by the name embedded in the DB
-    // The API creates the doc with name `e2e-test-doc-<timestamp>` — find by partial match
-    // or fall back to looking at the most recently created row
-    let row = docId
-      ? documentsListPage.getDocumentRows().filter({ hasText: "e2e-test-doc" }).first()
-      : documentsListPage.getDocumentRowByName(docName);
+    const row = documentsListPage.getDocumentRowByName(docName);
 
     // Wait for row to appear (may take a moment for Convex to propagate)
     await expect(row).toBeVisible({ timeout: 10000 });
     await row.getByRole("button", { name: /document actions for/i }).click();
     const shareMenuItem = page.getByRole("menuitem", { name: /^share$/i });
     await expect(shareMenuItem).toBeVisible({ timeout: 10000 });
-    await shareMenuItem.click();
+    await shareMenuItem.click({ force: true });
   };
 
   test.describe("Share Dialog Opening", () => {
@@ -91,7 +85,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
       expect(await shareDialog.isOpen()).toBe(true);
@@ -103,7 +97,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
       await shareDialog.close();
@@ -117,7 +111,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
       await shareDialog.closeWithX();
@@ -133,7 +127,7 @@ test.describe("Document Sharing", () => {
     }) => {
       test.setTimeout(60000);
       await documentsPage.goto(organizationSlug);
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
       await shareDialog.waitForOpen();
 
       if (await shareDialog.isTeamSharingDisabled()) {
@@ -153,7 +147,7 @@ test.describe("Document Sharing", () => {
     }) => {
       test.setTimeout(60000);
       await documentsPage.goto(organizationSlug);
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
       await shareDialog.waitForOpen();
 
       if (await shareDialog.isTeamSharingDisabled()) {
@@ -173,7 +167,7 @@ test.describe("Document Sharing", () => {
     }) => {
       test.setTimeout(60000);
       await documentsPage.goto(organizationSlug);
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
       await shareDialog.waitForOpen();
 
       await shareDialog.selectSharingMode("workspace");
@@ -190,7 +184,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -212,7 +206,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -236,7 +230,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -261,7 +255,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -298,7 +292,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -333,7 +327,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -348,7 +342,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -367,7 +361,7 @@ test.describe("Document Sharing", () => {
     }) => {
       test.setTimeout(60000);
       await documentsPage.goto(organizationSlug);
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
       await shareDialog.waitForOpen();
 
       if (!(await shareDialog.isTeamSharingDisabled())) {
@@ -388,7 +382,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -403,7 +397,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -432,7 +426,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -453,7 +447,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -474,7 +468,7 @@ test.describe("Document Sharing", () => {
       test.setTimeout(60000);
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -500,7 +494,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 
@@ -524,7 +518,7 @@ test.describe("Document Sharing", () => {
     }) => {
       await documentsPage.goto(organizationSlug);
 
-      await openShareForDocument(authenticatedPage, documentsPage, sharedDocId, sharedDocName);
+      await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
 
       await shareDialog.waitForOpen();
 

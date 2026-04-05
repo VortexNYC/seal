@@ -94,6 +94,7 @@ export class ShareDialogPage {
 
   async isSharingModeSelected(mode: SharingMode): Promise<boolean> {
     const button = this.getSharingModeButton(mode);
+    await button.waitFor({ state: "visible", timeout: 5000 });
     const classes = await button.getAttribute("class");
     if (!classes) {
       return false;
@@ -118,6 +119,8 @@ export class ShareDialogPage {
   }
 
   async isTeamSharingDisabled(): Promise<boolean> {
+    await this.workspaceModeButton.waitFor({ state: "visible", timeout: 5000 });
+    await this.specificModeButton.waitFor({ state: "visible", timeout: 5000 });
     const workspaceDisabled = await this.workspaceModeButton.isDisabled();
     const specificDisabled = await this.specificModeButton.isDisabled();
     return workspaceDisabled && specificDisabled;
@@ -227,6 +230,7 @@ export class ShareDialogPage {
 
   async showsEmptyState(): Promise<boolean> {
     const emptyState = this.dialogRoot.getByText("No one else has access yet");
+    await emptyState.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
     return await emptyState.isVisible();
   }
 }

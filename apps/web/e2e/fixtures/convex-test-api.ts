@@ -87,11 +87,12 @@ export async function ensurePdfStorageId(pdfPath: string): Promise<string> {
 export async function apiCreateDocument(
   organizationSlug: string,
   storageId: string,
+  name = `e2e-test-doc-${Date.now()}`,
 ): Promise<string> {
   const result = (await convexMutation("test_e2e_helpers:createTestDocument", {
     organizationSlug,
     storageId,
-    name: `e2e-test-doc-${Date.now()}`,
+    name,
   })) as { status: string; value: { id: string } };
   return result.value.id;
 }

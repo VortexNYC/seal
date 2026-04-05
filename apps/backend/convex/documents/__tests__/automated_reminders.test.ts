@@ -15,7 +15,6 @@ describe("processAutomatedReminders", () => {
   let ownerId: Id<"users">;
 
   beforeEach(async () => {
-    vi.useFakeTimers();
     t = createTestContext();
 
     organizationId = await t.run(async (ctx) => {
@@ -40,16 +39,15 @@ describe("processAutomatedReminders", () => {
         activeOrganizationId: organizationId,
       });
     });
+
+    // Activate fake timers AFTER DB setup — fake timers replace setTimeout which
+    // convex-test uses internally, causing beforeEach to hang on slow CI runners.
+    vi.useFakeTimers();
   });
 
-  afterEach(async () => {
-    // Drain scheduled functions spawned by ctx.scheduler.runAfter to prevent
-    // "Write outside of transaction" unhandled rejections leaking between tests
-    try {
-      await t.finishAllScheduledFunctions(vi.runAllTimers);
-    } catch {
-      // Scheduled email actions will fail in test env — that's expected
-    }
+  afterEach(() => {
+    // Restore real timers first — finishAllScheduledFunctions can hang when
+    // fake timers intercept internal setTimeout calls on slow CI runners.
     vi.useRealTimers();
   });
 
