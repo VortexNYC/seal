@@ -109,13 +109,16 @@ export default defineConfig(async ({ command }) => ({
     },
   },
 
-  // Prevent Fumadocs packages from being externalized during SSR.
-  // This avoids React context errors and hydration mismatches.
-  // tslib must also be bundled — the resolve alias rewrites it to ESM, but
-  // without noExternal Nitro leaves runtime imports that reference
-  // tslib/modules/index.js which doesn't exist in the .output directory.
+  // Bundle these packages into SSR chunks instead of leaving them as external
+  // runtime imports. This is required because:
+  // - fumadocs-*: avoids React context errors and hydration mismatches
+  // - tslib: the resolve alias rewrites it to ESM, but Nitro's external _libs/
+  //   chunks resolve tslib via Node's exports map to modules/index.js which
+  //   Nitro doesn't copy to .output
+  // - @radix-ui/*: depends on tslib at runtime — bundling inlines the aliased
+  //   ESM version instead of leaving broken external imports
   ssr: {
-    noExternal: ["fumadocs-core", "fumadocs-ui", "tslib"],
+    noExternal: ["fumadocs-core", "fumadocs-ui", "tslib", /^@radix-ui\//],
   },
 
   // Polyfill node:path → path-browserify only during browser dep pre-bundling.
