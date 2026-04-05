@@ -99,14 +99,15 @@ async function getSharingSubscriptionState(
 
   // Check for past-due warning only when no active/trialing sub exists
   let subscriptionWarning: string | null = null;
+  let pastDueSubscription: typeof activeOrTrialing = null;
   if (!activeOrTrialing && hasSharedDocuments) {
-    const pastDue = await ctx.db
+    pastDueSubscription = await ctx.db
       .query("subscriptions")
       .withIndex("by_organization_status", (q) =>
         q.eq("organizationId", organizationId).eq("status", "past_due"),
       )
       .first();
-    if (pastDue) {
+    if (pastDueSubscription) {
       subscriptionWarning =
         "Your subscription payment is past due. Document sharing may be disabled soon.";
     }
@@ -114,7 +115,7 @@ async function getSharingSubscriptionState(
 
   return {
     canUseTeamSharing,
-    subscriptionStatus: activeOrTrialing?.status ?? null,
+    subscriptionStatus: (activeOrTrialing ?? pastDueSubscription)?.status ?? null,
     subscriptionWarning,
   };
 }
