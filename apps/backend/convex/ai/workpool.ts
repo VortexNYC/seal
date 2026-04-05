@@ -63,12 +63,14 @@ async function isProOrganization(
       .withIndex("by_organization_status", (q) =>
         q.eq("organizationId", organizationId).eq("status", "active"),
       )
+      .order("desc")
       .first()) ??
     (await db
       .query("subscriptions")
       .withIndex("by_organization_status", (q) =>
         q.eq("organizationId", organizationId).eq("status", "trialing"),
       )
+      .order("desc")
       .first());
 
   return !!subscription;
