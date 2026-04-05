@@ -75,7 +75,7 @@ test.describe("Document Sharing", () => {
     await row.getByRole("button", { name: /document actions for/i }).click();
     const shareMenuItem = page.getByRole("menuitem", { name: /^share$/i });
     await expect(shareMenuItem).toBeVisible({ timeout: 10000 });
-    await shareMenuItem.click();
+    await shareMenuItem.click({ force: true });
   };
 
   test.describe("Share Dialog Opening", () => {

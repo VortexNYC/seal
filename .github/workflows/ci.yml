@@ -112,6 +112,7 @@ jobs:
           E2E_TEST_EMAIL_CODE: ${{ vars.E2E_TEST_EMAIL_CODE }}
           VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL_TEST }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
+          VITE_APP_URL: http://localhost:5180
           NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: Upload web E2E artifacts

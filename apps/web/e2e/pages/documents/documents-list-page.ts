@@ -7,7 +7,9 @@ import { waitForClerkConvexToken } from "../../fixtures/auth-helpers";
 
 export class DocumentsListPage {
   readonly page: Page;
+  readonly heading: Locator;
   readonly createDocumentButton: Locator;
+  readonly draftsFilterButton: Locator;
   readonly documentTable: Locator;
   readonly searchInput: Locator;
   readonly documentRows: Locator;
@@ -16,11 +18,13 @@ export class DocumentsListPage {
 
   constructor(page: Page) {
     this.page = page;
+    this.heading = page.getByRole("heading", { name: "Documents" });
     this.createDocumentButton = page
       .getByRole("button", {
         name: /upload document|create document|new document/i,
       })
       .first();
+    this.draftsFilterButton = page.getByRole("button", { name: "Drafts", exact: true });
     this.documentTable = page.locator("table");
     this.searchInput = page.getByPlaceholder("Search documents by name or description...");
     this.documentRows = page.locator("table tbody tr");
@@ -35,7 +39,7 @@ export class DocumentsListPage {
       await this.page.goto(targetUrl, { waitUntil: "domcontentloaded" });
 
       const recovered = await this.recoverFromAuthError(targetUrl);
-      if (!recovered) {
+      if (!recovered && (await this.waitForDocumentsShell().catch(() => false))) {
         return;
       }
     }
@@ -226,6 +230,35 @@ export class DocumentsListPage {
     throw new Error(
       "Timed out waiting for the documents list to resolve to rows or an empty state.",
     );
+  }
+
+  private async waitForDocumentsShell(timeoutMs = 10000): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      if (await this.authRequiredError.isVisible().catch(() => false)) {
+        return false;
+      }
+
+      const shellReady =
+        (await this.heading.isVisible().catch(() => false)) &&
+        ((await this.createDocumentButton.isVisible().catch(() => false)) ||
+          (await this.searchInput.isVisible().catch(() => false)) ||
+          (await this.draftsFilterButton.isVisible().catch(() => false)) ||
+          (await this.documentRows
+            .first()
+            .isVisible()
+            .catch(() => false)) ||
+          (await this.emptyDocumentsState.isVisible().catch(() => false)));
+
+      if (shellReady) {
+        return true;
+      }
+
+      await this.page.waitForTimeout(250);
+    }
+
+    return false;
   }
 
   private async recoverFromAuthError(targetUrl?: string): Promise<boolean> {
