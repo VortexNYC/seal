@@ -102,6 +102,10 @@ export default defineConfig(async ({ command }) => ({
       "fumadocs-mdx:collections/server": path.resolve(import.meta.dirname, "./.source/server.ts"),
       "fumadocs-mdx:collections/browser": path.resolve(import.meta.dirname, "./.source/browser.ts"),
       "fumadocs-mdx:collections/dynamic": path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
+      // Force ESM entry — Rolldown's CJS interop generates a broken destructure
+      // (`__toESM$1(...).default` → undefined) when tslib's CJS build is bundled
+      // into SSR chunks as a transitive dependency of fumadocs/shiki.
+      tslib: require.resolve("tslib/tslib.es6.mjs"),
     },
   },
 
