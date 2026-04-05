@@ -1,7 +1,7 @@
 /* oxlint-disable react-hooks/rules-of-hooks */
 import { expect, test as base, type Page } from "@playwright/test";
 
-import { getTestWorkspaceConfig, isAuthenticatedUrl, signInTestUser } from "./auth-helpers";
+import { ensureAuthenticatedWorkspaceHome, getTestWorkspaceConfig } from "./auth-helpers";
 import { apiCreateDocument, apiDeleteDocument } from "./convex-test-api";
 
 type AuthFixtures = {
@@ -39,28 +39,7 @@ async function getStorageId(): Promise<string | null> {
  */
 export const test = base.extend<AuthFixtures>({
   authenticatedPage: async ({ page }, use) => {
-    await page.goto("/app", { waitUntil: "domcontentloaded" });
-
-    // Wait for redirect to resolve — could be /{slug}/home, sign-in, or onboarding
-    await page.waitForURL(/\/([\w-]+\/home|[\w-]+\/onboarding|sign-in|app)/, {
-      timeout: 8000,
-      waitUntil: "domcontentloaded",
-    });
-
-    // If we didn't land on an authenticated route, re-authenticate
-    if (!isAuthenticatedUrl(page.url())) {
-      await signInTestUser(page);
-    }
-
-    // Ensure we're on /{slug}/home — if not, navigate there
-    if (!page.url().match(/\/[\w-]+\/home/)) {
-      await page.goto("/app", { waitUntil: "domcontentloaded" });
-      await page.waitForURL(/\/[\w-]+\/home/, {
-        timeout: 8000,
-        waitUntil: "domcontentloaded",
-      });
-    }
-
+    await ensureAuthenticatedWorkspaceHome(page);
     await use(page);
   },
 

@@ -72,6 +72,45 @@ export async function signInTestUser(page: Page): Promise<void> {
   await ensureConvexAuth(page);
 }
 
+/**
+ * Re-enter the authenticated app bootstrap flow and only return once the page
+ * has landed on a workspace home route with a working Convex auth token.
+ */
+export async function ensureAuthenticatedWorkspaceHome(page: Page): Promise<void> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.goto("/app", { waitUntil: "domcontentloaded" });
+    await page
+      .waitForURL(/\/([\w-]+\/home|[\w-]+\/onboarding|sign-in|app)/, {
+        timeout: 10000,
+        waitUntil: "domcontentloaded",
+      })
+      .catch(() => {});
+
+    if (!isAuthenticatedUrl(page.url())) {
+      await signInTestUser(page);
+    }
+
+    if (!page.url().match(/\/[\w-]+\/home/)) {
+      await page.goto("/app", { waitUntil: "domcontentloaded" });
+      await page
+        .waitForURL(/\/[\w-]+\/home/, {
+          timeout: 12000,
+          waitUntil: "domcontentloaded",
+        })
+        .catch(() => {});
+    }
+
+    if (page.url().match(/\/[\w-]+\/home/)) {
+      await ensureConvexAuth(page);
+      return;
+    }
+
+    await page.waitForTimeout(500);
+  }
+
+  throw new Error("[E2E] Failed to land on an authenticated workspace home route.");
+}
+
 export function isAuthenticatedUrl(url: string): boolean {
   try {
     const pathname = new URL(url).pathname;
