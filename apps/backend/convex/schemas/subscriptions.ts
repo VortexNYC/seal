@@ -47,6 +47,7 @@ export const subscriptionsTable = defineTable({
   updatedAt: v.number(),
 })
   .index("by_organization_id", ["organizationId"])
+  .index("by_organization_status", ["organizationId", "status"])
   .index("by_external_customer_id", ["externalCustomerId"])
   .index("by_external_subscription_id", ["externalSubscriptionId"])
   .index("by_status", ["status"]);

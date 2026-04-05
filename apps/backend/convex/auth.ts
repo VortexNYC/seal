@@ -196,8 +196,10 @@ async function getActiveSubscription(
 ): Promise<Doc<"subscriptions"> | undefined> {
   const subscription = await ctx.db
     .query("subscriptions")
-    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
-    .filter((q) => q.eq(q.field("status"), "active"))
+    .withIndex("by_organization_status", (q) =>
+      q.eq("organizationId", organizationId).eq("status", "active"),
+    )
+    .order("desc")
     .first();
 
   return subscription ?? undefined;

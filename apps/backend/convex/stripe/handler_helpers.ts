@@ -230,8 +230,9 @@ export async function cancelOtherSubscriptions(
 ): Promise<void> {
   const otherActiveSubscriptions = await ctx.db
     .query("subscriptions")
-    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
-    .filter((q) => q.eq(q.field("status"), "active"))
+    .withIndex("by_organization_status", (q) =>
+      q.eq("organizationId", organizationId).eq("status", "active"),
+    )
     .collect();
 
   if (otherActiveSubscriptions.length === 0) {
