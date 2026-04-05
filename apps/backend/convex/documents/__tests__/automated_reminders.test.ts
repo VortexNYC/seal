@@ -15,7 +15,6 @@ describe("processAutomatedReminders", () => {
   let ownerId: Id<"users">;
 
   beforeEach(async () => {
-    vi.useFakeTimers();
     t = createTestContext();
 
     organizationId = await t.run(async (ctx) => {
@@ -40,6 +39,10 @@ describe("processAutomatedReminders", () => {
         activeOrganizationId: organizationId,
       });
     });
+
+    // Activate fake timers AFTER DB setup — fake timers replace setTimeout which
+    // convex-test uses internally, causing beforeEach to hang on slow CI runners.
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {

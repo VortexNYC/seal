@@ -46,7 +46,6 @@ describe("sweepExpiredRecipients", () => {
   }
 
   beforeEach(async () => {
-    vi.useFakeTimers();
     t = createTestContext();
 
     organizationId = await t.run(async (ctx) => {
@@ -89,6 +88,10 @@ describe("sweepExpiredRecipients", () => {
         expirationPeriod: { amount: 7, unit: "day" },
       });
     });
+
+    // Activate fake timers AFTER DB setup — fake timers replace setTimeout which
+    // convex-test uses internally, causing beforeEach to hang on slow CI runners.
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
