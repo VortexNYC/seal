@@ -72,7 +72,7 @@ function StatsCardsFallback(): React.ReactElement {
 
 function ChartFallback(): React.ReactElement {
   return (
-    <Card className="lg:col-span-2">
+    <Card data-testid="document-activity-section" className="lg:col-span-2">
       <CardHeader className="pb-2 sm:pb-6">
         <div className="bg-muted mb-2 h-5 w-1/3 rounded" />
         <div className="bg-muted h-4 w-1/2 rounded" />

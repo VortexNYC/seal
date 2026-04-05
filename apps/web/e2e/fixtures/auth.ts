@@ -71,7 +71,7 @@ export const test = base.extend<AuthFixtures>({
     const factory = async (name?: string) => {
       if (!storageId) throw new Error("PDF storageId not cached — check global.setup.ts ran");
       const docName = name ?? `e2e-test-doc-${Date.now()}`;
-      const id = await apiCreateDocument(organizationSlug, storageId);
+      const id = await apiCreateDocument(organizationSlug, storageId, docName);
       created.push({ id });
       return { id, name: docName };
     };
