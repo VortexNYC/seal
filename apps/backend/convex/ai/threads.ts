@@ -76,10 +76,17 @@ function createSealContext(ctx: ActionCtx, args: GenerateResponseArgs): SealAICt
   } as SealAICtx;
 }
 
+const TIER_MODEL: Record<number, string> = {
+  1: "gemini-3.1-flash-lite-preview",
+  2: "gemini-3-flash",
+  3: "gemini-3-pro",
+};
+
 async function logChatUsage(
   ctx: ActionCtx,
   args: GenerateResponseArgs,
   totalTokens: number,
+  tierUsed: number,
 ): Promise<void> {
   if (!args.internalUserId || totalTokens <= 0) {
     return;
@@ -93,7 +100,7 @@ async function logChatUsage(
       tokensUsed: totalTokens,
       durationMs: 0,
       documentId: args.documentId,
-      modelUsed: "gemini-3-flash",
+      modelUsed: TIER_MODEL[tierUsed] ?? "gemini-3-flash",
     });
   } catch (usageError) {
     console.error("[AI Chat] Failed to log usage:", usageError);
@@ -216,7 +223,7 @@ async function executeResponseGeneration(
     totalTokens,
   });
 
-  await logChatUsage(ctx, args, totalTokens);
+  await logChatUsage(ctx, args, totalTokens, tierUsed);
 
   // Log routing telemetry (non-critical)
   try {

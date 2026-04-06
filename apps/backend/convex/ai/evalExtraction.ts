@@ -19,45 +19,51 @@ import {
   type PaymentExtractionResult,
 } from "./tools/paymentExtractionSchema";
 
-const PAYMENT_EXTRACTION_PROMPT = `You are analyzing a contract document for a document signing platform. Your job is to extract all payment-related terms and structure them into a payment configuration.
-
-## What to Extract
-- **Line items**: Individual charges, fees, services with descriptions and amounts
-- **Currency**: The currency used (infer from symbols: $ → usd, € → eur, £ → gbp). Always lowercase: "usd", "eur", "gbp"
-- **Payment type**: Whether it's a one-time payment, recurring subscription, installment plan, or deposit + balance
-- **Due date terms**: When payment is due (upon receipt, net 30, etc.)
-- **Late fees**: Any penalty clauses for late payment
-- **Recurring details**: Billing interval if subscription-based
-- **Installment details**: Number of payments if split into installments
-- **Deposit details**: Deposit percentage and balance due timeline
+const PAYMENT_EXTRACTION_PROMPT = `You are analyzing a contract document for a document signing platform. Extract all payment-related terms.
 
 ## Amount Format
-- All monetary amounts must be in **cents** (multiply dollars by 100)
-- $5,000.00 = 500000 cents, $99.99 = 9999 cents, £45,000 = 4500000 cents
-- If an amount is ambiguous, use the most likely interpretation
+All monetary amounts must be in cents (multiply by 100). $5,000 = 500000 cents, £45,000 = 4500000 cents.
 
 ## Payment Type Rules (read carefully)
-- **"one_time"**: Single payment for a fixed scope of work
-- **"recurring"**: Repeating payments that continue indefinitely (subscriptions, retainers billed monthly/annually)
-- **"installments"**: Fixed number of split payments (e.g. "3 equal monthly payments", "paid in 4 instalments")
-- **"deposit_balance"**: An upfront deposit followed by a final balance — use this when the contract mentions "deposit", "retainer upon signing + balance", "X% now and Y% later", or "balance due before [event/delivery]"
+- "one_time": Single payment for fixed scope of work
+- "recurring": Repeating payments indefinitely (subscriptions, monthly retainers)
+- "installments": Fixed number of split payments (e.g. "3 equal monthly payments")
+- "deposit_balance": Upfront deposit + final balance — use when contract mentions "deposit", "X% now and Y% later", or "balance due before [event/delivery]"
 
 ## Late Fee Rules (critical)
-- **ONLY populate lateFee if the contract explicitly states a penalty amount for late payment**
-- If the contract says "no late fee", "no penalty", or simply does not mention late fees → **omit lateFee entirely** (do not include the field)
-- lateFee.amount for percentage type = the percentage number (e.g. 1.5 for 1.5%), NOT cents
-- lateFee.amount for fixed type = cents (e.g. 5000 for $50.00)
+- ONLY populate lateFee if the contract explicitly states a penalty amount for late payment
+- If contract says "no late fee", "no penalty", or doesn't mention late fees → omit lateFee entirely (do not include the field)
+- lateFee.amount for percentage = the percentage number (1.5 for 1.5%), NOT cents
+- lateFee.amount for fixed = cents ($50 = 5000)
+
+## Due Date Term Mapping (use these exact enum values)
+Map contract language to enum values as follows — do NOT use "custom" unless the days don't match any standard term:
+- "due upon receipt", "due on receipt", "due immediately", "due within 5 business days", "payable upon execution", "invoiced upon execution", "payable upon signing", "due at signing" → "on_receipt"
+- "net 15", "within 15 days", "within fifteen (15) days", "within fifteen days", "due within fifteen days", "15-day payment terms" → "net_15"
+- "net 30", "within 30 days", "within thirty (30) days", "within thirty days", "due within thirty days", "30-day payment terms" → "net_30"
+- "net 60", "within 60 days", "within sixty (60) days", "within sixty days", "due within sixty days", "60-day payment terms" → "net_60"
+- "within 45 days", "within 90 days", any non-standard number of days → "custom" + customDueDays
+
+CRITICAL: Identify the PRIMARY due date clause. Many contracts have a secondary grace period clause (e.g. "No late fee applies if paid within 10 business days"). IGNORE grace period language — use only the primary due date statement.
+Example: "Invoice is due upon receipt. No late fee if paid within 10 business days." → PRIMARY is "due upon receipt" → "on_receipt". The 10-day clause is a grace period, NOT the due date.
 
 ## Custom Due Date Rules
+- Only use "custom" when the number of days does NOT match 15, 30, or 60
 - If dueDateTerms is "custom", you MUST populate customDueDays with the exact number of days
-- Example: "due within 45 days" → dueDateTerms: "custom", customDueDays: 45
+
+## Line Item Rules
+- Create one line item per distinct service, product, or deliverable with its own stated price
+- If a contract has an installment PAYMENT SCHEDULE for a single service (e.g., "3 equal payments of $2,000 for design services"), create ONE line item for the total ($6,000), NOT one per installment
+- If a contract has multiple distinct services with separate prices (e.g., "equipment: $250,000; installation: $18,000; maintenance: $12,000"), create one line item per service
+- Only include line items with FIXED, STATED amounts in cents
+- EXCLUDE variable or cost-plus items like "third-party costs invoiced at cost", "disbursements at cost", "procurement costs TBD" — omit these, mention in notes instead
 
 ## Other Guidelines
-1. Extract ONLY what is explicitly stated or clearly implied
-2. Default paymentType to "one_time" unless the document clearly describes another structure
+1. Extract ONLY what is explicitly stated
+2. Default paymentType to "one_time" unless document clearly describes another structure
 3. Default dueDateTerms to "net_30" if not specified
-4. Quantity defaults to 1 unless explicitly stated
-5. Currency defaults to "usd" if no currency indicator found — always use lowercase ISO 4217
+4. Currency always lowercase ISO 4217: "usd", "eur", "gbp". Default "usd" if no indicator
+5. Quantity defaults to 1 unless explicitly stated
 
 Extract all payment terms from the document.`;
 
