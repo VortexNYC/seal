@@ -1,0 +1,26 @@
+{
+  "lineItems": [
+    {
+      "description": "Tooling and setup — Auris MicroClamp Device (Model AUR-7)",
+      "quantity": 1,
+      "unitPriceCents": 15000000
+    },
+    {
+      "description": "Per-unit fabrication — Auris MicroClamp Device (Model AUR-7)",
+      "quantity": 500,
+      "unitPriceCents": 400000
+    }
+  ],
+  "currency": "usd",
+  "paymentType": "deposit_balance",
+  "dueDateTerms": "net_30",
+  "lateFee": {
+    "type": "percentage",
+    "amount": 1.5,
+    "gracePeriodDays": 0
+  },
+  "depositBalanceConfig": {
+    "depositPercent": 25,
+    "balanceDueDays": 30
+  }
+}

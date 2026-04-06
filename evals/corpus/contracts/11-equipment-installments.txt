@@ -1,0 +1,57 @@
+EQUIPMENT PURCHASE AND INSTALLATION AGREEMENT
+
+Effective Date: March 3, 2026
+
+PARTIES
+
+This Equipment Purchase and Installation Agreement ("Agreement") is entered into as of the Effective Date by and between:
+
+Pinnacle Industrial Supply GmbH, a company incorporated under the laws of Germany, with its principal place of business at Messegelände 1, 70629 Stuttgart, Germany ("Supplier"), and
+
+Berghoff Automotive Components GmbH & Co. KG, a company incorporated under the laws of Germany, with its principal place of business at Werkstraße 12, 74172 Neckarsulm, Germany ("Buyer").
+
+EQUIPMENT AND INSTALLATION
+
+Supplier shall deliver, install, configure, and commission one (1) Pinnacle P-7000 precision CNC machining center, including tooling package, coolant system, and remote monitoring module, at Buyer's production facility in Neckarsulm. Delivery is expected within twelve (12) weeks of contract execution. Installation and commissioning are estimated at five (5) business days following delivery.
+
+PURCHASE PRICE AND PAYMENT SCHEDULE
+
+The total purchase price including installation and first-year maintenance is two hundred eighty thousand euros (€280,000.00), broken down as follows:
+
+Equipment and tooling: €250,000.00
+Installation and commissioning: €18,000.00
+First-year preventive maintenance plan: €12,000.00
+
+Payment shall be made in three (3) monthly installments:
+
+Installment 1: €93,333.34 — due April 1, 2026 (upon contract execution)
+Installment 2: €93,333.33 — due May 1, 2026 (upon delivery confirmation)
+Installment 3: €93,333.33 — due June 1, 2026 (upon commissioning sign-off)
+
+All amounts are denominated in euros. Invoices shall be issued ten (10) business days before each payment date. Payment shall be made by SEPA bank transfer to Supplier's designated account. Payments not received within thirty (30) days of the due date shall accrue interest at the statutory default interest rate under Section 288 BGB (currently 9 percentage points above the base rate).
+
+TITLE AND RISK
+
+Title to the equipment shall pass to Buyer upon receipt of payment in full. Risk of loss shall pass upon delivery and acceptance at Buyer's facility.
+
+GOVERNING LAW
+
+This Agreement shall be governed by the laws of Germany.
+
+SIGNATURES
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
+
+PINNACLE INDUSTRIAL SUPPLY GMBH
+
+By: ___________________________
+Name: Rainer Hoffmann
+Title: Sales Director
+Date: March 3, 2026
+
+BERGHOFF AUTOMOTIVE COMPONENTS GMBH & CO. KG
+
+By: ___________________________
+Name: Klaus Berghoff
+Title: Managing Partner
+Date: March 3, 2026

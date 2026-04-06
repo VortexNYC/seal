@@ -18,31 +18,52 @@ import {
   type PaymentExtractionResult,
 } from "./tools/paymentExtractionSchema";
 
-const PAYMENT_EXTRACTION_PROMPT = `You are analyzing a PDF document for a document signing platform. Your job is to extract all payment-related terms and structure them into a payment configuration.
-
-## What to Extract
-- **Line items**: Individual charges, fees, services with descriptions and amounts
-- **Currency**: The currency used (infer from symbols: $ → usd, € → eur, £ → gbp)
-- **Payment type**: Whether it's a one-time payment, recurring subscription, installment plan, or deposit + balance
-- **Due date terms**: When payment is due (upon receipt, net 30, etc.)
-- **Late fees**: Any penalty clauses for late payment
-- **Recurring details**: Billing interval if subscription-based
-- **Installment details**: Number of payments if split into installments
-- **Deposit details**: Deposit percentage and balance due timeline
+const PAYMENT_EXTRACTION_PROMPT = `You are analyzing a PDF document for a document signing platform. Extract all payment-related terms.
 
 ## Amount Format
-- All monetary amounts must be in **cents** (multiply dollars by 100)
-- $5,000.00 = 500000 cents
-- $99.99 = 9999 cents
-- If an amount is ambiguous, use the most likely interpretation
+All monetary amounts must be in cents (multiply by 100). $5,000 = 500000 cents, £45,000 = 4500000 cents.
 
-## Guidelines
-1. Extract ONLY what is explicitly stated or clearly implied in the document
-2. Default to "one_time" payment type unless the document clearly describes recurring/installments/deposit
-3. Default to "net_30" due date terms if not specified
-4. If the document mentions multiple payment phases, use the appropriate payment type (installments or deposit_balance)
-5. Quantity defaults to 1 unless explicitly stated otherwise
-6. Currency defaults to "usd" if no currency indicator is found
+## Payment Type Rules (read carefully)
+- "one_time": Single payment for fixed scope of work
+- "recurring": Repeating payments indefinitely (subscriptions, monthly retainers)
+- "installments": Fixed number of split payments (e.g. "3 equal monthly payments")
+- "deposit_balance": Upfront deposit + final balance — use when contract mentions "deposit", "X% now and Y% later", or "balance due before [event/delivery]"
+
+## Late Fee Rules (critical)
+- ONLY populate lateFee if the contract explicitly states a penalty amount for late payment
+- If contract says "no late fee", "no penalty", or doesn't mention late fees → omit lateFee entirely (do not include the field)
+- lateFee.amount for percentage = the percentage number (1.5 for 1.5%), NOT cents
+- lateFee.amount for fixed = cents ($50 = 5000)
+
+## Due Date Term Mapping (use these exact enum values)
+Map contract language to enum values as follows — do NOT use "custom" unless the days don't match any standard term:
+- "due upon receipt", "due on receipt", "due immediately", "due within 5 business days", "payable upon execution", "invoiced upon execution", "payable upon signing", "due at signing", "upon contract execution", "upon execution of this Agreement", "upon signing of this Agreement" → "on_receipt"
+- "net 15", "within 15 days", "within fifteen (15) days", "within fifteen days", "due within fifteen days", "15-day payment terms" → "net_15"
+- "net 30", "within 30 days", "within thirty (30) days", "within thirty days", "due within thirty days", "30-day payment terms" → "net_30"
+- "net 60", "within 60 days", "within sixty (60) days", "within sixty days", "due within sixty days", "60-day payment terms" → "net_60"
+- "within 45 days", "within 90 days", any non-standard number of days → "custom" + customDueDays
+
+CRITICAL: Grace period language is NOT a due date term. "Payment is made within ten (10) business days of receipt" describes a grace period, NOT when payment is due. Look for the primary due date clause, ignore grace period clauses.
+
+For installment contracts: dueDateTerms reflects when the FIRST installment is due relative to the invoice/execution.
+
+## Custom Due Date Rules
+- Only use "custom" when the number of days does NOT match 15, 30, or 60
+- If dueDateTerms is "custom", you MUST populate customDueDays with the exact number of days
+
+## Line Item Rules
+- Create one line item per distinct service, product, or deliverable with its own stated price
+- If a contract has an installment PAYMENT SCHEDULE for a single service (e.g., "3 equal payments of $2,000 for design services"), create ONE line item for the total ($6,000), NOT one per installment
+- If a contract has multiple distinct services with separate prices (e.g., "equipment: $250,000; installation: $18,000; maintenance: $12,000"), create one line item per service
+- Only include line items with FIXED, STATED amounts in cents
+- EXCLUDE variable or cost-plus items like "third-party costs invoiced at cost", "disbursements at cost", "procurement costs TBD" — omit these, mention in notes instead
+
+## Other Guidelines
+1. Extract ONLY what is explicitly stated
+2. Default paymentType to "one_time" unless document clearly describes another structure
+3. Default dueDateTerms to "net_30" if not specified
+4. Currency always lowercase ISO 4217: "usd", "eur", "gbp". Default "usd" if no indicator
+5. Quantity defaults to 1 unless explicitly stated
 
 Extract all payment terms from the document.`;
 

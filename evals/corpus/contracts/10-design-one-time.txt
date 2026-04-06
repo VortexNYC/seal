@@ -1,0 +1,53 @@
+BRAND IDENTITY DESIGN SERVICES AGREEMENT
+
+Effective Date: February 5, 2026
+
+PARTIES
+
+This Brand Identity Design Services Agreement ("Agreement") is entered into as of the Effective Date by and between:
+
+Fielding & Fox Design Co., a sole proprietorship with its principal place of business at 88 Battery Street, San Francisco, CA 94111 ("Designer"), and
+
+Clearwater Biotech, Inc., a California corporation with its principal place of business at 951 Gateway Boulevard, South San Francisco, CA 94080 ("Client").
+
+SCOPE OF SERVICES
+
+Designer shall deliver a complete brand identity system for Client's consumer health division operating under the working name "Vitare." Deliverables shall include: (i) logo mark and wordmark in primary and secondary configurations; (ii) a full color palette with accessibility-grade contrast ratios; (iii) typography system specifying primary, secondary, and monospace typefaces with usage guidelines; (iv) a master brand guide document (PDF and Figma source file); (v) business card, letterhead, and email signature templates; and (vi) one (1) round of revisions to final deliverables based on consolidated Client feedback.
+
+FEES AND PAYMENT
+
+Client shall pay Designer a flat fee of eight thousand seven hundred fifty dollars ($8,750.00) for the services described herein. The full amount shall be invoiced upon execution of this Agreement and is due net thirty (30) days from the invoice date.
+
+All payments shall be made by ACH bank transfer or credit card via the Designer's invoicing portal. No late fee is specified; however, Designer shall have no obligation to transfer source files or final deliverables until payment has been received in full.
+
+All amounts are in United States dollars.
+
+INTELLECTUAL PROPERTY
+
+Upon receipt of payment in full, Designer assigns to Client all intellectual property rights in the delivered brand identity system, including logo files, brand guide, and templates, in all formats provided.
+
+REVISIONS
+
+Any revisions beyond the included round described above shall be billed at Designer's standard hourly rate of one hundred fifty dollars ($150.00) per hour, invoiced monthly and due upon receipt.
+
+GOVERNING LAW
+
+This Agreement shall be governed by the laws of the State of California.
+
+SIGNATURES
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
+
+FIELDING & FOX DESIGN CO.
+
+By: ___________________________
+Name: Mara Fielding
+Title: Principal Designer
+Date: February 5, 2026
+
+CLEARWATER BIOTECH, INC.
+
+By: ___________________________
+Name: Jason Wu
+Title: Chief Marketing Officer
+Date: February 5, 2026

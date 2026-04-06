@@ -1,0 +1,16 @@
+{
+  "lineItems": [
+    {
+      "description": "Interior design services — three model apartment units (4A, 4B, 4C), 22 Aldgate High Street",
+      "quantity": 1,
+      "unitPriceCents": 3000000
+    }
+  ],
+  "currency": "gbp",
+  "paymentType": "deposit_balance",
+  "dueDateTerms": "net_30",
+  "depositBalanceConfig": {
+    "depositPercent": 50,
+    "balanceDueDays": 30
+  }
+}

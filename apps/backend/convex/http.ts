@@ -2862,6 +2862,43 @@ http.route({
 });
 
 // ---------------------------------------------------------------------------
+// DEV-only: payment extraction eval endpoint.
+// Accepts raw contract text, runs extraction, returns PaymentExtractionResult.
+// Used by evals/scripts/score-extraction.ts — bypasses PDF storage requirement.
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: "/dev/eval/extract-payment",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const clerkSecret = process.env.CLERK_SECRET_KEY;
+    if (!clerkSecret || !clerkSecret.startsWith("sk_test_")) {
+      return new Response(JSON.stringify({ error: "Only available in dev" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const body = (await request.json()) as { contractText?: string };
+    if (!body.contractText) {
+      return new Response(JSON.stringify({ error: "contractText is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const result = await ctx.runAction(internal.ai.evalExtraction.extractPaymentFromText, {
+      contractText: body.contractText,
+    });
+
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+// ---------------------------------------------------------------------------
 // BUG-11 fix: CORS preflight handler for all /api/v1/* paths.
 // Convex HTTP router requires explicit route registration per method — there
 // is no wildcard method support, so OPTIONS must be registered separately.

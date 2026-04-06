@@ -1,0 +1,17 @@
+{
+  "lineItems": [
+    {
+      "description": "Legal retainer — energy project development counsel (PPAs, EPC, regulatory, financing, corporate; 60 hrs/month minimum)",
+      "quantity": 1,
+      "unitPriceCents": 12000000
+    }
+  ],
+  "currency": "usd",
+  "paymentType": "installments",
+  "dueDateTerms": "custom",
+  "customDueDays": 7,
+  "installmentsConfig": {
+    "count": 6,
+    "interval": "week"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "lineItems": [
+    {
+      "description": "Monthly marketing retainer — up to 80 hours per month (brand strategy, paid media, creative, reporting)",
+      "quantity": 1,
+      "unitPriceCents": 1200000
+    }
+  ],
+  "currency": "usd",
+  "paymentType": "recurring",
+  "dueDateTerms": "net_15",
+  "recurringConfig": {
+    "interval": "month",
+    "intervalCount": 1
+  }
+}

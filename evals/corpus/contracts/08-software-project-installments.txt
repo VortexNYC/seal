@@ -1,0 +1,56 @@
+CUSTOM SOFTWARE DEVELOPMENT AGREEMENT
+
+Effective Date: February 1, 2026
+
+PARTIES
+
+This Custom Software Development Agreement ("Agreement") is entered into as of the Effective Date by and between:
+
+Helix Software Solutions, Inc., a Colorado corporation with its principal place of business at 1800 Larimer Street, Suite 1400, Denver, CO 80202 ("Developer"), and
+
+Summit Financial Credit Union, a federally chartered credit union with its principal place of business at 4500 Cherry Creek Drive South, Denver, CO 80246 ("Client").
+
+PROJECT SCOPE
+
+Developer shall design, develop, and deliver a custom member loan origination portal and back-office workflow system for Client's retail lending operations. The project includes requirements discovery, UX/UI design, front-end and back-end development, core banking API integration (FiServ DNA), user acceptance testing support, and deployment to Client's cloud environment. Detailed specifications are set forth in the Statement of Work dated January 28, 2026, which is incorporated herein by reference.
+
+TOTAL PROJECT FEE AND PAYMENT SCHEDULE
+
+The total fixed fee for the project is two hundred forty thousand dollars ($240,000.00), denominated in United States dollars, payable in four (4) equal monthly installments of sixty thousand dollars ($60,000.00) each. The payment schedule is as follows:
+
+Installment 1: $60,000.00 — due February 15, 2026 (project kickoff)
+Installment 2: $60,000.00 — due March 15, 2026 (design milestone)
+Installment 3: $60,000.00 — due April 15, 2026 (development complete)
+Installment 4: $60,000.00 — due May 15, 2026 (final delivery and acceptance)
+
+Each installment invoice shall be issued seven (7) days prior to its due date. Payment is due on the dates set forth above. A late fee of two percent (2%) of the outstanding installment amount shall apply for each month or portion thereof that payment remains overdue, with a five (5) day grace period from the due date.
+
+CHANGE REQUESTS
+
+Any material change to the project scope shall be documented in a written change order and may result in adjustments to the project fee and timeline, subject to mutual written agreement.
+
+INTELLECTUAL PROPERTY
+
+Upon receipt of all payments, Developer assigns to Client all right, title, and interest in the deliverables, including all source code, documentation, and associated intellectual property.
+
+GOVERNING LAW
+
+This Agreement shall be governed by the laws of the State of Colorado.
+
+SIGNATURES
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
+
+HELIX SOFTWARE SOLUTIONS, INC.
+
+By: ___________________________
+Name: Nathan Cole
+Title: Chief Executive Officer
+Date: February 1, 2026
+
+SUMMIT FINANCIAL CREDIT UNION
+
+By: ___________________________
+Name: Patricia Yuen
+Title: Chief Information Officer
+Date: February 1, 2026
