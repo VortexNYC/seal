@@ -195,6 +195,7 @@ export const applyFieldSuggestions = authMutation({
           currency: ext.currency.toLowerCase(),
           dueDateTerms: ext.dueDateTerms,
           customDueDays: ext.customDueDays,
+          customDueDate: ext.customDueDate,
           lateFees: ext.lateFee
             ? {
                 enabled: true,
@@ -272,6 +273,7 @@ export const saveExtractedPaymentConfig = internalMutation({
       paymentType: paymentTypeTuple,
       dueDateTerms: dueDateTermsTuple,
       customDueDays: v.optional(v.number()),
+      customDueDate: v.optional(v.string()),
       lateFee: v.optional(
         v.object({
           type: v.union(v.literal("percentage"), v.literal("fixed")),
@@ -367,6 +369,7 @@ export const saveExtractedPaymentConfig = internalMutation({
         currency: extraction.currency.toLowerCase(),
         dueDateTerms: extraction.dueDateTerms,
         customDueDays: extraction.customDueDays,
+        customDueDate: extraction.customDueDate,
         lateFees,
         recurringConfig,
         installmentsConfig,
@@ -386,6 +389,7 @@ export const saveExtractedPaymentConfig = internalMutation({
       currency: extraction.currency.toLowerCase(),
       dueDateTerms: extraction.dueDateTerms,
       customDueDays: extraction.customDueDays,
+      customDueDate: extraction.customDueDate,
       lateFees,
       recurringConfig,
       installmentsConfig,

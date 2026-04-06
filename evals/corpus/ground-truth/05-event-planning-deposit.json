@@ -8,7 +8,7 @@
   ],
   "currency": "usd",
   "paymentType": "deposit_balance",
-  "dueDateTerms": "on_receipt",
+  "dueDateTerms": "custom",
   "depositBalanceConfig": {
     "depositPercent": 25,
     "balanceDueDays": 30

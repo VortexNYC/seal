@@ -20,6 +20,7 @@ export const paymentExtractionValidator = v.object({
   paymentType: paymentTypeTuple,
   dueDateTerms: dueDateTermsTuple,
   customDueDays: v.optional(v.number()),
+  customDueDate: v.optional(v.string()),
   lateFee: v.optional(
     v.object({
       type: v.union(v.literal("percentage"), v.literal("fixed")),

@@ -18,7 +18,8 @@
   ],
   "currency": "eur",
   "paymentType": "installments",
-  "dueDateTerms": "on_receipt",
+  "dueDateTerms": "custom",
+  "customDueDate": "2026-04-01",
   "installmentsConfig": {
     "count": 3,
     "interval": "month"

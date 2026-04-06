@@ -8,7 +8,7 @@
   ],
   "currency": "gbp",
   "paymentType": "deposit_balance",
-  "dueDateTerms": "net_60",
+  "dueDateTerms": "custom",
   "depositBalanceConfig": {
     "depositPercent": 50,
     "balanceDueDays": 60

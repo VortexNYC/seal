@@ -8,7 +8,8 @@
   ],
   "currency": "usd",
   "paymentType": "installments",
-  "dueDateTerms": "on_receipt",
+  "dueDateTerms": "custom",
+  "customDueDate": "2026-04-01",
   "lateFee": {
     "type": "fixed",
     "amount": 25000,

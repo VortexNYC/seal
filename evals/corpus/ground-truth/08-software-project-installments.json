@@ -8,7 +8,8 @@
   ],
   "currency": "usd",
   "paymentType": "installments",
-  "dueDateTerms": "on_receipt",
+  "dueDateTerms": "custom",
+  "customDueDays": 7,
   "lateFee": {
     "type": "percentage",
     "amount": 2,

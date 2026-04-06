@@ -98,7 +98,9 @@ tests:
   - type: javascript
     value: JSON.parse(output).currency === "usd"
   - type: javascript
-    value: JSON.parse(output).dueDateTerms === "on_receipt"
+    value: JSON.parse(output).dueDateTerms === "custom"
+  - type: javascript
+    value: JSON.parse(output).customDueDate === "2026-04-01"
   - type: javascript
     value: JSON.parse(output).lineItems?.length === 1
   - type: javascript
@@ -126,7 +128,7 @@ tests:
   - type: javascript
     value: JSON.parse(output).currency === "usd"
   - type: javascript
-    value: JSON.parse(output).dueDateTerms === "on_receipt"
+    value: JSON.parse(output).dueDateTerms === "custom"
   - type: javascript
     value: JSON.parse(output).lineItems?.length === 1
   - type: javascript
@@ -188,7 +190,9 @@ tests:
   - type: javascript
     value: JSON.parse(output).currency === "usd"
   - type: javascript
-    value: JSON.parse(output).dueDateTerms === "on_receipt"
+    value: JSON.parse(output).dueDateTerms === "custom"
+  - type: javascript
+    value: JSON.parse(output).customDueDays === 7
   - type: javascript
     value: JSON.parse(output).lineItems?.length === 1
   - type: javascript
@@ -216,7 +220,7 @@ tests:
   - type: javascript
     value: JSON.parse(output).currency === "gbp"
   - type: javascript
-    value: JSON.parse(output).dueDateTerms === "net_30"
+    value: JSON.parse(output).dueDateTerms === "custom"
   - type: javascript
     value: JSON.parse(output).lineItems?.length === 1
   - type: javascript
@@ -256,7 +260,9 @@ tests:
   - type: javascript
     value: JSON.parse(output).currency === "eur"
   - type: javascript
-    value: JSON.parse(output).dueDateTerms === "on_receipt"
+    value: JSON.parse(output).dueDateTerms === "custom"
+  - type: javascript
+    value: JSON.parse(output).customDueDate === "2026-04-01"
   - type: javascript
     value: JSON.parse(output).lineItems?.length === 3
   - type: javascript
@@ -454,7 +460,9 @@ tests:
   - type: javascript
     value: JSON.parse(output).currency === "usd"
   - type: javascript
-    value: JSON.parse(output).dueDateTerms === "on_receipt"
+    value: JSON.parse(output).dueDateTerms === "custom"
+  - type: javascript
+    value: JSON.parse(output).customDueDays === 7
   - type: javascript
     value: JSON.parse(output).lineItems?.length === 1
   - type: javascript
@@ -476,7 +484,7 @@ tests:
   - type: javascript
     value: JSON.parse(output).currency === "gbp"
   - type: javascript
-    value: JSON.parse(output).dueDateTerms === "net_60"
+    value: JSON.parse(output).dueDateTerms === "custom"
   - type: javascript
     value: JSON.parse(output).lineItems?.length === 1
   - type: javascript

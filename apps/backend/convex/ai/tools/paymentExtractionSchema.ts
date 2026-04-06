@@ -43,7 +43,13 @@ export const PaymentExtractionSchema = z.object({
     .int()
     .positive()
     .optional()
-    .describe("Custom due days if dueDateTerms is 'custom'"),
+    .describe("Custom due days if dueDateTerms is 'custom' and a relative day count is stated"),
+  customDueDate: z
+    .string()
+    .optional()
+    .describe(
+      "ISO 8601 date (e.g. '2026-04-01') when dueDateTerms is 'custom' and a specific calendar date is stated. For installments with multiple dates, use the first payment date. Omit for event-relative terms.",
+    ),
   lateFee: z
     .object({
       type: z.enum(["percentage", "fixed"]),

@@ -63,6 +63,23 @@ export function getDaysUntilDue(terms: string, customDueDays?: number): number {
   }
 }
 
+/**
+ * Returns Stripe-compatible due date params.
+ * When a specific calendar date is known, uses `due_date` (Unix timestamp) so
+ * the Stripe invoice matches the contract exactly — not a relative approximation.
+ * Falls back to `days_until_due` for relative terms.
+ */
+export function getDueDateParam(
+  terms: string,
+  customDueDays?: number,
+  customDueDate?: string,
+): { days_until_due: number } | { due_date: number } {
+  if (customDueDate) {
+    return { due_date: Math.floor(new Date(customDueDate).getTime() / 1000) };
+  }
+  return { days_until_due: getDaysUntilDue(terms, customDueDays) };
+}
+
 /** Wallet methods implied by `card` — not valid as standalone invoice payment_method_types. */
 const WALLET_METHODS = new Set(["apple_pay", "google_pay"]);
 
@@ -100,6 +117,7 @@ interface PaymentFieldConfig {
   currency: string;
   dueDateTerms: string;
   customDueDays?: number;
+  customDueDate?: string;
   totalAmountCents: number;
   feeHandling: string;
   allowedPaymentMethods: string[];
@@ -149,7 +167,7 @@ async function createDraftSendInvoice(
   stripeAccountId: string,
   params: {
     customerId: string;
-    daysUntilDue: number;
+    dueDateParam: { days_until_due: number } | { due_date: number };
     applicationFeeAmount?: number;
     metadata: Record<string, string>;
     paymentSettings?: {
@@ -161,7 +179,7 @@ async function createDraftSendInvoice(
     {
       customer: params.customerId,
       collection_method: "send_invoice",
-      days_until_due: params.daysUntilDue,
+      ...params.dueDateParam,
       auto_advance: false,
       pending_invoice_items_behavior: "exclude",
       application_fee_amount: params.applicationFeeAmount,
@@ -360,7 +378,7 @@ async function createOneTimeInvoice(
   const platformFeeCents = calculatePlatformFee(config.totalAmountCents, isPro);
   const invoice = await createDraftSendInvoice(stripe, stripeAccountId, {
     customerId: customer.id,
-    daysUntilDue: getDaysUntilDue(config.dueDateTerms, config.customDueDays),
+    dueDateParam: getDueDateParam(config.dueDateTerms, config.customDueDays, config.customDueDate),
     applicationFeeAmount: platformFeeCents > 0 ? platformFeeCents : undefined,
     metadata: buildPaymentMetadata(config),
     paymentSettings: getInvoicePaymentSettings(config.allowedPaymentMethods),
@@ -443,7 +461,7 @@ async function createDepositBalanceInvoices(
   const paymentSettings = getInvoicePaymentSettings(config.allowedPaymentMethods);
   const depositInvoice = await createDraftSendInvoice(stripe, stripeAccountId, {
     customerId: customer.id,
-    daysUntilDue: 1,
+    dueDateParam: { days_until_due: 1 },
     applicationFeeAmount: depositFeeCents > 0 ? depositFeeCents : undefined,
     metadata: buildPaymentMetadata(config, { invoiceType: "deposit" }),
     paymentSettings,
@@ -470,7 +488,7 @@ async function createDepositBalanceInvoices(
     const finalizedDeposit = await finalizeDraftInvoice(stripe, stripeAccountId, depositInvoice.id);
     balanceInvoice = await createDraftSendInvoice(stripe, stripeAccountId, {
       customerId: customer.id,
-      daysUntilDue: depositBalanceConfig.balanceDueDays,
+      dueDateParam: { days_until_due: depositBalanceConfig.balanceDueDays },
       applicationFeeAmount: balanceFeeCents > 0 ? balanceFeeCents : undefined,
       metadata: buildPaymentMetadata(config, { invoiceType: "balance" }),
       paymentSettings,
