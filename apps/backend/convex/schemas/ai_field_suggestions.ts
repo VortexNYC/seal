@@ -71,4 +71,5 @@ export const aiFieldSuggestionsTable = defineTable({
   paymentExtraction: v.optional(paymentExtractionValidator),
 })
   .index("by_document", ["documentId"])
+  .index("by_document_status", ["documentId", "status"])
   .index("by_organization", ["organizationId"]);

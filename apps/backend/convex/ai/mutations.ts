@@ -99,8 +99,9 @@ export const saveFieldSuggestions = internalMutation({
     // Dismiss any existing pending suggestions for this document
     const existing = await ctx.db
       .query("ai_field_suggestions")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_document_status", (q) =>
+        q.eq("documentId", args.documentId).eq("status", "pending"),
+      )
       .collect();
 
     for (const suggestion of existing) {
