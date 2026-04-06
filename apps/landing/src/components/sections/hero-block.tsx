@@ -18,8 +18,8 @@ export function StaticHero() {
         {/* Headline */}
         <FadeIn delay={0.05}>
           <h1 className="text-foreground font-serif text-[clamp(2.5rem,6vw,5rem)] leading-[1.05] font-normal tracking-tight">
-            Most signing tools are glorified PDFs.{" "}
-            <span className="text-primary italic">We actually read yours.</span>
+            The old players offer e-signatures.{" "}
+            <span className="text-primary italic">We built an engine.</span>
           </h1>
         </FadeIn>
 
