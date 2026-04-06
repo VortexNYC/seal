@@ -156,15 +156,17 @@ function SigningMockup() {
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
 
+    const delay0 = SIGNERS[0]?.delay ?? 1200;
+    const delay1 = SIGNERS[1]?.delay ?? 2800;
+
     function runLoop() {
       setPhase("waiting");
-      t = setTimeout(() => setPhase("signing1"), SIGNERS[0].delay);
-      t = setTimeout(() => setPhase("signing2"), SIGNERS[1].delay);
+      t = setTimeout(() => setPhase("signing1"), delay0);
+      t = setTimeout(() => setPhase("signing2"), delay1);
       t = setTimeout(() => {
         setPhase("complete");
-        // Reset after 2.5s
         t = setTimeout(runLoop, 2500);
-      }, SIGNERS[1].delay + 900);
+      }, delay1 + 900);
     }
 
     runLoop();
@@ -273,94 +275,129 @@ function SigningMockup() {
   );
 }
 
-/* ── Audit Trail Mockup — events cascade in on loop ───────────────────── */
-const AUDIT_EVENTS = [
-  { status: "success", title: "Document completed", detail: "All 2 signers signed. Certificate generated.", time: "2:43 PM" },
-  { status: "success", title: "Marcus Lee signed", detail: "192.168.1.42 · Safari 17 · iPhone 16", time: "2:43 PM" },
-  { status: "success", title: "Sarah Chen signed", detail: "203.0.113.12 · Chrome 122 · MacBook Pro", time: "2:40 PM" },
-  { status: "info", title: "Document sent for signing", detail: "Sent to sarah@acme.com, marcus@acme.com", time: "2:40 PM" },
-  { status: "muted", title: "Document created", detail: "Uploaded by jordan@vantage.co", time: "2:38 PM" },
+/* ── Developer API Mockup — animated API call + webhook response loop ─── */
+const API_STEPS = [
+  {
+    type: "request" as const,
+    label: "POST /v1/documents",
+    lines: [
+      '  "title": "Service Agreement",',
+      '  "signers": [',
+      '    { "email": "sarah@acme.com",',
+      '      "role": "client" }',
+      '  ],',
+      '  "collect_payment": true',
+    ],
+  },
+  {
+    type: "response" as const,
+    label: "201 Created",
+    lines: [
+      '  "id": "doc_3fK9mPqR",',
+      '  "status": "pending",',
+      '  "signing_url": "https://seal.co/s/..."',
+    ],
+  },
+  {
+    type: "webhook" as const,
+    label: "→ webhook: document.completed",
+    lines: [
+      '  "event": "document.completed",',
+      '  "document_id": "doc_3fK9mPqR",',
+      '  "payment_collected": true',
+    ],
+  },
 ];
 
-function AuditTrailMockup() {
-  const [visibleCount, setVisibleCount] = useState(0);
+function DevApiMockup() {
+  const [step, setStep] = useState(0);
+  const [lineCount, setLineCount] = useState(0);
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
 
-    function runLoop() {
-      setVisibleCount(0);
+    function runStep(s: number) {
+      setStep(s);
+      setLineCount(0);
+      const lines = API_STEPS[s]?.lines ?? [];
       let i = 0;
-      function addNext() {
+      function revealLine() {
         i++;
-        setVisibleCount(i);
-        if (i < AUDIT_EVENTS.length) {
-          timeout = setTimeout(addNext, 500);
+        setLineCount(i);
+        if (i < lines.length) {
+          timeout = setTimeout(revealLine, 180);
+        } else if (s < API_STEPS.length - 1) {
+          timeout = setTimeout(() => runStep(s + 1), 900);
         } else {
-          timeout = setTimeout(runLoop, 3000);
+          timeout = setTimeout(() => runStep(0), 2800);
         }
       }
-      timeout = setTimeout(addNext, 600);
+      timeout = setTimeout(revealLine, 300);
     }
 
-    runLoop();
+    runStep(0);
     return () => clearTimeout(timeout);
   }, []);
 
+  const current = API_STEPS[step] ?? API_STEPS[0]!;
+
   return (
-    <div className="border-border bg-card w-full overflow-hidden rounded-xl border shadow-lg">
-      <div className="border-border flex items-center justify-between border-b px-5 py-3">
-        <span className="text-foreground text-sm font-medium">Activity Log</span>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-300 ${
-            visibleCount >= AUDIT_EVENTS.length
-              ? "bg-success/15 text-success"
-              : "bg-primary/10 text-primary"
-          }`}
-        >
-          <Circle aria-hidden="true" className="size-1.5 fill-current" />
-          {visibleCount >= AUDIT_EVENTS.length ? "Completed" : "In progress…"}
-        </span>
+    <div className="border-border bg-card w-full overflow-hidden rounded-xl border shadow-lg font-mono text-xs">
+      {/* Terminal tab bar */}
+      <div className="border-border bg-muted/30 flex items-center gap-1.5 border-b px-4 py-2.5">
+        <span className="size-2.5 rounded-full bg-red-400/70" />
+        <span className="size-2.5 rounded-full bg-yellow-400/70" />
+        <span className="size-2.5 rounded-full bg-green-400/70" />
+        <span className="text-muted-foreground ml-3 text-xs">seal api — zsh</span>
       </div>
-      <div className="divide-border divide-y min-h-[220px]">
-        {AUDIT_EVENTS.slice(0, visibleCount).map((event, i) => (
-          <div
-            key={event.title}
-            className="flex items-start justify-between px-5 py-3 animate-slide-in-up"
-            style={{ animationDelay: `${i * 30}ms` }}
-          >
-            <div className="flex items-start gap-2.5">
-              <Circle
-                aria-hidden="true"
-                className={`mt-1 size-2 shrink-0 fill-current ${
-                  event.status === "success"
-                    ? "text-success"
-                    : event.status === "info"
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                }`}
-              />
-              <div>
-                <p className="text-foreground text-sm font-medium">{event.title}</p>
-                <p className="text-muted-foreground text-xs">{event.detail}</p>
-              </div>
+
+      <div className="p-5 min-h-[220px] space-y-1">
+        {/* All completed steps shown dimmed */}
+        {API_STEPS.slice(0, step).map((s) => (
+          <div key={s.label} className="opacity-30">
+            <p className={`mb-1 ${s.type === "request" ? "text-primary" : s.type === "response" ? "text-success" : "text-warning"}`}>
+              {s.type === "request" ? "$ curl" : s.type === "response" ? "←" : "⚡"}{" "}
+              <span className="text-foreground/70">{s.label}</span>
+            </p>
+            <div className="pl-4 space-y-0.5">
+              {s.lines.map((line) => (
+                <p key={line} className="text-muted-foreground">{line}</p>
+              ))}
             </div>
-            <span className="text-muted-foreground shrink-0 text-xs">{event.time}</span>
           </div>
         ))}
-        {visibleCount < AUDIT_EVENTS.length && (
-          <div className="px-5 py-3 flex items-center gap-2">
-            <span className="bg-muted size-2 rounded-full animate-pulse" />
-            <span className="bg-muted h-2 w-32 rounded animate-pulse" />
+
+        {/* Current active step */}
+        <div>
+          <p className={`mb-1 ${current.type === "request" ? "text-primary" : current.type === "response" ? "text-success" : "text-warning"}`}>
+            {current.type === "request" ? "$ curl" : current.type === "response" ? "←" : "⚡"}{" "}
+            <span className="text-foreground">{current.label}</span>
+          </p>
+          <div className="pl-4 space-y-0.5">
+            {current.lines.slice(0, lineCount).map((line, i) => (
+              <p key={line} className="text-muted-foreground animate-fade-in" style={{ animationDelay: `${i * 20}ms` }}>
+                {line}
+              </p>
+            ))}
+            {lineCount < current.lines.length && (
+              <span className="inline-block size-2 bg-foreground animate-pulse rounded-sm" />
+            )}
           </div>
-        )}
+        </div>
       </div>
-      <div className="border-border border-t px-5 py-3">
-        <p className="text-muted-foreground text-xs">
-          {visibleCount >= AUDIT_EVENTS.length
-            ? "Certificate ID: SL-2026-83F2A · SHA-256: a3f8c…"
-            : "Recording events…"}
-        </p>
+
+      <div className="border-border flex items-center justify-between border-t px-5 py-3">
+        <div className="flex items-center gap-3">
+          {API_STEPS.map((s, i) => (
+            <span
+              key={s.label}
+              className={`size-1.5 rounded-full transition-colors duration-300 ${
+                i < step ? "bg-success" : i === step ? "bg-primary animate-pulse" : "bg-muted-foreground/30"
+              }`}
+            />
+          ))}
+        </div>
+        <span className="text-muted-foreground text-xs">REST API · Full OpenAPI spec</span>
       </div>
     </div>
   );
@@ -514,25 +551,17 @@ const featureSections: FeatureSection[] = [
     eyebrow: "SIGNING",
     headline: "Sign in under 60 seconds.",
     description:
-      "No app to download. No account required. Signers get a link, sign on any device, and you get a legally binding document with a full audit certificate.",
+      "No app to download. No account required. Signers get a link, sign on any device, and you get a legally binding document — ESIGN Act compliant with a full tamper-evident audit certificate.",
+    bullets: [
+      "No account required for recipients",
+      "ESIGN & UETA compliant by default",
+      "SHA-256 audit certificate on completion",
+    ],
     reversed: true,
     mockup: SigningMockup,
   },
   {
     number: "03",
-    eyebrow: "COMPLIANCE",
-    headline: "An audit trail your lawyers will love.",
-    description:
-      "Every action is timestamped, every signer verified, every IP logged. ESIGN Act compliant by default. When it goes to court, you're covered.",
-    bullets: [
-      "ESIGN Act compliant",
-      "Tamper-evident SHA-256 hash",
-      "IP, device, and time on every event",
-    ],
-    mockup: AuditTrailMockup,
-  },
-  {
-    number: "04",
     eyebrow: "PAYMENTS",
     headline: "Collect payment the moment they sign.",
     description:
@@ -542,14 +571,27 @@ const featureSections: FeatureSection[] = [
       "Auto-generated Stripe invoices on completion",
       "No separate billing tool required",
     ],
-    reversed: true,
     mockup: PaymentsMockup,
+  },
+  {
+    number: "04",
+    eyebrow: "DEVELOPER API",
+    headline: "Built for developers from day one.",
+    description:
+      "A full REST API, webhooks for every event, and an OpenAPI spec you can import into your tooling. Integrate Seal into any product in an afternoon — no enterprise contract required.",
+    bullets: [
+      "Full REST API on every plan",
+      "Webhooks for every document event",
+      "OpenAPI spec for code generation",
+    ],
+    reversed: true,
+    mockup: DevApiMockup,
   },
 ];
 
 export function StaticFeatures() {
   return (
-    <section className="px-6 py-32 sm:py-40" id="features">
+    <section className="px-6 pt-12 pb-32 sm:pt-16 sm:pb-40" id="features">
       <div className="mx-auto max-w-6xl">
         {/* Section header */}
         <FadeIn>
@@ -558,7 +600,8 @@ export function StaticFeatures() {
               What Seal does
             </p>
             <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
-              Four things DocuSign can&apos;t.
+              The old tools built e-signatures.{" "}
+              <span className="text-primary italic">We built a document engine.</span>
             </h2>
           </div>
         </FadeIn>

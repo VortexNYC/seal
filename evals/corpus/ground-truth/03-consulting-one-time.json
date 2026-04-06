@@ -4,14 +4,10 @@
       "description": "Operational efficiency assessment and transformation roadmap — flat project fee",
       "quantity": 1,
       "unitPriceCents": 2250000
-    },
-    {
-      "description": "Pre-approved travel and lodging expense reimbursement (cap)",
-      "quantity": 1,
-      "unitPriceCents": 250000
     }
   ],
   "currency": "usd",
   "paymentType": "one_time",
-  "dueDateTerms": "on_receipt"
+  "dueDateTerms": "on_receipt",
+  "notes": "Travel and lodging reimbursement capped at $2,500 — variable, invoiced separately with receipts"
 }

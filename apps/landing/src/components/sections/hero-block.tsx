@@ -13,35 +13,27 @@ const valuePillars = [
 
 export function StaticHero() {
   return (
-    <section className="relative overflow-hidden px-6 pt-28 pb-24 sm:pt-36 sm:pb-32">
-      <div className="mx-auto max-w-4xl">
-        {/* Eyebrow */}
-        <FadeIn>
-          <p className="text-primary mb-6 text-sm font-semibold tracking-wider uppercase">
-            The DocuSign Alternative
-          </p>
-        </FadeIn>
-
+    <section className="relative overflow-hidden px-6 pt-20 pb-8 sm:pt-24 sm:pb-12">
+      <div className="mx-auto max-w-4xl text-center">
         {/* Headline */}
         <FadeIn delay={0.05}>
           <h1 className="text-foreground font-serif text-[clamp(2.5rem,6vw,5rem)] leading-[1.05] font-normal tracking-tight">
-            DocuSign doesn&apos;t read your contracts.{" "}
-            <span className="text-primary italic">We do.</span>
+            Most signing tools are glorified PDFs.{" "}
+            <span className="text-primary italic">We actually read yours.</span>
           </h1>
         </FadeIn>
 
         {/* Subtitle */}
         <FadeIn delay={0.1}>
-          <p className="text-muted-foreground mt-8 max-w-2xl text-lg leading-relaxed text-pretty sm:text-xl">
-            Seal is an intelligent document platform built for B2B teams. Sign contracts, collect
-            payments, and let AI catch what you missed — all in one place, with a full REST API
-            from day one. Free to start.
+          <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-pretty sm:text-xl">
+            Seal is a document engine for B2B teams — sign contracts, collect payment, and let AI
+            catch what you missed. Full REST API from day one. Free to start.
           </p>
         </FadeIn>
 
         {/* Value pillars */}
         <FadeIn delay={0.12}>
-          <div className="mt-8 flex flex-wrap gap-2">
+          <div className="mt-8 flex flex-wrap justify-center gap-2">
             {valuePillars.map((pillar) => (
               <span
                 className="border-border bg-muted/40 text-muted-foreground rounded-full border px-3 py-1 text-sm"
@@ -55,7 +47,7 @@ export function StaticHero() {
 
         {/* CTAs */}
         <FadeIn delay={0.15}>
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center">
             <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
               <a href={`${APP_URL}/sign-up`}>
                 Start Free

@@ -43,9 +43,8 @@ Map contract language to enum values as follows — do NOT use "custom" unless t
 - "net 60", "within 60 days", "within sixty (60) days", "within sixty days", "due within sixty days", "60-day payment terms" → "net_60"
 - "within 45 days", "within 90 days", any non-standard number of days → "custom" + customDueDays
 
-CRITICAL: Grace period language is NOT a due date term. "Payment is made within ten (10) business days of receipt" describes a grace period, NOT when payment is due. Look for the primary due date clause, ignore grace period clauses.
-
-For installment contracts: dueDateTerms reflects when the FIRST installment is due relative to the invoice/execution.
+CRITICAL: Identify the PRIMARY due date clause. Many contracts have a secondary grace period clause (e.g. "No late fee applies if paid within 10 business days"). IGNORE grace period language — use only the primary due date statement.
+Example: "Invoice is due upon receipt. No late fee if paid within 10 business days." → PRIMARY is "due upon receipt" → "on_receipt". The 10-day clause is a grace period, NOT the due date.
 
 ## Custom Due Date Rules
 - Only use "custom" when the number of days does NOT match 15, 30, or 60
