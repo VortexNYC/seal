@@ -57,7 +57,8 @@ function getManualChunkName(id: string): string | undefined {
 
 export default defineConfig(async ({ command }) => ({
   server: {
-    port: 5181,
+    host: "127.0.0.1",
+    port: parseInt(process.env.PORT ?? "5181"),
     proxy: {
       "/ingest/static": {
         target: "https://us-assets.i.posthog.com",
@@ -99,6 +100,7 @@ export default defineConfig(async ({ command }) => ({
   resolve: {
     tsconfigPaths: true,
     alias: {
+      "~": path.resolve(import.meta.dirname, "./src"),
       "fumadocs-mdx:collections/server": path.resolve(import.meta.dirname, "./.source/server.ts"),
       "fumadocs-mdx:collections/browser": path.resolve(import.meta.dirname, "./.source/browser.ts"),
       "fumadocs-mdx:collections/dynamic": path.resolve(import.meta.dirname, "./.source/dynamic.ts"),

@@ -4,9 +4,16 @@ import { FadeIn } from "~/components/ui/fade-in";
 import { APP_URL } from "~/lib/constants";
 import type { HeroBlock } from "~/lib/content/types";
 
+const valuePillars = [
+  { label: "E-Signatures" },
+  { label: "Payments & Invoicing" },
+  { label: "AI Document Review" },
+  { label: "Developer API" },
+];
+
 export function StaticHero() {
   return (
-    <section className="relative overflow-hidden px-6 pt-28 pb-20 sm:pt-36 sm:pb-28">
+    <section className="relative overflow-hidden px-6 pt-28 pb-24 sm:pt-36 sm:pb-32">
       <div className="mx-auto max-w-4xl">
         {/* Eyebrow */}
         <FadeIn>
@@ -25,10 +32,25 @@ export function StaticHero() {
 
         {/* Subtitle */}
         <FadeIn delay={0.1}>
-          <p className="text-muted-foreground mt-8 max-w-xl text-lg leading-relaxed text-pretty sm:text-xl">
-            Seal is the first e-signature platform with AI built in from day one. We catch the
-            clauses your lawyer would — before you ever hit send.
+          <p className="text-muted-foreground mt-8 max-w-2xl text-lg leading-relaxed text-pretty sm:text-xl">
+            Seal is an intelligent document platform built for B2B teams. Sign contracts, collect
+            payments, and let AI catch what you missed — all in one place, with a full REST API
+            from day one. Free to start.
           </p>
+        </FadeIn>
+
+        {/* Value pillars */}
+        <FadeIn delay={0.12}>
+          <div className="mt-8 flex flex-wrap gap-2">
+            {valuePillars.map((pillar) => (
+              <span
+                className="border-border bg-muted/40 text-muted-foreground rounded-full border px-3 py-1 text-sm"
+                key={pillar.label}
+              >
+                {pillar.label}
+              </span>
+            ))}
+          </div>
         </FadeIn>
 
         {/* CTAs */}
@@ -47,6 +69,13 @@ export function StaticHero() {
               <a href="#features">See how it works</a>
             </Button>
           </div>
+        </FadeIn>
+
+        {/* Social proof line */}
+        <FadeIn delay={0.2}>
+          <p className="text-muted-foreground mt-8 text-sm">
+            Free forever plan · No credit card required · Set up in under 2 minutes
+          </p>
         </FadeIn>
       </div>
     </section>

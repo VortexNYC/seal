@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as IntegrationsRouteImport } from './routes/integrations'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as CompareRouteImport } from './routes/compare'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as ApiReferenceRouteImport } from './routes/api-reference'
 import { Route as IndexRouteImport } from './routes/index'
@@ -30,6 +32,11 @@ const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IntegrationsRoute = IntegrationsRouteImport.update({
   id: '/integrations',
   path: '/integrations',
@@ -38,6 +45,11 @@ const IntegrationsRoute = IntegrationsRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChangelogRoute = ChangelogRouteImport.update({
@@ -75,8 +87,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api-reference': typeof ApiReferenceRoute
   '/changelog': typeof ChangelogRouteWithChildren
+  '/compare': typeof CompareRoute
   '/docs': typeof DocsRouteWithChildren
   '/integrations': typeof IntegrationsRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
@@ -87,8 +101,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api-reference': typeof ApiReferenceRoute
   '/changelog': typeof ChangelogRouteWithChildren
+  '/compare': typeof CompareRoute
   '/docs': typeof DocsRouteWithChildren
   '/integrations': typeof IntegrationsRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
@@ -100,8 +116,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/api-reference': typeof ApiReferenceRoute
   '/changelog': typeof ChangelogRouteWithChildren
+  '/compare': typeof CompareRoute
   '/docs': typeof DocsRouteWithChildren
   '/integrations': typeof IntegrationsRoute
+  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
@@ -114,8 +132,10 @@ export interface FileRouteTypes {
     | '/'
     | '/api-reference'
     | '/changelog'
+    | '/compare'
     | '/docs'
     | '/integrations'
+    | '/pricing'
     | '/privacy-policy'
     | '/terms-of-service'
     | '/changelog/$slug'
@@ -126,8 +146,10 @@ export interface FileRouteTypes {
     | '/'
     | '/api-reference'
     | '/changelog'
+    | '/compare'
     | '/docs'
     | '/integrations'
+    | '/pricing'
     | '/privacy-policy'
     | '/terms-of-service'
     | '/changelog/$slug'
@@ -138,8 +160,10 @@ export interface FileRouteTypes {
     | '/'
     | '/api-reference'
     | '/changelog'
+    | '/compare'
     | '/docs'
     | '/integrations'
+    | '/pricing'
     | '/privacy-policy'
     | '/terms-of-service'
     | '/changelog/$slug'
@@ -151,8 +175,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiReferenceRoute: typeof ApiReferenceRoute
   ChangelogRoute: typeof ChangelogRouteWithChildren
+  CompareRoute: typeof CompareRoute
   DocsRoute: typeof DocsRouteWithChildren
   IntegrationsRoute: typeof IntegrationsRoute
+  PricingRoute: typeof PricingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
   PagesSlugRoute: typeof PagesSlugRoute
@@ -174,6 +200,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/integrations': {
       id: '/integrations'
       path: '/integrations'
@@ -186,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/changelog': {
@@ -259,8 +299,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiReferenceRoute: ApiReferenceRoute,
   ChangelogRoute: ChangelogRouteWithChildren,
+  CompareRoute: CompareRoute,
   DocsRoute: DocsRouteWithChildren,
   IntegrationsRoute: IntegrationsRoute,
+  PricingRoute: PricingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
   PagesSlugRoute: PagesSlugRoute,
