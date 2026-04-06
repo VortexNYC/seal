@@ -19,7 +19,9 @@ export const subscriptionStatus = v.union(
 export type SubscriptionStatus = Infer<typeof subscriptionStatus>;
 
 export const subscriptionsTable = defineTable({
-  organizationId: v.id("organizations"),
+  // TODO: Narrow back to v.id("organizations") and remove userId after backfill migration runs
+  organizationId: v.optional(v.id("organizations")),
+  userId: v.optional(v.id("users")), // Legacy field — remove after migration
 
   externalCustomerId: v.string(), // Stripe customer ID
   externalSubscriptionId: v.string(), // Stripe subscription ID
@@ -45,6 +47,7 @@ export const subscriptionsTable = defineTable({
   updatedAt: v.number(),
 })
   .index("by_organization_id", ["organizationId"])
+  .index("by_organization_status", ["organizationId", "status"])
   .index("by_external_customer_id", ["externalCustomerId"])
   .index("by_external_subscription_id", ["externalSubscriptionId"])
   .index("by_status", ["status"]);

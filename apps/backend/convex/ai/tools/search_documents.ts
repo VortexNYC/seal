@@ -20,10 +20,10 @@ export const searchDocuments = createTool({
     "Returns document excerpts with page numbers and citations. " +
     "Use this when the user asks about document contents, specific clauses, terms, dates, " +
     "or any information that might be in their uploaded documents.",
-  args: z.object({
+  inputSchema: z.object({
     query: z.string().describe("The search query — what to look for across documents"),
   }),
-  handler: async (ctx: SealAICtx, { query }): Promise<string> => {
+  execute: async (ctx: SealAICtx, { query }): Promise<string> => {
     try {
       // Use cached search — identical queries within 1 hour skip re-embedding
       const results = (await searchCache.fetch(ctx, {

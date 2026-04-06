@@ -90,6 +90,46 @@ setup("authenticate clerk test user", async ({ page }) => {
 
   if (deployKey) {
     try {
+      let totalPurged = 0;
+      for (let attempt = 0; attempt < 25; attempt++) {
+        const purgeRes = await fetch(`${convexUrl}/api/mutation`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Convex ${deployKey}`,
+          },
+          body: JSON.stringify({
+            path: "test_e2e_helpers:purgeE2EDocuments",
+            args: { organizationSlug, batchSize: 200 },
+            format: "json",
+          }),
+        });
+
+        if (!purgeRes.ok) {
+          console.warn(
+            "[setup] purgeE2EDocuments HTTP error:",
+            purgeRes.status,
+            await purgeRes.text(),
+          );
+          break;
+        }
+
+        const purgeData = (await purgeRes.json()) as {
+          status: string;
+          value?: { deleted?: number; hasMore?: boolean };
+        };
+        const deleted = purgeData.value?.deleted ?? 0;
+        totalPurged += deleted;
+
+        if (!purgeData.value?.hasMore || deleted === 0) {
+          break;
+        }
+      }
+
+      if (totalPurged > 0) {
+        console.info(`[setup] Purged ${totalPurged} stale E2E document(s)`);
+      }
+
       const res = await fetch(`${convexUrl}/api/mutation`, {
         method: "POST",
         headers: {

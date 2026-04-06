@@ -81,21 +81,41 @@ async function getSharingSubscriptionState(
   organizationId: Id<"organizations">,
   hasSharedDocuments: boolean,
 ) {
-  const subscription = await ctx.db
-    .query("subscriptions")
-    .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
-    .first();
+  const activeOrTrialing =
+    (await ctx.db
+      .query("subscriptions")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "active"),
+      )
+      .first()) ??
+    (await ctx.db
+      .query("subscriptions")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "trialing"),
+      )
+      .first());
 
-  const canUseTeamSharing =
-    subscription?.status === "active" || subscription?.status === "trialing";
-  const subscriptionWarning =
-    subscription?.status === "past_due" && hasSharedDocuments
-      ? "Your subscription payment is past due. Document sharing may be disabled soon."
-      : null;
+  const canUseTeamSharing = !!activeOrTrialing;
+
+  // Check for past-due warning only when no active/trialing sub exists
+  let subscriptionWarning: string | null = null;
+  let pastDueSubscription: typeof activeOrTrialing = null;
+  if (!activeOrTrialing && hasSharedDocuments) {
+    pastDueSubscription = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "past_due"),
+      )
+      .first();
+    if (pastDueSubscription) {
+      subscriptionWarning =
+        "Your subscription payment is past due. Document sharing may be disabled soon.";
+    }
+  }
 
   return {
     canUseTeamSharing,
-    subscriptionStatus: subscription?.status ?? null,
+    subscriptionStatus: (activeOrTrialing ?? pastDueSubscription)?.status ?? null,
     subscriptionWarning,
   };
 }
@@ -124,10 +144,12 @@ export const updateSharingMode = permissionMutation("documents:share")({
     if (args.sharingMode === "workspace" || args.sharingMode === "specific") {
       const subscription = await ctx.db
         .query("subscriptions")
-        .withIndex("by_organization_id", (q) => q.eq("organizationId", document.organizationId))
+        .withIndex("by_organization_status", (q) =>
+          q.eq("organizationId", document.organizationId).eq("status", "active"),
+        )
         .first();
 
-      const isPro = subscription?.status === "active";
+      const isPro = !!subscription;
 
       if (!isPro) {
         throw new ConvexError(

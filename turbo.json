@@ -5,7 +5,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", ".output/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", ".output/**", ".vercel/output/**", "dist/**"]
     },
     "start": {
       "cache": false
@@ -53,10 +53,22 @@
     "CONVEX_DEPLOY_KEY",
     "NEXT_PUBLIC_CONVEX_URL",
     "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+    "VITE_APP_URL",
     "VITE_CONVEX_URL",
     "VITE_CLERK_PUBLISHABLE_KEY",
     "VITE_CLERK_SIGN_IN_URL",
-    "VITE_CLERK_SIGN_UP_URL"
+    "VITE_CLERK_SIGN_UP_URL",
+    "VITE_EXPOSE_CONVEX_API",
+    "VITE_PUBLIC_POSTHOG_KEY",
+    "VITE_SENTRY_DSN",
+    "VITE_SENTRY_ENVIRONMENT",
+    "VITE_SENTRY_RELEASE",
+    "VITE_STRIPE_PUBLISHABLE_KEY",
+    "SANITY_DATASET",
+    "SANITY_PROJECT_ID",
+    "SENTRY_AUTH_TOKEN",
+    "SENTRY_ORG",
+    "SENTRY_PROJECT"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",

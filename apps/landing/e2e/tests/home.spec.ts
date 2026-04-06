@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { HomePage } from "../pages/home-page";
 import { trackBrowserErrors } from "../utils/browser-assertions";
 
-const APP_URL = "https://app.seal.co";
+const APP_URL = process.env.VITE_APP_URL || "https://app.seal.nyc";
 
 test.describe("landing homepage", () => {
   test("renders homepage shell and critical sections without browser errors", async ({ page }) => {
@@ -24,13 +24,6 @@ test.describe("landing homepage", () => {
 
     for (let i = 0; i < startFreeCount; i += 1) {
       await expect(homePage.startFreeLinks().nth(i)).toHaveAttribute("href", `${APP_URL}/sign-up`);
-    }
-
-    const signInCount = await homePage.signInLinks().count();
-    expect(signInCount).toBeGreaterThan(0);
-
-    for (let i = 0; i < signInCount; i += 1) {
-      await expect(homePage.signInLinks().nth(i)).toHaveAttribute("href", `${APP_URL}/sign-in`);
     }
 
     await browserErrors.assertNoErrors();

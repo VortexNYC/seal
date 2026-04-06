@@ -3,11 +3,13 @@ import { resolve } from "node:path";
 
 import type { Locator, Page } from "@playwright/test";
 
-import { waitForClerkConvexToken } from "../../fixtures/auth-helpers";
+import { ensureAuthenticatedWorkspaceHome, ensureConvexAuth } from "../../fixtures/auth-helpers";
 
 export class DocumentsListPage {
   readonly page: Page;
+  readonly heading: Locator;
   readonly createDocumentButton: Locator;
+  readonly draftsFilterButton: Locator;
   readonly documentTable: Locator;
   readonly searchInput: Locator;
   readonly documentRows: Locator;
@@ -16,11 +18,13 @@ export class DocumentsListPage {
 
   constructor(page: Page) {
     this.page = page;
+    this.heading = page.getByRole("heading", { name: /^Documents$/, exact: true });
     this.createDocumentButton = page
       .getByRole("button", {
         name: /upload document|create document|new document/i,
       })
       .first();
+    this.draftsFilterButton = page.getByRole("button", { name: "Drafts", exact: true });
     this.documentTable = page.locator("table");
     this.searchInput = page.getByPlaceholder("Search documents by name or description...");
     this.documentRows = page.locator("table tbody tr");
@@ -31,12 +35,19 @@ export class DocumentsListPage {
   async goto(slug: string): Promise<void> {
     const targetUrl = `/${slug}/documents`;
 
-    for (let attempt = 0; attempt < 3; attempt++) {
+    await ensureConvexAuth(this.page).catch(async () => {
+      await ensureAuthenticatedWorkspaceHome(this.page);
+    });
+
+    for (let attempt = 0; attempt < 2; attempt++) {
       await this.page.goto(targetUrl, { waitUntil: "domcontentloaded" });
 
-      const recovered = await this.recoverFromAuthError(targetUrl);
-      if (!recovered) {
+      if (await this.waitForDocumentsShell().catch(() => false)) {
         return;
+      }
+
+      if (!(await this.recoverFromAuthError(targetUrl))) {
+        break;
       }
     }
 
@@ -228,6 +239,38 @@ export class DocumentsListPage {
     );
   }
 
+  private async waitForDocumentsShell(timeoutMs = 10000): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      const headingVisible = await this.heading.isVisible().catch(() => false);
+      const createVisible = await this.createDocumentButton.isVisible().catch(() => false);
+      const searchVisible = await this.searchInput.isVisible().catch(() => false);
+      const draftsVisible = await this.draftsFilterButton.isVisible().catch(() => false);
+      const rowsVisible = await this.documentRows
+        .first()
+        .isVisible()
+        .catch(() => false);
+      const emptyVisible = await this.emptyDocumentsState.isVisible().catch(() => false);
+      const shellReady =
+        headingVisible &&
+        (createVisible || searchVisible || draftsVisible || rowsVisible || emptyVisible);
+
+      if (shellReady) {
+        return true;
+      }
+
+      const authErrorVisible = await this.authRequiredError.isVisible().catch(() => false);
+      if (authErrorVisible) {
+        return false;
+      }
+
+      await this.page.waitForTimeout(250);
+    }
+
+    return false;
+  }
+
   private async recoverFromAuthError(targetUrl?: string): Promise<boolean> {
     const hasAuthError = await this.authRequiredError.isVisible().catch(() => false);
 
@@ -235,13 +278,10 @@ export class DocumentsListPage {
       return false;
     }
 
-    await waitForClerkConvexToken(this.page);
+    await ensureAuthenticatedWorkspaceHome(this.page);
 
-    if (targetUrl) {
-      await this.page.goto(targetUrl, { waitUntil: "domcontentloaded" });
-    } else {
-      await this.page.reload({ waitUntil: "domcontentloaded" });
-    }
+    const retryUrl = targetUrl ?? this.page.url();
+    await this.page.goto(retryUrl, { waitUntil: "domcontentloaded" });
 
     return true;
   }

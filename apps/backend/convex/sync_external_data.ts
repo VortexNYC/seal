@@ -285,6 +285,179 @@ export const syncUsersFromClerkToConvex = internalAction({
   },
 });
 
+/**
+ * Sync all Clerk organizations into Convex organizations table.
+ * Idempotent: existing orgs are updated, missing orgs are created.
+ */
+export const syncOrganizationsFromClerkToConvex = internalAction({
+  args: {
+    pageSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<{ totalFetched: number; synced: number; errors: number }> => {
+    const clerk = getClerkClient();
+    const pageSize = Math.max(1, Math.min(args.pageSize ?? 100, 500));
+
+    let offset = 0;
+    let totalFetched = 0;
+    let synced = 0;
+    let errors = 0;
+
+    while (true) {
+      const page = await clerk.organizations.getOrganizationList({
+        limit: pageSize,
+        offset,
+      });
+
+      if (page.data.length === 0) break;
+
+      for (const org of page.data) {
+        totalFetched++;
+        try {
+          await ctx.runMutation(api.clerk_webhooks.syncOrganization, {
+            clerkId: org.id,
+            name: org.name,
+            slug: org.slug ?? undefined,
+            logo: org.imageUrl ?? undefined,
+          });
+          synced++;
+        } catch (error) {
+          errors++;
+          console.error("[syncOrganizationsFromClerkToConvex] Failed to sync org", {
+            clerkOrgId: org.id,
+            name: org.name,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      offset += page.data.length;
+      if (offset >= page.totalCount) break;
+    }
+
+    const result = { totalFetched, synced, errors };
+    console.warn("[syncOrganizationsFromClerkToConvex] complete", result);
+    return result;
+  },
+});
+
+/**
+ * Sync all Clerk organization memberships into Convex.
+ * Iterates every org, fetches its members, and upserts memberships.
+ * Must run AFTER users and organizations are synced.
+ */
+export const syncMembershipsFromClerkToConvex = internalAction({
+  args: {
+    pageSize: v.optional(v.number()),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ orgsProcessed: number; membershipsSync: number; errors: number }> => {
+    const clerk = getClerkClient();
+    const pageSize = Math.max(1, Math.min(args.pageSize ?? 100, 500));
+
+    let orgsProcessed = 0;
+    let membershipsSync = 0;
+    let errors = 0;
+
+    // Iterate all orgs
+    let orgOffset = 0;
+    while (true) {
+      const orgsPage = await clerk.organizations.getOrganizationList({
+        limit: pageSize,
+        offset: orgOffset,
+      });
+
+      if (orgsPage.data.length === 0) break;
+
+      for (const org of orgsPage.data) {
+        orgsProcessed++;
+
+        // Fetch members for this org
+        let memberOffset = 0;
+        while (true) {
+          const membersPage = await clerk.organizations.getOrganizationMembershipList({
+            organizationId: org.id,
+            limit: pageSize,
+            offset: memberOffset,
+          });
+
+          if (membersPage.data.length === 0) break;
+
+          for (const membership of membersPage.data) {
+            const userId = membership.publicUserData?.userId;
+            if (!userId) continue;
+
+            try {
+              await ctx.runMutation(api.clerk_webhooks.syncOrganizationMembership, {
+                userClerkId: userId,
+                organizationClerkId: org.id,
+                role: membership.role,
+              });
+              membershipsSync++;
+            } catch (error) {
+              errors++;
+              console.error("[syncMembershipsFromClerkToConvex] Failed to sync membership", {
+                clerkOrgId: org.id,
+                clerkUserId: userId,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
+          }
+
+          memberOffset += membersPage.data.length;
+          if (memberOffset >= membersPage.totalCount) break;
+        }
+      }
+
+      orgOffset += orgsPage.data.length;
+      if (orgOffset >= orgsPage.totalCount) break;
+    }
+
+    const result = { orgsProcessed, membershipsSync, errors };
+    console.warn("[syncMembershipsFromClerkToConvex] complete", result);
+    return result;
+  },
+});
+
+/**
+ * Full Clerk sync: users, then organizations, then memberships.
+ *
+ * Usage:
+ *   bunx convex run sync_external_data:syncAllClerkToConvex
+ */
+export const syncAllClerkToConvex = internalAction({
+  args: {
+    pageSize: v.optional(v.number()),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    users: ClerkUserSyncResult;
+    orgs: { totalFetched: number; synced: number; errors: number };
+    memberships: { orgsProcessed: number; membershipsSync: number; errors: number };
+  }> => {
+    const users = await ctx.runAction(internal.sync_external_data.syncUsersFromClerkToConvex, {
+      pageSize: args.pageSize,
+    });
+
+    const orgs = await ctx.runAction(
+      internal.sync_external_data.syncOrganizationsFromClerkToConvex,
+      { pageSize: args.pageSize },
+    );
+
+    const memberships = await ctx.runAction(
+      internal.sync_external_data.syncMembershipsFromClerkToConvex,
+      { pageSize: args.pageSize },
+    );
+
+    const result = { users, orgs, memberships };
+    console.warn("[syncAllClerkToConvex] complete", result);
+    return result;
+  },
+});
+
 async function findStripeCustomerByMetadata(
   stripe: Stripe,
   userId: string,

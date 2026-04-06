@@ -89,7 +89,7 @@ bun run build
 bun run lint
 bun run format
 bun run typecheck
-bun run static-analysis
+bun run verify
 bun run test
 
 bunx turbo run test --filter=@seal/backend

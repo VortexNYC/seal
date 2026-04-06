@@ -13,6 +13,10 @@ Create small, logical git commits from the current changes.
 - Write specific commit messages that describe what changed and why.
 - Review the working tree before committing.
 - Do not commit local workarounds, debug code, or temporary scaffolding.
+- Load and follow the repo's `AGENTS.md` before staging or pushing.
+- Never commit secrets or `.env*` files.
+- If a change depends on regenerated Convex output under `apps/backend/convex/_generated/`, include that generated output in the same logical commit.
+- Never force-push or force-with-lease unless the user explicitly approves it in the current thread.
 
 ## Review for bad commit content
 
@@ -27,14 +31,16 @@ Before proposing commits, scan modified files for:
 
 ## Process
 
-1. Run `git status` to inspect the working tree.
-2. Run `git diff` and any targeted diffs needed to understand the changes.
-3. Group changes by logical area such as feature, fix, test, docs, or config.
-4. Propose a commit plan with one line per commit using `type(scope): message`.
-5. Present the plan to the user for approval before committing.
-6. After approval, execute the commits one by one with focused staging.
-7. Show the resulting recent commit log.
-8. Ask whether the user wants to push the commits.
+1. Read `AGENTS.md` and note any repo-specific commit constraints before touching git state.
+2. Run `git status` to inspect the working tree.
+3. Run `git diff` and any targeted diffs needed to understand the changes.
+4. Scan the staged and unstaged files for generated artifacts, secrets, or temporary code that should be excluded or paired with source changes.
+5. Group changes by logical area such as feature, fix, test, docs, or config.
+6. Propose a commit plan with one line per commit using `type(scope): message`.
+7. Present the plan to the user for approval before committing, unless the user has already explicitly asked you to go ahead and commit.
+8. After approval, execute the commits one by one with focused staging.
+9. Show the resulting recent commit log.
+10. Ask whether the user wants to push the commits.
 
 ## Commit message format
 
@@ -64,3 +70,4 @@ Report:
 - any suspicious temporary code you removed or flagged
 - the final commit hashes and subjects if commits were created
 - whether the branch is ready to push
+- any repo-specific staging or push constraints that still apply

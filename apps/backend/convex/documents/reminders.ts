@@ -153,10 +153,12 @@ export const sendBulkReminder = authMutation({
 
       reminderIds.push(reminderId);
 
-      // Schedule sending
-      await ctx.scheduler.runAfter(0, internal.documents?.reminders.processReminder, {
-        reminderId,
-      });
+      // Stagger sends by 250ms each to stay under Resend's 5 req/s limit
+      await ctx.scheduler.runAfter(
+        reminderIds.length * 250,
+        internal.documents?.reminders.processReminder,
+        { reminderId },
+      );
     }
 
     return {

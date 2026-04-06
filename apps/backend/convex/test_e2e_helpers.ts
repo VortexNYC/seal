@@ -99,11 +99,19 @@ export const seedProSubscriptionForE2E = mutation({
     }
 
     // Idempotency check — product/price are always ensured above regardless
-    const existing = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_organization_id", (q) => q.eq("organizationId", org._id))
-      .filter((q) => q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "trialing")))
-      .first();
+    const existing =
+      (await ctx.db
+        .query("subscriptions")
+        .withIndex("by_organization_status", (q) =>
+          q.eq("organizationId", org._id).eq("status", "active"),
+        )
+        .first()) ??
+      (await ctx.db
+        .query("subscriptions")
+        .withIndex("by_organization_status", (q) =>
+          q.eq("organizationId", org._id).eq("status", "trialing"),
+        )
+        .first());
 
     if (existing) return { seeded: false, reason: "subscription_already_active" };
 
@@ -279,11 +287,19 @@ export const seedProSubscription = internalMutation({
   },
   handler: async (ctx, { organizationId }) => {
     // Check if org already has an active subscription
-    const existing = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
-      .filter((q) => q.or(q.eq(q.field("status"), "active"), q.eq(q.field("status"), "trialing")))
-      .first();
+    const existing =
+      (await ctx.db
+        .query("subscriptions")
+        .withIndex("by_organization_status", (q) =>
+          q.eq("organizationId", organizationId).eq("status", "active"),
+        )
+        .first()) ??
+      (await ctx.db
+        .query("subscriptions")
+        .withIndex("by_organization_status", (q) =>
+          q.eq("organizationId", organizationId).eq("status", "trialing"),
+        )
+        .first());
 
     if (existing) return { seeded: false, reason: "subscription_already_active" };
 

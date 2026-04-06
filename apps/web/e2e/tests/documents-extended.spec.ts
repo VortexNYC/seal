@@ -43,10 +43,10 @@ async function createAndOpenDocument(
   // Fallback: UI path
   const documentsPage = new DocumentsListPage(authenticatedPage);
   await documentsPage.goto(organizationSlug);
-  const documentName = await documentsPage.createDocument(testData.samplePdfPath);
-  await documentsPage.openDocument(documentName);
+  const uploadedDocumentName = await documentsPage.createDocument(testData.samplePdfPath);
+  await documentsPage.openDocument(uploadedDocumentName);
   await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-  return { id: null, name: documentName };
+  return { id: null, name: uploadedDocumentName };
 }
 
 async function deleteDocument(

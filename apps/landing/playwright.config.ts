@@ -1,4 +1,29 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { defineConfig, devices } from "@playwright/test";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+for (const envFile of [".env.local", ".env"]) {
+  const envPath = path.resolve(__dirname, envFile);
+  if (!fs.existsSync(envPath)) continue;
+
+  for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith("#")) continue;
+
+    const separatorIndex = trimmedLine.indexOf("=");
+    if (separatorIndex === -1) continue;
+
+    const key = trimmedLine.slice(0, separatorIndex).trim();
+    const value = trimmedLine.slice(separatorIndex + 1).trim();
+    if (!process.env[key]) {
+      process.env[key] = value;
+    }
+  }
+}
 
 export default defineConfig({
   testDir: "./e2e/tests",
@@ -14,7 +39,7 @@ export default defineConfig({
   ],
   use: {
     actionTimeout: 15000,
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3001",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5181",
     navigationTimeout: 30000,
     screenshot: "only-on-failure",
     trace: "on-first-retry",
@@ -53,8 +78,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "bun run build && PORT=3001 bun run start",
-    url: "http://localhost:3001",
+    command: "bun run build && PORT=5181 bun run start",
+    url: "http://localhost:5181",
     reuseExistingServer: false,
     stdout: "ignore",
     stderr: "pipe",

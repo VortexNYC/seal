@@ -240,7 +240,7 @@ export const handleSubscriptionUpdated = internalMutation({
       subscription.status === "incomplete_expired" ||
       subscription.status === "unpaid";
 
-    if (wasActive && isNowInactive) {
+    if (wasActive && isNowInactive && existingSubscription.organizationId) {
       await ctx.scheduler.runAfter(0, internal.webhooks.delivery.abandonPendingDeliveriesForOrg, {
         organizationId: existingSubscription.organizationId,
       });
@@ -318,22 +318,24 @@ export const handleSubscriptionDeleted = internalMutation({
     });
 
     // Downgrade cascade: abandon pending webhook deliveries
-    await ctx.scheduler.runAfter(0, internal.webhooks.delivery.abandonPendingDeliveriesForOrg, {
-      organizationId: existingSubscription.organizationId,
-    });
-    console.warn(
-      JSON.stringify({
-        topic: "subscription_lifecycle",
-        event: "downgrade_cascade_triggered",
-        operation: "handleSubscriptionDeleted",
+    if (existingSubscription.organizationId) {
+      await ctx.scheduler.runAfter(0, internal.webhooks.delivery.abandonPendingDeliveriesForOrg, {
         organizationId: existingSubscription.organizationId,
-        stripeSubscriptionId: subscription.id,
-        customerId: subscription.customer,
-        previousStatus: existingSubscription.status,
-        cancelReason: subscription.cancelReason,
-        timestamp: now,
-      }),
-    );
+      });
+      console.warn(
+        JSON.stringify({
+          topic: "subscription_lifecycle",
+          event: "downgrade_cascade_triggered",
+          operation: "handleSubscriptionDeleted",
+          organizationId: existingSubscription.organizationId,
+          stripeSubscriptionId: subscription.id,
+          customerId: subscription.customer,
+          previousStatus: existingSubscription.status,
+          cancelReason: subscription.cancelReason,
+          timestamp: now,
+        }),
+      );
+    }
 
     console.warn(
       JSON.stringify({

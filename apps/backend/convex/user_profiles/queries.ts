@@ -119,10 +119,12 @@ export const getUsageStatistics = authQuery({
     const organizationId = ctx.auth.organization._id;
     const subscription = await ctx.db
       .query("subscriptions")
-      .withIndex("by_organization_id", (q) => q.eq("organizationId", organizationId))
+      .withIndex("by_organization_status", (q) =>
+        q.eq("organizationId", organizationId).eq("status", "active"),
+      )
       .first();
 
-    const isPro = subscription?.status === "active";
+    const isPro = !!subscription;
 
     // Plan limits
     const limits = {

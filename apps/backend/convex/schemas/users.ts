@@ -27,6 +27,10 @@ export const usersTable = defineTable({
   // Super admin flag (bypasses all organization permissions)
   isSuperAdmin: v.optional(v.boolean()),
 
+  // Legacy field — Stripe customer ID was moved to organizations table.
+  // TODO: Remove after migration clears this from existing user documents.
+  stripeCustomerId: v.optional(v.string()),
+
   // Onboarding tracking
   onboardingCompleted: v.optional(v.boolean()),
   onboardingCompletedAt: v.optional(v.number()),

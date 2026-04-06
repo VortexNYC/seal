@@ -1,6 +1,7 @@
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
 import { ConvexQueryClient } from "@convex-dev/react-query";
+import { api } from "@seal/backend/convex/_generated/api";
 import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
@@ -47,13 +48,7 @@ const shouldExposeConvexApi =
 
 if (shouldExposeConvexApi) {
   (window as Window & { __convexClient?: typeof convex }).__convexClient = convex;
-  import("@seal/backend/convex/_generated/api")
-    .then((apiModule) => {
-      (window as Window & { __convexApi?: typeof apiModule.api }).__convexApi = apiModule.api;
-    })
-    .catch((error) => {
-      console.error("[E2E] Failed to load Convex API:", error);
-    });
+  (window as Window & { __convexApi?: typeof api }).__convexApi = api;
 }
 
 const queryClient = new QueryClient({

@@ -11,7 +11,7 @@ const siteConfig = {
   tagline: "Document Signatures Made Simple",
   description:
     "Sign, send, and manage documents securely. A modern platform for digital signatures and workflow management.",
-  url: import.meta.env.VITE_APP_URL || "https://seal.co",
+  url: import.meta.env.VITE_APP_URL || "https://app.seal.nyc",
   ogImage: "/favicon/og-image.png",
   twitterHandle: "@sealhq",
   locale: "en_US",

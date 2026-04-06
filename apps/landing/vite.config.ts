@@ -7,7 +7,6 @@ import viteReact from "@vitejs/plugin-react";
 import mdx from "fumadocs-mdx/vite";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
-import tsConfigPaths from "vite-tsconfig-paths";
 
 import * as SourceConfig from "./source.config";
 import { searchIndexPlugin } from "./src/plugins/search-index";
@@ -23,6 +22,13 @@ function getManualChunkName(id: string): string | undefined {
     return undefined;
   }
 
+  // Never reassign CSS files — Rolldown's CSS module codegen breaks when CSS
+  // imports are forced into a different chunk (generates `style_exports` before
+  // the variable is declared).
+  if (id.endsWith(".css")) {
+    return undefined;
+  }
+
   if (
     matchesPackage(id, "fumadocs-core") ||
     matchesPackage(id, "fumadocs-mdx") ||
@@ -34,12 +40,24 @@ function getManualChunkName(id: string): string | undefined {
     return "vendor-docs";
   }
 
+  if (matchesPackage(id, "@scalar") || matchesPackage(id, "scalar")) {
+    return "vendor-api-ref";
+  }
+
+  if (matchesPackage(id, "motion") || matchesPackage(id, "framer-motion")) {
+    return "vendor-motion";
+  }
+
+  if (matchesPackage(id, "@clerk") || matchesPackage(id, "posthog")) {
+    return "vendor-services";
+  }
+
   return undefined;
 }
 
 export default defineConfig(async ({ command }) => ({
   server: {
-    port: 3001,
+    port: 5181,
     proxy: {
       "/ingest/static": {
         target: "https://us-assets.i.posthog.com",
@@ -68,9 +86,6 @@ export default defineConfig(async ({ command }) => ({
     },
     await mdx(SourceConfig, { updateViteConfig: true }),
     searchIndexPlugin(),
-    tsConfigPaths({
-      projects: ["./tsconfig.json"],
-    }),
     tailwindcss(),
     tanstackStart({
       srcDirectory: "src",
@@ -82,39 +97,44 @@ export default defineConfig(async ({ command }) => ({
   ],
 
   resolve: {
+    tsconfigPaths: true,
     alias: {
       "fumadocs-mdx:collections/server": path.resolve(import.meta.dirname, "./.source/server.ts"),
       "fumadocs-mdx:collections/browser": path.resolve(import.meta.dirname, "./.source/browser.ts"),
       "fumadocs-mdx:collections/dynamic": path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
+      // Force ESM entry — Rolldown's CJS interop generates a broken destructure
+      // (`__toESM$1(...).default` → undefined) when tslib's CJS build is bundled
+      // into SSR chunks as a transitive dependency of fumadocs/shiki.
+      tslib: require.resolve("tslib/tslib.es6.mjs"),
     },
   },
 
-  // Prevent Fumadocs packages from being externalized during SSR.
-  // This avoids React context errors and hydration mismatches.
+  // Bundle these packages into SSR chunks instead of leaving them as external
+  // runtime imports. This is required because:
+  // - fumadocs-*: avoids React context errors and hydration mismatches
+  // - tslib: the resolve alias rewrites it to ESM, but Nitro's external _libs/
+  //   chunks resolve tslib via Node's exports map to modules/index.js which
+  //   Nitro doesn't copy to .output
+  // - @radix-ui/*: depends on tslib at runtime — bundling inlines the aliased
+  //   ESM version instead of leaving broken external imports
   ssr: {
-    noExternal: ["fumadocs-core", "fumadocs-ui"],
+    noExternal: ["fumadocs-core", "fumadocs-ui", "tslib", /^@radix-ui\//],
   },
 
   // Polyfill node:path → path-browserify only during browser dep pre-bundling.
   // fumadocs-core/source uses path.join/dirname which don't exist in browsers.
   optimizeDeps: {
-    esbuildOptions: {
-      plugins: [
-        {
-          name: "polyfill-node-path",
-          setup(build: {
-            onResolve: (opts: { filter: RegExp }, cb: () => { path: string }) => void;
-          }) {
-            build.onResolve({ filter: /^node:path$/ }, () => ({
-              path: require.resolve("path-browserify"),
-            }));
-          },
+    rolldownOptions: {
+      resolve: {
+        alias: {
+          "node:path": require.resolve("path-browserify"),
         },
-      ],
+      },
     },
   },
 
   build: {
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
         manualChunks(id: string) {

@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-const APP_URL = "https://app.seal.co";
+const APP_URL = process.env.VITE_APP_URL || "https://app.seal.nyc";
 
 export class HomePage {
   readonly page: Page;
