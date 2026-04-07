@@ -92,6 +92,7 @@ import { subscriptionsTable } from "./schemas/subscriptions";
 import { type TemplateStatus, templateFieldsTable, templatesTable } from "./schemas/templates";
 import { userProfilesTable } from "./schemas/user_profiles";
 import { type UserStatus, usersTable } from "./schemas/users";
+import { waitlistEntriesTable } from "./schemas/waitlist_entries";
 import {
   type WebhookDeliveryStatus,
   type WebhookEndpointStatus,
@@ -99,7 +100,6 @@ import {
   webhookDeliveries,
   webhookEndpoints,
 } from "./schemas/webhooks";
-import { waitlistEntriesTable } from "./schemas/waitlist_entries";
 
 // Re-export types for use in other files
 export type MemberStatus = UserStatus; // Member status uses the same values as user status

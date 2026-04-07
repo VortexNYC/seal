@@ -43,8 +43,7 @@ export const pageSEO: Record<string, PageSEO> = {
   },
   waitlist: {
     title: "Join the Waitlist - Seal",
-    description:
-      "Join the Seal waitlist to get early access when we open invitations.",
+    description: "Join the Seal waitlist to get early access when we open invitations.",
     noIndex: true,
   },
   signUp: {

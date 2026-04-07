@@ -9,8 +9,8 @@ import { v } from "convex/values";
 import { Resend } from "resend";
 
 import { internalAction } from "../_generated/server";
-import { resendComponent } from "../emails/resend_component";
 import { sendTeamInvitation, sendWelcome } from "../documents/email";
+import { resendComponent } from "../emails/resend_component";
 
 /**
  * Send welcome email to new user
@@ -76,7 +76,8 @@ export const sendTeamInvitationEmail = internalAction({
     error?: string;
   }> => {
     const inviteUrl =
-      args.inviteUrl || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180"}/accept-invite`;
+      args.inviteUrl ||
+      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:5180"}/accept-invite`;
 
     const result = await sendTeamInvitation(ctx, {
       to: args.inviteeEmail,

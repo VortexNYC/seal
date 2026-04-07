@@ -743,7 +743,12 @@ export const upsertWaitlistEntry = internalMutation({
   args: {
     clerkId: v.string(),
     emailAddress: v.string(),
-    status: v.union(v.literal("pending"), v.literal("invited"), v.literal("completed"), v.literal("rejected")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("invited"),
+      v.literal("completed"),
+      v.literal("rejected"),
+    ),
     isLocked: v.boolean(),
     inviteUrl: v.optional(v.string()),
     invitationStatus: v.optional(v.string()),
@@ -773,15 +778,15 @@ export const upsertWaitlistEntry = internalMutation({
       updatedAt: args.updatedAt,
       invitedAt:
         args.status === "invited"
-          ? existingEntry?.invitedAt ?? args.updatedAt
+          ? (existingEntry?.invitedAt ?? args.updatedAt)
           : existingEntry?.invitedAt,
       completedAt:
         args.status === "completed"
-          ? existingEntry?.completedAt ?? args.updatedAt
+          ? (existingEntry?.completedAt ?? args.updatedAt)
           : existingEntry?.completedAt,
       rejectedAt:
         args.status === "rejected"
-          ? existingEntry?.rejectedAt ?? args.updatedAt
+          ? (existingEntry?.rejectedAt ?? args.updatedAt)
           : existingEntry?.rejectedAt,
     };
 
@@ -795,16 +800,20 @@ export const upsertWaitlistEntry = internalMutation({
       previousStatus !== args.status && args.status !== "pending" && normalizedEmail.length > 0;
 
     if (shouldNotify) {
-      await ctx.scheduler.runAfter(0, internal.emails.user_email_actions.sendWaitlistNotificationEmail, {
-        emailAddress: normalizedEmail,
-        status: args.status,
-        waitlistEntryId: args.clerkId,
-        inviteUrl: args.inviteUrl,
-        invitationStatus: args.invitationStatus,
-        invitationCreatedAt: args.invitationCreatedAt,
-        invitationUpdatedAt: args.invitationUpdatedAt,
-        updatedAt: args.updatedAt,
-      });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.emails.user_email_actions.sendWaitlistNotificationEmail,
+        {
+          emailAddress: normalizedEmail,
+          status: args.status,
+          waitlistEntryId: args.clerkId,
+          inviteUrl: args.inviteUrl,
+          invitationStatus: args.invitationStatus,
+          invitationCreatedAt: args.invitationCreatedAt,
+          invitationUpdatedAt: args.invitationUpdatedAt,
+          updatedAt: args.updatedAt,
+        },
+      );
     }
 
     return { created: !existingEntry, updated: Boolean(existingEntry) };
