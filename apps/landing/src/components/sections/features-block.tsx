@@ -1,6 +1,6 @@
 import { ArrowRight, Check, Circle, CreditCard, FileText } from "lucide-react";
 import type { ReactElement } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { FadeIn } from "~/components/ui/fade-in";
 import type { FeaturesSectionBlock } from "~/lib/content/types";
 
@@ -512,7 +512,7 @@ function PaymentsMockup() {
       </div>
 
       <div className="border-border flex items-center justify-between border-t px-5 py-3">
-        <span className="text-muted-foreground text-xs">Powered by Stripe · Auto-invoice</span>
+        <span className="text-muted-foreground text-xs">Auto-invoiced on completion</span>
         <span className="bg-primary text-primary-foreground inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium">
           View invoice <ArrowRight aria-hidden="true" className="size-3" />
         </span>
@@ -534,47 +534,47 @@ interface FeatureSection {
 
 const featureSections: FeatureSection[] = [
   {
-    number: "01",
+    number: "",
     eyebrow: "AI REVIEW",
-    headline: "AI that actually reads your contracts.",
+    headline: "Like having a legal assistant review every clause.",
     description:
-      "Most e-signature tools are glorified PDFs. Seal's AI reviews every clause before a single signature is collected — catching issues your lawyer would bill $800/hr to find.",
+      "Seal reads your agreements before anyone signs — catching non-standard terms, missing signature blocks, and risky language. Think of it as your in-house counsel, without the hourly rate.",
     bullets: [
-      "Missing signature blocks",
-      "Non-standard liquidation terms",
-      "Ambiguous jurisdiction clauses",
+      "Redline suggestions on non-standard clauses",
+      "Missing signature block detection",
+      "Jurisdiction and enforceability flags",
     ],
     mockup: AiReviewMockup,
   },
   {
-    number: "02",
+    number: "",
     eyebrow: "SIGNING",
-    headline: "Sign in under 60 seconds.",
+    headline: "Upload your documents.",
     description:
-      "No app to download. No account required. Signers get a link, sign on any device, and you get a legally binding document — ESIGN Act compliant with a full tamper-evident audit certificate.",
+      "Upload a document and AI automatically detects and places every field. Recipients get a link — no app, no account required.",
     bullets: [
-      "No account required for recipients",
-      "ESIGN & UETA compliant by default",
-      "SHA-256 audit certificate on completion",
+      "ESIGN & UETA compliant",
+      "Tamper-evident SHA-256 audit certificate",
+      "Full activity log — IP, device, and timestamp on every event",
     ],
     reversed: true,
     mockup: SigningMockup,
   },
   {
-    number: "03",
+    number: "",
     eyebrow: "PAYMENTS",
     headline: "Collect payment the moment they sign.",
     description:
-      "Don't chase invoices. Seal lets you attach a payment to any document — one-time, recurring, or installment. The moment a signer completes the document, payment is collected automatically.",
+      "Attach a payment to any document — one-time, recurring, or installment. The moment the document is signed, payment is collected. No chasing invoices.",
     bullets: [
       "One-time, subscription, and installment billing",
-      "Auto-generated Stripe invoices on completion",
+      "Auto-generated invoices on completion",
       "No separate billing tool required",
     ],
     mockup: PaymentsMockup,
   },
   {
-    number: "04",
+    number: "",
     eyebrow: "DEVELOPER API",
     headline: "Built for developers from day one.",
     description:
@@ -591,35 +591,21 @@ const featureSections: FeatureSection[] = [
 
 export function StaticFeatures() {
   return (
-    <section className="px-6 pt-12 pb-32 sm:pt-16 sm:pb-40" id="features">
+    <section className="px-6 pt-32 pb-32 sm:pt-40 sm:pb-40" id="features">
       <div className="mx-auto max-w-6xl">
-        {/* Section header */}
-        <FadeIn>
-          <div className="mb-24 max-w-2xl">
-            <p className="text-primary mb-4 text-sm font-semibold tracking-wider uppercase">
-              What Seal does
-            </p>
-            <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
-              The old tools built e-signatures.{" "}
-              <span className="text-primary italic">We built a document engine.</span>
-            </h2>
-          </div>
-        </FadeIn>
-
-        {/* Feature sections */}
         <div className="space-y-32">
           {featureSections.map((section) => (
             <div
               className={`grid items-center gap-12 lg:grid-cols-2 lg:gap-16 ${
                 section.reversed ? "lg:[&>*:first-child]:order-2" : ""
               }`}
-              key={section.number}
+              key={section.eyebrow}
             >
               {/* Copy */}
               <FadeIn>
                 <div>
                   <p className="text-muted-foreground mb-3 text-xs font-medium tracking-[0.15em] uppercase">
-                    {section.number} — {section.eyebrow}
+                    {section.eyebrow}
                   </p>
                   <h3 className="text-foreground font-serif text-3xl tracking-tight sm:text-4xl">
                     {section.headline}

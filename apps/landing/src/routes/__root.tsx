@@ -42,7 +42,7 @@ const softwareSchema = {
 
 // Static inline script to detect system dark mode preference before first paint.
 // This prevents a flash of wrong theme. The string is a hardcoded constant — no user input.
-const THEME_DETECTION_SCRIPT = `(function(){try{var d=document.documentElement;var m=window.matchMedia('(prefers-color-scheme:dark)');if(m.matches)d.classList.add('dark');m.addEventListener('change',function(e){e.matches?d.classList.add('dark'):d.classList.remove('dark');})}catch(e){}})()`;
+const THEME_DETECTION_SCRIPT = `(function(){try{var d=document.documentElement;var s=localStorage.getItem('theme');if(s==='dark'){d.classList.add('dark');}else if(s==='light'){d.classList.remove('dark');}else{var m=window.matchMedia('(prefers-color-scheme:dark)');if(m.matches)d.classList.add('dark');m.addEventListener('change',function(e){if(!localStorage.getItem('theme')){e.matches?d.classList.add('dark'):d.classList.remove('dark');}});}}catch(e){}})()`;
 
 export const Route = createRootRoute({
   head: () => ({
@@ -119,7 +119,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { pathname } = useLocation();
-  const isFullscreen = pathname.startsWith("/docs") || pathname.startsWith("/api-reference");
+  const isFullscreen = pathname.startsWith("/docs") || pathname.startsWith("/developer");
 
   useEffect(() => {
     initPostHog();
@@ -130,7 +130,7 @@ function RootComponent() {
       {isFullscreen ? (
         <Outlet />
       ) : (
-        <div className="relative flex min-h-dvh flex-col">
+        <div className="relative flex min-h-dvh flex-col overflow-x-hidden">
           <Navbar />
           <main className="flex-1">
             <Outlet />

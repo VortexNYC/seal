@@ -1,0 +1,353 @@
+---
+title: Webhooks API
+description: Configure webhook endpoints for real-time event notifications
+---
+
+# Webhooks API
+
+The Webhooks API allows you to configure HTTP endpoints that receive real-time notifications when events occur in your Seal account. Webhooks enable you to build reactive integrations that respond immediately to document lifecycle events.
+
+## The Webhook Object
+
+### Attributes
+
+| Attribute       | Type   | Description                                                                 |
+| --------------- | ------ | --------------------------------------------------------------------------- |
+| `id`            | string | Unique webhook identifier                                                   |
+| `name`          | string | Human-readable label for this endpoint                                      |
+| `url`           | string | HTTPS endpoint URL                                                          |
+| `events`        | array  | Array of subscribed event types                                             |
+| `status`        | string | Status: `active`, `paused`, `disabled`                                      |
+| `secret_prefix` | string | First 12 characters of the HMAC secret (full secret shown once at creation) |
+| `description`   | string | Optional description                                                        |
+| `stats`         | object | Delivery stats: `total_deliveries`, `successful`, `failed`, `success_rate`  |
+| `created_at`    | string | ISO 8601 creation timestamp                                                 |
+| `updated_at`    | string | ISO 8601 last update timestamp                                              |
+
+### Example Object
+
+```json
+{
+  "id": "wh_abc123",
+  "name": "Production webhook",
+  "url": "https://api.example.com/webhooks/seal",
+  "events": ["document.sent", "recipient.signed", "document.completed"],
+  "status": "active",
+  "secret_prefix": "whsec_ac7Ng4",
+  "description": "Notifies our CRM on document events",
+  "stats": {
+    "total_deliveries": 42,
+    "successful": 41,
+    "failed": 1,
+    "success_rate": 97
+  },
+  "created_at": "2024-01-15T10:00:00Z",
+  "updated_at": "2024-01-27T11:00:00Z"
+}
+```
+
+<Callout type="info">
+  **Security**: The full HMAC secret (`whsec_...`) is only returned once, at creation time.
+  Subsequent reads show only `secret_prefix` (the first 12 characters) for identification. Store the
+  secret securely — if lost, use the rotate-secret endpoint to generate a new one.
+</Callout>
+
+## List Webhooks
+
+Retrieve all webhook endpoints for your organization.
+
+### Endpoint
+
+```
+GET /api/v1/webhooks
+```
+
+### Required Scope
+
+`seal:webhooks:manage`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/webhooks", {
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
+
+const webhooks = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET https://seal.convex.site/api/v1/webhooks \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+## Get Webhook
+
+Retrieve a single webhook by ID.
+
+### Endpoint
+
+```
+GET /api/v1/webhooks/get?id={id}
+```
+
+### Required Scope
+
+`seal:webhooks:manage`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/webhooks/get?id=wh_abc123", {
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
+
+const webhook = await response.json();
+```
+
+## Create Webhook
+
+Create a new webhook endpoint.
+
+### Endpoint
+
+```
+POST /api/v1/webhooks
+```
+
+### Required Scope
+
+`seal:webhooks:manage`
+
+### Request Body
+
+| Field         | Type   | Required | Description                          |
+| ------------- | ------ | -------- | ------------------------------------ |
+| `name`        | string | Yes      | Webhook name                         |
+| `url`         | string | Yes      | HTTPS endpoint URL                   |
+| `events`      | array  | Yes      | Array of event types to subscribe to |
+| `description` | string | No       | Webhook description                  |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/webhooks", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    url: "https://api.example.com/webhooks/seal",
+    events: ["document.sent", "recipient.signed", "document.completed"],
+    description: "Production webhook endpoint",
+  }),
+});
+
+const webhook = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X POST https://seal.convex.site/api/v1/webhooks \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://api.example.com/webhooks/seal",
+    "events": ["document.sent", "recipient.signed", "document.completed"]
+  }'
+```
+
+### Response
+
+```json
+{
+  "id": "wh_abc123",
+  "url": "https://api.example.com/webhooks/seal",
+  "events": ["document.sent", "recipient.signed", "document.completed"],
+  "status": "active",
+  "secret": "whsec_abc123xyz",
+  "created_at": "2024-01-27T15:00:00Z"
+}
+```
+
+<Callout type="warn">
+  **Important**: Save the `secret` value securely. It's only shown once during creation and is
+  required for verifying webhook signatures.
+</Callout>
+
+## Update Webhook
+
+Update a webhook's configuration.
+
+### Endpoint
+
+```
+PUT /api/v1/webhooks/update?id={id}
+```
+
+### Required Scope
+
+`seal:webhooks:manage`
+
+### Request Body
+
+| Field    | Type   | Description                    |
+| -------- | ------ | ------------------------------ |
+| `url`    | string | New endpoint URL               |
+| `events` | array  | New event subscriptions        |
+| `status` | string | New status: `active`, `paused` |
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/webhooks/update?id=wh_abc123", {
+  method: "PUT",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    events: ["document.sent", "document.completed", "recipient.signed"],
+    status: "active",
+  }),
+});
+```
+
+## Delete Webhook
+
+Permanently delete a webhook endpoint.
+
+### Endpoint
+
+```
+DELETE /api/v1/webhooks/delete?id={id}
+```
+
+### Required Scope
+
+`seal:webhooks:manage`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/webhooks/delete?id=wh_abc123", {
+  method: "DELETE",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
+
+const result = await response.json();
+// Returns { "deleted": true } with 200 status
+```
+
+## Rotate Secret
+
+Generate a new webhook secret for signature verification.
+
+### Endpoint
+
+```
+POST /api/v1/webhooks/rotate-secret?id={id}
+```
+
+### Required Scope
+
+`seal:webhooks:manage`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/webhooks/rotate-secret?id=wh_abc123",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const { secret } = await response.json();
+```
+
+### Response
+
+```json
+{
+  "id": "wh_abc123",
+  "secret": "whsec_new_secret_xyz",
+  "rotated_at": "2024-01-27T16:00:00Z"
+}
+```
+
+<Callout type="info">
+  **Best Practice**: Rotate webhook secrets periodically (every 90 days) and immediately if you
+  suspect compromise.
+</Callout>
+
+## Get Event Types
+
+Retrieve all available webhook event types.
+
+### Endpoint
+
+```
+GET /api/v1/webhooks/event-types
+```
+
+### Required Scope
+
+`seal:webhooks:manage`
+
+## Available Event Types
+
+See the [Webhooks Guide](/developer/webhooks) for the complete list of 17 event types and their payloads.
+
+### Document Events
+
+- `document.created`
+- `document.sent`
+- `document.viewed`
+- `document.completed`
+- `document.voided`
+- `document.expired`
+- `document.declined`
+
+### Recipient Events
+
+- `recipient.added`
+- `recipient.viewed`
+- `recipient.signed`
+- `recipient.approved`
+- `recipient.declined`
+- `recipient.reminded`
+
+### Template Events
+
+- `template.created`
+- `template.updated`
+- `template.used`
+
+## Subscribe to All Events
+
+Pass an empty array to receive every event type:
+
+```json
+{
+  "events": []
+}
+```
+
+## Next Steps
+
+- **[Webhooks Guide](/developer/webhooks)** - Complete webhook setup and verification guide
+- **[Error Handling](/developer/getting-started/error-handling)** - Handle webhook delivery failures

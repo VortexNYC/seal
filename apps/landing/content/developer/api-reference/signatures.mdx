@@ -1,0 +1,306 @@
+---
+title: Signatures API
+description: Verify signatures and access complete audit trails
+---
+
+# Signatures API
+
+The Signatures API provides access to signature verification and audit trail data. Use these endpoints to verify the authenticity of signatures and retrieve detailed signing history.
+
+## The Signature Object
+
+### Attributes
+
+| Attribute        | Type   | Description                          |
+| ---------------- | ------ | ------------------------------------ |
+| `id`             | string | Unique signature identifier          |
+| `document_id`    | string | Associated document ID               |
+| `recipient_id`   | string | Recipient who signed                 |
+| `signer_email`   | string | Email of the signer                  |
+| `signer_name`    | string | Name of the signer                   |
+| `signed_at`      | string | ISO 8601 timestamp when signed       |
+| `ip_address`     | string | IP address used for signing          |
+| `user_agent`     | string | Browser/device information           |
+| `signature_type` | string | Type: `electronic`, `drawn`, `typed` |
+
+### Example Object
+
+```json
+{
+  "id": "sig_abc123",
+  "document_id": "doc_xyz789",
+  "recipient_id": "rec_def456",
+  "signer_email": "john@example.com",
+  "signer_name": "John Doe",
+  "signed_at": "2024-01-27T11:00:00Z",
+  "ip_address": "203.0.113.42",
+  "user_agent": "Mozilla/5.0...",
+  "signature_type": "drawn"
+}
+```
+
+## List Signatures
+
+Retrieve all signatures for a document.
+
+### Endpoint
+
+```
+GET /api/v1/signatures?document_id={documentId}
+```
+
+### Required Scope
+
+`seal:signatures:read`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch("https://seal.convex.site/api/v1/signatures?document_id=doc_xyz789", {
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
+
+const signatures = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET https://seal.convex.site/api/v1/signatures?document_id=doc_xyz789 \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "signatures": [
+    {
+      "id": "sig_abc123",
+      "recipient_id": "rec_def456",
+      "signer_email": "john@example.com",
+      "signer_name": "John Doe",
+      "signed_at": "2024-01-27T11:00:00Z",
+      "signature_type": "drawn"
+    }
+  ]
+}
+```
+
+## Get Signature
+
+Retrieve a single signature by ID.
+
+### Endpoint
+
+```
+GET /api/v1/signatures/get?document_id={documentId}&id={id}
+```
+
+### Required Scope
+
+`seal:signatures:read`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/signatures/get?document_id=doc_xyz789&id=sig_abc123",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const signature = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://seal.convex.site/api/v1/signatures/get?document_id=doc_xyz789&id=sig_abc123" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+## Verify Document
+
+Verify the authenticity and integrity of a signed document.
+
+### Endpoint
+
+```
+GET /api/v1/signatures/verify?document_id={documentId}
+```
+
+### Required Scope
+
+`seal:signatures:read`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/signatures/verify?document_id=doc_xyz789",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const verification = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://seal.convex.site/api/v1/signatures/verify?document_id=doc_xyz789" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "document_id": "doc_xyz789",
+  "verified": true,
+  "completed": true,
+  "signatures_count": 2,
+  "all_signatures_valid": true,
+  "verification_timestamp": "2024-01-27T15:00:00Z",
+  "signatures": [
+    {
+      "id": "sig_abc123",
+      "signer_email": "john@example.com",
+      "signed_at": "2024-01-27T11:00:00Z",
+      "valid": true
+    },
+    {
+      "id": "sig_def456",
+      "signer_email": "jane@example.com",
+      "signed_at": "2024-01-27T12:00:00Z",
+      "valid": true
+    }
+  ]
+}
+```
+
+## Get Audit Trail
+
+Retrieve the complete audit trail for a document.
+
+### Endpoint
+
+```
+GET /api/v1/signatures/audit?document_id={documentId}
+```
+
+### Required Scope
+
+`seal:signatures:read`
+
+### TypeScript Example
+
+```typescript
+const response = await fetch(
+  "https://seal.convex.site/api/v1/signatures/audit?document_id=doc_xyz789",
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const auditTrail = await response.json();
+```
+
+### cURL Example
+
+```bash
+curl -X GET "https://seal.convex.site/api/v1/signatures/audit?document_id=doc_xyz789" \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "document_id": "doc_xyz789",
+  "events": [
+    {
+      "timestamp": "2024-01-27T10:30:00Z",
+      "event_type": "document.created",
+      "actor": "api_key_ak_xxx",
+      "details": {
+        "title": "Service Agreement"
+      }
+    },
+    {
+      "timestamp": "2024-01-27T10:31:00Z",
+      "event_type": "document.sent",
+      "actor": "api_key_ak_xxx",
+      "details": {
+        "recipients_count": 2
+      }
+    },
+    {
+      "timestamp": "2024-01-27T10:45:00Z",
+      "event_type": "recipient.viewed",
+      "actor": "john@example.com",
+      "ip_address": "203.0.113.42",
+      "details": {
+        "recipient_id": "rec_def456"
+      }
+    },
+    {
+      "timestamp": "2024-01-27T11:00:00Z",
+      "event_type": "recipient.signed",
+      "actor": "john@example.com",
+      "ip_address": "203.0.113.42",
+      "details": {
+        "recipient_id": "rec_def456",
+        "signature_id": "sig_abc123"
+      }
+    }
+  ]
+}
+```
+
+## Audit Trail Event Types
+
+| Event Type           | Description                      |
+| -------------------- | -------------------------------- |
+| `document.created`   | Document was created             |
+| `document.sent`      | Document was sent to recipients  |
+| `document.voided`    | Document was cancelled           |
+| `document.completed` | All recipients completed signing |
+| `recipient.added`    | Recipient was added to document  |
+| `recipient.viewed`   | Recipient viewed the document    |
+| `recipient.signed`   | Recipient signed the document    |
+| `recipient.approved` | Recipient approved the document  |
+| `recipient.declined` | Recipient declined to sign       |
+| `recipient.reminded` | Reminder sent to recipient       |
+
+## Signature Verification
+
+All signatures include cryptographic verification data:
+
+- **Timestamp**: Exact time of signing (tamper-proof)
+- **IP Address**: Geographic verification
+- **User Agent**: Device/browser verification
+- **Document Hash**: Ensures document hasn't been modified
+- **Certificate Chain**: Cryptographic proof of authenticity
+
+<Callout type="info">
+  **Legal Validity**: Seal signatures comply with ESIGN Act and eIDAS regulations for electronic
+  signatures. The audit trail provides legally admissible evidence of signing events.
+</Callout>
+
+## Next Steps
+
+- **[Documents API](/developer/api-reference/documents)** - Manage signed documents
+- **[Webhooks](/developer/webhooks)** - Receive real-time signature notifications
+- **[Error Handling](/developer/getting-started/error-handling)** - Handle verification errors

@@ -14,12 +14,13 @@ import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as IntegrationsRouteImport } from './routes/integrations'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as DeveloperRouteImport } from './routes/developer'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as ChangelogRouteImport } from './routes/changelog'
-import { Route as ApiReferenceRouteImport } from './routes/api-reference'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
+import { Route as DeveloperSplatRouteImport } from './routes/developer/$'
 import { Route as ChangelogSlugRouteImport } from './routes/changelog.$slug'
 
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
@@ -47,6 +48,11 @@ const DocsRoute = DocsRouteImport.update({
   path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeveloperRoute = DeveloperRouteImport.update({
+  id: '/developer',
+  path: '/developer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompareRoute = CompareRouteImport.update({
   id: '/compare',
   path: '/compare',
@@ -57,11 +63,6 @@ const ChangelogRoute = ChangelogRouteImport.update({
   path: '/changelog',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiReferenceRoute = ApiReferenceRouteImport.update({
-  id: '/api-reference',
-  path: '/api-reference',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/api-reference.lazy').then((d) => d.Route))
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -77,6 +78,11 @@ const DocsSplatRoute = DocsSplatRouteImport.update({
   path: '/$',
   getParentRoute: () => DocsRoute,
 } as any)
+const DeveloperSplatRoute = DeveloperSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => DeveloperRoute,
+} as any)
 const ChangelogSlugRoute = ChangelogSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -85,44 +91,47 @@ const ChangelogSlugRoute = ChangelogSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/api-reference': typeof ApiReferenceRoute
   '/changelog': typeof ChangelogRouteWithChildren
   '/compare': typeof CompareRoute
+  '/developer': typeof DeveloperRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
   '/integrations': typeof IntegrationsRoute
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
+  '/developer/$': typeof DeveloperSplatRoute
   '/docs/$': typeof DocsSplatRoute
   '/pages/$slug': typeof PagesSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/api-reference': typeof ApiReferenceRoute
   '/changelog': typeof ChangelogRouteWithChildren
   '/compare': typeof CompareRoute
+  '/developer': typeof DeveloperRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
   '/integrations': typeof IntegrationsRoute
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
+  '/developer/$': typeof DeveloperSplatRoute
   '/docs/$': typeof DocsSplatRoute
   '/pages/$slug': typeof PagesSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/api-reference': typeof ApiReferenceRoute
   '/changelog': typeof ChangelogRouteWithChildren
   '/compare': typeof CompareRoute
+  '/developer': typeof DeveloperRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
   '/integrations': typeof IntegrationsRoute
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/changelog/$slug': typeof ChangelogSlugRoute
+  '/developer/$': typeof DeveloperSplatRoute
   '/docs/$': typeof DocsSplatRoute
   '/pages/$slug': typeof PagesSlugRoute
 }
@@ -130,52 +139,55 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/api-reference'
     | '/changelog'
     | '/compare'
+    | '/developer'
     | '/docs'
     | '/integrations'
     | '/pricing'
     | '/privacy-policy'
     | '/terms-of-service'
     | '/changelog/$slug'
+    | '/developer/$'
     | '/docs/$'
     | '/pages/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/api-reference'
     | '/changelog'
     | '/compare'
+    | '/developer'
     | '/docs'
     | '/integrations'
     | '/pricing'
     | '/privacy-policy'
     | '/terms-of-service'
     | '/changelog/$slug'
+    | '/developer/$'
     | '/docs/$'
     | '/pages/$slug'
   id:
     | '__root__'
     | '/'
-    | '/api-reference'
     | '/changelog'
     | '/compare'
+    | '/developer'
     | '/docs'
     | '/integrations'
     | '/pricing'
     | '/privacy-policy'
     | '/terms-of-service'
     | '/changelog/$slug'
+    | '/developer/$'
     | '/docs/$'
     | '/pages/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ApiReferenceRoute: typeof ApiReferenceRoute
   ChangelogRoute: typeof ChangelogRouteWithChildren
   CompareRoute: typeof CompareRoute
+  DeveloperRoute: typeof DeveloperRouteWithChildren
   DocsRoute: typeof DocsRouteWithChildren
   IntegrationsRoute: typeof IntegrationsRoute
   PricingRoute: typeof PricingRoute
@@ -221,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/developer': {
+      id: '/developer'
+      path: '/developer'
+      fullPath: '/developer'
+      preLoaderRoute: typeof DeveloperRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/compare': {
       id: '/compare'
       path: '/compare'
@@ -233,13 +252,6 @@ declare module '@tanstack/react-router' {
       path: '/changelog'
       fullPath: '/changelog'
       preLoaderRoute: typeof ChangelogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api-reference': {
-      id: '/api-reference'
-      path: '/api-reference'
-      fullPath: '/api-reference'
-      preLoaderRoute: typeof ApiReferenceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -263,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsSplatRouteImport
       parentRoute: typeof DocsRoute
     }
+    '/developer/$': {
+      id: '/developer/$'
+      path: '/$'
+      fullPath: '/developer/$'
+      preLoaderRoute: typeof DeveloperSplatRouteImport
+      parentRoute: typeof DeveloperRoute
+    }
     '/changelog/$slug': {
       id: '/changelog/$slug'
       path: '/$slug'
@@ -285,6 +304,18 @@ const ChangelogRouteWithChildren = ChangelogRoute._addFileChildren(
   ChangelogRouteChildren,
 )
 
+interface DeveloperRouteChildren {
+  DeveloperSplatRoute: typeof DeveloperSplatRoute
+}
+
+const DeveloperRouteChildren: DeveloperRouteChildren = {
+  DeveloperSplatRoute: DeveloperSplatRoute,
+}
+
+const DeveloperRouteWithChildren = DeveloperRoute._addFileChildren(
+  DeveloperRouteChildren,
+)
+
 interface DocsRouteChildren {
   DocsSplatRoute: typeof DocsSplatRoute
 }
@@ -297,9 +328,9 @@ const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ApiReferenceRoute: ApiReferenceRoute,
   ChangelogRoute: ChangelogRouteWithChildren,
   CompareRoute: CompareRoute,
+  DeveloperRoute: DeveloperRouteWithChildren,
   DocsRoute: DocsRouteWithChildren,
   IntegrationsRoute: IntegrationsRoute,
   PricingRoute: PricingRoute,

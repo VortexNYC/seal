@@ -99,6 +99,7 @@ import {
   webhookDeliveries,
   webhookEndpoints,
 } from "./schemas/webhooks";
+import { waitlistEntriesTable } from "./schemas/waitlist_entries";
 
 // Re-export types for use in other files
 export type MemberStatus = UserStatus; // Member status uses the same values as user status
@@ -152,6 +153,7 @@ export type { StripeAccountType, StripeFeeHandling };
 
 // Re-export subscription coupon/promo types
 export type { SubscriptionCouponDuration, SubscriptionCouponType, SubscriptionPromoCodeStatus };
+export type { WaitlistEntryStatus } from "./schemas/waitlist_entries";
 
 // Re-export payment field config types
 export type { DueDateTerms, PaymentMethod, PaymentStatus, PaymentType };
@@ -214,6 +216,7 @@ export default defineSchema({
   // Webhooks
   webhook_endpoints: webhookEndpoints,
   webhook_deliveries: webhookDeliveries,
+  waitlist_entries: waitlistEntriesTable,
 
   // Feedback
   feedback: feedbackTable,

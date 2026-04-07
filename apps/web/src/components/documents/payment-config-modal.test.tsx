@@ -1,3 +1,6 @@
+/// <reference types="vitest" />
+/// @vitest-environment jsdom
+
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

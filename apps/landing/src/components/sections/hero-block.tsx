@@ -1,75 +1,70 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { FadeIn } from "~/components/ui/fade-in";
-import { APP_URL } from "~/lib/constants";
 import type { HeroBlock } from "~/lib/content/types";
-
-const valuePillars = [
-  { label: "E-Signatures" },
-  { label: "Payments & Invoicing" },
-  { label: "AI Document Review" },
-  { label: "Developer API" },
-];
 
 export function StaticHero() {
   return (
-    <section className="relative overflow-hidden px-6 pt-20 pb-8 sm:pt-24 sm:pb-12">
+    <section className="relative px-6 pt-[clamp(8rem,22vh,14rem)] pb-16">
+      {/* Headline */}
       <div className="mx-auto max-w-4xl text-center">
-        {/* Headline */}
         <FadeIn delay={0.05}>
           <h1 className="text-foreground font-serif text-[clamp(2.5rem,6vw,5rem)] leading-[1.05] font-normal tracking-tight">
-            The old players offer e-signatures.{" "}
+            The old tools offer e-signature.
+            <br />
             <span className="text-primary italic">We built an engine.</span>
           </h1>
         </FadeIn>
-
-        {/* Subtitle */}
-        <FadeIn delay={0.1}>
-          <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-pretty sm:text-xl">
-            Seal is a document engine for B2B teams — sign contracts, collect payment, and let AI
-            catch what you missed. Full REST API from day one. Free to start.
-          </p>
-        </FadeIn>
-
-        {/* Value pillars */}
-        <FadeIn delay={0.12}>
-          <div className="mt-8 flex flex-wrap justify-center gap-2">
-            {valuePillars.map((pillar) => (
-              <span
-                className="border-border bg-muted/40 text-muted-foreground rounded-full border px-3 py-1 text-sm"
-                key={pillar.label}
-              >
-                {pillar.label}
-              </span>
-            ))}
-          </div>
-        </FadeIn>
-
-        {/* CTAs */}
-        <FadeIn delay={0.15}>
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center">
-            <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
-              <a href={`${APP_URL}/sign-up`}>
-                Start Free
-                <ArrowRight
-                  aria-hidden="true"
-                  className="ml-2 size-4 transition-transform group-hover:translate-x-0.5"
-                />
-              </a>
-            </Button>
-            <Button asChild className="h-12 px-8 text-base font-medium" size="lg" variant="outline">
-              <a href="#features">See how it works</a>
-            </Button>
-          </div>
-        </FadeIn>
-
-        {/* Social proof line */}
-        <FadeIn delay={0.2}>
-          <p className="text-muted-foreground mt-8 text-sm">
-            Free forever plan · No credit card required · Set up in under 2 minutes
-          </p>
-        </FadeIn>
       </div>
+
+      {/* Mockup */}
+      <FadeIn delay={0.2}>
+        <div className="relative mx-auto mt-16 max-w-6xl">
+          {/* Glow */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-12 opacity-50 blur-[100px]"
+            style={{ background: "radial-gradient(ellipse at 50% 40%, #A63D2F 0%, #c4503e 20%, #A63D2F33 60%, transparent 85%)" }}
+          />
+          {/* Mockup card — mask fades the whole card including its clip boundary */}
+          <div className="relative overflow-hidden rounded-t-2xl [mask-image:linear-gradient(to_bottom,black_40%,transparent_88%)]">
+            {/* Browser chrome */}
+            <div className="border-border bg-muted/40 border-b">
+              <div className="flex items-end gap-0 px-3 pt-2.5">
+                <div className="flex items-center gap-1.5 px-3 py-1.5">
+                  <span className="size-2.5 rounded-full bg-red-400/60" />
+                  <span className="size-2.5 rounded-full bg-yellow-400/60" />
+                  <span className="size-2.5 rounded-full bg-green-400/60" />
+                </div>
+                <div className="bg-background/60 flex items-center gap-1.5 rounded-t-md border border-b-0 border-border/40 px-3 py-1.5">
+                  <svg className="text-primary size-3 shrink-0" fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 2a1 1 0 0 1 1-1h5.586a1 1 0 0 1 .707.293l3.414 3.414A1 1 0 0 1 14 5.414V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2Z" fill="currentColor" opacity="0.2" />
+                    <path d="M9 1.5V5a1 1 0 0 0 1 1h3.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" />
+                    <path d="M3 2a1 1 0 0 1 1-1h5.586a1 1 0 0 1 .707.293l3.414 3.414A1 1 0 0 1 14 5.414V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" />
+                  </svg>
+                  <span className="text-foreground/70 max-w-[180px] truncate text-xs">ACME Corp — Service Agreement.pdf</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2">
+                <div className="bg-muted/60 flex-1 rounded px-3 py-1">
+                  <span className="text-muted-foreground text-xs">app.seal.co</span>
+                </div>
+              </div>
+            </div>
+            {/* Screenshot area — placeholder until /public/product-screenshot.png is added */}
+            <div className="bg-muted/10 h-[580px]">
+              <img
+                alt=""
+                aria-hidden="true"
+                className="h-full w-full object-cover object-top"
+                src="/product-screenshot.png"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              />
+
+            </div>
+          </div>
+        </div>
+      </FadeIn>
     </section>
   );
 }

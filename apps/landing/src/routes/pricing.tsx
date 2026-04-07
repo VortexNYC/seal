@@ -9,7 +9,7 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "Simple, honest pricing. No per-envelope fees. No seat minimums. Free forever plan with unlimited recipients. Pro from $12/mo.",
+          "Simple, honest pricing. 10 documents free. Pro from $12/mo — 500 docs/month, REST API, webhooks, and lower payment fees.",
       },
       { property: "og:title", content: "Pricing — Seal" },
       {

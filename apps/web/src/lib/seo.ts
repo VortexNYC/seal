@@ -41,10 +41,16 @@ export const pageSEO: Record<string, PageSEO> = {
     description: "Sign in to your Seal account to manage your documents and signatures.",
     noIndex: true,
   },
-  signUp: {
-    title: "Get Started - Seal",
+  waitlist: {
+    title: "Join the Waitlist - Seal",
     description:
-      "Create your free Seal account and start signing documents in minutes. No credit card required.",
+      "Join the Seal waitlist to get early access when we open invitations.",
+    noIndex: true,
+  },
+  signUp: {
+    title: "Create Your Account - Seal",
+    description: "Create your Seal account if you received an invitation.",
+    noIndex: true,
   },
   sign: {
     title: "Sign Document - Seal",

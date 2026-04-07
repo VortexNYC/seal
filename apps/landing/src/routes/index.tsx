@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StaticCta } from "~/components/sections/cta-block";
-import { StaticDevelopers } from "~/components/sections/developers-block";
 import { StaticFeatures } from "~/components/sections/features-block";
 import { StaticHero } from "~/components/sections/hero-block";
-import { StaticTrust } from "~/components/sections/trust-block";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -47,8 +45,6 @@ function Home() {
     <>
       <StaticHero />
       <StaticFeatures />
-      <StaticTrust />
-      <StaticDevelopers />
       <StaticCta />
     </>
   );

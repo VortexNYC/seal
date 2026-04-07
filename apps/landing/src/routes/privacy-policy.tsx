@@ -43,8 +43,9 @@ function PrivacyPolicy() {
 
           <h3>Account Information</h3>
           <p>
-            When you create an account, we collect information provided through our authentication
-            provider, Clerk, including your name, email address, and profile image.
+            When you join the waitlist or sign up through an invitation, we collect information
+            provided through our authentication provider, Clerk, including your name, email
+            address, and profile image.
           </p>
 
           <h3>Document Data</h3>

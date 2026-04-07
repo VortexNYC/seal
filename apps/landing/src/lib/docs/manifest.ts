@@ -2,6 +2,7 @@ import type { Root } from "fumadocs-core/page-tree";
 import { deserializePageTree } from "fumadocs-core/source/client";
 
 import docsManifestData from "../../../.source/docs-manifest.json";
+import developerManifestData from "../../../.source/developer-manifest.json";
 
 interface SerializedPageTree {
   $fumadocs_loader: "page-tree";
@@ -27,6 +28,7 @@ interface DocsManifest {
   pages: Record<string, DocsManifestPage>;
 }
 
+// Docs
 const docsManifest = docsManifestData as unknown as DocsManifest;
 const docsPageTree = deserializePageTree(docsManifest.pageTree) as Root;
 
@@ -36,4 +38,16 @@ export function getDocsPage(slugs: string[]): DocsManifestPage | undefined {
 
 export function getDocsPageTree(): Root {
   return docsPageTree;
+}
+
+// Developer
+const developerManifest = developerManifestData as unknown as DocsManifest;
+const developerPageTree = deserializePageTree(developerManifest.pageTree) as Root;
+
+export function getDeveloperPage(slugs: string[]): DocsManifestPage | undefined {
+  return developerManifest.pages[slugs.join("/")];
+}
+
+export function getDeveloperPageTree(): Root {
+  return developerPageTree;
 }

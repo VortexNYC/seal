@@ -16,7 +16,7 @@ function RouteComponent() {
   return (
     <SignIn
       routing="virtual"
-      signUpUrl="/sign-up"
+      signUpUrl="/waitlist"
       appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
     />
   );

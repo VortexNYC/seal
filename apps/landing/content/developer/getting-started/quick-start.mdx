@@ -1,0 +1,283 @@
+---
+title: Quick Start
+description: Send your first document for signing in 4 simple steps
+---
+
+# Quick Start
+
+This guide will walk you through sending your first document for signing using the Seal API. You'll learn the complete workflow from uploading a PDF to sending it to recipients.
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- A Seal account with an active organization
+- An API key with `seal:documents:write` and `seal:recipients:write` scopes ([create one](/developer/getting-started/authentication))
+- A PDF document to send for signing
+
+## Step 1: Generate Upload URL
+
+First, generate a secure upload URL for your PDF document:
+
+### TypeScript
+
+```typescript
+const uploadResponse = await fetch("https://seal.convex.site/api/v1/uploads/generate-url", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+  },
+});
+
+const { upload_url } = await uploadResponse.json();
+```
+
+### cURL
+
+```bash
+curl -X POST https://seal.convex.site/api/v1/uploads/generate-url \
+  -H "Authorization: Bearer ak_your_api_key_here"
+```
+
+### Response
+
+```json
+{
+  "upload_url": "https://storage.convex.cloud/..."
+}
+```
+
+## Step 2: Upload the PDF
+
+Upload your PDF file to the generated URL:
+
+### TypeScript
+
+```typescript
+// Read the PDF file
+const fileBlob = await fetch("/path/to/contract.pdf").then((r) => r.blob());
+
+// Upload to storage
+const uploadResult = await fetch(upload_url, {
+  method: "POST",
+  body: fileBlob,
+  headers: {
+    "Content-Type": "application/pdf",
+  },
+});
+
+if (!uploadResult.ok) {
+  throw new Error("File upload failed");
+}
+
+const { storageId } = await uploadResult.json();
+```
+
+### cURL
+
+```bash
+curl -X POST "https://storage.convex.cloud/..." \
+  -H "Content-Type: application/pdf" \
+  --data-binary "@contract.pdf"
+```
+
+## Step 3: Create Document and Add Recipients
+
+Create a document record, then add recipients separately via the Recipients API:
+
+### Create the Document
+
+#### TypeScript
+
+```typescript
+const documentResponse = await fetch("https://seal.convex.site/api/v1/documents", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer ak_your_api_key_here",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    title: "Service Agreement",
+    description: "Annual service contract for review and signature",
+    storage_id: storageId, // from Step 2
+    file_size: fileBlob.size,
+    file_type: "application/pdf",
+  }),
+});
+
+const document = await documentResponse.json();
+console.log("Document created:", document.id);
+```
+
+#### cURL
+
+```bash
+curl -X POST https://seal.convex.site/api/v1/documents \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Service Agreement",
+    "description": "Annual service contract for review and signature",
+    "storage_id": "kg2h4j5k6l7m8n9p0q1r2s3t",
+    "file_size": 204800,
+    "file_type": "application/pdf"
+  }'
+```
+
+#### Response
+
+```json
+{
+  "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+  "title": "Service Agreement",
+  "description": "Annual service contract for review and signature",
+  "status": "draft",
+  "created_at": "2024-01-27T10:30:00Z",
+  "updated_at": "2024-01-27T10:30:00Z",
+  "recipients_count": 0,
+  "signed_count": 0
+}
+```
+
+### Add Recipients
+
+Add each recipient to the document using the Recipients API:
+
+#### TypeScript
+
+```typescript
+const recipients = [
+  { email: "john@example.com", name: "John Doe", role: "signer", order: 1 },
+  { email: "jane@example.com", name: "Jane Smith", role: "signer", order: 2 },
+];
+
+for (const recipient of recipients) {
+  await fetch(`https://seal.convex.site/api/v1/recipients?document_id=${document.id}`, {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(recipient),
+  });
+}
+```
+
+#### cURL
+
+```bash
+curl -X POST "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "name": "John Doe",
+    "role": "signer",
+    "order": 1
+  }'
+
+curl -X POST "https://seal.convex.site/api/v1/recipients?document_id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "jane@example.com",
+    "name": "Jane Smith",
+    "role": "signer",
+    "order": 2
+  }'
+```
+
+## Step 4: Send for Signing
+
+Send the document to all recipients via email:
+
+### TypeScript
+
+```typescript
+const sendResponse = await fetch(
+  `https://seal.convex.site/api/v1/documents/send?id=${document.id}`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: "Please review and sign this service agreement at your earliest convenience.",
+    }),
+  },
+);
+
+const result = await sendResponse.json();
+console.log("Document sent:", result);
+```
+
+### cURL
+
+```bash
+curl -X POST "https://seal.convex.site/api/v1/documents/send?id=jd7k8l9m0n1p2q3r4s5t6u7v" \
+  -H "Authorization: Bearer ak_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Please review and sign this service agreement at your earliest convenience."
+  }'
+```
+
+### Response
+
+```json
+{
+  "id": "jd7k8l9m0n1p2q3r4s5t6u7v",
+  "status": "sent",
+  "sent_at": "2024-01-27T10:31:00Z",
+  "recipients_notified": 2
+}
+```
+
+## What Happens Next?
+
+After sending the document:
+
+1. **Email Notifications**: Each recipient receives an email with a secure signing link
+2. **Signing Process**: Recipients can review and sign the document in their browser
+3. **Status Updates**: The document status updates as recipients sign
+4. **Webhook Events**: Your webhook endpoints receive real-time notifications (if configured)
+5. **Completion**: Once all recipients sign, the document status becomes `completed`
+
+## Tracking Document Status
+
+You can check the document status at any time:
+
+```typescript
+const statusResponse = await fetch(
+  `https://seal.convex.site/api/v1/documents/get?id=${document.id}`,
+  {
+    headers: {
+      Authorization: "Bearer ak_your_api_key_here",
+    },
+  },
+);
+
+const doc = await statusResponse.json();
+console.log(`Status: ${doc.status}, Signed: ${doc.signed_count}/${doc.recipients_count}`);
+```
+
+## Next Steps
+
+- **[Error Handling](/developer/getting-started/error-handling)** - Learn how to handle API errors gracefully
+- **[API Reference](/developer/api-reference/documents)** - Explore all document endpoints and options
+- **[Webhooks](/developer/webhooks)** - Set up real-time notifications for document events
+- **[Templates](/developer/api-reference/templates)** - Create reusable document templates
+
+## Common Recipient Roles
+
+| Role       | Description                 | Can Sign | Can Approve | Can View |
+| ---------- | --------------------------- | -------- | ----------- | -------- |
+| `signer`   | Must sign the document      | ✓        | -           | ✓        |
+| `approver` | Must approve before signing | -        | ✓           | ✓        |
+| `viewer`   | Can only view the document  | -        | -           | ✓        |
+
+<Callout type="info">
+  **Sequential Signing**: Set the `order` field on recipients to enforce a signing sequence.
+  Recipient 2 won't receive the document until Recipient 1 completes their action.
+</Callout>

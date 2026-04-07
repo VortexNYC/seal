@@ -265,8 +265,8 @@ function ComparePage() {
           <FadeIn delay={0.15}>
             <div className="mt-8">
               <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
-                <a href={`${APP_URL}/sign-up`}>
-                  Try Seal free
+                <a href={`${APP_URL}/waitlist`}>
+                  Join Waitlist
                   <ArrowRight
                     aria-hidden="true"
                     className="ml-2 size-4 transition-transform group-hover:translate-x-0.5"
@@ -422,8 +422,8 @@ function ComparePage() {
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button asChild className="group h-12 px-8 text-base font-medium" size="lg">
-                <a href={`${APP_URL}/sign-up`}>
-                  Start Free
+                <a href={`${APP_URL}/waitlist`}>
+                  Join Waitlist
                   <ArrowRight
                     aria-hidden="true"
                     className="ml-2 size-4 transition-transform group-hover:translate-x-0.5"

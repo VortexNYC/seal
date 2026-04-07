@@ -3,14 +3,15 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
+import { ThemeToggle } from "~/components/ui/theme-toggle";
 import { APP_URL } from "~/lib/constants";
 import { cn } from "~/utils/cn";
 
 const navItems = [
-  { label: "Pricing", href: "/pricing" },
   { label: "Compare", href: "/compare" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Docs", href: "/docs" },
-  { label: "Changelog", href: "/changelog" },
+  { label: "Developer", href: "/developer" },
 ];
 
 export function Navbar() {
@@ -48,9 +49,9 @@ export function Navbar() {
           <svg
             aria-hidden="true"
             fill="none"
-            height={28}
+            height={36}
             viewBox="0 0 120 120"
-            width={28}
+            width={36}
             xmlns="http://www.w3.org/2000/svg"
           >
             <g transform="translate(18, 15) scale(0.95)">
@@ -60,7 +61,7 @@ export function Navbar() {
               />
             </g>
           </svg>
-          <span className="font-serif text-foreground text-[22px] italic leading-none tracking-tight">
+          <span className="font-serif text-foreground text-[28px] italic leading-none tracking-tight">
             Seal
           </span>
         </Link>
@@ -70,7 +71,7 @@ export function Navbar() {
           {navItems.map((item) => (
             <Link
               className={cn(
-                "text-muted-foreground hover:text-foreground rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "text-foreground/70 hover:text-foreground rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 pathname === item.href && "text-foreground",
               )}
               key={item.label}
@@ -82,7 +83,8 @@ export function Navbar() {
         </nav>
 
         {/* Desktop CTA */}
-        <div className="flex items-center gap-3 max-md:hidden">
+        <div className="flex items-center gap-2 max-md:hidden">
+          <ThemeToggle />
           {hasClerk ? (
             <>
               <SignedOut>
@@ -151,12 +153,12 @@ export function Navbar() {
 function SignedOutDesktopCtas() {
   return (
     <>
-      <Button asChild className="text-muted-foreground hover:text-foreground" variant="ghost">
+      <Button asChild className="border-primary text-foreground hover:text-foreground" variant="outline">
         <a href={`${APP_URL}/sign-in`}>Sign in</a>
       </Button>
-      <Button asChild className="group">
-        <a href={`${APP_URL}/sign-up`}>
-          Start Free
+      <Button asChild className="group text-foreground">
+        <a href={`${APP_URL}/waitlist`}>
+          Join Waitlist
           <ArrowRight
             aria-hidden="true"
             className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
@@ -174,8 +176,8 @@ function SignedOutMobileCtas() {
         <a href={`${APP_URL}/sign-in`}>Sign in</a>
       </Button>
       <Button asChild className="group w-full" size="lg">
-        <a href={`${APP_URL}/sign-up`}>
-          Start Free
+        <a href={`${APP_URL}/waitlist`}>
+          Join Waitlist
           <ArrowRight
             aria-hidden="true"
             className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"

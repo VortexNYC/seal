@@ -40,10 +40,6 @@ function getManualChunkName(id: string): string | undefined {
     return "vendor-docs";
   }
 
-  if (matchesPackage(id, "@scalar") || matchesPackage(id, "scalar")) {
-    return "vendor-api-ref";
-  }
-
   if (matchesPackage(id, "motion") || matchesPackage(id, "framer-motion")) {
     return "vendor-motion";
   }
@@ -120,12 +116,22 @@ export default defineConfig(async ({ command }) => ({
   // - @radix-ui/*: depends on tslib at runtime — bundling inlines the aliased
   //   ESM version instead of leaving broken external imports
   ssr: {
-    noExternal: ["fumadocs-core", "fumadocs-ui", "tslib", /^@radix-ui\//],
+    noExternal: [
+      "fumadocs-core",
+      "fumadocs-openapi",
+      "fumadocs-ui",
+      "@fumari/stf",
+      "tslib",
+      /^@radix-ui\//,
+    ],
   },
 
   // Polyfill node:path → path-browserify only during browser dep pre-bundling.
   // fumadocs-core/source uses path.join/dirname which don't exist in browsers.
   optimizeDeps: {
+    // Force a single version of router-core — avoids "invariant" missing-export
+    // errors caused by bun resolving multiple semver-incompatible copies.
+    exclude: ["@tanstack/router-core"],
     rolldownOptions: {
       resolve: {
         alias: {
