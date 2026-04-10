@@ -33,9 +33,7 @@ setup("authenticate clerk test user", async ({ page }) => {
   );
 
   await assertConvexE2eHelperAvailability();
-  console.info(
-    `[setup] Convex E2E helpers ready on ${convexTarget.deploymentName}`,
-  );
+  console.info(`[setup] Convex E2E helpers ready on ${convexTarget.deploymentName}`);
 
   // Sign in and verify Convex auth is ready
   await signInTestUser(page);
