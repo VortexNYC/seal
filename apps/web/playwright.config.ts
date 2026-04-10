@@ -17,7 +17,6 @@ dotenv.config({ path: path.resolve(__dirname, ".env.test") });
  */
 export default defineConfig({
   testDir: "./e2e/tests",
-  testMatch: "**/*.e2e.ts",
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -59,11 +58,12 @@ export default defineConfig({
   projects: [
     {
       name: "setup",
-      testMatch: /global\.setup\.ts/,
+      testMatch: "**/global.setup.ts",
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "chromium",
+      testMatch: "**/*.e2e.ts",
       dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
@@ -73,6 +73,7 @@ export default defineConfig({
 
     {
       name: "firefox",
+      testMatch: "**/*.e2e.ts",
       dependencies: ["setup"],
       use: {
         ...devices["Desktop Firefox"],
@@ -82,6 +83,7 @@ export default defineConfig({
 
     {
       name: "webkit",
+      testMatch: "**/*.e2e.ts",
       dependencies: ["setup"],
       use: {
         ...devices["Desktop Safari"],
@@ -92,6 +94,7 @@ export default defineConfig({
     /* Test against mobile viewports. */
     {
       name: "Mobile Chrome",
+      testMatch: "**/*.e2e.ts",
       dependencies: ["setup"],
       use: {
         ...devices["Pixel 5"],
@@ -100,6 +103,7 @@ export default defineConfig({
     },
     {
       name: "Mobile Safari",
+      testMatch: "**/*.e2e.ts",
       dependencies: ["setup"],
       use: {
         ...devices["iPhone 12"],

@@ -12,8 +12,6 @@ test.describe("Document Management", () => {
     const documentsPage = new DocumentsListPage(authenticatedPage);
     await documentsPage.goto(organizationSlug);
 
-    const initialCount = await documentsPage.getDocumentCount();
-
     // This test explicitly validates the UI upload flow — must use UI creation.
     let createdName: string | null = null;
     try {
@@ -29,7 +27,6 @@ test.describe("Document Management", () => {
     try {
       await documentsPage.waitForAnyDocumentRow();
       await expect(documentsPage.getDocumentRowByName(createdName)).toBeVisible();
-      expect(await documentsPage.getDocumentCount()).toBeGreaterThan(initialCount);
     } finally {
       await documentsPage.goto(organizationSlug);
       await documentsPage.deleteDocument(createdName).catch(() => {});

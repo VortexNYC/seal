@@ -18,7 +18,7 @@ test.describe("Document Sharing", () => {
     documentsPage = new DocumentsListPage(authenticatedPage);
     shareDialog = new ShareDialogPage(authenticatedPage);
     sharedDocId = "";
-    sharedDocName = `e2e-test-doc-${Date.now()}`;
+    sharedDocName = "";
 
     // Read the cached storageId written by global.setup.ts
     let storageId: string | null = null;
@@ -35,10 +35,13 @@ test.describe("Document Sharing", () => {
 
     if (storageId) {
       // Fast path: create via API (~200ms, no browser)
-      sharedDocId = (await apiCreateDocument(organizationSlug, storageId)).id;
+      const doc = await apiCreateDocument(organizationSlug, storageId);
+      sharedDocId = doc.id;
+      sharedDocName = doc.name;
       // Navigate to the documents list so UI is ready for the test
       await documentsPage.goto(organizationSlug);
     } else {
+      sharedDocName = `e2e-test-doc-${Date.now()}`;
       // Fallback: create via UI (slow but safe)
       await documentsPage.goto(organizationSlug);
       try {
@@ -464,8 +467,11 @@ test.describe("Document Sharing", () => {
   });
 
   test.describe("Edge Cases", () => {
-    test("should prevent sharing with oneself", async ({ authenticatedPage, organizationSlug }) => {
+    test.beforeEach(() => {
       test.setTimeout(60000);
+    });
+
+    test("should prevent sharing with oneself", async ({ authenticatedPage, organizationSlug }) => {
       await documentsPage.goto(organizationSlug);
 
       await openShareForDocument(authenticatedPage, documentsPage, sharedDocName);
