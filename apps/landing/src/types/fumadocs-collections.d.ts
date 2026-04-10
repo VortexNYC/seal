@@ -10,6 +10,7 @@ declare module "fumadocs-mdx:collections/browser" {
 
   const browserCollections: {
     changelog: DocCollectionEntry<"changelog">;
+    developer: DocCollectionEntry<"developer">;
     docs: DocCollectionEntry<"docs">;
   };
 

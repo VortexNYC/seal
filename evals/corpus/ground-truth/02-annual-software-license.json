@@ -1,0 +1,21 @@
+{
+  "lineItems": [
+    {
+      "description": "Annual license fee — Obsidian Portfolio Risk Suite v4.x (10 servers)",
+      "quantity": 1,
+      "unitPriceCents": 3600000
+    }
+  ],
+  "currency": "eur",
+  "paymentType": "recurring",
+  "dueDateTerms": "net_15",
+  "lateFee": {
+    "type": "fixed",
+    "amount": 20000,
+    "gracePeriodDays": 15
+  },
+  "recurringConfig": {
+    "interval": "year",
+    "intervalCount": 1
+  }
+}

@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { changelog } from "../.source/server";
 import type { ChangelogFeature } from "../src/lib/changelog/manifest";
 import type { ContentImage } from "../src/lib/content/types";
-import { source } from "../src/lib/docs/server-source";
+import { docsSource, developerSource } from "../src/lib/docs/server-source";
 
 interface SerializedTocItem {
   depth: number;
@@ -26,7 +26,7 @@ interface DocsManifestPage {
 }
 
 interface DocsManifest {
-  pageTree: Awaited<ReturnType<typeof source.serializePageTree>>;
+  pageTree: Awaited<ReturnType<typeof docsSource.serializePageTree>>;
   pages: Record<string, DocsManifestPage>;
 }
 
@@ -94,12 +94,14 @@ function serializeTocTitle(title: ReactNode): string {
 
 const root = path.resolve(import.meta.dirname, "..");
 const docsOutputPath = path.join(root, ".source", "docs-manifest.json");
+const developerOutputPath = path.join(root, ".source", "developer-manifest.json");
 const changelogOutputPath = path.join(root, ".source", "changelog-manifest.json");
 
 async function generateDocsManifest(): Promise<void> {
   const pages: Record<string, DocsManifestPage> = {};
 
-  for (const page of source.getPages()) {
+  // Docs manifest
+  for (const page of docsSource.getPages()) {
     const data = page.data as DocsPageData;
     const key = page.slugs.join("/");
     const toc = data.toc.map((item) => ({
@@ -107,7 +109,6 @@ async function generateDocsManifest(): Promise<void> {
       title: serializeTocTitle(item.title),
       url: item.url,
     }));
-
     pages[key] = {
       description: data.description,
       lastModified: data.lastModified?.toISOString(),
@@ -118,12 +119,36 @@ async function generateDocsManifest(): Promise<void> {
       url: page.url,
     };
   }
-
-  const pageTree = await source.serializePageTree(source.pageTree);
-  const manifest: DocsManifest = { pageTree, pages };
-
+  const docsPageTree = await docsSource.serializePageTree(docsSource.pageTree);
+  const docsManifest: DocsManifest = { pageTree: docsPageTree, pages };
   await fs.mkdir(path.dirname(docsOutputPath), { recursive: true });
-  await fs.writeFile(docsOutputPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  await fs.writeFile(docsOutputPath, `${JSON.stringify(docsManifest, null, 2)}\n`, "utf8");
+
+  // Developer manifest
+  const devPages: Record<string, DocsManifestPage> = {};
+  for (const page of developerSource.getPages()) {
+    const data = page.data as DocsPageData;
+    if ((data as { type?: string }).type === "openapi") continue;
+    const key = page.slugs.join("/");
+    const toc = data.toc.map((item) => ({
+      depth: item.depth,
+      title: serializeTocTitle(item.title),
+      url: item.url,
+    }));
+    devPages[key] = {
+      description: data.description,
+      lastModified: data.lastModified?.toISOString(),
+      path: page.path,
+      slugs: page.slugs,
+      title: data.title,
+      toc,
+      url: page.url,
+    };
+  }
+  const devPageTree = await developerSource.serializePageTree(developerSource.pageTree);
+  const developerManifest: DocsManifest = { pageTree: devPageTree, pages: devPages };
+  await fs.mkdir(path.dirname(developerOutputPath), { recursive: true });
+  await fs.writeFile(developerOutputPath, `${JSON.stringify(developerManifest, null, 2)}\n`, "utf8");
 }
 
 async function generateChangelogManifest(): Promise<void> {

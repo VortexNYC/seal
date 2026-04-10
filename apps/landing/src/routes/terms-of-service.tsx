@@ -52,7 +52,10 @@ function TermsOfService() {
           </p>
 
           <h2>3. Account Registration &amp; Security</h2>
-          <p>To use certain features of the Service, you must create an account. You agree to:</p>
+          <p>
+            To use certain features of the Service, you may need an account or an approved
+            invitation. You agree to:
+          </p>
           <ul>
             <li>Provide accurate, current, and complete information during registration</li>
             <li>Maintain the security of your account credentials</li>
@@ -60,8 +63,8 @@ function TermsOfService() {
             <li>Accept responsibility for all activity that occurs under your account</li>
           </ul>
           <p>
-            Authentication is managed through our identity provider, Clerk. By creating an account,
-            you also agree to Clerk&apos;s terms of service.
+            Authentication is managed through our identity provider, Clerk. If you create an
+            account, you also agree to Clerk&apos;s terms of service.
           </p>
 
           <h2>4. Service Description</h2>

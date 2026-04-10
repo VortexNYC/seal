@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   calculatePlatformFee,
   getDaysUntilDue,
+  getDueDateParam,
   toStripePaymentMethodTypes,
 } from "./payment_field_actions";
 
@@ -69,6 +70,36 @@ describe("getDaysUntilDue", () => {
   test("unknown term → 30 (default)", () => {
     expect(getDaysUntilDue("something_else")).toBe(30);
     expect(getDaysUntilDue("")).toBe(30);
+  });
+});
+
+describe("getDueDateParam", () => {
+  test("calendar date → { due_date } with correct unix timestamp", () => {
+    const result = getDueDateParam("custom", undefined, "2026-04-01");
+    expect(result).toEqual({ due_date: Math.floor(new Date("2026-04-01").getTime() / 1000) });
+  });
+
+  test("calendar date takes priority over customDueDays", () => {
+    const result = getDueDateParam("custom", 45, "2026-04-01");
+    expect(result).toEqual({ due_date: Math.floor(new Date("2026-04-01").getTime() / 1000) });
+    expect(result).not.toHaveProperty("days_until_due");
+  });
+
+  test("no calendar date → delegates to getDaysUntilDue", () => {
+    expect(getDueDateParam("on_receipt")).toEqual({ days_until_due: 1 });
+    expect(getDueDateParam("net_15")).toEqual({ days_until_due: 15 });
+    expect(getDueDateParam("net_30")).toEqual({ days_until_due: 30 });
+    expect(getDueDateParam("net_60")).toEqual({ days_until_due: 60 });
+    expect(getDueDateParam("custom", 45)).toEqual({ days_until_due: 45 });
+    expect(getDueDateParam("custom")).toEqual({ days_until_due: 30 });
+  });
+
+  test("different calendar dates produce different timestamps", () => {
+    const apr1 = getDueDateParam("custom", undefined, "2026-04-01") as { due_date: number };
+    const may1 = getDueDateParam("custom", undefined, "2026-05-01") as { due_date: number };
+    expect(may1.due_date).toBeGreaterThan(apr1.due_date);
+    // 30 days apart = 30 * 86400 seconds
+    expect(may1.due_date - apr1.due_date).toBe(30 * 86400);
   });
 });
 

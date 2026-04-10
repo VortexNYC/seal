@@ -124,8 +124,8 @@ function IntegrationsPage() {
               Ready to build?
             </h2>
             <p className="text-muted-foreground mx-auto mt-4 max-w-lg text-pretty">
-              Get started with the API in minutes. Create an account, generate an API key, and send
-              your first document.
+              Get early access to the API, then generate an API key and send your first document
+              once you&apos;re invited.
             </p>
             <div
               className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"

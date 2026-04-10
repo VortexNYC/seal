@@ -639,6 +639,7 @@ export const handleInvitationCreated = internalMutation({
     clerkOrganizationId: v.string(),
     emailAddress: v.string(),
     role: v.optional(v.string()),
+    inviteUrl: v.optional(v.string()),
     publicMetadata: v.optional(v.any()),
     createdAt: v.optional(v.number()),
   },
@@ -724,12 +725,98 @@ export const handleInvitationCreated = internalMutation({
         organizationName: organization.name,
         role: role.charAt(0).toUpperCase() + role.slice(1), // Capitalize role
         clerkInvitationId: args.clerkInvitationId,
+        inviteUrl: args.inviteUrl,
         expiresAt,
       });
     }
 
     console.info(`✅ Created invitation record: ${args.emailAddress} -> ${organization.name}`);
     return { created: true, _id: invitationId };
+  },
+});
+
+/**
+ * Handle waitlistEntry.created / waitlistEntry.updated webhook
+ * Stores waitlist submissions and notifies internal sales when status changes
+ */
+export const upsertWaitlistEntry = internalMutation({
+  args: {
+    clerkId: v.string(),
+    emailAddress: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("invited"),
+      v.literal("completed"),
+      v.literal("rejected"),
+    ),
+    isLocked: v.boolean(),
+    inviteUrl: v.optional(v.string()),
+    invitationStatus: v.optional(v.string()),
+    invitationCreatedAt: v.optional(v.number()),
+    invitationUpdatedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const existingEntry = await ctx.db
+      .query("waitlist_entries")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    const normalizedEmail = args.emailAddress.toLowerCase();
+    const previousStatus = existingEntry?.status;
+    const nextEntry = {
+      clerkId: args.clerkId,
+      email: normalizedEmail,
+      status: args.status,
+      isLocked: args.isLocked,
+      invitationUrl: args.inviteUrl,
+      invitationStatus: args.invitationStatus,
+      invitationCreatedAt: args.invitationCreatedAt,
+      invitationUpdatedAt: args.invitationUpdatedAt,
+      createdAt: existingEntry?.createdAt ?? args.createdAt,
+      updatedAt: args.updatedAt,
+      invitedAt:
+        args.status === "invited"
+          ? (existingEntry?.invitedAt ?? args.updatedAt)
+          : existingEntry?.invitedAt,
+      completedAt:
+        args.status === "completed"
+          ? (existingEntry?.completedAt ?? args.updatedAt)
+          : existingEntry?.completedAt,
+      rejectedAt:
+        args.status === "rejected"
+          ? (existingEntry?.rejectedAt ?? args.updatedAt)
+          : existingEntry?.rejectedAt,
+    };
+
+    if (existingEntry) {
+      await ctx.db.patch(existingEntry._id, nextEntry);
+    } else {
+      await ctx.db.insert("waitlist_entries", nextEntry);
+    }
+
+    const shouldNotify =
+      previousStatus !== args.status && args.status !== "pending" && normalizedEmail.length > 0;
+
+    if (shouldNotify) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.emails.user_email_actions.sendWaitlistNotificationEmail,
+        {
+          emailAddress: normalizedEmail,
+          status: args.status,
+          waitlistEntryId: args.clerkId,
+          inviteUrl: args.inviteUrl,
+          invitationStatus: args.invitationStatus,
+          invitationCreatedAt: args.invitationCreatedAt,
+          invitationUpdatedAt: args.invitationUpdatedAt,
+          updatedAt: args.updatedAt,
+        },
+      );
+    }
+
+    return { created: !existingEntry, updated: Boolean(existingEntry) };
   },
 });
 

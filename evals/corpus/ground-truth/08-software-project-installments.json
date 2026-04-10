@@ -1,0 +1,22 @@
+{
+  "lineItems": [
+    {
+      "description": "Custom member loan origination portal and back-office workflow system — fixed project fee",
+      "quantity": 1,
+      "unitPriceCents": 24000000
+    }
+  ],
+  "currency": "usd",
+  "paymentType": "installments",
+  "dueDateTerms": "custom",
+  "customDueDays": 7,
+  "lateFee": {
+    "type": "percentage",
+    "amount": 2,
+    "gracePeriodDays": 5
+  },
+  "installmentsConfig": {
+    "count": 4,
+    "interval": "month"
+  }
+}

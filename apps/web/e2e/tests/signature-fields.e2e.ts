@@ -29,10 +29,10 @@ async function createAndOpenDocument(
   const storageId = getCachedStorageId();
 
   if (storageId) {
-    const id = await apiCreateDocument(organizationSlug, storageId);
-    await authenticatedPage.goto(`/${organizationSlug}/documents/${id}`);
+    const doc = await apiCreateDocument(organizationSlug, storageId);
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
     await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-    return { id, name: `e2e-test-doc-${id}` };
+    return { id: doc.id, name: doc.name };
   }
 
   const documentsPage = new DocumentsListPage(authenticatedPage);

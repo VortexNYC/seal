@@ -1,0 +1,22 @@
+{
+  "lineItems": [
+    {
+      "description": "Session fee — half-day editorial photography (executive headshots, up to 8 individuals)",
+      "quantity": 1,
+      "unitPriceCents": 37500
+    },
+    {
+      "description": "Retouching and delivery — up to 8 selected images, JPEG",
+      "quantity": 1,
+      "unitPriceCents": 20000
+    },
+    {
+      "description": "File licensing fee — internal editorial use, 3 years",
+      "quantity": 1,
+      "unitPriceCents": 12500
+    }
+  ],
+  "currency": "usd",
+  "paymentType": "one_time",
+  "dueDateTerms": "net_15"
+}

@@ -1,0 +1,49 @@
+CYBERSECURITY AUDIT SERVICES AGREEMENT
+
+Effective Date: March 20, 2026
+
+PARTIES
+
+This Cybersecurity Audit Services Agreement ("Agreement") is entered into as of the Effective Date by and between:
+
+RedVector Security Consulting, LLC, a Virginia limited liability company with its principal place of business at 1775 Tysons Boulevard, Suite 400, McLean, VA 22102 ("Firm"), and
+
+Cascade Community Bank, N.A., a nationally chartered bank with its principal place of business at 620 SW 5th Avenue, Portland, OR 97204 ("Bank").
+
+SCOPE OF ENGAGEMENT
+
+Firm shall conduct a comprehensive cybersecurity maturity assessment of Bank's information systems and technology infrastructure, including: (i) external network reconnaissance and vulnerability scanning; (ii) web application assessment of Bank's internet-facing portals and mobile banking application; (iii) internal network segmentation review; (iv) active directory and identity access management review; (v) review of Bank's security policies against FFIEC Cybersecurity Assessment Tool (CAT) standards; and (vi) tabletop exercise simulating a ransomware incident response. Firm shall deliver a final assessment report with executive summary, technical findings, risk ratings, and a remediation roadmap within fifteen (15) business days of the conclusion of on-site assessment activities.
+
+FEES AND PAYMENT
+
+Bank shall pay Firm a fixed engagement fee of thirty-seven thousand five hundred dollars ($37,500.00) for the full scope of services described herein. The engagement fee shall be invoiced upon execution of this Agreement and is due within forty-five (45) days of the invoice date. All amounts are denominated in United States dollars.
+
+If payment is not received within five (5) days of the due date, a late fee of one percent (1%) of the outstanding balance per month shall apply until the account is paid in full.
+
+Travel and accommodation expenses associated with on-site activities shall be reimbursed separately at cost, not to exceed three thousand dollars ($3,000.00), invoiced within thirty (30) days of the engagement conclusion and due on receipt.
+
+CONFIDENTIALITY
+
+Given the sensitive nature of the findings, Firm agrees to maintain strict confidentiality and to limit disclosure of any findings to Bank personnel with a documented need to know.
+
+GOVERNING LAW
+
+This Agreement shall be governed by the laws of the State of Virginia.
+
+SIGNATURES
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
+
+REDVECTOR SECURITY CONSULTING, LLC
+
+By: ___________________________
+Name: James Hartfield
+Title: Principal Consultant
+Date: March 20, 2026
+
+CASCADE COMMUNITY BANK, N.A.
+
+By: ___________________________
+Name: Lorraine Kim
+Title: Chief Information Security Officer
+Date: March 20, 2026

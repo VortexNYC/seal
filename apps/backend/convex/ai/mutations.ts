@@ -99,8 +99,9 @@ export const saveFieldSuggestions = internalMutation({
     // Dismiss any existing pending suggestions for this document
     const existing = await ctx.db
       .query("ai_field_suggestions")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_document_status", (q) =>
+        q.eq("documentId", args.documentId).eq("status", "pending"),
+      )
       .collect();
 
     for (const suggestion of existing) {
@@ -194,6 +195,7 @@ export const applyFieldSuggestions = authMutation({
           currency: ext.currency.toLowerCase(),
           dueDateTerms: ext.dueDateTerms,
           customDueDays: ext.customDueDays,
+          customDueDate: ext.customDueDate,
           lateFees: ext.lateFee
             ? {
                 enabled: true,
@@ -271,6 +273,7 @@ export const saveExtractedPaymentConfig = internalMutation({
       paymentType: paymentTypeTuple,
       dueDateTerms: dueDateTermsTuple,
       customDueDays: v.optional(v.number()),
+      customDueDate: v.optional(v.string()),
       lateFee: v.optional(
         v.object({
           type: v.union(v.literal("percentage"), v.literal("fixed")),
@@ -366,6 +369,7 @@ export const saveExtractedPaymentConfig = internalMutation({
         currency: extraction.currency.toLowerCase(),
         dueDateTerms: extraction.dueDateTerms,
         customDueDays: extraction.customDueDays,
+        customDueDate: extraction.customDueDate,
         lateFees,
         recurringConfig,
         installmentsConfig,
@@ -385,6 +389,7 @@ export const saveExtractedPaymentConfig = internalMutation({
       currency: extraction.currency.toLowerCase(),
       dueDateTerms: extraction.dueDateTerms,
       customDueDays: extraction.customDueDays,
+      customDueDate: extraction.customDueDate,
       lateFees,
       recurringConfig,
       installmentsConfig,

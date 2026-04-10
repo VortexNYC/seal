@@ -1,0 +1,12 @@
+{
+  "lineItems": [
+    {
+      "description": "Fixed legal fee — cross-border asset purchase agreement (due diligence through closing)",
+      "quantity": 1,
+      "unitPriceCents": 4500000
+    }
+  ],
+  "currency": "gbp",
+  "paymentType": "one_time",
+  "dueDateTerms": "net_60"
+}

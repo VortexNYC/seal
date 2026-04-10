@@ -90,6 +90,8 @@ interface ClerkWebhookEvent {
     | "organizationInvitation.created"
     | "organizationInvitation.accepted"
     | "organizationInvitation.revoked"
+    | "waitlistEntry.created"
+    | "waitlistEntry.updated"
     | "session.created"
     | "session.ended"
     | "session.removed"
@@ -116,8 +118,19 @@ interface ClerkWebhookEvent {
     organization_id?: string;
     email_address?: string;
     status?: string;
+    url?: string | null;
     created_at?: number;
     updated_at?: number;
+    // For waitlist events
+    is_locked?: boolean;
+    invitation?: {
+      email_address: string;
+      public_metadata: Record<string, unknown> | null;
+      status?: string;
+      url?: string | null;
+      created_at: number;
+      updated_at: number;
+    } | null;
     // For organization events — Clerk sends the creator's user ID
     created_by?: string;
     // For session events
@@ -346,6 +359,7 @@ async function handleClerkInvitationCreated(
       clerkOrganizationId: data.organization_id,
       emailAddress: data.email_address,
       role: data.role,
+      inviteUrl: data.url || undefined,
       publicMetadata: data.public_metadata,
       createdAt: data.created_at,
     });
@@ -385,6 +399,31 @@ async function handleClerkInvitationRevoked(
   console.info(`[Clerk Webhook] Invitation revoked: ${data.id}`);
 }
 
+async function handleClerkWaitlistEntryUpsert(
+  ctx: HttpActionCtx,
+  data: ClerkWebhookEvent["data"],
+): Promise<void> {
+  if (!data.email_address) {
+    console.warn(`[Clerk Webhook] Missing email for waitlist entry`, { id: data.id });
+    return;
+  }
+
+  const invitation = data.invitation;
+  await ctx.runMutation(internal.clerk_webhooks.upsertWaitlistEntry, {
+    clerkId: data.id,
+    emailAddress: data.email_address,
+    status: (data.status as "pending" | "invited" | "completed" | "rejected") || "pending",
+    isLocked: data.is_locked || false,
+    inviteUrl: invitation?.url || undefined,
+    invitationStatus: invitation?.status,
+    invitationCreatedAt: invitation?.created_at,
+    invitationUpdatedAt: invitation?.updated_at,
+    createdAt: data.created_at || Date.now(),
+    updatedAt: data.updated_at || Date.now(),
+  });
+  console.info(`[Clerk Webhook] Waitlist entry synced: ${data.email_address} (${data.status})`);
+}
+
 async function logClerkSessionEvent(
   ctx: HttpActionCtx,
   data: ClerkWebhookEvent["data"],
@@ -416,6 +455,8 @@ const clerkWebhookHandlers: Partial<Record<ClerkWebhookEvent["type"], ClerkEvent
   "organizationInvitation.created": handleClerkInvitationCreated,
   "organizationInvitation.accepted": handleClerkInvitationAccepted,
   "organizationInvitation.revoked": handleClerkInvitationRevoked,
+  "waitlistEntry.created": handleClerkWaitlistEntryUpsert,
+  "waitlistEntry.updated": handleClerkWaitlistEntryUpsert,
   "session.created": (ctx, data) =>
     logClerkSessionEvent(ctx, data, "user.login", "[Clerk Webhook] Session logged"),
   "session.ended": (ctx, data) =>
@@ -2853,6 +2894,43 @@ http.route({
     }
 
     const result = await ctx.runMutation(internal.ai.eval.resetEvalState, {});
+
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+// ---------------------------------------------------------------------------
+// DEV-only: payment extraction eval endpoint.
+// Accepts raw contract text, runs extraction, returns PaymentExtractionResult.
+// Used by evals/scripts/score-extraction.ts — bypasses PDF storage requirement.
+// ---------------------------------------------------------------------------
+
+http.route({
+  path: "/dev/eval/extract-payment",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const clerkSecret = process.env.CLERK_SECRET_KEY;
+    if (!clerkSecret || !clerkSecret.startsWith("sk_test_")) {
+      return new Response(JSON.stringify({ error: "Only available in dev" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const body = (await request.json()) as { contractText?: string };
+    if (!body.contractText) {
+      return new Response(JSON.stringify({ error: "contractText is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const result = await ctx.runAction(internal.ai.evalExtraction.extractPaymentFromText, {
+      contractText: body.contractText,
+    });
 
     return new Response(JSON.stringify(result), {
       status: 200,

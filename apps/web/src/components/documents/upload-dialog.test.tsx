@@ -2,6 +2,8 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+vi.stubEnv("VITE_CONVEX_URL", "https://example.com");
+
 const mockUseMutation = vi.fn();
 const mockUseQuery = vi.fn();
 

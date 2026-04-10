@@ -1,0 +1,17 @@
+{
+  "lineItems": [
+    {
+      "description": "Quarterly subscription — Lexicon Intelligence Research Platform (full database, 12-language translation, news monitoring, API access, 5 user seats)",
+      "quantity": 1,
+      "unitPriceCents": 450000
+    }
+  ],
+  "currency": "eur",
+  "paymentType": "recurring",
+  "dueDateTerms": "net_30",
+  "recurringConfig": {
+    "interval": "month",
+    "intervalCount": 3
+  },
+  "notes": "Statutory late interest at 3× French legal interest rate applies on overdue amounts; no contractual late fee."
+}

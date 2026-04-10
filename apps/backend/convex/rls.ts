@@ -714,6 +714,7 @@ function getInternalOnlyRules(
   | "mcp_oauth_refresh_tokens"
   | "subscription_coupons"
   | "subscription_promo_codes"
+  | "waitlist_entries"
 > {
   return {
     download_tokens: {
@@ -738,6 +739,10 @@ function getInternalOnlyRules(
     },
     subscription_promo_codes: {
       read: async () => rlsCtx !== null,
+      modify: async () => false,
+    },
+    waitlist_entries: {
+      read: async () => false,
       modify: async () => false,
     },
   };

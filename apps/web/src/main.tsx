@@ -177,6 +177,7 @@ function ThemedClerkProvider({ children }: { children: React.ReactNode }) {
       publishableKey={CLERK_URL}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
+      waitlistUrl="/waitlist"
       afterSignInUrl="/app"
       afterSignUpUrl="/app"
       signInFallbackRedirectUrl="/app"

@@ -15,6 +15,7 @@ interface Plan {
   cta: string;
   ctaLink: string;
   highlighted?: boolean;
+  contact?: boolean;
 }
 
 const plans: Plan[] = [
@@ -24,34 +25,55 @@ const plans: Plan[] = [
     period: "forever",
     subtitle: "For individuals getting started",
     features: [
-      { text: "5 documents per month", included: true },
+      { text: "10 documents per month", included: true },
       { text: "Unlimited recipients", included: true },
-      { text: "Email notifications", included: true },
-      { text: "Full audit trail", included: true },
+      { text: "Full audit trail + SHA-256 certificate", included: true },
       { text: "PDF download", included: true },
-      { text: "Team workspace", included: false },
-      { text: "API access", included: false },
+      { text: "Payment collection (4.5% + 30¢)", included: true },
+      { text: "100MB document storage", included: true },
+      { text: "Custom branding", included: false },
+      { text: "Reusable templates", included: false },
+      { text: "REST API + webhooks", included: false },
     ],
-    cta: "Start Free",
-    ctaLink: `${APP_URL}/sign-up`,
+    cta: "Join Waitlist",
+    ctaLink: `${APP_URL}/waitlist`,
   },
   {
     name: "Pro",
     price: { monthly: "$15", annual: "$12" },
     period: "/mo",
-    subtitle: "For teams that move fast",
+    subtitle: "For teams that close deals",
     features: [
-      { text: "Unlimited documents", included: true },
-      { text: "Team workspaces", included: true },
+      { text: "500 documents per month", included: true },
+      { text: "Up to 20 seats", included: true },
       { text: "Custom branding", included: true },
       { text: "Reusable templates", included: true },
-      { text: "Payments — one-time, recurring, installments", included: true },
-      { text: "REST API access", included: true },
+      { text: "Payment collection (4.0% + 30¢)", included: true },
+      { text: "10GB document storage", included: true },
+      { text: "REST API + webhooks", included: true },
       { text: "Priority support", included: true },
     ],
-    cta: "Start Pro Trial",
-    ctaLink: `${APP_URL}/sign-up?plan=pro`,
+    cta: "Join Waitlist",
+    ctaLink: `${APP_URL}/waitlist`,
     highlighted: true,
+  },
+  {
+    name: "Enterprise",
+    price: { monthly: "Custom", annual: "Custom" },
+    period: "",
+    subtitle: "For orgs with compliance and scale requirements",
+    features: [
+      { text: "Unlimited documents", included: true },
+      { text: "Unlimited seats", included: true },
+      { text: "SSO (SAML / OIDC)", included: true },
+      { text: "Custom payment fee rates", included: true },
+      { text: "Advanced compliance controls", included: true },
+      { text: "Custom integrations", included: true },
+      { text: "Priority support", included: true },
+    ],
+    cta: "Talk to us",
+    ctaLink: "mailto:sales@seal.co",
+    contact: true,
   },
 ];
 
@@ -112,7 +134,7 @@ export function StaticPricing() {
         </FadeIn>
 
         {/* Pricing cards */}
-        <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-2" data-testid="pricing-grid">
+        <div className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-3" data-testid="pricing-grid">
           {plans.map((plan, i) => (
             <FadeIn delay={i * 0.08} key={plan.name}>
               <div
@@ -190,17 +212,7 @@ export function StaticPricing() {
           ))}
         </div>
 
-        {/* Enterprise line */}
-        <FadeIn delay={0.2}>
-          <div className="border-border mx-auto mt-8 max-w-4xl rounded-xl border p-6 text-center">
-            <p className="text-foreground text-sm font-medium">
-              Need SSO, advanced compliance, or custom integrations?{" "}
-              <a className="text-primary hover:underline" href="mailto:sales@seal.co">
-                Talk to us
-              </a>
-            </p>
-          </div>
-        </FadeIn>
+
       </div>
     </section>
   );
@@ -259,7 +271,7 @@ export function PricingBlockComponent({ block }: { block: PricingSectionBlock })
                     variant={tier.highlighted ? "default" : "outline"}
                   >
                     <a href={tier.ctaLink}>
-                      {tier.ctaText || "Get Started"}
+                      {tier.ctaText || "Join Waitlist"}
                       <ArrowRight
                         aria-hidden="true"
                         className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"

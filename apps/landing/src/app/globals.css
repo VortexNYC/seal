@@ -56,9 +56,44 @@
   50% { transform: translateY(-12px); }
 }
 
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes type-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes progress-bar {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+@keyframes badge-pop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes tick-check {
+  0%   { stroke-dashoffset: 24; opacity: 0; }
+  40%  { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-float,
-  .animate-float-slow {
+  .animate-float-slow,
+  .animate-slide-in-up,
+  .animate-badge-pop,
+  .animate-progress-bar {
     animation: none;
   }
 }
@@ -70,5 +105,25 @@
 
   .animate-float-slow {
     animation: float-slow 6s ease-in-out infinite;
+  }
+
+  .animate-slide-in-up {
+    animation: slide-in-up 0.4s ease-out both;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out both;
+  }
+
+  .animate-cursor {
+    animation: type-cursor 1s step-end infinite;
+  }
+
+  .animate-badge-pop {
+    animation: badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .animate-progress-bar {
+    animation: progress-bar 1.5s ease-out both;
   }
 }

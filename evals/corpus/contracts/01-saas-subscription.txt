@@ -1,0 +1,49 @@
+SOFTWARE AS A SERVICE SUBSCRIPTION AGREEMENT
+
+Effective Date: March 1, 2026
+
+PARTIES
+
+This Software as a Service Subscription Agreement ("Agreement") is entered into as of the Effective Date by and between:
+
+Meridian Analytics, Inc., a Delaware corporation with its principal place of business at 400 Technology Square, Boston, MA 02139 ("Provider"), and
+
+Halcyon Freight Partners, LLC, a Texas limited liability company with its principal place of business at 1820 Commerce Street, Dallas, TX 75201 ("Customer").
+
+SCOPE OF SERVICES
+
+Provider shall make available to Customer its cloud-based logistics intelligence platform, Meridian Core, including all standard features, automated reporting modules, and up to fifty (50) named user seats. Provider shall maintain platform uptime of no less than 99.5% measured on a monthly basis, exclusive of scheduled maintenance windows communicated at least 72 hours in advance.
+
+SUBSCRIPTION TERM
+
+This Agreement shall commence on the Effective Date and continue for an initial term of twelve (12) months, renewing automatically for successive twelve-month periods unless either party provides written notice of non-renewal at least sixty (60) days prior to the end of the then-current term.
+
+PAYMENT TERMS
+
+Customer shall pay Provider a monthly subscription fee of eight thousand five hundred dollars ($8,500.00) per month, plus a one-time onboarding and data migration fee of two thousand dollars ($2,000.00) due with the first invoice. Invoices are issued on the first business day of each calendar month and are due within thirty (30) days of the invoice date. All amounts are denominated in United States dollars.
+
+Late payments shall accrue interest at a rate of one and one-half percent (1.5%) per month on any outstanding balance, beginning five (5) days after the payment due date.
+
+All fees are exclusive of applicable taxes, which Customer shall be responsible for paying. Provider reserves the right to suspend access to the platform upon sixty (60) days of non-payment following written notice.
+
+GOVERNING LAW
+
+This Agreement shall be governed by the laws of the Commonwealth of Massachusetts without regard to its conflict-of-law provisions.
+
+SIGNATURES
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
+
+MERIDIAN ANALYTICS, INC.
+
+By: ___________________________
+Name: Rachel Thornton
+Title: Chief Revenue Officer
+Date: March 1, 2026
+
+HALCYON FREIGHT PARTNERS, LLC
+
+By: ___________________________
+Name: Derek Vasquez
+Title: VP of Operations
+Date: March 1, 2026

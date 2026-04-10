@@ -1,0 +1,16 @@
+{
+  "lineItems": [
+    {
+      "description": "Corporate leadership summit planning and production fee — Fontainebleau Miami Beach, June 12–13 2026",
+      "quantity": 1,
+      "unitPriceCents": 9500000
+    }
+  ],
+  "currency": "usd",
+  "paymentType": "deposit_balance",
+  "dueDateTerms": "custom",
+  "depositBalanceConfig": {
+    "depositPercent": 25,
+    "balanceDueDays": 30
+  }
+}

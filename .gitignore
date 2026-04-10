@@ -120,3 +120,4 @@ apps/web/convex/_generated/
 .claude/hookify.*.local.md
 .claude/skills/openlogs-server-logs
 .agents/skills/openlogs-server-logs/
+apps/*/PORT

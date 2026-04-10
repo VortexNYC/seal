@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as VerifyQrTokenRouteImport } from './routes/verify.$qrToken'
 import { Route as SignTokenRouteImport } from './routes/sign.$token'
 import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
+import { Route as AuthWaitlistRouteImport } from './routes/_auth/waitlist'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
 import { Route as AuthAcceptInviteRouteImport } from './routes/_auth/accept-invite'
@@ -99,6 +100,11 @@ const AuthenticatedSlugRoute = AuthenticatedSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthWaitlistRoute = AuthWaitlistRouteImport.update({
+  id: '/waitlist',
+  path: '/waitlist',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
   id: '/sign-up',
@@ -366,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/waitlist': typeof AuthWaitlistRoute
   '/$slug': typeof AuthenticatedSlugRouteWithChildren
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
@@ -418,6 +425,7 @@ export interface FileRoutesByTo {
   '/accept-invite': typeof AuthAcceptInviteRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/waitlist': typeof AuthWaitlistRoute
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
   '/$slug/$': typeof AuthenticatedSlugSplatRoute
@@ -467,6 +475,7 @@ export interface FileRoutesById {
   '/_auth/accept-invite': typeof AuthAcceptInviteRoute
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
+  '/_auth/waitlist': typeof AuthWaitlistRoute
   '/_authenticated/$slug': typeof AuthenticatedSlugRouteWithChildren
   '/sign/$token': typeof SignTokenRoute
   '/verify/$qrToken': typeof VerifyQrTokenRoute
@@ -521,6 +530,7 @@ export interface FileRouteTypes {
     | '/accept-invite'
     | '/sign-in'
     | '/sign-up'
+    | '/waitlist'
     | '/$slug'
     | '/sign/$token'
     | '/verify/$qrToken'
@@ -573,6 +583,7 @@ export interface FileRouteTypes {
     | '/accept-invite'
     | '/sign-in'
     | '/sign-up'
+    | '/waitlist'
     | '/sign/$token'
     | '/verify/$qrToken'
     | '/$slug/$'
@@ -621,6 +632,7 @@ export interface FileRouteTypes {
     | '/_auth/accept-invite'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
+    | '/_auth/waitlist'
     | '/_authenticated/$slug'
     | '/sign/$token'
     | '/verify/$qrToken'
@@ -734,6 +746,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$slug'
       preLoaderRoute: typeof AuthenticatedSlugRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_auth/waitlist': {
+      id: '/_auth/waitlist'
+      path: '/waitlist'
+      fullPath: '/waitlist'
+      preLoaderRoute: typeof AuthWaitlistRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_auth/sign-up': {
       id: '/_auth/sign-up'
@@ -1050,12 +1069,14 @@ interface AuthRouteChildren {
   AuthAcceptInviteRoute: typeof AuthAcceptInviteRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
+  AuthWaitlistRoute: typeof AuthWaitlistRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthAcceptInviteRoute: AuthAcceptInviteRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
+  AuthWaitlistRoute: AuthWaitlistRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

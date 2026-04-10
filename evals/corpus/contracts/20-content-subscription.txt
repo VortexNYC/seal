@@ -1,0 +1,49 @@
+CONTENT PLATFORM SUBSCRIPTION AGREEMENT
+
+Effective Date: April 1, 2026
+
+PARTIES
+
+This Content Platform Subscription Agreement ("Agreement") is entered into as of the Effective Date by and between:
+
+Lexicon Intelligence S.A.S., a simplified joint-stock company (société par actions simplifiée) incorporated under the laws of France, with its principal office at 54 Rue du Faubourg Saint-Honoré, 75008 Paris, France ("Provider"), and
+
+Dumont Partners Advisory EURL, a single-member limited liability company incorporated under the laws of France, with its principal office at 38 Avenue George V, 75008 Paris, France ("Subscriber").
+
+SUBSCRIPTION SERVICES
+
+Provider shall grant Subscriber access to the Lexicon Intelligence Research Platform, including the full article database (over two million (2,000,000) records), machine-translated content in twelve (12) languages, real-time news monitoring with keyword alert configuration, and API access with up to ten thousand (10,000) requests per month. Subscriber may designate up to five (5) named user accounts under this Agreement.
+
+SUBSCRIPTION FEE AND PAYMENT TERMS
+
+Subscriber shall pay Provider a quarterly subscription fee of four thousand five hundred euros (€4,500.00), invoiced quarterly in advance. The first invoice shall be issued on the Effective Date and is due within thirty (30) days of the invoice date. Subsequent invoices shall be issued quarterly on the anniversary of the prior invoice date and shall each be due within thirty (30) days of issuance.
+
+Subscriber shall pay by SEPA bank transfer to Provider's designated account. All fees exclude applicable TVA (VAT), which shall be added at the applicable French statutory rate where applicable.
+
+If any invoice remains unpaid more than thirty (30) days after its due date, Provider may suspend access to the platform after providing five (5) days' written notice. No contractual late fee applies, but statutory interest under French law shall accrue at three (3) times the legal interest rate on any overdue amounts.
+
+TERM AND RENEWAL
+
+This Agreement shall commence on the Effective Date and shall continue for a minimum initial term of one (1) year. Thereafter it shall renew automatically on a quarterly basis unless either party provides thirty (30) days' prior written notice of non-renewal.
+
+GOVERNING LAW
+
+This Agreement shall be governed by and construed in accordance with the laws of France, and any dispute shall be subject to the exclusive jurisdiction of the courts of Paris.
+
+SIGNATURES
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.
+
+LEXICON INTELLIGENCE S.A.S.
+
+By: ___________________________
+Name: Henri Beaumont
+Title: Directeur Général
+Date: April 1, 2026
+
+DUMONT PARTNERS ADVISORY EURL
+
+By: ___________________________
+Name: Élise Dumont
+Title: Gérante
+Date: April 1, 2026

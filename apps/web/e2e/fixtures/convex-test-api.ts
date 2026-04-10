@@ -82,19 +82,19 @@ export async function ensurePdfStorageId(pdfPath: string): Promise<string> {
 
 /**
  * Create a test document directly via Convex mutation.
- * Returns the document ID string.
+ * Returns both the document ID and the name that was stored in the DB.
  */
 export async function apiCreateDocument(
   organizationSlug: string,
   storageId: string,
-  name = `e2e-test-doc-${Date.now()}`,
-): Promise<string> {
+): Promise<{ id: string; name: string }> {
+  const name = `e2e-test-doc-${Date.now()}`;
   const result = (await convexMutation("test_e2e_helpers:createTestDocument", {
     organizationSlug,
     storageId,
     name,
   })) as { status: string; value: { id: string } };
-  return result.value.id;
+  return { id: result.value.id, name };
 }
 
 /**

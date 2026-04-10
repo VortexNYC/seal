@@ -35,7 +35,7 @@ test.describe("Document Sharing", () => {
 
     if (storageId) {
       // Fast path: create via API (~200ms, no browser)
-      sharedDocId = await apiCreateDocument(organizationSlug, storageId, sharedDocName);
+      sharedDocId = (await apiCreateDocument(organizationSlug, storageId)).id;
       // Navigate to the documents list so UI is ready for the test
       await documentsPage.goto(organizationSlug);
     } else {

@@ -96,7 +96,8 @@ export const paymentFieldConfigsTable = defineTable({
 
   // Terms
   dueDateTerms: dueDateTermsTuple,
-  customDueDays: v.optional(v.number()), // only when dueDateTerms === "custom"
+  customDueDays: v.optional(v.number()), // only when dueDateTerms === "custom" and relative days stated
+  customDueDate: v.optional(v.string()), // ISO 8601 date, only when dueDateTerms === "custom" and a calendar date is stated
   lateFees: v.optional(lateFeeValidator),
 
   // Type-specific configs

@@ -1,0 +1,22 @@
+{
+  "lineItems": [
+    {
+      "description": "Tenant improvement buildout — floors 12–14, 720 Wilshire Boulevard, Los Angeles",
+      "quantity": 1,
+      "unitPriceCents": 125000000
+    }
+  ],
+  "currency": "usd",
+  "paymentType": "installments",
+  "dueDateTerms": "custom",
+  "customDueDate": "2026-04-01",
+  "lateFee": {
+    "type": "fixed",
+    "amount": 25000,
+    "gracePeriodDays": 10
+  },
+  "installmentsConfig": {
+    "count": 6,
+    "interval": "month"
+  }
+}

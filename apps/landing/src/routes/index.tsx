@@ -1,24 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StaticCta } from "~/components/sections/cta-block";
-import { StaticDevelopers } from "~/components/sections/developers-block";
-import { staticFaqs, StaticFaq } from "~/components/sections/faq-block";
 import { StaticFeatures } from "~/components/sections/features-block";
 import { StaticHero } from "~/components/sections/hero-block";
-import { StaticPricing } from "~/components/sections/pricing-block";
-import { StaticTrust } from "~/components/sections/trust-block";
-
-const faqJsonLd = JSON.stringify({
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: staticFaqs.map((faq) => ({
-    "@type": "Question",
-    name: faq.question,
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: faq.answer,
-    },
-  })),
-});
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,7 +10,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Seal reads your contracts before you sign them. AI-powered e-signatures with built-in clause review, payments, and a full REST API. Free to start.",
+          "Seal is an intelligent document platform — e-signatures, built-in payments, AI clause review, and a full REST API. Free to start.",
       },
       { property: "og:type", content: "website" },
       {
@@ -37,7 +20,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Seal reads your contracts before you sign them. AI-powered e-signatures with built-in clause review, payments, and a full REST API.",
+          "E-signatures, built-in payments, AI clause review, and a full REST API. Free to start.",
       },
       { property: "og:url", content: "https://seal.co" },
       { property: "og:image", content: "https://seal.co/favicon/og-image.png" },
@@ -49,15 +32,9 @@ export const Route = createFileRoute("/")({
       {
         name: "twitter:description",
         content:
-          "Seal reads your contracts before you sign them. AI-powered e-signatures with built-in clause review, payments, and a full REST API.",
+          "E-signatures, built-in payments, AI clause review, and a full REST API. Free to start.",
       },
       { name: "twitter:image", content: "https://seal.co/favicon/og-image.png" },
-    ],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: faqJsonLd,
-      },
     ],
   }),
   component: Home,
@@ -68,10 +45,6 @@ function Home() {
     <>
       <StaticHero />
       <StaticFeatures />
-      <StaticTrust />
-      <StaticDevelopers />
-      <StaticPricing />
-      <StaticFaq />
       <StaticCta />
     </>
   );

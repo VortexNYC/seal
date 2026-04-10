@@ -40,10 +40,6 @@ function getManualChunkName(id: string): string | undefined {
     return "vendor-docs";
   }
 
-  if (matchesPackage(id, "@scalar") || matchesPackage(id, "scalar")) {
-    return "vendor-api-ref";
-  }
-
   if (matchesPackage(id, "motion") || matchesPackage(id, "framer-motion")) {
     return "vendor-motion";
   }
@@ -57,7 +53,8 @@ function getManualChunkName(id: string): string | undefined {
 
 export default defineConfig(async ({ command }) => ({
   server: {
-    port: 5181,
+    host: "127.0.0.1",
+    port: parseInt(process.env.PORT ?? "5181"),
     proxy: {
       "/ingest/static": {
         target: "https://us-assets.i.posthog.com",
@@ -99,6 +96,7 @@ export default defineConfig(async ({ command }) => ({
   resolve: {
     tsconfigPaths: true,
     alias: {
+      "~": path.resolve(import.meta.dirname, "./src"),
       "fumadocs-mdx:collections/server": path.resolve(import.meta.dirname, "./.source/server.ts"),
       "fumadocs-mdx:collections/browser": path.resolve(import.meta.dirname, "./.source/browser.ts"),
       "fumadocs-mdx:collections/dynamic": path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
@@ -118,12 +116,22 @@ export default defineConfig(async ({ command }) => ({
   // - @radix-ui/*: depends on tslib at runtime — bundling inlines the aliased
   //   ESM version instead of leaving broken external imports
   ssr: {
-    noExternal: ["fumadocs-core", "fumadocs-ui", "tslib", /^@radix-ui\//],
+    noExternal: [
+      "fumadocs-core",
+      "fumadocs-openapi",
+      "fumadocs-ui",
+      "@fumari/stf",
+      "tslib",
+      /^@radix-ui\//,
+    ],
   },
 
   // Polyfill node:path → path-browserify only during browser dep pre-bundling.
   // fumadocs-core/source uses path.join/dirname which don't exist in browsers.
   optimizeDeps: {
+    // Force a single version of router-core — avoids "invariant" missing-export
+    // errors caused by bun resolving multiple semver-incompatible copies.
+    exclude: ["@tanstack/router-core"],
     rolldownOptions: {
       resolve: {
         alias: {

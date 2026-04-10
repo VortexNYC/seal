@@ -1,7 +1,8 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { CreditCardIcon, Loader2Icon, PlusIcon, TrashIcon } from "lucide-react";
+import { format, parse } from "date-fns";
+import { CalendarIcon, CreditCardIcon, Loader2Icon, PlusIcon, TrashIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -9,6 +10,7 @@ import { getErrorMessage } from "@/lib/utils";
 
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { Calendar } from "../ui/calendar";
 import { Checkbox } from "../ui/checkbox";
 import {
   Dialog,
@@ -21,6 +23,7 @@ import {
 import { Input } from "../ui/input";
 import { InputCurrency, parseCurrency } from "../ui/input-currency";
 import { Label } from "../ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
@@ -79,6 +82,8 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
   const [paymentType, setPaymentType] = useState<PaymentType>("one_time");
   const [dueDateTerms, setDueDateTerms] = useState<DueDateTerms>("on_receipt");
   const [customDueDays, setCustomDueDays] = useState<number>(30);
+  const [customDueDateMode, setCustomDueDateMode] = useState<"days" | "date">("days");
+  const [customDueDate, setCustomDueDate] = useState<Date | undefined>(undefined);
 
   // Late fees
   const [lateFeeEnabled, setLateFeeEnabled] = useState(false);
@@ -125,6 +130,8 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
     setPaymentType("one_time");
     setDueDateTerms("on_receipt");
     setCustomDueDays(30);
+    setCustomDueDateMode("days");
+    setCustomDueDate(undefined);
     setLateFeeEnabled(false);
     setLateFeeType("percentage");
     setLateFeeAmount(0);
@@ -162,7 +169,13 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
       );
       setPaymentType(existingConfig.paymentType);
       setDueDateTerms(existingConfig.dueDateTerms);
-      if (existingConfig.customDueDays) setCustomDueDays(existingConfig.customDueDays);
+      if (existingConfig.customDueDate) {
+        setCustomDueDateMode("date");
+        setCustomDueDate(parse(existingConfig.customDueDate, "yyyy-MM-dd", new Date()));
+      } else if (existingConfig.customDueDays) {
+        setCustomDueDateMode("days");
+        setCustomDueDays(existingConfig.customDueDays);
+      }
 
       if (existingConfig.lateFees) {
         setLateFeeEnabled(existingConfig.lateFees.enabled);
@@ -265,7 +278,12 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
         })),
         currency: "usd",
         dueDateTerms,
-        customDueDays: dueDateTerms === "custom" ? customDueDays : undefined,
+        customDueDays:
+          dueDateTerms === "custom" && customDueDateMode === "days" ? customDueDays : undefined,
+        customDueDate:
+          dueDateTerms === "custom" && customDueDateMode === "date" && customDueDate
+            ? format(customDueDate, "yyyy-MM-dd")
+            : undefined,
         lateFees: lateFeeEnabled
           ? {
               enabled: true,
@@ -446,15 +464,57 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
                   </SelectContent>
                 </Select>
                 {dueDateTerms === "custom" && (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={1}
-                      className="w-24"
-                      value={customDueDays}
-                      onChange={(e) => setCustomDueDays(Number(e.target.value))}
-                    />
-                    <span className="text-muted-foreground text-sm">days</span>
+                  <div className="space-y-2">
+                    <div className="flex gap-1.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={customDueDateMode === "days" ? "default" : "outline"}
+                        onClick={() => setCustomDueDateMode("days")}
+                      >
+                        Days from signing
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={customDueDateMode === "date" ? "default" : "outline"}
+                        onClick={() => setCustomDueDateMode("date")}
+                      >
+                        Specific date
+                      </Button>
+                    </div>
+                    {customDueDateMode === "days" ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          className="w-24"
+                          value={customDueDays}
+                          onChange={(e) => setCustomDueDays(Number(e.target.value))}
+                        />
+                        <span className="text-muted-foreground text-sm">days</span>
+                      </div>
+                    ) : (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                            {customDueDate ? format(customDueDate, "PPP") : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={customDueDate}
+                            onSelect={setCustomDueDate}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    )}
                   </div>
                 )}
               </div>

@@ -6,6 +6,10 @@ export const docs = defineDocs({
   dir: "content/docs",
 });
 
+export const developer = defineDocs({
+  dir: "content/developer",
+});
+
 const imageSchema = z.object({
   alt: z.string().optional(),
   height: z.number().optional(),
