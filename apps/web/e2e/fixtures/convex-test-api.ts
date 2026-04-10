@@ -60,8 +60,16 @@ export async function ensurePdfStorageId(pdfPath: string): Promise<string> {
   });
 
   if (!uploadUrlRes.ok) throw new Error(`generateUploadUrl failed: ${uploadUrlRes.status}`);
-  const uploadUrlData = (await uploadUrlRes.json()) as { status: string; value: string };
-  const uploadUrl = uploadUrlData.value;
+  const uploadUrlData = (await uploadUrlRes.json()) as {
+    status: string;
+    value?: string | { uploadUrl?: string };
+  };
+  const uploadUrl =
+    typeof uploadUrlData.value === "string" ? uploadUrlData.value : uploadUrlData.value?.uploadUrl;
+
+  if (!uploadUrl) {
+    throw new Error(`generateUploadUrl returned no upload URL: ${JSON.stringify(uploadUrlData)}`);
+  }
 
   // Upload the PDF
   const pdfBytes = fs.readFileSync(pdfPath);

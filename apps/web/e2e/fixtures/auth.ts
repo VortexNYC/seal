@@ -24,7 +24,7 @@ async function getStorageId(): Promise<string> {
     const { readFileSync } = await import("node:fs");
     const storageFile = path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
-      "../../../playwright/.clerk/e2e-pdf-storage-id.txt",
+      "../../playwright/.clerk/e2e-pdf-storage-id.txt",
     );
     cachedStorageId = readFileSync(storageFile, "utf8").trim() || null;
   } catch {
