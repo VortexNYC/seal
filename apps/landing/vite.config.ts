@@ -12,7 +12,7 @@ import * as SourceConfig from "./source.config";
 import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
-const shikiPackageDir = path.dirname(require.resolve("shiki"));
+const shikiPackageDir = path.dirname(path.dirname(require.resolve("shiki")));
 
 function matchesPackage(id: string, pkg: string): boolean {
   return id.includes(`/node_modules/${pkg}/`) || id.endsWith(`/node_modules/${pkg}`);
