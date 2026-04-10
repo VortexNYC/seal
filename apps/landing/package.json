@@ -39,6 +39,7 @@
     "clsx": "^2.1.1",
     "fumadocs-core": "^16.7.10",
     "fumadocs-openapi": "^10.6.6",
+    "shiki": "^4.0.2",
     "fumadocs-ui": "^16.7.10",
     "lucide-react": "^1.7.0",
     "motion": "^12.38.0",
