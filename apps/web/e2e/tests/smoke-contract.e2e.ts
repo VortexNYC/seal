@@ -43,7 +43,8 @@ test.describe("Smoke Contract", () => {
     const documentsPage = new DocumentsListPage(authenticatedPage);
     await documentsPage.goto(organizationSlug);
     await expect(authenticatedPage).toHaveURL(`/${organizationSlug}/documents`);
-    await expect(authenticatedPage.getByRole("button", { name: /new document/i })).toBeVisible();
+    await expect(documentsPage.heading).toBeVisible();
+    await expect(documentsPage.createDocumentButton).toBeVisible();
   });
 
   test("seeded api document opens in the editor", async ({
