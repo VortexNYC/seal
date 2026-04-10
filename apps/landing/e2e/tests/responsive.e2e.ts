@@ -81,11 +81,7 @@ test.describe("landing responsive layouts", () => {
     await apiReferencePage.goto();
     await assertNoHorizontalOverflow(page);
 
-    if (viewportKind === "desktop") {
-      await expect(apiReferencePage.navigationMenuButton()).toBeHidden();
-    } else {
-      await expect(apiReferencePage.navigationMenuButton()).toBeVisible();
-    }
+    await expect(apiReferencePage.navigationMenuButton()).toBeVisible();
 
     await page.goto("/changelog");
     await expect(page.getByRole("heading", { level: 1, name: /changelog/i })).toBeVisible();
