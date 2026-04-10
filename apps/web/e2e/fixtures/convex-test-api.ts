@@ -144,4 +144,3 @@ export async function ensurePdfStorageId(pdfPath: string): Promise<string> {
 
   return storageId;
 }
-
