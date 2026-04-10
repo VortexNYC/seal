@@ -112,7 +112,9 @@ export async function ensureAuthenticatedWorkspaceHome(
 
     const activeSlug = extractOrganizationSlugFromUrl(page.url());
     if (preferredOrganizationSlug && activeSlug && activeSlug !== preferredOrganizationSlug) {
-      await page.goto(`/${preferredOrganizationSlug}/home`, { waitUntil: "domcontentloaded" }).catch(() => {});
+      await page
+        .goto(`/${preferredOrganizationSlug}/home`, { waitUntil: "domcontentloaded" })
+        .catch(() => {});
       await page
         .waitForURL(/\/[\w-]+\/home/, {
           timeout: 12000,
@@ -144,7 +146,9 @@ export function isAuthenticatedUrl(url: string): boolean {
 function extractOrganizationSlugFromUrl(url: string): string | null {
   try {
     const pathname = new URL(url).pathname;
-    const match = pathname.match(/^\/([\w-]+)\/(?:home|documents|settings|templates|analytics)(?:\/|$)/);
+    const match = pathname.match(
+      /^\/([\w-]+)\/(?:home|documents|settings|templates|analytics)(?:\/|$)/,
+    );
     return match?.[1] ?? null;
   } catch {
     return null;
