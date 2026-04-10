@@ -1,7 +1,6 @@
 import type { Page } from "@playwright/test";
 
 import { expect, test } from "../fixtures/auth";
-import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { ShareDialogPage } from "../pages/documents/share-dialog-page";
 import { waitForToast } from "../utils/test-helpers";
@@ -11,58 +10,22 @@ test.describe("Document Sharing", () => {
 
   let documentsPage: DocumentsListPage;
   let shareDialog: ShareDialogPage;
-  let sharedDocId: string;
   let sharedDocName: string;
 
-  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
+  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
     documentsPage = new DocumentsListPage(authenticatedPage);
     shareDialog = new ShareDialogPage(authenticatedPage);
-    sharedDocId = "";
-    sharedDocName = "";
 
-    // Read the cached storageId written by global.setup.ts
-    let storageId: string | null = null;
     try {
-      const { readFileSync } = await import("node:fs");
-      const { resolve, dirname } = await import("node:path");
-      const { fileURLToPath } = await import("node:url");
-      const f = resolve(
-        dirname(fileURLToPath(import.meta.url)),
-        "../../playwright/.clerk/e2e-pdf-storage-id.txt",
-      );
-      storageId = readFileSync(f, "utf8").trim() || null;
-    } catch {}
-
-    if (storageId) {
-      // Fast path: create via API (~200ms, no browser)
-      const doc = await apiCreateDocument(organizationSlug, storageId);
-      sharedDocId = doc.id;
+      const doc = await createApiDocument();
       sharedDocName = doc.name;
-      // Navigate to the documents list so UI is ready for the test
       await documentsPage.goto(organizationSlug);
-    } else {
-      sharedDocName = `e2e-test-doc-${Date.now()}`;
-      // Fallback: create via UI (slow but safe)
-      await documentsPage.goto(organizationSlug);
-      try {
-        sharedDocName = await documentsPage.createDocument("./e2e/fixtures/sample-document.pdf");
-      } catch (err) {
-        if (err instanceof Error && err.message.includes("monthly document limit")) {
-          test.skip(true, "E2E workspace reached its monthly document limit.");
-          return;
-        }
-        throw err;
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("monthly document limit")) {
+        test.skip(true, "E2E workspace reached its monthly document limit.");
+        return;
       }
-    }
-  });
-
-  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
-    if (sharedDocId) {
-      await apiDeleteDocument(sharedDocId).catch(() => {});
-    } else if (sharedDocName) {
-      const dp = new DocumentsListPage(authenticatedPage);
-      await dp.goto(organizationSlug).catch(() => {});
-      await dp.deleteDocument(sharedDocName).catch(() => {});
+      throw err;
     }
   });
 

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+
+import { pdfStorageIdPath } from "./paths";
 
 /**
  * Lightweight Convex HTTP API client for E2E test fixtures.
@@ -26,12 +27,12 @@ function getConvexAuthHeaders(): HeadersInit {
   };
 }
 
-const STORAGE_ID_FILE = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../playwright/.clerk/e2e-pdf-storage-id.txt",
-);
+const STORAGE_ID_FILE = pdfStorageIdPath;
 
-async function convexMutation(path: string, args: Record<string, unknown>): Promise<unknown> {
+export async function convexMutation(
+  path: string,
+  args: Record<string, unknown>,
+): Promise<unknown> {
   const res = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: "POST",
     headers: getConvexAuthHeaders(),
@@ -144,26 +145,3 @@ export async function ensurePdfStorageId(pdfPath: string): Promise<string> {
   return storageId;
 }
 
-/**
- * Create a test document directly via Convex mutation.
- * Returns both the document ID and the name that was stored in the DB.
- */
-export async function apiCreateDocument(
-  organizationSlug: string,
-  storageId: string,
-): Promise<{ id: string; name: string }> {
-  const name = `e2e-test-doc-${Date.now()}`;
-  const result = (await convexMutation("test_e2e_helpers:createTestDocument", {
-    organizationSlug,
-    storageId,
-    name,
-  })) as { status: string; value: { id: string } };
-  return { id: result.value.id, name };
-}
-
-/**
- * Delete a test document directly via Convex mutation.
- */
-export async function apiDeleteDocument(documentId: string): Promise<void> {
-  await convexMutation("test_e2e_helpers:deleteTestDocument", { documentId });
-}

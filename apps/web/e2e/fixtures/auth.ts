@@ -1,11 +1,11 @@
 /* oxlint-disable react-hooks/rules-of-hooks */
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { expect, test as base, type Page } from "@playwright/test";
 
+import { createDocument, deleteDocument } from "../factories/document-factory";
 import { ensureAuthenticatedWorkspaceHome, getTestWorkspaceConfig } from "./auth-helpers";
-import { apiCreateDocument, apiDeleteDocument, ensurePdfStorageId } from "./convex-test-api";
+import { ensurePdfStorageId } from "./convex-test-api";
+import { pdfStorageIdPath, sampleDocumentPath } from "./paths";
+import { readCachedWorkspaceSlug } from "./workspace-state";
 
 type AuthFixtures = {
   authenticatedPage: Page;
@@ -22,11 +22,7 @@ async function getStorageId(): Promise<string> {
 
   try {
     const { readFileSync } = await import("node:fs");
-    const storageFile = path.resolve(
-      path.dirname(fileURLToPath(import.meta.url)),
-      "../../playwright/.clerk/e2e-pdf-storage-id.txt",
-    );
-    cachedStorageId = readFileSync(storageFile, "utf8").trim() || null;
+    cachedStorageId = readFileSync(pdfStorageIdPath, "utf8").trim() || null;
   } catch {
     cachedStorageId = null;
   }
@@ -35,8 +31,7 @@ async function getStorageId(): Promise<string> {
     return cachedStorageId;
   }
 
-  const pdfPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "sample-document.pdf");
-  cachedStorageId = await ensurePdfStorageId(pdfPath);
+  cachedStorageId = await ensurePdfStorageId(sampleDocumentPath);
   return cachedStorageId;
 }
 
@@ -57,7 +52,7 @@ export const test = base.extend<AuthFixtures>({
 
     const factory = async () => {
       const storageId = await getStorageId();
-      const { id, name } = await apiCreateDocument(organizationSlug, storageId);
+      const { id, name } = await createDocument({ organizationSlug, storageId });
       created.push({ id });
       return { id, name };
     };
@@ -66,11 +61,17 @@ export const test = base.extend<AuthFixtures>({
 
     // Auto-cleanup all docs created during this test
     for (const { id } of created) {
-      await apiDeleteDocument(id).catch(() => {});
+      await deleteDocument(id).catch(() => {});
     }
   },
 
   organizationSlug: async ({ authenticatedPage }, use) => {
+    const cachedSlug = readCachedWorkspaceSlug();
+    if (cachedSlug) {
+      await use(cachedSlug);
+      return;
+    }
+
     // Extract from URL first (most reliable when on /home)
     const url = authenticatedPage.url();
     const match = url.match(/\/([\w-]+)\/home/);

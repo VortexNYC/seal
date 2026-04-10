@@ -1,6 +1,8 @@
 import { clerk } from "@clerk/testing/playwright";
 import { type Page } from "@playwright/test";
 
+import { extractOrganizationSlugFromUrl } from "./workspace-state";
+
 type TestWorkspaceConfig = {
   email: string;
   emailCode: string;
@@ -140,18 +142,6 @@ export function isAuthenticatedUrl(url: string): boolean {
     return /\/(app|[\w-]+\/home|[\w-]+\/onboarding\/choose-organization)/.test(pathname);
   } catch {
     return false;
-  }
-}
-
-function extractOrganizationSlugFromUrl(url: string): string | null {
-  try {
-    const pathname = new URL(url).pathname;
-    const match = pathname.match(
-      /^\/([\w-]+)\/(?:home|documents|settings|templates|analytics)(?:\/|$)/,
-    );
-    return match?.[1] ?? null;
-  } catch {
-    return null;
   }
 }
 

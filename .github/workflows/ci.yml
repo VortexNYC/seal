@@ -77,10 +77,10 @@ jobs:
         # while the normal workspace script execution is stable.
         run: cd apps/web && bun run test
 
-  test-web-e2e:
-    name: Web E2E
+  test-web-e2e-smoke:
+    name: Web E2E Smoke
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    timeout-minutes: 20
+    timeout-minutes: 10
     needs: quality
 
     steps:
@@ -98,12 +98,13 @@ jobs:
       - name: Install Playwright browsers
         run: cd apps/web && bunx playwright install --with-deps chromium
 
-      - name: Run web E2E tests
-        # Only run chromium in CI — other browsers run locally.
+      - name: Run web E2E smoke gate
+        id: web_e2e_smoke
+        # Fail fast on environment/auth/helper regressions before the full suite.
         # Avoid `bun --bun run` here: Playwright's config loader fails under
         # Bun's Node shim, while the normal workspace script execution works
         # locally and in CI-compatible environments.
-        run: cd apps/web && bun run test:e2e --project=setup --project=chromium
+        run: cd apps/web && bun run test:e2e --project=smoke-contract
         env:
           CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
@@ -115,11 +116,60 @@ jobs:
           VITE_APP_URL: http://localhost:5180
           NODE_OPTIONS: "--max-old-space-size=4096"
 
-      - name: Upload web E2E artifacts
-        if: failure()
+      - name: Upload web E2E smoke artifacts
+        if: steps.web_e2e_smoke.conclusion == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: web-e2e-artifacts
+          name: web-e2e-smoke-artifacts
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          if-no-files-found: ignore
+
+  test-web-e2e-chromium:
+    name: Web E2E Chromium
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 20
+    needs:
+      - quality
+      - test-web-e2e-smoke
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: cd apps/web && bunx playwright install --with-deps chromium
+
+      - name: Run web E2E chromium suite
+        id: web_e2e_chromium
+        # Smoke passed in the upstream job, but this job runs on a fresh machine.
+        # Re-run setup dependencies here so Chromium has its own local setup artifacts.
+        run: cd apps/web && bun run test:e2e --project=chromium
+        env:
+          CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          E2E_TEST_USER_EMAIL: ${{ vars.E2E_TEST_USER_EMAIL }}
+          E2E_TEST_EMAIL_CODE: ${{ vars.E2E_TEST_EMAIL_CODE }}
+          VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL_TEST }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY_TEST }}
+          VITE_APP_URL: http://localhost:5180
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Upload web E2E chromium artifacts
+        if: steps.web_e2e_chromium.conclusion == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-e2e-chromium-artifacts
           path: |
             apps/web/playwright-report
             apps/web/test-results

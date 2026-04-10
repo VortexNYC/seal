@@ -8,8 +8,9 @@ import { defineConfig, devices } from "@playwright/test";
  */
 import dotenv from "dotenv";
 
+import { authStatePath } from "./e2e/fixtures/paths";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const authStatePath = path.resolve(__dirname, "playwright/.clerk/user.json");
 dotenv.config({ path: path.resolve(__dirname, ".env.test") });
 
 /**
@@ -57,14 +58,38 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: "setup",
-      testMatch: "**/global.setup.ts",
+      name: "setup-auth",
+      testMatch: "**/auth.setup.ts",
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "setup-app",
+      testMatch: "**/app.setup.ts",
+      dependencies: ["setup-auth"],
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: authStatePath,
+      },
+    },
+    {
+      name: "setup-backend",
+      testMatch: "**/backend.setup.ts",
+      dependencies: ["setup-app"],
+    },
+    {
+      name: "smoke-contract",
+      testMatch: "**/smoke-contract.e2e.ts",
+      dependencies: ["setup-backend"],
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: authStatePath,
+      },
     },
     {
       name: "chromium",
       testMatch: "**/*.e2e.ts",
-      dependencies: ["setup"],
+      testIgnore: "**/smoke-contract.e2e.ts",
+      dependencies: ["smoke-contract"],
       use: {
         ...devices["Desktop Chrome"],
         storageState: authStatePath,
@@ -74,7 +99,8 @@ export default defineConfig({
     {
       name: "firefox",
       testMatch: "**/*.e2e.ts",
-      dependencies: ["setup"],
+      testIgnore: "**/smoke-contract.e2e.ts",
+      dependencies: ["smoke-contract"],
       use: {
         ...devices["Desktop Firefox"],
         storageState: authStatePath,
@@ -84,7 +110,8 @@ export default defineConfig({
     {
       name: "webkit",
       testMatch: "**/*.e2e.ts",
-      dependencies: ["setup"],
+      testIgnore: "**/smoke-contract.e2e.ts",
+      dependencies: ["smoke-contract"],
       use: {
         ...devices["Desktop Safari"],
         storageState: authStatePath,
@@ -95,7 +122,8 @@ export default defineConfig({
     {
       name: "Mobile Chrome",
       testMatch: "**/*.e2e.ts",
-      dependencies: ["setup"],
+      testIgnore: "**/smoke-contract.e2e.ts",
+      dependencies: ["smoke-contract"],
       use: {
         ...devices["Pixel 5"],
         storageState: authStatePath,
@@ -104,7 +132,8 @@ export default defineConfig({
     {
       name: "Mobile Safari",
       testMatch: "**/*.e2e.ts",
-      dependencies: ["setup"],
+      testIgnore: "**/smoke-contract.e2e.ts",
+      dependencies: ["smoke-contract"],
       use: {
         ...devices["iPhone 12"],
         storageState: authStatePath,

@@ -1,72 +1,22 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import type { Page } from "@playwright/test";
 
 import { expect, test } from "../fixtures/auth";
-import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { DocumentPage } from "../pages/documents/document-page";
-import { DocumentsListPage } from "../pages/documents/documents-list-page";
-import { testData } from "../utils/test-data";
 
-function getCachedStorageId(): string | null {
-  try {
-    const f = resolve(
-      dirname(fileURLToPath(import.meta.url)),
-      "../../playwright/.clerk/e2e-pdf-storage-id.txt",
-    );
-    return readFileSync(f, "utf8").trim() || null;
-  } catch {
-    return null;
-  }
-}
-
-async function createAndOpenDocument(
-  authenticatedPage: Page,
-  organizationSlug: string,
-): Promise<{ id: string | null; name: string }> {
-  const storageId = getCachedStorageId();
-
-  if (storageId) {
-    const doc = await apiCreateDocument(organizationSlug, storageId);
-    await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
-    await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-    return { id: doc.id, name: doc.name };
-  }
-
-  const documentsPage = new DocumentsListPage(authenticatedPage);
-  await documentsPage.goto(organizationSlug);
-  const documentName = await documentsPage.createDocument(testData.samplePdfPath);
-  await documentsPage.openDocument(documentName);
-  await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-  return { id: null, name: documentName };
-}
-
-async function deleteDocument(
-  authenticatedPage: Page,
-  organizationSlug: string,
-  docId: string | null,
-  docName: string,
-): Promise<void> {
-  if (docId) {
-    await apiDeleteDocument(docId).catch(() => {});
-  } else if (docName) {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
-    await documentsPage.goto(organizationSlug).catch(() => {});
-    await documentsPage.deleteDocument(docName).catch(() => {});
-  }
+async function setupApiBackedDocument(args: {
+  authenticatedPage: Page;
+  organizationSlug: string;
+  createApiDocument: () => Promise<{ id: string; name: string }>;
+}): Promise<void> {
+  const doc = await args.createApiDocument();
+  await args.authenticatedPage.goto(`/${args.organizationSlug}/documents/${doc.id}`);
+  await new DocumentPage(args.authenticatedPage).waitForDocumentLoad();
 }
 
 test.describe("Signature Fields - Selection", () => {
-  let docId: string | null = null;
-  let docName = "";
-
-  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
+  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
     try {
-      const doc = await createAndOpenDocument(authenticatedPage, organizationSlug);
-      docId = doc.id;
-      docName = doc.name;
+      await setupApiBackedDocument({ authenticatedPage, organizationSlug, createApiDocument });
     } catch (err) {
       if (err instanceof Error && err.message.includes("monthly document limit")) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
@@ -74,10 +24,6 @@ test.describe("Signature Fields - Selection", () => {
       }
       throw err;
     }
-  });
-
-  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
-    await deleteDocument(authenticatedPage, organizationSlug, docId, docName);
   });
 
   test("should display all field type buttons", async ({ authenticatedPage }) => {
@@ -129,14 +75,9 @@ test.describe("Signature Fields - Selection", () => {
 });
 
 test.describe("Signature Fields - Drag and Drop", () => {
-  let docId: string | null = null;
-  let docName = "";
-
-  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
+  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
     try {
-      const doc = await createAndOpenDocument(authenticatedPage, organizationSlug);
-      docId = doc.id;
-      docName = doc.name;
+      await setupApiBackedDocument({ authenticatedPage, organizationSlug, createApiDocument });
     } catch (err) {
       if (err instanceof Error && err.message.includes("monthly document limit")) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
@@ -144,10 +85,6 @@ test.describe("Signature Fields - Drag and Drop", () => {
       }
       throw err;
     }
-  });
-
-  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
-    await deleteDocument(authenticatedPage, organizationSlug, docId, docName);
   });
 
   test("should add signature field by clicking on canvas", async ({ authenticatedPage }) => {
@@ -190,14 +127,9 @@ test.describe("Signature Fields - Drag and Drop", () => {
 });
 
 test.describe("Signature Fields - Management", () => {
-  let docId: string | null = null;
-  let docName = "";
-
-  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
+  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
     try {
-      const doc = await createAndOpenDocument(authenticatedPage, organizationSlug);
-      docId = doc.id;
-      docName = doc.name;
+      await setupApiBackedDocument({ authenticatedPage, organizationSlug, createApiDocument });
     } catch (err) {
       if (err instanceof Error && err.message.includes("monthly document limit")) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
@@ -205,10 +137,6 @@ test.describe("Signature Fields - Management", () => {
       }
       throw err;
     }
-  });
-
-  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
-    await deleteDocument(authenticatedPage, organizationSlug, docId, docName);
   });
 
   test("should display fields section", async ({ authenticatedPage }) => {
@@ -273,14 +201,9 @@ test.describe("Signature Fields - Management", () => {
 });
 
 test.describe("Signature Fields - Toolbar Interactions", () => {
-  let docId: string | null = null;
-  let docName = "";
-
-  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
+  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
     try {
-      const doc = await createAndOpenDocument(authenticatedPage, organizationSlug);
-      docId = doc.id;
-      docName = doc.name;
+      await setupApiBackedDocument({ authenticatedPage, organizationSlug, createApiDocument });
     } catch (err) {
       if (err instanceof Error && err.message.includes("monthly document limit")) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
@@ -288,10 +211,6 @@ test.describe("Signature Fields - Toolbar Interactions", () => {
       }
       throw err;
     }
-  });
-
-  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
-    await deleteDocument(authenticatedPage, organizationSlug, docId, docName);
   });
 
   test("should display signature fields toolbar", async ({ authenticatedPage }) => {

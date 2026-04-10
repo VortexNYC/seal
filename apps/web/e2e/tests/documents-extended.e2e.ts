@@ -1,93 +1,75 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import type { Browser, BrowserContext, Page } from "@playwright/test";
 
-import type { Page } from "@playwright/test";
-
+import { createDocument, deleteDocument as deleteApiDocument } from "../factories/document-factory";
 import { expect, test } from "../fixtures/auth";
-import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
+import { ensurePdfStorageId } from "../fixtures/convex-test-api";
+import { sampleDocumentPath } from "../fixtures/paths";
+import { readCachedWorkspaceSlug } from "../fixtures/workspace-state";
 import { DocumentPage } from "../pages/documents/document-page";
 import { DocumentsListPage } from "../pages/documents/documents-list-page";
-import { testData } from "../utils/test-data";
 
-function getCachedStorageId(): string | null {
+type ApiDocument = { id: string; name: string };
+
+async function createAndOpenApiDocument(args: {
+  authenticatedPage: Page;
+  organizationSlug: string;
+  createApiDocument: () => Promise<ApiDocument>;
+}): Promise<ApiDocument> {
+  const doc = await args.createApiDocument();
+  await args.authenticatedPage.goto(`/${args.organizationSlug}/documents/${doc.id}`);
+  await new DocumentPage(args.authenticatedPage).waitForDocumentLoad();
+  return doc;
+}
+
+async function resolveWorkspaceSlug(context: BrowserContext): Promise<string> {
+  const cachedSlug = readCachedWorkspaceSlug();
+  if (cachedSlug) {
+    return cachedSlug;
+  }
+
+  const page = await context.newPage();
   try {
-    const f = resolve(
-      dirname(fileURLToPath(import.meta.url)),
-      "../../playwright/.clerk/e2e-pdf-storage-id.txt",
-    );
-    return readFileSync(f, "utf8").trim() || null;
-  } catch {
-    return null;
+    await page.goto("/app", { waitUntil: "domcontentloaded" });
+    await page.waitForURL(/\/([\w-]+)\/(home|onboarding)/, { timeout: 10000 });
+    const match = page.url().match(/\/([\w-]+)\/(home|onboarding)/);
+    if (!match?.[1]) {
+      throw new Error(`Unable to resolve workspace slug from ${page.url()}`);
+    }
+    return match[1];
+  } finally {
+    await page.close();
   }
 }
 
-/**
- * Create a document and open it in the editor.
- * Fast path: API create + direct URL navigation (~3s vs ~15s UI path).
- * Returns the document ID (fast path) or name (slow path).
- */
-async function createAndOpenDocument(
-  authenticatedPage: Page,
-  organizationSlug: string,
-): Promise<{ id: string | null; name: string }> {
-  const storageId = getCachedStorageId();
-
-  if (storageId) {
-    const doc = await apiCreateDocument(organizationSlug, storageId);
-    await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
-    await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-    return { id: doc.id, name: doc.name };
-  }
-
-  // Fallback: UI path
-  const documentsPage = new DocumentsListPage(authenticatedPage);
-  await documentsPage.goto(organizationSlug);
-  const uploadedDocumentName = await documentsPage.createDocument(testData.samplePdfPath);
-  await documentsPage.openDocument(uploadedDocumentName);
-  await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-  return { id: null, name: uploadedDocumentName };
-}
-
-async function deleteDocument(
-  authenticatedPage: Page,
-  organizationSlug: string,
-  docId: string | null,
-  docName: string,
-): Promise<void> {
-  if (docId) {
-    await apiDeleteDocument(docId).catch(() => {});
-  } else {
-    const documentsPage = new DocumentsListPage(authenticatedPage);
-    await documentsPage.goto(organizationSlug).catch(() => {});
-    await documentsPage.deleteDocument(docName).catch(() => {});
+async function withSetupContext<T>(
+  browser: Browser,
+  storageState: string,
+  fn: (context: BrowserContext, organizationSlug: string) => Promise<T>,
+): Promise<T> {
+  const context = await browser.newContext({ storageState });
+  try {
+    const organizationSlug = await resolveWorkspaceSlug(context);
+    return await fn(context, organizationSlug);
+  } finally {
+    await context.close();
   }
 }
 
 test.describe("Document Filtering", () => {
-  let docId: string | null = null;
-  let docName = "";
-
-  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
+  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
     try {
-      const doc = await createAndOpenDocument(authenticatedPage, organizationSlug);
-      docId = doc.id;
-      docName = doc.name;
-      // Navigate back to documents list after opening
-      const documentsPage = new DocumentsListPage(authenticatedPage);
-      await documentsPage.goto(organizationSlug);
+      await createAndOpenApiDocument({
+        authenticatedPage,
+        organizationSlug,
+        createApiDocument,
+      });
+      await new DocumentsListPage(authenticatedPage).goto(organizationSlug);
     } catch (err) {
       if (err instanceof Error && err.message.includes("monthly document limit")) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
         return;
       }
       throw err;
-    }
-  });
-
-  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
-    if (docId || docName) {
-      await deleteDocument(authenticatedPage, organizationSlug, docId, docName);
     }
   });
 
@@ -122,17 +104,19 @@ test.describe("Document Filtering", () => {
 });
 
 test.describe("Document Actions", () => {
-  let docId: string | null = null;
+  let docId = "";
   let docName = "";
 
-  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
+  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
     try {
-      const doc = await createAndOpenDocument(authenticatedPage, organizationSlug);
+      const doc = await createAndOpenApiDocument({
+        authenticatedPage,
+        organizationSlug,
+        createApiDocument,
+      });
       docId = doc.id;
       docName = doc.name;
-      // Navigate back to documents list
-      const documentsPage = new DocumentsListPage(authenticatedPage);
-      await documentsPage.goto(organizationSlug);
+      await new DocumentsListPage(authenticatedPage).goto(organizationSlug);
     } catch (err) {
       if (err instanceof Error && err.message.includes("monthly document limit")) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
@@ -142,19 +126,12 @@ test.describe("Document Actions", () => {
     }
   });
 
-  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
-    if (docId || docName) {
-      await deleteDocument(authenticatedPage, organizationSlug, docId, docName);
-    }
-  });
-
   test("should download document", async ({ authenticatedPage }) => {
     const documentsPage = new DocumentsListPage(authenticatedPage);
     const row = documentsPage.getDocumentRowByName(docName);
     await row.waitFor({ state: "visible", timeout: 10000 });
     await row.getByRole("button", { name: /document actions for/i }).click();
 
-    // Chromium/WebKit open a popup; Firefox triggers a download event instead.
     const popupPromise = authenticatedPage
       .waitForEvent("popup", { timeout: 5000 })
       .catch(() => null);
@@ -165,8 +142,6 @@ test.describe("Document Actions", () => {
     await authenticatedPage.getByRole("menuitem", { name: /^download$/i }).click();
 
     const [popup, download] = await Promise.all([popupPromise, downloadPromise]);
-    // Check download first: Firefox opens an about:blank popup but triggers a
-    // download event. Chromium/WebKit open a popup that navigates to the URL.
     if (download) {
       expect(download).toBeTruthy();
     } else if (popup) {
@@ -180,91 +155,48 @@ test.describe("Document Actions", () => {
     authenticatedPage,
     organizationSlug,
   }) => {
-    // Open the document we created in beforeEach
-    if (docId) {
-      await authenticatedPage.goto(`/${organizationSlug}/documents/${docId}`);
-    } else {
-      const documentsPage = new DocumentsListPage(authenticatedPage);
-      await documentsPage.openDocument(docName);
-    }
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${docId}`);
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.waitForDocumentLoad();
 
     await documentPage.backButton.click();
 
     await expect(authenticatedPage).toHaveURL(`/${organizationSlug}/documents`);
-    // afterEach will delete the document
+  });
+
+  test.afterEach(() => {
+    docId = "";
+    docName = "";
   });
 });
 
 test.describe("Document Editor - Zoom Controls", () => {
   test.describe.configure({ mode: "serial" });
 
-  let zoomDocId: string | null = null;
-  let zoomDocumentName = "";
+  let zoomDocId = "";
 
   test.beforeAll(async ({ browser }, testInfo) => {
-    const storageId = (() => {
-      try {
-        const f = resolve(
-          dirname(fileURLToPath(import.meta.url)),
-          "../../playwright/.clerk/e2e-pdf-storage-id.txt",
-        );
-        return readFileSync(f, "utf8").trim() || null;
-      } catch {
-        return null;
-      }
-    })();
+    const storageId = await ensurePdfStorageId(sampleDocumentPath);
+    const storageState = testInfo.project.use.storageState as string;
 
-    const context = await browser.newContext({
-      storageState: testInfo.project.use.storageState as string,
-    });
-    const page = await context.newPage();
-    await page.goto("/app", { waitUntil: "domcontentloaded" });
-    await page.waitForURL(/\/[\w-]+\/home/, { timeout: 10000 });
-    const slug = page.url().match(/\/([\w-]+)\/home/)?.[1] ?? "";
-
-    if (storageId) {
-      const doc = await apiCreateDocument(slug, storageId);
-      zoomDocId = doc.id;
-      zoomDocumentName = doc.name;
-    } else {
-      const documentsPage = new DocumentsListPage(page);
-      await documentsPage.goto(slug);
-      zoomDocumentName = await documentsPage.createDocument(testData.samplePdfPath);
-    }
-    await context.close();
+    zoomDocId = await withSetupContext(
+      browser,
+      storageState,
+      async (_context, organizationSlug) => {
+        const doc = await createDocument({ organizationSlug, storageId });
+        return doc.id;
+      },
+    );
   });
 
-  test.afterAll(async ({ browser }, testInfo) => {
-    if (!zoomDocId && !zoomDocumentName) return;
-
+  test.afterAll(async () => {
     if (zoomDocId) {
-      await apiDeleteDocument(zoomDocId).catch(() => {});
-      return;
+      await deleteApiDocument(zoomDocId).catch(() => {});
     }
-
-    const context = await browser.newContext({
-      storageState: testInfo.project.use.storageState as string,
-    });
-    const page = await context.newPage();
-    await page.goto("/app", { waitUntil: "domcontentloaded" });
-    await page.waitForURL(/\/[\w-]+\/home/, { timeout: 10000 });
-    const slug = page.url().match(/\/([\w-]+)\/home/)?.[1] ?? "";
-    const documentsPage = new DocumentsListPage(page);
-    await documentsPage.goto(slug);
-    await documentsPage.deleteDocument(zoomDocumentName).catch(() => {});
-    await context.close();
   });
 
   test("should zoom in on document", async ({ authenticatedPage, organizationSlug }) => {
-    if (zoomDocId) {
-      await authenticatedPage.goto(`/${organizationSlug}/documents/${zoomDocId}`);
-    } else {
-      const documentsPage = new DocumentsListPage(authenticatedPage);
-      await documentsPage.goto(organizationSlug);
-      await documentsPage.openDocument(zoomDocumentName);
-    }
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${zoomDocId}`);
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.waitForDocumentLoad();
 
@@ -277,13 +209,7 @@ test.describe("Document Editor - Zoom Controls", () => {
   });
 
   test("should zoom out on document", async ({ authenticatedPage, organizationSlug }) => {
-    if (zoomDocId) {
-      await authenticatedPage.goto(`/${organizationSlug}/documents/${zoomDocId}`);
-    } else {
-      const documentsPage = new DocumentsListPage(authenticatedPage);
-      await documentsPage.goto(organizationSlug);
-      await documentsPage.openDocument(zoomDocumentName);
-    }
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${zoomDocId}`);
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.waitForDocumentLoad();
 
@@ -292,13 +218,7 @@ test.describe("Document Editor - Zoom Controls", () => {
   });
 
   test("should reset zoom on document", async ({ authenticatedPage, organizationSlug }) => {
-    if (zoomDocId) {
-      await authenticatedPage.goto(`/${organizationSlug}/documents/${zoomDocId}`);
-    } else {
-      const documentsPage = new DocumentsListPage(authenticatedPage);
-      await documentsPage.goto(organizationSlug);
-      await documentsPage.openDocument(zoomDocumentName);
-    }
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${zoomDocId}`);
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.waitForDocumentLoad();
 
@@ -313,13 +233,7 @@ test.describe("Document Editor - Zoom Controls", () => {
   });
 
   test("should fit document to viewport", async ({ authenticatedPage, organizationSlug }) => {
-    if (zoomDocId) {
-      await authenticatedPage.goto(`/${organizationSlug}/documents/${zoomDocId}`);
-    } else {
-      const documentsPage = new DocumentsListPage(authenticatedPage);
-      await documentsPage.goto(organizationSlug);
-      await documentsPage.openDocument(zoomDocumentName);
-    }
+    await authenticatedPage.goto(`/${organizationSlug}/documents/${zoomDocId}`);
     const documentPage = new DocumentPage(authenticatedPage);
     await documentPage.waitForDocumentLoad();
 
@@ -335,26 +249,19 @@ test.describe("Document Editor - Zoom Controls", () => {
 test.describe("Document Details Sidebar", () => {
   test.describe.configure({ mode: "serial" });
 
-  let sidebarDocId: string | null = null;
-  let sidebarDocumentName = "";
-
-  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
+  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
     try {
-      const doc = await createAndOpenDocument(authenticatedPage, organizationSlug);
-      sidebarDocId = doc.id;
-      sidebarDocumentName = doc.name;
+      await createAndOpenApiDocument({
+        authenticatedPage,
+        organizationSlug,
+        createApiDocument,
+      });
     } catch (err) {
       if (err instanceof Error && err.message.includes("monthly document limit")) {
         test.skip(true, "E2E workspace reached its monthly document limit.");
         return;
       }
       throw err;
-    }
-  });
-
-  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
-    if (sidebarDocId || sidebarDocumentName) {
-      await deleteDocument(authenticatedPage, organizationSlug, sidebarDocId, sidebarDocumentName);
     }
   });
 
@@ -372,7 +279,6 @@ test.describe("Document Details Sidebar", () => {
 
     await expect(documentPage.recipientsSectionButton).toBeVisible();
 
-    // Fresh document always shows "No recipients" + "Add Recipient" button
     const noRecipients = authenticatedPage.getByText("No recipients");
     const addRecipientButton = authenticatedPage.getByRole("button", { name: /add recipient/i });
     await expect(noRecipients.or(addRecipientButton).first()).toBeVisible({ timeout: 15000 });
@@ -382,12 +288,7 @@ test.describe("Document Details Sidebar", () => {
     const documentPage = new DocumentPage(authenticatedPage);
 
     await documentPage.activitySectionButton.click();
-
-    // Verify Activity section
     await expect(documentPage.activitySectionButton).toBeVisible();
-
-    // Activity entries accumulate across runs; "was created" may be buried.
-    // Match any event verb that appears in activity log items.
     await expect(
       authenticatedPage
         .getByText(/was (?:created|added|updated|removed|sent|signed|viewed)/i)

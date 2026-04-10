@@ -88,6 +88,8 @@ PLAYWRIGHT_BASE_URL=http://localhost:5180
 Configuration is in `playwright.config.ts`:
 
 - Base URL: `http://localhost:5180`
+- Staged setup projects: `setup-auth` → `setup-app` → `setup-backend`
+- Fail-fast smoke gate: `smoke-contract` runs after setup and before full browser suites
 - Browsers: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
 - Auto-starts dev server
 - Captures screenshots/videos on failure
@@ -222,6 +224,14 @@ Configure these in GitHub repository settings:
 - `CLERK_TESTING_TOKEN` (if your Clerk test environment requires it)
 - `CLERK_SECRET_KEY` (alternative to `CLERK_TESTING_TOKEN` for some setups)
 - `E2E_TEST_USER_EMAIL`
+
+### Setup artifacts
+
+Playwright setup writes shared artifacts under `apps/web/playwright/.clerk/`:
+
+- `user.json` — authenticated Clerk storage state
+- `workspace-slug.txt` — resolved active workspace slug
+- `e2e-pdf-storage-id.txt` — cached Convex storage id for the sample PDF
 
 ## 🎨 Best Practices
 

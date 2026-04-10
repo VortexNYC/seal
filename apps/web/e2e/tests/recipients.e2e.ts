@@ -1,61 +1,20 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { expect, test } from "../fixtures/auth";
-import { apiCreateDocument, apiDeleteDocument } from "../fixtures/convex-test-api";
 import { DocumentPage } from "../pages/documents/document-page";
-import { DocumentsListPage } from "../pages/documents/documents-list-page";
 import { testData } from "../utils/test-data";
 import { waitForToast } from "../utils/test-helpers";
 
-function getCachedStorageId(): string | null {
-  try {
-    const f = resolve(
-      dirname(fileURLToPath(import.meta.url)),
-      "../../playwright/.clerk/e2e-pdf-storage-id.txt",
-    );
-    return readFileSync(f, "utf8").trim() || null;
-  } catch {
-    return null;
-  }
-}
-
 test.describe("Recipients Management", () => {
-  let sharedDocId: string | null = null;
-  let sharedDocName = "";
-
-  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
-    const storageId = getCachedStorageId();
+  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
     try {
-      if (storageId) {
-        const doc = await apiCreateDocument(organizationSlug, storageId);
-        sharedDocId = doc.id;
-        sharedDocName = doc.name;
-        await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
-        await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-      } else {
-        const documentsPage = new DocumentsListPage(authenticatedPage);
-        await documentsPage.goto(organizationSlug);
-        sharedDocName = await documentsPage.createDocument(testData.samplePdfPath);
-        await documentsPage.openDocument(sharedDocName);
-      }
+      const doc = await createApiDocument();
+      await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
+      await new DocumentPage(authenticatedPage).waitForDocumentLoad();
     } catch (err) {
       if (err instanceof Error && err.message.includes("monthly document limit")) {
         test.skip(true, "Monthly document quota exhausted.");
         return;
       }
       throw err;
-    }
-  });
-
-  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
-    if (sharedDocId) {
-      await apiDeleteDocument(sharedDocId).catch(() => {});
-    } else if (sharedDocName) {
-      const documentsPage = new DocumentsListPage(authenticatedPage);
-      await documentsPage.goto(organizationSlug).catch(() => {});
-      await documentsPage.deleteDocument(sharedDocName).catch(() => {});
     }
   });
 
@@ -290,40 +249,17 @@ test.describe("Recipients - Authentication Methods", () => {
 });
 
 test.describe("Document Sending", () => {
-  let sendingDocId: string | null = null;
-  let sendingDocName = "";
-
-  test.beforeEach(async ({ authenticatedPage, organizationSlug }) => {
-    const storageId = getCachedStorageId();
+  test.beforeEach(async ({ authenticatedPage, organizationSlug, createApiDocument }) => {
     try {
-      if (storageId) {
-        const doc = await apiCreateDocument(organizationSlug, storageId);
-        sendingDocId = doc.id;
-        sendingDocName = doc.name;
-        await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
-        await new DocumentPage(authenticatedPage).waitForDocumentLoad();
-      } else {
-        const documentsPage = new DocumentsListPage(authenticatedPage);
-        await documentsPage.goto(organizationSlug);
-        sendingDocName = await documentsPage.createDocument(testData.samplePdfPath);
-        await documentsPage.openDocument(sendingDocName);
-      }
+      const doc = await createApiDocument();
+      await authenticatedPage.goto(`/${organizationSlug}/documents/${doc.id}`);
+      await new DocumentPage(authenticatedPage).waitForDocumentLoad();
     } catch (err) {
       if (err instanceof Error && err.message.includes("monthly document limit")) {
         test.skip(true, "Monthly document quota exhausted.");
         return;
       }
       throw err;
-    }
-  });
-
-  test.afterEach(async ({ authenticatedPage, organizationSlug }) => {
-    if (sendingDocId) {
-      await apiDeleteDocument(sendingDocId).catch(() => {});
-    } else if (sendingDocName) {
-      const documentsPage = new DocumentsListPage(authenticatedPage);
-      await documentsPage.goto(organizationSlug).catch(() => {});
-      await documentsPage.deleteDocument(sendingDocName).catch(() => {});
     }
   });
 
