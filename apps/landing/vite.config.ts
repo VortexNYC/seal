@@ -100,12 +100,11 @@ export default defineConfig(async ({ command }) => ({
       "fumadocs-mdx:collections/server": path.resolve(import.meta.dirname, "./.source/server.ts"),
       "fumadocs-mdx:collections/browser": path.resolve(import.meta.dirname, "./.source/browser.ts"),
       "fumadocs-mdx:collections/dynamic": path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
-      // Force shiki subpaths to resolve from the physical package path instead
-      // of Bun's virtual .bun cache. Rolldown cannot load these through the
-      // cache path during landing builds.
-      "shiki/core": path.resolve(import.meta.dirname, "../../node_modules/shiki/dist/core.mjs"),
-      "shiki/wasm": path.resolve(import.meta.dirname, "../../node_modules/shiki/dist/wasm.mjs"),
-      "shiki/onig.wasm": path.resolve(import.meta.dirname, "../../node_modules/shiki/dist/onig.wasm"),
+      // Force shiki subpaths to resolve from the actual installed package
+      // location instead of assuming a root node_modules layout.
+      "shiki/core": require.resolve("shiki/dist/core.mjs"),
+      "shiki/wasm": require.resolve("shiki/dist/wasm.mjs"),
+      "shiki/onig.wasm": require.resolve("shiki/dist/onig.wasm"),
       // Force ESM entry — Rolldown's CJS interop generates a broken destructure
       // (`__toESM$1(...).default` → undefined) when tslib's CJS build is bundled
       // into SSR chunks as a transitive dependency of fumadocs/shiki.
