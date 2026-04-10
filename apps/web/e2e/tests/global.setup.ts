@@ -6,7 +6,11 @@ import { clerkSetup } from "@clerk/testing/playwright";
 import { test as setup } from "@playwright/test";
 
 import { ensureWorkspace, getTestWorkspaceConfig, signInTestUser } from "../fixtures/auth-helpers";
-import { ensurePdfStorageId } from "../fixtures/convex-test-api";
+import {
+  assertConvexE2eHelperAvailability,
+  describeConvexE2eTarget,
+  ensurePdfStorageId,
+} from "../fixtures/convex-test-api";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const authStatePath = path.resolve(__dirname, "../../playwright/.clerk/user.json");
@@ -22,6 +26,16 @@ setup("initialize clerk testing environment", async () => {
 setup("authenticate clerk test user", async ({ page }) => {
   setup.setTimeout(60000);
   mkdirSync(path.dirname(authStatePath), { recursive: true });
+
+  const convexTarget = describeConvexE2eTarget();
+  console.info(
+    `[setup] Web E2E Convex target: ${convexTarget.deploymentName} (${convexTarget.convexUrl})`,
+  );
+
+  await assertConvexE2eHelperAvailability();
+  console.info(
+    `[setup] Convex E2E helpers ready on ${convexTarget.deploymentName}`,
+  );
 
   // Sign in and verify Convex auth is ready
   await signInTestUser(page);

@@ -11,6 +11,21 @@ import { fileURLToPath } from "node:url";
 const CONVEX_URL = process.env.VITE_CONVEX_URL ?? "https://coordinated-lemur-768.convex.cloud";
 const DEPLOY_KEY = process.env.CONVEX_DEPLOY_KEY ?? "";
 
+function getConvexDeploymentName(convexUrl: string): string {
+  try {
+    return new URL(convexUrl).hostname.split(".")[0] ?? convexUrl;
+  } catch {
+    return convexUrl;
+  }
+}
+
+function getConvexAuthHeaders(): HeadersInit {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Convex ${DEPLOY_KEY}`,
+  };
+}
+
 const STORAGE_ID_FILE = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../playwright/.clerk/e2e-pdf-storage-id.txt",
@@ -19,10 +34,7 @@ const STORAGE_ID_FILE = path.resolve(
 async function convexMutation(path: string, args: Record<string, unknown>): Promise<unknown> {
   const res = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Convex ${DEPLOY_KEY}`,
-    },
+    headers: getConvexAuthHeaders(),
     body: JSON.stringify({ path, args, format: "json" }),
   });
   if (!res.ok) {
@@ -30,6 +42,51 @@ async function convexMutation(path: string, args: Record<string, unknown>): Prom
     throw new Error(`Convex mutation ${path} failed (${res.status}): ${text}`);
   }
   return res.json();
+}
+
+export function describeConvexE2eTarget(): { deploymentName: string; convexUrl: string } {
+  return {
+    deploymentName: getConvexDeploymentName(CONVEX_URL),
+    convexUrl: CONVEX_URL,
+  };
+}
+
+export async function assertConvexE2eHelperAvailability(): Promise<void> {
+  if (!DEPLOY_KEY) {
+    throw new Error(
+      `CONVEX_DEPLOY_KEY is missing for Web E2E preflight. Convex deployment: ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL})`,
+    );
+  }
+
+  const response = await fetch(`${CONVEX_URL}/api/mutation`, {
+    method: "POST",
+    headers: getConvexAuthHeaders(),
+    body: JSON.stringify({
+      path: "test_e2e_helpers:generateUploadUrl",
+      args: {},
+      format: "json",
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Convex E2E helper preflight failed for ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL}) with HTTP ${response.status}: ${text}`,
+    );
+  }
+
+  const data = (await response.json()) as {
+    status: string;
+    value?: string | { uploadUrl?: string };
+    errorMessage?: string;
+  };
+  const uploadUrl = typeof data.value === "string" ? data.value : data.value?.uploadUrl;
+
+  if (!uploadUrl) {
+    throw new Error(
+      `Convex E2E helper preflight failed for ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL}). Response: ${JSON.stringify(data)}`,
+    );
+  }
 }
 
 /**
@@ -48,10 +105,7 @@ export async function ensurePdfStorageId(pdfPath: string): Promise<string> {
   // Get an upload URL from Convex
   const uploadUrlRes = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Convex ${DEPLOY_KEY}`,
-    },
+    headers: getConvexAuthHeaders(),
     body: JSON.stringify({
       path: "test_e2e_helpers:generateUploadUrl",
       args: {},
@@ -68,7 +122,9 @@ export async function ensurePdfStorageId(pdfPath: string): Promise<string> {
     typeof uploadUrlData.value === "string" ? uploadUrlData.value : uploadUrlData.value?.uploadUrl;
 
   if (!uploadUrl) {
-    throw new Error(`generateUploadUrl returned no upload URL: ${JSON.stringify(uploadUrlData)}`);
+    throw new Error(
+      `generateUploadUrl returned no upload URL for ${getConvexDeploymentName(CONVEX_URL)} (${CONVEX_URL}): ${JSON.stringify(uploadUrlData)}`,
+    );
   }
 
   // Upload the PDF
