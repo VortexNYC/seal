@@ -1,6 +1,6 @@
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mockUseMutation = vi.fn();
 const mockUseQuery = vi.fn();
@@ -52,7 +52,16 @@ function renderDialog(
 }
 
 describe("UploadDialog", () => {
-  afterEach(cleanup);
+  beforeEach(() => {
+    vi.stubEnv("VITE_CONVEX_URL", "https://local.convex.cloud");
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllEnvs();
+    mockUseQuery.mockReset();
+    mockUseMutation.mockReset();
+  });
 
   test("does not render dialog content when open is false", () => {
     mockUseQuery.mockReturnValue(undefined);

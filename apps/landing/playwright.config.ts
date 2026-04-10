@@ -27,6 +27,7 @@ for (const envFile of [".env.local", ".env"]) {
 
 export default defineConfig({
   testDir: "./e2e/tests",
+  testMatch: "**/*.e2e.ts",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
