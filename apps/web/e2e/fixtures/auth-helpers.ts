@@ -77,8 +77,11 @@ export async function signInTestUser(page: Page): Promise<void> {
  * has landed on a workspace home route with a working Convex auth token.
  */
 export async function ensureAuthenticatedWorkspaceHome(page: Page): Promise<void> {
+  const { organizationSlug } = getTestWorkspaceConfig();
+  const homeUrl = `/${organizationSlug}/home`;
+
   for (let attempt = 0; attempt < 2; attempt++) {
-    await page.goto("/app", { waitUntil: "domcontentloaded" });
+    await page.goto(homeUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
     await page
       .waitForURL(/\/([\w-]+\/home|[\w-]+\/onboarding|sign-in|app)/, {
         timeout: 10000,
@@ -86,18 +89,9 @@ export async function ensureAuthenticatedWorkspaceHome(page: Page): Promise<void
       })
       .catch(() => {});
 
-    if (!isAuthenticatedUrl(page.url())) {
+    if (!page.url().includes("/home") || !isAuthenticatedUrl(page.url())) {
       await signInTestUser(page);
-    }
-
-    if (!page.url().match(/\/[\w-]+\/home/)) {
-      await page.goto("/app", { waitUntil: "domcontentloaded" });
-      await page
-        .waitForURL(/\/[\w-]+\/home/, {
-          timeout: 12000,
-          waitUntil: "domcontentloaded",
-        })
-        .catch(() => {});
+      await page.goto(homeUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
     }
 
     if (page.url().match(/\/[\w-]+\/home/)) {
