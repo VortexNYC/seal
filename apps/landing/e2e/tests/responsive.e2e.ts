@@ -19,26 +19,24 @@ test.describe("landing responsive layouts", () => {
     await homePage.goto();
     await assertNoHorizontalOverflow(page);
 
+    const featureCopy = page.getByRole("heading", {
+      name: /like having a legal assistant review every clause/i,
+    });
+    const featureMockup = page.getByText("Series A Term Sheet — Vantage.pdf");
+    await featureCopy.scrollIntoViewIfNeeded();
+
     if (viewportKind === "mobile") {
       await expect(homePage.mobileMenuButton()).toBeVisible();
       await expect(homePage.desktopNav()).toBeHidden();
-      await expectStacked(homePage.pricingCards().nth(0), homePage.pricingCards().nth(1));
-      await expectStacked(homePage.developersCopy(), homePage.developersCodePanel());
+      await expectStacked(featureCopy, featureMockup);
       await expectStacked(homePage.footerGridColumns().nth(0), homePage.footerGridColumns().nth(1));
       return;
     }
 
     await expect(homePage.mobileMenuButton()).toBeHidden();
     await expect(homePage.desktopNav()).toBeVisible();
-    await expectInline(homePage.pricingCards().nth(0), homePage.pricingCards().nth(1));
+    await expectInline(featureCopy, featureMockup);
     await expectInline(homePage.footerGridColumns().nth(0), homePage.footerGridColumns().nth(1));
-
-    if (viewportKind === "tablet") {
-      await expectStacked(homePage.developersCopy(), homePage.developersCodePanel());
-      return;
-    }
-
-    await expectInline(homePage.developersCopy(), homePage.developersCodePanel());
   });
 
   test("representative routes stay usable without horizontal overflow", async ({
@@ -66,9 +64,7 @@ test.describe("landing responsive layouts", () => {
     }
 
     await page.goto("/docs");
-    await expect(
-      page.getByRole("heading", { name: /developer documentation/i }).first(),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: /documentation/i }).first()).toBeVisible();
     await assertNoHorizontalOverflow(page);
 
     if (viewportKind === "mobile") {

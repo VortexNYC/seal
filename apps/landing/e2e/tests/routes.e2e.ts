@@ -8,7 +8,7 @@ test.describe("landing public routes", () => {
   test("footer links resolve to legal, docs, and changelog routes", async ({ page }) => {
     const homePage = new HomePage(page);
     const visitFooterLink = async (
-      name: "Templates" | "Changelog" | "Terms" | "Privacy",
+      name: "Pricing" | "Changelog" | "Terms" | "Privacy",
       assertion: () => Promise<void>,
     ): Promise<void> => {
       await homePage.goto();
@@ -17,9 +17,9 @@ test.describe("landing public routes", () => {
       await assertion();
     };
 
-    await visitFooterLink("Templates", async () => {
-      await expect(page).toHaveURL(/\/docs$/);
-      await expect(page.locator("body")).toContainText("Seal Docs");
+    await visitFooterLink("Pricing", async () => {
+      await expect(page).toHaveURL(/\/pricing$/);
+      await expect(page.getByRole("heading", { level: 2, name: /simple, honest pricing/i })).toBeVisible();
     });
 
     await visitFooterLink("Changelog", async () => {
@@ -27,17 +27,17 @@ test.describe("landing public routes", () => {
       await expect(page.getByRole("heading", { level: 1, name: /changelog/i })).toBeVisible();
     });
 
-    await visitFooterLink("Terms", async () => {
-      await expect(page).toHaveURL(/\/terms-of-service$/);
-      await expect(
-        page.getByRole("heading", { level: 1, name: /terms of service/i }),
-      ).toBeVisible();
-    });
+    await homePage.goto();
+    await page.getByRole("button", { name: "Privacy" }).scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: "Privacy" }).click();
+    await expect(page.getByRole("dialog")).toContainText("Privacy Policy");
+    await page.getByRole("button", { name: "Close" }).click();
 
-    await visitFooterLink("Privacy", async () => {
-      await expect(page).toHaveURL(/\/privacy-policy$/);
-      await expect(page.getByRole("heading", { level: 1, name: /privacy policy/i })).toBeVisible();
-    });
+    await homePage.goto();
+    await page.getByRole("button", { name: "Terms" }).scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: "Terms" }).click();
+    await expect(page.getByRole("dialog")).toContainText("Terms of Service");
+    await page.getByRole("button", { name: "Close" }).click();
   });
 
   test("representative public routes render without blocking errors", async ({ browser }) => {
@@ -65,7 +65,7 @@ test.describe("landing public routes", () => {
         },
       },
       {
-        path: "/api-reference",
+        path: "/docs/api-reference",
         assert: async (page: Parameters<typeof trackBrowserErrors>[0]) => {
           await new ApiReferencePage(page).waitForReady();
         },

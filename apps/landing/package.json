@@ -13,6 +13,7 @@
     "content:sitemap": "bunx vite-node ./tools/generate-sitemap.ts",
     "build:app": "vite build",
     "build": "bun run content:prepare && bun run content:search && bun run content:sitemap && bun run build:app",
+    "postbuild": "bun run tools/copy-server-runtime-deps.ts",
     "preview": "vite preview",
     "start": "node .output/server/index.mjs",
     "pretypecheck": "bun run content:prepare",

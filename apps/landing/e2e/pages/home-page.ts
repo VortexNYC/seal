@@ -16,21 +16,28 @@ export class HomePage {
 
   async waitForReady(): Promise<void> {
     await expect(
-      this.page.getByRole("heading", { level: 1, name: /docusign doesn.t read your contracts/i }),
+      this.page.getByRole("heading", { level: 1, name: /the old tools offer e-signature/i }),
     ).toBeVisible();
-    await expect(this.page.getByRole("navigation").first()).toBeVisible();
+
+    const viewport = this.page.viewportSize();
+    if (viewport && viewport.width < 768) {
+      await expect(this.page.getByTestId("mobile-menu-button")).toBeVisible();
+    } else {
+      await expect(this.page.getByTestId("desktop-nav")).toBeVisible();
+    }
+
     await expect(this.page.getByRole("contentinfo")).toBeVisible();
   }
 
   heroHeading(): Locator {
     return this.page.getByRole("heading", {
       level: 1,
-      name: /docusign doesn.t read your contracts/i,
+      name: /the old tools offer e-signature/i,
     });
   }
 
   startFreeLinks(): Locator {
-    return this.page.locator(`a[href="${APP_URL}/sign-up"]`);
+    return this.page.locator(`a[href="${APP_URL}/waitlist"]`);
   }
 
   signInLinks(): Locator {

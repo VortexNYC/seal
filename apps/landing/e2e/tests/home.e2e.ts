@@ -13,17 +13,16 @@ test.describe("landing homepage", () => {
     await homePage.goto();
 
     await expect(homePage.heroHeading()).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: /three things the old tools can.t do/i }),
-    ).toBeVisible();
-    await expect(page.getByRole("heading", { name: /simple, honest pricing/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /questions\? answers\./i })).toBeVisible();
+    await page.getByRole("heading", { name: /like having a legal assistant review every clause/i }).scrollIntoViewIfNeeded();
+    await expect(page.getByRole("heading", { name: /like having a legal assistant review every clause/i })).toBeVisible();
+    await page.getByRole("heading", { name: /it.s time to stop juggling tools and start getting more deals/i }).scrollIntoViewIfNeeded();
+    await expect(page.getByRole("heading", { name: /it.s time to stop juggling tools and start getting more deals/i })).toBeVisible();
 
     const startFreeCount = await homePage.startFreeLinks().count();
     expect(startFreeCount).toBeGreaterThan(0);
 
     for (let i = 0; i < startFreeCount; i += 1) {
-      await expect(homePage.startFreeLinks().nth(i)).toHaveAttribute("href", `${APP_URL}/sign-up`);
+      await expect(homePage.startFreeLinks().nth(i)).toHaveAttribute("href", `${APP_URL}/waitlist`);
     }
 
     await browserErrors.assertNoErrors();
@@ -39,29 +38,20 @@ test.describe("landing homepage", () => {
     await homePage.goto();
 
     await expect(page.getByTestId("desktop-nav")).toBeVisible();
-    await homePage.desktopNavLink("Pricing").click();
-    await expect(homePage.pricingSection()).toBeInViewport();
-
-    await Promise.all([
-      page.waitForURL(/\/integrations$/),
-      homePage.desktopNavLink("Integrations").click(),
-    ]);
-    await expect(page).toHaveURL(/\/integrations$/);
-    await expect(page.getByRole("heading", { level: 1, name: /built to connect/i })).toBeVisible();
-
     await Promise.all([page.waitForURL(/\/docs$/), homePage.desktopNavLink("Docs").click()]);
     await expect(page).toHaveURL(/\/docs$/);
-    await expect(page.locator("body")).toContainText("Seal Docs");
+    await expect(page.locator("body")).toContainText("Docs");
 
     await page.goto("/");
     await homePage.waitForReady();
 
-    await Promise.all([
-      page.waitForURL(/\/changelog$/),
-      homePage.desktopNavLink("Changelog").click(),
-    ]);
-    await expect(page).toHaveURL(/\/changelog$/);
-    await expect(page.getByRole("heading", { level: 1, name: /changelog/i })).toBeVisible();
+    await Promise.all([page.waitForURL(/\/compare$/), homePage.desktopNavLink("Compare").click()]);
+    await expect(page).toHaveURL(/\/compare$/);
+    await expect(page.getByRole("heading", { level: 1, name: /we built a document platform/i })).toBeVisible();
+
+    await Promise.all([page.waitForURL(/\/developer$/), homePage.desktopNavLink("Developer").click()]);
+    await expect(page).toHaveURL(/\/developer$/);
+    await expect(page.getByRole("heading", { name: "Developer Documentation" }).first()).toBeVisible();
   });
 
   test("mobile menu opens and navigates correctly", async ({ page, isMobile }) => {
@@ -78,11 +68,8 @@ test.describe("landing homepage", () => {
     await expect(homePage.pricingSection()).toBeInViewport();
 
     await homePage.mobileMenuButton().tap();
-    await Promise.all([
-      page.waitForURL(/\/integrations$/),
-      homePage.mobileMenuLink("Integrations").click(),
-    ]);
-    await expect(page).toHaveURL(/\/integrations$/);
-    await expect(page.getByRole("heading", { level: 1, name: /built to connect/i })).toBeVisible();
+    await Promise.all([page.waitForURL(/\/compare$/), homePage.mobileMenuLink("Compare").click()]);
+    await expect(page).toHaveURL(/\/compare$/);
+    await expect(page.getByRole("heading", { level: 1, name: /we built a document platform/i })).toBeVisible();
   });
 });

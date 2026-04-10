@@ -8,7 +8,7 @@ export class ApiReferencePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto("/api-reference");
+    await this.page.goto("/docs/api-reference");
     await this.waitForReady();
   }
 
@@ -30,6 +30,6 @@ export class ApiReferencePage {
   }
 
   titleHeading(): Locator {
-    return this.page.getByRole("heading", { name: /seal api/i }).first();
+    return this.page.getByRole("heading", { name: /api reference/i }).first();
   }
 }

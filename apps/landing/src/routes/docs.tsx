@@ -3,6 +3,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
 import { type CSSProperties } from "react";
+import { ClientOnly } from "~/components/client-only";
 import { getDocsPageTree } from "~/lib/docs/manifest";
 
 const docsPageTree = getDocsPageTree();
@@ -29,20 +30,23 @@ function DocsLayoutRoute() {
           api: "/api/search.json",
         },
       }}
+      theme={{ enabled: false }}
     >
-      <DocsLayout
-        containerProps={{ style: { '--fd-layout-width': '100vw' } as CSSProperties }}
-        tree={docsPageTree}
-        nav={{
-          title: (
-            <a href="/docs" className="font-semibold text-base">
-              Docs
-            </a>
-          ),
-        }}
-      >
-        <Outlet />
-      </DocsLayout>
+      <ClientOnly>
+        <DocsLayout
+          containerProps={{ style: { '--fd-layout-width': '100vw' } as CSSProperties }}
+          tree={docsPageTree}
+          nav={{
+            title: (
+              <a href="/docs" className="font-semibold text-base">
+                Docs
+              </a>
+            ),
+          }}
+        >
+          <Outlet />
+        </DocsLayout>
+      </ClientOnly>
     </RootProvider>
   );
 }

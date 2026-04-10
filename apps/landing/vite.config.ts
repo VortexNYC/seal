@@ -110,6 +110,7 @@ export default defineConfig(async ({ command }) => ({
       // (`__toESM$1(...).default` → undefined) when tslib's CJS build is bundled
       // into SSR chunks as a transitive dependency of fumadocs/shiki.
       tslib: require.resolve("tslib/tslib.es6.mjs"),
+      "tslib/modules/index.js": require.resolve("tslib/tslib.es6.mjs"),
     },
   },
 
@@ -127,6 +128,8 @@ export default defineConfig(async ({ command }) => ({
       "fumadocs-openapi",
       "fumadocs-ui",
       "@fumari/stf",
+      "react-remove-scroll",
+      "use-sidecar",
       "tslib",
       /^@radix-ui\//,
     ],

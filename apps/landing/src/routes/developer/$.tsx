@@ -1,8 +1,9 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { DocsBody, DocsDescription, DocsPage, DocsTitle, PageLastUpdate } from "fumadocs-ui/page";
+import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/page";
 import { Suspense } from "react";
 import { ClientAPIPage } from "~/components/api-page";
+import { PageLastUpdate } from "~/components/docs/page-last-update";
 import { renderDeveloperPageContent, preloadDeveloperPageContent } from "~/lib/docs/client-loader";
 import { developerSource } from "~/lib/docs/server-source";
 
