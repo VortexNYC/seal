@@ -45,9 +45,9 @@ export const test = base.extend<AuthFixtures>({
 
   createApiDocument: async ({ organizationSlug }, use) => {
     const created: Array<{ id: string }> = [];
-    const storageId = await getStorageId();
 
     const factory = async () => {
+      const storageId = await getStorageId();
       if (!storageId) throw new Error("PDF storageId not cached — check global.setup.ts ran");
       const { id, name } = await apiCreateDocument(organizationSlug, storageId);
       created.push({ id });
