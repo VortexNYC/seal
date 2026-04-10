@@ -1,8 +1,11 @@
 /* oxlint-disable react-hooks/rules-of-hooks */
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { expect, test as base, type Page } from "@playwright/test";
 
 import { ensureAuthenticatedWorkspaceHome, getTestWorkspaceConfig } from "./auth-helpers";
-import { apiCreateDocument, apiDeleteDocument } from "./convex-test-api";
+import { apiCreateDocument, apiDeleteDocument, ensurePdfStorageId } from "./convex-test-api";
 
 type AuthFixtures = {
   authenticatedPage: Page;
@@ -14,21 +17,27 @@ type AuthFixtures = {
 /** Shared in-memory cache of the PDF storageId across all workers in a process */
 let cachedStorageId: string | null = null;
 
-async function getStorageId(): Promise<string | null> {
+async function getStorageId(): Promise<string> {
   if (cachedStorageId) return cachedStorageId;
+
   try {
     const { readFileSync } = await import("node:fs");
-    const { resolve } = await import("node:path");
-    const { fileURLToPath } = await import("node:url");
-    const storageFile = resolve(
-      fileURLToPath(import.meta.url),
+    const storageFile = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
       "../../../playwright/.clerk/e2e-pdf-storage-id.txt",
     );
     cachedStorageId = readFileSync(storageFile, "utf8").trim() || null;
-    return cachedStorageId;
   } catch {
-    return null;
+    cachedStorageId = null;
   }
+
+  if (cachedStorageId) {
+    return cachedStorageId;
+  }
+
+  const pdfPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "sample-document.pdf");
+  cachedStorageId = await ensurePdfStorageId(pdfPath);
+  return cachedStorageId;
 }
 
 /**
@@ -48,7 +57,6 @@ export const test = base.extend<AuthFixtures>({
 
     const factory = async () => {
       const storageId = await getStorageId();
-      if (!storageId) throw new Error("PDF storageId not cached — check global.setup.ts ran");
       const { id, name } = await apiCreateDocument(organizationSlug, storageId);
       created.push({ id });
       return { id, name };

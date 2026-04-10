@@ -26,7 +26,7 @@ export class ApiReferencePage {
   }
 
   navigationMenuButton(): Locator {
-    return this.page.getByRole("button", { name: /open menu/i }).first();
+    return this.page.getByTestId("mobile-menu-button");
   }
 
   titleHeading(): Locator {
