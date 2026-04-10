@@ -12,6 +12,7 @@ import * as SourceConfig from "./source.config";
 import { searchIndexPlugin } from "./src/plugins/search-index";
 
 const require = createRequire(import.meta.url);
+const shikiPackageDir = path.dirname(require.resolve("shiki/package.json"));
 
 function matchesPackage(id: string, pkg: string): boolean {
   return id.includes(`/node_modules/${pkg}/`) || id.endsWith(`/node_modules/${pkg}`);
@@ -102,9 +103,9 @@ export default defineConfig(async ({ command }) => ({
       "fumadocs-mdx:collections/dynamic": path.resolve(import.meta.dirname, "./.source/dynamic.ts"),
       // Force shiki subpaths to resolve from the actual installed package
       // location instead of assuming a root node_modules layout.
-      "shiki/core": require.resolve("shiki/dist/core.mjs"),
-      "shiki/wasm": require.resolve("shiki/dist/wasm.mjs"),
-      "shiki/onig.wasm": require.resolve("shiki/dist/onig.wasm"),
+      "shiki/core": path.join(shikiPackageDir, "dist/core.mjs"),
+      "shiki/wasm": path.join(shikiPackageDir, "dist/wasm.mjs"),
+      "shiki/onig.wasm": path.join(shikiPackageDir, "dist/onig.wasm"),
       // Force ESM entry — Rolldown's CJS interop generates a broken destructure
       // (`__toESM$1(...).default` → undefined) when tslib's CJS build is bundled
       // into SSR chunks as a transitive dependency of fumadocs/shiki.
