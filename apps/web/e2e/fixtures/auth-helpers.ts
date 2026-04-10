@@ -76,12 +76,12 @@ export async function signInTestUser(page: Page): Promise<void> {
  * Re-enter the authenticated app bootstrap flow and only return once the page
  * has landed on a workspace home route with a working Convex auth token.
  */
-export async function ensureAuthenticatedWorkspaceHome(page: Page): Promise<void> {
-  const { organizationSlug } = getTestWorkspaceConfig();
-  const homeUrl = `/${organizationSlug}/home`;
-
+export async function ensureAuthenticatedWorkspaceHome(
+  page: Page,
+  preferredOrganizationSlug?: string,
+): Promise<void> {
   for (let attempt = 0; attempt < 2; attempt++) {
-    await page.goto(homeUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
+    await page.goto("/app", { waitUntil: "domcontentloaded" }).catch(() => {});
     await page
       .waitForURL(/\/([\w-]+\/home|[\w-]+\/onboarding|sign-in|app)/, {
         timeout: 10000,
@@ -89,9 +89,36 @@ export async function ensureAuthenticatedWorkspaceHome(page: Page): Promise<void
       })
       .catch(() => {});
 
-    if (!page.url().includes("/home") || !isAuthenticatedUrl(page.url())) {
+    if (!isAuthenticatedUrl(page.url())) {
       await signInTestUser(page);
-      await page.goto(homeUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
+      await page.goto("/app", { waitUntil: "domcontentloaded" }).catch(() => {});
+      await page
+        .waitForURL(/\/([\w-]+\/home|[\w-]+\/onboarding|sign-in|app)/, {
+          timeout: 12000,
+          waitUntil: "domcontentloaded",
+        })
+        .catch(() => {});
+    }
+
+    if (!page.url().match(/\/[\w-]+\/home/)) {
+      await page.goto("/app", { waitUntil: "domcontentloaded" }).catch(() => {});
+      await page
+        .waitForURL(/\/[\w-]+\/home/, {
+          timeout: 12000,
+          waitUntil: "domcontentloaded",
+        })
+        .catch(() => {});
+    }
+
+    const activeSlug = extractOrganizationSlugFromUrl(page.url());
+    if (preferredOrganizationSlug && activeSlug && activeSlug !== preferredOrganizationSlug) {
+      await page.goto(`/${preferredOrganizationSlug}/home`, { waitUntil: "domcontentloaded" }).catch(() => {});
+      await page
+        .waitForURL(/\/[\w-]+\/home/, {
+          timeout: 12000,
+          waitUntil: "domcontentloaded",
+        })
+        .catch(() => {});
     }
 
     if (page.url().match(/\/[\w-]+\/home/)) {
@@ -111,6 +138,16 @@ export function isAuthenticatedUrl(url: string): boolean {
     return /\/(app|[\w-]+\/home|[\w-]+\/onboarding\/choose-organization)/.test(pathname);
   } catch {
     return false;
+  }
+}
+
+function extractOrganizationSlugFromUrl(url: string): string | null {
+  try {
+    const pathname = new URL(url).pathname;
+    const match = pathname.match(/^\/([\w-]+)\/(?:home|documents|settings|templates|analytics)(?:\/|$)/);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
   }
 }
 

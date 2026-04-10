@@ -25,18 +25,25 @@ test.describe("landing responsive layouts", () => {
     const featureMockup = page.getByText("Series A Term Sheet — Vantage.pdf");
     await featureCopy.scrollIntoViewIfNeeded();
 
-    if (viewportKind === "desktop") {
-      await expect(homePage.mobileMenuButton()).toBeHidden();
-      await expect(homePage.desktopNav()).toBeVisible();
-      await expectInline(featureCopy, featureMockup);
+    if (viewportKind === "mobile") {
+      await expect(homePage.mobileMenuButton()).toBeVisible();
+      await expect(homePage.desktopNav()).toBeHidden();
+      await expectStacked(featureCopy, featureMockup);
+      await expectStacked(homePage.footerGridColumns().nth(0), homePage.footerGridColumns().nth(1));
+      return;
+    }
+
+    await expect(homePage.mobileMenuButton()).toBeHidden();
+    await expect(homePage.desktopNav()).toBeVisible();
+
+    if (viewportKind === "tablet") {
+      await expectStacked(featureCopy, featureMockup);
       await expectInline(homePage.footerGridColumns().nth(0), homePage.footerGridColumns().nth(1));
       return;
     }
 
-    await expect(homePage.mobileMenuButton()).toBeVisible();
-    await expect(homePage.desktopNav()).toBeHidden();
-    await expectStacked(featureCopy, featureMockup);
-    await expectStacked(homePage.footerGridColumns().nth(0), homePage.footerGridColumns().nth(1));
+    await expectInline(featureCopy, featureMockup);
+    await expectInline(homePage.footerGridColumns().nth(0), homePage.footerGridColumns().nth(1));
   });
 
   test("representative routes stay usable without horizontal overflow", async ({

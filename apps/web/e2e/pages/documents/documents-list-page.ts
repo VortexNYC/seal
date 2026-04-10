@@ -278,9 +278,10 @@ export class DocumentsListPage {
       return false;
     }
 
-    await ensureAuthenticatedWorkspaceHome(this.page);
-
     const retryUrl = targetUrl ?? this.page.url();
+    const preferredOrganizationSlug = retryUrl.match(/^\/([\w-]+)\//)?.[1];
+
+    await ensureAuthenticatedWorkspaceHome(this.page, preferredOrganizationSlug);
     await this.page.goto(retryUrl, { waitUntil: "domcontentloaded" });
 
     return true;
