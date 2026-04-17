@@ -61,7 +61,7 @@ export function Navbar() {
               />
             </g>
           </svg>
-          <span className="font-serif text-foreground text-[28px] italic leading-none tracking-tight">
+          <span className="text-foreground font-serif text-[28px] leading-none tracking-tight italic">
             Seal
           </span>
         </Link>
@@ -153,10 +153,14 @@ export function Navbar() {
 function SignedOutDesktopCtas() {
   return (
     <>
-      <Button asChild className="border-primary text-foreground hover:text-foreground" variant="outline">
+      <Button asChild variant="ghost">
         <a href={`${APP_URL}/sign-in`}>Sign in</a>
       </Button>
-      <Button asChild className="group text-foreground">
+      <Button
+        asChild
+        className="group border-primary text-primary hover:text-primary"
+        variant="outline"
+      >
         <a href={`${APP_URL}/waitlist`}>
           Join Waitlist
           <ArrowRight
