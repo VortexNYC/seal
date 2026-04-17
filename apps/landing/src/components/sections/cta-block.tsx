@@ -7,9 +7,9 @@ import type { CtaSectionBlock } from "~/lib/content/types";
 export function StaticCta() {
   return (
     <section className="px-6 py-20 sm:py-28">
-      <div className="mx-auto max-w-3xl text-center">
+      <div className="mx-auto text-center">
         <FadeIn>
-          <h2 className="text-foreground font-serif text-4xl tracking-tight text-balance sm:text-5xl">
+          <h2 className="text-foreground mx-auto max-w-[30ch] font-serif text-4xl tracking-tight text-balance sm:text-5xl">
             It&apos;s time to stop juggling tools and start{" "}
             <span className="text-primary italic">getting more deals.</span>
           </h2>
