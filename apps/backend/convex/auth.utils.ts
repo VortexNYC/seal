@@ -1,3 +1,5 @@
+import { ConvexError } from "convex/values";
+
 import type { Doc } from "./_generated/dataModel";
 import type { OrganizationMemberRole } from "./schema";
 
@@ -532,6 +534,44 @@ export function hasDocumentSigningAccess(member: Doc<"organization_members">): b
 }
 
 /**
+ * Require a specific permission or throw an AuthError
+ * Useful for one-off permission checks inside handlers
+ *
+ * @param member - The organization member to check
+ * @param permission - The required permission string
+ * @throws ConvexError with INSUFFICIENT_PERMISSIONS if the member lacks the permission
+ */
+export function requirePermission(
+  member: Doc<"organization_members">,
+  permission: string,
+): void {
+  if (!hasPermission(member, permission)) {
+    throw new ConvexError(
+      `Insufficient permissions: ${permission} required`,
+    );
+  }
+}
+
+/**
+ * Require a minimum role or throw an AuthError
+ * Useful for one-off role checks inside handlers
+ *
+ * @param member - The organization member to check
+ * @param requiredRole - The minimum required role
+ * @throws ConvexError with INSUFFICIENT_ROLE if the member's role is too low
+ */
+export function requireRole(
+  member: Doc<"organization_members">,
+  requiredRole: OrganizationMemberRole,
+): void {
+  if (!hasRole(member, requiredRole)) {
+    throw new ConvexError(
+      `Insufficient role: ${requiredRole} required, got ${member.role}`,
+    );
+  }
+}
+
+/**
  * Utility functions for role and permission checking
  * Grouped for easy import and backward compatibility
  */
@@ -570,6 +610,10 @@ export const AuthUtils = {
   canAccessAnalytics,
   canUseTemplates,
   hasDocumentSigningAccess,
+
+  // Required-permission utilities (check + throw)
+  requirePermission,
+  requireRole,
 
   // Permission constants
   PERMISSIONS: DOCUMENT_SIGNING_PERMISSIONS,
