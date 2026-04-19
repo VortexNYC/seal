@@ -11,6 +11,7 @@ import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 import { useMemo } from "react";
 import ReactDOM from "react-dom/client";
+// Pipeline edit proof — T2-SEAL-1776571434447
 
 import { DefaultCatchBoundary } from "./components/default-catch-boundary";
 import Loader from "./components/loader";
