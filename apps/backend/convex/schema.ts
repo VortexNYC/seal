@@ -1,3 +1,4 @@
+// Schema: Convex database tables and type definitions
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
 
