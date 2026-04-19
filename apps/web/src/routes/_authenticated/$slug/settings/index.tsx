@@ -3,6 +3,8 @@
  *
  * Organization general settings
  * Route: /{slug}/settings
+ *
+ * @validation VAL-REAL-1776629332274
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
