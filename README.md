@@ -1,5 +1,7 @@
 # Seal
 
+<!-- val-token: 1776628674114 -->
+
 Seal is a Bun + Turborepo monorepo for the Seal document-signing platform. It contains the product web app, public site and developer docs, Convex backend, MCP server, transactional email templates, an embeddable React SDK, and shared design tokens.
 
 ## Workspace Overview
