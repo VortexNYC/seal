@@ -189,3 +189,5 @@ The API reference content is generated from `apps/landing/openapi.yaml`.
 - Web app guide: [apps/web/AGENTS.md](apps/web/AGENTS.md)
 - Backend guide: [apps/backend/convex/AGENTS.md](apps/backend/convex/AGENTS.md)
 - MCP server details: [apps/mcp-server/README.md](apps/mcp-server/README.md)
+
+<!-- val-token: 1776627247462 -->
