@@ -482,6 +482,14 @@ export function isAdmin(member: Doc<"organization_members">): boolean {
 }
 
 /**
+ * Check if user is an organization owner or admin
+ * Common guard for admin-scoped resources (e.g. visibility-restricted folders)
+ */
+export function isAdminOrOwner(member: Doc<"organization_members">): boolean {
+  return member.role === "owner" || member.role === "admin";
+}
+
+/**
  * User type checking functions
  * Note: userType was removed from organization_members schema, defaulting to personal
  */
@@ -549,6 +557,7 @@ export const AuthUtils = {
   isBusinessUser,
   isOwner,
   isAdmin,
+  isAdminOrOwner,
 
   // Document signing management functions
   canManageDocuments,
