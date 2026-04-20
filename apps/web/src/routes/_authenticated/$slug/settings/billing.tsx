@@ -127,15 +127,34 @@ function BillingSettingsPage() {
       throw new Error("No lookup key set");
     }
 
-    const { clientSecret } = await createEmbeddedCheckout({
-      lookupKey: checkoutLookupKey,
-      returnUrl: `${window.location.origin}${window.location.pathname}?upgraded=true`,
-    });
-    return clientSecret;
+    try {
+      const { clientSecret } = await createEmbeddedCheckout({
+        lookupKey: checkoutLookupKey,
+        returnUrl: `${window.location.origin}${window.location.pathname}?upgraded=true`,
+      });
+      return clientSecret;
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : "Failed to start checkout. Please try again.",
+      );
+      handleCancelCheckout();
+      throw err;
+    }
   }, [createEmbeddedCheckout, checkoutLookupKey]);
 
   // Memoize options so EmbeddedCheckoutProvider doesn't re-initialize
-  const checkoutOptions = useMemo(() => ({ fetchClientSecret }), [fetchClientSecret]);
+  const checkoutOptions = useMemo(
+    () => ({
+      fetchClientSecret,
+      onComplete: () => {
+        setShowCheckout(false);
+        setCheckoutLookupKey(null);
+      },
+    }),
+    [fetchClientSecret],
+  );
 
   function handleUpgrade(lookupKey: string) {
     setCheckoutLookupKey(lookupKey);
