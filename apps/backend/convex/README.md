@@ -1,5 +1,7 @@
 # Welcome to your Convex functions directory!
 
+<!-- val:1776701765388 -->
+
 Write your Convex functions here.
 See https://docs.convex.dev/functions for more.
 
