@@ -187,6 +187,9 @@ export const email = {
   warningText: "#713f12",
 } as const;
 
+/** Brand color shade keys ("50" | "100" | ... | "900") */
+export type BrandShade = keyof typeof brand;
+
 /** All tokens as a single export — mirrors OKLCH values in seal-theme-web.css */
 export const tokens = {
   brand,
