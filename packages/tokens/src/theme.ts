@@ -1,4 +1,6 @@
 /**
+ * @module tokens/theme
+ *
  * Seal Design System — TypeScript token exports
  *
  * Use these hex values anywhere CSS variables aren't available:
