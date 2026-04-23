@@ -6,6 +6,8 @@
  * - @clerk/express for authentication middleware
  * - @clerk/mcp-tools for MCP-specific OAuth helpers
  * - @modelcontextprotocol/sdk for MCP protocol
+ *
+ * Exposes tools and resources over the MCP protocol via an Express-based HTTP transport.
  */
 import { clerkMiddleware } from "@clerk/express";
 import {
