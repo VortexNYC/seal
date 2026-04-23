@@ -10,6 +10,8 @@
  * When updating a color, change both files.
  *
  * @module tokens/theme
+ *
+ * @since 0.0.1
  */
 
 export const brand = {
