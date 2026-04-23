@@ -8,6 +8,8 @@
  *
  * These values mirror the OKLCH values in seal-theme-web.css exactly.
  * When updating a color, change both files.
+ *
+ * @module tokens/theme
  */
 
 export const brand = {
