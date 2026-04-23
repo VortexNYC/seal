@@ -61,7 +61,7 @@ const queryClient = new QueryClient({
 });
 convexQueryClient.connect(queryClient);
 
-// Create a new router instance
+// Create router instance — file-based routes from routeTree.gen.ts
 const router = createRouter({
   routeTree,
   defaultPreload: "intent",
