@@ -172,7 +172,7 @@ export const canvas = {
   },
 } as const;
 
-/** Email-safe palette — inline styles for React Email templates */
+/** Email-safe palette — inline styles for React Email templates (no CSS variables available) */
 export const email = {
   background: "#f5f3f0",
   card: "#ffffff",
