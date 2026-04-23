@@ -1,5 +1,6 @@
 /**
  * @module tokens/theme
+ * @since 1.0.0
  *
  * Seal Design System — TypeScript token exports
  *
