@@ -192,7 +192,7 @@ export const email = {
   warningText: "#713f12",
 } as const;
 
-/** All tokens as a single export */
+/** Aggregated design token registry — mirrors the OKLCH values in seal-theme-web.css */
 export const tokens = {
   brand,
   light,
