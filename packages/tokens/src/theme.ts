@@ -187,6 +187,9 @@ export const email = {
   warningText: "#713f12",
 } as const;
 
+/** Union of all token category names ("brand" | "light" | "dark" | …) */
+export type TokenCategory = keyof typeof tokens
+
 /** All tokens as a single export */
 export const tokens = {
   brand,
