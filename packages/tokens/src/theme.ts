@@ -189,7 +189,13 @@ export const email = {
   warningText: "#713f12",
 } as const;
 
-/** All tokens as a single export */
+/**
+ * All tokens as a single export.
+ *
+ * Provides the complete Seal design token map: brand colors, light/dark palettes,
+ * status colors, signer slots, role badges, field-type colors, document-status
+ * surfaces, AI accents, canvas rendering colors, and email-safe palette.
+ */
 export const tokens = {
   brand,
   light,
