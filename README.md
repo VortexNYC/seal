@@ -1,5 +1,7 @@
 # Seal
 
+<!-- T2-SEAL-1776960675274: pipeline validation edit -->
+
 Seal is a Bun + Turborepo monorepo for the Seal document-signing platform, built for fast iteration and type safety. It contains the product web app, public site and developer docs, Convex backend, MCP server, transactional email templates, an embeddable React SDK, and shared design tokens.
 
 ## Workspace Overview
