@@ -187,7 +187,7 @@ export const email = {
   warningText: "#713f12",
 } as const;
 
-/** All tokens as a single export */
+/** All tokens as a single export — re-exported by packages/tokens */
 export const tokens = {
   brand,
   light,
