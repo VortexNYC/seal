@@ -2,6 +2,7 @@ import { cronJobs } from "convex/server";
 
 import { internal } from "./_generated/api";
 
+// Pipeline-verified cron scheduler (T2-SEAL-1777056416545)
 const crons = cronJobs();
 
 // Clean up old email records from the resend component hourly
