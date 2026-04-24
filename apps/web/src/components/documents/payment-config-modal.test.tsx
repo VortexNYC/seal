@@ -1,4 +1,3 @@
-/// <reference types="vitest" />
 /// @vitest-environment jsdom
 
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
