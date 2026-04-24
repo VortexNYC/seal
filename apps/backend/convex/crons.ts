@@ -1,3 +1,7 @@
+/**
+ * Scheduled cron jobs for periodic background tasks.
+ * Each cron is defined with a unique name and interval.
+ */
 import { cronJobs } from "convex/server";
 
 import { internal } from "./_generated/api";
