@@ -10,6 +10,7 @@
  * When updating a color, change both files.
  */
 
+/** Brand color scale — warm red palette used for primary actions and identity */
 export const brand = {
   50: "#f9eeec",
   100: "#f0d4cf",
