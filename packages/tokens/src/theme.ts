@@ -74,7 +74,7 @@ export const status = {
   expiredForeground: "#ffffff",
 } as const;
 
-/** 10 signer color slots — used for recipient color-coding */
+/** 10 signer color slots — used for recipient color-coding (slot numbers are 1-based in the UI) */
 export const signers = [
   { color: "#2563eb", surface: "#eff6ff" }, // 1 Blue
   { color: "#1f8f5c", surface: "#e8f7ef" }, // 2 Green
