@@ -4,7 +4,7 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Clean up old email records from the resend component hourly
+// Clean up old email records from the resend component hourly [GAMMA]
 crons.interval(
   "cleanup-resend-emails",
   { hours: 1 },
