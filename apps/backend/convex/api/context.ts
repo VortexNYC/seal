@@ -45,6 +45,8 @@ function parseIpv4(ip: string): number | null {
  */
 function ipMatchesCidr(ip: string, cidr: string): boolean {
   const trimmedCidr = cidr.trim();
+  const slashCount = (trimmedCidr.match(/\//g) || []).length;
+  if (slashCount > 1) return false; // Reject malformed CIDR with multiple slashes
   const [network = "", prefixStr] = trimmedCidr.split("/");
   const prefix = prefixStr ? Number(prefixStr) : 32;
 
