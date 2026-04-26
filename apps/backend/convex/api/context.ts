@@ -45,10 +45,10 @@ function parseIpv4(ip: string): number | null {
  */
 function ipMatchesCidr(ip: string, cidr: string): boolean {
   const trimmedCidr = cidr.trim();
-  const [network, prefixStr] = trimmedCidr.split("/");
+  const [network = "", prefixStr] = trimmedCidr.split("/");
   const prefix = prefixStr ? Number(prefixStr) : 32;
 
-  if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) return false;
+  if (!network || !Number.isInteger(prefix) || prefix < 0 || prefix > 32) return false;
 
   const ipNum = parseIpv4(ip);
   const networkNum = parseIpv4(network);
@@ -458,7 +458,7 @@ async function resolveOAuthAuthContext(
       );
     }
 
-    organizationId = memberships[0].organizationId;
+    organizationId = memberships[0]!.organizationId;  // Length > 0 checked above
   }
 
   return buildAuthContext(ctx, {

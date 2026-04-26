@@ -20,7 +20,7 @@ export async function getOrCreateConnectedCustomer(
   );
 
   if (existingCustomers.data.length > 0) {
-    const existing = existingCustomers.data[0];
+    const existing = existingCustomers.data[0]!;  // Length > 0 checked above
     // Update name if provided and different
     if (name && existing.name !== name) {
       return stripe.customers.update(existing.id, { name }, { stripeAccount: stripeAccountId });
