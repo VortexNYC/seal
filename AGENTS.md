@@ -1,6 +1,6 @@
 # PROJECT KNOWLEDGE BASE
 
-<!-- VAL-T2-SEAL-1777054289449: minimal edit pipeline proof -->
+<!-- [CLEAN] VAL-T2-SEAL-1777054289449: minimal edit pipeline proof -->
 
 **Generated:** 2026-03-10 14:37 CET
 **Commit:** f7b9cd2
