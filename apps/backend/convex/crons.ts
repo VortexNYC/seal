@@ -4,7 +4,7 @@ import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
-// Clean up old email records from the resend component hourly [SUPPORT-B]
+// Clean up old email records from the resend component hourly [TREC-SEAL-SUPPORT-B]
 crons.interval(
   "cleanup-resend-emails",
   { hours: 1 },
