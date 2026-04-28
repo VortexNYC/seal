@@ -1,10 +1,15 @@
+/**
+ * Scheduled cron jobs for periodic background tasks.
+ * Each cron is defined with a unique name and interval.
+ */
 import { cronJobs } from "convex/server";
 
 import { internal } from "./_generated/api";
 
+// Pipeline-verified cron scheduler (T2-SEAL-1777056416545)
 const crons = cronJobs();
 
-// Clean up old email records from the resend component hourly [TREC-SEAL-SUPPORT-B]
+// Clean up old email records from the resend component hourly [BETA] [SIGMA] [CONFLICT-B] [TREC-SEAL-SUPPORT-B]
 crons.interval(
   "cleanup-resend-emails",
   { hours: 1 },
