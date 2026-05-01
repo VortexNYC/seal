@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
-import { AuthUtils } from "../auth.utils";
 import { authQuery } from "../auth";
+import { AuthUtils } from "../auth.utils";
 
 export const listFolders = authQuery({
   args: {
