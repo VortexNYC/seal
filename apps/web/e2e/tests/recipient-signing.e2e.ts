@@ -29,7 +29,7 @@ const test = base.extend<{
   signableDoc: SignableDocument;
   workspaceSlug: string;
 }>({
-  workspaceSlug: async (_fixtures, run) => {
+  workspaceSlug: async ({ browser: _browser }, run) => {
     const slug = readCachedWorkspaceSlug();
     if (!slug) {
       throw new Error("Cached workspace slug not found — setup-app project must run first");
