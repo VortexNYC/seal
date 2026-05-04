@@ -1,9 +1,0 @@
-{
-  "ticket": "OP-SEAL-1777908259015",
-  "task": "Report Seal's main package.json version field",
-  "result": {
-    "version": "0.0.1",
-    "source": "package.json",
-    "field": "version"
-  }
-}
