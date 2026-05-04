@@ -50,7 +50,10 @@ export const hasOrganization = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new ConvexError("Authentication required");
+      // Auth token not yet attached (race during page load with ConvexProviderWithClerk).
+      // Returning null lets the React caller treat this as a loading state instead of
+      // tripping the error boundary on every fresh navigation.
+      return null;
     }
 
     // Get user by Clerk ID
@@ -320,7 +323,8 @@ export const listUserOrganizations = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new ConvexError("Authentication required");
+      // Same race as hasOrganization — return null so callers treat it as loading.
+      return null;
     }
 
     const user = await ctx.db
