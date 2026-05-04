@@ -241,6 +241,152 @@ export const createTestDocument = mutation({
 });
 
 /**
+ * Build a fully prepared signable document for the recipient signing E2E test:
+ * - one document in workflowStatus="sent"
+ * - one signer recipient with a fresh signingToken
+ * - one main signature field bound to that recipient on page 1
+ *
+ * Returns the signing token plus the IDs the test needs for assertions
+ * (document state, audit log) once signing completes.
+ */
+export const createSignableTestDocument = mutation({
+  args: {
+    organizationSlug: v.string(),
+    storageId: v.string(),
+    name: v.optional(v.string()),
+    recipientEmail: v.optional(v.string()),
+    recipientName: v.optional(v.string()),
+  },
+  handler: async (ctx, { organizationSlug, storageId, name, recipientEmail, recipientName }) => {
+    requireE2eDeployment();
+
+    const org = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", organizationSlug))
+      .first();
+    if (!org) throw new Error(`org_not_found: ${organizationSlug}`);
+
+    let owner = await ctx.db
+      .query("users")
+      .withIndex("by_active_org", (q) => q.eq("activeOrganizationId", org._id))
+      .first();
+    if (!owner) {
+      const e2eClerkId = "user_3B4i0q60eWUsHUVSbdnnVPLmRT7";
+      owner =
+        (await ctx.db
+          .query("users")
+          .withIndex("by_clerk_id", (q) => q.eq("clerkId", e2eClerkId))
+          .first()) ?? (await ctx.db.query("users").first());
+    }
+    if (!owner) throw new Error("no_user_found_for_org");
+
+    const now = Date.now();
+    const docId = await ctx.db.insert("documents", {
+      organizationId: org._id,
+      ownerId: owner._id,
+      name: name ?? `e2e-signable-doc-${now}`,
+      status: "active",
+      workflowStatus: "sent",
+      sharingMode: "specific",
+      fileSize: 12345,
+      fileType: "application/pdf",
+      storageId,
+      sentAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Recipient — random plaintext token, 24h expiry. Production uses tokenHash for
+    // lookup but seed both columns so either lookup path works.
+    const tokenSuffix = `${now.toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+    const signingToken = `e2e-${tokenSuffix}`;
+    const tokenHash = await sha256Hex(signingToken);
+    const recipientId = await ctx.db.insert("document_recipients", {
+      documentId: docId,
+      email: recipientEmail ?? `e2e-recipient-${now}@example.com`,
+      name: recipientName ?? "E2E Recipient",
+      role: "signer",
+      status: "pending",
+      order: 1,
+      signingToken,
+      tokenHash,
+      tokenExpiresAt: now + 24 * 60 * 60 * 1000,
+      sentAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const fieldId = await ctx.db.insert("signature_fields", {
+      documentId: docId,
+      recipientId,
+      fieldType: "signature",
+      label: "Signature",
+      isRequired: true,
+      isMainSignature: true,
+      x: 0.35,
+      y: 0.35,
+      width: 0.3,
+      height: 0.08,
+      page: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      documentId: docId,
+      recipientId,
+      signingToken,
+      fieldId,
+    };
+  },
+});
+
+/**
+ * Read the workflow state of an E2E-seeded document so the test can assert
+ * the post-signing transition without needing org-scoped auth.
+ */
+export const getTestDocumentState = query({
+  args: {
+    documentId: v.string(),
+  },
+  handler: async (ctx, { documentId }) => {
+    requireE2eDeployment();
+    const id = documentId as Id<"documents">;
+    const doc = await ctx.db.get(id);
+    if (!doc) return null;
+
+    const recipients = await ctx.db
+      .query("document_recipients")
+      .withIndex("by_document", (q) => q.eq("documentId", id))
+      .collect();
+
+    const auditEntries = await ctx.db
+      .query("audit_logs")
+      .withIndex("by_document", (q) => q.eq("documentId", id))
+      .collect();
+
+    return {
+      workflowStatus: doc.workflowStatus,
+      status: doc.status,
+      recipients: recipients.map((r) => ({
+        id: r._id,
+        status: r.status,
+        signedAt: r.signedAt ?? null,
+      })),
+      auditActions: auditEntries.map((a) => a.action),
+    };
+  },
+});
+
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
  * Delete a test document by ID.
  */
 export const deleteTestDocument = mutation({
