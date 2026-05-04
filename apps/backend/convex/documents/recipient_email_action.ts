@@ -8,6 +8,7 @@
 import { ConvexError, v } from "convex/values";
 import { nanoid } from "nanoid";
 
+import { logActionRequired } from "../audit_logs/helpers";
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { type ActionCtx, internalAction, internalMutation } from "../_generated/server";
@@ -39,6 +40,23 @@ export const markDocumentAsCompleted = internalMutation({
         retainUntil: now + SEVEN_YEARS_MS,
         qrToken: nanoid(24),
         qrTokenGeneratedAt: now,
+      });
+
+      // Audit trail: record completion as a system action so the transition is
+      // observable in the audit log. The workflow runs without a user context,
+      // so the actor is "system" rather than a Clerk user.
+      await logActionRequired(ctx, {
+        organizationId: document.organizationId,
+        actorType: "system",
+        actorId: "workflow:document_completion",
+        action: "document.completed",
+        resourceType: "document",
+        resourceId: args.documentId,
+        documentId: args.documentId,
+        oldValues: { workflowStatus: document.workflowStatus },
+        newValues: { workflowStatus: "completed", completedAt: now },
+        metadata: { source: "documentCompletionWorkflow" },
+        ipAddress: "system",
       });
     }
 

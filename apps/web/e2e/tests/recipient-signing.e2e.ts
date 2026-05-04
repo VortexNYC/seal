@@ -117,12 +117,15 @@ test.describe("Recipient Signing", () => {
       await context.close();
     }
 
-    // 5. Backend must reflect the signature itself.
-    //    Note: doc.workflowStatus="completed" is set by a separate durable workflow
-    //    (cert generation + completion emails) that can take 30s+. The UI shows
-    //    "Completed" the moment the only recipient signs, computed from recipient
-    //    state — that's what users see and what we already asserted above.
-    //    We only verify the synchronous half here.
+    // 5. Backend reflects the signature itself (synchronous part).
+    //    Note: doc.workflowStatus="completed" is set by a durable workflow
+    //    (postSignatureWorkflow → markDocumentAsCompleted → cert + emails).
+    //    Direct CLI signing transitions the doc to "completed" within ~13s on
+    //    clever-goose-484; the UI path through this Playwright test does not
+    //    reliably do so within 90s, even in isolation, despite calling the same
+    //    submitRecipientSignature mutation. Worth investigating separately —
+    //    tracked as a follow-up. We assert the synchronous half here so the
+    //    test still fails loudly if signing itself breaks.
     const state = await getDocumentState(signableDoc.documentId);
     expect(state).not.toBeNull();
     expect(state?.recipients[0]?.status).toBe("signed");
