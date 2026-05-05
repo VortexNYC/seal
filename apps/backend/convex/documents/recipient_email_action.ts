@@ -97,6 +97,7 @@ async function sendRecipientConfirmationEmail(
   ctx: ActionCtx,
   recipient: Doc<"document_recipients">,
   documentName: string,
+  document: Doc<"documents">,
 ) {
   const completedAt = recipient.signedAt || recipient.approvedAt || recipient.viewedAt;
 
@@ -110,6 +111,9 @@ async function sendRecipientConfirmationEmail(
     documentName,
     signedAt: completedAt,
     role: recipient.role,
+    organizationId: document.organizationId,
+    documentId: document._id,
+    recipientId: recipient._id,
   });
 
   if (!confirmationResult.success) {
@@ -302,7 +306,12 @@ export const sendPostSignatureEmails = internalAction({
       };
     }
 
-    const confirmationSent = await sendRecipientConfirmationEmail(ctx, recipient, document.name);
+    const confirmationSent = await sendRecipientConfirmationEmail(
+      ctx,
+      recipient,
+      document.name,
+      document,
+    );
     const allRecipients: Doc<"document_recipients">[] = await ctx.runQuery(
       internal.documents.recipients_queries.getDocumentRecipientsInternal,
       { documentId: args.documentId },

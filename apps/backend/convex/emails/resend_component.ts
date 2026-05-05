@@ -11,6 +11,7 @@
 
 import { Resend } from "@convex-dev/resend";
 import { vOnEmailEventArgs } from "@convex-dev/resend";
+import { v } from "convex/values";
 
 import { components, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -96,6 +97,43 @@ export const handleEmailEvent = internalMutation({
         source: "resend_component",
       },
       ipAddress: "webhook",
+    });
+  },
+});
+
+/**
+ * Record that an email was queued through the Resend component, with the
+ * Resend message id and the recipient. Mirrors the audit shape produced by
+ * `handleEmailEvent` for delivery events, so prod operators can trace an
+ * email from "queued" through "delivered" / "opened" / "bounced" entirely
+ * via the audit log. Called from action-side senders that can't write the
+ * row directly.
+ */
+export const logEmailQueued = internalMutation({
+  args: {
+    organizationId: v.id("organizations"),
+    messageId: v.string(),
+    to: v.string(),
+    subject: v.string(),
+    documentId: v.optional(v.id("documents")),
+    recipientId: v.optional(v.id("document_recipients")),
+  },
+  handler: async (ctx, args) => {
+    await logAction(ctx, {
+      organizationId: args.organizationId,
+      actorType: "system",
+      actorId: "resend_component",
+      action: "email.queued",
+      resourceType: "email",
+      resourceId: args.messageId,
+      documentId: args.documentId,
+      recipientId: args.recipientId,
+      newValues: { to: args.to, subject: args.subject },
+      metadata: {
+        description: `Email queued to ${args.to}: ${args.subject}`,
+        source: "resend_component",
+      },
+      ipAddress: "system",
     });
   },
 });

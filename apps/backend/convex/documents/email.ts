@@ -20,10 +20,36 @@ import {
 } from "@seal/transactional";
 import { Resend } from "resend";
 
+import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { resendComponent } from "../emails/resend_component";
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
+
+/**
+ * Best-effort `email.queued` audit entry. Logged whenever a Resend send
+ * succeeds — gives prod operators (and the recipient-signing E2E) a
+ * trace from "queued" through "delivered"/"opened"/"bounced" entirely
+ * via the audit log. Swallow errors so audit gaps never crash sending.
+ */
+async function logEmailQueuedSafe(
+  ctx: ActionCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    messageId: string;
+    to: string;
+    subject: string;
+    documentId?: Id<"documents">;
+    recipientId?: Id<"document_recipients">;
+  },
+): Promise<void> {
+  try {
+    await ctx.runMutation(internal.emails.resend_component.logEmailQueued, args);
+  } catch (error) {
+    console.warn("[email] failed to write email.queued audit entry:", error);
+  }
+}
 
 /** Create a Resend SDK instance (lazily, per-call). */
 function getResendSdk(): Resend {
@@ -129,6 +155,9 @@ export interface SendSigningCompleteParams {
   signedAt: number;
   role: "signer" | "approver" | "viewer";
   downloadUrl?: string;
+  organizationId: Id<"organizations">;
+  documentId: Id<"documents">;
+  recipientId: Id<"document_recipients">;
 }
 
 /**
@@ -168,6 +197,15 @@ export async function sendSigningComplete(
         return data!.id;
       },
     );
+
+    await logEmailQueuedSafe(ctx, {
+      organizationId: params.organizationId,
+      messageId: emailId,
+      to,
+      subject,
+      documentId: params.documentId,
+      recipientId: params.recipientId,
+    });
 
     return { success: true, messageId: emailId };
   } catch (error) {

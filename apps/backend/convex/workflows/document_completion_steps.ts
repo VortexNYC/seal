@@ -122,6 +122,9 @@ export const sendSignerConfirmation = internalAction({
       documentName: document.name,
       signedAt: completedAt,
       role: recipient.role,
+      organizationId: document.organizationId,
+      documentId: document._id,
+      recipientId: recipient._id,
     });
 
     if (!result.success) {
