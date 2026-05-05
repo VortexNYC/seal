@@ -76,12 +76,32 @@ test.describe("Billing", () => {
     }
   });
 
-  // NOTE: createCustomerPortalSession requires `organization.stripeCustomerId`
-  // (a real Stripe customer record). The E2E seed inserts a synthetic row into
-  // the local `subscriptions` table but never provisions a real Stripe customer
-  // for the test org, so this action throws "No billing account found" until
-  // the seed (or a separate test fixture) is extended to call Stripe and store
-  // the customer id back on the organization. Tracked as a follow-up.
+  test("createCustomerPortalSession returns a real Stripe portal URL", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    await authenticatedPage.goto(`/${organizationSlug}/settings/billing`);
+    await waitForBillingPageReady(authenticatedPage);
+
+    // Drive the action directly off the exposed test-mode Convex client. This
+    // is the same call the "Manage Billing" header button makes — proves the
+    // Stripe SDK is reachable from Convex actions, the org has a real Stripe
+    // customer record (seeded by `seedStripeCustomerForE2E` in
+    // backend.setup), and the portal endpoint hands back a URL.
+    const result = await authenticatedPage.evaluate(async (returnUrl) => {
+      const client = window.__convexClient;
+      const api = window.__convexApi;
+      if (!client || !api) throw new Error("Convex client not ready");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (await client.action((api as any).stripe.actions.createCustomerPortalSession, {
+        returnUrl,
+      })) as { url: string };
+    }, authenticatedPage.url());
+
+    expect(result).toHaveProperty("url");
+    // Stripe-hosted portal URLs are served from billing.stripe.com.
+    expect(result.url).toMatch(/^https:\/\/billing\.stripe\.com\//);
+  });
 });
 
 /**
