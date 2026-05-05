@@ -73,6 +73,9 @@ export interface SendDocumentInvitationParams {
   invoiceAmount?: number;
   invoiceCurrency?: string;
   branding?: EmailBrandingParams;
+  organizationId: Id<"organizations">;
+  documentId: Id<"documents">;
+  recipientId: Id<"document_recipients">;
 }
 
 /**
@@ -137,6 +140,15 @@ export async function sendDocumentInvitation(
         return data!.id;
       },
     );
+
+    await logEmailQueuedSafe(ctx, {
+      organizationId: params.organizationId,
+      messageId: emailId,
+      to,
+      subject,
+      documentId: params.documentId,
+      recipientId: params.recipientId,
+    });
 
     return { success: true, messageId: emailId };
   } catch (error) {
@@ -230,6 +242,8 @@ export interface SendDocumentCompletedParams {
     role: "signer" | "approver" | "viewer";
     completedAt: number;
   }>;
+  organizationId: Id<"organizations">;
+  documentId: Id<"documents">;
 }
 
 /**
@@ -268,6 +282,14 @@ export async function sendDocumentCompleted(
         return data!.id;
       },
     );
+
+    await logEmailQueuedSafe(ctx, {
+      organizationId: params.organizationId,
+      messageId: emailId,
+      to,
+      subject,
+      documentId: params.documentId,
+    });
 
     return { success: true, messageId: emailId };
   } catch (error) {

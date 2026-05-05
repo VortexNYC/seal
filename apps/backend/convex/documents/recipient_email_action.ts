@@ -186,6 +186,9 @@ async function notifyNextSequentialGroup(
       signingUrl: `${baseUrl}/sign/${nextRecipient.signingToken}`,
       expiresAt: nextRecipient.tokenExpiresAt,
       branding: emailBranding,
+      organizationId: document.organizationId,
+      documentId: document._id,
+      recipientId: nextRecipient._id,
     });
   }
 }
@@ -240,6 +243,8 @@ async function sendCompletionEmailToOwner(
     downloadUrl: `${convexSiteUrl}/download?token=${downloadToken}`,
     completedAt: Date.now(),
     recipientsSummary,
+    organizationId: document.organizationId,
+    documentId: document._id,
   });
 
   if (!completionResult.success) {
@@ -382,6 +387,9 @@ export const sendNextRecipientInvitation = internalAction({
       signingUrl,
       expiresAt: recipient.tokenExpiresAt,
       branding: emailBranding,
+      organizationId: document.organizationId,
+      documentId: document._id,
+      recipientId: recipient._id,
     });
   },
 });

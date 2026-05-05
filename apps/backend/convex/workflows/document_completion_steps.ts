@@ -83,6 +83,9 @@ async function notifySequentialRecipients(
       signingUrl,
       expiresAt: recipient.tokenExpiresAt,
       branding: emailBranding,
+      organizationId: document.organizationId,
+      documentId: document._id,
+      recipientId: recipient._id,
     });
     notifiedCount++;
   }
@@ -288,6 +291,8 @@ export const sendCompletionEmails = internalAction({
       downloadUrl,
       completedAt: Date.now(),
       recipientsSummary,
+      organizationId: document.organizationId,
+      documentId: document._id,
     });
 
     if (!result.success) {
