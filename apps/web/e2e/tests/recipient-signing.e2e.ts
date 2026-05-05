@@ -78,7 +78,10 @@ test.describe("Recipient Signing", () => {
     browser,
     signableDoc,
   }) => {
-    test.setTimeout(45_000);
+    // UI sign flow ~5s + completion-workflow poll up to 60s. Observed end-to-end
+    // from sign → workflowStatus="completed" is ~6s on clever-goose-484; 60s
+    // gives generous headroom under parallel-test load.
+    test.setTimeout(120_000);
 
     const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     try {
@@ -117,20 +120,35 @@ test.describe("Recipient Signing", () => {
       await context.close();
     }
 
-    // 5. Backend reflects the signature itself (synchronous part).
-    //    Note: doc.workflowStatus="completed" is set by a durable workflow
-    //    (postSignatureWorkflow → markDocumentAsCompleted → cert + emails).
-    //    Direct CLI signing transitions the doc to "completed" within ~13s on
-    //    clever-goose-484; the UI path through this Playwright test does not
-    //    reliably do so within 90s, even in isolation, despite calling the same
-    //    submitRecipientSignature mutation. Worth investigating separately —
-    //    tracked as a follow-up. We assert the synchronous half here so the
-    //    test still fails loudly if signing itself breaks.
-    const state = await getDocumentState(signableDoc.documentId);
-    expect(state).not.toBeNull();
-    expect(state?.recipients[0]?.status).toBe("signed");
-    expect(state?.recipients[0]?.signedAt).not.toBeNull();
-    expect(state?.auditActions.some((a) => a.includes("sign"))).toBe(true);
+    // 5. Backend reflects the signature synchronously inside saveFieldValue's
+    //    autoSubmitMainSignature path: recipient.status="signed", a
+    //    `recipient.signed` audit entry, and a `signatures` row.
+    const initialState = await getDocumentState(signableDoc.documentId);
+    expect(initialState).not.toBeNull();
+    expect(initialState?.recipients[0]?.status).toBe("signed");
+    expect(initialState?.recipients[0]?.signedAt).not.toBeNull();
+    expect(initialState?.auditActions).toContain("recipient.signed");
+
+    // 6. The full completion chain runs as a durable workflow off the back of
+    //    the signature mutation: postSignatureWorkflow → markDocumentAsCompleted
+    //    → cert generation + completion emails. Poll for workflowStatus
+    //    transitioning to "completed" plus the new `document.completed` audit
+    //    entry. If either never lands, real users would never get their
+    //    certificate or completion email even though the UI told them the
+    //    doc is signed — that's the bug we want this test to catch. Observed
+    //    ~6s in isolation; 60s tolerates parallel-test load.
+    const completionDeadline = Date.now() + 60_000;
+    let completed = initialState;
+    while (
+      Date.now() < completionDeadline &&
+      (completed?.workflowStatus !== "completed" ||
+        !completed?.auditActions.includes("document.completed"))
+    ) {
+      await new Promise((r) => setTimeout(r, 1000));
+      completed = await getDocumentState(signableDoc.documentId);
+    }
+    expect(completed?.workflowStatus).toBe("completed");
+    expect(completed?.auditActions).toContain("document.completed");
   });
 
   test("recipient backend state is seeded correctly", async ({ signableDoc }) => {

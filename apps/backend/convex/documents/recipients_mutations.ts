@@ -213,7 +213,7 @@ async function maybeSendViewedNotification(
   }
 }
 
-async function maybeStartPostSignatureWorkflow(
+export async function maybeStartPostSignatureWorkflow(
   ctx: MutationCtx,
   recipient: Doc<"document_recipients">,
   status: RecipientStatusChangeArgs["status"],

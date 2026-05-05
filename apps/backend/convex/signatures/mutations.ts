@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { mutation } from "../_generated/server";
-import { logSignatureAction } from "../audit_logs/helpers";
+import { logRecipientAction, logSignatureAction } from "../audit_logs/helpers";
 import { authMutation } from "../auth";
 import { encryptSignatureData } from "../crypto/encryption";
 import { generateSignatureHash, generateSignatureImageHash } from "../crypto/helpers";
@@ -13,6 +13,7 @@ function getEncryptionKey(): string | undefined {
   return process.env.SIGNATURE_ENCRYPTION_KEY;
 }
 import { findRecipientByToken } from "../documents/recipient_helpers";
+import { maybeStartPostSignatureWorkflow } from "../documents/recipients_mutations";
 import { authenticationMethodTuple } from "../schemas/recipients";
 import { publishWebhookEvent } from "../webhooks/publish";
 import {
@@ -185,11 +186,12 @@ async function upsertSignatureRecord(
 }
 
 async function autoSubmitMainSignature(
-  ctx: SignatureDbCtx,
+  ctx: MutationCtx,
   recipient: Doc<"document_recipients">,
   document: Doc<"documents">,
   field: Doc<"signature_fields">,
   signatureImageUrl: string | undefined,
+  ipAddress: string,
 ): Promise<void> {
   if (field.isMainSignature !== true || field.fieldType !== "signature") {
     return;
@@ -209,6 +211,34 @@ async function autoSubmitMainSignature(
   if (status !== "signed" && status !== "approved") {
     return;
   }
+
+  // Audit trail: token-based signers reach terminal status through this path
+  // (rather than an explicit submitRecipientSignature(signed) call), so the
+  // status-change audit entry has to be written here too. Otherwise the
+  // recipient.signed event is missing from the trail and downstream tooling
+  // (dashboard activity, compliance exports) can't see when this recipient
+  // actually completed. The audit table only enumerates `recipient.signed`
+  // for terminal actions on this path; "approved" recipients are tracked via
+  // their own webhook + status change audit elsewhere.
+  if (status === "signed") {
+    await logRecipientAction(ctx, {
+      organizationId: document.organizationId,
+      actorType: "recipient",
+      actorId: recipient._id,
+      recipientId: recipient._id,
+      action: "recipient.signed",
+      documentId: field.documentId,
+      newValues: { status },
+      ipAddress,
+    });
+  }
+
+  // Kick off the durable post-signature workflow (sendSignerConfirmation →
+  // documentCompletionWorkflow → markDocumentAsCompleted + cert generation).
+  // Without this the recipient is marked complete but the doc never finalizes
+  // — completion email never fires, certificate never generates, and the doc
+  // stays in workflowStatus="sent" indefinitely from the sender's perspective.
+  await maybeStartPostSignatureWorkflow(ctx, recipient, status);
 
   await publishWebhookEvent(ctx, {
     organizationId: document.organizationId,
@@ -661,6 +691,7 @@ export const saveFieldValue = mutation({
       signatureContext.document,
       signatureContext.field,
       args.signatureImageUrl,
+      args.ipAddress,
     );
 
     return result;
