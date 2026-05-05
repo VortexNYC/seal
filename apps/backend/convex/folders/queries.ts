@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { authQuery } from "../auth";
+import { AuthUtils } from "../auth.utils";
 
 export const listFolders = authQuery({
   args: {
@@ -21,7 +22,7 @@ export const listFolders = authQuery({
 
     if (!member) throw new ConvexError("No access to this organization");
 
-    const isAdminOrOwner = member.role === "admin" || member.role === "owner";
+    const isAdminOrOwner = AuthUtils.isAdminOrOwner(member);
 
     // Query folders by parent
     const allFolders = await ctx.db
@@ -104,7 +105,7 @@ export const getAllFoldersFlat = authQuery({
       .first();
 
     if (!member) throw new ConvexError("No access to this organization");
-    const isAdminOrOwner = member.role === "admin" || member.role === "owner";
+    const isAdminOrOwner = AuthUtils.isAdminOrOwner(member);
 
     const allFolders = await ctx.db
       .query("folders")

@@ -1,4 +1,7 @@
 /**
+ * @module tokens/theme
+ * @since 1.0.0
+ *
  * Seal Design System — TypeScript token exports
  *
  * Use these hex values anywhere CSS variables aren't available:
@@ -6,10 +9,13 @@
  *   - Canvas / SVG rendering
  *   - Programmatic color manipulation
  *
+ * validation:1776634915808
+ *
  * These values mirror the OKLCH values in seal-theme-web.css exactly.
  * When updating a color, change both files.
  */
 
+/** Brand color scale — warm red palette used for primary actions and identity */
 export const brand = {
   50: "#f9eeec",
   100: "#f0d4cf",
@@ -69,7 +75,7 @@ export const status = {
   expiredForeground: "#ffffff",
 } as const;
 
-/** 10 signer color slots — used for recipient color-coding */
+/** 10 signer color slots — used for recipient color-coding (slot numbers are 1-based in the UI) */
 export const signers = [
   { color: "#2563eb", surface: "#eff6ff" }, // 1 Blue
   { color: "#1f8f5c", surface: "#e8f7ef" }, // 2 Green
@@ -172,7 +178,7 @@ export const canvas = {
   },
 } as const;
 
-/** Email-safe palette — inline styles for React Email templates */
+/** Email-safe palette — inline styles for React Email templates (no CSS variables available) */
 export const email = {
   background: "#f5f3f0",
   card: "#ffffff",
@@ -187,7 +193,7 @@ export const email = {
   warningText: "#713f12",
 } as const;
 
-/** All tokens as a single export */
+/** Aggregated design token registry — mirrors the OKLCH values in seal-theme-web.css */
 export const tokens = {
   brand,
   light,

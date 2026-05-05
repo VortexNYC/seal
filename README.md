@@ -1,4 +1,11 @@
 # Seal
+<!-- val-seed: 1776633784549 -->
+
+<!-- val-token: 1776628674114 -->
+
+<!-- val-dup-seed-1776635330428 -->
+
+<!-- val-seed: 1776652153608 -->
 
 Seal is a Bun + Turborepo monorepo for the Seal document-signing platform. It contains the product web app, public site and developer docs, Convex backend, MCP server, transactional email templates, an embeddable React SDK, and shared design tokens.
 
@@ -189,3 +196,5 @@ The API reference content is generated from `apps/landing/openapi.yaml`.
 - Web app guide: [apps/web/AGENTS.md](apps/web/AGENTS.md)
 - Backend guide: [apps/backend/convex/AGENTS.md](apps/backend/convex/AGENTS.md)
 - MCP server details: [apps/mcp-server/README.md](apps/mcp-server/README.md)
+
+<!-- val-token: 1776627247462 -->

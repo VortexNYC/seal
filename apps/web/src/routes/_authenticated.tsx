@@ -1,3 +1,4 @@
+// Authenticated layout: gates all child routes behind Clerk auth + org membership.
 import { SignedIn, SignedOut, useOrganization, useUser } from "@clerk/clerk-react";
 import * as Sentry from "@sentry/react";
 import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";

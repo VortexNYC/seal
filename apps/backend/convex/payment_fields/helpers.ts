@@ -25,6 +25,8 @@ type PaymentConfig = {
 
 /**
  * Compute the total amount in cents from line items.
+ *
+ * Sums `quantity * unitPrice` for each item.
  */
 export function computeTotalAmountCents(
   items: Array<{ quantity: number; unitPrice: number }>,
