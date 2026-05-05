@@ -45,6 +45,19 @@ export async function convexMutation(
   return res.json();
 }
 
+export async function convexQuery(path: string, args: Record<string, unknown>): Promise<unknown> {
+  const res = await fetch(`${CONVEX_URL}/api/query`, {
+    method: "POST",
+    headers: getConvexAuthHeaders(),
+    body: JSON.stringify({ path, args, format: "json" }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Convex query ${path} failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
 export function describeConvexE2eTarget(): { deploymentName: string; convexUrl: string } {
   return {
     deploymentName: getConvexDeploymentName(CONVEX_URL),
