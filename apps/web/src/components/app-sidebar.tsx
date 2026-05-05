@@ -341,7 +341,7 @@ function buildTeamOptions({
   organizations,
 }: {
   slug: string;
-  organizations: OrganizationListEntry[] | undefined;
+  organizations: OrganizationListEntry[] | null | undefined;
 }) {
   if (!organizations) {
     return [];

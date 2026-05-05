@@ -37,7 +37,8 @@ function AuthenticatedRedirect() {
   const [hasAttemptedRecovery, setHasAttemptedRecovery] = useState(false);
   const [fixedSlug, setFixedSlug] = useState<string | null>(null);
 
-  const isLoading = organizationStatus === undefined;
+  // null = backend saw no identity yet (auth still attaching). Treat as loading.
+  const isLoading = organizationStatus === undefined || organizationStatus === null;
   const hasOrganization = organizationStatus?.hasOrganization ?? false;
   const activeOrganizationSlug = fixedSlug ?? organizationStatus?.activeOrganizationSlug ?? null;
   const needsActiveOrgFix = organizationStatus?.needsActiveOrgFix ?? false;

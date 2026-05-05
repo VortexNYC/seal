@@ -71,7 +71,8 @@ linear-client.ts
 linear-client.js
 
 # Linear utility scripts (development only)
-scripts/
+scripts/linear-*
+evals/scripts/
 # Local environment files
 .env.linear
 
