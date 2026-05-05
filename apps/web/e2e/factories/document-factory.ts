@@ -29,6 +29,9 @@ export async function createSignableDocument(args: {
   name?: string;
   recipientEmail?: string;
   recipientName?: string;
+  /** Defaults to "sent". Use "draft" when the test needs editor-side
+   *  affordances (like "Save as Template") that gate on `canEdit`. */
+  workflowStatus?: "sent" | "draft";
 }): Promise<SignableDocument> {
   const name = args.name ?? `e2e-signable-doc-${Date.now()}`;
   const result = (await convexMutation("test_e2e_helpers:createSignableTestDocument", {
@@ -37,6 +40,7 @@ export async function createSignableDocument(args: {
     name,
     recipientEmail: args.recipientEmail,
     recipientName: args.recipientName,
+    workflowStatus: args.workflowStatus,
   })) as {
     status: string;
     value: { documentId: string; recipientId: string; signingToken: string; fieldId: string };

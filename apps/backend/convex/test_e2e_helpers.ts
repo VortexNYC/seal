@@ -256,9 +256,18 @@ export const createSignableTestDocument = mutation({
     name: v.optional(v.string()),
     recipientEmail: v.optional(v.string()),
     recipientName: v.optional(v.string()),
+    // When "draft", the doc + recipient are created but the doc stays editable
+    // by the owner (canEdit=true in the doc editor). Useful for tests that need
+    // to drive editor-only affordances like "Save as Template". Defaults to
+    // "sent" because the recipient signing test depends on the sent state.
+    workflowStatus: v.optional(v.union(v.literal("sent"), v.literal("draft"))),
   },
-  handler: async (ctx, { organizationSlug, storageId, name, recipientEmail, recipientName }) => {
+  handler: async (
+    ctx,
+    { organizationSlug, storageId, name, recipientEmail, recipientName, workflowStatus },
+  ) => {
     requireE2eDeployment();
+    const desiredStatus = workflowStatus ?? "sent";
 
     const org = await ctx.db
       .query("organizations")
@@ -286,12 +295,14 @@ export const createSignableTestDocument = mutation({
       ownerId: owner._id,
       name: name ?? `e2e-signable-doc-${now}`,
       status: "active",
-      workflowStatus: "sent",
+      workflowStatus: desiredStatus,
       sharingMode: "specific",
       fileSize: 12345,
       fileType: "application/pdf",
       storageId,
-      sentAt: now,
+      // Only stamp sentAt when we're seeding directly into "sent" — leaves
+      // draft docs in a clean pre-send state.
+      sentAt: desiredStatus === "sent" ? now : undefined,
       createdAt: now,
       updatedAt: now,
     });
