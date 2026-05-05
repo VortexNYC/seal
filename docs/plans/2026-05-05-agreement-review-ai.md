@@ -1,7 +1,7 @@
 # Agreement Review with AI — Design Proposal
 
 **Status:** proposal
-**Date:** 2026-05-05
+**Date:** 2026-05-05 (revised same day after first review)
 **Author:** initial draft from session work
 
 ## What Seal is, in one sentence
@@ -9,11 +9,11 @@
 Seal is the platform two or more parties use to **understand, negotiate, sign, and pay
 for an agreement** — any agreement. Vendor contracts, employment offers, NDAs, real
 estate, services, leases, equipment purchase, partnership terms, settlement papers,
-license deals, sublease, anything where two sides need to commit to terms and execute.
+license deals, sublease, anything where two sides need to commit to terms and
+execute.
 
-Seal is **not** a legal practice tool. It is not built for lawyers as the audience.
-Lawyers use it like everyone else. The audience is **anyone with an agreement to
-execute**.
+Seal is **not** a legal practice tool. Lawyers use it like everyone else; they're
+not the audience. The audience is **anyone with an agreement to execute**.
 
 The lifecycle Seal owns end-to-end:
 
@@ -28,94 +28,201 @@ Connect, billing, portal — covered through #198). This proposal addresses
 **[understand]** and **[negotiate]** — the surface that exists today as
 "upload a PDF and trust your gut."
 
+## Two strict product rules
+
+These two are non-negotiable and shape the rest of the design:
+
+### 1. Documents are immutable PDFs. Seal never edits PDF text.
+
+External tools (Word, Google Docs, Adobe Acrobat) are where text editing happens.
+A new revision means a **new PDF upload**, which produces a **new version**.
+This sidesteps the impossible "edit PDF text" problem and avoids competing with
+real document editors — that's not a fight Seal wins.
+
+### 2. "Editing" in Seal means annotation, not text editing.
+
+Seal still lets users add things **on top of** the PDF — text boxes, signature
+fields, date fields, checkboxes, the existing field-placement editor. That's
+annotation, not text editing. The underlying PDF bytes never change. This stays
+exactly as it works today.
+
 ## The opportunity
 
-Every other doc-signing product (DocuSign, Adobe Sign, SignWell, Dropbox Sign) treats
-the document as a black box. Upload, place fields, send, sign. The buyer-of-the-product
-("send it for me") is well-served. The receiving-party experience and the pre-send
-review experience are essentially nothing.
+Every other doc-signing product (DocuSign, Adobe Sign, SignWell, Dropbox Sign)
+treats the document as a black box. Upload, place fields, send, sign. The
+buyer-of-the-product ("send it for me") is well-served. The receiving-party
+experience and the pre-send review experience are essentially nothing.
 
-In practice, both sides spend the most time on what's *in* the document. They miss
-auto-renew clauses they didn't notice. They sign jurisdiction terms they wouldn't have
-agreed to if they'd seen them. Counter-proposing a single clause means a back-and-forth
-in email, manual track-changes in Word, re-uploading.
+In practice, both sides spend the most time on what's *in* the document. They
+miss auto-renew clauses they didn't notice. They sign jurisdiction terms they
+wouldn't have agreed to if they'd seen them. Counter-proposing a single clause
+means a back-and-forth in email, manual revision in Word, re-uploading.
 
 Seal can collapse that loop into the same surface where the doc lives.
 
 ## What we take from Mike (concept-only, no code)
 
-[Mike](https://github.com/willchen96/mike) is an open-source legal-AI workspace, AGPL.
-Reading the architecture is useful; lifting the code is not (license + stack mismatch
-aside, the legal framing is wrong for Seal). We take **concepts and patterns** and
-build them in our stack.
+[Mike](https://github.com/willchen96/mike) is an open-source legal-AI workspace,
+AGPL-3.0. Reading the architecture is useful; lifting the code is not (license
++ stack mismatch). We take **concepts and patterns** and build them in our
+stack.
 
 | Mike concept | What we keep | What we drop |
 |---|---|---|
 | AI chat tied to a document | ✅ "Ask the agreement" — both sides can question the doc in plain English | — |
-| Suggested edits as discrete database records (before-text, after-text, change_id, link to chat that produced them) | ✅ Structured suggestions with approve/reject state, traced back to the AI turn that produced them | — |
-| Tracked-changes export (DOCX redline) | ✅ Phase 3. Export a redlined version when negotiation closes | — |
-| Tabular review across N docs | ✅ Phase 4 — org-level analytics ("what's our average payment terms across all signed vendor contracts") | — |
+| Per-version chat threads | ✅ Each PDF version has its own thread; conversations on v1 don't pollute v2 | — |
+| Suggestions as discrete database records (linked to the chat that produced them) | ✅ Structured concerns/questions traced back to the AI turn that surfaced them | — |
 | Multi-LLM with tool use (Claude + Gemini) | ✅ Already partly here via Vercel AI Gateway env vars on `clever-goose-484` | — |
-| Project / matter / subfolder hierarchy | — | ❌ Too legal-practice. Seal stays around the **agreement** as the unit, not "matters" |
-| Built-in workflow library labeled by practice area (M&A, real estate, IP) | — | ❌ Universal review prompts only. No practice-area framing |
+| Tracked-changes DOCX export with redlines | — | ❌ Implies Seal mutates document text. Violates rule #1. Not building this. |
+| "Apply this AI suggestion to the doc" | — | ❌ Same — implies text editing. AI proposals stay as messages, not as edit operations |
+| Project / matter / subfolder hierarchy | ✅ Already covered by Seal's existing `folders` table — just polish the UX | — |
+| Built-in workflows labeled by legal practice area | — | ❌ Universal review prompts only. No practice-area framing |
 | BYO Anthropic/Gemini key | — | ❌ Seal pays for inference; tier limits via existing subscription gates |
-| Tracked-changes data model — `change_id` + `del_w_id` + `ins_w_id` referring to Word doc internals | We keep the **idea** of structured edits | We don't keep the Word-XML coupling. Works for any input format |
+| Tabular review across N docs | ✅ Phase 6 (own design doc when we get there) | — |
 
-## What we are NOT building (yet)
+## What we take from Catapult (code OK to lift — same org)
 
-- **A drafting tool from a blank page.** Seal is for documents users already have.
-  AI generation of contracts from scratch is a different product surface and competes
-  with Ironclad / Spotdraft. Skip.
-- **Legal research.** Seal doesn't read case law. The AI helps users understand a
-  doc *they have*, not the legal landscape around it.
-- **Compliance / privilege / UPL.** Lawyer-specific concerns. Out of scope.
-- **Matter management.** Seal documents stay flat under an organization. No legal
-  matter/case hierarchy.
+[Catapult](https://github.com/Catapult-Lighting-LLC/Catapult) is a sibling
+Vortex project that already shipped document versioning. Pattern is in
+`convex/schema.ts` and `convex/documents.ts`. We port it directly.
+
+### Catapult's versioning pattern
+
+**No separate `document_versions` table.** Versions are sibling rows in the same
+`documents` table:
+
+```ts
+documents: defineTable({
+  // ... existing fields ...
+
+  // === Versioning ===
+  version: v.number(),                          // starts at 1
+  parentDocumentId: v.optional(v.id("documents")), // null for v1; points to v1 for v2+
+  isLatestVersion: v.boolean(),                 // exactly one true per chain
+})
+  .index("by_org_and_latest", ["organizationId", "isLatestVersion"])
+  .index("by_parent", ["parentDocumentId", "version"])
+```
+
+**Version-creation flow** (from Catapult's `documents.ts`):
+
+```ts
+const originalId = existing.parentDocumentId ?? existing._id;
+const siblings = await ctx.db.query("documents")
+  .withIndex("by_parent", q => q.eq("parentDocumentId", originalId))
+  .collect();
+const maxVersion = Math.max(existing.version, ...siblings.map(s => s.version));
+
+await ctx.db.patch(existing._id, { isLatestVersion: false, ... });
+for (const s of siblings.filter(s => s.isLatestVersion)) {
+  await ctx.db.patch(s._id, { isLatestVersion: false, ... });
+}
+
+await ctx.db.insert("documents", {
+  ...existing,                       // copy metadata
+  storageId: newStorageId,           // new PDF blob
+  version: maxVersion + 1,
+  parentDocumentId: originalId,
+  isLatestVersion: true,
+  ...
+});
+```
+
+**Why this fits Seal cleanly:**
+
+- Three new optional columns on `documents`, no new table.
+- Every existing FK to `documents._id` still works; the row it points to is now
+  one specific version (which is correct — a signature was placed on a specific
+  version of a specific PDF).
+- All current queries keep working; add `.filter(isLatestVersion)` for "current view."
+- Version-list query is a single index lookup.
+- Backfill is mechanical: existing rows → `version: 1`, `isLatestVersion: true`,
+  `parentDocumentId: undefined`.
+
+We port this verbatim with a Seal-style migration.
+
+## Folders — already exist, just expose them
+
+Seal already has a `folders` table with `organizationId`, `name`, `parentId`
+(recursive), `type` ("document" | "template"), `visibility`. Documents already
+have a `folderId`. The grouping primitive is here.
+
+What's missing is **UX exposure**:
+
+- Users can name folders whatever they want — "Acme Deal Q4", "Smith Lease,"
+  "Vendor Renewals 2026" — Seal stays opinion-free on taxonomy.
+- Visible browse + drag/drop into folders.
+- Pinning, bulk operations.
+
+We **don't** introduce a "deal" or "project" or "matter" concept. The folder
+is the container, named however the user wants. This is consistent with rule
+#1 — the user knows their domain better than we do.
 
 ## User stories the surface unlocks
 
-1. **Sender pre-send review.** Sender uploads a 14-page services agreement. Before
-   clicking Send, they hit "Review with AI." The system flags: 60-day auto-renewal
-   clause, $25k indemnification cap, jurisdiction in Delaware, late-fee terms, and a
-   non-standard termination-for-convenience window. Sender approves three suggested
-   counter-edits, rejects two, leaves the rest. The doc updates in place. Then they
-   place fields and send.
+1. **Sender pre-send review.** Sender uploads a 14-page services agreement.
+   Before clicking Send, they hit "Review with AI." The system flags concerns:
+   60-day auto-renewal clause, $25k indemnification cap, jurisdiction in
+   Delaware, late-fee terms, non-standard termination-for-convenience window.
+   Sender reads the concerns, decides any matter, and can:
+     - Send the doc as-is (acknowledging the concerns)
+     - Open the chat thread and ask follow-up questions
+     - Edit in their tool of choice and re-upload — that becomes v2
 
-2. **Recipient pre-sign review.** Recipient gets the link, opens the doc, sees the
-   "Ask the agreement" sidebar. Asks "what's my termination notice?" Gets the clause
-   pulled out with a summary. Asks "is there anything I should be careful about?"
-   Gets the same flagged-clause list the sender saw. Decides whether to sign.
+2. **Recipient pre-sign review.** Recipient gets the link, opens the doc, sees
+   the same flagged-concern panel + their own chat thread. Asks "what's my
+   termination notice?" Gets the clause pulled with a summary. Decides whether
+   to sign or push back.
 
-3. **Counter-proposal.** Recipient sees the indemnification cap is too low, types
-   "I'd want this raised to $100k." AI generates a redlined edit. Recipient sends
-   the proposed edit back to the sender (no signature yet). Sender sees the
-   suggestion in their existing dashboard, approves or rejects. Doc updates. Loop
-   continues until both sides accept the final.
+3. **Counter-proposal as message.** Recipient writes "I'd want indemnification
+   raised to $100k. Can you revise?" — a message into the **shared thread**
+   between the parties. Sender sees it on the doc, edits in their tool of
+   choice, uploads v2. The recipient is notified that v2 is ready. Both see
+   the version history.
 
-4. **Org-level read.** A team admin asks "across all our signed vendor contracts in
-   the last year, what's the average payment-due window? What jurisdictions are most
-   common? Which ones have unilateral price-increase clauses?" Seal produces a
-   table. (Phase 4.)
+4. **Version-scoped review.** v2 gets its own AI review and its own chat
+   threads. v1's flagged concerns about indemnification are no longer relevant
+   if v2 fixed it; v2's review verifies the fix and flags any new issues
+   introduced. Old threads stay attached to old versions, immutable.
 
-## Architecture (Seal-native, not Mike-shaped)
+5. **Folder organization.** A workspace might have a folder called "Q4 Vendors"
+   containing every agreement they're negotiating with vendors. Each agreement
+   has its own version history. Folder is the unit of "deal" or "project" or
+   whatever the user calls it.
 
-### New Convex tables
+## Architecture (Seal-native)
 
-Designed independently from Mike's Postgres schema. House style: camelCase fields,
-`createdAt`/`updatedAt`, `organizationId` scoping, indexed by query patterns.
+### Schema additions
+
+#### Existing `documents` table — three new fields (Catapult pattern)
 
 ```ts
-// agreement_reviews — one row per "AI review session" on a document version
+// Add to documentsTable
+version: v.optional(v.number()),                   // starts at 1; optional during backfill
+parentDocumentId: v.optional(v.id("documents")),   // null for v1; v1's _id for v2+
+isLatestVersion: v.optional(v.boolean()),          // backfill all existing rows to true
+
+// Add indexes
+.index("by_org_and_latest", ["organizationId", "isLatestVersion"])
+.index("by_parent", ["parentDocumentId", "version"])
+```
+
+Migration: backfill every existing row → `version: 1`, `isLatestVersion: true`,
+`parentDocumentId: undefined`.
+
+#### New: `agreement_reviews` — one row per AI review on a document version
+
+```ts
 {
-  documentId: Id<"documents">,
+  documentId: Id<"documents">,                     // points at the specific version row
   organizationId: Id<"organizations">,
-  initiatedByUserId: v.optional(v.id("users")),     // sender side
-  initiatedByRecipientId: v.optional(v.id("document_recipients")), // recipient side
+  initiatedByUserId: v.optional(v.id("users")),
+  initiatedByRecipientId: v.optional(v.id("document_recipients")),
   status: v.union("pending", "running", "ready", "failed"),
-  modelUsed: v.string(),                            // e.g. "claude-sonnet-4-7"
-  textHash: v.string(),                             // for action-cache idempotency
-  summary: v.optional(v.string()),                  // top-level "what is this doc"
-  flaggedClauseCount: v.number(),
+  modelUsed: v.string(),
+  textHash: v.string(),                            // for action-cache idempotency
+  summary: v.optional(v.string()),                 // top-level "what is this doc"
+  flaggedConcernCount: v.number(),
   startedAt: v.number(),
   completedAt: v.optional(v.number()),
   createdAt: v.number(),
@@ -125,196 +232,240 @@ Designed independently from Mike's Postgres schema. House style: camelCase field
 .index("by_org_status", ["organizationId", "status"])
 ```
 
+#### New: `agreement_concerns` — flagged items in a review
+
+(Renamed from `agreement_suggestions` in v1 of this doc — they're concerns,
+not text edits. We're not changing the document text.)
+
 ```ts
-// agreement_suggestions — one row per AI-flagged item or proposed edit
 {
   reviewId: Id<"agreement_reviews">,
-  documentId: Id<"documents">,
+  documentId: Id<"documents">,                     // specific version
   organizationId: Id<"organizations">,
-  // What the suggestion is about
   category: v.union(
     "auto_renewal", "indemnification", "jurisdiction", "payment_terms",
     "termination", "liability_cap", "confidentiality", "ip_assignment",
     "non_compete", "other"
   ),
   severity: v.union("info", "caution", "blocker"),
-  title: v.string(),                                // short label
-  rationale: v.string(),                            // why it matters
-  // Where it points to in the document
+  title: v.string(),                               // short label
+  rationale: v.string(),                           // why it matters
   sourcePage: v.optional(v.number()),
-  sourceSpan: v.optional(v.string()),               // text excerpt
-  // What to change (optional — some items are flag-only)
-  proposedDeletion: v.optional(v.string()),
-  proposedInsertion: v.optional(v.string()),
-  // State
-  state: v.union("open", "accepted", "rejected", "superseded"),
-  decidedAt: v.optional(v.number()),
-  decidedByUserId: v.optional(v.id("users")),
-  decidedByRecipientId: v.optional(v.id("document_recipients")),
+  sourceSpan: v.optional(v.string()),              // text excerpt
+  acknowledgedAt: v.optional(v.number()),          // sender saw + acknowledged
+  acknowledgedByUserId: v.optional(v.id("users")),
   createdAt: v.number(),
   updatedAt: v.number(),
 }
 .index("by_review", ["reviewId"])
-.index("by_document_state", ["documentId", "state"])
+.index("by_document", ["documentId"])
 ```
 
+Note: no `proposedDeletion` / `proposedInsertion`. AI flags concerns; user
+decides what to do (re-upload v2, ignore, message the counterparty).
+
+#### New: `agreement_chats` — chat threads scoped to a document version
+
 ```ts
-// agreement_chats — chat thread per (document, party)
 {
-  documentId: Id<"documents">,
+  documentId: Id<"documents">,                     // specific version row
   organizationId: Id<"organizations">,
-  participantUserId: v.optional(v.id("users")),
-  participantRecipientId: v.optional(v.id("document_recipients")),
+  scope: v.union("private", "shared"),             // private = one party + AI; shared = both parties + optionally AI
+  participantUserId: v.optional(v.id("users")),    // for private threads on the sender side
+  participantRecipientId: v.optional(v.id("document_recipients")), // for private threads on the recipient side
   messageCount: v.number(),
   createdAt: v.number(),
   updatedAt: v.number(),
 }
-.index("by_document_participant_user", ["documentId", "participantUserId"])
-.index("by_document_participant_recipient", ["documentId", "participantRecipientId"])
+.index("by_document_scope", ["documentId", "scope"])
+.index("by_document_user", ["documentId", "participantUserId"])
+.index("by_document_recipient", ["documentId", "participantRecipientId"])
 ```
 
+Three threads per version per session:
+- **Sender's private thread** (just sender + AI)
+- **Recipient's private thread** (just recipient + AI, exists once recipient opens link)
+- **Shared thread** (sender + recipient, AI optional via @-mention or button)
+
+#### New: `agreement_chat_messages`
+
 ```ts
-// agreement_chat_messages — individual messages in a chat
 {
   chatId: Id<"agreement_chats">,
   role: v.union("user", "assistant", "system"),
+  authorUserId: v.optional(v.id("users")),
+  authorRecipientId: v.optional(v.id("document_recipients")),
   content: v.string(),
-  // If the assistant turn produced one or more suggestions, point back
-  producedSuggestionIds: v.optional(v.array(v.id("agreement_suggestions"))),
+  producedConcernIds: v.optional(v.array(v.id("agreement_concerns"))),
+  // For shared-thread messages, the source private message that was published
+  publishedFromMessageId: v.optional(v.id("agreement_chat_messages")),
   tokenUsage: v.optional(v.object({ input: v.number(), output: v.number() })),
   createdAt: v.number(),
 }
 .index("by_chat_created", ["chatId", "createdAt"])
 ```
 
-These tables live alongside the existing `documents`, `document_recipients`,
-`signature_fields`, `audit_logs` schemas. New audit actions:
-`review.started`, `review.completed`, `suggestion.accepted`, `suggestion.rejected`.
-
 ### New Convex functions
 
-- `agreements.reviews.startReview` (action) — extract doc text, hit AI Gateway with
-  the structured-output prompt, write `agreement_reviews` + `agreement_suggestions`
-  rows. Goes through the existing `@convex-dev/agent` component for chat memory.
-- `agreements.reviews.getReview` (query) — load review + suggestions for a doc.
-- `agreements.suggestions.decide` (mutation) — accept/reject a suggestion;
-  optionally apply the edit to the document text + bump
-  `documents.currentVersionId`.
-- `agreements.chats.send` (action) — append a message, run AI turn, persist
-  response. Uses the same agent component.
-- `agreements.exports.tracked` (action) — Phase 3. Generate a DOCX or PDF with
-  redlines from accepted suggestions.
+- `documents.uploadNewVersion` (mutation) — Catapult-pattern version creation.
+  Takes existing documentId + new storageId; produces a new row, demotes
+  predecessors. Auto-fires `agreement_reviews.startReview` on the new version.
+- `agreements.reviews.startReview` (action) — extract doc text via existing
+  `extract_text_action.ts`, hit AI Gateway, write `agreement_reviews` +
+  `agreement_concerns`. Action-cache keyed on `textHash`.
+- `agreements.reviews.getReview` (query) — load review + concerns for a doc
+  version.
+- `agreements.concerns.acknowledge` (mutation) — sender marks a concern as
+  read/handled. Doesn't change the doc. Just clears the badge.
+- `agreements.chats.send` (action) — append a message to a thread, run AI
+  turn if the thread includes AI, persist response.
+- `agreements.chats.publishToShared` (mutation) — copy a private-thread
+  message into the shared thread (the "share with the other side" button).
 
-All of these reuse the existing infrastructure already in `convex.config.ts`:
-`@convex-dev/agent`, `@convex-dev/action-cache`, `@convex-dev/workflow`,
+All reuse the existing infrastructure already in `convex.config.ts`:
+`@convex-dev/agent` (chat memory), `@convex-dev/action-cache` (review
+caching), `@convex-dev/workflow` (long-running review jobs),
 `@convex-dev/rag` (handy for cross-doc analysis later).
 
 ### New web routes / UI
 
-- **Review panel** — sidebar in the existing doc editor at
-  `/{slug}/documents/{docId}`. Lists suggestions grouped by category, with
-  approve/reject buttons. Reuses the field-placement editor's right-rail layout.
-- **Chat panel** — toggleable, sits next to the review panel. Threaded chat with the
-  agreement.
+- **Version dropdown** in the doc editor header — switch between v1, v2, v3
+  of the same agreement. Defaults to latest.
+- **Version history sidebar** — list all versions with upload date, who
+  uploaded, what changed (optional one-line description user types on
+  re-upload), AI-summarized diff if we want to get fancy.
+- **Review panel** — sidebar listing concerns by category. Click a concern
+  to see the source page/excerpt highlighted in the PDF viewer.
+- **Chat panel** — three tabs: "My notes" (private thread), "Shared with
+  recipient" (shared thread), "AI" (AI-only thread for whoever opened it).
 - **Recipient-side review panel** — same components, mounted on
-  `/sign/{token}` behind a feature flag (initially) so recipients can see the
-  same flagged items the sender saw, plus their own chat thread.
-- **Pre-send review CTA** — the Send button picks up an extra step. If a review
-  has flagged items in `state="open"`, the modal shows them and asks the sender
-  to either resolve (accept/reject) or override before sending.
+  `/sign/{token}` behind a feature flag initially. Recipients can see
+  shared thread + their own private thread + AI.
+- **Folder browser** — polish the existing `folders` UI. User-named, no
+  taxonomy imposed.
+- **Pre-send review CTA** — Send button picks up an extra step. If the
+  current version has any unacknowledged blocker-severity concerns, the
+  modal lists them and asks the sender to either acknowledge or re-upload
+  before sending.
 
 ## Phasing
 
-Each phase is a separate PR. Each ships independently. Each one is testable on the
-Mini E2E executor we built in #193 / #200.
+Each phase is a separate PR. Each ships independently. Each one is testable
+on the Mini E2E executor we built in #193 / #200.
 
-### Phase 1 — Doc chat (1 week)
+### Phase 1 — Versioning (~1.5 weeks)
+
+The foundation. Everything else scopes to a version, so this comes first.
+
+- Schema: add `version` / `parentDocumentId` / `isLatestVersion` to
+  `documents`. Backfill mutation for existing rows.
+- Mutation: `uploadNewVersion` (Catapult pattern, ported with Seal idioms).
+- UI: version dropdown in doc editor; history sidebar; "upload new version"
+  button.
+- E2E: create doc, upload v2, assert v2 is now isLatestVersion=true and v1
+  is false; the recipient signing test still finds the latest version.
+
+### Phase 2 — Doc chat (per version, private threads) (~1 week)
+
+Cheapest valuable thing. Reuses the agent component.
 
 - Tables: `agreement_chats`, `agreement_chat_messages`.
-- Backend: extract doc text on demand (already have `documents/extract_text_action.ts`),
-  feed to agent component, persist messages.
-- UI: sidebar chat in the doc editor + on the public sign page.
-- Test: E2E that asks "what's the termination notice?" gets a non-empty answer.
-- Audit: `chat.message_sent` audit entries.
+- Backend: extract doc text on demand, feed to agent component, persist
+  messages. Scoped to (documentId, scope, participant).
+- UI: chat panel in the doc editor + on the public sign page.
+- E2E: ask "what's the termination notice?" on a doc, get a non-empty answer.
 
-This is the cheapest valuable thing. Reuses every existing component. Validates
-that the AI gateway / agent / cost model all hold up before we build redlining
-on top.
+### Phase 3 — AI review with concerns (~1.5 weeks)
 
-### Phase 2 — Structured AI review with approve/reject (1.5 weeks)
+- Tables: `agreement_reviews`, `agreement_concerns`.
+- Backend: structured-output prompt that returns flagged-concerns-with-rationale.
+  Cached per `textHash` so re-running on the same version is free.
+- UI: review panel sender-side + recipient-side (behind feature flag).
+- Send-flow integration: Send button checks for unacknowledged blocker
+  concerns, prompts the sender.
+- E2E: create doc, run review, assert at least one concern exists, ack one,
+  assert state.
 
-- Tables: `agreement_reviews`, `agreement_suggestions`.
-- Backend: structured-output prompt that returns flagged-clauses-with-rationales.
-  Caches per `textHash` so re-running on the same doc is free.
-- UI: review panel in the doc editor (sender side) and on `/sign/{token}` (recipient
-  side, behind feature flag).
-- Send-flow integration: Send button checks for unresolved blocker-severity
-  suggestions, prompts the sender.
-- Test: E2E that creates a doc, runs review, asserts at least one suggestion
-  exists and accepting it transitions state to `accepted`.
+### Phase 4 — Shared cross-party thread (~1 week)
 
-### Phase 3 — Tracked-changes export (1 week)
+- Add `scope: "shared"` chat support.
+- "Share with the other side" button on private-thread messages
+  (publishToShared mutation).
+- Recipient-side UI for the shared thread.
+- Notifications when the other side posts to the shared thread.
 
-- DOCX redline output for accepted edits.
-- PDF redline output (use `pdf-lib` patterns we already use elsewhere).
-- Triggered from a "Download redlined" action button.
+### Phase 5 — Folder UX polish (~1 week)
 
-This is the smallest of the three but the highest "ohh nice" value for users
-who came from Word. We can ship Phase 1 + 2 without it; Phase 3 is a fast follow.
+The schema is there. This is mostly UI work:
+- Browse with drag/drop into folders
+- Bulk operations
+- Pinning, sorting
+- Folder rename + nested folders properly exposed
+- Visibility setting (everyone vs admin)
 
-### Phase 4 — Cross-document tabular review (later, separate decision)
+### Phase 6 (later, separate decision) — Cross-document tabular review
 
-Org-level analytics across signed agreements. "What's our average payment window?
-Which contracts have auto-renewals expiring in Q3?" Spreadsheet UI. Probably its
-own design doc when we get there.
+Org-level analytics. "What's our average payment window across all signed
+vendor agreements?" Spreadsheet UI. Own design doc when we get there.
 
 ## Cross-cutting concerns
 
-- **Cost.** AI inference goes on Seal's bill. Free tier gets N reviews / month
-  (suggest: 3). Pro unlimited. Enterprise via custom limits. Mirrors the existing
-  `seedProSubscription` tier-based approach.
-- **Privacy.** Document text only goes to the model provider via the AI Gateway,
-  which has zero-data-retention turned on by default per Vercel docs. No fine-tuning
-  on customer data. We surface this in plain language in the review settings panel.
-- **Provider neutrality.** Vercel AI Gateway is provider-agnostic. We default to
-  the best-available reasoning model and let pro accounts pick (claude-sonnet-4-7,
-  gemini-3-flash-preview, etc.).
-- **Audit trail.** Every review run, every suggestion decision, gets an audit
-  entry. Existing `audit_logs` schema handles it; we add `review.*` and
-  `suggestion.*` action literals.
-- **Recipient-side AI.** Anonymous (token-based) recipients reviewing the doc cost
-  Seal money the sender hasn't paid for. Initial gate: only enable recipient-side
-  AI review if the sending org is on a tier that includes it. Recipient-side
-  cost gets billed to the sender.
-- **Feature flag.** Whole surface lives behind `agreements_ai` flag for the first
-  few weeks of staging exposure. Gradual roll-out.
+- **Cost.** AI inference goes on Seal's bill. Free tier gets N reviews +
+  M chat messages per month. Pro unlimited. Enterprise via custom limits.
+  Mirrors the existing `seedProSubscription` tier-based approach.
+- **Privacy.** Document text only goes to the model provider via the AI
+  Gateway, which has zero-data-retention turned on by default per Vercel
+  docs. No fine-tuning on customer data. We surface this in plain language
+  in the review settings panel.
+- **Provider neutrality.** Vercel AI Gateway is provider-agnostic. We
+  default to the best-available reasoning model and let pro accounts pick.
+- **Audit trail.** Every review run, every concern acknowledgement, every
+  chat message gets an audit entry. Existing `audit_logs` schema handles
+  it; we add `review.*`, `concern.*`, `chat.message_sent` action literals.
+- **Recipient-side AI cost.** Anonymous (token-based) recipients reviewing
+  the doc cost Seal money the sender hasn't paid for directly. Initial
+  gate: only enable recipient-side AI if the sending org's tier includes
+  it. Recipient-side cost gets billed to the sender's org.
+- **Feature flag.** Whole surface lives behind `agreements_ai` flag for
+  the first few weeks of staging exposure. Gradual roll-out.
+- **Versioning + signatures.** Once a version is signed, that version is
+  locked. New uploads create yet another version which is a fresh
+  un-signed document. The signed version stays as a permanent record.
+  This matches how it actually works in the real world.
+
+## Things this is explicitly NOT a design for
+
+- **PDF text editing.** Seal never mutates PDF bytes. Edits happen in
+  external tools, then the user uploads a new version.
+- **Drafting from blank page.** Seal is for documents users already have.
+- **Tracked-changes export (DOCX redline).** Implies Seal mutates document
+  text. Out.
+- **"Apply this AI suggestion."** Same — implies text editing. AI flags
+  concerns; users decide and re-upload if they want to change anything.
+- **Legal research / case law.** Out.
+- **Compliance / privilege / UPL.** Lawyer-specific. Out.
+- **Matter management.** Folders cover what most users need. We don't
+  build a separate matter-or-deal hierarchy.
 
 ## Open questions
 
-1. **Editing the source PDF.** Right now Seal's documents are PDFs. Tracked-changes
-   on a PDF is awkward — best UX is on the underlying text. Two options:
-     - (a) Require uploads to be DOCX, convert to PDF for signing, keep DOCX as the
-       source of truth.
-     - (b) Keep PDF source, present suggestions as overlay edits, generate a
-       redlined PDF on export.
-   Phase 1 doesn't decide this; chat is read-only. Phase 2 does.
-2. **Negotiation back-and-forth across parties.** When recipient counter-proposes,
-   does the sender just see suggestions in the doc editor, or do we build a
-   separate "review queue"? Lean toward the former for v1.
-3. **Cost ceiling per review.** Hard cap to prevent a single 200-page doc from
-   eating tokens. Suggest: 100k input tokens, fail-soft above that with a
-   "doc too long" message.
-
-## What this *isn't* a design for
-
-- Drafting from blank page.
-- Legal research / case law lookup.
-- Matter management.
-- Per-document role-based access. Existing `document_recipients` covers signing
-  access; AI review uses the same access boundary.
+1. **Version diff summary.** When v2 lands, do we run an AI step that
+   summarizes "here's what changed since v1" for both parties? Cheap to add,
+   high signal. Probably yes — phase 2 or 3 add-on.
+2. **Inheriting unanswered concerns across versions.** When v2 lands, do
+   v1's unacknowledged concerns get carried forward as "still open?" Or
+   does the new review subsume them? Lean toward subsume — v2's review
+   should reflect v2's actual content, not v1's history.
+3. **Cost ceiling per review.** Hard cap on input tokens to prevent a
+   single 200-page doc from eating tokens. Suggest 100k input tokens with
+   fail-soft "doc too long" message.
+4. **Shared thread vs email reply.** Do we surface shared-thread messages
+   via existing email notifications? Probably — recipients are used to
+   email, not in-app messaging.
 
 ## Next concrete step
 
-After this doc gets reviewed, build **Phase 1 — doc chat — as a working spike**
-on a fresh branch. Two days max to a green E2E that asks a doc a question and
-gets a coherent answer back. Then iterate.
+Once approved, build **Phase 1 — versioning — as the first PR.** Two-week
+target. Catapult code is the reference; we port the schema + mutation, write
+Seal-style tests, ship. Then Phase 2 (chat) on top. Each phase compounds
+the next.
