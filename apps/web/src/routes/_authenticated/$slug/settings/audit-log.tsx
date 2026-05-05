@@ -126,9 +126,11 @@ function getActionLabel(action: AuditAction): string {
     "user.login": "Signed in",
     "user.logout": "Signed out",
     "user.updated": "Account updated",
+    "email.queued": "Email queued",
     "email.delivered": "Email delivered",
     "email.opened": "Email opened",
     "email.bounced": "Email bounced",
+    "email.failed": "Email failed",
     other: "Other",
   };
   return labels[action] ?? action;

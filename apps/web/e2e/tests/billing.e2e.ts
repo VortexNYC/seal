@@ -102,6 +102,36 @@ test.describe("Billing", () => {
     // Stripe-hosted portal URLs are served from billing.stripe.com.
     expect(result.url).toMatch(/^https:\/\/billing\.stripe\.com\//);
   });
+
+  test("createEmbeddedCheckoutSession returns a clientSecret for a known price", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    await authenticatedPage.goto(`/${organizationSlug}/settings/billing`);
+    await waitForBillingPageReady(authenticatedPage);
+
+    // The pro:monthly:v2 lookup key resolves to a real recurring price on the
+    // shared Stripe sandbox account. The action assembles a checkout session
+    // using the seeded Stripe customer (provisioned by seedStripeCustomerForE2E)
+    // and returns the clientSecret the embedded iframe would mount with.
+    // We assert the session is created — driving the actual iframe + 4242 card
+    // is a separate concern (Stripe's own UI) and not covered here.
+    const result = await authenticatedPage.evaluate(async (returnUrl) => {
+      const client = window.__convexClient;
+      const api = window.__convexApi;
+      if (!client || !api) throw new Error("Convex client not ready");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (await client.action((api as any).stripe.actions.createEmbeddedCheckoutSession, {
+        lookupKey: "pro:monthly:v2",
+        returnUrl,
+      })) as { clientSecret: string };
+    }, authenticatedPage.url());
+
+    expect(result).toHaveProperty("clientSecret");
+    // Stripe checkout client secrets follow `cs_*_secret_*` (v3 format) or the
+    // older `cs_*` shape; both start with `cs_`.
+    expect(result.clientSecret).toMatch(/^cs_/);
+  });
 });
 
 /**

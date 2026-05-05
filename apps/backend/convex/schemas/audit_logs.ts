@@ -62,9 +62,11 @@ export const auditActionTuple = v.union(
   v.literal("user.updated"),
 
   // Email delivery actions
+  v.literal("email.queued"),
   v.literal("email.delivered"),
   v.literal("email.opened"),
   v.literal("email.bounced"),
+  v.literal("email.failed"),
 
   // Generic action for extensibility
   v.literal("other"),

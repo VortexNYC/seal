@@ -142,13 +142,20 @@ test.describe("Recipient Signing", () => {
     while (
       Date.now() < completionDeadline &&
       (completed?.workflowStatus !== "completed" ||
-        !completed?.auditActions.includes("document.completed"))
+        !completed?.auditActions.includes("document.completed") ||
+        !completed?.auditActions.includes("email.queued"))
     ) {
       await new Promise((r) => setTimeout(r, 1000));
       completed = await getDocumentState(signableDoc.documentId);
     }
     expect(completed?.workflowStatus).toBe("completed");
     expect(completed?.auditActions).toContain("document.completed");
+    // The post-signature workflow's sendSignerConfirmation step should have
+    // queued a confirmation email through Resend; we observe that via the
+    // `email.queued` audit entry written from sendSigningComplete on success.
+    // Real Resend delivery (delivered/opened/bounced) is captured separately
+    // by the resend component's webhook handler — out of scope here.
+    expect(completed?.auditActions).toContain("email.queued");
   });
 
   test("recipient backend state is seeded correctly", async ({ signableDoc }) => {

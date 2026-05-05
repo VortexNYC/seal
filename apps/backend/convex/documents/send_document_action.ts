@@ -151,6 +151,8 @@ async function sendInvitationBatch(
   params: {
     recipients: Doc<"document_recipients">[];
     documentName: string;
+    documentId: Id<"documents">;
+    organizationId: Id<"organizations">;
     senderName: string;
     customMessage: string | undefined;
     recipientMessageMap: Map<Id<"document_recipients">, string>;
@@ -186,6 +188,9 @@ async function sendInvitationBatch(
       invoiceAmount: invoiceDetails.invoiceAmount,
       invoiceCurrency: invoiceDetails.invoiceCurrency,
       branding: params.emailBranding,
+      organizationId: params.organizationId,
+      documentId: params.documentId,
+      recipientId: recipient._id,
     });
 
     results.push({
@@ -602,6 +607,8 @@ export const sendDocumentEmails = action({
     const emailResults = await sendInvitationBatch(ctx, {
       recipients: getRecipientsToEmail(document, recipients),
       documentName: document.name,
+      documentId: document._id,
+      organizationId: document.organizationId,
       senderName,
       customMessage: args.customMessage,
       recipientMessageMap: buildRecipientMessageMap(args.recipientMessages),
@@ -699,6 +706,9 @@ export const resendRecipientEmail = action({
       customMessage: args.customMessage,
       expiresAt: emailExpiresAt,
       branding: emailBranding,
+      organizationId: document.organizationId,
+      documentId: document._id,
+      recipientId: recipient._id,
     });
 
     return {
@@ -749,6 +759,8 @@ export const sendDocumentEmailsInternal = internalAction({
     await sendInvitationBatch(ctx, {
       recipients: getRecipientsToEmail(document, recipients),
       documentName: document.name,
+      documentId: document._id,
+      organizationId: document.organizationId,
       senderName,
       customMessage: args.customMessage,
       recipientMessageMap: new Map(),
