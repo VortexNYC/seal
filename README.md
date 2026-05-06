@@ -198,3 +198,4 @@ The API reference content is generated from `apps/landing/openapi.yaml`.
 - MCP server details: [apps/mcp-server/README.md](apps/mcp-server/README.md)
 
 <!-- val-token: 1776627247462 -->
+<!-- vortex e2e test 5 2026-05-06 -->
