@@ -208,9 +208,7 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
   ],
 };
 
-/**
- * Check if user has specific permission
- */
+/** Returns true if the member has the named permission via role or individual grant. */
 export function hasPermission(member: Doc<"organization_members">, permission: string): boolean {
   // Check if user is active
   if (member.status !== "active") {
@@ -267,16 +265,12 @@ export function getEffectivePermissions(member: Doc<"organization_members">): st
   return [...new Set([...rolePermissions, ...individualPermissions])];
 }
 
-/**
- * Check if user account is in a valid state
- */
+/** Returns true if the member's account is valid (active, not suspended). */
 export function isAccountValid(member: Doc<"organization_members">): boolean {
   return member.status === "active";
 }
 
-/**
- * Get user display name
- */
+/** Returns the user's display name (full name when available, else email local-part). */
 export function getDisplayName(user: Doc<"users">): string {
   return user.name || user.email || "Unknown User";
 }
