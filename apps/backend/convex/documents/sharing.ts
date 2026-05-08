@@ -8,6 +8,7 @@ import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { authQuery, permissionMutation } from "../auth";
+import { isAccountValid } from "../auth.utils";
 import {
   ACCESS_ERRORS,
   getActiveMembership,
@@ -36,7 +37,7 @@ async function canViewSharedDocument(
       )
       .first();
 
-    if (member !== null && member.status === "active") {
+    if (member !== null && isAccountValid(member)) {
       return true;
     }
   }
