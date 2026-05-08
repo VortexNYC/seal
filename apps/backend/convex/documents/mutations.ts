@@ -11,6 +11,7 @@ import type { DatabaseReader } from "../_generated/server";
 import { enqueueAiPipeline } from "../ai/workpool";
 import { logDocumentAction } from "../audit_logs/helpers";
 import { authMutation, permissionMutation } from "../auth";
+import { isAccountValid } from "../auth.utils";
 import { retrier } from "../retrier";
 import { expirationPeriodToMs } from "./send_document_action";
 import { validateFile } from "./upload_config";
@@ -395,7 +396,7 @@ export const updateThumbnail = authMutation({
         )
         .first();
 
-      hasAccess = member !== null && member.status === "active";
+      hasAccess = member !== null && isAccountValid(member);
     }
 
     if (!hasAccess) {
