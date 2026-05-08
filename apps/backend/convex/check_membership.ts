@@ -45,6 +45,7 @@ function getPrimaryEmailAddress(clerkUser: {
  * NOTE: This is a query and cannot update the user's activeOrganizationId.
  * Use ensureActiveOrganization mutation if you need to fix missing activeOrganizationId.
  */
+/** Returns whether the current user belongs to any organization. */
 export const hasOrganization = query({
   args: {},
   handler: async (ctx) => {
