@@ -169,6 +169,7 @@ async function getAccessExports(ctx: QueryCtx, userId: Id<"users">) {
  * User-facing mutation to request a data export.
  * Schedules the export action and returns immediately.
  */
+/** Initiates a user data export request. */
 export const requestDataExport = authMutation({
   args: {},
   handler: async (ctx) => {
