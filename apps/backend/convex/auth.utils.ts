@@ -234,6 +234,7 @@ export function hasPermission(member: Doc<"organization_members">, permission: s
 /**
  * Check if user has specific role or higher
  */
+/** Returns true if the member's role is at or above the required level. */
 export function hasRole(
   member: Doc<"organization_members">,
   requiredRole: OrganizationMemberRole,
@@ -246,6 +247,7 @@ export function hasRole(
 /**
  * Check if user can access specific organization
  */
+/** Returns true if the member can access the given organization. */
 export function canAccessOrganization(
   member: Doc<"organization_members">,
   targetOrgId: string,
@@ -256,6 +258,7 @@ export function canAccessOrganization(
 /**
  * Get effective permissions for user (role-based + individual permissions)
  */
+/** Returns the union of role permissions and individual permissions for the member. */
 export function getEffectivePermissions(member: Doc<"organization_members">): string[] {
   const rolePermissions = ROLE_PERMISSIONS[member.role] || [];
   const individualPermissions = member.permissions || [];
