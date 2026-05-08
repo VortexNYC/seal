@@ -90,7 +90,7 @@ describe("Stripe webhook handlers", () => {
       trial_start: null,
       trial_end: null,
       latest_invoice: null,
-      metadata: { organizationId, ...(overrides?.metadata ?? {}) },
+      metadata: { organizationId, ...overrides?.metadata },
       items: {
         data: [
           {
