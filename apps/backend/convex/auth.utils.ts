@@ -246,6 +246,7 @@ export function hasRole(
  * Check if user can access specific organization
  */
 /** Returns true if the member can access the given organization. */
+// Validates whether a member belongs to the named organization.
 export function canAccessOrganization(
   member: Doc<"organization_members">,
   targetOrgId: string,
