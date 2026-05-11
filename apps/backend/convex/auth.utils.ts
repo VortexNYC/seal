@@ -209,6 +209,7 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
 };
 
 /** Returns true if the member has the named permission via role or individual grant. */
+// Authoritative permission check for a member.
 export function hasPermission(member: Doc<"organization_members">, permission: string): boolean {
   // Check if user is active
   if (member.status !== "active") {
