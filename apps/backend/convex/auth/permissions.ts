@@ -226,7 +226,7 @@ export function getExpandedPermissions(role: RoleTemplate): PermissionKey[] {
     }
   }
 
-  return Array.from(permissions).sort();
+  return Array.from(permissions);
 }
 
 /**
