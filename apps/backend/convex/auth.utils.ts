@@ -493,6 +493,7 @@ export function isAdminOrOwner(member: Doc<"organization_members">): boolean {
  * User type checking functions
  * Note: userType was removed from organization_members schema, defaulting to personal
  */
+/** Returns true if the user account is a personal (non-business) account. */
 export function isPersonalUser(_member: Doc<"organization_members">): boolean {
   return true; // Default to personal since userType was removed
 }
