@@ -42,3 +42,7 @@ apps/web/
 - Use CSS classes in E2E selectors.
 - Bypass `EnforceOrganization` for authenticated routes.
 - Import Convex functions directly from `../../convex/_generated/api`.
+
+## Quick Links
+
+- [Vite docs](https://vitejs.dev/)
