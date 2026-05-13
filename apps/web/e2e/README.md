@@ -300,6 +300,7 @@ page.locator("div > span:nth-child(3)");
 - [Best Practices](https://playwright.dev/docs/best-practices)
 - [Debugging Guide](https://playwright.dev/docs/debug)
 - [Selectors](https://playwright.dev/docs/selectors)
+- [Test Generator (Codegen)](https://playwright.dev/docs/codegen)
 
 ## 🤝 Contributing
 
