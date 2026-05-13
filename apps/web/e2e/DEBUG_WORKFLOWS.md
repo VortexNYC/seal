@@ -359,5 +359,7 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 PLAYWRIGHT_BASE_URL=http://localhost:5180
 ```
 
-> Tip: see [apps/web/e2e/README.md](README.md) for general e2e setup and patterns.
-> Tip: launch the Playwright Inspector with `PWDEBUG=1 bun run test:e2e` to step through tests interactively.
+## Debug Tips
+
+- See [apps/web/e2e/README.md](README.md) for general e2e setup and patterns.
+- Launch the Playwright Inspector with `PWDEBUG=1 bun run test:e2e` to step through tests interactively.
