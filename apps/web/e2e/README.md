@@ -311,3 +311,7 @@ When adding new tests:
 3. Document any special setup requirements
 4. Ensure tests pass in CI
 5. Update this README if adding new patterns
+
+## Quick Links
+
+- [Playwright docs](https://playwright.dev/)
