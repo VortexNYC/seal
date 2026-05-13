@@ -358,3 +358,5 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 # Playwright
 PLAYWRIGHT_BASE_URL=http://localhost:5180
 ```
+
+> Tip: see [apps/web/e2e/README.md](README.md) for general e2e setup and patterns.
