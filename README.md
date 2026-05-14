@@ -6,6 +6,7 @@
 <!-- val-dup-seed-1776635330428 -->
 
 <!-- val-seed: 1776652153608 -->
+<!-- merge-deploy-rung: 1778772723448 -->
 
 Seal is a Bun + Turborepo monorepo for the Seal document-signing platform.
 It contains the product web app, the public site and developer docs, the Convex backend, and the MCP server.
