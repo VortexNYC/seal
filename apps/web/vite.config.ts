@@ -1,3 +1,4 @@
+// Seal frontend Vite configuration
 import path from "node:path";
 
 import { sentryVitePlugin } from "@sentry/vite-plugin";
