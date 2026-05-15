@@ -1,3 +1,4 @@
+// Seal web app knip (dead-code analysis) configuration
 import type { KnipConfig } from "knip";
 
 const config: KnipConfig = {
