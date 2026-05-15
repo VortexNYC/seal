@@ -1,3 +1,4 @@
+// Seal web app Playwright E2E configuration
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
