@@ -1,3 +1,4 @@
+// Seal backend Vitest test configuration
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
