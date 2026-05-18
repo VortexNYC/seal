@@ -1,3 +1,4 @@
+// Seal landing site Vite build configuration
 import { createRequire } from "node:module";
 import path from "node:path";
 
