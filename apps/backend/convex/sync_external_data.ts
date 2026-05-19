@@ -18,6 +18,23 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type ActionCtx, internalAction, internalMutation } from "./_generated/server";
 
+/**
+ * Compute the symmetric set difference between two string arrays.
+ * Returns stable sorted arrays of added (in next, not in prev) and removed (in prev, not in next) keys.
+ */
+export function diffSyncKeys(
+  prev: string[],
+  next: string[],
+): { added: string[]; removed: string[] } {
+  const prevSet = new Set(prev);
+  const nextSet = new Set(next);
+
+  const added = [...nextSet].filter((key) => !prevSet.has(key)).sort();
+  const removed = [...prevSet].filter((key) => !nextSet.has(key)).sort();
+
+  return { added, removed };
+}
+
 function getClerkClient() {
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (!secretKey) {
