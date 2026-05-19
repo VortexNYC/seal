@@ -49,6 +49,13 @@ export type SealRLSContext = {
 };
 
 /**
+ * Pure helper: returns true for non-mutating roles.
+ */
+export function isReadOnlyRole(role: string): boolean {
+  return role === "viewer" || role === "guest";
+}
+
+/**
  * Get RLS context from query context
  * Returns null if user is not authenticated
  */
