@@ -7,6 +7,17 @@
 
 import { ConvexError, v } from "convex/values";
 
+/**
+ * Returns a stable one-line summary of the export scope.
+ * @example summarizeExportScope(["profile", "documents"]) // "Export includes: profile, documents"
+ */
+export function summarizeExportScope(parts: string[]): string {
+  if (parts.length === 0) {
+    return "Export includes: nothing";
+  }
+  return `Export includes: ${parts.join(", ")}`;
+}
+
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
