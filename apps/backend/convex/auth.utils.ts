@@ -7,7 +7,7 @@ import type { OrganizationMemberRole } from "./schema";
  */
 /** Authentication helpers shared by Convex functions. */
 /** Authentication helpers shared by Convex functions. */
-export const ROLE_HIERARCHY: Record<OrganizationMemberRole, number> = {
+export const ORG_ROLE_HIERARCHY: Record<OrganizationMemberRole, number> = {
   system: 150, // System-level access (highest)
   owner: 100, // Organization owner
   admin: 75, // Organization administrator
@@ -238,8 +238,8 @@ export function hasRole(
   member: Doc<"organization_members">,
   requiredRole: OrganizationMemberRole,
 ): boolean {
-  const userLevel = ROLE_HIERARCHY[member.role] || 0;
-  const requiredLevel = ROLE_HIERARCHY[requiredRole] || 0;
+  const userLevel = ORG_ROLE_HIERARCHY[member.role] || 0;
+  const requiredLevel = ORG_ROLE_HIERARCHY[requiredRole] || 0;
   return userLevel >= requiredLevel;
 }
 
@@ -583,5 +583,5 @@ export const AuthUtils = {
 
   // Permission constants
   PERMISSIONS: DOCUMENT_SIGNING_PERMISSIONS,
-  ROLE_HIERARCHY,
+  ORG_ROLE_HIERARCHY,
 };
