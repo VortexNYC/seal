@@ -1,3 +1,4 @@
+// Seal MCP server knip configuration
 import type { KnipConfig } from "knip";
 
 const config: KnipConfig = {
