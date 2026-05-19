@@ -43,6 +43,10 @@ export const list = query({
   },
 });
 
+export function isStalePresence(lastSeenMs: number, nowMs: number, thresholdMs: number): boolean {
+  return nowMs - lastSeenMs > thresholdMs;
+}
+
 export const disconnect = mutation({
   args: { sessionToken: v.string() },
   handler: async (ctx, { sessionToken }) => {
