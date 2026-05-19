@@ -49,9 +49,7 @@ describe("hasAllPermissions", () => {
 
   test("returns true for wildcard/system role granting all permissions", () => {
     const member = makeMember({ role: "system" });
-    expect(hasAllPermissions(member, ["documents:delete", "org:manage", "api:create"])).toBe(
-      true,
-    );
+    expect(hasAllPermissions(member, ["documents:delete", "org:manage", "api:create"])).toBe(true);
   });
 
   test("returns true for admin role with all requested permissions via role grants", () => {

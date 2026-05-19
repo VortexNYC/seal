@@ -231,7 +231,10 @@ export function hasPermission(member: Doc<"organization_members">, permission: s
 }
 
 /** Returns true if the member has every permission in the list. */
-export function hasAllPermissions(member: Doc<"organization_members">, permissions: string[]): boolean {
+export function hasAllPermissions(
+  member: Doc<"organization_members">,
+  permissions: string[],
+): boolean {
   return permissions.every((permission) => hasPermission(member, permission));
 }
 
