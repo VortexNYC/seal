@@ -8,6 +8,16 @@ import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 
 /**
+ * Returns true if the user has no matching memberships.
+ */
+export function isOrphanedUser(
+  userId: string,
+  memberships: Array<{ userId: string; orgId: string }>,
+): boolean {
+  return !memberships.some((m) => m.userId === userId);
+}
+
+/**
  * Fix a user who has a membership but no activeOrganizationId set
  * Run from Convex dashboard: fix_user_org:fixUserActiveOrganization({ email: "user@example.com" })
  */
