@@ -122,10 +122,10 @@ function mapMembershipRole(role: string, isFirstMember: boolean): OrganizationRo
   if (clerkRole.includes("admin") || clerkRole === "org:admin") {
     return "admin";
   }
-  if (clerkRole.includes("member")) {
-    return "member";
+  if (clerkRole.includes("viewer")) {
+    return "viewer";
   }
-  return "viewer";
+  return "member";
 }
 
 /**
@@ -390,11 +390,11 @@ export const syncOrganizationMembership = mutation({
     // We should map this to "owner" role since they created the org
     if (clerkRole.includes("admin") || clerkRole === "org:admin") {
       mappedRole = "owner"; // Creator of the organization should be owner
-    } else if (clerkRole.includes("member")) {
-      mappedRole = "member";
+    } else if (clerkRole.includes("viewer")) {
+      mappedRole = "viewer";
     } else {
       // Safe default for unrecognized roles
-      mappedRole = "viewer";
+      mappedRole = "member";
     }
 
     console.info(

@@ -209,5 +209,47 @@ describe("Clerk webhook sync mutations", () => {
       expect(membership?.userId).toBe(userId);
       expect(membership?.status).toBe("active");
     });
+
+    test("defaults unrecognized Clerk roles to member for new members", async () => {
+      // Seed an owner first so the org is not empty.
+      await t.mutation(api.clerk_webhooks.syncUser, {
+        clerkId: "user_test_membership_owner",
+        email: "owner@example.com",
+        isEmailVerified: true,
+      });
+      const { organizationId } = await t.mutation(api.clerk_webhooks.syncOrganization, {
+        clerkId: "org_test_membership_default",
+        name: "Default Role Org",
+      });
+      await t.mutation(api.clerk_webhooks.syncOrganizationMembership, {
+        userClerkId: "user_test_membership_owner",
+        organizationClerkId: "org_test_membership_default",
+        role: "admin",
+      });
+
+      // Now add a second user with an unrecognized Clerk role.
+      const { userId } = await t.mutation(api.clerk_webhooks.syncUser, {
+        clerkId: "user_test_membership_default",
+        email: "default@example.com",
+        isEmailVerified: true,
+      });
+      await t.mutation(api.clerk_webhooks.syncOrganizationMembership, {
+        userClerkId: "user_test_membership_default",
+        organizationClerkId: "org_test_membership_default",
+        role: "org:billing",
+      });
+
+      const membership = await t.run(async (ctx) => {
+        return ctx.db
+          .query("organization_members")
+          .withIndex("by_user_organization", (q) =>
+            q.eq("userId", userId).eq("organizationId", organizationId),
+          )
+          .first();
+      });
+
+      expect(membership).not.toBeNull();
+      expect(membership?.role).toBe("member");
+    });
   });
 });
