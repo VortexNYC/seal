@@ -48,6 +48,7 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
     "documents:download",
     "documents:share",
     "documents:export",
+    "documents:bulk_export",
     // Templates (full access) - includes both old and new permission naming
     "templates:read",
     "templates:view", // New naming convention
@@ -113,6 +114,7 @@ export const ROLE_PERMISSIONS: Record<OrganizationMemberRole, string[]> = {
     "documents:download",
     "documents:share",
     "documents:export",
+    "documents:bulk_export",
     // Templates (full access) - includes both old and new permission naming
     "templates:read",
     "templates:view", // New naming convention
@@ -302,6 +304,7 @@ export const DOCUMENT_SIGNING_PERMISSIONS = {
   DOCUMENTS_SEND: "documents:send",
   DOCUMENTS_CANCEL: "documents:cancel",
   DOCUMENTS_DOWNLOAD: "documents:download",
+  DOCUMENTS_BULK_EXPORT: "documents:bulk_export",
 
   // Template permissions
   TEMPLATES_READ: "templates:read",
@@ -355,6 +358,19 @@ export const DOCUMENT_SIGNING_PERMISSIONS = {
 export function canManageDocuments(member: Doc<"organization_members">, orgId: string): boolean {
   // Must have document management permission
   if (!hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_CREATE)) {
+    return false;
+  }
+
+  // Must be in same organization
+  return canAccessOrganization(member, orgId);
+}
+
+/**
+ * Check if user can bulk export documents
+ */
+export function canBulkExportDocuments(member: Doc<"organization_members">, orgId: string): boolean {
+  // Must have bulk export document permission
+  if (!hasPermission(member, DOCUMENT_SIGNING_PERMISSIONS.DOCUMENTS_BULK_EXPORT)) {
     return false;
   }
 
@@ -562,6 +578,7 @@ export const AuthUtils = {
 
   // Document signing management functions
   canManageDocuments,
+  canBulkExportDocuments,
   canSendDocuments,
   canManageTemplates,
   canDownloadDocuments,
