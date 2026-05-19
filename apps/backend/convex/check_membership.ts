@@ -7,12 +7,18 @@ import { createClerkClient } from "@clerk/backend";
 import { ConvexError, v } from "convex/values";
 
 import { api, internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
 import { action, mutation, query } from "./_generated/server";
 
 interface OrganizationSyncRepairResult {
   success: boolean;
   activeOrganizationSlug: string | null;
   reason?: string;
+}
+
+/** Returns true if the member's status is active (i.e., in good standing). */
+export function isMemberInGoodStanding(member: Doc<"organization_members">): boolean {
+  return member.status === "active";
 }
 
 function getPrimaryEmailAddress(clerkUser: {
