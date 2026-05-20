@@ -63,3 +63,18 @@ export const removeUserStripeCustomerId = migrations.define({
     console.info(`[migration] Cleared stripeCustomerId from user ${doc._id}`);
   },
 });
+
+/**
+ * Backfill redactionLevel on legacy documents.
+ *
+ * Before this field was added, documents had no redactionLevel value.
+ * This migration sets it to "none" so that existing rows have an explicit default.
+ */
+export const backfillDocumentRedactionLevel = migrations.define({
+  table: "documents",
+  migrateOne: async (ctx, doc) => {
+    if (doc.redactionLevel !== undefined) return;
+    await ctx.db.patch(doc._id, { redactionLevel: "none" });
+    console.info(`[migration] Backfilled redactionLevel for document ${doc._id}`);
+  },
+});
