@@ -339,7 +339,9 @@ export function DocumentSidebar({
                         <div className="text-muted-foreground truncate font-sans text-xs sm:text-[0.6875rem]">
                           {recipient.email}
                           {recipient.phone && (
-                            <span className="ml-1 text-muted-foreground/70">· {recipient.phone}</span>
+                            <span className="text-muted-foreground/70 ml-1">
+                              · {recipient.phone}
+                            </span>
                           )}
                         </div>
                       )}
@@ -482,7 +484,7 @@ export function DocumentSidebar({
                         redactionLevel === level
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border bg-card text-muted-foreground hover:bg-muted",
-                        isSavingRedactionLevel && "opacity-50 cursor-not-allowed",
+                        isSavingRedactionLevel && "cursor-not-allowed opacity-50",
                       )}
                     >
                       {isSavingRedactionLevel && redactionLevel !== level && (

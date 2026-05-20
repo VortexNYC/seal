@@ -216,9 +216,7 @@ function DocumentDetailPage() {
   const removeRecipient = useMutation(api.documents.recipients_mutations.removeRecipient);
   const addRecipients = useMutation(api.documents.recipients_mutations.addRecipients);
   const updateDocument = useMutation(api.documents.mutations.updateDocument);
-  const setDocumentRedactionLevel = useMutation(
-    api.documents.mutations.setDocumentRedactionLevel,
-  );
+  const setDocumentRedactionLevel = useMutation(api.documents.mutations.setDocumentRedactionLevel);
   const resendRecipientEmail = useAction(api.documents.send_document_action.resendRecipientEmail);
 
   // ── Auth ────────────────────────────────────────────────────────────────

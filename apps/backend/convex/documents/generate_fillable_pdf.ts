@@ -47,7 +47,10 @@ export const generateFillablePdfAction = action({
 
     // Create a map of recipient IDs to recipient info
     const recipientMap = new Map(
-      recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email, phone: r.phone ?? null }]),
+      recipients.map((r) => [
+        r._id,
+        { name: r.name ?? null, email: r.email, phone: r.phone ?? null },
+      ]),
     );
 
     // Fetch the original PDF file from storage
@@ -130,7 +133,10 @@ export const generateAndStoreFillablePdf = action({
 
     // Create a map of recipient IDs to recipient info
     const recipientMap = new Map(
-      recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email, phone: r.phone ?? null }]),
+      recipients.map((r) => [
+        r._id,
+        { name: r.name ?? null, email: r.email, phone: r.phone ?? null },
+      ]),
     );
 
     // Fetch the original PDF file from storage

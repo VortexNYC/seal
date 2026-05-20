@@ -99,13 +99,12 @@ describe("Document redactionLevel", () => {
   });
 
   test("can set redactionLevel to none", async () => {
-    await t.withIdentity({ subject: "clerk_test_owner" }).mutation(
-      api.documents.mutations.setDocumentRedactionLevel,
-      {
+    await t
+      .withIdentity({ subject: "clerk_test_owner" })
+      .mutation(api.documents.mutations.setDocumentRedactionLevel, {
         documentId,
         redactionLevel: "strict",
-      },
-    );
+      });
 
     const result = await t
       .withIdentity({ subject: "clerk_test_owner" })
@@ -123,13 +122,12 @@ describe("Document redactionLevel", () => {
 
   test("rejects invalid redactionLevel values", async () => {
     await expect(
-      t.withIdentity({ subject: "clerk_test_owner" }).mutation(
-        api.documents.mutations.setDocumentRedactionLevel,
-        {
+      t
+        .withIdentity({ subject: "clerk_test_owner" })
+        .mutation(api.documents.mutations.setDocumentRedactionLevel, {
           documentId,
           redactionLevel: "invalid" as "none",
-        },
-      ),
+        }),
     ).rejects.toThrow();
   });
 });

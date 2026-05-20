@@ -240,7 +240,8 @@ async function addSignaturePlaceholder(
 
   // Add recipient info below if available
   if (recipient) {
-    const displayName = recipient.name || applyRedaction(recipient.email, "email", redactionLevel) || "";
+    const displayName =
+      recipient.name || applyRedaction(recipient.email, "email", redactionLevel) || "";
     const recipientTextSize = 8;
     const recipientTextWidth = font.widthOfTextAtSize(displayName, recipientTextSize);
     page.drawText(displayName, {

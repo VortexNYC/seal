@@ -138,7 +138,7 @@ export function AddRecipientDialog({
           {
             email: recipientEmail,
             name: recipientName,
-            phone: activeTab === "outsider" ? (phone.trim() || undefined) : undefined,
+            phone: activeTab === "outsider" ? phone.trim() || undefined : undefined,
             role,
           },
         ],
