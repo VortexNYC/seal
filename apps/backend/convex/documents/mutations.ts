@@ -360,6 +360,40 @@ export const updateDocument = permissionMutation("documents:edit")({
 });
 
 /**
+ * Set document redaction level for PDF exports
+ * Controls how sensitive data is exposed in generated PDFs
+ * Requires documents:edit permission
+ */
+export const setDocumentRedactionLevel = permissionMutation("documents:edit")({
+  args: {
+    documentId: v.id("documents"),
+    redactionLevel: v.union(v.literal("none"), v.literal("standard"), v.literal("strict")),
+  },
+  handler: async (ctx, args) => {
+    const userId = ctx.auth.user._id;
+
+    // 1. Get the document
+    const document = await ctx.db.get(args.documentId);
+    if (!document) {
+      throw new ConvexError("Document not found");
+    }
+
+    // 2. Verify user has edit access
+    if (!(await hasEditDocumentAccess(ctx, document, userId))) {
+      throw new ConvexError("You don't have permission to edit this document");
+    }
+
+    // 3. Update redaction level
+    await ctx.db.patch(args.documentId, {
+      redactionLevel: args.redactionLevel,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+/**
  * Update document thumbnail
  * Used for lazy thumbnail generation from existing documents
  */

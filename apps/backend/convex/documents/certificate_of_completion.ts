@@ -18,6 +18,7 @@ import { encode as encodeQr } from "uqr";
 import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { internalAction, internalMutation } from "../_generated/server";
+import { applyRedaction, type RedactionLevel } from "./redaction";
 
 const PAGE_WIDTH = 595.28; // A4
 const PAGE_HEIGHT = 841.89;
@@ -34,6 +35,7 @@ interface CertificateData {
   documentHash?: string;
   qrToken?: string;
   verifyBaseUrl: string;
+  redactionLevel?: RedactionLevel;
 }
 
 interface CertificatePageState {
@@ -124,6 +126,7 @@ function drawDocumentDetails(state: CertificatePageState, data: CertificateData)
 function drawRecipientsSection(
   state: CertificatePageState,
   recipients: Doc<"document_recipients">[],
+  redactionLevel?: RedactionLevel,
 ): void {
   addNewPageIfNeeded(state, 40);
   state.page.drawText("Signers & Recipients", {
@@ -147,11 +150,17 @@ function drawRecipientsSection(
     });
     state.y -= 14;
 
-    const details = [
-      `Email: ${recipient.email}`,
+    const maskedEmail = applyRedaction(recipient.email, "email", redactionLevel);
+    const details: string[] = [
+      `Email: ${maskedEmail}`,
       `Role: ${recipient.role.charAt(0).toUpperCase() + recipient.role.slice(1)}`,
       `Status: ${recipient.status}`,
     ];
+
+    if (recipient.phone) {
+      const maskedPhone = applyRedaction(recipient.phone, "phone", redactionLevel);
+      details.push(`Phone: ${maskedPhone}`);
+    }
 
     for (const detail of details) {
       state.page.drawText(detail, {
@@ -331,7 +340,7 @@ async function generateCertificatePdf(data: CertificateData): Promise<Uint8Array
 
   drawHeader(state);
   drawDocumentDetails(state, data);
-  drawRecipientsSection(state, data.recipients);
+  drawRecipientsSection(state, data.recipients, data.redactionLevel);
   drawAuditTrail(state, data.auditLogs);
   drawFooter(state);
   drawQrCode(pdfDoc, helvetica, data);
@@ -393,6 +402,7 @@ export const generateCertificate = internalAction({
       documentHash: document.documentHash ?? undefined,
       qrToken: document.qrToken ?? undefined,
       verifyBaseUrl: process.env.SITE_URL ?? "https://app.seal.so",
+      redactionLevel: document.redactionLevel as RedactionLevel | undefined,
     });
 
     // 5. Upload to Convex Storage

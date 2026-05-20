@@ -146,6 +146,7 @@ export const suggestForRecipient = permissionQuery("contacts:view")({
       fullName: c.fullName,
       email: c.email,
       company: c.company,
+      phone: c.phone,
     }));
   },
 });

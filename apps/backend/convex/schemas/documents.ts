@@ -108,6 +108,11 @@ export const documentsTable = defineTable({
   // Signing mode: parallel (all at once) or sequential (enforce order groups)
   signingMode: v.optional(signingModeTuple),
 
+  // Redaction level for sensitive data in PDF exports
+  redactionLevel: v.optional(
+    v.union(v.literal("none"), v.literal("standard"), v.literal("strict")),
+  ),
+
   // QR code verification token (generated on document completion)
   qrToken: v.optional(v.string()),
   qrTokenGeneratedAt: v.optional(v.number()),

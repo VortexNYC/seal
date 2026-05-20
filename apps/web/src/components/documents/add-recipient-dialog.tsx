@@ -63,6 +63,7 @@ export function AddRecipientDialog({
   } | null>(null);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"signer" | "viewer" | "approver">("signer");
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -137,6 +138,7 @@ export function AddRecipientDialog({
           {
             email: recipientEmail,
             name: recipientName,
+            phone: activeTab === "outsider" ? (phone.trim() || undefined) : undefined,
             role,
           },
         ],
@@ -146,6 +148,7 @@ export function AddRecipientDialog({
       // Reset form
       setEmail("");
       setName("");
+      setPhone("");
       setRole("signer");
       setSelectedMember(null);
       onOpenChange(false);
@@ -264,6 +267,7 @@ export function AddRecipientDialog({
                           onClick={() => {
                             setEmail(contact.email);
                             setName(contact.fullName);
+                            setPhone(contact.phone || "");
                             setShowSuggestions(false);
                           }}
                         >
@@ -285,6 +289,17 @@ export function AddRecipientDialog({
                   placeholder="John Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone (Optional)</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+1-555-123-4567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
             </TabsContent>

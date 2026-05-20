@@ -353,6 +353,7 @@ export const addRecipients = permissionMutation("documents:edit")({
       v.object({
         email: v.string(),
         name: v.optional(v.string()),
+        phone: v.optional(v.string()),
         role: recipientRoleTuple,
         order: v.optional(v.number()),
         isPlaceholder: v.optional(v.boolean()),
@@ -402,6 +403,7 @@ export const addRecipients = permissionMutation("documents:edit")({
         documentId: args.documentId,
         email: recipient.email.toLowerCase(),
         name: recipient.name,
+        phone: recipient.phone,
         role: recipient.role,
         status: "pending",
         order: recipient.order,
@@ -427,6 +429,7 @@ export const addRecipients = permissionMutation("documents:edit")({
           newValues: {
             email: recipient.email.toLowerCase(),
             name: recipient.name,
+            phone: recipient.phone,
             role: recipient.role,
           },
           ipAddress: "web-authenticated",
@@ -679,6 +682,7 @@ export const updateRecipient = permissionMutation("documents:edit")({
     recipientId: v.id("document_recipients"),
     name: v.optional(v.string()),
     email: v.optional(v.string()),
+    phone: v.optional(v.string()),
     role: v.optional(recipientRoleTuple),
     order: v.optional(v.number()),
   },
@@ -744,6 +748,9 @@ export const updateRecipient = permissionMutation("documents:edit")({
     }
     if (args.email !== undefined) {
       updates.email = args.email.toLowerCase();
+    }
+    if (args.phone !== undefined) {
+      updates.phone = args.phone;
     }
     if (args.role !== undefined) {
       updates.role = args.role;

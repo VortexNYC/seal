@@ -22,7 +22,10 @@ type RecipientForOptions = {
  * Groups dialog open/close state for the document detail page.
  * Does not contain any business logic — only state values and setters.
  */
-export function useDocumentState(initialRedirectUrl: string) {
+export function useDocumentState(
+  initialRedirectUrl: string,
+  initialRedactionLevel: "none" | "standard" | "strict" = "none",
+) {
   const [addRecipientOpen, setAddRecipientOpen] = useState(false);
   const [addMyselfOpen, setAddMyselfOpen] = useState(false);
   const [removeRecipientOpen, setRemoveRecipientOpen] = useState(false);
@@ -35,6 +38,10 @@ export function useDocumentState(initialRedirectUrl: string) {
   const [redirectUrlInput, setRedirectUrlInput] = useState(initialRedirectUrl);
   const [redirectUrlError, setRedirectUrlError] = useState<string | null>(null);
   const [isSavingRedirect, setIsSavingRedirect] = useState(false);
+  const [redactionLevel, setRedactionLevel] = useState<"none" | "standard" | "strict">(
+    initialRedactionLevel,
+  );
+  const [isSavingRedactionLevel, setIsSavingRedactionLevel] = useState(false);
 
   return {
     addRecipientOpen,
@@ -59,5 +66,9 @@ export function useDocumentState(initialRedirectUrl: string) {
     setRedirectUrlError,
     isSavingRedirect,
     setIsSavingRedirect,
+    redactionLevel,
+    setRedactionLevel,
+    isSavingRedactionLevel,
+    setIsSavingRedactionLevel,
   };
 }

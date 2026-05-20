@@ -1,10 +1,12 @@
 import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from "pdf-lib";
 
 import type { Doc } from "../_generated/dataModel";
+import { applyRedaction, type RedactionLevel } from "./redaction";
 
 interface RecipientInfo {
   name: string | null;
   email: string;
+  phone?: string | null;
 }
 
 type PdfForm = ReturnType<PDFDocument["getForm"]>;
@@ -49,6 +51,7 @@ async function addFormField(
   layout: FieldLayout,
   font: PDFFont,
   recipient: RecipientInfo | undefined,
+  redactionLevel: RedactionLevel | undefined,
 ): Promise<void> {
   const fieldName = `${field.fieldType}_${field._id}`;
 
@@ -69,6 +72,7 @@ async function addFormField(
         layout.height,
         font,
         recipient,
+        redactionLevel,
       );
       return;
     case "dropdown":
@@ -108,6 +112,7 @@ export async function generateFillablePdf(
   originalPdfBytes: ArrayBuffer,
   fields: Doc<"signature_fields">[],
   recipients: Map<string, RecipientInfo>,
+  redactionLevel?: RedactionLevel,
 ): Promise<Uint8Array> {
   // Load the original PDF
   const pdfDoc = await PDFDocument.load(originalPdfBytes);
@@ -132,7 +137,7 @@ export async function generateFillablePdf(
       const layout = getFieldLayout(page, field);
 
       try {
-        await addFormField(form, page, field, layout, helveticaBold, recipient);
+        await addFormField(form, page, field, layout, helveticaBold, recipient, redactionLevel);
       } catch (error) {
         console.error(`Failed to add field ${fieldName}:`, error);
       }
@@ -209,6 +214,7 @@ async function addSignaturePlaceholder(
   height: number,
   font: PDFFont,
   recipient: RecipientInfo | undefined,
+  redactionLevel?: RedactionLevel,
 ) {
   // Draw a rectangle border for the signature field
   page.drawRectangle({
@@ -234,10 +240,10 @@ async function addSignaturePlaceholder(
 
   // Add recipient info below if available
   if (recipient) {
-    const recipientText = recipient.name || recipient.email;
+    const displayName = recipient.name || applyRedaction(recipient.email, "email", redactionLevel) || "";
     const recipientTextSize = 8;
-    const recipientTextWidth = font.widthOfTextAtSize(recipientText, recipientTextSize);
-    page.drawText(recipientText, {
+    const recipientTextWidth = font.widthOfTextAtSize(displayName, recipientTextSize);
+    page.drawText(displayName, {
       x: x + (width - recipientTextWidth) / 2,
       y: y + 8,
       size: recipientTextSize,

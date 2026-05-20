@@ -216,6 +216,9 @@ function DocumentDetailPage() {
   const removeRecipient = useMutation(api.documents.recipients_mutations.removeRecipient);
   const addRecipients = useMutation(api.documents.recipients_mutations.addRecipients);
   const updateDocument = useMutation(api.documents.mutations.updateDocument);
+  const setDocumentRedactionLevel = useMutation(
+    api.documents.mutations.setDocumentRedactionLevel,
+  );
   const resendRecipientEmail = useAction(api.documents.send_document_action.resendRecipientEmail);
 
   // ── Auth ────────────────────────────────────────────────────────────────
@@ -241,7 +244,10 @@ function DocumentDetailPage() {
     paymentConfigByFieldId,
   });
 
-  const docState = useDocumentState(documentData.redirectUrl ?? "");
+  const docState = useDocumentState(
+    documentData.redirectUrl ?? "",
+    documentData.redactionLevel ?? "none",
+  );
 
   const documentAnnotations = useDocumentAnnotations(documentId as Id<"documents">);
   const { openSections, toggleSection } = useSectionState(documentAnnotations.annotations !== null);
@@ -451,6 +457,26 @@ function DocumentDetailPage() {
       toast.error(err instanceof Error ? err.message : "Failed to save redirect URL");
     } finally {
       docState.setIsSavingRedirect(false);
+    }
+  };
+
+  const handleSaveRedactionLevel = async (level: "none" | "standard" | "strict") => {
+    if (level === documentData.redactionLevel) {
+      return;
+    }
+    docState.setIsSavingRedactionLevel(true);
+    try {
+      await setDocumentRedactionLevel({
+        documentId: documentId as Id<"documents">,
+        redactionLevel: level,
+      });
+      docState.setRedactionLevel(level);
+      toast.success(`Redaction level set to ${level}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save redaction level");
+      docState.setRedactionLevel(documentData.redactionLevel ?? "none");
+    } finally {
+      docState.setIsSavingRedactionLevel(false);
     }
   };
 
@@ -805,6 +831,9 @@ function DocumentDetailPage() {
                 docState.setRedirectUrlError(null);
               }}
               onSaveRedirectUrl={handleSaveRedirectUrl}
+              redactionLevel={docState.redactionLevel}
+              onRedactionLevelChange={handleSaveRedactionLevel}
+              isSavingRedactionLevel={docState.isSavingRedactionLevel}
               onAddRecipient={() => docState.setAddRecipientOpen(true)}
               onAddMyself={() => docState.setAddMyselfOpen(true)}
               onRecipientOptions={(recipient) => {

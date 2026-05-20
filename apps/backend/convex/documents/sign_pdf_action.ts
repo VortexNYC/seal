@@ -19,6 +19,7 @@ import { api, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { action, type ActionCtx } from "../_generated/server";
 import { isRecipientComplete } from "../schemas/document_recipients";
+import { applyRedaction, type RedactionLevel } from "./redaction";
 
 type PdfSigningBundle = {
   document: Doc<"documents">;
@@ -403,6 +404,7 @@ function drawSignatureStampDetails(
   layout: SignatureStampLayout,
   helvetica: PDFFont,
   helveticaBold: PDFFont,
+  redactionLevel: RedactionLevel | undefined,
 ): void {
   const stampX = layout.x + stampConfig.padding;
   let stampY = layout.pdfY + layout.stampHeight - stampConfig.padding - 2;
@@ -427,8 +429,9 @@ function drawSignatureStampDetails(
   stampY -= stampConfig.lineHeight;
 
   if (signerEmail && signerEmail !== signerName) {
+    const displayEmail = applyRedaction(signerEmail, "email", redactionLevel) ?? signerEmail;
     const emailDisplay =
-      signerEmail.length > 35 ? `${signerEmail.substring(0, 32)}...` : signerEmail;
+      displayEmail.length > 35 ? `${displayEmail.substring(0, 32)}...` : displayEmail;
     page.drawText(emailDisplay, {
       x: stampX,
       y: stampY,
@@ -465,6 +468,7 @@ async function drawSignatureStamp(
   recipient: Doc<"document_recipients"> | undefined,
   helvetica: PDFFont,
   helveticaBold: PDFFont,
+  redactionLevel: RedactionLevel | undefined,
 ): Promise<void> {
   const layout = getSignatureStampLayout(page, field);
   drawSignatureFrame(page, layout);
@@ -483,6 +487,7 @@ async function drawSignatureStamp(
     layout,
     helvetica,
     helveticaBold,
+    redactionLevel,
   );
 }
 
@@ -528,6 +533,7 @@ async function embedSignaturesIntoPdf(
 ): Promise<void> {
   const pages = pdfDoc.getPages();
   const recipientMap = new Map(recipients.map((r) => [r._id, r]));
+  const redactionLevel = document.redactionLevel as RedactionLevel | undefined;
 
   for (const signature of signatures) {
     const field = signatureFields.find((f) => f._id === signature.fieldId);
@@ -548,6 +554,7 @@ async function embedSignaturesIntoPdf(
       recipientMap.get(signature.recipientId as Id<"document_recipients">),
       helvetica,
       helveticaBold,
+      redactionLevel,
     );
   }
 

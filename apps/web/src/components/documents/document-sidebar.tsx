@@ -94,12 +94,17 @@ interface DocumentSidebarProps {
   onFieldDragStart: (fieldType: string) => void;
   onFieldDragEnd: () => void;
 
-  // Redirect URL state (document settings)
+  // Document Settings
   redirectUrlInput: string;
   redirectUrlError: string | null;
   isSavingRedirect: boolean;
   onRedirectUrlChange: (url: string) => void;
   onSaveRedirectUrl: () => void;
+
+  // Redaction level
+  redactionLevel: "none" | "standard" | "strict";
+  onRedactionLevelChange: (level: "none" | "standard" | "strict") => void;
+  isSavingRedactionLevel: boolean;
 
   // Recipient action callbacks
   onAddRecipient: () => void;
@@ -225,6 +230,9 @@ export function DocumentSidebar({
   isSavingRedirect,
   onRedirectUrlChange,
   onSaveRedirectUrl,
+  redactionLevel,
+  onRedactionLevelChange,
+  isSavingRedactionLevel,
   onAddRecipient,
   onAddMyself,
   onRecipientOptions,
@@ -330,6 +338,9 @@ export function DocumentSidebar({
                       {recipient.name && (
                         <div className="text-muted-foreground truncate font-sans text-xs sm:text-[0.6875rem]">
                           {recipient.email}
+                          {recipient.phone && (
+                            <span className="ml-1 text-muted-foreground/70">· {recipient.phone}</span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -449,6 +460,38 @@ export function DocumentSidebar({
                   </Button>
                 </div>
                 {redirectUrlError && <p className="text-destructive text-xs">{redirectUrlError}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-foreground flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase">
+                  <SettingsIcon className="h-3.5 w-3.5" />
+                  Redaction Level
+                </Label>
+                <p className="text-muted-foreground text-xs">
+                  Control how sensitive data is shown in exported PDFs.
+                </p>
+                <div className="flex gap-2">
+                  {(["none", "standard", "strict"] as const).map((level) => (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => onRedactionLevelChange(level)}
+                      disabled={isSavingRedactionLevel}
+                      className={cn(
+                        "flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center font-sans text-xs font-semibold transition-colors select-none",
+                        redactionLevel === level
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card text-muted-foreground hover:bg-muted",
+                        isSavingRedactionLevel && "opacity-50 cursor-not-allowed",
+                      )}
+                    >
+                      {isSavingRedactionLevel && redactionLevel !== level && (
+                        <Loader2Icon className="mr-1 inline h-3 w-3 animate-spin" />
+                      )}
+                      {level.charAt(0).toUpperCase() + level.slice(1)}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </CollapsibleContent>

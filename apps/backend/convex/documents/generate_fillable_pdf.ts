@@ -4,6 +4,7 @@ import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { action } from "../_generated/server";
 import { generateFillablePdf } from "./pdf_form_generator";
+import type { RedactionLevel } from "./redaction";
 
 /**
  * Action to generate a fillable PDF with form fields based on signature fields
@@ -46,7 +47,7 @@ export const generateFillablePdfAction = action({
 
     // Create a map of recipient IDs to recipient info
     const recipientMap = new Map(
-      recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email }]),
+      recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email, phone: r.phone ?? null }]),
     );
 
     // Fetch the original PDF file from storage
@@ -68,6 +69,7 @@ export const generateFillablePdfAction = action({
       pdfArrayBuffer,
       signatureFields,
       recipientMap,
+      document.redactionLevel as RedactionLevel | undefined,
     );
 
     // Convert Uint8Array to base64 for transmission
@@ -128,7 +130,7 @@ export const generateAndStoreFillablePdf = action({
 
     // Create a map of recipient IDs to recipient info
     const recipientMap = new Map(
-      recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email }]),
+      recipients.map((r) => [r._id, { name: r.name ?? null, email: r.email, phone: r.phone ?? null }]),
     );
 
     // Fetch the original PDF file from storage
@@ -150,6 +152,7 @@ export const generateAndStoreFillablePdf = action({
       pdfArrayBuffer,
       signatureFields,
       recipientMap,
+      document.redactionLevel as RedactionLevel | undefined,
     );
 
     // Store the fillable PDF in Convex storage

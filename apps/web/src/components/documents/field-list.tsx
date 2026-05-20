@@ -40,6 +40,7 @@ interface Recipient {
   _id: Id<"document_recipients">;
   name?: string;
   email: string;
+  phone?: string | null;
 }
 
 interface FieldListProps {
