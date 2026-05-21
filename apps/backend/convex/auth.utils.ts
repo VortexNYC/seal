@@ -1,3 +1,10 @@
+/**
+ * Authentication and authorization utilities for Convex functions.
+ *
+ * Defines role hierarchies, permission mappings, and helper functions
+ * for checking organization membership access and document signing rights.
+ */
+
 import type { Doc } from "./_generated/dataModel";
 import type { OrganizationMemberRole } from "./schema";
 
@@ -5,8 +12,6 @@ import type { OrganizationMemberRole } from "./schema";
  * Role hierarchy levels for permission comparison
  * Higher numbers = more permissions
  */
-/** Authentication helpers shared by Convex functions. */
-/** Authentication helpers shared by Convex functions. */
 export const ROLE_HIERARCHY: Record<OrganizationMemberRole, number> = {
   system: 150, // System-level access (highest)
   owner: 100, // Organization owner
