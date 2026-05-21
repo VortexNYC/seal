@@ -1,5 +1,8 @@
 /**
- * Document queries for Seal - Document Sharing
+ * Document queries
+ *
+ * Query functions for listing, searching, and retrieving documents
+ * and their related data (signatures, audit trails, versions).
  */
 
 import { ConvexError, v } from "convex/values";
