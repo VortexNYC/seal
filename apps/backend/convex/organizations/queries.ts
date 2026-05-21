@@ -1,7 +1,9 @@
 /**
  * Organization/Workspace queries
  *
- * Provides read access to organization data, members, and invitations
+ * Query functions for retrieving organization data, member lists,
+ * invitations, and workspace settings (AI, branding, signing,
+ * notifications, and security).
  */
 
 import { ConvexError, v } from "convex/values";

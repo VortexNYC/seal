@@ -1,7 +1,9 @@
 /**
  * Contact queries
  *
- * Query functions for the Contacts/CRM module.
+ * Query functions for listing, searching, and retrieving contacts
+ * within an organization. Includes lookups by email and related
+ * document resolution for CRM integration.
  */
 
 import { ConvexError, v } from "convex/values";
