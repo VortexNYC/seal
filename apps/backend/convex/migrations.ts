@@ -1,9 +1,7 @@
 /**
- * Convex Migrations
- *
- * Provides a proper framework for schema migrations using @convex-dev/migrations.
- * Define individual migrations using `migrations.define()` and run them via the
- * `run` function from the Convex dashboard or CLI.
+ * Convex schema and data migration framework for Seal.
+ * Uses @convex-dev/migrations to define migrations and run them
+ * from the Convex dashboard or CLI.
  */
 
 import { Migrations } from "@convex-dev/migrations";
