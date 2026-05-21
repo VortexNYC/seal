@@ -10,9 +10,14 @@ import { permissionQuery } from "../auth";
 import { contactStatusValidator } from "../schemas/contacts";
 
 /**
- * List all contacts for the current organization.
- * Optionally filter by status.
- * Requires contacts:view permission.
+ * Contact query resolvers for the Seal backend.
+ *
+ * Exposes Convex queries to list, search, and retrieve contacts and related
+ * documents scoped to the current organization. All functions require the
+ * `contacts:view` permission.
+ *
+ * Typical inputs: status filters, contact IDs, email, or search terms.
+ * Outputs: contact records, suggested matches, or related document arrays.
  */
 export const list = permissionQuery("contacts:view")({
   args: {
