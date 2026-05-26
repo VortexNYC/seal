@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 
-import { cn, parseConvexError, getErrorMessage, clamp } from "./utils";
+import { cn, parseConvexError, getErrorMessage, clamp, truncateMiddle } from "./utils";
 
 describe("cn", () => {
   test("merges simple class names", () => {
@@ -283,5 +283,47 @@ describe("clamp", () => {
       expect(clamp(-0.1, 0, 1)).toBe(0);
       expect(clamp(1.1, 0, 1)).toBe(1);
     });
+  });
+});
+describe("truncateMiddle", () => {
+  test("returns text unchanged when it fits within max", () => {
+    expect(truncateMiddle("hello", 10)).toBe("hello");
+  });
+
+  test("returns text unchanged when length equals max", () => {
+    expect(truncateMiddle("hello", 5)).toBe("hello");
+  });
+
+  test("truncates middle with an ellipsis", () => {
+    expect(truncateMiddle("hello world", 8)).toBe("he...rld");
+  });
+
+  test("handles even max length", () => {
+    expect(truncateMiddle("abcdefghij", 7)).toBe("ab...ij");
+  });
+
+  test("handles odd max length", () => {
+    expect(truncateMiddle("abcdefghij", 8)).toBe("ab...hij");
+  });
+
+  test("handles empty string", () => {
+    expect(truncateMiddle("", 5)).toBe("");
+  });
+
+  test("handles max smaller than ellipsis length", () => {
+    expect(truncateMiddle("hello world", 2)).toBe("he");
+  });
+
+  test("handles max equal to ellipsis length", () => {
+    expect(truncateMiddle("hello world", 3)).toBe("hel");
+  });
+
+  test("handles max of zero", () => {
+    expect(truncateMiddle("hello", 0)).toBe("");
+  });
+
+  test("handles long strings", () => {
+    const long = "a".repeat(100);
+    expect(truncateMiddle(long, 10)).toBe("aaa...aaaa");
   });
 });
