@@ -1,4 +1,11 @@
 // val-token:1776717855015
+/**
+ * Shared utility helpers for the Seal web app.
+ *
+ * - `cn` merges Tailwind CSS class names via `clsx` + `tailwind-merge`.
+ * - Convex error helpers (`parseConvexError`, `getErrorMessage`) normalize
+ *   server-side errors into typed, user-friendly messages.
+ */
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
