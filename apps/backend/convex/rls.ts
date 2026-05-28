@@ -820,3 +820,48 @@ export async function rlsRules(ctx: QueryCtx): Promise<Rules<QueryCtx, DataModel
 
   return rules as Rules<QueryCtx, DataModel>;
 }
+
+/**
+ * Build RLS rules scoped to a specific recipient (token-based access).
+ * All tables without explicit recipient access are denied by the rules themselves.
+ */
+export function recipientRlsRules(
+  ctx: QueryCtx,
+  recipientContext: {
+    recipientId: Id<"document_recipients">;
+    documentId: Id<"documents">;
+    email: string;
+    role: RecipientRole;
+  },
+): Rules<QueryCtx, DataModel> {
+  const rlsCtx: SealRLSContext = {
+    userId: null,
+    orgId: null,
+    role: null,
+    permissions: [],
+    isOwner: false,
+    isAdmin: false,
+    isSuperAdmin: false,
+    hasPermission: () => false,
+    hasAnyPermission: () => false,
+    hasAllPermissions: () => false,
+    documentAccessCache: new Map(),
+    recipientContext,
+  };
+
+  const rules: StrictRules = {
+    ...getUserManagementRules(ctx, rlsCtx),
+    ...getOrganizationManagementRules(ctx, rlsCtx),
+    ...getPrimaryDocumentRules(ctx, rlsCtx),
+    ...getDocumentWorkflowRules(ctx, rlsCtx),
+    ...getDocumentAssetRules(ctx, rlsCtx),
+    ...getSignatureWorkflowRules(ctx, rlsCtx),
+    ...getTemplateAndContactRules(ctx, rlsCtx),
+    ...getAuditAndBillingRules(ctx, rlsCtx),
+    ...getIntegrationAndWebhookRules(ctx, rlsCtx),
+    ...getInternalOnlyRules(ctx, rlsCtx),
+    ...getExportAndAiRules(ctx, rlsCtx),
+  };
+
+  return rules as Rules<QueryCtx, DataModel>;
+}
