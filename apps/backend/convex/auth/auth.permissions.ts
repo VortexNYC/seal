@@ -13,6 +13,7 @@ import {
   hasAnyPermission,
   hasPermission,
   isValidPermission,
+  ROLE_TEMPLATES,
   type PermissionKey,
   type RoleTemplate,
 } from "./permissions";
@@ -153,17 +154,23 @@ function isPermissionKey(permission: string): permission is PermissionKey {
   return isValidPermission(permission);
 }
 
+function getRoleTemplatePermissions(role: string): PermissionKey[] {
+  return role in ROLE_TEMPLATES
+    ? getExpandedPermissions(role as RoleTemplate)
+    : [];
+}
+
 async function resolvePermissions(
   ctx: QueryCtx | MutationCtx,
   membership: Doc<"organization_members">,
 ): Promise<PermissionKey[]> {
-  let permissions: PermissionKey[] = getExpandedPermissions(membership.role as RoleTemplate);
+  let permissions: PermissionKey[] = getRoleTemplatePermissions(membership.role);
 
   if (membership.roleId) {
     const role = await ctx.db.get(membership.roleId);
     permissions = role
       ? role.permissions.filter(isPermissionKey)
-      : getExpandedPermissions(membership.role as RoleTemplate);
+      : getRoleTemplatePermissions(membership.role);
   }
 
   if (membership.permissionOverrides?.add) {
