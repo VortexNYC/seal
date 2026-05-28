@@ -675,8 +675,27 @@ http.route({
 // PUBLIC REST API ENDPOINTS
 // =============================================================================
 
+http.route({
+  path: "/health",
+  method: "GET",
+  handler: httpAction(async () => {
+    return new Response(
+      JSON.stringify({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        },
+      },
+    );
+  }),
+});
+
 /**
- * API Health Check
  *
  * @route GET /api/v1/health
  * @public
