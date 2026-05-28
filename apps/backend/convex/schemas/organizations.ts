@@ -56,6 +56,12 @@ export const securitySettingsValidator = v.object({
 });
 export type SecuritySettings = Infer<typeof securitySettingsValidator>;
 
+export const customPaymentRatesValidator = v.object({
+  cardRate: v.number(),
+  cardFixed: v.number(),
+});
+export type CustomPaymentRates = Infer<typeof customPaymentRatesValidator>;
+
 export const organizationsTable = defineTable({
   name: v.string(),
   slug: v.string(),
@@ -97,6 +103,9 @@ export const organizationsTable = defineTable({
 
   // Stripe billing customer for this organization
   stripeCustomerId: v.optional(v.string()),
+
+  // Platform custom payment rates (enterprise only — set by Seal super-admin)
+  customPaymentRates: v.optional(customPaymentRatesValidator),
 
   updatedAt: v.number(),
 })

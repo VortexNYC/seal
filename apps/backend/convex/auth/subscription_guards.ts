@@ -191,6 +191,30 @@ export function calculateApplicationFee(
 }
 
 /**
+ * Validate custom payment rates read from an organization document.
+ * Returns the rates only when both values are finite and within safe bounds.
+ */
+function validateCustomPaymentRates(
+  rates: { cardRate: number; cardFixed: number } | undefined,
+): { cardRate: number; cardFixed: number } | undefined {
+  if (!rates) return undefined;
+
+  const { cardRate, cardFixed } = rates;
+  if (
+    Number.isFinite(cardRate) &&
+    cardRate >= 0 &&
+    cardRate <= 1.0 &&
+    Number.isFinite(cardFixed) &&
+    cardFixed >= 0 &&
+    cardFixed <= 100_000
+  ) {
+    return rates;
+  }
+
+  return undefined;
+}
+
+/**
  * Get the application fee for a payment, resolving the org's tier.
  */
 export async function getApplicationFee(
@@ -203,11 +227,23 @@ export async function getApplicationFee(
 
   // Check for enterprise custom rates
   const org = await db.get(organizationId);
-  const customRates =
-    plan === "enterprise"
-      ? (org as { customPaymentRates?: { cardRate: number; cardFixed: number } })
-          ?.customPaymentRates
-      : undefined;
+  const rawRates =
+    plan === "enterprise" ? org?.customPaymentRates : undefined;
+  const customRates = validateCustomPaymentRates(rawRates);
+
+  if (rawRates && !customRates) {
+    console.error(
+      JSON.stringify({
+        topic: "subscription_guards",
+        event: "invalid_custom_payment_rates",
+        severity: "critical",
+        organizationId,
+        cardRate: rawRates.cardRate,
+        cardFixed: rawRates.cardFixed,
+        timestamp: Date.now(),
+      }),
+    );
+  }
 
   return calculateApplicationFee(amountCents, plan, isAch, customRates);
 }
