@@ -130,6 +130,15 @@ async function ensurePrimaryOwnerMembership(
     .first();
 
   if (!membership) {
+    const existingMembers = await ctx.db
+      .query("organization_members")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .take(1);
+
+    if (existingMembers.length > 0) {
+      throw new ConvexError("Not authorized to claim ownership of this organization");
+    }
+
     await ctx.db.insert("organization_members", {
       organizationId,
       userId,
