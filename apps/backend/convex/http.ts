@@ -707,6 +707,26 @@ http.route({
 });
 
 /**
+ * Ping endpoint - Lightweight liveness check
+ *
+ * @route GET /ping
+ * @public
+ */
+http.route({
+  path: "/ping",
+  method: "GET",
+  handler: httpAction(async () => {
+    return new Response(
+      JSON.stringify({ pong: true, timestamp: new Date().toISOString() }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }),
+});
+
+/**
  * Client IP endpoint - Returns the caller's IP address
  * Used by the signing page to capture IP for audit trail compliance
  *
