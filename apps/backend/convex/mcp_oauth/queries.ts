@@ -14,7 +14,8 @@ export const getClientById = internalQuery({
     const client = await ctx.db
       .query("mcp_oauth_clients")
       .withIndex("by_organization_client_id", (q) =>
-        q.eq("organizationId", args.organizationId).eq("clientId", args.clientId))
+        q.eq("organizationId", args.organizationId).eq("clientId", args.clientId),
+      )
       .first();
 
     return client;
@@ -33,7 +34,8 @@ export const getAuthorizationCode = internalQuery({
     const code = await ctx.db
       .query("mcp_oauth_codes")
       .withIndex("by_organization_code_hash", (q) =>
-        q.eq("organizationId", args.organizationId).eq("codeHash", args.codeHash))
+        q.eq("organizationId", args.organizationId).eq("codeHash", args.codeHash),
+      )
       .first();
 
     if (!code) {
@@ -61,7 +63,8 @@ export const getRefreshToken = internalQuery({
     const token = await ctx.db
       .query("mcp_oauth_refresh_tokens")
       .withIndex("by_organization_token_hash", (q) =>
-        q.eq("organizationId", args.organizationId).eq("tokenHash", args.tokenHash))
+        q.eq("organizationId", args.organizationId).eq("tokenHash", args.tokenHash),
+      )
       .first();
 
     if (!token) {
@@ -90,7 +93,11 @@ export const getRefreshTokensByUserAndClient = internalQuery({
     const tokens = await ctx.db
       .query("mcp_oauth_refresh_tokens")
       .withIndex("by_organization_user_client", (q) =>
-        q.eq("organizationId", args.organizationId).eq("userId", args.userId).eq("clientId", args.clientId))
+        q
+          .eq("organizationId", args.organizationId)
+          .eq("userId", args.userId)
+          .eq("clientId", args.clientId),
+      )
       .collect();
 
     // Filter out expired tokens
@@ -112,7 +119,8 @@ export const validateRedirectUri = internalQuery({
     const client = await ctx.db
       .query("mcp_oauth_clients")
       .withIndex("by_organization_client_id", (q) =>
-        q.eq("organizationId", args.organizationId).eq("clientId", args.clientId))
+        q.eq("organizationId", args.organizationId).eq("clientId", args.clientId),
+      )
       .first();
 
     if (!client) {
