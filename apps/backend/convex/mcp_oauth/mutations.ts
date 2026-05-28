@@ -55,6 +55,19 @@ export const createAuthorizationCode = internalMutation({
     expiresAt: v.number(),
   },
   handler: async (ctx, args) => {
+    const client = await ctx.db
+      .query("mcp_oauth_clients")
+      .withIndex("by_client_id", (q) => q.eq("clientId", args.clientId))
+      .first();
+
+    if (!client) {
+      throw new Error("Client not found");
+    }
+
+    if (!client.redirectUris.includes(args.redirectUri)) {
+      throw new Error("Redirect URI not registered for client");
+    }
+
     const now = Date.now();
 
     const codeDocId = await ctx.db.insert("mcp_oauth_codes", {
