@@ -29,8 +29,6 @@ async function getEncryptionKey(keyBase64: string): Promise<CryptoKey> {
  * Encrypt a string value using AES-256-GCM.
  *
  * Returns the encrypted value prefixed with `enc:v1:<iv>:` for identification.
- * If no encryption key is configured, returns the plaintext value unchanged
- * (graceful degradation for development environments).
  *
  * @param plaintext - The value to encrypt
  * @param keyBase64 - Base64-encoded 256-bit encryption key
@@ -40,7 +38,8 @@ export async function encryptSignatureData(
   plaintext: string | undefined,
   keyBase64: string | undefined,
 ): Promise<string | undefined> {
-  if (!plaintext || !keyBase64) return plaintext;
+  if (!plaintext) return plaintext;
+  if (!keyBase64) throw new Error("Encryption key is not configured");
 
   const key = await getEncryptionKey(keyBase64);
   const encoder = new TextEncoder();
