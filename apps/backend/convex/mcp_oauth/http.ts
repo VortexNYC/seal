@@ -79,7 +79,7 @@ export const registerClient = httpAction(async (ctx, request) => {
     return jsonResponse(result, 201);
   } catch (error) {
     console.error("Error registering client:", error);
-    return errorResponse(500, error instanceof Error ? error.message : "Internal error");
+    return errorResponse(500, "Internal error");
   }
 });
 
@@ -109,7 +109,7 @@ export const getClient = httpAction(async (ctx, request) => {
     return jsonResponse(client);
   } catch (error) {
     console.error("Error getting client:", error);
-    return errorResponse(500, error instanceof Error ? error.message : "Internal error");
+    return errorResponse(500, "Internal error");
   }
 });
 
@@ -147,7 +147,7 @@ export const createAuthorizationCode = httpAction(async (ctx, request) => {
     return jsonResponse(result, 201);
   } catch (error) {
     console.error("Error creating authorization code:", error);
-    return errorResponse(500, error instanceof Error ? error.message : "Internal error");
+    return errorResponse(500, "Internal error");
   }
 });
 
@@ -177,7 +177,7 @@ export const getAuthorizationCode = httpAction(async (ctx, request) => {
     return jsonResponse(code);
   } catch (error) {
     console.error("Error getting authorization code:", error);
-    return errorResponse(500, error instanceof Error ? error.message : "Internal error");
+    return errorResponse(500, "Internal error");
   }
 });
 
@@ -205,7 +205,7 @@ export const deleteAuthorizationCode = httpAction(async (ctx, request) => {
     return jsonResponse(result);
   } catch (error) {
     console.error("Error deleting authorization code:", error);
-    return errorResponse(500, error instanceof Error ? error.message : "Internal error");
+    return errorResponse(500, "Internal error");
   }
 });
 
@@ -236,7 +236,7 @@ export const createRefreshToken = httpAction(async (ctx, request) => {
     return jsonResponse(result, 201);
   } catch (error) {
     console.error("Error creating refresh token:", error);
-    return errorResponse(500, error instanceof Error ? error.message : "Internal error");
+    return errorResponse(500, "Internal error");
   }
 });
 
@@ -266,7 +266,7 @@ export const getRefreshToken = httpAction(async (ctx, request) => {
     return jsonResponse(token);
   } catch (error) {
     console.error("Error getting refresh token:", error);
-    return errorResponse(500, error instanceof Error ? error.message : "Internal error");
+    return errorResponse(500, "Internal error");
   }
 });
 
@@ -292,7 +292,7 @@ export const updateRefreshToken = httpAction(async (ctx, request) => {
     return jsonResponse(result);
   } catch (error) {
     console.error("Error updating refresh token:", error);
-    return errorResponse(500, error instanceof Error ? error.message : "Internal error");
+    return errorResponse(500, "Internal error");
   }
 });
 
@@ -320,7 +320,7 @@ export const deleteRefreshToken = httpAction(async (ctx, request) => {
     return jsonResponse(result);
   } catch (error) {
     console.error("Error deleting refresh token:", error);
-    return errorResponse(500, error instanceof Error ? error.message : "Internal error");
+    return errorResponse(500, "Internal error");
   }
 });
 
@@ -354,6 +354,6 @@ export const validateRedirectUri = httpAction(async (ctx, request) => {
     return jsonResponse(result);
   } catch (error) {
     console.error("Error validating redirect URI:", error);
-    return errorResponse(500, error instanceof Error ? error.message : "Internal error");
+    return errorResponse(500, "Internal error");
   }
 });
