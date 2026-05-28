@@ -712,21 +712,23 @@ http.route({
  * @route GET /health
  * @public
  */
+export async function handleHealthCheck(): Promise<Response> {
+  return new Response(
+    JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }),
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      },
+    },
+  );
+}
+
 http.route({
   path: "/health",
   method: "GET",
-  handler: httpAction(async () => {
-    return new Response(
-      JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store",
-        },
-      },
-    );
-  }),
+  handler: httpAction(handleHealthCheck),
 });
 
 /**
