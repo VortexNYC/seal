@@ -28,6 +28,7 @@ import {
   API_SCOPES,
   apiHttpAction,
   apiResponse,
+  LATEST_API_VERSION,
   listApiVersions,
   paginatedResponse,
   parseJsonBody,
@@ -702,6 +703,25 @@ http.route({
       timestamp: new Date().toISOString(),
       version: "2025-01-01",
       versions: listApiVersions(),
+    });
+  }),
+});
+
+/**
+ * API Version
+ *
+ * @route GET /version
+ * @public
+ *
+ * @returns Current API version and server timestamp
+ */
+http.route({
+  path: "/version",
+  method: "GET",
+  handler: publicApiHttpAction(async () => {
+    return apiResponse(200, {
+      version: LATEST_API_VERSION,
+      timestamp: new Date().toISOString(),
     });
   }),
 });
