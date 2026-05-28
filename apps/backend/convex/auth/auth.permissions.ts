@@ -238,6 +238,10 @@ export async function getAuthContextWithPermissions(
       "No membership found for super admin",
     );
 
+    if (member.status !== "active") {
+      throwPermissionAuthError("FORBIDDEN", `Membership is ${member.status}`);
+    }
+
     return buildSuperAdminContext(user, member, organization, organizationId);
   }
 
