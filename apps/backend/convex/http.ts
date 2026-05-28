@@ -36,6 +36,7 @@ import {
   validateRequiredFields,
 } from "./api";
 import { ApiError } from "./api/errors";
+import { healthHandler } from "./api/health";
 import { resendComponent } from "./emails/resend_component";
 import {
   createAuthorizationCode as mcpCreateAuthorizationCode,
@@ -717,18 +718,7 @@ http.route({
 http.route({
   path: "/health",
   method: "GET",
-  handler: httpAction(async () => {
-    return new Response(
-      JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store",
-        },
-      },
-    );
-  }),
+  handler: httpAction(healthHandler),
 });
 
 /**
