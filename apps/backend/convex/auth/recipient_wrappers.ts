@@ -54,7 +54,6 @@ export const recipientQuery = customQuery(
   customCtx(async (ctx) => {
     // Helper to validate token and get recipient context
     const validateRecipientToken = async (signingToken: string): Promise<RecipientContext> => {
-      // Hash-based lookup with plaintext fallback for pre-migration records
       const recipient = await findRecipientByToken(ctx, signingToken);
 
       if (!recipient) {
@@ -125,7 +124,6 @@ export const recipientMutation = customMutation(
   customCtx(async (ctx) => {
     // Helper to validate token and get recipient context
     const validateRecipientToken = async (signingToken: string): Promise<RecipientContext> => {
-      // Hash-based lookup with plaintext fallback for pre-migration records
       const recipient = await findRecipientByToken(ctx, signingToken);
 
       if (!recipient) {

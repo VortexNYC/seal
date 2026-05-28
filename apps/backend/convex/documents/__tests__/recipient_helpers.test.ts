@@ -130,10 +130,10 @@ describe("recipient_helpers", () => {
       expect(result?.email).toBe("signer@test.com");
     });
 
-    test("falls back to plaintext token when tokenHash is not set", async () => {
+    test("returns null when tokenHash is not set", async () => {
       const token = "token-plaintext-fallback";
 
-      const recipientId = await t.run(async (ctx) => {
+      await t.run(async (ctx) => {
         return await ctx.db.insert("document_recipients", {
           documentId,
           email: "fallback@test.com",
@@ -152,9 +152,7 @@ describe("recipient_helpers", () => {
         return await findRecipientByToken(ctx, token);
       });
 
-      expect(result).not.toBeNull();
-      expect(result?._id).toEqual(recipientId);
-      expect(result?.email).toBe("fallback@test.com");
+      expect(result).toBeNull();
     });
 
     test("returns null for non-existent token", async () => {

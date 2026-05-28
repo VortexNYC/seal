@@ -32,8 +32,7 @@ export async function verifyDocumentOwnership(
 
 /**
  * Find a recipient by their signing token using hash-based lookup.
- * Tries the secure tokenHash index first, falls back to plaintext
- * index for pre-migration records.
+ * Only the SHA-256 hash of the token is used for database lookups.
  *
  * @returns The recipient document, or null if not found
  */
@@ -43,19 +42,10 @@ export async function findRecipientByToken(
 ): Promise<Doc<"document_recipients"> | null> {
   const tokenHash = await generateStringHash(signingToken);
 
-  // Try hash-based lookup first (secure path for new records)
-  let recipient = await ctx.db
+  const recipient = await ctx.db
     .query("document_recipients")
     .withIndex("by_token_hash", (q) => q.eq("tokenHash", tokenHash))
     .first();
-
-  // Fallback to plaintext lookup for pre-migration records
-  if (!recipient) {
-    recipient = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_token", (q) => q.eq("signingToken", signingToken))
-      .first();
-  }
 
   return recipient;
 }
