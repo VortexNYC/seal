@@ -730,6 +730,23 @@ http.route({
 });
 
 /**
+ * Pong - Lightweight health probe
+ *
+ * @route GET /pong
+ * @public
+ */
+http.route({
+  path: "/pong",
+  method: "GET",
+  handler: publicApiHttpAction(async () => {
+    return apiResponse(200, {
+      pong: true,
+      timestamp: new Date().toISOString(),
+    });
+  }),
+});
+
+/**
  * API Root - Returns available endpoints
  *
  * @route GET /api/v1
