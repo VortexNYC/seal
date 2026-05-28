@@ -675,6 +675,14 @@ http.route({
 // PUBLIC REST API ENDPOINTS
 // =============================================================================
 
+/**
+ * Simple health check
+ *
+ * @route GET /health
+ * @public
+ *
+ * @returns Basic health status with timestamp
+ */
 http.route({
   path: "/health",
   method: "GET",
