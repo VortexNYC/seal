@@ -189,6 +189,18 @@ export async function canManageDocument(
     return true;
   }
 
+  // Verify user is an active organization member before checking access records
+  const member = await ctx.db
+    .query("organization_members")
+    .withIndex("by_user_organization", (q) =>
+      q.eq("userId", userId).eq("organizationId", document.organizationId),
+    )
+    .first();
+
+  if (!member || member.status !== "active") {
+    return false;
+  }
+
   // Check for "manage" permission level
   const access = await ctx.db
     .query("document_access")
