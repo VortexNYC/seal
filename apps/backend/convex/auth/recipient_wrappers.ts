@@ -65,7 +65,11 @@ export const recipientQuery = customQuery(
       }
 
       // Check token expiration
-      if (recipient.tokenExpiresAt < Date.now()) {
+      if (
+        recipient.tokenExpiresAt === undefined ||
+        recipient.tokenExpiresAt === null ||
+        recipient.tokenExpiresAt < Date.now()
+      ) {
         throw new ConvexError({
           code: "FORBIDDEN",
           message: "Signing token has expired",
@@ -136,7 +140,11 @@ export const recipientMutation = customMutation(
       }
 
       // Check token expiration
-      if (recipient.tokenExpiresAt < Date.now()) {
+      if (
+        recipient.tokenExpiresAt === undefined ||
+        recipient.tokenExpiresAt === null ||
+        recipient.tokenExpiresAt < Date.now()
+      ) {
         throw new ConvexError({
           code: "FORBIDDEN",
           message: "Signing token has expired",
