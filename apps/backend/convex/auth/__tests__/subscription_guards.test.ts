@@ -5,8 +5,10 @@ import type { Id } from "../../_generated/dataModel";
 import { createTestContext } from "../../test.setup";
 import {
   PLAN_LIMITS,
+  calculateApplicationFee,
   ensureProFeature,
   ensureSeatLimit,
+  getApplicationFee,
   getSubscriptionPlan,
 } from "../subscription_guards";
 
@@ -336,6 +338,124 @@ describe("subscription_guards", () => {
         const message = (error as ConvexError<string>).data;
         expect(message).toContain("Upgrade");
       }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // calculateApplicationFee
+  // ---------------------------------------------------------------------------
+  describe("calculateApplicationFee", () => {
+    test("returns 0 for ACH regardless of plan", () => {
+      expect(calculateApplicationFee(10000, "free", true)).toBe(0);
+      expect(calculateApplicationFee(10000, "pro", true)).toBe(0);
+      expect(calculateApplicationFee(10000, "enterprise", true)).toBe(0);
+    });
+
+    test("uses default free rates for card payments", () => {
+      expect(calculateApplicationFee(10000, "free", false)).toBe(Math.round(10000 * 0.045 + 30));
+    });
+
+    test("uses default pro rates for card payments", () => {
+      expect(calculateApplicationFee(10000, "pro", false)).toBe(Math.round(10000 * 0.04 + 30));
+    });
+
+    test("uses default enterprise rates for card payments", () => {
+      expect(calculateApplicationFee(10000, "enterprise", false)).toBe(Math.round(10000 * 0.04 + 30));
+    });
+
+    test("uses custom rates when provided", () => {
+      expect(calculateApplicationFee(10000, "enterprise", false, { cardRate: 0.02, cardFixed: 20 })).toBe(
+        Math.round(10000 * 0.02 + 20),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getApplicationFee
+  // ---------------------------------------------------------------------------
+  describe("getApplicationFee", () => {
+    test("returns 0 for ACH on free plan", async () => {
+      const fee = await t.run(async (ctx) => {
+        return await getApplicationFee(ctx.db, organizationId, 10000, true);
+      });
+      expect(fee).toBe(0);
+    });
+
+    test("uses default rates for free plan card payment", async () => {
+      const fee = await t.run(async (ctx) => {
+        return await getApplicationFee(ctx.db, organizationId, 10000, false);
+      });
+      expect(fee).toBe(Math.round(10000 * 0.045 + 30));
+    });
+
+    test("uses custom rates for enterprise with valid custom rates", async () => {
+      await seedSubscription({ tier: "enterprise" });
+      await t.run(async (ctx) => {
+        await ctx.db.patch(organizationId, {
+          customPaymentRates: { cardRate: 0.02, cardFixed: 20 },
+        });
+      });
+
+      const fee = await t.run(async (ctx) => {
+        return await getApplicationFee(ctx.db, organizationId, 10000, false);
+      });
+      expect(fee).toBe(Math.round(10000 * 0.02 + 20));
+    });
+
+    test("ignores custom rates for non-enterprise plan", async () => {
+      await seedSubscription({ tier: "pro" });
+      await t.run(async (ctx) => {
+        await ctx.db.patch(organizationId, {
+          customPaymentRates: { cardRate: 0.02, cardFixed: 20 },
+        });
+      });
+
+      const fee = await t.run(async (ctx) => {
+        return await getApplicationFee(ctx.db, organizationId, 10000, false);
+      });
+      expect(fee).toBe(Math.round(10000 * 0.04 + 30));
+    });
+
+    test("falls back to default rates when custom rates are invalid (negative)", async () => {
+      await seedSubscription({ tier: "enterprise" });
+      await t.run(async (ctx) => {
+        await ctx.db.patch(organizationId, {
+          customPaymentRates: { cardRate: -0.01, cardFixed: 20 },
+        });
+      });
+
+      const fee = await t.run(async (ctx) => {
+        return await getApplicationFee(ctx.db, organizationId, 10000, false);
+      });
+      expect(fee).toBe(Math.round(10000 * 0.04 + 30));
+    });
+
+    test("falls back to default rates when custom rates are invalid (excessive rate)", async () => {
+      await seedSubscription({ tier: "enterprise" });
+      await t.run(async (ctx) => {
+        await ctx.db.patch(organizationId, {
+          customPaymentRates: { cardRate: 5.0, cardFixed: 20 },
+        });
+      });
+
+      const fee = await t.run(async (ctx) => {
+        return await getApplicationFee(ctx.db, organizationId, 10000, false);
+      });
+      expect(fee).toBe(Math.round(10000 * 0.04 + 30));
+    });
+
+    test("falls back to default rates when custom rates are invalid (excessive fixed)", async () => {
+      await seedSubscription({ tier: "enterprise" });
+      await t.run(async (ctx) => {
+        await ctx.db.patch(organizationId, {
+          customPaymentRates: { cardRate: 0.02, cardFixed: 200_000 },
+        });
+      });
+
+      const fee = await t.run(async (ctx) => {
+        return await getApplicationFee(ctx.db, organizationId, 10000, false);
+      });
+      expect(fee).toBe(Math.round(10000 * 0.04 + 30));
     });
   });
 });
