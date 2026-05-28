@@ -227,8 +227,7 @@ export async function getApplicationFee(
 
   // Check for enterprise custom rates
   const org = await db.get(organizationId);
-  const rawRates =
-    plan === "enterprise" ? org?.customPaymentRates : undefined;
+  const rawRates = plan === "enterprise" ? org?.customPaymentRates : undefined;
   const customRates = validateCustomPaymentRates(rawRates);
 
   if (rawRates && !customRates) {
