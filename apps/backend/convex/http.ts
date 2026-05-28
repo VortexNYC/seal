@@ -707,6 +707,31 @@ http.route({
 });
 
 /**
+ * Lightweight Health Check
+ *
+ * @route GET /health
+ * @public
+ *
+ * @returns Basic health status with timestamp
+ */
+http.route({
+  path: "/health",
+  method: "GET",
+  handler: httpAction(async () => {
+    return new Response(
+      JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        },
+      },
+    );
+  }),
+});
+
+/**
  * Client IP endpoint - Returns the caller's IP address
  * Used by the signing page to capture IP for audit trail compliance
  *
