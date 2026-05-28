@@ -10,6 +10,7 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import { action } from "../_generated/server";
+import { isAdmin } from "../auth.utils";
 
 /**
  * Send organization invitation via Clerk backend API
@@ -27,6 +28,31 @@ export const clerkInvite = action({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new ConvexError("Authentication required");
+    }
+
+    // Verify caller is an admin of the target organization
+    const user = await ctx.runQuery(internal.organizations.helpers.getUserByClerkId, {
+      clerkId: identity.subject,
+    });
+
+    if (!user) {
+      throw new ConvexError("User not found");
+    }
+
+    const membership = await ctx.runQuery(
+      internal.organizations.helpers.getActiveMembershipByUserAndOrganization,
+      {
+        userId: user._id,
+        organizationId: args.organizationId,
+      },
+    );
+
+    if (!membership) {
+      throw new ConvexError("Organization membership required");
+    }
+
+    if (!isAdmin(membership)) {
+      throw new ConvexError("Only workspace owners and admins can send invitations");
     }
 
     // Check if Clerk is configured
