@@ -7,12 +7,14 @@ import { internalQuery } from "../_generated/server";
  */
 export const getClientById = internalQuery({
   args: {
+    organizationId: v.id("organizations"),
     clientId: v.string(),
   },
   handler: async (ctx, args) => {
     const client = await ctx.db
       .query("mcp_oauth_clients")
-      .withIndex("by_client_id", (q) => q.eq("clientId", args.clientId))
+      .withIndex("by_organization_client_id", (q) =>
+        q.eq("organizationId", args.organizationId).eq("clientId", args.clientId))
       .first();
 
     return client;
@@ -24,12 +26,14 @@ export const getClientById = internalQuery({
  */
 export const getAuthorizationCode = internalQuery({
   args: {
+    organizationId: v.id("organizations"),
     codeHash: v.string(),
   },
   handler: async (ctx, args) => {
     const code = await ctx.db
       .query("mcp_oauth_codes")
-      .withIndex("by_code_hash", (q) => q.eq("codeHash", args.codeHash))
+      .withIndex("by_organization_code_hash", (q) =>
+        q.eq("organizationId", args.organizationId).eq("codeHash", args.codeHash))
       .first();
 
     if (!code) {
@@ -50,12 +54,14 @@ export const getAuthorizationCode = internalQuery({
  */
 export const getRefreshToken = internalQuery({
   args: {
+    organizationId: v.id("organizations"),
     tokenHash: v.string(),
   },
   handler: async (ctx, args) => {
     const token = await ctx.db
       .query("mcp_oauth_refresh_tokens")
-      .withIndex("by_token_hash", (q) => q.eq("tokenHash", args.tokenHash))
+      .withIndex("by_organization_token_hash", (q) =>
+        q.eq("organizationId", args.organizationId).eq("tokenHash", args.tokenHash))
       .first();
 
     if (!token) {
@@ -76,13 +82,15 @@ export const getRefreshToken = internalQuery({
  */
 export const getRefreshTokensByUserAndClient = internalQuery({
   args: {
+    organizationId: v.id("organizations"),
     userId: v.string(),
     clientId: v.string(),
   },
   handler: async (ctx, args) => {
     const tokens = await ctx.db
       .query("mcp_oauth_refresh_tokens")
-      .withIndex("by_user_client", (q) => q.eq("userId", args.userId).eq("clientId", args.clientId))
+      .withIndex("by_organization_user_client", (q) =>
+        q.eq("organizationId", args.organizationId).eq("userId", args.userId).eq("clientId", args.clientId))
       .collect();
 
     // Filter out expired tokens
@@ -96,13 +104,15 @@ export const getRefreshTokensByUserAndClient = internalQuery({
  */
 export const validateRedirectUri = internalQuery({
   args: {
+    organizationId: v.id("organizations"),
     clientId: v.string(),
     redirectUri: v.string(),
   },
   handler: async (ctx, args) => {
     const client = await ctx.db
       .query("mcp_oauth_clients")
-      .withIndex("by_client_id", (q) => q.eq("clientId", args.clientId))
+      .withIndex("by_organization_client_id", (q) =>
+        q.eq("organizationId", args.organizationId).eq("clientId", args.clientId))
       .first();
 
     if (!client) {

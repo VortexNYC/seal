@@ -5,6 +5,7 @@
  */
 
 import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 import { httpAction } from "../_generated/server";
 
 /**
@@ -62,6 +63,7 @@ export const registerClient = httpAction(async (ctx, request) => {
 
   try {
     const body = (await request.json()) as {
+      organizationId: string;
       clientId: string;
       clientSecretHash?: string;
       clientName: string;
@@ -74,7 +76,10 @@ export const registerClient = httpAction(async (ctx, request) => {
       scope?: string;
     };
 
-    const result = await ctx.runMutation(internal.mcp_oauth.mutations.registerClient, body);
+    const result = await ctx.runMutation(internal.mcp_oauth.mutations.registerClient, {
+      ...body,
+      organizationId: body.organizationId as Id<"organizations">,
+    });
 
     return jsonResponse(result, 201);
   } catch (error) {
@@ -94,13 +99,20 @@ export const getClient = httpAction(async (ctx, request) => {
 
   try {
     const url = new URL(request.url);
+    const organizationId = url.searchParams.get("organizationId");
     const clientId = url.searchParams.get("clientId");
 
+    if (!organizationId) {
+      return errorResponse(400, "organizationId is required");
+    }
     if (!clientId) {
       return errorResponse(400, "clientId is required");
     }
 
-    const client = await ctx.runQuery(internal.mcp_oauth.queries.getClientById, { clientId });
+    const client = await ctx.runQuery(internal.mcp_oauth.queries.getClientById, {
+      organizationId: organizationId as Id<"organizations">,
+      clientId,
+    });
 
     if (!client) {
       return errorResponse(404, "Client not found");
@@ -128,6 +140,7 @@ export const createAuthorizationCode = httpAction(async (ctx, request) => {
 
   try {
     const body = (await request.json()) as {
+      organizationId: string;
       codeHash: string;
       clientId: string;
       userId: string;
@@ -141,7 +154,10 @@ export const createAuthorizationCode = httpAction(async (ctx, request) => {
 
     const result = await ctx.runMutation(
       internal.mcp_oauth.mutations.createAuthorizationCode,
-      body,
+      {
+        ...body,
+        organizationId: body.organizationId as Id<"organizations">,
+      },
     );
 
     return jsonResponse(result, 201);
@@ -162,13 +178,20 @@ export const getAuthorizationCode = httpAction(async (ctx, request) => {
 
   try {
     const url = new URL(request.url);
+    const organizationId = url.searchParams.get("organizationId");
     const codeHash = url.searchParams.get("codeHash");
 
+    if (!organizationId) {
+      return errorResponse(400, "organizationId is required");
+    }
     if (!codeHash) {
       return errorResponse(400, "codeHash is required");
     }
 
-    const code = await ctx.runQuery(internal.mcp_oauth.queries.getAuthorizationCode, { codeHash });
+    const code = await ctx.runQuery(internal.mcp_oauth.queries.getAuthorizationCode, {
+      organizationId: organizationId as Id<"organizations">,
+      codeHash,
+    });
 
     if (!code) {
       return errorResponse(404, "Authorization code not found or expired");
@@ -192,13 +215,18 @@ export const deleteAuthorizationCode = httpAction(async (ctx, request) => {
 
   try {
     const url = new URL(request.url);
+    const organizationId = url.searchParams.get("organizationId");
     const codeHash = url.searchParams.get("codeHash");
 
+    if (!organizationId) {
+      return errorResponse(400, "organizationId is required");
+    }
     if (!codeHash) {
       return errorResponse(400, "codeHash is required");
     }
 
     const result = await ctx.runMutation(internal.mcp_oauth.mutations.deleteAuthorizationCode, {
+      organizationId: organizationId as Id<"organizations">,
       codeHash,
     });
 
@@ -224,6 +252,7 @@ export const createRefreshToken = httpAction(async (ctx, request) => {
 
   try {
     const body = (await request.json()) as {
+      organizationId: string;
       tokenHash: string;
       clientId: string;
       userId: string;
@@ -231,7 +260,10 @@ export const createRefreshToken = httpAction(async (ctx, request) => {
       expiresAt?: number;
     };
 
-    const result = await ctx.runMutation(internal.mcp_oauth.mutations.createRefreshToken, body);
+    const result = await ctx.runMutation(internal.mcp_oauth.mutations.createRefreshToken, {
+      ...body,
+      organizationId: body.organizationId as Id<"organizations">,
+    });
 
     return jsonResponse(result, 201);
   } catch (error) {
@@ -251,13 +283,20 @@ export const getRefreshToken = httpAction(async (ctx, request) => {
 
   try {
     const url = new URL(request.url);
+    const organizationId = url.searchParams.get("organizationId");
     const tokenHash = url.searchParams.get("tokenHash");
 
+    if (!organizationId) {
+      return errorResponse(400, "organizationId is required");
+    }
     if (!tokenHash) {
       return errorResponse(400, "tokenHash is required");
     }
 
-    const token = await ctx.runQuery(internal.mcp_oauth.queries.getRefreshToken, { tokenHash });
+    const token = await ctx.runQuery(internal.mcp_oauth.queries.getRefreshToken, {
+      organizationId: organizationId as Id<"organizations">,
+      tokenHash,
+    });
 
     if (!token) {
       return errorResponse(404, "Refresh token not found or expired");
@@ -281,12 +320,16 @@ export const updateRefreshToken = httpAction(async (ctx, request) => {
 
   try {
     const body = (await request.json()) as {
+      organizationId: string;
       tokenHash: string;
     };
 
     const result = await ctx.runMutation(
       internal.mcp_oauth.mutations.updateRefreshTokenLastUsed,
-      body,
+      {
+        ...body,
+        organizationId: body.organizationId as Id<"organizations">,
+      },
     );
 
     return jsonResponse(result);
@@ -307,13 +350,18 @@ export const deleteRefreshToken = httpAction(async (ctx, request) => {
 
   try {
     const url = new URL(request.url);
+    const organizationId = url.searchParams.get("organizationId");
     const tokenHash = url.searchParams.get("tokenHash");
 
+    if (!organizationId) {
+      return errorResponse(400, "organizationId is required");
+    }
     if (!tokenHash) {
       return errorResponse(400, "tokenHash is required");
     }
 
     const result = await ctx.runMutation(internal.mcp_oauth.mutations.deleteRefreshToken, {
+      organizationId: organizationId as Id<"organizations">,
       tokenHash,
     });
 
@@ -339,14 +387,19 @@ export const validateRedirectUri = httpAction(async (ctx, request) => {
 
   try {
     const url = new URL(request.url);
+    const organizationId = url.searchParams.get("organizationId");
     const clientId = url.searchParams.get("clientId");
     const redirectUri = url.searchParams.get("redirectUri");
 
+    if (!organizationId) {
+      return errorResponse(400, "organizationId is required");
+    }
     if (!clientId || !redirectUri) {
       return errorResponse(400, "clientId and redirectUri are required");
     }
 
     const result = await ctx.runQuery(internal.mcp_oauth.queries.validateRedirectUri, {
+      organizationId: organizationId as Id<"organizations">,
       clientId,
       redirectUri,
     });

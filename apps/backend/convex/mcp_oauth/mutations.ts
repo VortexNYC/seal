@@ -7,6 +7,7 @@ import { internalMutation } from "../_generated/server";
  */
 export const registerClient = internalMutation({
   args: {
+    organizationId: v.id("organizations"),
     clientId: v.string(),
     clientSecretHash: v.optional(v.string()),
     clientName: v.string(),
@@ -22,6 +23,7 @@ export const registerClient = internalMutation({
     const now = Date.now();
 
     const clientDocId = await ctx.db.insert("mcp_oauth_clients", {
+      organizationId: args.organizationId,
       clientId: args.clientId,
       clientSecretHash: args.clientSecretHash,
       clientName: args.clientName,
@@ -44,6 +46,7 @@ export const registerClient = internalMutation({
  */
 export const createAuthorizationCode = internalMutation({
   args: {
+    organizationId: v.id("organizations"),
     codeHash: v.string(),
     clientId: v.string(),
     userId: v.string(),
@@ -58,6 +61,7 @@ export const createAuthorizationCode = internalMutation({
     const now = Date.now();
 
     const codeDocId = await ctx.db.insert("mcp_oauth_codes", {
+      organizationId: args.organizationId,
       codeHash: args.codeHash,
       clientId: args.clientId,
       userId: args.userId,
@@ -79,12 +83,14 @@ export const createAuthorizationCode = internalMutation({
  */
 export const deleteAuthorizationCode = internalMutation({
   args: {
+    organizationId: v.id("organizations"),
     codeHash: v.string(),
   },
   handler: async (ctx, args) => {
     const code = await ctx.db
       .query("mcp_oauth_codes")
-      .withIndex("by_code_hash", (q) => q.eq("codeHash", args.codeHash))
+      .withIndex("by_organization_code_hash", (q) =>
+        q.eq("organizationId", args.organizationId).eq("codeHash", args.codeHash))
       .first();
 
     if (code) {
@@ -101,6 +107,7 @@ export const deleteAuthorizationCode = internalMutation({
  */
 export const createRefreshToken = internalMutation({
   args: {
+    organizationId: v.id("organizations"),
     tokenHash: v.string(),
     clientId: v.string(),
     userId: v.string(),
@@ -111,6 +118,7 @@ export const createRefreshToken = internalMutation({
     const now = Date.now();
 
     const tokenDocId = await ctx.db.insert("mcp_oauth_refresh_tokens", {
+      organizationId: args.organizationId,
       tokenHash: args.tokenHash,
       clientId: args.clientId,
       userId: args.userId,
@@ -129,12 +137,14 @@ export const createRefreshToken = internalMutation({
  */
 export const updateRefreshTokenLastUsed = internalMutation({
   args: {
+    organizationId: v.id("organizations"),
     tokenHash: v.string(),
   },
   handler: async (ctx, args) => {
     const token = await ctx.db
       .query("mcp_oauth_refresh_tokens")
-      .withIndex("by_token_hash", (q) => q.eq("tokenHash", args.tokenHash))
+      .withIndex("by_organization_token_hash", (q) =>
+        q.eq("organizationId", args.organizationId).eq("tokenHash", args.tokenHash))
       .first();
 
     if (token) {
@@ -153,12 +163,14 @@ export const updateRefreshTokenLastUsed = internalMutation({
  */
 export const deleteRefreshToken = internalMutation({
   args: {
+    organizationId: v.id("organizations"),
     tokenHash: v.string(),
   },
   handler: async (ctx, args) => {
     const token = await ctx.db
       .query("mcp_oauth_refresh_tokens")
-      .withIndex("by_token_hash", (q) => q.eq("tokenHash", args.tokenHash))
+      .withIndex("by_organization_token_hash", (q) =>
+        q.eq("organizationId", args.organizationId).eq("tokenHash", args.tokenHash))
       .first();
 
     if (token) {
@@ -175,12 +187,14 @@ export const deleteRefreshToken = internalMutation({
  */
 export const deleteAllUserRefreshTokens = internalMutation({
   args: {
+    organizationId: v.id("organizations"),
     userId: v.string(),
   },
   handler: async (ctx, args) => {
     const tokens = await ctx.db
       .query("mcp_oauth_refresh_tokens")
-      .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+      .withIndex("by_organization_user", (q) =>
+        q.eq("organizationId", args.organizationId).eq("userId", args.userId))
       .collect();
 
     for (const token of tokens) {

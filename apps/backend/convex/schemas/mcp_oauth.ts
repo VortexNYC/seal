@@ -8,6 +8,9 @@ import { v } from "convex/values";
  * Clients are registered via RFC 7591 Dynamic Client Registration.
  */
 export const mcpOauthClientsTable = defineTable({
+  // Organization scoping
+  organizationId: v.id("organizations"),
+
   // Generated client ID (UUID)
   clientId: v.string(),
 
@@ -29,7 +32,7 @@ export const mcpOauthClientsTable = defineTable({
   // Timestamps
   createdAt: v.number(),
 })
-  .index("by_client_id", ["clientId"])
+  .index("by_organization_client_id", ["organizationId", "clientId"])
   .index("by_created_at", ["createdAt"]);
 
 /**
@@ -39,6 +42,9 @@ export const mcpOauthClientsTable = defineTable({
  * Codes are one-time use and expire after 10 minutes.
  */
 export const mcpOauthCodesTable = defineTable({
+  // Organization scoping
+  organizationId: v.id("organizations"),
+
   // Hashed authorization code
   codeHash: v.string(),
 
@@ -67,7 +73,7 @@ export const mcpOauthCodesTable = defineTable({
   // Creation timestamp
   createdAt: v.number(),
 })
-  .index("by_code_hash", ["codeHash"])
+  .index("by_organization_code_hash", ["organizationId", "codeHash"])
   .index("by_expires_at", ["expiresAt"]);
 
 /**
@@ -77,6 +83,9 @@ export const mcpOauthCodesTable = defineTable({
  * Refresh tokens can be used to obtain new access tokens.
  */
 export const mcpOauthRefreshTokensTable = defineTable({
+  // Organization scoping
+  organizationId: v.id("organizations"),
+
   // Hashed refresh token
   tokenHash: v.string(),
 
@@ -98,7 +107,7 @@ export const mcpOauthRefreshTokensTable = defineTable({
   // Last used timestamp
   lastUsedAt: v.optional(v.number()),
 })
-  .index("by_token_hash", ["tokenHash"])
-  .index("by_user_client", ["userId", "clientId"])
-  .index("by_user_id", ["userId"])
+  .index("by_organization_token_hash", ["organizationId", "tokenHash"])
+  .index("by_organization_user_client", ["organizationId", "userId", "clientId"])
+  .index("by_organization_user", ["organizationId", "userId"])
   .index("by_expires_at", ["expiresAt"]);
