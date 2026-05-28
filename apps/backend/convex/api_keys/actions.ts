@@ -199,10 +199,48 @@ export const revokeClerkApiKey = action({
       throw new ConvexError("Authentication required");
     }
 
+    const user = await ctx.runQuery(internal.organizations.helpers.getUserByClerkId, {
+      clerkId: identity.subject,
+    });
+
+    if (!user) {
+      throw new ConvexError("User not found");
+    }
+
+    if (!user.activeOrganizationId) {
+      throw new ConvexError("No active organization");
+    }
+
+    const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
+      organizationId: user.activeOrganizationId,
+    });
+
+    if (!organization?.clerkId) {
+      throw new ConvexError("Organization not synced with Clerk");
+    }
+
     try {
       const secretKey = process.env.CLERK_SECRET_KEY;
       if (!secretKey) {
         throw new ConvexError("CLERK_SECRET_KEY not configured");
+      }
+
+      const keyResponse = await fetch(`https://api.clerk.com/v1/api_keys/${args.apiKeyId}`, {
+        headers: {
+          Authorization: `Bearer ${secretKey}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!keyResponse.ok) {
+        const body = await keyResponse.text();
+        console.error("[revokeClerkApiKey] Key lookup error:", keyResponse.status, body);
+        throw new ConvexError(`API key not found: ${keyResponse.status}`);
+      }
+
+      const keyData = (await keyResponse.json()) as { subject?: string };
+      if (keyData.subject !== organization.clerkId) {
+        throw new ConvexError("You do not have permission to revoke this API key");
       }
 
       const response = await fetch(`https://api.clerk.com/v1/api_keys/${args.apiKeyId}/revoke`, {
