@@ -1,3 +1,4 @@
+// Seal Convex schema — see defineSchema below.
 // validation: 1776691370865
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
