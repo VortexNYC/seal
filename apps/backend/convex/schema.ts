@@ -165,6 +165,7 @@ export type { AnnotationCategory, AnnotationSeverity };
 // Re-export branding types
 export type { BrandingSettings };
 
+// Seal application schema — users, organizations, documents, signatures, billing, AI, webhooks & integrations.
 export default defineSchema({
   users: usersTable,
   user_profiles: userProfilesTable,
