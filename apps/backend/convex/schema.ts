@@ -1,3 +1,4 @@
+// This file defines the Seal application's Convex database schema.
 // validation: 1776691370865
 import { defineSchema } from "convex/server";
 import type { Infer } from "convex/values";
