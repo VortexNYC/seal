@@ -238,3 +238,4 @@ export default defineSchema({
   mcp_oauth_codes: mcpOauthCodesTable,
   mcp_oauth_refresh_tokens: mcpOauthRefreshTokensTable,
 });
+// end of Seal schema
