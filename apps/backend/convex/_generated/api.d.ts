@@ -57,7 +57,6 @@ import type * as api_v1_templates from "../api/v1/templates.js";
 import type * as api_v1_uploads from "../api/v1/uploads.js";
 import type * as api_v1_webhooks from "../api/v1/webhooks.js";
 import type * as api_versioning from "../api/versioning.js";
-import type * as api_keys_actions from "../api_keys/actions.js";
 import type * as api_keys_index from "../api_keys/index.js";
 import type * as api_keys_keys from "../api_keys/keys.js";
 import type * as api_keys_mutations from "../api_keys/mutations.js";
@@ -313,7 +312,6 @@ declare const fullApi: ApiFromModules<{
   "api/v1/uploads": typeof api_v1_uploads;
   "api/v1/webhooks": typeof api_v1_webhooks;
   "api/versioning": typeof api_versioning;
-  "api_keys/actions": typeof api_keys_actions;
   "api_keys/index": typeof api_keys_index;
   "api_keys/keys": typeof api_keys_keys;
   "api_keys/mutations": typeof api_keys_mutations;
