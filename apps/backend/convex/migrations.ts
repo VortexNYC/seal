@@ -10,11 +10,36 @@ import { Migrations } from "@convex-dev/migrations";
 
 import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
+import { ensureVortexAuthSystemRoles } from "./lib/vortexAuthOrganizations";
 
 /** Migrations registry for Seal Convex schema. */
 export const migrations = new Migrations<DataModel>(components.migrations);
 
 export const run = migrations.runner();
+
+/**
+ * P2e (part 1) — backfill the vortexAuth COMPONENT org anchor + system roles
+ * for every existing organization.
+ *
+ * Anchors each local org into the component (sets organizations.vortexAuthOrganizationId
+ * via upsertOrganization) and seeds Seal's ROLE_PERMISSIONS catalog. Idempotent
+ * (upsert keyed by the bridge id; seedDefaultRoles is a no-op on re-run).
+ *
+ * Membership backfill is intentionally NOT done here: a component membership
+ * requires the member's `vortexAuthUserId`, which existing Clerk-only users do
+ * not have until they sign in via Better-Auth. Memberships populate lazily at
+ * cutover (P2c/P4); this migration only establishes org + role truth, which
+ * needs no user identity.
+ */
+export const backfillOrganizationComponentAnchors = migrations.define({
+  table: "organizations",
+  migrateOne: async (ctx, doc) => {
+    await ensureVortexAuthSystemRoles(ctx, doc._id);
+    console.info(
+      `[migration] Anchored org ${doc._id} (${doc.name}) into vortexAuth component + seeded roles`,
+    );
+  },
+});
 
 /**
  * Backfill organizationId on legacy subscription documents.

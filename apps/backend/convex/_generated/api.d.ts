@@ -131,6 +131,8 @@ import type * as folders_queries from "../folders/queries.js";
 import type * as http from "../http.js";
 import type * as lib_authIdentities from "../lib/authIdentities.js";
 import type * as lib_canonicalGlue from "../lib/canonicalGlue.js";
+import type * as lib_componentOrgReads from "../lib/componentOrgReads.js";
+import type * as lib_vortexAuthOrganizations from "../lib/vortexAuthOrganizations.js";
 import type * as mcp_oauth_http from "../mcp_oauth/http.js";
 import type * as mcp_oauth_mutations from "../mcp_oauth/mutations.js";
 import type * as mcp_oauth_queries from "../mcp_oauth/queries.js";
@@ -384,6 +386,8 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/authIdentities": typeof lib_authIdentities;
   "lib/canonicalGlue": typeof lib_canonicalGlue;
+  "lib/componentOrgReads": typeof lib_componentOrgReads;
+  "lib/vortexAuthOrganizations": typeof lib_vortexAuthOrganizations;
   "mcp_oauth/http": typeof mcp_oauth_http;
   "mcp_oauth/mutations": typeof mcp_oauth_mutations;
   "mcp_oauth/queries": typeof mcp_oauth_queries;
