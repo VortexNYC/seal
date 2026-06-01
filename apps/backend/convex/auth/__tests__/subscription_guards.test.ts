@@ -360,13 +360,15 @@ describe("subscription_guards", () => {
     });
 
     test("uses default enterprise rates for card payments", () => {
-      expect(calculateApplicationFee(10000, "enterprise", false)).toBe(Math.round(10000 * 0.04 + 30));
+      expect(calculateApplicationFee(10000, "enterprise", false)).toBe(
+        Math.round(10000 * 0.04 + 30),
+      );
     });
 
     test("uses custom rates when provided", () => {
-      expect(calculateApplicationFee(10000, "enterprise", false, { cardRate: 0.02, cardFixed: 20 })).toBe(
-        Math.round(10000 * 0.02 + 20),
-      );
+      expect(
+        calculateApplicationFee(10000, "enterprise", false, { cardRate: 0.02, cardFixed: 20 }),
+      ).toBe(Math.round(10000 * 0.02 + 20));
     });
   });
 
