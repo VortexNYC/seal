@@ -24,5 +24,14 @@
 - **P7 — schema cleanup:** drop `clerkId` (users, organizations), `clerkMembershipId`/`externalId` (members), `clerkInvitationId`/`clerkOrganizationId` (invitations) + indexes via add→backfill→switch→drop (+5th re-add-strip-redrop safety if Convex rejects live deploy). Convert `organization_invitations.token` from Clerk-id to Convex-generated.
 - **P8 — full-stack test + cleanup:** backend (`convex run` + logs) + UI E2E via dev-browser on `seal.localhost:1355`: signup → org create → invite → accept → 2FA enroll/step-up → API key → sign-out. Verify on dev `aware-buzzard-568`. Fix stale `.test-env` (self-hosted → Cloud). Sentry sweep. Then PR → `staging`.
 
+## Progress
+- **P0 — DONE** (commit `809d764`, branch `feat/vortex-auth-p0-scaffold`). Scaffold landed + deployed clean to dev `aware-buzzard-568` (both components installed). Files: convex.config (betterAuth+vortexAuth), betterAuthClient.ts, auth.config.ts (additive — Clerk + Better-Auth), betterAuth.ts, lib/canonicalGlue.ts, lib/authIdentities.ts, users.ts (upsert/deleteFromBetterAuth), http.ts (registerAuthRoutes), schema additions. Verified: tsc clean, lint 0 err, 1368/1368 tests, convex dev --once OK.
+  - GOTCHA 1: `@plasmapos` is on **GitHub Packages**, not public npm. Added `.npmrc` (`@plasmapos:registry=https://npm.pkg.github.com` + `${NODE_AUTH_TOKEN}`). Install/codegen/deploy all need `NODE_AUTH_TOKEN=$(gh auth token)` (gh token has write:packages).
+  - GOTCHA 2: backend `typecheck` used `@typescript/native-preview`, which **panics** on the 23k-line component-generated api.d.ts. Switched to stock `tsc` (matches every other Seal pkg + crm).
+  - DECISION: `users.clerkId` kept **REQUIRED** (not optional) to avoid churning ~11 clerkId-keyed call sites; Better-Auth users store their Better-Auth subject in clerkId transitionally (unique, no `user_…` collision). Whole column dropped in P7.
+  - Env set on aware-buzzard-568: BETTER_AUTH_{SECRET,ISSUER,JWKS_URL,URL,TRUSTED_ORIGINS} (mirrors crm).
+  - Better-Auth password min length > 8 (signup with "12345678" → PASSWORD_TOO_SHORT). Use ≥12-char test passwords.
+- **P1 — DONE** (verified, no code change). Live signup `POST aware-buzzard-568.convex.site/api/auth/sign-up/email` → sync trigger → Seal `users` row created with clerkId=BA-subject + vortexAuthUserId=component-userId, name/locale/timezone defaulted. Test user `seal-p1-bridge@seal.nyc` left on dev. Both providers coexist in deployed auth config.
+
 ## Resume
-Read this file + memory `project-seal-migration-plan.md`. Start at P0. Nothing is implemented yet.
+Read this file + memory `project-seal-migration-plan.md`. Branch `feat/vortex-auth-p0-scaffold`. **Resume at P2** (component-truth for orgs/members/roles/invites + backfill — copy crm's pattern). NOTE: a separate, NOT-MINE workstream (Cloudflare deploy: apps/mcp-worker, wrangler.jsonc, .dockerignore, dist-*) sits UNTRACKED in the tree + a `git stash` ("pre-migration: unrelated perf/infra tweaks") holds unrelated tracked edits — leave both alone.
