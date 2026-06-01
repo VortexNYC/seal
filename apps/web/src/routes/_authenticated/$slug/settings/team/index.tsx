@@ -42,8 +42,8 @@ function TeamSettings() {
   );
 
   const invitations = useQuery(
-    api.organizations.queries.getPendingInvitations,
-    orgId && permissions?.permissions.canInviteMembers ? { organizationId: orgId } : "skip",
+    api.invitations.listInvitations,
+    orgId && permissions?.permissions.canInviteMembers ? { status: "pending" } : "skip",
   );
 
   // Loading state handled by pendingComponent
@@ -132,7 +132,6 @@ function TeamSettings() {
                       role: inv.role === "system" || inv.role === "owner" ? "admin" : inv.role,
                     })) ?? []
                   }
-                  organizationId={orgId}
                 />
               </CardContent>
             </Card>
