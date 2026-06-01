@@ -7,7 +7,7 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
-import { useAction } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   AlertTriangle,
   Check,
@@ -25,7 +25,7 @@ import {
   Shield,
   Users,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { FeatureGate } from "@/components/feature-gate";
@@ -204,43 +204,26 @@ function formatRelativeTime(date: Date): string {
 }
 
 function ApiKeysPage() {
-  const createApiKey = useAction(api.api_keys.actions.createClerkApiKey);
-  const listApiKeys = useAction(api.api_keys.actions.listClerkApiKeys);
-  const revokeApiKey = useAction(api.api_keys.actions.revokeClerkApiKey);
+  const createApiKey = useMutation(api.api_keys.keys.createApiKey);
+  const revokeApiKey = useMutation(api.api_keys.keys.revokeApiKey);
+  const apiKeysData = useQuery(api.api_keys.keys.listApiKeys, {});
 
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [selectedScopes, setSelectedScopes] = useState<ClerkApiScope[]>([]);
   const [newKeySecret, setNewKeySecret] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
 
-  const fetchApiKeys = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const keys = await listApiKeys();
-      setApiKeys(
-        keys.map((key) => ({
-          id: key.id,
-          name: key.name,
-          createdAt: new Date(key.createdAt),
-          lastUsedAt: key.lastUsedAt ? new Date(key.lastUsedAt) : undefined,
-          scopes: key.scopes,
-          revoked: key.revoked,
-        })),
-      );
-    } catch (error) {
-      console.error("Failed to fetch API keys:", error);
-      setApiKeys([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [listApiKeys]);
-
-  useEffect(() => {
-    fetchApiKeys();
-  }, [fetchApiKeys]);
+  // Reactive: useQuery auto-refreshes after create/revoke mutations.
+  const isLoading = apiKeysData === undefined;
+  const apiKeys: ApiKey[] = (apiKeysData ?? []).map((key) => ({
+    id: key.id,
+    name: key.name,
+    createdAt: new Date(key.createdAt),
+    lastUsedAt: key.lastUsedAt ? new Date(key.lastUsedAt) : undefined,
+    scopes: key.scopes,
+    revoked: key.revoked,
+  }));
 
   const handleCreateKey = async () => {
     if (!newKeyName.trim()) {
@@ -262,7 +245,6 @@ function ApiKeysPage() {
       if (result?.secret) {
         setNewKeySecret(result.secret);
         toast.success("API key created successfully");
-        await fetchApiKeys();
       }
     } catch (error) {
       console.error("Failed to create API key:", error);
@@ -291,7 +273,6 @@ function ApiKeysPage() {
     try {
       await revokeApiKey({ apiKeyId: keyId });
       toast.success("API key revoked");
-      await fetchApiKeys();
     } catch (error) {
       console.error("Failed to revoke API key:", error);
       toast.error(getErrorMessage(error));

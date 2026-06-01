@@ -59,6 +59,7 @@ import type * as api_v1_webhooks from "../api/v1/webhooks.js";
 import type * as api_versioning from "../api/versioning.js";
 import type * as api_keys_actions from "../api_keys/actions.js";
 import type * as api_keys_index from "../api_keys/index.js";
+import type * as api_keys_keys from "../api_keys/keys.js";
 import type * as api_keys_mutations from "../api_keys/mutations.js";
 import type * as api_keys_queries from "../api_keys/queries.js";
 import type * as audit_logs_helpers from "../audit_logs/helpers.js";
@@ -314,6 +315,7 @@ declare const fullApi: ApiFromModules<{
   "api/versioning": typeof api_versioning;
   "api_keys/actions": typeof api_keys_actions;
   "api_keys/index": typeof api_keys_index;
+  "api_keys/keys": typeof api_keys_keys;
   "api_keys/mutations": typeof api_keys_mutations;
   "api_keys/queries": typeof api_keys_queries;
   "audit_logs/helpers": typeof audit_logs_helpers;
