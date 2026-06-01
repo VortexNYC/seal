@@ -8,8 +8,8 @@
 import { ConvexError, v } from "convex/values";
 
 import { internalQuery } from "../_generated/server";
-import { getSubscriptionPlan } from "./subscription_guards";
 import { requireActiveMembership } from "./access_control";
+import { getSubscriptionPlan } from "./subscription_guards";
 
 /**
  * Check whether an organization is on a Pro (or higher) plan.
