@@ -142,7 +142,6 @@ import type * as organization_roles_helpers from "../organization_roles/helpers.
 import type * as organization_roles_migrations from "../organization_roles/migrations.js";
 import type * as organization_roles_mutations from "../organization_roles/mutations.js";
 import type * as organization_roles_queries from "../organization_roles/queries.js";
-import type * as organizations_actions from "../organizations/actions.js";
 import type * as organizations_helpers from "../organizations/helpers.js";
 import type * as organizations_mutations from "../organizations/mutations.js";
 import type * as organizations_queries from "../organizations/queries.js";
@@ -198,7 +197,6 @@ import type * as schemas_subscriptions from "../schemas/subscriptions.js";
 import type * as schemas_templates from "../schemas/templates.js";
 import type * as schemas_user_profiles from "../schemas/user_profiles.js";
 import type * as schemas_users from "../schemas/users.js";
-import type * as schemas_waitlist_entries from "../schemas/waitlist_entries.js";
 import type * as schemas_webhooks from "../schemas/webhooks.js";
 import type * as signature_fields_helpers from "../signature_fields/helpers.js";
 import type * as signature_fields_mutations from "../signature_fields/mutations.js";
@@ -397,7 +395,6 @@ declare const fullApi: ApiFromModules<{
   "organization_roles/migrations": typeof organization_roles_migrations;
   "organization_roles/mutations": typeof organization_roles_mutations;
   "organization_roles/queries": typeof organization_roles_queries;
-  "organizations/actions": typeof organizations_actions;
   "organizations/helpers": typeof organizations_helpers;
   "organizations/mutations": typeof organizations_mutations;
   "organizations/queries": typeof organizations_queries;
@@ -453,7 +450,6 @@ declare const fullApi: ApiFromModules<{
   "schemas/templates": typeof schemas_templates;
   "schemas/user_profiles": typeof schemas_user_profiles;
   "schemas/users": typeof schemas_users;
-  "schemas/waitlist_entries": typeof schemas_waitlist_entries;
   "schemas/webhooks": typeof schemas_webhooks;
   "signature_fields/helpers": typeof signature_fields_helpers;
   "signature_fields/mutations": typeof signature_fields_mutations;

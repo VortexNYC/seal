@@ -1,7 +1,7 @@
 /**
  * Organization invitations on the vortexAuth component (P7).
  *
- * Replaces the Clerk-based invite flow (organizations/actions.ts clerkInvite
+ * Replaces the removed Clerk-based invite flow (the old Clerk invite action
  * + the deleted Clerk acceptance webhook). Invitation truth lives in the
  * component; the raw token is shown once and emailed, only its sha256 hash is
  * stored. Acceptance materializes a component membership.

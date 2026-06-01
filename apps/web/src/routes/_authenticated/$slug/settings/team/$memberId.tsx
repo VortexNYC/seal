@@ -3,7 +3,7 @@ import type { Id } from "@seal/backend/convex/_generated/dataModel";
 
 import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useAction, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Calendar, Mail, Shield, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -35,8 +35,8 @@ function MemberDetails() {
   const { slug, memberId } = Route.useParams();
   const { user } = useUser();
   const navigate = useNavigate();
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const organization = useQuery(api.organizations.queries.getOrganization, {
     slug,
@@ -54,28 +54,27 @@ function MemberDetails() {
       : "skip",
   );
 
-  const deleteUser = useAction(api.organizations.actions.clerkDeleteUser);
+  const removeMember = useMutation(api.organizations.mutations.removeMember);
 
-  const handleDeleteUser = async () => {
+  const handleRemoveMember = async () => {
     if (!orgId || !memberId) return;
 
-    setIsDeleting(true);
+    setIsRemoving(true);
     try {
-      await deleteUser({
+      await removeMember({
         memberId: memberId as Id<"organization_members">,
-        organizationId: orgId,
       });
 
-      toast.success("User deleted successfully");
+      toast.success("Member removed successfully");
       navigate({
         to: "/$slug/settings/team",
         params: { slug },
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete user");
+      toast.error(error instanceof Error ? error.message : "Failed to remove member");
     } finally {
-      setIsDeleting(false);
-      setShowDeleteDialog(false);
+      setIsRemoving(false);
+      setShowRemoveDialog(false);
     }
   };
 
@@ -252,30 +251,30 @@ function MemberDetails() {
           </CardContent>
         </Card>
 
-        {/* Danger Zone - Delete User */}
+        {/* Danger Zone - Remove Member */}
         {member.role !== "owner" && (
           <Card className="border-destructive">
             <CardHeader>
               <CardTitle className="text-destructive">Danger Zone</CardTitle>
-              <CardDescription>Permanently delete this user from the system</CardDescription>
+              <CardDescription>Remove this member from the organization</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Delete User</p>
+                  <p className="text-sm font-medium">Remove Member</p>
                   <p className="text-muted-foreground text-sm">
-                    This will permanently delete the user from Clerk and all their data from the
-                    system. This action cannot be undone.
+                    This removes the member from this organization. Their account and access to any
+                    other organizations are unaffected.
                   </p>
                 </div>
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => setShowDeleteDialog(true)}
-                  disabled={isDeleting}
+                  onClick={() => setShowRemoveDialog(true)}
+                  disabled={isRemoving}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete User
+                  Remove Member
                 </Button>
               </div>
             </CardContent>
@@ -283,34 +282,36 @@ function MemberDetails() {
         )}
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      {/* Remove Confirmation Dialog */}
+      <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Remove this member?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div>
                 <p>
-                  This action cannot be undone. This will permanently delete the user{" "}
-                  <span className="font-semibold">{member.name || member.email}</span> from Clerk
-                  and remove all their data from the system, including:
+                  This removes{" "}
+                  <span className="font-semibold">{member.name || member.email}</span> from this
+                  organization, including:
                 </p>
                 <ul className="mt-2 list-inside list-disc space-y-1">
-                  <li>User account and profile</li>
-                  <li>All organization memberships</li>
-                  <li>Access to all workspaces</li>
+                  <li>Their membership in this organization</li>
+                  <li>Access to this workspace</li>
                 </ul>
+                <p className="mt-2">
+                  Their account and access to any other organizations are unaffected.
+                </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteUser}
-              disabled={isDeleting}
+              onClick={handleRemoveMember}
+              disabled={isRemoving}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? "Deleting..." : "Delete User"}
+              {isRemoving ? "Removing..." : "Remove Member"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

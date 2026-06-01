@@ -2,13 +2,15 @@
  * Organization/Workspace mutations for Control Zero
  */
 
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type GenericId, v } from "convex/values";
 
+import { components } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx, mutation } from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
 import { adminMutation, authMutation } from "../auth";
 import { ensureProFeature, ensureSeatLimit } from "../auth/subscription_guards";
+import { getComponentMemberRefForUserOrganization } from "../lib/componentOrgReads";
 import { seedSystemRoles } from "../organization_roles/helpers";
 import { organizationBaseSchema } from "../validations/organizations";
 
@@ -602,6 +604,24 @@ export const removeMember = adminMutation({
 
     const removedUserId = membership.userId;
     const removedRole = membership.role;
+
+    // Remove the component membership (B2B: suspend, never touch the auth
+    // account — a user can belong to multiple orgs). Resolve the component
+    // member ref via the user + org bridge ids; no-op when either is absent.
+    const removedUser = await ctx.db.get(removedUserId);
+    if (removedUser) {
+      const componentMemberRef = await getComponentMemberRefForUserOrganization(
+        ctx,
+        removedUser,
+        organization,
+      );
+      if (componentMemberRef) {
+        await ctx.runMutation(components.vortexAuth.organizations.setMemberStatus, {
+          memberId: componentMemberRef.memberId as GenericId<"organization_members">,
+          status: "suspended",
+        });
+      }
+    }
 
     await ctx.db.delete(args.memberId);
 
