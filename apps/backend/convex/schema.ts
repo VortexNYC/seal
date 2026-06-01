@@ -38,11 +38,6 @@ import {
 import { downloadTokensTable } from "./schemas/download_tokens";
 import { feedbackTable } from "./schemas/feedback";
 import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
-import {
-  mcpOauthClientsTable,
-  mcpOauthCodesTable,
-  mcpOauthRefreshTokensTable,
-} from "./schemas/mcp_oauth";
 import { type NotificationType, notificationsTable } from "./schemas/notifications";
 import { organizationInvitationsTable } from "./schemas/organization_invitations";
 import {
@@ -229,9 +224,4 @@ export default defineSchema({
   ai_progress: aiProgressTable,
   ai_routing_logs: aiRoutingLogsTable,
   ai_usage_log: aiUsageLogTable,
-
-  // MCP OAuth
-  mcp_oauth_clients: mcpOauthClientsTable,
-  mcp_oauth_codes: mcpOauthCodesTable,
-  mcp_oauth_refresh_tokens: mcpOauthRefreshTokensTable,
 });

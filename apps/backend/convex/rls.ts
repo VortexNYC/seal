@@ -708,27 +708,10 @@ function getInternalOnlyRules(
   rlsCtx: SealRLSContext | null,
 ): Pick<
   StrictRules,
-  | "download_tokens"
-  | "mcp_oauth_clients"
-  | "mcp_oauth_codes"
-  | "mcp_oauth_refresh_tokens"
-  | "subscription_coupons"
-  | "subscription_promo_codes"
+  "download_tokens" | "subscription_coupons" | "subscription_promo_codes"
 > {
   return {
     download_tokens: {
-      read: async () => false,
-      modify: async () => false,
-    },
-    mcp_oauth_clients: {
-      read: async () => false,
-      modify: async () => false,
-    },
-    mcp_oauth_codes: {
-      read: async () => false,
-      modify: async () => false,
-    },
-    mcp_oauth_refresh_tokens: {
       read: async () => false,
       modify: async () => false,
     },
