@@ -48,7 +48,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@clerk/types": "^4.101.20",
     "convex-test": "^0.0.46",
     "vitest": "catalog:"
   }
