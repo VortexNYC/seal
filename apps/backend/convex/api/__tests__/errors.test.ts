@@ -24,9 +24,9 @@ describe("ApiError", () => {
     expect(error.code).toBe("INTERNAL_ERROR");
   });
 
-  test("unknown status code returns 'Error' as title", () => {
+  test('unknown status code returns "Unknown Error" as title', () => {
     const error = new ApiError(418, "I'm a teapot", "INTERNAL_ERROR");
-    expect(error.title).toBe("Error");
+    expect(error.title).toBe("Unknown Error");
   });
 
   test("maps all known status codes to correct titles", () => {
