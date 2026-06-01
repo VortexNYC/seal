@@ -258,6 +258,80 @@ export async function recordVortexAuthInvitationEmailDelivery(
   });
 }
 
+/** Component apiKey status enum (mirrors the component schema). */
+type ComponentApiKeyStatus = "active" | "revoked";
+
+/**
+ * Create an API key in the vortexAuth COMPONENT — the source of truth for API
+ * keys (P5; Seal has no local api_keys table). The org is ensured in the
+ * component first; the owner `userId` is mapped to the component user via the
+ * bridge id. Returns the COMPONENT apiKey id (a string).
+ */
+export async function createVortexAuthApiKey(
+  ctx: VortexAuthMutationCtx,
+  args: {
+    organizationId: Id<"organizations">;
+    userId: Id<"users">;
+    name: string;
+    keyPrefix: string;
+    keyHash: string;
+    scopes: readonly string[];
+    allowedIpRanges?: readonly string[];
+    expiresAt?: number;
+    status?: ComponentApiKeyStatus;
+  },
+): Promise<string> {
+  const user = await ctx.db.get(args.userId);
+  if (user === null) {
+    throw new ConvexError({ code: "NOT_FOUND", message: "API key user not found" });
+  }
+  if (!user.vortexAuthUserId) {
+    throw new ConvexError({
+      code: "FAILED_PRECONDITION",
+      message: "API key user is missing vortex auth bridge id",
+    });
+  }
+
+  const result = await ctx.runMutation(components.vortexAuth.apiKeys.upsertApiKey, {
+    organizationId: await ensureVortexAuthOrganization(
+      ctx,
+      args.organizationId,
+      user.vortexAuthUserId,
+    ),
+    userId: user.vortexAuthUserId,
+    name: args.name,
+    keyPrefix: args.keyPrefix,
+    keyHash: args.keyHash,
+    requestId: null,
+    requestIdExpiresAt: null,
+    scopes: [...args.scopes],
+    allowedIpRanges: args.allowedIpRanges ? [...args.allowedIpRanges] : null,
+    expiresAt: args.expiresAt ?? null,
+    status: args.status ?? "active",
+  });
+
+  return String(result.apiKeyId);
+}
+
+/** Revoke a COMPONENT apiKey (idempotent). `apiKeyId` is the COMPONENT id. */
+export async function revokeVortexAuthApiKey(
+  ctx: VortexAuthMutationCtx,
+  apiKeyId: string,
+): Promise<void> {
+  await ctx.runMutation(components.vortexAuth.apiKeys.revokeApiKey, { apiKeyId });
+}
+
+/** Record lastUsed timestamp/ip on a COMPONENT apiKey (hot auth path). */
+export async function touchVortexAuthApiKeyLastUsed(
+  ctx: VortexAuthMutationCtx,
+  args: { apiKeyId: string; ip?: string | null },
+): Promise<void> {
+  await ctx.runMutation(components.vortexAuth.apiKeys.touchApiKeyLastUsed, {
+    apiKeyId: args.apiKeyId,
+    ip: args.ip ?? null,
+  });
+}
+
 async function getOptionalVortexAuthUserId(
   ctx: VortexAuthMutationCtx,
   userId: Id<"users"> | undefined,

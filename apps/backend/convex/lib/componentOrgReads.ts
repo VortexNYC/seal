@@ -390,6 +390,114 @@ export function membershipIdSetKey(ids: readonly string[]): string {
 }
 
 // ---------------------------------------------------------------------------
+// Component API key reads (P5 — component is the source of truth for API keys)
+// ---------------------------------------------------------------------------
+
+type RawComponentApiKey = {
+  _id: string;
+  organizationId?: string;
+  userId?: string;
+  name: string;
+  keyPrefix: string;
+  keyHash: string;
+  scopes: string[];
+  allowedIpRanges?: string[];
+  expiresAt?: number;
+  status: "active" | "revoked";
+  lastUsedAt?: number;
+  lastUsedIp?: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type ComponentResolvedApiKey = {
+  _id: string;
+  organizationId: Id<"organizations">;
+  userId: Id<"users">;
+  name: string;
+  keyPrefix: string;
+  keyHash: string;
+  scopes: string[];
+  allowedIpRanges?: string[];
+  expiresAt?: number;
+  status: "active" | "revoked";
+  lastUsedAt?: number;
+  lastUsedIp?: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+async function mapComponentApiKey(
+  ctx: ReadCtx,
+  apiKey: RawComponentApiKey,
+): Promise<ComponentResolvedApiKey | null> {
+  if (apiKey.organizationId === undefined || apiKey.userId === undefined) {
+    return null;
+  }
+  const organizationId = await resolveSealOrganizationId(ctx, apiKey.organizationId);
+  if (organizationId === null) {
+    return null;
+  }
+  const userId = await resolveSealUserId(ctx, apiKey.userId);
+  if (userId === null) {
+    return null;
+  }
+  return {
+    _id: apiKey._id,
+    organizationId,
+    userId,
+    name: apiKey.name,
+    keyPrefix: apiKey.keyPrefix,
+    keyHash: apiKey.keyHash,
+    scopes: apiKey.scopes,
+    allowedIpRanges: apiKey.allowedIpRanges,
+    expiresAt: apiKey.expiresAt,
+    status: apiKey.status,
+    lastUsedAt: apiKey.lastUsedAt,
+    lastUsedIp: apiKey.lastUsedIp,
+    createdAt: apiKey.createdAt,
+    updatedAt: apiKey.updatedAt,
+  };
+}
+
+/** HOT AUTH PATH. Resolve a component apiKey by key prefix, mapped to Seal anchors. */
+export async function getComponentApiKeyByPrefix(
+  ctx: ReadCtx,
+  keyPrefix: string,
+): Promise<ComponentResolvedApiKey | null> {
+  const apiKey = await ctx.runQuery(components.vortexAuth.apiKeys.getApiKeyByPrefix, { keyPrefix });
+  if (apiKey === null) {
+    return null;
+  }
+  return await mapComponentApiKey(ctx, apiKey as RawComponentApiKey);
+}
+
+/** List a Seal organization's component apiKeys, mapped to Seal anchors. */
+export async function listComponentApiKeysByOrganization(
+  ctx: ReadCtx,
+  organization: Pick<Doc<"organizations">, "vortexAuthOrganizationId">,
+  options?: { status?: "active" | "revoked"; limit?: number },
+): Promise<ComponentResolvedApiKey[]> {
+  const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
+  if (!vortexAuthOrganizationId) {
+    return [];
+  }
+  const apiKeys = await ctx.runQuery(components.vortexAuth.apiKeys.listApiKeysByOrganization, {
+    organizationId: vortexAuthOrganizationId,
+    status: options?.status,
+    limit: options?.limit,
+  });
+  const resolved: ComponentResolvedApiKey[] = [];
+  for (const apiKey of apiKeys) {
+    const mapped = await mapComponentApiKey(ctx, apiKey as RawComponentApiKey);
+    if (mapped !== null) {
+      resolved.push(mapped);
+    }
+  }
+  return resolved;
+}
+
+// ---------------------------------------------------------------------------
 // Component invitation reads
 // ---------------------------------------------------------------------------
 
