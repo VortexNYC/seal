@@ -7,15 +7,8 @@ import { createConvexAuthConfig } from "@plasmapos/vortex-auth/better-auth/serve
 // process.env.X as mandatory, which would break deploys to fresh deployments.
 export const betterAuthConvexProvider = createConvexAuthConfig();
 
-// ADDITIVE during the migration: keep the Clerk provider live AND add the
-// Better-Auth provider so both token types validate while we cut over.
-// Clerk is removed in P6 once vortex-auth is proven live.
+// Single-origin Better-Auth: this deployment signs and validates its own
+// tokens. The Clerk provider was removed in P6 once vortex-auth went live.
 export default {
-  providers: [
-    {
-      domain: process.env.CLERK_FRONTEND_API_URL,
-      applicationID: "convex",
-    },
-    betterAuthConvexProvider,
-  ],
+  providers: [betterAuthConvexProvider],
 };

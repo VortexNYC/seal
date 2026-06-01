@@ -77,7 +77,6 @@ import type * as auth_wrappers from "../auth/wrappers.js";
 import type * as betterAuth from "../betterAuth.js";
 import type * as betterAuthClient from "../betterAuthClient.js";
 import type * as check_membership from "../check_membership.js";
-import type * as clerk_webhooks from "../clerk_webhooks.js";
 import type * as contacts_index from "../contacts/index.js";
 import type * as contacts_mutations from "../contacts/mutations.js";
 import type * as contacts_queries from "../contacts/queries.js";
@@ -333,7 +332,6 @@ declare const fullApi: ApiFromModules<{
   betterAuth: typeof betterAuth;
   betterAuthClient: typeof betterAuthClient;
   check_membership: typeof check_membership;
-  clerk_webhooks: typeof clerk_webhooks;
   "contacts/index": typeof contacts_index;
   "contacts/mutations": typeof contacts_mutations;
   "contacts/queries": typeof contacts_queries;
