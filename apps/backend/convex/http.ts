@@ -24,6 +24,7 @@ import { Webhook } from "svix";
 import { api, internal } from "./_generated/api";
 import type { DataModel, Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
+import { registerAuthRoutes } from "./betterAuth";
 import {
   API_SCOPES,
   apiHttpAction,
@@ -481,6 +482,10 @@ async function handleClerkWebhookEvent(
 }
 
 const http = httpRouter();
+
+// Mount Better-Auth routes (/api/auth/*) from vortex-auth. Additive during
+// the migration — the Clerk webhook below stays live until P6.
+registerAuthRoutes(http);
 
 http.route({
   path: "/clerk-webhooks",
