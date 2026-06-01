@@ -155,9 +155,7 @@ function isPermissionKey(permission: string): permission is PermissionKey {
 }
 
 function getRoleTemplatePermissions(role: string): PermissionKey[] {
-  return role in ROLE_TEMPLATES
-    ? getExpandedPermissions(role as RoleTemplate)
-    : [];
+  return role in ROLE_TEMPLATES ? getExpandedPermissions(role as RoleTemplate) : [];
 }
 
 async function resolvePermissions(
