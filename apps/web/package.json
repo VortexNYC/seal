@@ -47,6 +47,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@plasmapos/vortex-auth": "0.1.172",
     "@react-input/number-format": "^2.0.3",
     "@seal/backend": "workspace:*",
     "@seal/tokens": "workspace:*",

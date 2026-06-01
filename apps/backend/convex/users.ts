@@ -1,8 +1,9 @@
 import { createBetterAuthIdentityProvisionPayload } from "@plasmapos/vortex-auth/better-auth";
 import { ConvexError, v } from "convex/values";
 
+import type { Doc } from "./_generated/dataModel";
 import { components } from "./_generated/api";
-import { internalMutation, mutation, type MutationCtx } from "./_generated/server";
+import { internalMutation, mutation, type MutationCtx, query } from "./_generated/server";
 import { getBetterAuthIdentityIssuer, getBetterAuthIdentityProvider } from "./lib/authIdentities";
 
 type BetterAuthIdentity = Record<string, unknown> & {
@@ -19,6 +20,27 @@ type UpsertBetterAuthUserArgs = {
   image?: string;
   sessionId?: string | null;
 };
+
+/**
+ * Return the currently-authenticated user's Seal `users` row, or null when
+ * unauthenticated / not yet provisioned. Resolution is by identity subject
+ * (= clerkId for both Clerk users and Better-Auth users, which store their
+ * BA subject in clerkId during the migration). Used by the vortex-auth React
+ * identity provisioner to detect whether the local user exists yet.
+ */
+export const getCurrentUser = query({
+  args: {},
+  handler: async (ctx): Promise<Doc<"users"> | null> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      return null;
+    }
+    return await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+  },
+});
 
 /**
  * Provision the currently-authenticated Better-Auth user into Seal's
