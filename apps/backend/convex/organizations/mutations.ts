@@ -137,7 +137,6 @@ async function ensurePrimaryOwnerMembership(
       status: "active",
       isPrimary: true,
       permissions: [],
-      externalId: undefined,
     });
     return;
   }

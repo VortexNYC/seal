@@ -36,10 +36,6 @@ export const organizationMembersTable = defineTable({
   status: organizationMemberStatus,
 
   isPrimary: v.boolean(),
-
-  // Clerk sync fields
-  externalId: v.optional(v.string()),
-  clerkMembershipId: v.optional(v.string()),
 })
   .index("by_user", ["userId"])
   .index("by_organization", ["organizationId"])
@@ -48,5 +44,4 @@ export const organizationMembersTable = defineTable({
   .index("by_organization_status", ["organizationId", "status"])
   .index("by_user_status", ["userId", "status"])
   .index("by_role", ["roleId"])
-  .index("by_organization_role", ["organizationId", "role"])
-  .index("by_clerk_membership_id", ["clerkMembershipId"]);
+  .index("by_organization_role", ["organizationId", "role"]);
