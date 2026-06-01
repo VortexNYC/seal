@@ -1,0 +1,28 @@
+# Seal → vortex-auth migration runbook
+
+**Goal:** Completely replace Clerk with `@plasmapos/vortex-auth` (Better-Auth + Convex), test backend + UI, then remove Clerk entirely. End state matches **crm/plasma** (B2B, component-truth). Seal is web-only (Vite) + Convex.
+
+**Branch:** `feat/vortex-auth-p0-scaffold` off `staging` (Seal base = `staging`).
+**Decision:** Waitlist is **DROPPED** (remove `<Waitlist>` + `waitlistEntry.*` webhooks + `waitlist_entries`).
+**Email:** `@seal/transactional` + Resend, `seal.nyc` Resend domain VERIFIED. Use the package's shipped builders (`createEmailVerificationEmailDraft`/`createPasswordResetEmailDraft` from `@plasmapos/vortex-auth/convex`) — do NOT hand-roll (pile's lesson).
+**Deployments (Convex Cloud):** dev `aware-buzzard-568`, prod `compassionate-robin-742`. `.test-env` is STALE (points at dead self-hosted seal-staging) — fix in P8.
+
+## Execution rules (per pile/crm/plasma)
+- Each phase is ADDITIVE and must `typecheck` green before the next. Clerk is torn out (P6) only AFTER vortex-auth is proven live.
+- Copy/adapt the **crm blueprint** (B2B, proven): `~/projects/crm/convex/{convex.config.ts, betterAuthClient.ts, auth.config.ts, betterAuth.ts, lib/canonicalGlue.ts, lib/authIdentities.ts}` and crm `users.ts` (`upsertFromBetterAuth`/`deleteFromBetterAuth`).
+- Keep Seal app-side: org anchor + rich org fields (branding/signing/security/ai/stripeCustomerId), the 5-tier roles + ~40 permissions + custom roles (`auth.utils.ts`). Component owns membership/role/invitation/api-key TRUTH.
+- Run from `apps/backend`: `bunx convex dev --once` to codegen after component/schema changes. Test UI via dev-browser at `http://seal.localhost:1355` (`portless seal ol bun run dev`).
+
+## Phases
+- **P0 — scaffold (additive):** deps in `apps/backend/package.json` (`@plasmapos/vortex-auth@0.1.172`, `@convex-dev/better-auth@0.12.2`, `better-auth@1.6.9`; resend already present). Mount `betterAuth` + `vortexAuth` in `convex.config.ts`. Create `betterAuthClient.ts` (createClient seam + sync triggers → `internal.users.upsertFromBetterAuth`/`deleteFromBetterAuth` + `components.vortexAuth.identity.provisionFromIdentity`), `betterAuth.ts` (runtime, `twoFactor:{enabled:true,issuer:"Seal"}`, rateLimit, trustedOrigins incl. `http://seal.localhost:1355` + staging/prod app origins), `lib/canonicalGlue.ts` (`createVortexAuthGlue` orgs:enabled, B2B adapters for Seal schema), `lib/authIdentities.ts`. Make `auth.config.ts` ADDITIVE (keep Clerk provider AND add `betterAuthConvexProvider`). `registerAuthRoutes(http)` in `http.ts`. Schema (additive optional): `users.vortexAuthUserId` + `by_vortex_auth_user` index, `users.activeVortexAuthOrganizationId`, `organizations.vortexAuthOrganizationId` + `by_vortex_auth_organization` index. Add `internal users.upsertFromBetterAuth` + `deleteFromBetterAuth`. `convex dev --once` + typecheck.
+- **P1 — identity bridge:** verify user-sync provisions Seal `users` from Better-Auth signup; both providers validate.
+- **P2 — component-truth:** route orgs/members/roles/invitations/api-keys through `vortexAuth` component (crm pattern); backfill existing Clerk-synced data into the component; keep app fields app-side.
+- **P3 — auth email:** wire Better-Auth `sendEmail` to shipped builders / `@seal/transactional`.
+- **P4 — frontend swap (web):** `ClerkProvider`+`ConvexProviderWithClerk` → vortex-auth provider; `<SignIn/SignUp/UserProfile/security(2FA)/accept-invite/TaskChooseOrganization>` → `vortex-auth/react`; `useUser/useOrganization/useClerk` → vortex-auth hooks; delete `lib/clerk-auth-theme.ts`; **remove `<Waitlist>` route**.
+- **P5 — API keys → component:** `api/context.ts` `verifyToken` (Clerk) → vortexAuth component API keys (crm proved it).
+- **P6 — Clerk teardown:** drop `@clerk/*` (fe+be); delete `clerk_webhooks.ts` (~1033 lines) + `/clerk-webhooks` route + handlers in `http.ts`; remove `createClerkClient` usages (5 files) + `recoverOrganizationSyncFromClerk`; remove Clerk provider from `auth.config.ts`; remove all `CLERK_*` env; drop waitlist tables/webhooks.
+- **P7 — schema cleanup:** drop `clerkId` (users, organizations), `clerkMembershipId`/`externalId` (members), `clerkInvitationId`/`clerkOrganizationId` (invitations) + indexes via add→backfill→switch→drop (+5th re-add-strip-redrop safety if Convex rejects live deploy). Convert `organization_invitations.token` from Clerk-id to Convex-generated.
+- **P8 — full-stack test + cleanup:** backend (`convex run` + logs) + UI E2E via dev-browser on `seal.localhost:1355`: signup → org create → invite → accept → 2FA enroll/step-up → API key → sign-out. Verify on dev `aware-buzzard-568`. Fix stale `.test-env` (self-hosted → Cloud). Sentry sweep. Then PR → `staging`.
+
+## Resume
+Read this file + memory `project-seal-migration-plan.md`. Start at P0. Nothing is implemented yet.
