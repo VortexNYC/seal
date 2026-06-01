@@ -129,6 +129,7 @@ import type * as fix_user_org from "../fix_user_org.js";
 import type * as folders_mutations from "../folders/mutations.js";
 import type * as folders_queries from "../folders/queries.js";
 import type * as http from "../http.js";
+import type * as invitations from "../invitations.js";
 import type * as lib_authIdentities from "../lib/authIdentities.js";
 import type * as lib_canonicalGlue from "../lib/canonicalGlue.js";
 import type * as lib_componentOrgReads from "../lib/componentOrgReads.js";
@@ -384,6 +385,7 @@ declare const fullApi: ApiFromModules<{
   "folders/mutations": typeof folders_mutations;
   "folders/queries": typeof folders_queries;
   http: typeof http;
+  invitations: typeof invitations;
   "lib/authIdentities": typeof lib_authIdentities;
   "lib/canonicalGlue": typeof lib_canonicalGlue;
   "lib/componentOrgReads": typeof lib_componentOrgReads;
