@@ -9,7 +9,11 @@
  * receive a pre-validated recipient context and a scoped db.
  */
 
-import { customCtxAndArgs, customMutation, customQuery } from "convex-helpers/server/customFunctions";
+import {
+  customCtxAndArgs,
+  customMutation,
+  customQuery,
+} from "convex-helpers/server/customFunctions";
 import { wrapDatabaseReader, wrapDatabaseWriter } from "convex-helpers/server/rowLevelSecurity";
 import { ConvexError, v } from "convex/values";
 
