@@ -152,13 +152,10 @@ export const createAuthorizationCode = httpAction(async (ctx, request) => {
       expiresAt: number;
     };
 
-    const result = await ctx.runMutation(
-      internal.mcp_oauth.mutations.createAuthorizationCode,
-      {
-        ...body,
-        organizationId: body.organizationId as Id<"organizations">,
-      },
-    );
+    const result = await ctx.runMutation(internal.mcp_oauth.mutations.createAuthorizationCode, {
+      ...body,
+      organizationId: body.organizationId as Id<"organizations">,
+    });
 
     return jsonResponse(result, 201);
   } catch (error) {
@@ -324,13 +321,10 @@ export const updateRefreshToken = httpAction(async (ctx, request) => {
       tokenHash: string;
     };
 
-    const result = await ctx.runMutation(
-      internal.mcp_oauth.mutations.updateRefreshTokenLastUsed,
-      {
-        ...body,
-        organizationId: body.organizationId as Id<"organizations">,
-      },
-    );
+    const result = await ctx.runMutation(internal.mcp_oauth.mutations.updateRefreshTokenLastUsed, {
+      ...body,
+      organizationId: body.organizationId as Id<"organizations">,
+    });
 
     return jsonResponse(result);
   } catch (error) {

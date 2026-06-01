@@ -90,7 +90,8 @@ export const deleteAuthorizationCode = internalMutation({
     const code = await ctx.db
       .query("mcp_oauth_codes")
       .withIndex("by_organization_code_hash", (q) =>
-        q.eq("organizationId", args.organizationId).eq("codeHash", args.codeHash))
+        q.eq("organizationId", args.organizationId).eq("codeHash", args.codeHash),
+      )
       .first();
 
     if (code) {
@@ -144,7 +145,8 @@ export const updateRefreshTokenLastUsed = internalMutation({
     const token = await ctx.db
       .query("mcp_oauth_refresh_tokens")
       .withIndex("by_organization_token_hash", (q) =>
-        q.eq("organizationId", args.organizationId).eq("tokenHash", args.tokenHash))
+        q.eq("organizationId", args.organizationId).eq("tokenHash", args.tokenHash),
+      )
       .first();
 
     if (token) {
@@ -170,7 +172,8 @@ export const deleteRefreshToken = internalMutation({
     const token = await ctx.db
       .query("mcp_oauth_refresh_tokens")
       .withIndex("by_organization_token_hash", (q) =>
-        q.eq("organizationId", args.organizationId).eq("tokenHash", args.tokenHash))
+        q.eq("organizationId", args.organizationId).eq("tokenHash", args.tokenHash),
+      )
       .first();
 
     if (token) {
@@ -194,7 +197,8 @@ export const deleteAllUserRefreshTokens = internalMutation({
     const tokens = await ctx.db
       .query("mcp_oauth_refresh_tokens")
       .withIndex("by_organization_user", (q) =>
-        q.eq("organizationId", args.organizationId).eq("userId", args.userId))
+        q.eq("organizationId", args.organizationId).eq("userId", args.userId),
+      )
       .collect();
 
     for (const token of tokens) {
