@@ -1,5 +1,14 @@
 # Seal → vortex-auth migration runbook
 
+> ## ▶ NEXT UP (2026-06-02): MCP OAuth cutover — the LAST Clerk in Seal
+> The Better-Auth MCP OAuth **server is already built + dev-proven** (commit `980df0a`; endpoints 200 on `aware-buzzard-568`). Remaining = the prod-facing cutover:
+> 1. **Repoint `apps/mcp-worker/src/index.ts`** off `@clerk/mcp-tools` + `@clerk/backend.verifyToken` → Seal's `/.well-known/oauth-authorization-server/seal-mcp` discovery + `/oauth/seal-mcp/jwks` verify. (OR retire the worker entirely + port its `src/tools/*` into Seal's in-Convex `POST /mcp` `handleMcpRequest`, crm-style — kills the worker's Clerk deps for good. Decide which.)
+> 2. **`resolveAuthContext` (api/context.ts):** route MCP bearer tokens → `resolveMcpAuth` instead of the Clerk `resolveJwtAuth`.
+> 3. **Deploy the OAuth server to PROD** `compassionate-robin-742` (where the worker points) + set its `BETTER_AUTH_*` env.
+> 4. **E2E the OAuth flow with a REAL MCP client** (authorize → PKCE → token → tool call). ⚠️ Do NOT flip prod MCP auth without this proof.
+> 5. **THEN delete** the Clerk `verifyToken`/`verifyOAuthAccessToken`/`resolveJwtAuth` path + `@clerk/backend` dep + `CLERK_*` env (`api/context.ts` + `apps/mcp-worker`).
+> Blueprint = crm `convex/mcpOAuth*.ts` + `apiContext.ts resolveMcpAuth`. After this, run **P8** (full E2E + fix `.test-env` + `emailVerification.required:true` + PR→staging). NOTE: `users.clerkId`/`organizations.clerkId` are KEPT (functional auth-subject key, ~30 sites) — later cosmetic rename→`authSubject`, not a drop.
+
 **Goal:** Completely replace Clerk with `@plasmapos/vortex-auth` (Better-Auth + Convex), test backend + UI, then remove Clerk entirely. End state matches **crm/plasma** (B2B, component-truth). Seal is web-only (Vite) + Convex.
 
 **Branch:** `feat/vortex-auth-p0-scaffold` off `staging` (Seal base = `staging`).
