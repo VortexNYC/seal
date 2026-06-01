@@ -150,7 +150,7 @@ export class ApiError extends Error {
       500: "Internal Server Error",
       503: "Service Unavailable",
     };
-    return titles[status] ?? "Error";
+    return titles[status] ?? "Unknown Error";
   }
 
   /**

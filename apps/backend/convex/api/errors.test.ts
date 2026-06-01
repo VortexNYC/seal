@@ -33,8 +33,8 @@ describe("ApiError", () => {
     expect(new ApiError(503, "down").title).toBe("Service Unavailable");
   });
 
-  it('falls back to "Error" for unknown status codes', () => {
-    expect(new ApiError(418, "teapot").title).toBe("Error");
+  it('falls back to "Unknown Error" for unknown status codes', () => {
+    expect(new ApiError(418, "teapot").title).toBe("Unknown Error");
   });
 
   it("stores field-level errors", () => {
