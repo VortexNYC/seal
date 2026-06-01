@@ -148,6 +148,27 @@ bunx turbo run test --filter=@seal/web
 bunx turbo run build --filter=@seal/landing
 ```
 
+## Scripts
+
+| Script         | Description                                                       |
+| -------------- | ----------------------------------------------------------------- |
+| `dev`          | Start main product stack (`@seal/backend`, `@seal/web`, `@seal/landing`) |
+| `build`        | Build all workspaces                                              |
+| `lint`         | Lint all workspaces                                               |
+| `lint:fix`     | Auto-fix lint issues with oxlint                                  |
+| `format`       | Format all files with oxfmt                                       |
+| `format:check` | Check formatting in all workspaces                                |
+| `typecheck`    | Type-check all workspaces                                         |
+| `knip`         | Detect unused files and exports across workspaces                 |
+| `knip:fix`     | Auto-fix unused files and exports                                 |
+| `verify`       | Run lint, format check, typecheck, and knip                       |
+| `test`         | Run tests in all workspaces                                       |
+| `clean`        | Remove build artifacts, caches, and node_modules                  |
+| `eval`         | Run promptfoo eval suite                                          |
+| `eval:redteam` | Run promptfoo redteam eval                                        |
+| `eval:all`     | Run both promptfoo eval suites                                    |
+| `eval:view`    | Open promptfoo results viewer                                     |
+
 ## E2E Testing
 
 Install Playwright browsers:
