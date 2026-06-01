@@ -1,10 +1,20 @@
 import { createBetterAuthConvexRuntime } from "@plasmapos/vortex-auth/better-auth/convex";
 import type { BetterAuthConvexRuntime } from "@plasmapos/vortex-auth/better-auth/convex";
+import {
+  createEmailVerificationEmailDraft,
+  createPasswordResetEmailDraft,
+} from "@plasmapos/vortex-auth/convex";
 
 import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { betterAuthConvexProvider } from "./auth.config";
 import { authComponent as consumerAuthComponent } from "./betterAuthClient";
+import { resendComponent } from "./emails/resend_component";
+
+/** Auth-email from-address (same source as Seal's transactional senders). */
+function authEmailFromAddress(): string {
+  return process.env.RESEND_FROM_EMAIL || "Seal <no-reply@seal.nyc>";
+}
 
 const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
   createBetterAuthConvexRuntime<DataModel>({
@@ -22,6 +32,33 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
     twoFactor: {
       enabled: true,
       issuer: "Seal",
+    },
+    // Send a verification email on sign-up; don't HARD-block sign-in on it
+    // yet (tighten `required` at P8 once the cutover flow is exercised).
+    emailVerification: {
+      sendOnSignUp: true,
+      required: false,
+    },
+    // Transport seam: the package owns POLICY (when/what kind + the tokenized
+    // url); Seal owns RENDER + SEND. Render with the package's shipped draft
+    // builders (no hand-rolled HTML — pile's lesson) and send via the same
+    // Resend component the rest of Seal's mail uses.
+    sendEmail: async ({ ctx, kind, to, url }) => {
+      const from = authEmailFromAddress();
+      const draft =
+        kind === "verify-email"
+          ? createEmailVerificationEmailDraft({ from, to, verifyUrl: url })
+          : createPasswordResetEmailDraft({ from, to, resetUrl: url });
+      if ("status" in draft) {
+        // not_configured (missing from/url) — log loudly, don't silently drop.
+        console.error(`[auth-email] ${kind} not sent to ${to}: ${draft.reason}`);
+        return;
+      }
+      // Better Auth invokes sendEmail inside a mutation-capable handler ctx;
+      // the seam types it as the broad GenericCtx, so narrow to the resend
+      // sender's expected ctx (which needs runMutation).
+      const sendCtx = ctx as unknown as Parameters<typeof resendComponent.sendEmail>[0];
+      await resendComponent.sendEmail(sendCtx, draft);
     },
     // Captcha is a PROVEN opt-in capability (Cloudflare Turnstile,
     // sign-up/reset scoped). Kept DISABLED on the shared dev deployment
