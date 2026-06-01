@@ -1,57 +1,36 @@
 /**
  * Profile Settings Page - Security
  *
- * User security settings using Clerk's UserProfile component (Security tab)
+ * Account security overview. Password reset runs through the email flow
+ * (Better-Auth); two-factor enrollment UI is wired in a follow-up (2FA is
+ * opt-in and not yet enabled for Seal).
  * Route: /{slug}/settings/profile/security
  */
 
-import { UserProfile } from "@clerk/clerk-react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/profile/security")({
   component: SecuritySettings,
 });
 
 function SecuritySettings() {
-  useEffect(() => {
-    // Wait for the component to mount, then click the security button
-    const timer = setTimeout(() => {
-      const buttons = document.querySelectorAll(".cl-navbarButton");
-      // Security is typically the second button (index 1)
-      const securityButton = buttons[1] as HTMLButtonElement;
-      if (securityButton) {
-        securityButton.click();
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
-    <div>
-      <style>
-        {`
-          /* Hide the entire navbar/sidebar */
-          .cl-navbar,
-          .cl-userProfile__navbar {
-            display: none !important;
-          }
-
-          /* Add padding to the left side of the content area */
-          .cl-pageScrollBox,
-          .cl-userProfile__pageScrollBox {
-            padding-left: 2rem !important;
-          }
-        `}
-      </style>
-      <UserProfile
-        appearance={{
-          elements: {
-            cardBox: "!shadow-sm !bg-card !rounded-xl !border",
-          },
-        }}
-      />
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Security</CardTitle>
+          <CardDescription>Manage your account security.</CardDescription>
+        </CardHeader>
+        <CardContent className="text-muted-foreground space-y-2 text-sm">
+          <p>
+            To change your password, sign out and use the “Forgot password” link on the sign-in
+            page — we’ll email you a secure reset link.
+          </p>
+          <p>Two-factor authentication will be available here soon.</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -379,8 +380,8 @@ function buildTeamOptions({
 export function AppSidebar({ slug, organization, permissions, ...props }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useUser();
-  const { signOut } = useClerk();
+  const { user } = useCurrentUser();
+  const { signOut } = useAppAuthActions();
   const { reset: resetAnalytics } = useAnalytics();
   const organizations = useQuery(api.check_membership.listUserOrganizations);
   const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
@@ -390,7 +391,7 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
   // Wrapper to reset PostHog identity before signing out
   const handleSignOut = React.useCallback(async () => {
     resetAnalytics();
-    await signOut();
+    await signOut({ redirectUrl: "/sign-in" });
   }, [resetAnalytics, signOut]);
 
   const teamOptions = React.useMemo(

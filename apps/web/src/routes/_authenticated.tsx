@@ -1,10 +1,12 @@
-// Authenticated layout: gates all child routes behind Clerk auth + org membership.
-import { SignedIn, SignedOut, useOrganization, useUser } from "@clerk/clerk-react";
+// Authenticated layout: gates all child routes behind vortex-auth + org membership.
 import * as Sentry from "@sentry/react";
 import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
 
+import Loader from "@/components/loader";
 import { EnforceOrganization } from "@/components/enforce-organization";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useAppAuth } from "@/lib/auth-runtime.better-auth";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -17,8 +19,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function SentryUserContext() {
-  const { user } = useUser();
-  const { organization } = useOrganization();
+  const { user } = useCurrentUser();
 
   useEffect(() => {
     if (user) {
@@ -26,31 +27,36 @@ function SentryUserContext() {
         id: user.id,
         email: user.primaryEmailAddress?.emailAddress,
       });
-      if (organization) {
-        Sentry.setTag("organization_id", organization.id);
-        Sentry.setTag("organization_name", organization.name);
-      }
     }
     return () => {
       Sentry.setUser(null);
     };
-  }, [user, organization]);
+  }, [user]);
 
   return null;
 }
 
 function AuthenticatedLayout() {
+  const { isLoaded, isSignedIn } = useAppAuth();
+
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <Navigate to="/sign-in" />;
+  }
+
   return (
     <>
-      <SignedOut>
-        <Navigate to="/sign-in" />
-      </SignedOut>
-      <SignedIn>
-        <SentryUserContext />
-        <EnforceOrganization>
-          <Outlet />
-        </EnforceOrganization>
-      </SignedIn>
+      <SentryUserContext />
+      <EnforceOrganization>
+        <Outlet />
+      </EnforceOrganization>
     </>
   );
 }

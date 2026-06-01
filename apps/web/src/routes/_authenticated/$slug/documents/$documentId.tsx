@@ -1,6 +1,7 @@
-import { useUser } from "@clerk/clerk-react";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
+
+import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { type ErrorComponentProps, createFileRoute, useRouter } from "@tanstack/react-router";

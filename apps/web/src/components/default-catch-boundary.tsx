@@ -1,4 +1,3 @@
-import { useClerk } from "@clerk/clerk-react";
 import * as Sentry from "@sentry/react";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Link, rootRouteId, useMatch, useRouter } from "@tanstack/react-router";
@@ -7,6 +6,7 @@ import { useEffect, useRef } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
 import {
   Card,
   CardContent,
@@ -18,7 +18,7 @@ import {
 
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
   const router = useRouter();
-  const { signOut } = useClerk();
+  const { signOut } = useAppAuthActions();
   const cardRef = useRef<HTMLDivElement>(null);
   const isRoot = useMatch({
     strict: false,
@@ -109,7 +109,11 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
             </Button>
           )}
 
-          <Button onClick={() => void signOut()} className="w-full sm:w-auto" variant="ghost">
+          <Button
+            onClick={() => void signOut({ redirectUrl: "/sign-in" })}
+            className="w-full sm:w-auto"
+            variant="ghost"
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Sign Out
           </Button>

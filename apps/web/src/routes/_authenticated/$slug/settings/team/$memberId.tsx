@@ -1,6 +1,7 @@
-import { useUser } from "@clerk/clerk-react";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+
+import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAction, useQuery } from "convex/react";
 import { ArrowLeft, Calendar, Mail, Shield, Trash2 } from "lucide-react";

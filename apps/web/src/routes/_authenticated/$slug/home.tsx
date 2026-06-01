@@ -8,8 +8,9 @@
  * Route: /{slug}/home
  */
 
-import { useUser } from "@clerk/clerk-react";
 import { api } from "@seal/backend/convex/_generated/api";
+
+import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
