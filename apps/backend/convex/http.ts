@@ -17,6 +17,10 @@
  * ```
  */
 
+import {
+  createMcpOAuthAccessRuntime,
+  createMcpOAuthHttpHandlers,
+} from "@plasmapos/vortex-auth/mcp";
 import { httpRouter } from "convex/server";
 import Stripe from "stripe";
 
@@ -36,6 +40,34 @@ import {
   validateRequiredFields,
 } from "./api";
 import { ApiError } from "./api/errors";
+import { resolveMcpAuth, requireMcpScope, type McpAuthContext } from "./api/context";
+import { validateRequestedOAuthScopes } from "./mcpOAuthAuthorization";
+import {
+  MCP_OAUTH_ALLOWED_SCOPES,
+  MCP_OAUTH_AUDIENCE,
+  MCP_OAUTH_AUTHORIZE_PATH,
+  MCP_OAUTH_AUTHORIZATION_SERVER_METADATA_PATH,
+  MCP_OAUTH_JWKS_PATH,
+  MCP_OAUTH_MCP_PATH,
+  MCP_OAUTH_PROTECTED_RESOURCE_METADATA_PATH,
+  MCP_OAUTH_REGISTRATION_PATH,
+  MCP_OAUTH_RESOURCE_ID,
+  MCP_OAUTH_TOKEN_PATH,
+  buildAuthorizationServerMetadata,
+  buildProtectedResourceMetadata,
+  resolveMcpOAuthOrigin,
+} from "./mcpOAuth";
+import {
+  requireAccessibleOrganization,
+  requireAllowedRedirectUri,
+  requireAllowedScopes,
+  requireKnownClient,
+} from "./mcpOAuthAuth";
+import {
+  buildBetterAuthTokenIdentifier,
+  getBetterAuthIdentityIssuer,
+  getBetterAuthIdentityProvider,
+} from "./lib/authIdentities";
 import { resendComponent } from "./emails/resend_component";
 import { processStripeConnectWebhookEvent } from "./stripe/connect_webhook_handlers";
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
@@ -68,6 +100,362 @@ const http = httpRouter();
 
 // Mount Better-Auth routes (/api/auth/*) from vortex-auth.
 registerAuthRoutes(http);
+
+// ===========================================================================
+// MCP OAuth (Better-Auth) authorization server — ADDITIVE
+//
+// Stands up the Better-Auth-backed MCP OAuth server (metadata, JWKS, authorize,
+// token, dynamic client registration, and the /mcp tool endpoint). Runs in
+// PARALLEL with the existing Clerk MCP/JWT path; nothing else in this file is
+// touched. Mirrors crm's wiring, adapted to Seal's scopes + tools.
+// ===========================================================================
+
+type McpHttpActionCtx = Parameters<Parameters<typeof httpAction>[0]>[0];
+
+function mcpJson(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function createMcpOAuthAccessRuntimeForCtx(ctx: McpHttpActionCtx) {
+  return createMcpOAuthAccessRuntime({
+    resolveIdentityForUser: async (betterAuthUserId) => {
+      const issuer = getBetterAuthIdentityIssuer();
+      return await ctx.runQuery(internal.apiAuth.getUserByIdentityForApiAuth, {
+        provider: getBetterAuthIdentityProvider(),
+        issuer,
+        subject: betterAuthUserId,
+        tokenIdentifier: buildBetterAuthTokenIdentifier(betterAuthUserId, issuer),
+      });
+    },
+    getAccessibleOrganizations: async (userId) =>
+      await ctx.runQuery(internal.apiAuth.getAccessibleOrganizationsForApiAuth, { userId }),
+    getOrganizationAccess: async ({ userId, requestedOrganizationId, organizationHintId }) =>
+      await ctx.runQuery(internal.apiAuth.getOrganizationAccessForApiAuth, {
+        userId,
+        requestedOrganizationId: (requestedOrganizationId as Id<"organizations"> | null) ?? null,
+        organizationHintId: (organizationHintId as Id<"organizations"> | null) ?? null,
+      }),
+    normalizeScopes: (requestedScopes) => requireAllowedScopes(requestedScopes),
+    validateScopes: ({ permissions, requestedScopes }) =>
+      validateRequestedOAuthScopes({
+        permissions: [...permissions],
+        requestedScopes: requireAllowedScopes(requestedScopes),
+      }),
+    requireAccessibleOrganization: (organizationId) =>
+      requireAccessibleOrganization((organizationId as Id<"organizations"> | null) ?? null),
+    signAccessToken: async ({ betterAuthUserId, clientId, organizationId, scopes, audience }) =>
+      await ctx.runAction(internal.mcpOAuthNode.signAccessToken, {
+        betterAuthUserId,
+        clientId,
+        organizationId: organizationId as Id<"organizations">,
+        scopes: [...requireAllowedScopes(scopes)],
+        audience,
+      }),
+  });
+}
+
+async function createStoredMcpAuthorizationCode(
+  ctx: McpHttpActionCtx,
+  input: {
+    code: string;
+    clientId: string;
+    redirectUri: string;
+    betterAuthUserId: string;
+    organizationId: string;
+    scopes: readonly string[];
+    codeChallenge: string;
+    codeChallengeMethod: "S256";
+    state?: string;
+    audience: string;
+    resourceId: string;
+    expiresAt: number;
+  },
+): Promise<void> {
+  await ctx.runMutation(internal.mcpOAuthAuth.createAuthorizationCode, {
+    code: input.code,
+    clientId: input.clientId,
+    redirectUri: input.redirectUri,
+    betterAuthUserId: input.betterAuthUserId,
+    organizationId: input.organizationId as Id<"organizations">,
+    scopes: requireAllowedScopes(input.scopes),
+    codeChallenge: input.codeChallenge,
+    codeChallengeMethod: input.codeChallengeMethod,
+    state: input.state,
+    audience: input.audience,
+    resourceId: input.resourceId,
+    expiresAt: input.expiresAt,
+  });
+}
+
+function createBoundMcpOAuthHttpHandlers(ctx: McpHttpActionCtx) {
+  const accessRuntime = createMcpOAuthAccessRuntimeForCtx(ctx);
+  return createMcpOAuthHttpHandlers({
+    authorize: {
+      defaultAudience: MCP_OAUTH_AUDIENCE,
+      defaultResourceId: MCP_OAUTH_RESOURCE_ID,
+      allowTestingExpiresInMs: process.env.ENABLE_DEVELOPMENT_TESTING_MUTATIONS === "true",
+      resolveClient: async (clientId) => {
+        return requireKnownClient(
+          await ctx.runQuery(internal.mcpOAuthAuth.resolveClient, { clientId }),
+        );
+      },
+      requireAllowedRedirectUri,
+      resolveRequestedScopes: (scope) => requireAllowedScopes(scope.split(" ").filter(Boolean)),
+      resolveSessionFromToken: async (sessionToken) => {
+        return await ctx.runQuery(internal.mcpOAuthAuth.resolveBetterAuthSessionFromToken, {
+          sessionToken,
+        });
+      },
+      resolveIdentityForSession: accessRuntime.resolveIdentityForSession,
+      authorize: accessRuntime.authorize,
+      createAuthorizationCode: async (input) => {
+        await createStoredMcpAuthorizationCode(ctx, input);
+      },
+    },
+    clientRegistration: {
+      supportedScopes: MCP_OAUTH_ALLOWED_SCOPES,
+      createDynamicClient: async (input) => {
+        return await ctx.runMutation(internal.mcpOAuthAuth.createDynamicClient, {
+          clientName: input.clientName,
+          redirectUris: [...input.redirectUris],
+          scope: input.scope ?? undefined,
+          tokenEndpointAuthMethod: input.tokenEndpointAuthMethod ?? undefined,
+          grantTypes: input.grantTypes ? [...input.grantTypes] : undefined,
+          responseTypes: input.responseTypes ? [...input.responseTypes] : undefined,
+          softwareId: input.softwareId ?? undefined,
+          softwareVersion: input.softwareVersion ?? undefined,
+        });
+      },
+    },
+    token: {
+      resolveClient: async (clientId) => {
+        return await ctx.runQuery(internal.mcpOAuthAuth.resolveClient, { clientId });
+      },
+      consumeAuthorizationCode: async (input) => {
+        return await ctx.runMutation(internal.mcpOAuthAuth.consumeAuthorizationCode, input);
+      },
+      redeemRefreshToken: async ({ client, refreshGrant }) => {
+        return await ctx.runMutation(internal.mcpOAuthAuth.redeemRefreshToken, {
+          clientId: client.clientId,
+          refreshToken: refreshGrant.refreshToken,
+          requestedScopes:
+            refreshGrant.requestedScopes.length > 0
+              ? requireAllowedScopes(refreshGrant.requestedScopes)
+              : undefined,
+        });
+      },
+      signAccessToken: accessRuntime.signAccessToken,
+      issueRefreshToken: async (input) => {
+        return await ctx.runMutation(internal.mcpOAuthAuth.issueRefreshToken, {
+          clientId: input.clientId,
+          betterAuthUserId: input.betterAuthUserId,
+          organizationId: input.organizationId as Id<"organizations">,
+          scopes: requireAllowedScopes(input.scopes),
+          audience: input.audience,
+          resourceId: input.resourceId,
+        });
+      },
+    },
+  });
+}
+
+function parseMcpBearerToken(request: Request): string | null {
+  const authorization = request.headers.get("authorization");
+  if (!authorization?.startsWith("Bearer ")) {
+    return null;
+  }
+  return authorization.slice("Bearer ".length);
+}
+
+type McpRequestBody = {
+  id?: string | number | null;
+  method?: string;
+  params?: Record<string, unknown>;
+};
+
+function mcpJsonRpcResult(id: string | number | null | undefined, payload: unknown): Response {
+  return mcpJson(200, {
+    jsonrpc: "2.0",
+    id: id ?? null,
+    result: {
+      content: [{ type: "text", text: JSON.stringify(payload) }],
+    },
+  });
+}
+
+async function handleMcpGetCurrentOrganization(
+  ctx: McpHttpActionCtx,
+  auth: McpAuthContext,
+  body: McpRequestBody,
+): Promise<Response> {
+  requireMcpScope(auth, API_SCOPES.MEMBERS_READ);
+
+  const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
+    organizationId: auth.organizationId,
+  });
+  if (organization === null) {
+    return mcpJson(404, { error: "organization_not_found" });
+  }
+
+  return mcpJsonRpcResult(body.id, {
+    id: organization._id,
+    name: organization.name,
+    slug: organization.slug,
+    status: organization.status ?? null,
+  });
+}
+
+async function handleMcpListDocuments(
+  ctx: McpHttpActionCtx,
+  auth: McpAuthContext,
+  body: McpRequestBody,
+): Promise<Response> {
+  requireMcpScope(auth, API_SCOPES.DOCUMENTS_READ);
+
+  const result = await ctx.runQuery(internal.api.v1.documents.listDocuments, {
+    userId: auth.userId,
+    organizationId: auth.organizationId,
+    limit: 20,
+  });
+
+  return mcpJsonRpcResult(body.id, {
+    documents: result.documents,
+    hasMore: result.hasMore,
+    nextCursor: result.nextCursor ?? null,
+  });
+}
+
+async function handleMcpListTemplates(
+  ctx: McpHttpActionCtx,
+  auth: McpAuthContext,
+  body: McpRequestBody,
+): Promise<Response> {
+  requireMcpScope(auth, API_SCOPES.TEMPLATES_READ);
+
+  const result = await ctx.runQuery(internal.api.v1.templates.listTemplates, {
+    userId: auth.userId,
+    organizationId: auth.organizationId,
+    limit: 20,
+  });
+
+  return mcpJsonRpcResult(body.id, {
+    templates: result.templates,
+    hasMore: result.hasMore,
+    nextCursor: result.nextCursor ?? null,
+  });
+}
+
+async function handleMcpRequest(ctx: McpHttpActionCtx, request: Request): Promise<Response> {
+  const accessToken = parseMcpBearerToken(request);
+  if (!accessToken) {
+    return mcpJson(401, { error: "missing_bearer_token" });
+  }
+
+  const verified = await ctx.runAction(internal.mcpOAuthNode.verifyAccessToken, {
+    accessToken,
+    audience: MCP_OAUTH_AUDIENCE,
+  });
+  if (!verified.betterAuthUserId || !verified.azp || !verified.orgId) {
+    return mcpJson(401, { error: "invalid_token" });
+  }
+
+  const auth = await resolveMcpAuth(ctx, {
+    session: {
+      accessToken,
+      clientId: verified.azp,
+      scopes: verified.scope,
+      userId: verified.betterAuthUserId,
+    },
+    requestedOrganizationId: verified.orgId as Id<"organizations">,
+    audience: MCP_OAUTH_AUDIENCE,
+    resourceId: MCP_OAUTH_RESOURCE_ID,
+    resourceType: "mcp.tool",
+  });
+
+  const body = (await request.json()) as McpRequestBody;
+
+  if (body.method === "seal.get_current_organization") {
+    return await handleMcpGetCurrentOrganization(ctx, auth, body);
+  }
+  if (body.method === "seal.list_documents") {
+    return await handleMcpListDocuments(ctx, auth, body);
+  }
+  if (body.method === "seal.list_templates") {
+    return await handleMcpListTemplates(ctx, auth, body);
+  }
+
+  return mcpJson(404, { error: "unknown_tool" });
+}
+
+http.route({
+  path: MCP_OAUTH_AUTHORIZATION_SERVER_METADATA_PATH,
+  method: "GET",
+  handler: httpAction(async (_ctx, request) => {
+    const origin = resolveMcpOAuthOrigin(request);
+    return mcpJson(200, buildAuthorizationServerMetadata(origin));
+  }),
+});
+
+http.route({
+  path: MCP_OAUTH_PROTECTED_RESOURCE_METADATA_PATH,
+  method: "GET",
+  handler: httpAction(async (_ctx, request) => {
+    const origin = resolveMcpOAuthOrigin(request);
+    return mcpJson(200, buildProtectedResourceMetadata(origin));
+  }),
+});
+
+http.route({
+  path: MCP_OAUTH_JWKS_PATH,
+  method: "GET",
+  handler: httpAction(async (ctx) =>
+    mcpJson(200, await ctx.runAction(internal.mcpOAuthNode.getPublicJwks, {})),
+  ),
+});
+
+http.route({
+  path: MCP_OAUTH_AUTHORIZE_PATH,
+  method: "GET",
+  handler: httpAction(
+    async (ctx, request) =>
+      await createBoundMcpOAuthHttpHandlers(ctx).handleAuthorizeRequest(request),
+  ),
+});
+
+http.route({
+  path: MCP_OAUTH_REGISTRATION_PATH,
+  method: "POST",
+  handler: httpAction(
+    async (ctx, request) =>
+      await createBoundMcpOAuthHttpHandlers(ctx).handleClientRegistrationRequest(request),
+  ),
+});
+
+http.route({
+  path: MCP_OAUTH_TOKEN_PATH,
+  method: "POST",
+  handler: httpAction(
+    async (ctx, request) => await createBoundMcpOAuthHttpHandlers(ctx).handleTokenRequest(request),
+  ),
+});
+
+http.route({
+  path: MCP_OAUTH_MCP_PATH,
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      return await handleMcpRequest(ctx, request);
+    } catch (error) {
+      return mcpJson(400, {
+        error: "invalid_request",
+        error_description: error instanceof Error ? error.message : "Unknown MCP error",
+      });
+    }
+  }),
+});
 
 http.route({
   path: "/stripe-webhook",

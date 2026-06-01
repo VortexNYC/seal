@@ -12,7 +12,22 @@
  */
 
 import { verifyToken } from "@clerk/backend";
-import { resolveStoredApiKeyCredential } from "@plasmapos/vortex-auth/convex";
+import {
+  createBetterAuthApiTokenVerifierFromConvexAuthConfig,
+  createConvexAuthConfig,
+} from "@plasmapos/vortex-auth/better-auth";
+import {
+  ApiAuthError,
+  createConvexApiAuthLookupAdapter,
+  type McpSessionLike,
+  resolveAuthorizedApiAuthContext,
+  resolveLinkedBetterAuthMcpSession,
+  resolveStoredApiKeyCredential,
+} from "@plasmapos/vortex-auth/convex";
+import {
+  buildBetterAuthTokenIdentifier,
+  getBetterAuthIdentityProvider,
+} from "../lib/authIdentities";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -695,4 +710,188 @@ export function requireAnyScope(auth: ApiAuthContext, scopes: ApiScope[]): void 
       "INSUFFICIENT_SCOPE",
     );
   }
+}
+
+// ===========================================================================
+// MCP OAuth (Better-Auth) — ADDITIVE
+//
+// New auth path for the Better-Auth-backed MCP OAuth authorization server
+// (convex/mcpOAuth*.ts + http.ts MCP routes). Runs in PARALLEL with the
+// existing Clerk JWT/API-key path above; nothing above this line is touched.
+//
+// A signed MCP access token carries the better-auth user id, client id, org
+// id, and scopes. `resolveMcpAuth` links that better-auth user back to a Seal
+// user + active org via the vortexAuth identity component (apiAuth.ts), then
+// authorizes org access via the package resolver. Returns a dedicated
+// `McpAuthContext` consumed by the MCP tool dispatch — separate from the
+// Clerk-shaped `ApiAuthContext` to avoid disturbing existing call sites.
+// ===========================================================================
+
+export interface McpAuthContext {
+  authType: "mcp_oauth";
+  scopes: string[];
+  userId: Id<"users">;
+  organizationId: Id<"organizations">;
+  betterAuthUserId: string;
+  role: string;
+  permissions: string[];
+  hasScope: (scope: string) => boolean;
+  hasPermission: (permission: string) => boolean;
+}
+
+export interface ResolveMcpAuthArgs {
+  session: McpSessionLike | null | undefined;
+  requestedOrganizationId?: Id<"organizations"> | null;
+  resourceType?: string;
+  resourceId?: string;
+  audience?: string | null;
+}
+
+type BetterAuthRuntime = {
+  issuer: string;
+  verifier: ReturnType<typeof createBetterAuthApiTokenVerifierFromConvexAuthConfig>;
+};
+
+let betterAuthRuntime: BetterAuthRuntime | null = null;
+
+function getBetterAuthRuntime(): BetterAuthRuntime {
+  if (betterAuthRuntime !== null) {
+    return betterAuthRuntime;
+  }
+
+  // Single-origin: this deployment signs AND validates its own tokens, issuer
+  // derived from CONVEX_SITE_URL. No process.env in the factory (matches
+  // auth.config.ts) so deploy-time auth-config analysis stays clean.
+  const provider = createConvexAuthConfig();
+
+  betterAuthRuntime = {
+    issuer: provider.issuer,
+    verifier: createBetterAuthApiTokenVerifierFromConvexAuthConfig(provider),
+  };
+
+  return betterAuthRuntime;
+}
+
+function createApiAuthLookupAdapter(ctx: ActionCtx) {
+  return createConvexApiAuthLookupAdapter({
+    runQuery: async (reference, args) => {
+      return await ctx.runQuery(
+        reference as
+          | typeof internal.apiAuth.getUserByIdentityForApiAuth
+          | typeof internal.apiAuth.getOrganizationAccessForApiAuth,
+        args as
+          | {
+              provider: string;
+              issuer: string;
+              subject: string;
+              tokenIdentifier: string;
+            }
+          | {
+              userId: string;
+              requestedOrganizationId: string | null;
+              organizationHintId: string | null;
+            },
+      );
+    },
+    refs: {
+      getUserByIdentity: internal.apiAuth.getUserByIdentityForApiAuth,
+      getOrganizationAccess: internal.apiAuth.getOrganizationAccessForApiAuth,
+    },
+  });
+}
+
+async function authorizeMcpOrganizationAccess(
+  ctx: ActionCtx,
+  args: {
+    userId: Id<"users">;
+    organizationId: Id<"organizations">;
+  },
+): Promise<{ role: string; permissions: string[] } | null> {
+  const membershipAccess = await ctx.runQuery(
+    internal.apiAuth.getOrganizationMembershipAccessForApiAuth,
+    {
+      userId: args.userId,
+      organizationId: args.organizationId,
+    },
+  );
+  if (!membershipAccess) {
+    return null;
+  }
+  return { role: membershipAccess.role, permissions: membershipAccess.permissions };
+}
+
+/**
+ * Resolve a signed MCP OAuth session (better-auth user + org + scopes) to a
+ * fully-authorized Seal MCP auth context. ADDITIVE — does not touch the Clerk
+ * `resolveAuthContext` / `resolveJwtAuth` / `resolveApiAuth` path above.
+ */
+export async function resolveMcpAuth(
+  ctx: ActionCtx,
+  args: ResolveMcpAuthArgs,
+): Promise<McpAuthContext> {
+  try {
+    const { issuer } = getBetterAuthRuntime();
+    const resolved = await resolveLinkedBetterAuthMcpSession({
+      session: args.session,
+      provider: getBetterAuthIdentityProvider(),
+      issuer,
+      buildTokenIdentifier: buildBetterAuthTokenIdentifier,
+      adapter: createApiAuthLookupAdapter(ctx),
+      requestedOrganizationId: args.requestedOrganizationId ?? null,
+      audience: args.audience ?? "seal-mcp",
+      resourceType: args.resourceType ?? "mcp.tool",
+      resourceId: args.resourceId ?? "seal:mcp",
+    });
+
+    const authorized = await resolveAuthorizedApiAuthContext({
+      auth: resolved.provisionalContext,
+      authType: "oauth",
+      authSubject: resolved.betterAuthUserId,
+      userId: resolved.userId,
+      organizationId: resolved.organizationId,
+      authorizeOrganizationAccess: async ({ userId, organizationId }) =>
+        await authorizeMcpOrganizationAccess(ctx, {
+          userId: userId as Id<"users">,
+          organizationId: organizationId as Id<"organizations">,
+        }),
+    });
+
+    if (authorized === null) {
+      throw new ApiError(403, "No active organization available", "ORGANIZATION_ACCESS_DENIED");
+    }
+
+    return {
+      authType: "mcp_oauth",
+      scopes: authorized.scopes,
+      userId: authorized.userId as Id<"users">,
+      organizationId: authorized.organizationId as Id<"organizations">,
+      betterAuthUserId: resolved.betterAuthUserId,
+      role: authorized.role,
+      permissions: authorized.permissions,
+      hasScope: (scope: string) => authorized.scopes.includes(scope),
+      hasPermission: (permission: string) => authorized.permissions.includes(permission),
+    };
+  } catch (error) {
+    if (error instanceof ApiAuthError) {
+      throw new ApiError(401, error.message, "INVALID_JWT");
+    }
+    throw error;
+  }
+}
+
+/**
+ * Scope gate for the MCP path. The signed token's scopes are the source of
+ * truth; if absent, fall back to the user's component-derived permissions.
+ */
+export function requireMcpScope(auth: McpAuthContext, scope: ApiScope): void {
+  if (auth.hasScope(scope)) {
+    return;
+  }
+  if (isFullAccessRole(auth.role)) {
+    return;
+  }
+  if (canUserUseScope(auth.permissions, scope)) {
+    return;
+  }
+  throw new ApiError(403, `Missing required scope: ${scope}`, "INSUFFICIENT_SCOPE");
 }
