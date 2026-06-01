@@ -11,7 +11,8 @@
  * @see {@link https://clerk.com/docs/guides/development/machine-auth/api-keys} Clerk API Keys
  */
 
-import { createClerkClient, verifyToken } from "@clerk/backend";
+import { verifyToken } from "@clerk/backend";
+import { resolveStoredApiKeyCredential } from "@plasmapos/vortex-auth/convex";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -69,28 +70,7 @@ export function isIpAllowed(ip: string, allowlist: string[]): boolean {
 }
 
 /**
- * Clerk client instance for API key operations.
- * Created lazily on first use.
- */
-let clerkClient: ReturnType<typeof createClerkClient> | null = null;
-
-/**
- * Gets or creates the Clerk client instance.
- */
-function getClerkClient(): ReturnType<typeof createClerkClient> {
-  if (!clerkClient) {
-    const secretKey = process.env.CLERK_SECRET_KEY;
-    if (!secretKey) {
-      throw new ApiError(500, "Clerk secret key not configured", "INTERNAL_ERROR");
-    }
-    clerkClient = createClerkClient({ secretKey });
-  }
-  return clerkClient;
-}
-
-/**
  * API-specific authentication context.
- * Bridges Clerk API key to internal user/org context.
  *
  * @interface ApiAuthContext
  */
@@ -102,14 +82,6 @@ type ClerkJwtPayload = Record<string, unknown> & {
   orgId?: string;
   scope?: string;
   scp?: string[];
-};
-
-type VerifiedApiKey = {
-  id: string;
-  name: string;
-  subject: string;
-  scopes?: string[];
-  claims?: Record<string, unknown>;
 };
 
 export interface ApiAuthContext {
@@ -302,97 +274,6 @@ function extractScopesFromJwt(payload: ClerkJwtPayload): string[] {
   return [];
 }
 
-async function verifyApiKey(token: string): Promise<VerifiedApiKey> {
-  const clerk = getClerkClient();
-
-  try {
-    return await (
-      clerk as unknown as {
-        apiKeys: {
-          verify: (value: string) => Promise<VerifiedApiKey>;
-        };
-      }
-    ).apiKeys.verify(token);
-  } catch (error) {
-    console.error("[resolveApiAuth] Clerk verification failed:", error);
-    throw new ApiError(401, "Invalid or expired API key", "INVALID_API_KEY");
-  }
-}
-
-async function resolveOrganizationKeySubject(
-  ctx: ActionCtx,
-  apiKey: VerifiedApiKey,
-): Promise<{
-  organizationId: Id<"organizations">;
-  userId: Id<"users">;
-  clerkUserId: string;
-}> {
-  const organization = await ctx.runQuery(internal.api.helpers.getOrgByClerkId, {
-    clerkOrgId: apiKey.subject,
-  });
-  if (!organization) {
-    throw new ApiError(403, "Organization not found", "ORGANIZATION_NOT_FOUND");
-  }
-
-  const creatorClerkId = apiKey.claims?.creator_user_id;
-  if (typeof creatorClerkId === "string") {
-    const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
-      clerkUserId: creatorClerkId,
-    });
-    if (!user) {
-      throw new ApiError(403, "API key creator not found", "USER_NOT_FOUND");
-    }
-
-    return {
-      organizationId: organization._id,
-      userId: user._id,
-      clerkUserId: creatorClerkId,
-    };
-  }
-
-  const owner = await ctx.runQuery(internal.api.helpers.getOrganizationOwner, {
-    organizationId: organization._id,
-  });
-  if (!owner) {
-    throw new ApiError(403, "Organization owner not found", "USER_NOT_FOUND");
-  }
-
-  return {
-    organizationId: organization._id,
-    userId: owner._id,
-    clerkUserId: owner.clerkId,
-  };
-}
-
-async function resolveUserKeySubject(
-  ctx: ActionCtx,
-  clerkUserId: string,
-): Promise<{
-  organizationId: Id<"organizations">;
-  userId: Id<"users">;
-  clerkUserId: string;
-}> {
-  const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
-    clerkUserId,
-  });
-  if (!user) {
-    throw new ApiError(403, "User not found", "USER_NOT_FOUND");
-  }
-  if (!user.activeOrganizationId) {
-    throw new ApiError(
-      403,
-      "User has no active organization. Set an active organization before using the API.",
-      "ORGANIZATION_ACCESS_DENIED",
-    );
-  }
-
-  return {
-    organizationId: user.activeOrganizationId,
-    userId: user._id,
-    clerkUserId,
-  };
-}
-
 function getOrgIdClaim(payload: ClerkJwtPayload): string | undefined {
   return typeof payload.org_id === "string"
     ? payload.org_id
@@ -561,15 +442,23 @@ export async function resolveApiAuth(
   clientIp?: string,
 ): Promise<ApiAuthContext> {
   const token = parseBearerToken(authHeader);
-  const apiKey = await verifyApiKey(token);
-  const isOrgKey = apiKey.subject.startsWith("org_");
-  const resolvedIdentity = isOrgKey
-    ? await resolveOrganizationKeySubject(ctx, apiKey)
-    : await resolveUserKeySubject(ctx, apiKey.subject);
+
+  // Verify against the vortexAuth COMPONENT (prefix lookup + secret hash +
+  // status/expiry), replacing Clerk's apiKeys.verify. The component key maps
+  // back to Seal org/user anchors via the internal query.
+  const result = await resolveStoredApiKeyCredential({
+    token,
+    findByKeyPrefix: async (keyPrefix) =>
+      await ctx.runQuery(internal.api_keys.keys.getApiKeyByPrefix, { keyPrefix }),
+  });
+  if (!result.ok) {
+    throw new ApiError(401, "Invalid or expired API key", "INVALID_API_KEY");
+  }
+  const apiKey = result.apiKey;
 
   // Tier check: Free-tier organizations cannot use the API
   const { plan } = await ctx.runQuery(internal.auth.subscription_helpers.checkProFeature, {
-    organizationId: resolvedIdentity.organizationId,
+    organizationId: apiKey.organizationId,
   });
   if (plan === "free") {
     throw new ApiError(403, "API access requires a Professional plan", "API_ACCESS_DISABLED");
@@ -577,13 +466,13 @@ export async function resolveApiAuth(
 
   return buildAuthContext(ctx, {
     authType: "api_key",
-    apiKeyId: apiKey.id,
+    apiKeyId: apiKey._id,
     apiKeyName: apiKey.name,
-    scopes: apiKey.scopes ?? [],
-    userId: resolvedIdentity.userId,
-    organizationId: resolvedIdentity.organizationId,
-    clerkUserId: resolvedIdentity.clerkUserId,
-    subjectType: isOrgKey ? "organization" : "user",
+    scopes: apiKey.scopes,
+    userId: apiKey.userId,
+    organizationId: apiKey.organizationId,
+    clerkUserId: apiKey.clerkUserId,
+    subjectType: "user",
     clientIp,
   });
 }

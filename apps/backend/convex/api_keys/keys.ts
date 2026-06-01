@@ -11,9 +11,10 @@ import {
 } from "@plasmapos/vortex-auth/convex";
 import { ConvexError, v } from "convex/values";
 
-import { mutation, query } from "../_generated/server";
+import { internalQuery, mutation, query } from "../_generated/server";
 import { getAuthContext } from "../auth";
 import {
+  getComponentApiKeyByPrefix,
   listComponentApiKeysByOrganization,
   type ComponentResolvedApiKey,
 } from "../lib/componentOrgReads";
@@ -91,6 +92,35 @@ export const listApiKeys = query({
       scopes: k.scopes,
       revoked: k.status === "revoked",
     }));
+  },
+});
+
+/**
+ * Internal: resolve a component API key by its key prefix, plus the owner's
+ * clerkId (clerkUserId is needed by the API auth-context builder during the
+ * migration). Returns the StoredApiKeyCredential-compatible shape for the
+ * package's resolveStoredApiKeyCredential verifier, or null when not found.
+ */
+export const getApiKeyByPrefix = internalQuery({
+  args: { keyPrefix: v.string() },
+  handler: async (ctx, args) => {
+    const apiKey = await getComponentApiKeyByPrefix(ctx, args.keyPrefix);
+    if (apiKey === null) {
+      return null;
+    }
+    const user = await ctx.db.get(apiKey.userId);
+    return {
+      _id: apiKey._id,
+      name: apiKey.name,
+      keyPrefix: apiKey.keyPrefix,
+      keyHash: apiKey.keyHash,
+      status: apiKey.status,
+      expiresAt: apiKey.expiresAt ?? null,
+      scopes: apiKey.scopes,
+      organizationId: apiKey.organizationId,
+      userId: apiKey.userId,
+      clerkUserId: user?.clerkId ?? "",
+    };
   },
 });
 
