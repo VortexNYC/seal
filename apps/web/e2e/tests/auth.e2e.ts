@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-import { getTestWorkspaceConfig, isAuthenticatedUrl, signInTestUser } from "../fixtures/auth-helpers";
+import {
+  getTestWorkspaceConfig,
+  isAuthenticatedUrl,
+  signInTestUser,
+} from "../fixtures/auth-helpers";
 
 function getSignInPromptMatcher() {
   return /sign in/i;
