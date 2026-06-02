@@ -40,7 +40,6 @@ import {
   validateRequiredFields,
 } from "./api";
 import { ApiError } from "./api/errors";
-import { resolveMcpAuth, requireMcpScope, type McpAuthContext } from "./api/context";
 import { validateRequestedOAuthScopes } from "./mcpOAuthAuthorization";
 import {
   MCP_OAUTH_ALLOWED_SCOPES,
@@ -48,7 +47,6 @@ import {
   MCP_OAUTH_AUTHORIZE_PATH,
   MCP_OAUTH_AUTHORIZATION_SERVER_METADATA_PATH,
   MCP_OAUTH_JWKS_PATH,
-  MCP_OAUTH_MCP_PATH,
   MCP_OAUTH_PROTECTED_RESOURCE_METADATA_PATH,
   MCP_OAUTH_REGISTRATION_PATH,
   MCP_OAUTH_RESOURCE_ID,
@@ -262,134 +260,6 @@ function createBoundMcpOAuthHttpHandlers(ctx: McpHttpActionCtx) {
   });
 }
 
-function parseMcpBearerToken(request: Request): string | null {
-  const authorization = request.headers.get("authorization");
-  if (!authorization?.startsWith("Bearer ")) {
-    return null;
-  }
-  return authorization.slice("Bearer ".length);
-}
-
-type McpRequestBody = {
-  id?: string | number | null;
-  method?: string;
-  params?: Record<string, unknown>;
-};
-
-function mcpJsonRpcResult(id: string | number | null | undefined, payload: unknown): Response {
-  return mcpJson(200, {
-    jsonrpc: "2.0",
-    id: id ?? null,
-    result: {
-      content: [{ type: "text", text: JSON.stringify(payload) }],
-    },
-  });
-}
-
-async function handleMcpGetCurrentOrganization(
-  ctx: McpHttpActionCtx,
-  auth: McpAuthContext,
-  body: McpRequestBody,
-): Promise<Response> {
-  requireMcpScope(auth, API_SCOPES.MEMBERS_READ);
-
-  const organization = await ctx.runQuery(internal.organizations.helpers.getOrganizationById, {
-    organizationId: auth.organizationId,
-  });
-  if (organization === null) {
-    return mcpJson(404, { error: "organization_not_found" });
-  }
-
-  return mcpJsonRpcResult(body.id, {
-    id: organization._id,
-    name: organization.name,
-    slug: organization.slug,
-    status: organization.status ?? null,
-  });
-}
-
-async function handleMcpListDocuments(
-  ctx: McpHttpActionCtx,
-  auth: McpAuthContext,
-  body: McpRequestBody,
-): Promise<Response> {
-  requireMcpScope(auth, API_SCOPES.DOCUMENTS_READ);
-
-  const result = await ctx.runQuery(internal.api.v1.documents.listDocuments, {
-    userId: auth.userId,
-    organizationId: auth.organizationId,
-    limit: 20,
-  });
-
-  return mcpJsonRpcResult(body.id, {
-    documents: result.documents,
-    hasMore: result.hasMore,
-    nextCursor: result.nextCursor ?? null,
-  });
-}
-
-async function handleMcpListTemplates(
-  ctx: McpHttpActionCtx,
-  auth: McpAuthContext,
-  body: McpRequestBody,
-): Promise<Response> {
-  requireMcpScope(auth, API_SCOPES.TEMPLATES_READ);
-
-  const result = await ctx.runQuery(internal.api.v1.templates.listTemplates, {
-    userId: auth.userId,
-    organizationId: auth.organizationId,
-    limit: 20,
-  });
-
-  return mcpJsonRpcResult(body.id, {
-    templates: result.templates,
-    hasMore: result.hasMore,
-    nextCursor: result.nextCursor ?? null,
-  });
-}
-
-async function handleMcpRequest(ctx: McpHttpActionCtx, request: Request): Promise<Response> {
-  const accessToken = parseMcpBearerToken(request);
-  if (!accessToken) {
-    return mcpJson(401, { error: "missing_bearer_token" });
-  }
-
-  const verified = await ctx.runAction(internal.mcpOAuthNode.verifyAccessToken, {
-    accessToken,
-    audience: MCP_OAUTH_AUDIENCE,
-  });
-  if (!verified.betterAuthUserId || !verified.azp || !verified.orgId) {
-    return mcpJson(401, { error: "invalid_token" });
-  }
-
-  const auth = await resolveMcpAuth(ctx, {
-    session: {
-      accessToken,
-      clientId: verified.azp,
-      scopes: verified.scope,
-      userId: verified.betterAuthUserId,
-    },
-    requestedOrganizationId: verified.orgId as Id<"organizations">,
-    audience: MCP_OAUTH_AUDIENCE,
-    resourceId: MCP_OAUTH_RESOURCE_ID,
-    resourceType: "mcp.tool",
-  });
-
-  const body = (await request.json()) as McpRequestBody;
-
-  if (body.method === "seal.get_current_organization") {
-    return await handleMcpGetCurrentOrganization(ctx, auth, body);
-  }
-  if (body.method === "seal.list_documents") {
-    return await handleMcpListDocuments(ctx, auth, body);
-  }
-  if (body.method === "seal.list_templates") {
-    return await handleMcpListTemplates(ctx, auth, body);
-  }
-
-  return mcpJson(404, { error: "unknown_tool" });
-}
-
 http.route({
   path: MCP_OAUTH_AUTHORIZATION_SERVER_METADATA_PATH,
   method: "GET",
@@ -442,20 +312,9 @@ http.route({
   ),
 });
 
-http.route({
-  path: MCP_OAUTH_MCP_PATH,
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    try {
-      return await handleMcpRequest(ctx, request);
-    } catch (error) {
-      return mcpJson(400, {
-        error: "invalid_request",
-        error_description: error instanceof Error ? error.message : "Unknown MCP error",
-      });
-    }
-  }),
-});
+// MCP tool calls ride the standard /api/v1 resource server (auth via
+// resolveMcpApiAuth in api/context.ts). This deployment only hosts the MCP
+// OAuth *authorization* server (metadata, JWKS, authorize, token, register).
 
 http.route({
   path: "/stripe-webhook",

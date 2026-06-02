@@ -20,11 +20,19 @@ import {
   type OAuthProtectedResourceMetadata,
   type PkcePair,
 } from "@plasmapos/vortex-auth/mcp";
-import { API_SCOPES, type ApiScope } from "./api/context";
+import {
+  API_SCOPES,
+  type ApiScope,
+  MCP_OAUTH_AUDIENCE,
+  MCP_OAUTH_RESOURCE_ID,
+} from "./api/context";
+
+// Audience + resource id live in api/context (the leaf the MCP modules already
+// depend on); re-exported here so existing importers of "./mcpOAuth" are
+// unaffected and there is a single source of truth with no import cycle.
+export { MCP_OAUTH_AUDIENCE, MCP_OAUTH_RESOURCE_ID };
 
 export const MCP_OAUTH_RESOURCE_SLUG = "seal-mcp";
-export const MCP_OAUTH_AUDIENCE = "seal-mcp";
-export const MCP_OAUTH_RESOURCE_ID = "seal:mcp";
 
 // Read-mostly MCP allow-list. Keep it small; broaden later as Seal MCP tools land.
 export const MCP_OAUTH_ALLOWED_SCOPES = [

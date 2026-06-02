@@ -153,6 +153,36 @@ export async function upsertVortexAuthMember(
   return result.memberId;
 }
 
+/**
+ * Anchor a newly-created organization and its owner into the vortexAuth
+ * component AT CREATION TIME. Without this, an app-side org-create (onboarding /
+ * `createWorkspace`) only writes the LOCAL org + membership, leaving the
+ * component empty — so component-truth consumers (MCP OAuth, `/api/v1`) can't
+ * see the org and deny all access until the one-shot backfill migration or a
+ * later org-scoped mutation happens to fire the lazy mirror.
+ *
+ * Idempotent. The org anchor + role catalog are identity-independent and always
+ * run; the owner membership is mirrored only once the owner is bridged to a
+ * component identity (`vortexAuthUserId`) — which it always is post-signup, but
+ * we skip defensively otherwise and let the lazy mirror in `auth.ts` catch up.
+ */
+export async function anchorNewOrganizationOwner(
+  ctx: VortexAuthMutationCtx,
+  args: { organizationId: Id<"organizations">; ownerUserId: Id<"users"> },
+): Promise<void> {
+  const owner = await ctx.db.get(args.ownerUserId);
+  await ensureVortexAuthOrganization(ctx, args.organizationId, owner?.vortexAuthUserId);
+  await ensureVortexAuthSystemRoles(ctx, args.organizationId, owner?.vortexAuthUserId);
+  if (owner?.vortexAuthUserId) {
+    await upsertVortexAuthMember(ctx, {
+      organizationId: args.organizationId,
+      userId: args.ownerUserId,
+      role: "owner",
+      status: "active",
+    });
+  }
+}
+
 /** Component invitation status enum (mirrors the component schema). */
 type ComponentInvitationStatus = "pending" | "accepted" | "revoked" | "expired";
 

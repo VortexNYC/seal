@@ -74,9 +74,20 @@ describe("canUserUseScope", () => {
 });
 
 describe("requireScope", () => {
-  test("bypasses check for owner role (JWT auth)", () => {
+  test("grants access from the token's own scope (MCP OAuth)", () => {
     const auth = {
-      authType: "jwt" as const,
+      authType: "mcp_oauth" as const,
+      role: "member",
+      permissions: [], // no permission, no full-access role
+      hasScope: (scope: string) => scope === API_SCOPES.WEBHOOKS_MANAGE,
+    } as unknown as ApiAuthContext;
+
+    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
+  });
+
+  test("bypasses check for owner role (MCP OAuth)", () => {
+    const auth = {
+      authType: "mcp_oauth" as const,
       role: "owner",
       permissions: [], // empty - should still pass
       hasScope: () => false,
@@ -85,9 +96,9 @@ describe("requireScope", () => {
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
   });
 
-  test("bypasses check for admin role (JWT auth)", () => {
+  test("bypasses check for admin role (MCP OAuth)", () => {
     const auth = {
-      authType: "jwt" as const,
+      authType: "mcp_oauth" as const,
       role: "admin",
       permissions: [], // empty - should still pass
       hasScope: () => false,
@@ -96,9 +107,9 @@ describe("requireScope", () => {
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
   });
 
-  test("checks permissions for member role (JWT auth)", () => {
+  test("checks permissions for member role (MCP OAuth)", () => {
     const auth = {
-      authType: "jwt" as const,
+      authType: "mcp_oauth" as const,
       role: "member",
       permissions: ["settings:integrations"],
       hasScope: () => false,
@@ -107,9 +118,9 @@ describe("requireScope", () => {
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
   });
 
-  test("rejects member without settings:integrations (JWT auth)", () => {
+  test("rejects member without settings:integrations (MCP OAuth)", () => {
     const auth = {
-      authType: "jwt" as const,
+      authType: "mcp_oauth" as const,
       role: "member",
       permissions: ["settings:view", "documents:view"],
       hasScope: () => false,

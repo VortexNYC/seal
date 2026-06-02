@@ -1,17 +1,22 @@
 /**
- * @fileoverview API Context Bridge - Translates Clerk API key auth to internal context.
- * Enables API endpoints to leverage existing RLS and permission systems.
+ * @fileoverview API Context Bridge — resolves an inbound `/api/v1` bearer token
+ * to an internal user/organization auth context. HTTP actions don't have
+ * access to `ctx.auth`, so we resolve credentials manually.
  *
- * This module bridges the gap between Clerk's API key authentication and
- * Convex's internal user/organization context. HTTP actions don't have
- * access to `ctx.auth`, so we need to manually resolve the API key to
- * internal IDs.
+ * Two credential types are accepted, both fully on `@plasmapos/vortex-auth`:
+ *  - **API keys** (non-JWT bearer) → the vortexAuth component (`resolveApiAuth`).
+ *  - **MCP OAuth access tokens** (ES256 JWT issued by this deployment's
+ *    Better-Auth MCP OAuth server) → the package MCP resolver
+ *    (`resolveMcpApiAuth` → `resolveMcpAuth`). MCP clients ride the same
+ *    `/api/v1` resource server; there is no separate tool surface to maintain.
+ *
+ * No Clerk. The legacy Clerk session-JWT / OAuth (`oat_`) verification path was
+ * removed once the web app moved to Better-Auth and MCP moved to the package
+ * OAuth server — nothing sends Clerk tokens to `/api/v1` anymore.
  *
  * @module api/context
- * @see {@link https://clerk.com/docs/guides/development/machine-auth/api-keys} Clerk API Keys
  */
 
-import { verifyToken } from "@clerk/backend";
 import {
   createBetterAuthApiTokenVerifierFromConvexAuthConfig,
   createConvexAuthConfig,
@@ -89,15 +94,7 @@ export function isIpAllowed(ip: string, allowlist: string[]): boolean {
  *
  * @interface ApiAuthContext
  */
-export type ApiAuthType = "api_key" | "jwt";
-
-type ClerkJwtPayload = Record<string, unknown> & {
-  sub?: string;
-  org_id?: string;
-  orgId?: string;
-  scope?: string;
-  scp?: string[];
-};
+export type ApiAuthType = "api_key" | "mcp_oauth";
 
 export interface ApiAuthContext {
   /** Which auth mechanism was used */
@@ -190,6 +187,15 @@ export const API_SCOPES = {
 export type ApiScope = (typeof API_SCOPES)[keyof typeof API_SCOPES];
 
 /**
+ * MCP OAuth audience + resource identifiers for this deployment's Better-Auth
+ * MCP OAuth server. Defined here (next to `API_SCOPES`, the leaf the MCP modules
+ * already import from) so `mcpOAuth.ts` can re-export them without a cycle back
+ * into this module.
+ */
+export const MCP_OAUTH_AUDIENCE = "seal-mcp";
+export const MCP_OAUTH_RESOURCE_ID = "seal:mcp";
+
+/**
  * Maps API scopes to internal permission requirements.
  * API scopes are coarser-grained than internal permissions.
  *
@@ -268,104 +274,6 @@ function parseBearerToken(authHeader: string | null): string {
 
 function isJwtToken(token: string): boolean {
   return token.split(".").length === 3;
-}
-
-function isOAuthAccessToken(token: string): boolean {
-  // Clerk OAuth access tokens start with "oat_"
-  return token.startsWith("oat_");
-}
-
-function extractScopesFromJwt(payload: ClerkJwtPayload): string[] {
-  const scope = payload.scope;
-  if (typeof scope === "string") {
-    return scope.split(" ").filter(Boolean);
-  }
-
-  const scp = payload.scp;
-  if (Array.isArray(scp) && scp.every((value) => typeof value === "string")) {
-    return scp;
-  }
-
-  return [];
-}
-
-function getOrgIdClaim(payload: ClerkJwtPayload): string | undefined {
-  return typeof payload.org_id === "string"
-    ? payload.org_id
-    : typeof payload.orgId === "string"
-      ? payload.orgId
-      : undefined;
-}
-
-async function getOrganizationIdForJwt(
-  ctx: ActionCtx,
-  user: { activeOrganizationId?: Id<"organizations"> | null },
-  orgIdClaim: string | undefined,
-): Promise<Id<"organizations">> {
-  if (orgIdClaim) {
-    const organization = await ctx.runQuery(internal.api.helpers.getOrgByClerkId, {
-      clerkOrgId: orgIdClaim,
-    });
-    if (!organization) {
-      throw new ApiError(403, "Organization not found", "ORGANIZATION_NOT_FOUND");
-    }
-    return organization._id;
-  }
-
-  if (user.activeOrganizationId) {
-    return user.activeOrganizationId;
-  }
-
-  throw new ApiError(
-    403,
-    "User has no active organization. Set an active organization before using the API.",
-    "ORGANIZATION_ACCESS_DENIED",
-  );
-}
-
-async function resolveOAuthAuthContext(
-  ctx: ActionCtx,
-  token: string,
-  clientIp?: string,
-): Promise<ApiAuthContext | null> {
-  const oauthResult = await verifyOAuthAccessToken(token);
-  if (!oauthResult) {
-    return null;
-  }
-
-  const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
-    clerkUserId: oauthResult.sub,
-  });
-  if (!user) {
-    throw new ApiError(403, "User not found", "USER_NOT_FOUND");
-  }
-
-  let organizationId = user.activeOrganizationId;
-  if (!organizationId) {
-    const memberships = await ctx.runQuery(internal.api.helpers.getUserOrganizationMemberships, {
-      userId: user._id,
-    });
-
-    if (memberships.length === 0) {
-      throw new ApiError(
-        403,
-        "User has no organization memberships. Join or create an organization first.",
-        "NO_ORGANIZATION",
-      );
-    }
-
-    organizationId = memberships[0].organizationId;
-  }
-
-  return buildAuthContext(ctx, {
-    authType: "jwt",
-    scopes: oauthResult.scopes,
-    userId: user._id,
-    organizationId,
-    clerkUserId: oauthResult.sub,
-    subjectType: "user",
-    clientIp,
-  });
 }
 
 async function buildAuthContext(
@@ -493,117 +401,62 @@ export async function resolveApiAuth(
 }
 
 /**
- * Verifies an OAuth access token using Clerk's REST API.
- * OAuth tokens from MCP clients need different verification than session JWTs.
+ * Resolves an MCP OAuth access token (ES256 JWT issued by this deployment's
+ * Better-Auth MCP OAuth server) to an internal `ApiAuthContext`.
+ *
+ * Flow (all `@plasmapos/vortex-auth`, no Clerk):
+ * 1. Verify the token signature/claims via the deployment's stored JWKS
+ *    (`mcpOAuthNode.verifyAccessToken`), bound to the MCP audience.
+ * 2. Link the Better-Auth subject → Seal user + active org and authorize org
+ *    access via the package MCP resolver (`resolveMcpAuth`).
+ * 3. Re-run the shared org-security gating (active membership, `allowApiAccess`,
+ *    IP allowlist) via `buildAuthContext`, so MCP access obeys the exact same
+ *    org controls as API keys.
  */
-async function verifyOAuthAccessToken(token: string): Promise<{
-  sub: string;
-  scopes: string[];
-} | null> {
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!secretKey) {
-    console.error("[verifyOAuthAccessToken] No CLERK_SECRET_KEY configured");
-    return null;
-  }
-
-  try {
-    const response = await fetch("https://api.clerk.com/oauth_applications/access_tokens/verify", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ access_token: token }),
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = (await response.json()) as {
-      subject?: string;
-      scopes?: string[];
-    };
-
-    if (!data.subject) {
-      return null;
-    }
-
-    return {
-      sub: data.subject,
-      scopes: data.scopes ?? [],
-    };
-  } catch (error) {
-    console.error("[verifyOAuthAccessToken] Verification failed:", error);
-    return null;
-  }
-}
-
-export async function resolveJwtAuth(
+async function resolveMcpApiAuth(
   ctx: ActionCtx,
-  authHeader: string | null,
+  token: string,
   clientIp?: string,
 ): Promise<ApiAuthContext> {
-  const token = parseBearerToken(authHeader);
-
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  const jwtKey = process.env.CLERK_JWT_KEY;
-  if (!secretKey && !jwtKey) {
-    throw new ApiError(500, "Clerk secret key or JWT key not configured", "INTERNAL_ERROR");
+  // verifyAccessToken throws on malformed / bad-signature / wrong-audience
+  // tokens. Any such failure is an auth failure (401), not a server error (500).
+  let verified: {
+    azp: string | null;
+    betterAuthUserId: string | null;
+    orgId: string | null;
+    scope: string;
+  };
+  try {
+    verified = await ctx.runAction(internal.mcpOAuthNode.verifyAccessToken, {
+      accessToken: token,
+      audience: MCP_OAUTH_AUDIENCE,
+    });
+  } catch {
+    throw new ApiError(401, "Invalid or expired token", "INVALID_JWT");
   }
-
-  // First try session token verification (verifyToken throws on invalid tokens)
-  // Skip for OAuth access tokens (oat_) which need direct OAuth verification
-  let payload: ClerkJwtPayload | null = null;
-  let sessionTokenError: unknown = null;
-
-  if (!isOAuthAccessToken(token)) {
-    try {
-      payload = (await verifyToken(token, {
-        secretKey,
-        jwtKey,
-      })) as ClerkJwtPayload;
-    } catch (error) {
-      sessionTokenError = error;
-      // Session token verification failed - this is expected for OAuth tokens
-    }
-  }
-
-  if (!payload) {
-    const oauthAuthContext = await resolveOAuthAuthContext(ctx, token, clientIp);
-    if (oauthAuthContext) {
-      return oauthAuthContext;
-    }
-
-    console.error(
-      "[resolveJwtAuth] Both session and OAuth verification failed:",
-      sessionTokenError instanceof Error ? sessionTokenError.message : sessionTokenError,
-    );
+  if (!verified.betterAuthUserId || !verified.azp || !verified.orgId) {
     throw new ApiError(401, "Invalid or expired token", "INVALID_JWT");
   }
 
-  // Session token was valid
-  const clerkUserId = typeof payload.sub === "string" ? payload.sub : undefined;
-  if (!clerkUserId) {
-    throw new ApiError(401, "Invalid session token subject", "INVALID_JWT");
-  }
-
-  const user = await ctx.runQuery(internal.api.helpers.getUserByClerkId, {
-    clerkUserId,
+  const mcp = await resolveMcpAuth(ctx, {
+    session: {
+      accessToken: token,
+      clientId: verified.azp,
+      scopes: verified.scope,
+      userId: verified.betterAuthUserId,
+    },
+    requestedOrganizationId: verified.orgId as Id<"organizations">,
+    audience: MCP_OAUTH_AUDIENCE,
+    resourceId: MCP_OAUTH_RESOURCE_ID,
+    resourceType: "mcp.tool",
   });
 
-  if (!user) {
-    throw new ApiError(403, "User not found", "USER_NOT_FOUND");
-  }
-
-  const organizationId = await getOrganizationIdForJwt(ctx, user, getOrgIdClaim(payload));
-
   return buildAuthContext(ctx, {
-    authType: "jwt",
-    scopes: extractScopesFromJwt(payload),
-    userId: user._id,
-    organizationId,
-    clerkUserId,
+    authType: "mcp_oauth",
+    scopes: mcp.scopes,
+    userId: mcp.userId,
+    organizationId: mcp.organizationId,
+    clerkUserId: mcp.betterAuthUserId,
     subjectType: "user",
     clientIp,
   });
@@ -616,12 +469,12 @@ export async function resolveAuthContext(
 ): Promise<ApiAuthContext> {
   const token = parseBearerToken(authHeader);
 
-  // Route JWTs and OAuth access tokens (oat_) to JWT/OAuth auth handler
-  if (isJwtToken(token) || isOAuthAccessToken(token)) {
-    return resolveJwtAuth(ctx, token, clientIp);
+  // ES256 JWTs are MCP OAuth access tokens from this deployment's Better-Auth
+  // MCP OAuth server. Everything else is an API key.
+  if (isJwtToken(token)) {
+    return resolveMcpApiAuth(ctx, token, clientIp);
   }
 
-  // API keys go through API key verification
   return resolveApiAuth(ctx, token, clientIp);
 }
 
@@ -658,21 +511,16 @@ function isFullAccessRole(role: string): boolean {
  * @throws {ApiError} 403 - If scope is missing
  */
 export function requireScope(auth: ApiAuthContext, scope: ApiScope): void {
-  if (auth.authType === "jwt") {
-    // Owners and admins have full access via OAuth
-    if (isFullAccessRole(auth.role)) {
+  if (auth.authType === "mcp_oauth") {
+    // MCP OAuth: the token's granted scopes are authoritative; fall back to
+    // owner/admin full access or permission-derived access.
+    if (auth.hasScope(scope) || isFullAccessRole(auth.role) || canUserUseScope(auth.permissions, scope)) {
       return;
     }
-    if (!canUserUseScope(auth.permissions, scope)) {
-      throw new ApiError(
-        403,
-        `Missing required permission for scope: ${scope}`,
-        "INSUFFICIENT_SCOPE",
-      );
-    }
-    return;
+    throw new ApiError(403, `Missing required scope: ${scope}`, "INSUFFICIENT_SCOPE");
   }
 
+  // API keys: scope grant is strict — no role/permission fallback.
   if (!auth.hasScope(scope)) {
     throw new ApiError(403, `Missing required scope: ${scope}`, "INSUFFICIENT_SCOPE");
   }
@@ -687,22 +535,23 @@ export function requireScope(auth: ApiAuthContext, scope: ApiScope): void {
  * @throws {ApiError} 403 - If no scope matches
  */
 export function requireAnyScope(auth: ApiAuthContext, scopes: ApiScope[]): void {
-  if (auth.authType === "jwt") {
-    // Owners and admins have full access via OAuth
-    if (isFullAccessRole(auth.role)) {
+  if (auth.authType === "mcp_oauth") {
+    // MCP OAuth: any granted scope, owner/admin, or any permission-derived match.
+    if (
+      auth.hasAnyScope(scopes) ||
+      isFullAccessRole(auth.role) ||
+      scopes.some((scope) => canUserUseScope(auth.permissions, scope))
+    ) {
       return;
     }
-    const hasPermission = scopes.some((scope) => canUserUseScope(auth.permissions, scope));
-    if (!hasPermission) {
-      throw new ApiError(
-        403,
-        `Missing required permission. Need one of: ${scopes.join(", ")}`,
-        "INSUFFICIENT_SCOPE",
-      );
-    }
-    return;
+    throw new ApiError(
+      403,
+      `Missing required scope. Need one of: ${scopes.join(", ")}`,
+      "INSUFFICIENT_SCOPE",
+    );
   }
 
+  // API keys: scope grant is strict — no role/permission fallback.
   if (!auth.hasAnyScope(scopes)) {
     throw new ApiError(
       403,
@@ -713,18 +562,14 @@ export function requireAnyScope(auth: ApiAuthContext, scopes: ApiScope[]): void 
 }
 
 // ===========================================================================
-// MCP OAuth (Better-Auth) — ADDITIVE
+// MCP OAuth (Better-Auth) session resolver
 //
-// New auth path for the Better-Auth-backed MCP OAuth authorization server
-// (convex/mcpOAuth*.ts + http.ts MCP routes). Runs in PARALLEL with the
-// existing Clerk JWT/API-key path above; nothing above this line is touched.
-//
-// A signed MCP access token carries the better-auth user id, client id, org
-// id, and scopes. `resolveMcpAuth` links that better-auth user back to a Seal
-// user + active org via the vortexAuth identity component (apiAuth.ts), then
-// authorizes org access via the package resolver. Returns a dedicated
-// `McpAuthContext` consumed by the MCP tool dispatch — separate from the
-// Clerk-shaped `ApiAuthContext` to avoid disturbing existing call sites.
+// A signed MCP access token carries the better-auth user id, client id, org id,
+// and scopes. `resolveMcpAuth` links that better-auth user back to a Seal user +
+// active org via the vortexAuth identity component (apiAuth.ts), then authorizes
+// org access via the package resolver. It returns a `McpAuthContext`; the
+// `/api/v1` entrypoint adapts that into an `ApiAuthContext` via
+// `resolveMcpApiAuth` (above) so MCP clients reuse the same resource server.
 // ===========================================================================
 
 export interface McpAuthContext {
@@ -822,8 +667,9 @@ async function authorizeMcpOrganizationAccess(
 
 /**
  * Resolve a signed MCP OAuth session (better-auth user + org + scopes) to a
- * fully-authorized Seal MCP auth context. ADDITIVE — does not touch the Clerk
- * `resolveAuthContext` / `resolveJwtAuth` / `resolveApiAuth` path above.
+ * fully-authorized Seal MCP auth context. Backs `resolveMcpApiAuth`, which
+ * adapts the result into the `ApiAuthContext` used by the `/api/v1` resource
+ * server.
  */
 export async function resolveMcpAuth(
   ctx: ActionCtx,
@@ -877,21 +723,4 @@ export async function resolveMcpAuth(
     }
     throw error;
   }
-}
-
-/**
- * Scope gate for the MCP path. The signed token's scopes are the source of
- * truth; if absent, fall back to the user's component-derived permissions.
- */
-export function requireMcpScope(auth: McpAuthContext, scope: ApiScope): void {
-  if (auth.hasScope(scope)) {
-    return;
-  }
-  if (isFullAccessRole(auth.role)) {
-    return;
-  }
-  if (canUserUseScope(auth.permissions, scope)) {
-    return;
-  }
-  throw new ApiError(403, `Missing required scope: ${scope}`, "INSUFFICIENT_SCOPE");
 }

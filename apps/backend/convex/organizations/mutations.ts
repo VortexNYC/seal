@@ -11,6 +11,7 @@ import { logAction } from "../audit_logs/helpers";
 import { adminMutation, authMutation } from "../auth";
 import { ensureProFeature, ensureSeatLimit } from "../auth/subscription_guards";
 import { getComponentMemberRefForUserOrganization } from "../lib/componentOrgReads";
+import { anchorNewOrganizationOwner } from "../lib/vortexAuthOrganizations";
 import { seedSystemRoles } from "../organization_roles/helpers";
 import { organizationBaseSchema } from "../validations/organizations";
 
@@ -250,6 +251,13 @@ export const ensurePersonalOrganization = mutation({
     await ensurePrimaryOwnerMembership(ctx, user._id, organization._id);
     await clearOtherPrimaryMemberships(ctx, user._id, organization._id);
 
+    // Mirror the org + owner into the vortexAuth component immediately so
+    // component-truth consumers (MCP OAuth, /api/v1) see it without waiting.
+    await anchorNewOrganizationOwner(ctx, {
+      organizationId: organization._id,
+      ownerUserId: user._id,
+    });
+
     await ctx.db.patch(user._id, {
       activeOrganizationId: organization._id,
       updatedAt: Date.now(),
@@ -350,6 +358,13 @@ export const createWorkspace = authMutation({
       status: "active",
       isPrimary: true,
       permissions: [],
+    });
+
+    // Mirror the org + owner into the vortexAuth component immediately so
+    // component-truth consumers (MCP OAuth, /api/v1) see it without waiting.
+    await anchorNewOrganizationOwner(ctx, {
+      organizationId,
+      ownerUserId: user._id,
     });
 
     return { id: organizationId };
