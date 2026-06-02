@@ -76,7 +76,7 @@ export function PendingInvitationsList({ invitations }: PendingInvitationsListPr
       </TableHeader>
       <TableBody>
         {invitations.map((invitation) => (
-          <TableRow key={invitation.id}>
+          <TableRow key={invitation.id} data-testid="pending-invitation">
             <TableCell className="font-medium">{invitation.email}</TableCell>
             <TableCell>
               <Badge variant="secondary">{invitation.role}</Badge>
