@@ -23,14 +23,18 @@ test.describe("Authentication", () => {
 
     // Users are redirected to the sign-in flow when not authenticated.
     await expect(page).toHaveURL("/sign-in");
-    await expect(page.getByRole("heading", { name: getSignInPromptMatcher() })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: getSignInPromptMatcher() }).first(),
+    ).toBeVisible();
   });
 
   test("should keep unauthenticated users on sign-in when accessing app", async ({ page }) => {
     await page.goto("/app");
 
     await expect(page).toHaveURL("/sign-in", { timeout: 30000 });
-    await expect(page.getByRole("heading", { name: getSignInPromptMatcher() })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: getSignInPromptMatcher() }).first(),
+    ).toBeVisible();
   });
 
   test("should login with valid credentials", async ({ page }) => {
@@ -48,7 +52,9 @@ test.describe("Authentication", () => {
     const { email } = getTestWorkspaceConfig();
 
     await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: getSignInPromptMatcher() })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: getSignInPromptMatcher() }).first(),
+    ).toBeVisible();
 
     await page.fill('input[type="email"]', email);
     await page.fill('input[type="password"]', "definitely-the-wrong-password");
