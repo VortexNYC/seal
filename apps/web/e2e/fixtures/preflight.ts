@@ -1,4 +1,3 @@
-import { canUseClerkTestingHelpers } from "./clerk-testing-env";
 import { describeConvexE2eTarget } from "./convex-test-api";
 
 let hasLoggedPreflight = false;
@@ -17,14 +16,14 @@ function logResolvedEnvironment(scope: string): void {
   }
 
   const convexTarget = describeConvexE2eTarget();
-  const clerkEmail = process.env.E2E_TEST_USER_EMAIL || process.env.TEST_USER_EMAIL || "<missing>";
+  const testEmail = process.env.E2E_TEST_USER_EMAIL || process.env.TEST_USER_EMAIL || "<missing>";
   const baseUrl = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5180";
 
   console.info(`[setup:${scope}] Base URL: ${baseUrl}`);
   console.info(
     `[setup:${scope}] Convex target: ${convexTarget.deploymentName} (${convexTarget.convexUrl})`,
   );
-  console.info(`[setup:${scope}] Clerk test user: ${clerkEmail}`);
+  console.info(`[setup:${scope}] Test user: ${testEmail}`);
 
   hasLoggedPreflight = true;
 }
@@ -39,19 +38,8 @@ export function assertAppEnv(): void {
 }
 
 export function assertAuthEnv(): void {
-  const testEmail = requireEnv("E2E_TEST_USER_EMAIL");
-  if (!testEmail.includes("+clerk_test")) {
-    throw new Error(
-      `[E2E preflight] E2E_TEST_USER_EMAIL must be a Clerk testing address. Received: ${testEmail}`,
-    );
-  }
-
-  if (process.env.CI && !canUseClerkTestingHelpers()) {
-    throw new Error(
-      "[E2E preflight] Clerk testing helpers are not fully configured in CI. Need publishable key plus CLERK_SECRET_KEY or CLERK_TESTING_TOKEN.",
-    );
-  }
-
+  requireEnv("E2E_TEST_USER_EMAIL");
+  requireEnv("E2E_TEST_USER_PASSWORD");
   logResolvedEnvironment("auth");
 }
 

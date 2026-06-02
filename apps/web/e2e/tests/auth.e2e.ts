@@ -1,5 +1,6 @@
-import { clerk } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
+
+import { getTestWorkspaceConfig, isAuthenticatedUrl, signInTestUser } from "../fixtures/auth-helpers";
 
 function getSignInPromptMatcher() {
   return /sign in/i;
@@ -16,7 +17,7 @@ test.describe("Authentication", () => {
   test("should redirect unauthenticated users to sign-in", async ({ page }) => {
     await page.goto("/");
 
-    // Users are now redirected to the sign-in flow when not authenticated.
+    // Users are redirected to the sign-in flow when not authenticated.
     await expect(page).toHaveURL("/sign-in");
     await expect(page.getByRole("heading", { name: getSignInPromptMatcher() })).toBeVisible();
   });
@@ -29,63 +30,31 @@ test.describe("Authentication", () => {
   });
 
   test("should login with valid credentials", async ({ page }) => {
-    const testEmail =
-      process.env.E2E_TEST_USER_EMAIL ||
-      process.env.TEST_USER_EMAIL ||
-      "sealtest001+clerk_test@example.com";
+    test.setTimeout(90000);
 
-    // Use Clerk's official testing protocol — clerk.signIn() handles the
-    // testing token, bot-detection bypass, and sign-in mechanics reliably.
-    // Manual OTP entry is fragile because Clerk's DOM structure changes across
-    // versions and the individual-digit inputs are hard to target consistently.
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    // Better-Auth email+password sign-in (signs up + onboards on first run).
+    await signInTestUser(page);
 
-    await clerk.signIn({
-      page,
-      signInParams: {
-        strategy: "email_code",
-        identifier: testEmail,
-      },
-    });
-
-    // After clerk.signIn() completes, navigate to the app
     await page.goto("/app", { waitUntil: "domcontentloaded" });
-
-    // Should redirect to authenticated area (may go to /app, /home, or org-specific path)
     await expect(page).toHaveURL(/\/(app|.*\/home|.*\/onboarding)/, { timeout: 30000 });
+    expect(isAuthenticatedUrl(page.url())).toBe(true);
   });
 
-  test("should show error with invalid credentials", async ({ page }) => {
-    const bogusEmail = "nonexistent-user-e2e-test@example.com";
+  test("should reject invalid credentials", async ({ page }) => {
+    const { email } = getTestWorkspaceConfig();
 
-    // Navigate directly to sign-in page
-    await page.goto("/sign-in");
-
-    // Wait for Clerk sign-in component to load
+    await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: getSignInPromptMatcher() })).toBeVisible();
 
-    // Fill in an email that doesn't exist in the Clerk instance
-    await page.getByRole("textbox", { name: /email/i }).first().fill(bogusEmail);
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.fill('input[type="email"]', email);
+    await page.fill('input[type="password"]', "definitely-the-wrong-password");
+    await page.click('button[type="submit"], button:has-text("Sign in")');
 
-    // Should show an auth error message (account not found, invalid, etc.)
-    await expect(
-      page.getByText(/couldn.t find|not found|incorrect|invalid|no account/i).first(),
-    ).toBeVisible({
-      timeout: 10000,
-    });
-  });
-});
-
-test.describe("Organization Selection", () => {
-  test.skip("should allow organization selection", async ({ page }) => {
-    // SKIPPED: The /onboarding/choose-organization route does not exist in the current app
-    // This test was written for a feature that hasn't been implemented yet
-    // Re-enable when organization selection onboarding is added
-
-    await page.goto("/onboarding/choose-organization");
-
-    // Should show organization selection
-    await expect(page.getByRole("heading", { name: /choose organization/i })).toBeVisible();
+    // Better-Auth rejects the credentials: the app stays on /sign-in (no
+    // authenticated redirect). An error message is shown but its exact copy is
+    // owned by the vortex-auth <SignIn> component, so we assert on the gate.
+    await page.waitForTimeout(2000);
+    await expect(page).toHaveURL(/\/sign-in/);
+    expect(isAuthenticatedUrl(page.url())).toBe(false);
   });
 });
