@@ -134,7 +134,10 @@ export function StaticPricing() {
         </FadeIn>
 
         {/* Pricing cards */}
-        <div className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-3" data-testid="pricing-grid">
+        <div
+          className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          data-testid="pricing-grid"
+        >
           {plans.map((plan, i) => (
             <FadeIn delay={i * 0.08} key={plan.name}>
               <div
@@ -211,8 +214,6 @@ export function StaticPricing() {
             </FadeIn>
           ))}
         </div>
-
-
       </div>
     </section>
   );

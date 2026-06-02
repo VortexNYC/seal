@@ -1,7 +1,5 @@
 "use client";
 
-import { useCurrentUser } from "@/hooks/use-current-user";
-import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -34,7 +32,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
 import { buildOrganizationPath } from "@/lib/organization-path";
 import { cn } from "@/lib/utils";
 

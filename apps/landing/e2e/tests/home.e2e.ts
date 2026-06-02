@@ -13,10 +13,22 @@ test.describe("landing homepage", () => {
     await homePage.goto();
 
     await expect(homePage.heroHeading()).toBeVisible();
-    await page.getByRole("heading", { name: /like having a legal assistant review every clause/i }).scrollIntoViewIfNeeded();
-    await expect(page.getByRole("heading", { name: /like having a legal assistant review every clause/i })).toBeVisible();
-    await page.getByRole("heading", { name: /it.s time to stop juggling tools and start getting more deals/i }).scrollIntoViewIfNeeded();
-    await expect(page.getByRole("heading", { name: /it.s time to stop juggling tools and start getting more deals/i })).toBeVisible();
+    await page
+      .getByRole("heading", { name: /like having a legal assistant review every clause/i })
+      .scrollIntoViewIfNeeded();
+    await expect(
+      page.getByRole("heading", { name: /like having a legal assistant review every clause/i }),
+    ).toBeVisible();
+    await page
+      .getByRole("heading", {
+        name: /it.s time to stop juggling tools and start getting more deals/i,
+      })
+      .scrollIntoViewIfNeeded();
+    await expect(
+      page.getByRole("heading", {
+        name: /it.s time to stop juggling tools and start getting more deals/i,
+      }),
+    ).toBeVisible();
 
     const startFreeCount = await homePage.startFreeLinks().count();
     expect(startFreeCount).toBeGreaterThan(0);
@@ -47,11 +59,18 @@ test.describe("landing homepage", () => {
 
     await Promise.all([page.waitForURL(/\/compare$/), homePage.desktopNavLink("Compare").click()]);
     await expect(page).toHaveURL(/\/compare$/);
-    await expect(page.getByRole("heading", { level: 1, name: /we built a document platform/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: /we built a document platform/i }),
+    ).toBeVisible();
 
-    await Promise.all([page.waitForURL(/\/developer$/), homePage.desktopNavLink("Developer").click()]);
+    await Promise.all([
+      page.waitForURL(/\/developer$/),
+      homePage.desktopNavLink("Developer").click(),
+    ]);
     await expect(page).toHaveURL(/\/developer$/);
-    await expect(page.getByRole("heading", { name: "Developer Documentation" }).first()).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Developer Documentation" }).first(),
+    ).toBeVisible();
   });
 
   test("mobile menu opens and navigates correctly", async ({ page, isMobile }) => {
@@ -70,6 +89,8 @@ test.describe("landing homepage", () => {
     await homePage.mobileMenuButton().tap();
     await Promise.all([page.waitForURL(/\/compare$/), homePage.mobileMenuLink("Compare").click()]);
     await expect(page).toHaveURL(/\/compare$/);
-    await expect(page.getByRole("heading", { level: 1, name: /we built a document platform/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: /we built a document platform/i }),
+    ).toBeVisible();
   });
 });

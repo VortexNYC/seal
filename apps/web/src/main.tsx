@@ -155,4 +155,3 @@ if (!rootElement.innerHTML) {
     </PostHogProvider>,
   );
 }
-

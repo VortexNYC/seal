@@ -148,7 +148,11 @@ async function generateDocsManifest(): Promise<void> {
   const devPageTree = await developerSource.serializePageTree(developerSource.pageTree);
   const developerManifest: DocsManifest = { pageTree: devPageTree, pages: devPages };
   await fs.mkdir(path.dirname(developerOutputPath), { recursive: true });
-  await fs.writeFile(developerOutputPath, `${JSON.stringify(developerManifest, null, 2)}\n`, "utf8");
+  await fs.writeFile(
+    developerOutputPath,
+    `${JSON.stringify(developerManifest, null, 2)}\n`,
+    "utf8",
+  );
 }
 
 async function generateChangelogManifest(): Promise<void> {

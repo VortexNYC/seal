@@ -252,11 +252,7 @@ async function resolveOrganizationMemberDualRead(
 
   // Lazy materialization (mutation contexts only — queries cannot write). Mirror
   // the local membership into the component so it becomes the forward truth.
-  if (
-    user.vortexAuthUserId &&
-    organization.vortexAuthOrganizationId &&
-    "runMutation" in ctx
-  ) {
+  if (user.vortexAuthUserId && organization.vortexAuthOrganizationId && "runMutation" in ctx) {
     await upsertVortexAuthMember(ctx as MutationCtx, {
       organizationId: organization._id,
       userId: user._id,

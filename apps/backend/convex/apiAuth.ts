@@ -18,16 +18,17 @@ import {
   buildApiAuthUserIdentityResult,
 } from "@plasmapos/vortex-auth/convex";
 import { v } from "convex/values";
-import { internalQuery, type QueryCtx } from "./_generated/server";
+
 import { components } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { getBetterAuthIdentityIssuer, getBetterAuthIdentityProvider } from "./lib/authIdentities";
+import { internalQuery, type QueryCtx } from "./_generated/server";
 import { ROLE_PERMISSIONS } from "./auth.utils";
-import type { OrganizationMemberRole } from "./schema";
+import { getBetterAuthIdentityIssuer, getBetterAuthIdentityProvider } from "./lib/authIdentities";
 import {
   resolveComponentMemberships,
   type ComponentResolvedMembership,
 } from "./lib/componentOrgReads";
+import type { OrganizationMemberRole } from "./schema";
 
 /**
  * Membership shape consumed by the package builders. Component-derived

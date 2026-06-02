@@ -16,9 +16,9 @@ import {
 } from "@plasmapos/vortex-auth/mcp";
 import { ConvexError, v } from "convex/values";
 
-import { API_SCOPES } from "./api/context";
 import { internal } from "./_generated/api";
 import { internalAction, type ActionCtx } from "./_generated/server";
+import { API_SCOPES } from "./api/context";
 import { MCP_OAUTH_AUDIENCE, MCP_OAUTH_DEFAULT_CLIENT, MCP_OAUTH_RESOURCE_ID } from "./mcpOAuth";
 
 const supportedScopeValidator = v.union(

@@ -1,7 +1,5 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-
-import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Calendar, Mail, Shield, Trash2 } from "lucide-react";
@@ -25,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/team/$memberId")({
   component: MemberDetails,
@@ -290,9 +289,8 @@ function MemberDetails() {
             <AlertDialogDescription asChild>
               <div>
                 <p>
-                  This removes{" "}
-                  <span className="font-semibold">{member.name || member.email}</span> from this
-                  organization, including:
+                  This removes <span className="font-semibold">{member.name || member.email}</span>{" "}
+                  from this organization, including:
                 </p>
                 <ul className="mt-2 list-inside list-disc space-y-1">
                   <li>Their membership in this organization</li>

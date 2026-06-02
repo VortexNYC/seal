@@ -9,8 +9,6 @@
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
-
-import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
@@ -28,6 +26,7 @@ import { TrendChart } from "@/components/dashboard/trend-chart";
 import { PageWrapper } from "@/components/page-wrapper";
 import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/$slug/home")({

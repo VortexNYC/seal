@@ -163,7 +163,10 @@ function CellValue({ value, isSeal }: { value: boolean | string; isSeal?: boolea
   if (value === true) {
     return (
       <div className="flex justify-center">
-        <Check aria-hidden="true" className={`size-5 ${isSeal ? "text-primary" : "text-primary/60"}`} />
+        <Check
+          aria-hidden="true"
+          className={`size-5 ${isSeal ? "text-primary" : "text-primary/60"}`}
+        />
         <span className="sr-only">Yes</span>
       </div>
     );
@@ -178,7 +181,9 @@ function CellValue({ value, isSeal }: { value: boolean | string; isSeal?: boolea
   }
   return (
     <div className="flex justify-center">
-      <span className={`text-xs ${isSeal ? "text-primary font-medium" : "text-muted-foreground"}`}>{value}</span>
+      <span className={`text-xs ${isSeal ? "text-primary font-medium" : "text-muted-foreground"}`}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -228,7 +233,7 @@ const alternativesData = [
     tagline: "Contract-to-Cash for mid-market. $599/mo minimum.",
     pricing: "From $599/mo (Growth tier)",
     verdict:
-      "Agree raised $10M+ and pivoted from a simple e-sig tool to a full \"Contract-to-Cash\" platform — agreements, billing, dunning, ARR dashboards. It's real product, and the payment automation is genuinely well-built. But there's no free plan, Growth starts at $599/mo, and their 6 \"AI agents\" are automation workflows with agent branding — not actual AI document understanding. Agree targets finance teams at mid-market companies. Seal targets developers and B2B teams who need document infrastructure, not a revenue ops platform.",
+      'Agree raised $10M+ and pivoted from a simple e-sig tool to a full "Contract-to-Cash" platform — agreements, billing, dunning, ARR dashboards. It\'s real product, and the payment automation is genuinely well-built. But there\'s no free plan, Growth starts at $599/mo, and their 6 "AI agents" are automation workflows with agent branding — not actual AI document understanding. Agree targets finance teams at mid-market companies. Seal targets developers and B2B teams who need document infrastructure, not a revenue ops platform.',
     weaknesses: [
       "No free plan — minimum $599/mo (Growth tier)",
       "No actual AI clause review — automation workflows branded as AI",
@@ -299,7 +304,7 @@ function ComparePage() {
                 <thead>
                   <tr className="bg-muted/30 border-border border-b">
                     <th className="px-5 py-4 text-left">
-                      <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                      <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                         Feature
                       </span>
                     </th>
@@ -384,7 +389,9 @@ function ComparePage() {
                     </span>
                   </div>
 
-                  <p className="text-muted-foreground mb-6 text-sm leading-relaxed">{alt.verdict}</p>
+                  <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
+                    {alt.verdict}
+                  </p>
 
                   <div>
                     <p className="text-foreground mb-3 text-xs font-semibold tracking-wider uppercase">

@@ -119,9 +119,7 @@ export default {
     }
 
     if (url.pathname === "/health") {
-      return withCors(
-        Response.json({ status: "ok", name: "seal-mcp-server", version: "0.0.1" }),
-      );
+      return withCors(Response.json({ status: "ok", name: "seal-mcp-server", version: "0.0.1" }));
     }
 
     // RFC 9728 protected-resource metadata — proxied from Seal Convex's seal-mcp

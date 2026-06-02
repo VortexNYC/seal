@@ -1,3 +1,11 @@
+import { createBetterAuthConvexClient } from "@plasmapos/vortex-auth/better-auth/client";
+import {
+  createVortexAuthEventCapture,
+  createVortexAuthFlowStorage,
+  createVortexAuthRoutePaths,
+  createVortexBetterAuthRuntime,
+  type VortexBetterAuthClient,
+} from "@plasmapos/vortex-auth/react";
 /**
  * Seal vortex-auth (Better-Auth) web runtime — P4 foundation.
  *
@@ -8,14 +16,6 @@
  * hooks the route/component swaps will consume.
  */
 import { api } from "@seal/backend/convex/_generated/api";
-import { createBetterAuthConvexClient } from "@plasmapos/vortex-auth/better-auth/client";
-import {
-  createVortexAuthEventCapture,
-  createVortexAuthFlowStorage,
-  createVortexAuthRoutePaths,
-  createVortexBetterAuthRuntime,
-  type VortexBetterAuthClient,
-} from "@plasmapos/vortex-auth/react";
 import type { ConvexReactClient } from "convex/react";
 import posthog from "posthog-js";
 import type { ReactNode } from "react";

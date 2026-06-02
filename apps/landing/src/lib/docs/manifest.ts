@@ -1,8 +1,8 @@
 import type { Root } from "fumadocs-core/page-tree";
 import { deserializePageTree } from "fumadocs-core/source/client";
 
-import docsManifestData from "../../../.source/docs-manifest.json";
 import developerManifestData from "../../../.source/developer-manifest.json";
+import docsManifestData from "../../../.source/docs-manifest.json";
 
 interface SerializedPageTree {
   $fumadocs_loader: "page-tree";

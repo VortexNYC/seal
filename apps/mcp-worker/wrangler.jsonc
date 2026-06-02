@@ -5,12 +5,12 @@
   "compatibility_date": "2026-05-24",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "SEAL_API_BASE_URL": "https://compassionate-robin-742.convex.site/api/v1"
+    "SEAL_API_BASE_URL": "https://compassionate-robin-742.convex.site/api/v1",
   },
   // Custom domain — replaces the Vercel deployment that previously held this
   // host. CF auto-manages the DNS A records when custom_domain is true.
   "routes": [{ "pattern": "mcp.seal.nyc", "custom_domain": true }],
   "observability": {
-    "enabled": true
-  }
+    "enabled": true,
+  },
 }

@@ -29,11 +29,7 @@ import {
   upsertVortexAuthMember,
 } from "./lib/vortexAuthOrganizations";
 
-const inviteRoleValidator = v.union(
-  v.literal("admin"),
-  v.literal("member"),
-  v.literal("viewer"),
-);
+const inviteRoleValidator = v.union(v.literal("admin"), v.literal("member"), v.literal("viewer"));
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -58,10 +54,7 @@ export const createInvitation = mutation({
     email: v.string(),
     role: inviteRoleValidator,
   },
-  handler: async (
-    ctx,
-    args,
-  ): Promise<{ invitationId: string; acceptUrl: string }> => {
+  handler: async (ctx, args): Promise<{ invitationId: string; acceptUrl: string }> => {
     const auth = await getAuthContext(ctx);
     if (!auth.hasPermission("org:users:invite")) {
       throw new ConvexError("You do not have permission to invite members");
@@ -219,10 +212,7 @@ export const getInvitationByToken = query({
  */
 export const redeemInvitation = mutation({
   args: { token: v.string() },
-  handler: async (
-    ctx: MutationCtx,
-    args,
-  ): Promise<{ organizationId: string }> => {
+  handler: async (ctx: MutationCtx, args): Promise<{ organizationId: string }> => {
     // The invitee is authenticated but typically has NO org yet, so resolve
     // the user directly (getAuthContext would require an active org).
     const identity = await ctx.auth.getUserIdentity();

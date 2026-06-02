@@ -36,11 +36,11 @@ function DevLayoutRoute() {
     >
       <ClientOnly>
         <DocsLayout
-          containerProps={{ style: { '--fd-layout-width': '100vw' } as CSSProperties }}
+          containerProps={{ style: { "--fd-layout-width": "100vw" } as CSSProperties }}
           tree={devPageTree}
           nav={{
             title: (
-              <a href="/developer" className="font-semibold text-base">
+              <a href="/developer" className="text-base font-semibold">
                 Developer
               </a>
             ),

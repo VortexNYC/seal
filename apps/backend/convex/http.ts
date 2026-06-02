@@ -27,7 +27,6 @@ import Stripe from "stripe";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
-import { registerAuthRoutes } from "./betterAuth";
 import {
   API_SCOPES,
   apiHttpAction,
@@ -40,7 +39,13 @@ import {
   validateRequiredFields,
 } from "./api";
 import { ApiError } from "./api/errors";
-import { validateRequestedOAuthScopes } from "./mcpOAuthAuthorization";
+import { registerAuthRoutes } from "./betterAuth";
+import { resendComponent } from "./emails/resend_component";
+import {
+  buildBetterAuthTokenIdentifier,
+  getBetterAuthIdentityIssuer,
+  getBetterAuthIdentityProvider,
+} from "./lib/authIdentities";
 import {
   MCP_OAUTH_ALLOWED_SCOPES,
   MCP_OAUTH_AUDIENCE,
@@ -61,12 +66,7 @@ import {
   requireAllowedScopes,
   requireKnownClient,
 } from "./mcpOAuthAuth";
-import {
-  buildBetterAuthTokenIdentifier,
-  getBetterAuthIdentityIssuer,
-  getBetterAuthIdentityProvider,
-} from "./lib/authIdentities";
-import { resendComponent } from "./emails/resend_component";
+import { validateRequestedOAuthScopes } from "./mcpOAuthAuthorization";
 import { processStripeConnectWebhookEvent } from "./stripe/connect_webhook_handlers";
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
 

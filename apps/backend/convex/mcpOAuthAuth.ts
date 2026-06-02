@@ -1,3 +1,5 @@
+import type { McpOAuthClient } from "@plasmapos/vortex-auth/mcp";
+import type { FunctionReference } from "convex/server";
 /**
  * MCP OAuth internal queries/mutations that delegate to the vortexAuth
  * component (authorization codes, dynamic clients, refresh tokens, signing
@@ -7,9 +9,9 @@
  * Component table ids cross the query boundary as opaque strings.
  */
 import { ConvexError, v } from "convex/values";
-import type { FunctionReference } from "convex/server";
-import type { Id } from "./_generated/dataModel";
+
 import { components } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import {
   internalMutation,
   internalQuery,
@@ -17,7 +19,6 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { API_SCOPES } from "./api/context";
-import type { McpOAuthClient } from "@plasmapos/vortex-auth/mcp";
 import {
   MCP_OAUTH_ALLOWED_SCOPES,
   getMcpOAuthClient,

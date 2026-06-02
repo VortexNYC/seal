@@ -1,8 +1,8 @@
 import { createBetterAuthIdentityProvisionPayload } from "@plasmapos/vortex-auth/better-auth";
 import { ConvexError, v } from "convex/values";
 
-import type { Doc } from "./_generated/dataModel";
 import { components } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
 import { internalMutation, mutation, type MutationCtx, query } from "./_generated/server";
 import { getBetterAuthIdentityIssuer, getBetterAuthIdentityProvider } from "./lib/authIdentities";
 
@@ -193,10 +193,7 @@ function readIdentityEmailVerified(identity: BetterAuthIdentity): boolean {
   return identity.emailVerified === true;
 }
 
-function readOptionalIdentityString(
-  identity: BetterAuthIdentity,
-  key: string,
-): string | undefined {
+function readOptionalIdentityString(identity: BetterAuthIdentity, key: string): string | undefined {
   const value = identity[key];
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }

@@ -29,14 +29,14 @@ import {
   resolveLinkedBetterAuthMcpSession,
   resolveStoredApiKeyCredential,
 } from "@plasmapos/vortex-auth/convex";
-import {
-  buildBetterAuthTokenIdentifier,
-  getBetterAuthIdentityProvider,
-} from "../lib/authIdentities";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
+import {
+  buildBetterAuthTokenIdentifier,
+  getBetterAuthIdentityProvider,
+} from "../lib/authIdentities";
 import { ApiError } from "./errors";
 
 // ---------------------------------------------------------------------------
@@ -514,7 +514,11 @@ export function requireScope(auth: ApiAuthContext, scope: ApiScope): void {
   if (auth.authType === "mcp_oauth") {
     // MCP OAuth: the token's granted scopes are authoritative; fall back to
     // owner/admin full access or permission-derived access.
-    if (auth.hasScope(scope) || isFullAccessRole(auth.role) || canUserUseScope(auth.permissions, scope)) {
+    if (
+      auth.hasScope(scope) ||
+      isFullAccessRole(auth.role) ||
+      canUserUseScope(auth.permissions, scope)
+    ) {
       return;
     }
     throw new ApiError(403, `Missing required scope: ${scope}`, "INSUFFICIENT_SCOPE");

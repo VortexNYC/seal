@@ -3,8 +3,8 @@ import * as Sentry from "@sentry/react";
 import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import Loader from "@/components/loader";
 import { EnforceOrganization } from "@/components/enforce-organization";
+import Loader from "@/components/loader";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useAppAuth } from "@/lib/auth-runtime.better-auth";
 

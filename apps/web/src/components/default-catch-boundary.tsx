@@ -6,7 +6,6 @@ import { useEffect, useRef } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
 import {
   Card,
   CardContent,
@@ -15,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
 
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
   const router = useRouter();

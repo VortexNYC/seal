@@ -41,10 +41,7 @@ function createToolResponse(payload: unknown, isError = false) {
 
 function toUploadErrorResponse(error: unknown) {
   if (error instanceof UploadValidationError) {
-    return createToolResponse(
-      { error: error.message, details: error.details },
-      true,
-    );
+    return createToolResponse({ error: error.message, details: error.details }, true);
   }
   return createToolResponse(
     { error: error instanceof Error ? error.message : String(error) },

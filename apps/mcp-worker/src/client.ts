@@ -1,5 +1,4 @@
 import type { ApiError } from "@seal/backend/convex/validations/api";
-
 // Worker edition: uploadToStorageStream uses Web Standards ReadableStream rather
 // than node:stream Readable. ReadableStream is part of the fetch body init type
 // and works directly with fetch() in Workers.
