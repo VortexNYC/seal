@@ -11,6 +11,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# @plasmapos/vortex-auth is published to GitHub Packages; bun install reads this
+# via .npmrc (//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}). Mirrors crm CI.
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+
 jobs:
   quality:
     name: Quality Checks
