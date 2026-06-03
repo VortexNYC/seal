@@ -1,21 +1,21 @@
 ---
 title: Authentication
-description: Learn how to authenticate API requests using Clerk API keys with scope-based access control
+description: Learn how to authenticate API requests using API keys with scope-based access control
 ---
 
 # Authentication
 
-The Seal API uses Clerk API keys for authentication. All API requests must include a valid API key in the `Authorization` header.
+The Seal API uses API keys for authentication. All API requests must include a valid API key in the `Authorization` header.
 
 ## Creating an API Key
 
-API keys are created through the Clerk Dashboard:
+API keys are created in the Seal app at **Settings → Developer → API keys**:
 
-1. Navigate to your Clerk Dashboard
-2. Go to **API Keys** section
+1. Sign in to the Seal app at [app.seal.nyc](https://app.seal.nyc)
+2. Go to **Settings → Developer → API keys**
 3. Click **Create API Key**
 4. Select the required scopes for your integration
-5. Copy the generated API key (format: `ak_xxx`)
+5. Copy the generated API key — it is shown only once at creation (format: `ak_xxx`)
 
 <Callout type="warn">
   **Security Best Practice**: Store API keys securely and never commit them to version control.
@@ -35,6 +35,13 @@ Seal uses scope-based access control to limit what each API key can do. Select o
 | `seal:recipients:read`  | Read recipient information           | GET /documents/:id/recipients, GET /recipients/:id                                                               |
 | `seal:recipients:write` | Manage document recipients           | POST /documents/:id/recipients, PATCH /recipients/:id, DELETE /recipients/:id, POST /recipients/:id/remind       |
 | `seal:signatures:read`  | Read signature data and audit trails | GET /signatures, GET /signatures/:id, GET /signatures/:id/verify, GET /signatures/:id/audit                      |
+| `seal:webhooks:manage`  | Create, update, delete webhooks      | Webhook management endpoints                                                                                      |
+| `seal:members:read`     | Read organization members            | Member endpoints                                                                                                 |
+| `seal:settings:read`    | Read organization settings           | Settings endpoints                                                                                               |
+| `seal:settings:write`   | Update organization settings         | Settings endpoints                                                                                               |
+| `seal:audit:read`       | Read audit logs                      | Audit log endpoints                                                                                              |
+| `seal:contacts:read`    | Read contacts                        | Contact endpoints                                                                                                |
+| `seal:contacts:write`   | Create, update, delete contacts      | Contact endpoints                                                                                                |
 
 ## Making Authenticated Requests
 
@@ -90,7 +97,7 @@ curl -X GET https://seal.convex.site/api/v1/documents \
 - **Use HTTPS**: Always make requests over HTTPS to protect your API key in transit
 - **Rotate Keys**: Regularly rotate API keys, especially if they may have been compromised
 - **Environment Variables**: Store API keys in environment variables, never hardcode them
-- **Monitor Usage**: Track API key usage in the Clerk Dashboard to detect anomalies
+- **Monitor and Revoke**: Monitor and revoke keys from Settings → Developer → API keys in the Seal app
 - **Separate Keys**: Use different API keys for development, staging, and production environments
 
 ## Next Steps

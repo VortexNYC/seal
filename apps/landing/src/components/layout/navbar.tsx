@@ -1,4 +1,3 @@
-import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -19,7 +18,6 @@ export function Navbar() {
   const location = useLocation();
   const pathname = location.pathname;
   const [isScrolled, setIsScrolled] = useState(false);
-  const hasClerk = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -85,18 +83,7 @@ export function Navbar() {
         {/* Desktop CTA */}
         <div className="flex items-center gap-2 max-md:hidden">
           <ThemeToggle />
-          {hasClerk ? (
-            <>
-              <SignedOut>
-                <SignedOutDesktopCtas />
-              </SignedOut>
-              <SignedIn>
-                <SignedInCta />
-              </SignedIn>
-            </>
-          ) : (
-            <SignedOutDesktopCtas />
-          )}
+          <SignedOutDesktopCtas />
         </div>
 
         {/* Mobile toggle */}
@@ -131,18 +118,7 @@ export function Navbar() {
             ))}
           </div>
           <div className="mt-4 flex flex-col gap-2 border-t pt-4">
-            {hasClerk ? (
-              <>
-                <SignedOut>
-                  <SignedOutMobileCtas />
-                </SignedOut>
-                <SignedIn>
-                  <SignedInMobileCta />
-                </SignedIn>
-              </>
-            ) : (
-              <SignedOutMobileCtas />
-            )}
+            <SignedOutMobileCtas />
           </div>
         </nav>
       )}
@@ -192,30 +168,3 @@ function SignedOutMobileCtas() {
   );
 }
 
-function SignedInCta() {
-  return (
-    <Button asChild className="group">
-      <a href={`${APP_URL}/app`}>
-        Open App
-        <ArrowRight
-          aria-hidden="true"
-          className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
-        />
-      </a>
-    </Button>
-  );
-}
-
-function SignedInMobileCta() {
-  return (
-    <Button asChild className="group w-full" size="lg">
-      <a href={`${APP_URL}/app`}>
-        Open App
-        <ArrowRight
-          aria-hidden="true"
-          className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5"
-        />
-      </a>
-    </Button>
-  );
-}

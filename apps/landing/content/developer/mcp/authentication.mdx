@@ -5,15 +5,15 @@ description: Configure OAuth authentication for the Seal MCP server
 
 # MCP Authentication
 
-The Seal MCP server uses Clerk OAuth 2.0 for secure authentication. This guide walks you through configuring OAuth access for AI assistants.
+The Seal MCP server uses OAuth 2.0 via Seal's own authorization server (Better-Auth) for secure authentication. This guide walks you through configuring OAuth access for AI assistants.
 
 ## Authentication Flow
 
-1. **Authorization Request**: MCP client redirects to Clerk authorization page
-2. **User Consent**: You authorize access and select organization
-3. **Authorization Code**: Clerk returns authorization code to MCP client
-4. **Token Exchange**: MCP client exchanges code for access token
-5. **API Access**: MCP client uses access token for all API requests
+1. **Authorization Request**: MCP client performs OAuth 2.0 (with dynamic client registration) and redirects to Seal's authorization/sign-in page
+2. **User Consent**: You sign in with your Seal account, authorize access, and select an organization
+3. **Authorization Code**: Seal's authorization server returns an authorization code to the MCP client
+4. **Token Exchange**: MCP client exchanges the code for an access token (a JWT)
+5. **API Access**: MCP client uses the access token for all API requests
 
 ## Claude Desktop Setup
 
@@ -116,12 +116,12 @@ Access tokens expire after 1 hour. The MCP client automatically refreshes tokens
 
 ### Token Revocation
 
-Revoke MCP access from your Clerk dashboard:
+Revoke MCP access from your Seal account (Settings → Developer) or by disconnecting the integration in your MCP client:
 
-1. Go to [Clerk Dashboard](https://dashboard.clerk.com)
-2. Navigate to **Sessions**
-3. Find the MCP session
-4. Click **Revoke**
+1. Sign in to the Seal app and go to **Settings → Developer**
+2. Find the connected MCP integration
+3. Disconnect or revoke its access
+4. Alternatively, disconnect the integration directly in your MCP client
 
 ## OAuth Endpoints
 
@@ -169,7 +169,7 @@ The MCP server cannot:
 - ✗ Access other organizations you belong to
 - ✗ Change organization settings
 - ✗ Manage billing or subscriptions
-- ✗ Access your Clerk account settings
+- ✗ Access your Seal account settings
 - ✗ Impersonate you in the web application
 
 ### Best Practices
@@ -199,7 +199,7 @@ The MCP server cannot:
 
 **Solution**: MCP client should auto-refresh. If it doesn't:
 
-1. Revoke access from Clerk dashboard
+1. Revoke access from your Seal account (Settings → Developer) or disconnect the integration in your MCP client
 2. Re-authorize in Claude Desktop
 
 ### Wrong Organization
@@ -208,7 +208,7 @@ The MCP server cannot:
 
 **Solution**:
 
-1. Revoke access from Clerk dashboard
+1. Revoke access from your Seal account (Settings → Developer) or disconnect the integration in your MCP client
 2. Re-authorize and select correct organization
 
 ### Permission Denied
