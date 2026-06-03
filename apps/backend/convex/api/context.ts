@@ -25,6 +25,7 @@ import {
   ApiAuthError,
   createConvexApiAuthLookupAdapter,
   type McpSessionLike,
+  resolveApiScopeAuthorization,
   resolveAuthorizedApiAuthContext,
   resolveLinkedBetterAuthMcpSession,
   resolveStoredApiKeyCredential,
@@ -486,20 +487,12 @@ export async function resolveAuthContext(
  * @param scope - The API scope to check
  * @returns Whether the user has permissions that satisfy the scope
  */
-export function canUserUseScope(userPermissions: string[], scope: ApiScope): boolean {
+export function canUserUseScope(userPermissions: readonly string[], scope: ApiScope): boolean {
   const requiredPerms = SCOPE_PERMISSION_MAP[scope];
   if (!requiredPerms) {
     return false;
   }
   return requiredPerms.some((perm) => userPermissions.includes(perm));
-}
-
-/**
- * Checks if a role has full access (owner or admin).
- * These roles should have all permissions regardless of explicit permission list.
- */
-function isFullAccessRole(role: string): boolean {
-  return role === "owner" || role === "admin";
 }
 
 /**
@@ -510,25 +503,29 @@ function isFullAccessRole(role: string): boolean {
  * @param scope - The required scope
  * @throws {ApiError} 403 - If scope is missing
  */
-export function requireScope(auth: ApiAuthContext, scope: ApiScope): void {
-  if (auth.authType === "mcp_oauth") {
-    // The OAuth token's granted scopes are a HARD CEILING — the user consented to
-    // exactly these scopes, so role does NOT bypass the scope grant (an owner's
-    // narrowly-scoped MCP token must not exceed its consented scopes).
-    if (!auth.hasScope(scope)) {
-      throw new ApiError(403, `Missing required scope: ${scope}`, "INSUFFICIENT_SCOPE");
-    }
-    // Within a granted scope, owner/admin or the mapped permission authorizes.
-    if (isFullAccessRole(auth.role) || canUserUseScope(auth.permissions, scope)) {
-      return;
-    }
-    throw new ApiError(403, `Missing required permission for scope: ${scope}`, "INSUFFICIENT_SCOPE");
-  }
+/** Map Seal's auth types onto the package scope-authorization vocabulary. */
+function toPackageScopeAuthType(authType: ApiAuthType): "jwt" | "api_key" | "oauth" {
+  return authType === "mcp_oauth" ? "oauth" : authType;
+}
 
-  // API keys: scope grant is strict — no role/permission fallback.
-  if (!auth.hasScope(scope)) {
-    throw new ApiError(403, `Missing required scope: ${scope}`, "INSUFFICIENT_SCOPE");
+export function requireScope(auth: ApiAuthContext, scope: ApiScope): void {
+  // Delegate to the package's canonical scope-authorization (matches crm). For
+  // api_key + mcp_oauth the token's granted scopes are a HARD CEILING — no role
+  // bypass (fullAccessRoles: []) — so a narrowly-scoped token can't exceed its
+  // consent. This replaces hand-rolled logic that previously drifted permissive.
+  const decision = resolveApiScopeAuthorization({
+    authType: toPackageScopeAuthType(auth.authType),
+    scopes: auth.scopes,
+    role: auth.role,
+    permissions: auth.permissions,
+    requiredScope: scope,
+    fullAccessRoles: [],
+    canUserUseScope,
+  });
+  if (decision.allowed) {
+    return;
   }
+  throw new ApiError(403, `Missing required scope: ${scope}`, "INSUFFICIENT_SCOPE");
 }
 
 /**
@@ -540,32 +537,21 @@ export function requireScope(auth: ApiAuthContext, scope: ApiScope): void {
  * @throws {ApiError} 403 - If no scope matches
  */
 export function requireAnyScope(auth: ApiAuthContext, scopes: ApiScope[]): void {
-  if (auth.authType === "mcp_oauth") {
-    // The token must have been granted at least one of the required scopes — the
-    // scope grant is a HARD CEILING, not bypassed by role.
-    if (!auth.hasAnyScope(scopes)) {
-      throw new ApiError(
-        403,
-        `Missing required scope. Need one of: ${scopes.join(", ")}`,
-        "INSUFFICIENT_SCOPE",
-      );
-    }
-    // Within the granted scope(s), owner/admin or a mapped permission authorizes.
-    if (
-      isFullAccessRole(auth.role) ||
-      scopes.some((scope) => canUserUseScope(auth.permissions, scope))
-    ) {
-      return;
-    }
-    throw new ApiError(
-      403,
-      `Missing required permission for scope. Need one of: ${scopes.join(", ")}`,
-      "INSUFFICIENT_SCOPE",
-    );
-  }
-
-  // API keys: scope grant is strict — no role/permission fallback.
-  if (!auth.hasAnyScope(scopes)) {
+  // Authorized if ANY required scope passes the canonical decision (each enforces
+  // the token-scope ceiling + permission).
+  const allowed = scopes.some(
+    (scope) =>
+      resolveApiScopeAuthorization({
+        authType: toPackageScopeAuthType(auth.authType),
+        scopes: auth.scopes,
+        role: auth.role,
+        permissions: auth.permissions,
+        requiredScope: scope,
+        fullAccessRoles: [],
+        canUserUseScope,
+      }).allowed,
+  );
+  if (!allowed) {
     throw new ApiError(
       403,
       `Missing required scope. Need one of: ${scopes.join(", ")}`,
