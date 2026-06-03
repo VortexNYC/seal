@@ -45,7 +45,7 @@ function getManualChunkName(id: string): string | undefined {
     return "vendor-motion";
   }
 
-  if (matchesPackage(id, "@clerk") || matchesPackage(id, "posthog")) {
+  if (matchesPackage(id, "posthog")) {
     return "vendor-services";
   }
 

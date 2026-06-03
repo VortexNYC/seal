@@ -63,8 +63,7 @@ function TermsOfService() {
             <li>Accept responsibility for all activity that occurs under your account</li>
           </ul>
           <p>
-            Authentication is managed through our identity provider, Clerk. If you create an
-            account, you also agree to Clerk&apos;s terms of service.
+            Authentication is managed by Seal on our own infrastructure.
           </p>
 
           <h2>4. Service Description</h2>

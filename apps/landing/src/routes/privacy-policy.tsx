@@ -44,8 +44,7 @@ function PrivacyPolicy() {
           <h3>Account Information</h3>
           <p>
             When you join the waitlist or sign up through an invitation, we collect information
-            provided through our authentication provider, Clerk, including your name, email address,
-            and profile image.
+            provided during authentication, including your name, email address, and profile image.
           </p>
 
           <h3>Document Data</h3>
@@ -98,10 +97,7 @@ function PrivacyPolicy() {
           </p>
           <ul>
             <li>
-              <strong>Clerk</strong> — Authentication and identity management
-            </li>
-            <li>
-              <strong>Convex</strong> — Backend infrastructure and data storage
+              <strong>Convex</strong> — Backend infrastructure, authentication, and data storage
             </li>
             <li>
               <strong>Stripe</strong> — Payment processing and subscription management

@@ -13,7 +13,7 @@ The Model Context Protocol is an open standard that allows AI assistants to secu
 
 - **27 Tools**: Complete API coverage for documents, recipients, templates, signatures, and uploads
 - **4 Resources**: Access to documents and templates with detail views
-- **Clerk OAuth**: Secure authentication with your Seal account
+- **OAuth 2.0**: Secure authentication with your Seal account
 - **Real-time Access**: Direct integration with your organization's data
 
 ## MCP Server URL
@@ -114,7 +114,7 @@ Resources provide read-only access to your Seal data:
 
 ## Authentication
 
-The MCP server uses Clerk OAuth for secure authentication:
+The MCP server uses OAuth 2.0 via Seal's own authorization server (Better-Auth) for secure authentication:
 
 1. **OAuth Flow**: Standard OAuth 2.0 authorization code flow
 2. **Scopes**: Full API access (all seal:\* scopes)
@@ -167,7 +167,7 @@ Claude: [Uses seal_list_documents and seal_send_reminder tools]
 - **OAuth Authentication**: Industry-standard secure authentication
 - **Organization Scoped**: Access limited to your selected organization
 - **Audit Trail**: All MCP actions are logged in document audit trails
-- **Revocable**: Disconnect MCP access anytime from Clerk dashboard
+- **Revocable**: Disconnect MCP access anytime from your Seal account (Settings → Developer) or your MCP client
 
 <Callout type="info">
   **Privacy**: The MCP server only accesses data you explicitly authorize. AI assistants cannot
