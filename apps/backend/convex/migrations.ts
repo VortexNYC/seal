@@ -72,69 +72,6 @@ export const backfillSubscriptionOrganizationId = migrations.define({
   },
 });
 
-// ---------------------------------------------------------------------------
-// EPHEMERAL — auth-subject rename data migrations.
-//
-// One-time backfill + strip used to rename the legacy auth-subject columns to
-// `authSubject` on live deployments (the schema no longer declares the old
-// fields, so they are read/removed via a local cast). Run order per
-// deployment: backfill* → (deploy switched code) → strip*. Delete these once
-// every deployment has been migrated.
-// ---------------------------------------------------------------------------
-
-/** Backfill `users.authSubject` from the legacy auth-subject column. */
-export const backfillUserAuthSubject = migrations.define({
-  table: "users",
-  migrateOne: async (ctx, doc) => {
-    if (doc.authSubject !== undefined) return;
-    const legacy = (doc as { clerkId?: string }).clerkId;
-    if (legacy !== undefined) await ctx.db.patch(doc._id, { authSubject: legacy });
-  },
-});
-
-/** Backfill `user_profiles.authSubject` from the legacy auth-subject column. */
-export const backfillUserProfilesAuthSubject = migrations.define({
-  table: "user_profiles",
-  migrateOne: async (ctx, doc) => {
-    if (doc.authSubject !== undefined) return;
-    const legacy = (doc as { clerkUserId?: string }).clerkUserId;
-    if (legacy !== undefined) await ctx.db.patch(doc._id, { authSubject: legacy });
-  },
-});
-
-/** Strip the legacy auth-subject column from user documents. */
-export const stripUserClerkId = migrations.define({
-  table: "users",
-  migrateOne: async (ctx, doc) => {
-    const { _id, _creationTime, ...rest } = doc as typeof doc & { clerkId?: string };
-    if (!("clerkId" in rest)) return;
-    delete (rest as { clerkId?: string }).clerkId;
-    await ctx.db.replace(_id, rest);
-  },
-});
-
-/** Strip the legacy auth-subject column from user_profiles documents. */
-export const stripUserProfilesClerkUserId = migrations.define({
-  table: "user_profiles",
-  migrateOne: async (ctx, doc) => {
-    const { _id, _creationTime, ...rest } = doc as typeof doc & { clerkUserId?: string };
-    if (!("clerkUserId" in rest)) return;
-    delete (rest as { clerkUserId?: string }).clerkUserId;
-    await ctx.db.replace(_id, rest);
-  },
-});
-
-/** Strip the dead legacy org-id column from organization documents. */
-export const stripOrgClerkId = migrations.define({
-  table: "organizations",
-  migrateOne: async (ctx, doc) => {
-    const { _id, _creationTime, ...rest } = doc as typeof doc & { clerkId?: string };
-    if (!("clerkId" in rest)) return;
-    delete (rest as { clerkId?: string }).clerkId;
-    await ctx.db.replace(_id, rest);
-  },
-});
-
 /**
  * Remove legacy stripeCustomerId from user documents.
  *
