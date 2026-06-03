@@ -173,6 +173,7 @@ export function logTrialConversionIfNeeded(
 
 export const MAX_SUBSCRIPTION_RETRY_ATTEMPTS = 5;
 
+/** Calculates exponential backoff delay in milliseconds for subscription retries. */
 export function getRetryDelayMs(retryCount: number): number {
   const baseDelayMs = 5000;
   return baseDelayMs * 2 ** retryCount;
