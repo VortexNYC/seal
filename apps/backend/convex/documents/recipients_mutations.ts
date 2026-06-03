@@ -419,8 +419,8 @@ export const addRecipients = permissionMutation("documents:edit")({
         await logRecipientAction(ctx, {
           organizationId: document.organizationId,
           actorType: "user",
-          actorId: user.clerkId,
-          userId: user.clerkId,
+          actorId: user.authSubject,
+          userId: user.authSubject,
           action: "recipient.added",
           documentId: args.documentId,
           recipientId,
@@ -499,8 +499,8 @@ export const removeRecipient = permissionMutation("documents:edit")({
       await logRecipientAction(ctx, {
         organizationId: document.organizationId,
         actorType: "user",
-        actorId: user.clerkId,
-        userId: user.clerkId,
+        actorId: user.authSubject,
+        userId: user.authSubject,
         action: "recipient.removed",
         documentId: recipient.documentId,
         recipientId: args.recipientId,
@@ -652,8 +652,8 @@ export const submitSignatureAuthenticated = authMutation({
       await logRecipientAction(ctx, {
         organizationId: document.organizationId,
         actorType: "user",
-        actorId: user.clerkId,
-        userId: user.clerkId,
+        actorId: user.authSubject,
+        userId: user.authSubject,
         action: auditAction,
         documentId: args.documentId,
         recipientId: recipient._id,
@@ -761,8 +761,8 @@ export const updateRecipient = permissionMutation("documents:edit")({
       await logRecipientAction(ctx, {
         organizationId: document.organizationId,
         actorType: "user",
-        actorId: user.clerkId,
-        userId: user.clerkId,
+        actorId: user.authSubject,
+        userId: user.authSubject,
         action: "recipient.updated",
         documentId: recipient.documentId,
         recipientId: args.recipientId,

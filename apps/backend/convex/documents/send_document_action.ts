@@ -464,8 +464,8 @@ async function authorizeDocumentOwner(
     throw new ConvexError("Authentication required");
   }
 
-  const user = await ctx.runQuery(internal.organizations.helpers.getUserByClerkId, {
-    clerkId: identity.subject,
+  const user = await ctx.runQuery(internal.organizations.helpers.getUserByAuthSubject, {
+    authSubject: identity.subject,
   });
 
   if (!user) {
@@ -508,7 +508,7 @@ export const markDocumentAsSent = internalMutation({
   args: {
     documentId: v.id("documents"),
     deadline: v.optional(v.number()), // SEA-119: Signing deadline
-    userId: v.optional(v.string()), // Clerk ID for audit trail
+    userId: v.optional(v.string()), // auth subject for audit trail
     signingMode: v.optional(v.union(v.literal("parallel"), v.literal("sequential"))),
     allowDictateNextSigner: v.optional(v.boolean()),
     expirationPeriod: v.optional(
@@ -623,7 +623,7 @@ export const sendDocumentEmails = action({
       await ctx.runMutation(internal.documents.send_document_action.markDocumentAsSent, {
         documentId: args.documentId,
         deadline: emailDeadline,
-        userId: senderUser?.clerkId,
+        userId: senderUser?.authSubject,
         signingMode: args.signingMode,
         allowDictateNextSigner: args.allowDictateNextSigner,
         expirationPeriod: args.expirationPeriod,

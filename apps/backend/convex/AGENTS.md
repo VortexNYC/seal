@@ -28,7 +28,7 @@ apps/backend/convex/
 | Permissions   | `apps/backend/convex/auth.utils.ts` | Role hierarchy + permission strings |
 | Schemas       | `apps/backend/convex/schemas/`      | One table per file                  |
 | REST API      | `apps/backend/convex/api/v1/`       | Public endpoints                    |
-| Webhooks      | `apps/backend/convex/http.ts`       | Clerk + Stripe HTTP router          |
+| Webhooks      | `apps/backend/convex/http.ts`       | Stripe + auth HTTP router           |
 | RLS rules     | `apps/backend/convex/rls.ts`        | Access control                      |
 
 ## CONVENTIONS

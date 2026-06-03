@@ -28,7 +28,7 @@ if [[ "${SYNC:-0}" == "1" ]]; then
     --exclude=.git \
     --exclude=test-results \
     --exclude=playwright-report \
-    --exclude=playwright/.clerk \
+    --exclude=playwright/.auth \
     --exclude=.turbo \
     --exclude=.cache \
     --exclude=dist \

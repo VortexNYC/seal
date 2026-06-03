@@ -294,7 +294,7 @@ export const getOrganizationMember = authQuery({
       joinedAt: member._creationTime,
       permissions: member.permissions,
       permissionOverrides: member.permissionOverrides,
-      clerkId: user.clerkId,
+      authSubject: user.authSubject,
       timezone: user.timezone,
     };
   },

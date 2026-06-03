@@ -29,7 +29,7 @@ describe("Notifications mutations", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -98,7 +98,7 @@ describe("Notifications mutations", () => {
   describe("list", () => {
     test("returns all notifications for the user ordered by createdAt desc", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .query(api.notifications.index.list, {});
 
       expect(result.items).toHaveLength(3);
@@ -110,7 +110,7 @@ describe("Notifications mutations", () => {
 
     test("respects limit parameter", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .query(api.notifications.index.list, { limit: 2 });
 
       expect(result.items).toHaveLength(2);
@@ -120,7 +120,7 @@ describe("Notifications mutations", () => {
 
     test("filters to unread only when unreadOnly is true", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .query(api.notifications.index.list, { unreadOnly: true });
 
       expect(result.items).toHaveLength(2);
@@ -137,7 +137,7 @@ describe("Notifications mutations", () => {
   describe("getUnreadCount", () => {
     test("returns correct count of unread notifications", async () => {
       const count = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .query(api.notifications.index.getUnreadCount, {});
 
       expect(count).toBe(2);
@@ -153,7 +153,7 @@ describe("Notifications mutations", () => {
       });
 
       const count = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .query(api.notifications.index.getUnreadCount, {});
 
       expect(count).toBe(0);
@@ -165,7 +165,7 @@ describe("Notifications mutations", () => {
       const unreadId = notificationIds[0]!;
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.markAsRead, {
           notificationId: unreadId,
         });
@@ -185,7 +185,7 @@ describe("Notifications mutations", () => {
       const readId = notificationIds[1]!;
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.markAsRead, {
           notificationId: readId,
         });
@@ -201,7 +201,7 @@ describe("Notifications mutations", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.markAsRead, {
           notificationId: idToDelete,
         });
@@ -218,7 +218,7 @@ describe("Notifications mutations", () => {
         const otherUserId = await ctx.db.insert("users", {
           email: "other@test.com",
           name: "Other User",
-          clerkId: "clerk_test_other",
+          authSubject: "test_other",
           isEmailVerified: true,
           timezone: "UTC",
           locale: "en-US",
@@ -247,7 +247,7 @@ describe("Notifications mutations", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.markAsRead, {
           notificationId: otherNotificationId,
         });
@@ -259,14 +259,14 @@ describe("Notifications mutations", () => {
   describe("markAllAsRead", () => {
     test("marks all unread notifications as read and returns count", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.markAllAsRead, {});
 
       expect(result).toEqual({ success: true, count: 2 });
 
       // Verify all notifications are now read
       const unreadCount = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .query(api.notifications.index.getUnreadCount, {});
 
       expect(unreadCount).toBe(0);
@@ -282,7 +282,7 @@ describe("Notifications mutations", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.markAllAsRead, {});
 
       expect(result).toEqual({ success: true, count: 0 });
@@ -294,7 +294,7 @@ describe("Notifications mutations", () => {
       const idToDelete = notificationIds[0]!;
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.deleteNotification, {
           notificationId: idToDelete,
         });
@@ -313,7 +313,7 @@ describe("Notifications mutations", () => {
         const otherUserId = await ctx.db.insert("users", {
           email: "other@test.com",
           name: "Other User",
-          clerkId: "clerk_test_other",
+          authSubject: "test_other",
           isEmailVerified: true,
           timezone: "UTC",
           locale: "en-US",
@@ -342,7 +342,7 @@ describe("Notifications mutations", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.deleteNotification, {
           notificationId: otherNotificationId,
         });
@@ -361,14 +361,14 @@ describe("Notifications mutations", () => {
   describe("clearAll", () => {
     test("deletes all notifications for the user and returns count", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.clearAll, {});
 
       expect(result).toEqual({ success: true, count: 3 });
 
       // Verify no notifications remain for this user
       const remaining = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .query(api.notifications.index.list, {});
 
       expect(remaining.items).toHaveLength(0);
@@ -379,7 +379,7 @@ describe("Notifications mutations", () => {
         const otherUserId = await ctx.db.insert("users", {
           email: "other@test.com",
           name: "Other User",
-          clerkId: "clerk_test_other",
+          authSubject: "test_other",
           isEmailVerified: true,
           timezone: "UTC",
           locale: "en-US",
@@ -409,7 +409,7 @@ describe("Notifications mutations", () => {
 
       // Clear all for the owner
       await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.clearAll, {});
 
       // Verify the other user's notification still exists
@@ -423,12 +423,12 @@ describe("Notifications mutations", () => {
     test("returns count 0 when user has no notifications", async () => {
       // Clear all first
       await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.clearAll, {});
 
       // Clear again
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.notifications.index.clearAll, {});
 
       expect(result).toEqual({ success: true, count: 0 });

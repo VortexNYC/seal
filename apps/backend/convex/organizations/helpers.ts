@@ -33,16 +33,16 @@ export const getUserById = internalQuery({
 });
 
 /**
- * Get user by Clerk ID (internal query for actions)
+ * Get user by auth subject (internal query for actions)
  */
-export const getUserByClerkId = internalQuery({
+export const getUserByAuthSubject = internalQuery({
   args: {
-    clerkId: v.string(),
+    authSubject: v.string(),
   },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", args.authSubject))
       .first();
   },
 });

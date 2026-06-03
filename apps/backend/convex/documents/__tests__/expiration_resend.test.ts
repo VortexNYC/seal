@@ -70,7 +70,7 @@ describe("resetExpiredRecipient", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -191,7 +191,7 @@ describe("reactivateExpiredDocument", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -292,7 +292,7 @@ describe("markDocumentAsSent (re-send expired flow)", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

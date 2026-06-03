@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-React 19 SPA using TanStack Router (file-based) + Vite, with Clerk auth and Convex data.
+React 19 SPA using TanStack Router (file-based) + Vite, with Better-Auth (via @plasmapos/vortex-auth) and Convex data.
 
 ## STRUCTURE
 
@@ -19,15 +19,15 @@ apps/web/
 
 ## WHERE TO LOOK
 
-| Task            | Location                                           | Notes                          |
-| --------------- | -------------------------------------------------- | ------------------------------ |
-| Root layout     | `apps/web/src/routes/__root.tsx`                   | Router setup + providers       |
-| Auth gate       | `apps/web/src/routes/_authenticated.tsx`           | SignedIn/SignedOut layout      |
-| Org enforcement | `apps/web/src/components/enforce-organization.tsx` | Redirects to onboarding        |
-| Route tree      | `apps/web/src/routes/`                             | File-based routes              |
-| Convex usage    | `apps/web/src/main.tsx`                            | Clerk + Convex + Router wiring |
-| E2E fixtures    | `apps/web/e2e/fixtures/`                           | Auth + Convex helpers          |
-| E2E pages       | `apps/web/e2e/pages/`                              | Page Object Models             |
+| Task            | Location                                           | Notes                                |
+| --------------- | -------------------------------------------------- | ------------------------------------ |
+| Root layout     | `apps/web/src/routes/__root.tsx`                   | Router setup + providers             |
+| Auth gate       | `apps/web/src/routes/_authenticated.tsx`           | SignedIn/SignedOut layout            |
+| Org enforcement | `apps/web/src/components/enforce-organization.tsx` | Redirects to onboarding              |
+| Route tree      | `apps/web/src/routes/`                             | File-based routes                    |
+| Convex usage    | `apps/web/src/main.tsx`                            | Better-Auth + Convex + Router wiring |
+| E2E fixtures    | `apps/web/e2e/fixtures/`                           | Auth + Convex helpers                |
+| E2E pages       | `apps/web/e2e/pages/`                              | Page Object Models                   |
 
 ## CONVENTIONS
 

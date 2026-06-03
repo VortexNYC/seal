@@ -8,7 +8,7 @@ import { createConvexAuthConfig } from "@plasmapos/vortex-auth/better-auth/serve
 export const betterAuthConvexProvider = createConvexAuthConfig();
 
 // Single-origin Better-Auth: this deployment signs and validates its own
-// tokens. The Clerk provider was removed in P6 once vortex-auth went live.
+// tokens.
 export default {
   providers: [betterAuthConvexProvider],
 };

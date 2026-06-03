@@ -13,7 +13,7 @@ import { readCachedWorkspaceSlug } from "../fixtures/workspace-state";
 /**
  * Recipient signing E2E — the public token flow that no other test exercises.
  *
- * Why this test runs without Clerk auth:
+ * Why this test runs without an authenticated session:
  *   The signing experience is the only Seal surface that anonymous users hit.
  *   We deliberately open a fresh browser context with no `storageState` so the
  *   recipient cannot accidentally inherit the sender's session.
@@ -53,7 +53,7 @@ const test = base.extend<{
 });
 
 test.describe("Recipient Signing", () => {
-  test("loads the signing page from a fresh browser context with no Clerk session", async ({
+  test("loads the signing page from a fresh browser context with no auth session", async ({
     browser,
     signableDoc,
   }) => {

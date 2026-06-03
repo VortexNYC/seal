@@ -46,7 +46,7 @@ describe("Payment field mutations", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -115,7 +115,7 @@ describe("Payment field mutations", () => {
   describe("upsertPaymentConfig", () => {
     test("creates a new payment config", async () => {
       const configId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
           makeValidPaymentArgs(paymentFieldId),
@@ -137,7 +137,7 @@ describe("Payment field mutations", () => {
     });
 
     test("updates existing config on second upsert", async () => {
-      const authed = t.withIdentity({ subject: "clerk_test_owner" });
+      const authed = t.withIdentity({ subject: "test_owner" });
 
       const firstId = await authed.mutation(
         api.payment_fields.mutations.upsertPaymentConfig,
@@ -161,7 +161,7 @@ describe("Payment field mutations", () => {
 
     test("lowercases currency", async () => {
       const configId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.payment_fields.mutations.upsertPaymentConfig, {
           ...makeValidPaymentArgs(paymentFieldId),
           currency: "USD",
@@ -203,7 +203,7 @@ describe("Payment field mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(
             api.payment_fields.mutations.upsertPaymentConfig,
             makeValidPaymentArgs(textFieldId),
@@ -214,7 +214,7 @@ describe("Payment field mutations", () => {
     test("rejects config with empty items", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.payment_fields.mutations.upsertPaymentConfig, {
             ...makeValidPaymentArgs(paymentFieldId),
             items: [],
@@ -225,7 +225,7 @@ describe("Payment field mutations", () => {
     test("rejects amount below Stripe minimum", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.payment_fields.mutations.upsertPaymentConfig, {
             ...makeValidPaymentArgs(paymentFieldId),
             items: [{ id: "item-1", description: "Tiny fee", quantity: 1, unitPrice: 10 }],
@@ -236,7 +236,7 @@ describe("Payment field mutations", () => {
     test("rejects recurring without config", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.payment_fields.mutations.upsertPaymentConfig, {
             ...makeValidPaymentArgs(paymentFieldId),
             paymentType: "recurring" as const,
@@ -246,7 +246,7 @@ describe("Payment field mutations", () => {
 
     test("accepts valid recurring config", async () => {
       const configId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.payment_fields.mutations.upsertPaymentConfig, {
           ...makeValidPaymentArgs(paymentFieldId),
           paymentType: "recurring" as const,
@@ -268,7 +268,7 @@ describe("Payment field mutations", () => {
 
   describe("deletePaymentConfig", () => {
     test("deletes existing payment config", async () => {
-      const authed = t.withIdentity({ subject: "clerk_test_owner" });
+      const authed = t.withIdentity({ subject: "test_owner" });
 
       await authed.mutation(
         api.payment_fields.mutations.upsertPaymentConfig,
@@ -291,7 +291,7 @@ describe("Payment field mutations", () => {
 
     test("succeeds silently when no config exists", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.payment_fields.mutations.deletePaymentConfig, { fieldId: paymentFieldId });
 
       expect(result).toEqual({ success: true });
@@ -300,7 +300,7 @@ describe("Payment field mutations", () => {
 
   describe("updatePaymentStatus", () => {
     test("updates payment status and Stripe IDs", async () => {
-      const authed = t.withIdentity({ subject: "clerk_test_owner" });
+      const authed = t.withIdentity({ subject: "test_owner" });
 
       const configId = await authed.mutation(
         api.payment_fields.mutations.upsertPaymentConfig,
@@ -322,7 +322,7 @@ describe("Payment field mutations", () => {
     });
 
     test("transitions through status lifecycle", async () => {
-      const authed = t.withIdentity({ subject: "clerk_test_owner" });
+      const authed = t.withIdentity({ subject: "test_owner" });
 
       const configId = await authed.mutation(
         api.payment_fields.mutations.upsertPaymentConfig,
@@ -348,7 +348,7 @@ describe("Payment field mutations", () => {
   describe("storeStripeIds (internal)", () => {
     test("stores Stripe IDs on config", async () => {
       const configId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
           makeValidPaymentArgs(paymentFieldId),
@@ -374,7 +374,7 @@ describe("Payment field mutations", () => {
 
     test("stores hostedInvoiceUrl on config", async () => {
       const configId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
           makeValidPaymentArgs(paymentFieldId),
@@ -402,7 +402,7 @@ describe("Payment field mutations", () => {
   describe("updatePaymentStatusFromSubscriptionWebhook (internal)", () => {
     test("finds config by subscriptionId and updates status", async () => {
       const configId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
           makeValidPaymentArgs(paymentFieldId),
@@ -453,7 +453,7 @@ describe("Payment field mutations", () => {
 
     test("updates the updatedAt timestamp", async () => {
       const configId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(
           api.payment_fields.mutations.upsertPaymentConfig,
           makeValidPaymentArgs(paymentFieldId),

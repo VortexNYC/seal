@@ -106,7 +106,7 @@ describe("api/v1/documents — access and bulk operations", () => {
       return await ctx.db.insert("users", {
         email: "owner@doc-access.com",
         name: "Owner",
-        clerkId: "clerk_doc_access_owner",
+        authSubject: "doc_access_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

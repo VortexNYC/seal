@@ -459,7 +459,7 @@ export const getDocumentRecipientsInternal = internalQuery({
 
 /**
  * Internal query to find a recipient by signing token.
- * Used by actions that authenticate via signing token instead of Clerk.
+ * Used by actions that authenticate via signing token instead of user auth.
  */
 export const findRecipientByTokenInternal = internalQuery({
   args: { signingToken: v.string() },

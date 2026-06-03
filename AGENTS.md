@@ -8,7 +8,7 @@
 
 ## OVERVIEW
 
-Seal is a Bun + Turborepo monorepo with a React 19 product app, a TanStack Start landing/docs site, a Convex backend, an MCP server, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Clerk; the product UI uses Tailwind v4 + Shadcn patterns.
+Seal is a Bun + Turborepo monorepo with a React 19 product app, a TanStack Start landing/docs site, a Convex backend, an MCP server, transactional email templates, an embeddable React SDK, and shared design tokens. Auth uses Better-Auth (via @plasmapos/vortex-auth); the product UI uses Tailwind v4 + Shadcn patterns.
 
 ## STRUCTURE
 
@@ -33,7 +33,7 @@ seal/
 | Backend permissions    | `apps/backend/convex/auth.utils.ts`                            | Role hierarchy + permission helpers             |
 | REST API v1            | `apps/backend/convex/api/v1/`                                  | Public API endpoints                            |
 | Product web routing    | `apps/web/src/routes/`                                         | TanStack file-based routes                      |
-| Product web entry      | `apps/web/src/main.tsx`                                        | Clerk + Convex + Router setup                   |
+| Product web entry      | `apps/web/src/main.tsx`                                        | Better-Auth + Convex + Router setup             |
 | Landing/docs routes    | `apps/landing/src/routes/`                                     | Marketing site, docs, API reference             |
 | Published docs content | `apps/landing/content/docs/`                                   | Fumadocs MDX source                             |
 | API spec source        | `apps/landing/openapi.yaml`                                    | Generates API docs                              |

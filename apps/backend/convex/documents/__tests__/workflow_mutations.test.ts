@@ -28,7 +28,7 @@ describe("Workflow mutations", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -86,7 +86,7 @@ describe("Workflow mutations", () => {
       const beforeSend = Date.now();
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.workflow_mutations.sendDocument, {
           documentId,
         });
@@ -107,7 +107,7 @@ describe("Workflow mutations", () => {
     test("rejects if document has no recipients", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.workflow_mutations.sendDocument, {
             documentId,
           }),
@@ -121,7 +121,7 @@ describe("Workflow mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.workflow_mutations.sendDocument, {
             documentId,
           }),
@@ -150,7 +150,7 @@ describe("Workflow mutations", () => {
       const beforeCancel = Date.now();
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.workflow_mutations.cancelDocument, {
           documentId,
           reason: "Changed my mind",
@@ -175,7 +175,7 @@ describe("Workflow mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.workflow_mutations.cancelDocument, {
             documentId,
           }),
@@ -216,7 +216,7 @@ describe("Workflow mutations", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.workflow_mutations.cancelDocument, {
           documentId,
         });
@@ -280,7 +280,7 @@ describe("Workflow mutations", () => {
       const beforeComplete = Date.now();
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.workflow_mutations.checkAndCompleteWorkflow, {
           documentId,
         });
@@ -329,7 +329,7 @@ describe("Workflow mutations", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.workflow_mutations.checkAndCompleteWorkflow, {
           documentId,
         });
@@ -403,7 +403,7 @@ describe("Workflow mutations", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.workflow_mutations.checkAndCompleteWorkflow, {
           documentId,
         });
@@ -425,7 +425,7 @@ describe("Workflow mutations", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.workflow_mutations.checkAndCompleteWorkflow, {
           documentId,
         });
@@ -441,7 +441,7 @@ describe("Workflow mutations", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.workflow_mutations.checkAndCompleteWorkflow, {
           documentId,
         });

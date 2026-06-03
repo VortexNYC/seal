@@ -17,7 +17,7 @@ describe("Document Sharing - Database Operations", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Owner User",
-        clerkId: "clerk_owner_123",
+        authSubject: "owner_123",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -28,7 +28,7 @@ describe("Document Sharing - Database Operations", () => {
       return await ctx.db.insert("users", {
         email: "viewer@test.com",
         name: "Viewer User",
-        clerkId: "clerk_viewer_456",
+        authSubject: "viewer_456",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -164,7 +164,7 @@ describe("Document Sharing - Database Operations", () => {
         return await ctx.db.insert("users", {
           email: "third@test.com",
           name: "Third User",
-          clerkId: "clerk_third_789",
+          authSubject: "third_789",
           isEmailVerified: true,
           timezone: "UTC",
           locale: "en-US",

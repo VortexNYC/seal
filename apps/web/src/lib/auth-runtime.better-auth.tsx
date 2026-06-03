@@ -11,8 +11,8 @@ import {
  *
  * Mirrors crm's apps/web/src/lib/auth-runtime.better-auth.tsx. Built
  * ADDITIVELY: this module is not yet wired into main.tsx (that swap is the
- * P4 cutover, which replaces ClerkProvider + ConvexProviderWithClerk with
- * AuthRuntimeProvider in one dev-browser-tested unit). Exposes the app auth
+ * P4 cutover, which wires in AuthRuntimeProvider to provide the Better-Auth
+ * runtime in one dev-browser-tested unit). Exposes the app auth
  * hooks the route/component swaps will consume.
  */
 import { api } from "@seal/backend/convex/_generated/api";

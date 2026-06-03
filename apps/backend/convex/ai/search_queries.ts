@@ -11,15 +11,15 @@ import { action, internalQuery } from "../_generated/server";
 import type { SearchResult } from "./search";
 
 /**
- * Internal query: resolve a Clerk user's active organization and user ID.
+ * Internal query: resolve a user's active organization and user ID by auth subject.
  * Used by search actions that need auth context without the authAction wrapper.
  */
 export const getCurrentUserOrg = internalQuery({
-  args: { clerkUserId: v.string() },
+  args: { authSubject: v.string() },
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", args.authSubject))
       .first();
 
     if (!user?.activeOrganizationId) return null;
@@ -47,7 +47,7 @@ export const fullSearch = action({
     if (args.query.trim().length < 2) return [];
 
     const result = await ctx.runQuery(internal.ai.search_queries.getCurrentUserOrg, {
-      clerkUserId: identity.subject,
+      authSubject: identity.subject,
     });
     if (!result) return [];
 

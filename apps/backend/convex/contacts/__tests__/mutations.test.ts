@@ -27,7 +27,7 @@ describe("Contact mutations", () => {
       return await ctx.db.insert("users", {
         email: "admin@contacts-test.com",
         name: "Admin User",
-        clerkId: "clerk_contacts_admin",
+        authSubject: "contacts_admin",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -47,7 +47,7 @@ describe("Contact mutations", () => {
     });
   });
 
-  const asAdmin = () => t.withIdentity({ subject: "clerk_contacts_admin" });
+  const asAdmin = () => t.withIdentity({ subject: "contacts_admin" });
 
   describe("create", () => {
     test("creates a contact with required fields", async () => {

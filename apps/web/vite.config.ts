@@ -43,8 +43,8 @@ export default defineConfig(({ command }) => {
       return "ui";
     }
 
-    if (moduleId.includes("@clerk") || moduleId.includes("posthog")) {
-      return "vendor-auth";
+    if (moduleId.includes("posthog")) {
+      return "vendor-analytics";
     }
 
     if (moduleId.includes("@stripe")) {

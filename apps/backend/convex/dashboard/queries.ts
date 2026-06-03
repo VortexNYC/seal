@@ -279,11 +279,11 @@ export const getRecentActivity = permissionQuery("audit:view")({
         let actorName = "System";
         let actorEmail = "";
 
-        // actorId stores Clerk user ID as string, need to look up by clerkId
+        // actorId stores auth subject as string, need to look up by authSubject
         if (log.actorId && log.actorType === "user") {
           const user = await ctx.db
             .query("users")
-            .withIndex("by_clerk_id", (q) => q.eq("clerkId", log.actorId as string))
+            .withIndex("by_auth_subject", (q) => q.eq("authSubject", log.actorId as string))
             .first();
           if (user) {
             actorName = user.name ?? user.email.split("@")[0] ?? "Unknown";

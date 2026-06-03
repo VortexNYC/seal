@@ -1,6 +1,6 @@
 export interface OrganizationSyncState {
-  isClerkLoaded: boolean;
-  hasClerkActiveOrganization: boolean;
+  isAuthLoaded: boolean;
+  hasActiveOrganization: boolean;
   hasOrganization: boolean;
   activeOrganizationSlug: string | null;
   hasAttemptedRecovery?: boolean;
@@ -11,7 +11,7 @@ export function shouldWaitForOrganizationSync(state: OrganizationSyncState): boo
     return false;
   }
 
-  if (!state.isClerkLoaded || !state.hasClerkActiveOrganization) {
+  if (!state.isAuthLoaded || !state.hasActiveOrganization) {
     return false;
   }
 

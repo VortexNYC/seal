@@ -17,7 +17,7 @@ It also includes transactional email templates, an embeddable React SDK, and sha
 
 | Path                     | Purpose                                     | Stack                                          |
 | ------------------------ | ------------------------------------------- | ---------------------------------------------- |
-| `apps/web`               | Main product app                            | React 19, TanStack Router, Vite, Clerk, Convex |
+| `apps/web`               | Main product app                            | React 19, TanStack Router, Vite, Better-Auth, Convex |
 | `apps/landing`           | Marketing site and published developer docs | TanStack Start, Fumadocs, local content        |
 | `apps/backend`           | Convex backend, REST API, webhooks, jobs    | Convex, TypeScript                             |
 | `apps/mcp-server`        | MCP server for Seal tools/resources         | Bun, Express, MCP SDK                          |
@@ -30,7 +30,7 @@ It also includes transactional email templates, an embeddable React SDK, and sha
 
 - Bun `1.3.0` or newer
 - A Convex deployment for backend-backed local work
-- Clerk credentials for authenticated flows
+- Better-Auth (via @plasmapos/vortex-auth) is the auth provider; no external auth credentials needed for local work
 - Optional: Stripe, Resend, and other integration secrets for billing/email flows
 
 Install dependencies once from the repo root:
@@ -85,7 +85,6 @@ The exact env set depends on which workspace you are running.
 Required for boot:
 
 - `VITE_CONVEX_URL`
-- `VITE_CLERK_PUBLISHABLE_KEY`
 
 Common optional vars:
 
@@ -98,9 +97,7 @@ Common optional vars:
 
 Common vars used by the Convex backend include:
 
-- `CLERK_FRONTEND_API_URL`
-- `CLERK_SECRET_KEY`
-- `CLERK_WEBHOOK_SECRET`
+- `BETTER_AUTH_SECRET`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `STRIPE_CONNECT_WEBHOOK_SECRET`

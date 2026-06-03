@@ -37,7 +37,7 @@ describe("audit_logs/helpers", () => {
       return await ctx.db.insert("users", {
         email: "user@test.com",
         name: "Test User",
-        clerkId: "clerk_test_user",
+        authSubject: "test_user",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -84,9 +84,9 @@ describe("audit_logs/helpers", () => {
       const logId = await t.run(async (ctx) => {
         return await logAction(ctx, {
           organizationId,
-          userId: "clerk_test_user",
+          userId: "test_user",
           actorType: "user",
-          actorId: "clerk_test_user",
+          actorId: "test_user",
           action: "document.created",
           resourceType: "document",
           resourceId: documentId,
@@ -104,9 +104,9 @@ describe("audit_logs/helpers", () => {
 
       expect(record).not.toBeNull();
       expect(record!.organizationId).toBe(organizationId);
-      expect(record!.userId).toBe("clerk_test_user");
+      expect(record!.userId).toBe("test_user");
       expect(record!.actorType).toBe("user");
-      expect(record!.actorId).toBe("clerk_test_user");
+      expect(record!.actorId).toBe("test_user");
       expect(record!.action).toBe("document.created");
       expect(record!.resourceType).toBe("document");
       expect(record!.resourceId).toBe(documentId);
@@ -150,7 +150,7 @@ describe("audit_logs/helpers", () => {
         return await logAction(ctx, {
           organizationId,
           actorType: "user",
-          actorId: "clerk_test_user",
+          actorId: "test_user",
           action: "document.sent",
           resourceType: "document",
           resourceId: documentId,
@@ -178,9 +178,9 @@ describe("audit_logs/helpers", () => {
       const logId = await t.run(async (ctx) => {
         return await logAction(ctx, {
           organizationId,
-          userId: "clerk_test_user",
+          userId: "test_user",
           actorType: "user",
-          actorId: "clerk_test_user",
+          actorId: "test_user",
           action: "document.updated",
           resourceType: "document",
           resourceId: documentId,
@@ -225,7 +225,7 @@ describe("audit_logs/helpers", () => {
       const logId = await t.run(async (ctx) => {
         return await logFieldAction(ctx, {
           organizationId,
-          userId: "clerk_test_user",
+          userId: "test_user",
           action: "field.created",
           fieldId,
           documentId,
@@ -247,7 +247,7 @@ describe("audit_logs/helpers", () => {
       expect(record!.documentId).toBe(documentId);
       expect(record!.recipientId).toBe(recipientId);
       expect(record!.actorType).toBe("user");
-      expect(record!.actorId).toBe("clerk_test_user");
+      expect(record!.actorId).toBe("test_user");
       expect(record!.newValues).toEqual({ fieldType: "signature", page: 1 });
       expect(record!.metadata).toEqual({
         description: "Field created for document",
@@ -276,7 +276,7 @@ describe("audit_logs/helpers", () => {
       const logId = await t.run(async (ctx) => {
         return await logFieldAction(ctx, {
           organizationId,
-          userId: "clerk_test_user",
+          userId: "test_user",
           action: "field.deleted",
           fieldId,
           documentId,
@@ -305,7 +305,7 @@ describe("audit_logs/helpers", () => {
       const logId = await t.run(async (ctx) => {
         return await logDocumentAction(ctx, {
           organizationId,
-          userId: "clerk_test_user",
+          userId: "test_user",
           action: "document.sent",
           documentId,
           description: "Document sent to 3 recipients",
@@ -324,8 +324,8 @@ describe("audit_logs/helpers", () => {
       expect(record!.resourceId).toBe(documentId);
       expect(record!.documentId).toBe(documentId);
       expect(record!.actorType).toBe("user");
-      expect(record!.actorId).toBe("clerk_test_user");
-      expect(record!.userId).toBe("clerk_test_user");
+      expect(record!.actorId).toBe("test_user");
+      expect(record!.userId).toBe("test_user");
       expect(record!.metadata).toEqual({
         description: "Document sent to 3 recipients",
         source: "web",
@@ -338,7 +338,7 @@ describe("audit_logs/helpers", () => {
       const logId = await t.run(async (ctx) => {
         return await logDocumentAction(ctx, {
           organizationId,
-          userId: "clerk_test_user",
+          userId: "test_user",
           action: "document.cancelled",
           documentId,
           ipAddress: "10.0.0.1",
@@ -401,8 +401,8 @@ describe("audit_logs/helpers", () => {
         return await logRecipientAction(ctx, {
           organizationId,
           actorType: "user",
-          actorId: "clerk_test_user",
-          userId: "clerk_test_user",
+          actorId: "test_user",
+          userId: "test_user",
           action: "recipient.added",
           documentId,
           recipientId,
@@ -417,7 +417,7 @@ describe("audit_logs/helpers", () => {
 
       expect(record!.action).toBe("recipient.added");
       expect(record!.actorType).toBe("user");
-      expect(record!.userId).toBe("clerk_test_user");
+      expect(record!.userId).toBe("test_user");
       expect(record!.metadata).toEqual({
         description: "Recipient added",
         source: "web",

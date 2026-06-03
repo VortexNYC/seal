@@ -26,7 +26,7 @@ export const run = migrations.runner();
  * (upsert keyed by the bridge id; seedDefaultRoles is a no-op on re-run).
  *
  * Membership backfill is intentionally NOT done here: a component membership
- * requires the member's `vortexAuthUserId`, which existing Clerk-only users do
+ * requires the member's `vortexAuthUserId`, which existing unbridged users do
  * not have until they sign in via Better-Auth. Memberships populate lazily at
  * cutover (P2c/P4); this migration only establishes org + role truth, which
  * needs no user identity.

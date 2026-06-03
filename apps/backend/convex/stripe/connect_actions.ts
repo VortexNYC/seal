@@ -35,8 +35,8 @@ async function resolveAdminMembership(ctx: ActionCtx, organizationId: Id<"organi
     throw new ConvexError("Authentication required");
   }
 
-  const user = await ctx.runQuery(internal.organizations.helpers.getUserByClerkId, {
-    clerkId: identity.subject,
+  const user = await ctx.runQuery(internal.organizations.helpers.getUserByAuthSubject, {
+    authSubject: identity.subject,
   });
 
   if (!user) {

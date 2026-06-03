@@ -34,7 +34,7 @@ export function getTestWorkspaceConfig(): TestWorkspaceConfig {
  * Sign in (or sign up + onboard) the Better-Auth test user, then verify Convex
  * authentication is ready before the caller saves storage state.
  *
- * Better-Auth (no Clerk):
+ * Better-Auth:
  * 1. Try the email+password sign-in form.
  * 2. If sign-in does not land authenticated (account does not exist yet), sign
  *    up via the sign-up form.

@@ -1,7 +1,7 @@
 /**
  * Developer Settings - API Keys
  *
- * Manage API keys for programmatic access using Clerk's API Keys feature.
+ * Manage API keys for programmatic access.
  * Route: /{slug}/settings/developer/api-keys
  */
 
@@ -64,7 +64,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/developer/a
   pendingComponent: FormSkeleton,
 });
 
-type ClerkApiScope =
+type ApiScope =
   | "seal:documents:read"
   | "seal:documents:write"
   | "seal:templates:read"
@@ -81,7 +81,7 @@ type ClerkApiScope =
   | "seal:contacts:write";
 
 const AVAILABLE_SCOPES: {
-  value: ClerkApiScope;
+  value: ApiScope;
   label: string;
   description: string;
   icon: typeof FileText;
@@ -210,7 +210,7 @@ function ApiKeysPage() {
 
   const [isCreating, setIsCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
-  const [selectedScopes, setSelectedScopes] = useState<ClerkApiScope[]>([]);
+  const [selectedScopes, setSelectedScopes] = useState<ApiScope[]>([]);
   const [newKeySecret, setNewKeySecret] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
 
@@ -279,7 +279,7 @@ function ApiKeysPage() {
     }
   };
 
-  const toggleScope = (scope: ClerkApiScope) => {
+  const toggleScope = (scope: ApiScope) => {
     setSelectedScopes((prev) =>
       prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope],
     );

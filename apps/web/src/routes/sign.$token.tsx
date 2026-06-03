@@ -3,7 +3,7 @@
  * Route: /sign/$token
  *
  * Allows recipients to view and sign documents using their unique signing token.
- * This is an unauthenticated route - no Clerk login required.
+ * This is an unauthenticated route - no login required.
  */
 
 import { convexQuery } from "@convex-dev/react-query";

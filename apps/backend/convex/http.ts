@@ -104,7 +104,7 @@ registerAuthRoutes(http);
 //
 // Stands up the Better-Auth-backed MCP OAuth server (metadata, JWKS, authorize,
 // token, dynamic client registration, and the /mcp tool endpoint). Runs in
-// PARALLEL with the existing Clerk MCP/JWT path; nothing else in this file is
+// PARALLEL with the existing API-key/JWT path; nothing else in this file is
 // touched. Mirrors crm's wiring, adapted to Seal's scopes + tools.
 // ===========================================================================
 
@@ -2575,15 +2575,14 @@ http.route({
 
 // ---------------------------------------------------------------------------
 // DEV-only: AI eval endpoint for promptfoo testing
-// Gated on CLERK_SECRET_KEY starting with "sk_test_" — never runs in prod.
+// Gated on DEV_EVAL_SECRET (set only on dev/test deployments) — never runs in prod.
 // ---------------------------------------------------------------------------
 
 http.route({
   path: "/dev/ai-eval",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    const clerkSecret = process.env.CLERK_SECRET_KEY;
-    if (!clerkSecret || !clerkSecret.startsWith("sk_test_")) {
+    if (!process.env.DEV_EVAL_SECRET) {
       return new Response(JSON.stringify({ error: "Only available in dev" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
@@ -2619,8 +2618,7 @@ http.route({
   path: "/dev/reset-eval-state",
   method: "POST",
   handler: httpAction(async (ctx) => {
-    const clerkSecret = process.env.CLERK_SECRET_KEY;
-    if (!clerkSecret || !clerkSecret.startsWith("sk_test_")) {
+    if (!process.env.DEV_EVAL_SECRET) {
       return new Response(JSON.stringify({ error: "Only available in dev" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
@@ -2646,8 +2644,7 @@ http.route({
   path: "/dev/eval/extract-payment",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    const clerkSecret = process.env.CLERK_SECRET_KEY;
-    if (!clerkSecret || !clerkSecret.startsWith("sk_test_")) {
+    if (!process.env.DEV_EVAL_SECRET) {
       return new Response(JSON.stringify({ error: "Only available in dev" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },

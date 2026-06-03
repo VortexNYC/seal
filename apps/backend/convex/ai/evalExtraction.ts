@@ -6,7 +6,7 @@
  * same model, same prompt, same schema. This lets the scoring script run
  * against the full corpus without needing to seed 20 PDFs into storage.
  *
- * DEV ONLY — guarded by CLERK_SECRET_KEY sk_test_ prefix check.
+ * DEV ONLY — guarded by the DEV_EVAL_SECRET env check on the HTTP route.
  */
 
 import { generateObject } from "ai";

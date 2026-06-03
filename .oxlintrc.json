@@ -147,7 +147,7 @@
     "**/coverage",
     "**/.expo",
     "**/src-tauri",
-    "**/.clerk",
+    "**/.auth",
     "**/.cache",
     "**/.output",
     "**/.next",

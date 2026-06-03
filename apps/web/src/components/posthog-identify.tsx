@@ -29,7 +29,7 @@ export function PostHogIdentify({ organization }: PostHogIdentifyProps) {
   useEffect(() => {
     if (!isLoaded || !user) return;
 
-    // Identify the user with their Clerk ID and properties
+    // Identify the user with their user id and properties
     identify({
       userId: user.id,
       email: user.primaryEmailAddress?.emailAddress,

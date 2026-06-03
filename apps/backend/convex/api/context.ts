@@ -10,9 +10,9 @@
  *    (`resolveMcpApiAuth` → `resolveMcpAuth`). MCP clients ride the same
  *    `/api/v1` resource server; there is no separate tool surface to maintain.
  *
- * No Clerk. The legacy Clerk session-JWT / OAuth (`oat_`) verification path was
- * removed once the web app moved to Better-Auth and MCP moved to the package
- * OAuth server — nothing sends Clerk tokens to `/api/v1` anymore.
+ * `/api/v1` only accepts these two credential types: the web app authenticates
+ * via Better-Auth and MCP rides the package OAuth server, so no other token
+ * shape reaches this resolver.
  *
  * @module api/context
  */
@@ -101,7 +101,7 @@ export interface ApiAuthContext {
   /** Which auth mechanism was used */
   authType: ApiAuthType;
 
-  /** Clerk API key ID (ak_xxx format) */
+  /** API key ID (ak_xxx format) */
   apiKeyId?: string;
 
   /** User-provided key name */
@@ -110,14 +110,14 @@ export interface ApiAuthContext {
   /** Scopes from the auth token (API key or JWT) */
   scopes: string[];
 
-  /** Internal Convex user ID (resolved from Clerk subject) */
+  /** Internal Convex user ID (resolved from the auth subject) */
   userId: Id<"users">;
 
   /** Internal Convex organization ID */
   organizationId: Id<"organizations">;
 
-  /** Clerk user ID (subject) */
-  clerkUserId: string;
+  /** Auth subject (identity.subject) */
+  authSubject: string;
 
   /** Whether the key is org-scoped or user-scoped */
   subjectType: "user" | "organization";
@@ -155,7 +155,6 @@ export interface ApiAuthContext {
 
 /**
  * Seal API scopes for external integrations.
- * These must be configured in the Clerk Dashboard.
  *
  * @constant
  * @description
@@ -224,8 +223,8 @@ export const SCOPE_PERMISSION_MAP: Record<ApiScope, string[]> = {
  *
  * Flow:
  * 1. Extract Bearer token from Authorization header
- * 2. Verify API key with Clerk
- * 3. Resolve Clerk subject to internal user/org IDs
+ * 2. Verify API key
+ * 3. Resolve the auth subject to internal user/org IDs
  * 4. Validate user has active membership in target organization
  * 5. Return context with scope helpers
  *
@@ -286,7 +285,7 @@ async function buildAuthContext(
     scopes: string[];
     userId: Id<"users">;
     organizationId: Id<"organizations">;
-    clerkUserId: string;
+    authSubject: string;
     subjectType: "user" | "organization";
     clientIp?: string;
   },
@@ -347,7 +346,7 @@ async function buildAuthContext(
     scopes: params.scopes,
     userId: params.userId,
     organizationId: params.organizationId,
-    clerkUserId: params.clerkUserId,
+    authSubject: params.authSubject,
     subjectType: params.subjectType,
     role,
     permissions,
@@ -368,8 +367,8 @@ export async function resolveApiAuth(
   const token = parseBearerToken(authHeader);
 
   // Verify against the vortexAuth COMPONENT (prefix lookup + secret hash +
-  // status/expiry), replacing Clerk's apiKeys.verify. The component key maps
-  // back to Seal org/user anchors via the internal query.
+  // status/expiry). The component key maps back to Seal org/user anchors via
+  // the internal query.
   const result = await resolveStoredApiKeyCredential({
     token,
     findByKeyPrefix: async (keyPrefix) =>
@@ -395,7 +394,7 @@ export async function resolveApiAuth(
     scopes: apiKey.scopes,
     userId: apiKey.userId,
     organizationId: apiKey.organizationId,
-    clerkUserId: apiKey.clerkUserId,
+    authSubject: apiKey.authSubject,
     subjectType: "user",
     clientIp,
   });
@@ -405,7 +404,7 @@ export async function resolveApiAuth(
  * Resolves an MCP OAuth access token (ES256 JWT issued by this deployment's
  * Better-Auth MCP OAuth server) to an internal `ApiAuthContext`.
  *
- * Flow (all `@plasmapos/vortex-auth`, no Clerk):
+ * Flow (all `@plasmapos/vortex-auth`):
  * 1. Verify the token signature/claims via the deployment's stored JWKS
  *    (`mcpOAuthNode.verifyAccessToken`), bound to the MCP audience.
  * 2. Link the Better-Auth subject → Seal user + active org and authorize org
@@ -457,7 +456,7 @@ async function resolveMcpApiAuth(
     scopes: mcp.scopes,
     userId: mcp.userId,
     organizationId: mcp.organizationId,
-    clerkUserId: mcp.betterAuthUserId,
+    authSubject: mcp.betterAuthUserId,
     subjectType: "user",
     clientIp,
   });

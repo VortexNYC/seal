@@ -1,8 +1,7 @@
 /**
  * Profile Settings Page - General
  *
- * User profile management using Clerk's UserProfile component
- * with additional bio field stored in Convex
+ * User profile management with additional bio field stored in Convex
  * Route: /{slug}/settings/profile/ (index)
  */
 

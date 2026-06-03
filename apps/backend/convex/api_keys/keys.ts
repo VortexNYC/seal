@@ -1,7 +1,7 @@
 /**
  * Component-backed API keys (P5). The vortexAuth component is the source of
- * truth — replaces the Clerk-issued keys (api_keys/actions.ts, removed in P6).
- * Tokens are shown once at creation; only a prefix + hash are stored.
+ * truth for these API keys. Tokens are shown once at creation; only a prefix +
+ * hash are stored.
  */
 import {
   createApiKeyPrefix,
@@ -97,9 +97,9 @@ export const listApiKeys = query({
 
 /**
  * Internal: resolve a component API key by its key prefix, plus the owner's
- * clerkId (clerkUserId is needed by the API auth-context builder during the
- * migration). Returns the StoredApiKeyCredential-compatible shape for the
- * package's resolveStoredApiKeyCredential verifier, or null when not found.
+ * auth subject (needed by the API auth-context builder). Returns the
+ * StoredApiKeyCredential-compatible shape for the package's
+ * resolveStoredApiKeyCredential verifier, or null when not found.
  */
 export const getApiKeyByPrefix = internalQuery({
   args: { keyPrefix: v.string() },
@@ -119,7 +119,7 @@ export const getApiKeyByPrefix = internalQuery({
       scopes: apiKey.scopes,
       organizationId: apiKey.organizationId,
       userId: apiKey.userId,
-      clerkUserId: user?.clerkId ?? "",
+      authSubject: user?.authSubject ?? "",
     };
   },
 });

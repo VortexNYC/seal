@@ -26,7 +26,6 @@ type OrganizationUpdateData = Partial<
 };
 
 type EnsurePersonalOrganizationArgs = {
-  clerkOrganizationId?: string;
   organizationName?: string;
   organizationSlug?: string;
 };
@@ -39,7 +38,7 @@ async function requireUserForPersonalOrganization(ctx: MutationCtx): Promise<Doc
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+    .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
     .first();
 
   if (!user) {
@@ -53,17 +52,6 @@ async function findExistingOrganizationForPersonalWorkspace(
   ctx: MutationCtx,
   args: EnsurePersonalOrganizationArgs,
 ): Promise<Doc<"organizations"> | null> {
-  if (args.clerkOrganizationId) {
-    const organization = await ctx.db
-      .query("organizations")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkOrganizationId!))
-      .first();
-
-    if (organization) {
-      return organization;
-    }
-  }
-
   if (!args.organizationSlug) {
     return null;
   }
@@ -91,7 +79,6 @@ async function upsertPersonalOrganization(
       type: "personal",
       timezone: user.timezone || "UTC",
       isActive: true,
-      clerkId: args.clerkOrganizationId || undefined,
       updatedAt: Date.now(),
     });
 
@@ -108,7 +95,6 @@ async function upsertPersonalOrganization(
   await ctx.db.patch(existingOrganization._id, {
     name: args.organizationName || existingOrganization.name,
     slug: args.organizationSlug || existingOrganization.slug,
-    clerkId: args.clerkOrganizationId || existingOrganization.clerkId,
     updatedAt: Date.now(),
   });
 
@@ -238,7 +224,6 @@ function validateReminderSchedule(reminderSchedule: number[] | undefined): void 
  */
 export const ensurePersonalOrganization = mutation({
   args: {
-    clerkOrganizationId: v.optional(v.string()),
     organizationName: v.optional(v.string()),
     organizationSlug: v.optional(v.string()),
   },
@@ -552,9 +537,9 @@ export const updateMemberRole = adminMutation({
 
     await logAction(ctx, {
       organizationId: organization._id,
-      userId: currentUser.clerkId,
+      userId: currentUser.authSubject,
       actorType: "user",
-      actorId: currentUser.clerkId,
+      actorId: currentUser.authSubject,
       action: "member.role_changed",
       resourceType: "member",
       resourceId: membership.userId,
@@ -642,9 +627,9 @@ export const removeMember = adminMutation({
 
     await logAction(ctx, {
       organizationId: organization._id,
-      userId: currentUser.clerkId,
+      userId: currentUser.authSubject,
       actorType: "user",
-      actorId: currentUser.clerkId,
+      actorId: currentUser.authSubject,
       action: "member.removed",
       resourceType: "member",
       resourceId: removedUserId,

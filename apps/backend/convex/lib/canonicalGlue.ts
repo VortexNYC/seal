@@ -3,7 +3,7 @@
  *
  * P0 scaffold pass: builds `createVortexAuthGlue` with Seal-flavored
  * adapters wired against Seal's existing schema. NO call site uses this
- * yet — it lands alongside the legacy Clerk auth path so we can run
+ * yet — it lands alongside the existing auth path so we can run
  * behavior-equivalence checks before swapping the auth context to consume
  * the glue under the hood (P2).
  *

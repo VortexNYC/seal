@@ -27,7 +27,7 @@ describe("Branding settings", () => {
       return await ctx.db.insert("users", {
         email: "admin@branding-test.com",
         name: "Admin User",
-        clerkId: "clerk_branding_admin",
+        authSubject: "branding_admin",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -88,7 +88,7 @@ describe("Branding settings", () => {
   describe("getBrandingSettings", () => {
     test("returns defaults when no branding has been set", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -120,7 +120,7 @@ describe("Branding settings", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -138,7 +138,7 @@ describe("Branding settings", () => {
   describe("updateBrandingSettings", () => {
     test("enables branding and sets colors", async () => {
       await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           enabled: true,
           brandColor: "#123456",
@@ -146,7 +146,7 @@ describe("Branding settings", () => {
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -159,7 +159,7 @@ describe("Branding settings", () => {
     test("preserves existing settings when updating partial fields", async () => {
       // First update: set brand color and email name
       await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           enabled: true,
           brandColor: "#AABBCC",
@@ -168,13 +168,13 @@ describe("Branding settings", () => {
 
       // Second update: only change accent color
       await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           accentColor: "#DDEEFF",
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -190,7 +190,7 @@ describe("Branding settings", () => {
 
     test("sets email configuration", async () => {
       await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           emailFromName: "Seal Legal",
           emailReplyTo: "legal@seal.nyc",
@@ -198,7 +198,7 @@ describe("Branding settings", () => {
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -210,13 +210,13 @@ describe("Branding settings", () => {
 
     test("can hide Seal branding", async () => {
       await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           hideSealBranding: true,
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -227,7 +227,7 @@ describe("Branding settings", () => {
     test("can disable branding", async () => {
       // Enable first
       await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           enabled: true,
           brandColor: "#FF0000",
@@ -235,13 +235,13 @@ describe("Branding settings", () => {
 
       // Then disable
       await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           enabled: false,
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -253,7 +253,7 @@ describe("Branding settings", () => {
 
     test("returns success object", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_branding_admin" })
+        .withIdentity({ subject: "branding_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           enabled: true,
         });

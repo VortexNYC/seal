@@ -29,7 +29,7 @@ describe("Recipients mutations", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -84,7 +84,7 @@ describe("Recipients mutations", () => {
   describe("addRecipients", () => {
     test("creates recipients with correct defaults and generates signing token & tokenHash", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.recipients_mutations.addRecipients, {
           documentId,
           recipients: [
@@ -118,7 +118,7 @@ describe("Recipients mutations", () => {
 
     test("lowercases email addresses", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.recipients_mutations.addRecipients, {
           documentId,
           recipients: [{ email: "Alice@EXAMPLE.COM", name: "Alice", role: "signer" }],
@@ -134,7 +134,7 @@ describe("Recipients mutations", () => {
     test("rejects duplicate emails in same batch", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.recipients_mutations.addRecipients, {
             documentId,
             recipients: [
@@ -148,7 +148,7 @@ describe("Recipients mutations", () => {
     test("rejects empty recipients array", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.recipients_mutations.addRecipients, {
             documentId,
             recipients: [],
@@ -164,7 +164,7 @@ describe("Recipients mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.recipients_mutations.addRecipients, {
             documentId,
             recipients: [{ email: "new@example.com", role: "signer" }],
@@ -188,7 +188,7 @@ describe("Recipients mutations", () => {
   describe("removeRecipient", () => {
     test("deletes recipient and returns success", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.recipients_mutations.removeRecipient, {
           recipientId,
         });
@@ -222,7 +222,7 @@ describe("Recipients mutations", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.recipients_mutations.removeRecipient, {
           recipientId,
         });
@@ -278,7 +278,7 @@ describe("Recipients mutations", () => {
 
       // Remove the recipient
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.recipients_mutations.removeRecipient, {
           recipientId,
         });
@@ -306,7 +306,7 @@ describe("Recipients mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.recipients_mutations.removeRecipient, {
             recipientId,
           }),
@@ -328,7 +328,7 @@ describe("Recipients mutations", () => {
   describe("updateRecipient", () => {
     test("updates name, email, and role successfully", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.recipients_mutations.updateRecipient, {
           recipientId,
           name: "Updated Name",
@@ -349,7 +349,7 @@ describe("Recipients mutations", () => {
 
     test("lowercases email", async () => {
       await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.documents.recipients_mutations.updateRecipient, {
           recipientId,
           email: "UPPERCASE@EXAMPLE.COM",
@@ -381,7 +381,7 @@ describe("Recipients mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.recipients_mutations.updateRecipient, {
             recipientId,
             email: "taken@example.com",
@@ -396,7 +396,7 @@ describe("Recipients mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.recipients_mutations.updateRecipient, {
             recipientId,
             name: "Should Fail",
@@ -411,7 +411,7 @@ describe("Recipients mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.recipients_mutations.updateRecipient, {
             recipientId,
             name: "Should Fail",
@@ -426,7 +426,7 @@ describe("Recipients mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.documents.recipients_mutations.updateRecipient, {
             recipientId,
             name: "Should Fail",

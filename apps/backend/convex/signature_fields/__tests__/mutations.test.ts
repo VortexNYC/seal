@@ -29,7 +29,7 @@ describe("Signature field mutations", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -84,7 +84,7 @@ describe("Signature field mutations", () => {
   describe("createField", () => {
     test("creates a text field with correct defaults", async () => {
       const fieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           recipientId,
@@ -121,7 +121,7 @@ describe("Signature field mutations", () => {
 
     test("first signature field for a recipient gets isMainSignature: true", async () => {
       const fieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           recipientId,
@@ -143,7 +143,7 @@ describe("Signature field mutations", () => {
     });
 
     test("second signature field for same recipient does not get isMainSignature", async () => {
-      const authed = t.withIdentity({ subject: "clerk_test_owner" });
+      const authed = t.withIdentity({ subject: "test_owner" });
 
       await authed.mutation(api.signature_fields.mutations.createField, {
         documentId,
@@ -179,7 +179,7 @@ describe("Signature field mutations", () => {
     });
 
     test("enforces one payment field per recipient", async () => {
-      const authed = t.withIdentity({ subject: "clerk_test_owner" });
+      const authed = t.withIdentity({ subject: "test_owner" });
 
       await authed.mutation(api.signature_fields.mutations.createField, {
         documentId,
@@ -217,7 +217,7 @@ describe("Signature field mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.signature_fields.mutations.createField, {
             documentId,
             recipientId,
@@ -253,7 +253,7 @@ describe("Signature field mutations", () => {
     test("validates field position - negative width", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.signature_fields.mutations.createField, {
             documentId,
             recipientId,
@@ -278,7 +278,7 @@ describe("Signature field mutations", () => {
 
     beforeEach(async () => {
       fieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           recipientId,
@@ -295,7 +295,7 @@ describe("Signature field mutations", () => {
 
     test("updates label and isRequired successfully", async () => {
       await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.updateField, {
           fieldId,
           label: "Updated Label",
@@ -317,7 +317,7 @@ describe("Signature field mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.signature_fields.mutations.updateField, {
             fieldId,
             label: "Should Fail",
@@ -332,7 +332,7 @@ describe("Signature field mutations", () => {
   describe("deleteField", () => {
     test("deletes a field successfully", async () => {
       const fieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           recipientId,
@@ -347,7 +347,7 @@ describe("Signature field mutations", () => {
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.deleteField, { fieldId });
 
       expect(result).toEqual({ success: true });
@@ -361,7 +361,7 @@ describe("Signature field mutations", () => {
 
     test("cascade-deletes payment_field_configs for payment fields", async () => {
       const paymentFieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           recipientId,
@@ -403,7 +403,7 @@ describe("Signature field mutations", () => {
 
       // Delete the payment field
       await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.deleteField, {
           fieldId: paymentFieldId,
         });
@@ -418,7 +418,7 @@ describe("Signature field mutations", () => {
 
     test("rejects deleting a field that has signatures", async () => {
       const fieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           recipientId,
@@ -450,14 +450,14 @@ describe("Signature field mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.signature_fields.mutations.deleteField, { fieldId }),
       ).rejects.toThrow("Cannot delete field that has been signed");
     });
 
     test("rejects when document is not draft", async () => {
       const fieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           recipientId,
@@ -477,7 +477,7 @@ describe("Signature field mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.signature_fields.mutations.deleteField, { fieldId }),
       ).rejects.toThrow("Cannot modify fields");
     });
@@ -491,7 +491,7 @@ describe("Signature field mutations", () => {
 
     beforeEach(async () => {
       fieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           recipientId,
@@ -508,7 +508,7 @@ describe("Signature field mutations", () => {
 
     test("updates position successfully", async () => {
       await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.repositionField, {
           fieldId,
           x: 50,
@@ -530,7 +530,7 @@ describe("Signature field mutations", () => {
     test("rejects invalid position - negative values", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.signature_fields.mutations.repositionField, {
             fieldId,
             x: -5,
@@ -545,7 +545,7 @@ describe("Signature field mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.signature_fields.mutations.repositionField, {
             fieldId,
             x: 50,
@@ -561,7 +561,7 @@ describe("Signature field mutations", () => {
     test("assigns unassigned field to a recipient", async () => {
       // Create field without a recipient
       const fieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           fieldType: "text",
@@ -575,7 +575,7 @@ describe("Signature field mutations", () => {
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.assignFieldToRecipient, {
           fieldId,
           recipientId,
@@ -592,7 +592,7 @@ describe("Signature field mutations", () => {
 
     test("auto-sets isMainSignature when assigning first signature field", async () => {
       const fieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           fieldType: "signature",
@@ -606,7 +606,7 @@ describe("Signature field mutations", () => {
         });
 
       await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.assignFieldToRecipient, {
           fieldId,
           recipientId,
@@ -622,7 +622,7 @@ describe("Signature field mutations", () => {
 
     test("rejects when document is not draft", async () => {
       const fieldId = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.createField, {
           documentId,
           fieldType: "text",
@@ -641,7 +641,7 @@ describe("Signature field mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.signature_fields.mutations.assignFieldToRecipient, {
             fieldId,
             recipientId,
@@ -656,7 +656,7 @@ describe("Signature field mutations", () => {
   describe("bulkCreateFields", () => {
     test("creates multiple fields at once and returns fieldIds and count", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_test_owner" })
+        .withIdentity({ subject: "test_owner" })
         .mutation(api.signature_fields.mutations.bulkCreateFields, {
           fields: [
             {
@@ -739,7 +739,7 @@ describe("Signature field mutations", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_test_owner" })
+          .withIdentity({ subject: "test_owner" })
           .mutation(api.signature_fields.mutations.bulkCreateFields, {
             fields: [
               {

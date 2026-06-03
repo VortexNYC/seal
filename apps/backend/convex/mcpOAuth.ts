@@ -2,7 +2,7 @@
  * MCP OAuth authorization-server protocol config + metadata builders for Seal.
  *
  * ADDITIVE: this stands up the Better-Auth-backed MCP OAuth server in parallel
- * with the existing Clerk MCP/JWT path in `api/context.ts`. Mirrors crm's
+ * with the existing API-key/JWT path in `api/context.ts`. Mirrors crm's
  * `convex/mcpOAuth.ts`, adapted to Seal's API scopes + resource identifiers.
  */
 import {

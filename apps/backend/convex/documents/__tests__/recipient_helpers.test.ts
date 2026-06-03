@@ -35,7 +35,7 @@ describe("recipient_helpers", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -73,7 +73,7 @@ describe("recipient_helpers", () => {
         return await ctx.db.insert("users", {
           email: "other@test.com",
           name: "Other User",
-          clerkId: "clerk_test_other",
+          authSubject: "test_other",
           isEmailVerified: true,
           timezone: "UTC",
           locale: "en-US",

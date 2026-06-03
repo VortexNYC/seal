@@ -46,7 +46,7 @@ describe("access_control", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Document Owner",
-        clerkId: "clerk_owner",
+        authSubject: "owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -58,7 +58,7 @@ describe("access_control", () => {
       return await ctx.db.insert("users", {
         email: "other@test.com",
         name: "Other User",
-        clerkId: "clerk_other",
+        authSubject: "other",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -70,7 +70,7 @@ describe("access_control", () => {
       return await ctx.db.insert("users", {
         email: "nonmember@test.com",
         name: "Non Member",
-        clerkId: "clerk_nonmember",
+        authSubject: "nonmember",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -339,7 +339,7 @@ describe("access_control", () => {
         const uid = await ctx.db.insert("users", {
           email: "inactive@test.com",
           name: "Inactive User",
-          clerkId: "clerk_inactive",
+          authSubject: "inactive",
           isEmailVerified: true,
           timezone: "UTC",
           locale: "en-US",
@@ -605,7 +605,7 @@ describe("access_control", () => {
         const uid = await ctx.db.insert("users", {
           email: "suspended@test.com",
           name: "Suspended User",
-          clerkId: "clerk_suspended",
+          authSubject: "suspended",
           isEmailVerified: true,
           timezone: "UTC",
           locale: "en-US",

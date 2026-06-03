@@ -19,11 +19,11 @@ export const getCurrentUserProfile = query({
       return null;
     }
 
-    const clerkUserId = identity.subject;
+    const authSubject = identity.subject;
 
     const profile = await ctx.db
       .query("user_profiles")
-      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", authSubject))
       .first();
 
     return profile;
@@ -31,12 +31,12 @@ export const getCurrentUserProfile = query({
 });
 
 /**
- * Get a user profile by Clerk user ID
+ * Get a user profile by auth subject
  * Only returns profile if requester is authenticated
  */
 export const getUserProfile = query({
   args: {
-    clerkUserId: v.string(),
+    authSubject: v.string(),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -47,7 +47,7 @@ export const getUserProfile = query({
 
     const profile = await ctx.db
       .query("user_profiles")
-      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", args.clerkUserId))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", args.authSubject))
       .first();
 
     return profile;

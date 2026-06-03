@@ -36,8 +36,6 @@ Use the official scaffolding tool. It creates a complete project with the fronte
 | -------------------------- | ----------------------------------------- |
 | `react-vite-shadcn`        | React + Vite + Tailwind + shadcn/ui       |
 | `nextjs-shadcn`            | Next.js App Router + Tailwind + shadcn/ui |
-| `react-vite-clerk-shadcn`  | React + Vite + Clerk auth + shadcn/ui     |
-| `nextjs-clerk`             | Next.js + Clerk auth                      |
 | `nextjs-convexauth-shadcn` | Next.js + Convex Auth + shadcn/ui         |
 | `nextjs-lucia-shadcn`      | Next.js + Lucia auth + shadcn/ui          |
 | `bare`                     | Convex backend only, no frontend          |

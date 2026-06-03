@@ -73,13 +73,13 @@ e2e/
 Create `.env.test` file (see `.env.test.example`):
 
 ```bash
-E2E_TEST_USER_EMAIL=seal-e2e+clerk_test@example.com
+E2E_TEST_USER_EMAIL=seal-e2e@seal.nyc
+E2E_TEST_USER_PASSWORD=your-test-user-password
 E2E_TEST_EMAIL_CODE=424242
 # Optional, for deterministic workspace recovery in setup:
 # E2E_TEST_ORGANIZATION_NAME="Seal E2E Workspace"
-# E2E_TEST_ORGANIZATION_SLUG=seal-e2e-clerk-test
+# E2E_TEST_ORGANIZATION_SLUG=seal-e2e-test
 VITE_CONVEX_URL=https://test-deployment.convex.cloud
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 PLAYWRIGHT_BASE_URL=http://localhost:5180
 ```
 
@@ -217,19 +217,16 @@ See `.github/workflows/ci.yml` for CI configuration.
 
 Configure these in GitHub repository settings:
 
-- `TEST_USER_EMAIL`
+- `E2E_TEST_USER_EMAIL`
+- `E2E_TEST_USER_PASSWORD`
 - `E2E_TEST_EMAIL_CODE`
 - `VITE_CONVEX_URL_TEST`
-- `VITE_CLERK_PUBLISHABLE_KEY_TEST`
-- `CLERK_TESTING_TOKEN` (if your Clerk test environment requires it)
-- `CLERK_SECRET_KEY` (alternative to `CLERK_TESTING_TOKEN` for some setups)
-- `E2E_TEST_USER_EMAIL`
 
 ### Setup artifacts
 
-Playwright setup writes shared artifacts under `apps/web/playwright/.clerk/`:
+Playwright setup writes shared artifacts under `apps/web/playwright/.auth/`:
 
-- `user.json` — authenticated Clerk storage state
+- `user.json` — authenticated Better-Auth storage state (session cookie)
 - `workspace-slug.txt` — resolved active workspace slug
 - `e2e-pdf-storage-id.txt` — cached Convex storage id for the sample PDF
 
@@ -277,9 +274,9 @@ page.locator("div > span:nth-child(3)");
 
 ### Authentication Failures
 
-- Ensure `.env.test` has correct credentials
-- Check Clerk test environment is active
-- Verify test user exists in Clerk
+- Ensure `.env.test` has correct credentials (`E2E_TEST_USER_EMAIL` + `E2E_TEST_USER_PASSWORD`)
+- Verify the test user exists and can sign in via the Better-Auth email+password form
+- Delete the cached auth state under `apps/web/playwright/.auth/` to force a fresh sign-in
 
 ### Timing Issues
 

@@ -119,12 +119,12 @@ async function requireAuthenticatedUser(
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+    .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
     .first();
 
   if (!user) {
     throwAuthError("NO_USER_RECORD", "User record not found. Please try refreshing the page.", {
-      clerkId: identity.subject,
+      authSubject: identity.subject,
     });
   }
 
@@ -211,8 +211,8 @@ function synthesizeMemberFromComponent(
  *  - Otherwise fall back to the local `organization_members` row (today's
  *    behavior). In mutation contexts, lazily mirror that local membership into
  *    the component (once the user is bridged) so the component catches up.
- *  - Clerk-only users (no vortexAuthUserId) short-circuit to the local read with
- *    zero component queries — the app stays on Clerk until Better-Auth cutover.
+ *  - Users not yet bridged to the component (no vortexAuthUserId) short-circuit
+ *    to the local read with zero component queries.
  */
 async function resolveOrganizationMemberDualRead(
   ctx: QueryCtx | MutationCtx,

@@ -44,7 +44,7 @@ describe("api/v1/members", () => {
       return await ctx.db.insert("users", {
         email: "owner@members-test.com",
         name: "Owner User",
-        clerkId: "clerk_members_owner",
+        authSubject: "members_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -56,7 +56,7 @@ describe("api/v1/members", () => {
       return await ctx.db.insert("users", {
         email: "admin@members-test.com",
         name: "Admin User",
-        clerkId: "clerk_members_admin",
+        authSubject: "members_admin",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -68,7 +68,7 @@ describe("api/v1/members", () => {
       return await ctx.db.insert("users", {
         // No name set — should fall back to email
         email: "member@members-test.com",
-        clerkId: "clerk_members_member",
+        authSubject: "members_member",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -168,7 +168,7 @@ describe("api/v1/members", () => {
       const systemUserId = await t.run(async (ctx) => {
         return await ctx.db.insert("users", {
           email: "system@internal.com",
-          clerkId: "clerk_system",
+          authSubject: "system",
           isEmailVerified: true,
           timezone: "UTC",
           locale: "en-US",

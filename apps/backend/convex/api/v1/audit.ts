@@ -103,10 +103,10 @@ export const listAuditLog = internalQuery({
         let actor_email: string | undefined;
 
         if (entry.actorType === "user" && entry.userId) {
-          // Look up user by Clerk ID in our users table
+          // Look up user by auth subject in our users table
           const user = await ctx.db
             .query("users")
-            .withIndex("by_clerk_id", (q) => q.eq("clerkId", entry.userId!))
+            .withIndex("by_auth_subject", (q) => q.eq("authSubject", entry.userId!))
             .first();
           if (user) {
             actor_name = user.name;

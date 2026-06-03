@@ -33,7 +33,7 @@ If a location has zero matching test files, report that suite as `NO TESTS FOUND
 
 **Web E2E (Playwright)** — Check all of the following before attempting to run:
 
-1. Clerk testing env vars are set (check `apps/web/.env.test` or environment for `CLERK_PUBLISHABLE_KEY`)
+1. Auth testing env vars are set (check `apps/web/.env.test` or environment for the auth provider's publishable key)
 2. `VITE_CONVEX_URL` is set or the default `http://localhost:5180` is reachable (try `curl -s -o /dev/null -w "%{http_code}" http://localhost:5180`)
 3. Playwright browsers are installed (check `node_modules/.cache/ms-playwright` or `apps/web/node_modules/.cache/ms-playwright`)
 
@@ -115,7 +115,7 @@ Test Assessment Report
 - Location: apps/web/e2e/tests/**/*.spec.ts
 - Status: PASS / FAIL / SKIPPED (prerequisites not met) / ERROR / NO TESTS FOUND
 - Prerequisite check:
-  - Clerk env vars: SET / MISSING
+  - Auth env vars: SET / MISSING
   - Dev server (localhost:5180): REACHABLE / UNREACHABLE
   - Playwright browsers: INSTALLED / MISSING
 - Tests: X passed, Y failed, Z skipped (total: N)

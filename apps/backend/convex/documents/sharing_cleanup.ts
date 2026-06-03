@@ -1,6 +1,7 @@
 /**
  * Document sharing cleanup helpers for subscription lapse and member removal scenarios.
- * These internal mutations are called from Stripe webhooks and Clerk webhooks.
+ * These internal mutations are called from Stripe webhooks and organization
+ * membership changes.
  */
 
 import { v } from "convex/values";
@@ -270,7 +271,7 @@ export const downgradeOrgSharing = internalMutation({
 
 /**
  * Clean up document access when a member is removed from an organization.
- * Called from Clerk webhook for organizationMembership.deleted event.
+ * Called when an organization membership is deleted.
  */
 export const cleanupMemberDocumentAccess = internalMutation({
   args: {

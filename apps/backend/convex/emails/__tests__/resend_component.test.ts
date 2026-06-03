@@ -29,7 +29,7 @@ describe("emails/resend_component", () => {
       return await ctx.db.insert("users", {
         email: "user@test.com",
         name: "Test User",
-        clerkId: "clerk_test_user",
+        authSubject: "test_user",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

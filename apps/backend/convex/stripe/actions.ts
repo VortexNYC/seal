@@ -96,8 +96,8 @@ async function resolveAuthContext(ctx: ActionCtx): Promise<{
   }
 
   const user: Doc<"users"> | null = await ctx.runQuery(
-    internal.organizations.helpers.getUserByClerkId,
-    { clerkId: identity.subject },
+    internal.organizations.helpers.getUserByAuthSubject,
+    { authSubject: identity.subject },
   );
 
   if (!user) {

@@ -44,7 +44,7 @@ export const markDocumentAsCompleted = internalMutation({
 
       // Audit trail: record completion as a system action so the transition is
       // observable in the audit log. The workflow runs without a user context,
-      // so the actor is "system" rather than a Clerk user.
+      // so the actor is "system" rather than an authenticated user.
       await logActionRequired(ctx, {
         organizationId: document.organizationId,
         actorType: "system",

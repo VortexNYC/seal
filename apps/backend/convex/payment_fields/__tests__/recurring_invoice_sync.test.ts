@@ -28,7 +28,7 @@ describe("recurring invoice sync via upsertRecurringInvoice", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Owner",
-        clerkId: "clerk_owner",
+        authSubject: "owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

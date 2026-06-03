@@ -8,319 +8,323 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as ChangelogRouteImport } from "./routes/changelog";
-import { Route as ChangelogSlugRouteImport } from "./routes/changelog.$slug";
-import { Route as CompareRouteImport } from "./routes/compare";
-import { Route as DeveloperRouteImport } from "./routes/developer";
-import { Route as DeveloperSplatRouteImport } from "./routes/developer/$";
-import { Route as DocsRouteImport } from "./routes/docs";
-import { Route as DocsSplatRouteImport } from "./routes/docs/$";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as IntegrationsRouteImport } from "./routes/integrations";
-import { Route as PagesSlugRouteImport } from "./routes/pages.$slug";
-import { Route as PricingRouteImport } from "./routes/pricing";
-import { Route as PrivacyPolicyRouteImport } from "./routes/privacy-policy";
-import { Route as TermsOfServiceRouteImport } from "./routes/terms-of-service";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as IntegrationsRouteImport } from './routes/integrations'
+import { Route as DocsRouteImport } from './routes/docs'
+import { Route as DeveloperRouteImport } from './routes/developer'
+import { Route as CompareRouteImport } from './routes/compare'
+import { Route as ChangelogRouteImport } from './routes/changelog'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as PagesSlugRouteImport } from './routes/pages.$slug'
+import { Route as DocsSplatRouteImport } from './routes/docs/$'
+import { Route as DeveloperSplatRouteImport } from './routes/developer/$'
+import { Route as ChangelogSlugRouteImport } from './routes/changelog.$slug'
 
 const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
-  id: "/terms-of-service",
-  path: "/terms-of-service",
+  id: '/terms-of-service',
+  path: '/terms-of-service',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
-  id: "/privacy-policy",
-  path: "/privacy-policy",
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const PricingRoute = PricingRouteImport.update({
-  id: "/pricing",
-  path: "/pricing",
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IntegrationsRoute = IntegrationsRouteImport.update({
-  id: "/integrations",
-  path: "/integrations",
+  id: '/integrations',
+  path: '/integrations',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DocsRoute = DocsRouteImport.update({
-  id: "/docs",
-  path: "/docs",
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DeveloperRoute = DeveloperRouteImport.update({
-  id: "/developer",
-  path: "/developer",
+  id: '/developer',
+  path: '/developer',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const CompareRoute = CompareRouteImport.update({
-  id: "/compare",
-  path: "/compare",
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ChangelogRoute = ChangelogRouteImport.update({
-  id: "/changelog",
-  path: "/changelog",
+  id: '/changelog',
+  path: '/changelog',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const PagesSlugRoute = PagesSlugRouteImport.update({
-  id: "/pages/$slug",
-  path: "/pages/$slug",
+  id: '/pages/$slug',
+  path: '/pages/$slug',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DocsSplatRoute = DocsSplatRouteImport.update({
-  id: "/$",
-  path: "/$",
+  id: '/$',
+  path: '/$',
   getParentRoute: () => DocsRoute,
-} as any);
+} as any)
 const DeveloperSplatRoute = DeveloperSplatRouteImport.update({
-  id: "/$",
-  path: "/$",
+  id: '/$',
+  path: '/$',
   getParentRoute: () => DeveloperRoute,
-} as any);
+} as any)
 const ChangelogSlugRoute = ChangelogSlugRouteImport.update({
-  id: "/$slug",
-  path: "/$slug",
+  id: '/$slug',
+  path: '/$slug',
   getParentRoute: () => ChangelogRoute,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/changelog": typeof ChangelogRouteWithChildren;
-  "/compare": typeof CompareRoute;
-  "/developer": typeof DeveloperRouteWithChildren;
-  "/docs": typeof DocsRouteWithChildren;
-  "/integrations": typeof IntegrationsRoute;
-  "/pricing": typeof PricingRoute;
-  "/privacy-policy": typeof PrivacyPolicyRoute;
-  "/terms-of-service": typeof TermsOfServiceRoute;
-  "/changelog/$slug": typeof ChangelogSlugRoute;
-  "/developer/$": typeof DeveloperSplatRoute;
-  "/docs/$": typeof DocsSplatRoute;
-  "/pages/$slug": typeof PagesSlugRoute;
+  '/': typeof IndexRoute
+  '/changelog': typeof ChangelogRouteWithChildren
+  '/compare': typeof CompareRoute
+  '/developer': typeof DeveloperRouteWithChildren
+  '/docs': typeof DocsRouteWithChildren
+  '/integrations': typeof IntegrationsRoute
+  '/pricing': typeof PricingRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
+  '/changelog/$slug': typeof ChangelogSlugRoute
+  '/developer/$': typeof DeveloperSplatRoute
+  '/docs/$': typeof DocsSplatRoute
+  '/pages/$slug': typeof PagesSlugRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/changelog": typeof ChangelogRouteWithChildren;
-  "/compare": typeof CompareRoute;
-  "/developer": typeof DeveloperRouteWithChildren;
-  "/docs": typeof DocsRouteWithChildren;
-  "/integrations": typeof IntegrationsRoute;
-  "/pricing": typeof PricingRoute;
-  "/privacy-policy": typeof PrivacyPolicyRoute;
-  "/terms-of-service": typeof TermsOfServiceRoute;
-  "/changelog/$slug": typeof ChangelogSlugRoute;
-  "/developer/$": typeof DeveloperSplatRoute;
-  "/docs/$": typeof DocsSplatRoute;
-  "/pages/$slug": typeof PagesSlugRoute;
+  '/': typeof IndexRoute
+  '/changelog': typeof ChangelogRouteWithChildren
+  '/compare': typeof CompareRoute
+  '/developer': typeof DeveloperRouteWithChildren
+  '/docs': typeof DocsRouteWithChildren
+  '/integrations': typeof IntegrationsRoute
+  '/pricing': typeof PricingRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
+  '/changelog/$slug': typeof ChangelogSlugRoute
+  '/developer/$': typeof DeveloperSplatRoute
+  '/docs/$': typeof DocsSplatRoute
+  '/pages/$slug': typeof PagesSlugRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/changelog": typeof ChangelogRouteWithChildren;
-  "/compare": typeof CompareRoute;
-  "/developer": typeof DeveloperRouteWithChildren;
-  "/docs": typeof DocsRouteWithChildren;
-  "/integrations": typeof IntegrationsRoute;
-  "/pricing": typeof PricingRoute;
-  "/privacy-policy": typeof PrivacyPolicyRoute;
-  "/terms-of-service": typeof TermsOfServiceRoute;
-  "/changelog/$slug": typeof ChangelogSlugRoute;
-  "/developer/$": typeof DeveloperSplatRoute;
-  "/docs/$": typeof DocsSplatRoute;
-  "/pages/$slug": typeof PagesSlugRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/changelog': typeof ChangelogRouteWithChildren
+  '/compare': typeof CompareRoute
+  '/developer': typeof DeveloperRouteWithChildren
+  '/docs': typeof DocsRouteWithChildren
+  '/integrations': typeof IntegrationsRoute
+  '/pricing': typeof PricingRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
+  '/changelog/$slug': typeof ChangelogSlugRoute
+  '/developer/$': typeof DeveloperSplatRoute
+  '/docs/$': typeof DocsSplatRoute
+  '/pages/$slug': typeof PagesSlugRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/changelog"
-    | "/compare"
-    | "/developer"
-    | "/docs"
-    | "/integrations"
-    | "/pricing"
-    | "/privacy-policy"
-    | "/terms-of-service"
-    | "/changelog/$slug"
-    | "/developer/$"
-    | "/docs/$"
-    | "/pages/$slug";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/changelog'
+    | '/compare'
+    | '/developer'
+    | '/docs'
+    | '/integrations'
+    | '/pricing'
+    | '/privacy-policy'
+    | '/terms-of-service'
+    | '/changelog/$slug'
+    | '/developer/$'
+    | '/docs/$'
+    | '/pages/$slug'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/changelog"
-    | "/compare"
-    | "/developer"
-    | "/docs"
-    | "/integrations"
-    | "/pricing"
-    | "/privacy-policy"
-    | "/terms-of-service"
-    | "/changelog/$slug"
-    | "/developer/$"
-    | "/docs/$"
-    | "/pages/$slug";
+    | '/'
+    | '/changelog'
+    | '/compare'
+    | '/developer'
+    | '/docs'
+    | '/integrations'
+    | '/pricing'
+    | '/privacy-policy'
+    | '/terms-of-service'
+    | '/changelog/$slug'
+    | '/developer/$'
+    | '/docs/$'
+    | '/pages/$slug'
   id:
-    | "__root__"
-    | "/"
-    | "/changelog"
-    | "/compare"
-    | "/developer"
-    | "/docs"
-    | "/integrations"
-    | "/pricing"
-    | "/privacy-policy"
-    | "/terms-of-service"
-    | "/changelog/$slug"
-    | "/developer/$"
-    | "/docs/$"
-    | "/pages/$slug";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/changelog'
+    | '/compare'
+    | '/developer'
+    | '/docs'
+    | '/integrations'
+    | '/pricing'
+    | '/privacy-policy'
+    | '/terms-of-service'
+    | '/changelog/$slug'
+    | '/developer/$'
+    | '/docs/$'
+    | '/pages/$slug'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  ChangelogRoute: typeof ChangelogRouteWithChildren;
-  CompareRoute: typeof CompareRoute;
-  DeveloperRoute: typeof DeveloperRouteWithChildren;
-  DocsRoute: typeof DocsRouteWithChildren;
-  IntegrationsRoute: typeof IntegrationsRoute;
-  PricingRoute: typeof PricingRoute;
-  PrivacyPolicyRoute: typeof PrivacyPolicyRoute;
-  TermsOfServiceRoute: typeof TermsOfServiceRoute;
-  PagesSlugRoute: typeof PagesSlugRoute;
+  IndexRoute: typeof IndexRoute
+  ChangelogRoute: typeof ChangelogRouteWithChildren
+  CompareRoute: typeof CompareRoute
+  DeveloperRoute: typeof DeveloperRouteWithChildren
+  DocsRoute: typeof DocsRouteWithChildren
+  IntegrationsRoute: typeof IntegrationsRoute
+  PricingRoute: typeof PricingRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  TermsOfServiceRoute: typeof TermsOfServiceRoute
+  PagesSlugRoute: typeof PagesSlugRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/terms-of-service": {
-      id: "/terms-of-service";
-      path: "/terms-of-service";
-      fullPath: "/terms-of-service";
-      preLoaderRoute: typeof TermsOfServiceRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/privacy-policy": {
-      id: "/privacy-policy";
-      path: "/privacy-policy";
-      fullPath: "/privacy-policy";
-      preLoaderRoute: typeof PrivacyPolicyRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/pricing": {
-      id: "/pricing";
-      path: "/pricing";
-      fullPath: "/pricing";
-      preLoaderRoute: typeof PricingRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/integrations": {
-      id: "/integrations";
-      path: "/integrations";
-      fullPath: "/integrations";
-      preLoaderRoute: typeof IntegrationsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/docs": {
-      id: "/docs";
-      path: "/docs";
-      fullPath: "/docs";
-      preLoaderRoute: typeof DocsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/developer": {
-      id: "/developer";
-      path: "/developer";
-      fullPath: "/developer";
-      preLoaderRoute: typeof DeveloperRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/compare": {
-      id: "/compare";
-      path: "/compare";
-      fullPath: "/compare";
-      preLoaderRoute: typeof CompareRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/changelog": {
-      id: "/changelog";
-      path: "/changelog";
-      fullPath: "/changelog";
-      preLoaderRoute: typeof ChangelogRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/pages/$slug": {
-      id: "/pages/$slug";
-      path: "/pages/$slug";
-      fullPath: "/pages/$slug";
-      preLoaderRoute: typeof PagesSlugRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/docs/$": {
-      id: "/docs/$";
-      path: "/$";
-      fullPath: "/docs/$";
-      preLoaderRoute: typeof DocsSplatRouteImport;
-      parentRoute: typeof DocsRoute;
-    };
-    "/developer/$": {
-      id: "/developer/$";
-      path: "/$";
-      fullPath: "/developer/$";
-      preLoaderRoute: typeof DeveloperSplatRouteImport;
-      parentRoute: typeof DeveloperRoute;
-    };
-    "/changelog/$slug": {
-      id: "/changelog/$slug";
-      path: "/$slug";
-      fullPath: "/changelog/$slug";
-      preLoaderRoute: typeof ChangelogSlugRouteImport;
-      parentRoute: typeof ChangelogRoute;
-    };
+    '/terms-of-service': {
+      id: '/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/terms-of-service'
+      preLoaderRoute: typeof TermsOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/integrations': {
+      id: '/integrations'
+      path: '/integrations'
+      fullPath: '/integrations'
+      preLoaderRoute: typeof IntegrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developer': {
+      id: '/developer'
+      path: '/developer'
+      fullPath: '/developer'
+      preLoaderRoute: typeof DeveloperRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/changelog': {
+      id: '/changelog'
+      path: '/changelog'
+      fullPath: '/changelog'
+      preLoaderRoute: typeof ChangelogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pages/$slug': {
+      id: '/pages/$slug'
+      path: '/pages/$slug'
+      fullPath: '/pages/$slug'
+      preLoaderRoute: typeof PagesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/$': {
+      id: '/docs/$'
+      path: '/$'
+      fullPath: '/docs/$'
+      preLoaderRoute: typeof DocsSplatRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/developer/$': {
+      id: '/developer/$'
+      path: '/$'
+      fullPath: '/developer/$'
+      preLoaderRoute: typeof DeveloperSplatRouteImport
+      parentRoute: typeof DeveloperRoute
+    }
+    '/changelog/$slug': {
+      id: '/changelog/$slug'
+      path: '/$slug'
+      fullPath: '/changelog/$slug'
+      preLoaderRoute: typeof ChangelogSlugRouteImport
+      parentRoute: typeof ChangelogRoute
+    }
   }
 }
 
 interface ChangelogRouteChildren {
-  ChangelogSlugRoute: typeof ChangelogSlugRoute;
+  ChangelogSlugRoute: typeof ChangelogSlugRoute
 }
 
 const ChangelogRouteChildren: ChangelogRouteChildren = {
   ChangelogSlugRoute: ChangelogSlugRoute,
-};
+}
 
-const ChangelogRouteWithChildren = ChangelogRoute._addFileChildren(ChangelogRouteChildren);
+const ChangelogRouteWithChildren = ChangelogRoute._addFileChildren(
+  ChangelogRouteChildren,
+)
 
 interface DeveloperRouteChildren {
-  DeveloperSplatRoute: typeof DeveloperSplatRoute;
+  DeveloperSplatRoute: typeof DeveloperSplatRoute
 }
 
 const DeveloperRouteChildren: DeveloperRouteChildren = {
   DeveloperSplatRoute: DeveloperSplatRoute,
-};
+}
 
-const DeveloperRouteWithChildren = DeveloperRoute._addFileChildren(DeveloperRouteChildren);
+const DeveloperRouteWithChildren = DeveloperRoute._addFileChildren(
+  DeveloperRouteChildren,
+)
 
 interface DocsRouteChildren {
-  DocsSplatRoute: typeof DocsSplatRoute;
+  DocsSplatRoute: typeof DocsSplatRoute
 }
 
 const DocsRouteChildren: DocsRouteChildren = {
   DocsSplatRoute: DocsSplatRoute,
-};
+}
 
-const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren);
+const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -333,17 +337,16 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
   PagesSlugRoute: PagesSlugRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-import type { createStart } from "@tanstack/react-start";
-
-import type { getRouter } from "./router.tsx";
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
   }
 }
