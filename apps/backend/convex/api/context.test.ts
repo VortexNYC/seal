@@ -74,40 +74,20 @@ describe("canUserUseScope", () => {
 });
 
 describe("requireScope", () => {
-  test("grants access from the token's own scope (MCP OAuth)", () => {
-    const auth = {
-      authType: "mcp_oauth" as const,
-      role: "member",
-      permissions: [], // no permission, no full-access role
-      hasScope: (scope: string) => scope === API_SCOPES.WEBHOOKS_MANAGE,
-    } as unknown as ApiAuthContext;
-
-    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
-  });
-
-  test("bypasses check for owner role (MCP OAuth)", () => {
+  // The OAuth token's granted scopes are a HARD CEILING for mcp_oauth: a missing
+  // scope is denied regardless of role/permission (least-privilege consent).
+  test("denies when the token lacks the scope, even for owner (scope is the ceiling)", () => {
     const auth = {
       authType: "mcp_oauth" as const,
       role: "owner",
-      permissions: [], // empty - should still pass
+      permissions: [],
       hasScope: () => false,
     } as unknown as ApiAuthContext;
 
-    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
+    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(ApiError);
   });
 
-  test("bypasses check for admin role (MCP OAuth)", () => {
-    const auth = {
-      authType: "mcp_oauth" as const,
-      role: "admin",
-      permissions: [], // empty - should still pass
-      hasScope: () => false,
-    } as unknown as ApiAuthContext;
-
-    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
-  });
-
-  test("checks permissions for member role (MCP OAuth)", () => {
+  test("denies when the token lacks the scope, even with the mapped permission", () => {
     const auth = {
       authType: "mcp_oauth" as const,
       role: "member",
@@ -115,15 +95,37 @@ describe("requireScope", () => {
       hasScope: () => false,
     } as unknown as ApiAuthContext;
 
+    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(ApiError);
+  });
+
+  test("allows owner within a granted scope", () => {
+    const auth = {
+      authType: "mcp_oauth" as const,
+      role: "owner",
+      permissions: [],
+      hasScope: (scope: string) => scope === API_SCOPES.WEBHOOKS_MANAGE,
+    } as unknown as ApiAuthContext;
+
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
   });
 
-  test("rejects member without settings:integrations (MCP OAuth)", () => {
+  test("allows member with the granted scope AND the mapped permission", () => {
+    const auth = {
+      authType: "mcp_oauth" as const,
+      role: "member",
+      permissions: ["settings:integrations"],
+      hasScope: (scope: string) => scope === API_SCOPES.WEBHOOKS_MANAGE,
+    } as unknown as ApiAuthContext;
+
+    expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).not.toThrow();
+  });
+
+  test("denies member with the granted scope but no mapped permission", () => {
     const auth = {
       authType: "mcp_oauth" as const,
       role: "member",
       permissions: ["settings:view", "documents:view"],
-      hasScope: () => false,
+      hasScope: (scope: string) => scope === API_SCOPES.WEBHOOKS_MANAGE,
     } as unknown as ApiAuthContext;
 
     expect(() => requireScope(auth, API_SCOPES.WEBHOOKS_MANAGE)).toThrow(ApiError);
