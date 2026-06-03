@@ -8,11 +8,11 @@
  * This component doesn't render any UI - it only manages PostHog identity.
  */
 
-import { useUser } from "@clerk/clerk-react";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useEffect } from "react";
 
 import { useAnalytics } from "@/hooks/use-analytics";
+import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 
 interface PostHogIdentifyProps {
   organization: {
@@ -34,7 +34,6 @@ export function PostHogIdentify({ organization }: PostHogIdentifyProps) {
       userId: user.id,
       email: user.primaryEmailAddress?.emailAddress,
       name: user.fullName ?? undefined,
-      createdAt: user.createdAt?.toISOString(),
     });
   }, [isLoaded, user, identify]);
 

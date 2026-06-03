@@ -1,8 +1,12 @@
-import { SignUp } from "@clerk/clerk-react";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { useTheme } from "@/components/theme-provider";
-import { getClerkAuthAppearance } from "@/lib/clerk-auth-theme";
+import {
+  authRoutePaths,
+  captureAuthEvent,
+  markPendingAuthFlow,
+  markPendingPostSignUpSync,
+  runtime,
+} from "@/lib/auth-runtime.better-auth";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/sign-up")({
@@ -11,7 +15,13 @@ export const Route = createFileRoute("/_auth/sign-up")({
 });
 
 function RouteComponent() {
-  const { resolvedTheme } = useTheme();
-
-  return <SignUp appearance={getClerkAuthAppearance(resolvedTheme === "dark")} />;
+  return (
+    <runtime.AuthSignUpRoutePage
+      signInPath={authRoutePaths.signInPath}
+      postSignUpPath="/app"
+      markPendingAuthFlow={markPendingAuthFlow}
+      markPendingPostSignUpSync={markPendingPostSignUpSync}
+      captureAuthEvent={captureAuthEvent}
+    />
+  );
 }

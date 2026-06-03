@@ -38,11 +38,6 @@ import {
 import { downloadTokensTable } from "./schemas/download_tokens";
 import { feedbackTable } from "./schemas/feedback";
 import { foldersTable, type FolderType, type FolderVisibility } from "./schemas/folders";
-import {
-  mcpOauthClientsTable,
-  mcpOauthCodesTable,
-  mcpOauthRefreshTokensTable,
-} from "./schemas/mcp_oauth";
 import { type NotificationType, notificationsTable } from "./schemas/notifications";
 import { organizationInvitationsTable } from "./schemas/organization_invitations";
 import {
@@ -93,7 +88,6 @@ import { subscriptionsTable } from "./schemas/subscriptions";
 import { type TemplateStatus, templateFieldsTable, templatesTable } from "./schemas/templates";
 import { userProfilesTable } from "./schemas/user_profiles";
 import { type UserStatus, usersTable } from "./schemas/users";
-import { waitlistEntriesTable } from "./schemas/waitlist_entries";
 import {
   type WebhookDeliveryStatus,
   type WebhookEndpointStatus,
@@ -154,7 +148,6 @@ export type { StripeAccountType, StripeFeeHandling };
 
 // Re-export subscription coupon/promo types
 export type { SubscriptionCouponDuration, SubscriptionCouponType, SubscriptionPromoCodeStatus };
-export type { WaitlistEntryStatus } from "./schemas/waitlist_entries";
 
 // Re-export payment field config types
 export type { DueDateTerms, PaymentMethod, PaymentStatus, PaymentType };
@@ -217,7 +210,6 @@ export default defineSchema({
   // Webhooks
   webhook_endpoints: webhookEndpoints,
   webhook_deliveries: webhookDeliveries,
-  waitlist_entries: waitlistEntriesTable,
 
   // Feedback
   feedback: feedbackTable,
@@ -232,9 +224,4 @@ export default defineSchema({
   ai_progress: aiProgressTable,
   ai_routing_logs: aiRoutingLogsTable,
   ai_usage_log: aiUsageLogTable,
-
-  // MCP OAuth
-  mcp_oauth_clients: mcpOauthClientsTable,
-  mcp_oauth_codes: mcpOauthCodesTable,
-  mcp_oauth_refresh_tokens: mcpOauthRefreshTokensTable,
 });

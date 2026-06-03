@@ -45,9 +45,7 @@ function DocsPageRoute() {
   return (
     <DocsPage key={loaderData.path} toc={loaderData.toc}>
       <DocsTitle>{loaderData.title}</DocsTitle>
-      {loaderData.description && (
-        <DocsDescription>{loaderData.description}</DocsDescription>
-      )}
+      {loaderData.description && <DocsDescription>{loaderData.description}</DocsDescription>}
       <DocsBody>
         <Suspense fallback={<div>Loading...</div>}>
           {renderDocsPageContent(loaderData.path)}

@@ -1,26 +1,26 @@
-import { clerk } from "@clerk/testing/playwright";
 import { type Page } from "@playwright/test";
 
 import { extractOrganizationSlugFromUrl } from "./workspace-state";
 
 type TestWorkspaceConfig = {
   email: string;
-  emailCode: string;
+  password: string;
+  name: string;
   organizationName: string;
   organizationSlug: string;
 };
 
 export function getTestWorkspaceConfig(): TestWorkspaceConfig {
   const email =
-    process.env.E2E_TEST_USER_EMAIL ||
-    process.env.TEST_USER_EMAIL ||
-    "seal-e2e+clerk_test@example.com";
-  const emailCode = process.env.E2E_TEST_EMAIL_CODE || process.env.TEST_EMAIL_CODE || "424242";
+    process.env.E2E_TEST_USER_EMAIL || process.env.TEST_USER_EMAIL || "seal-e2e@seal.nyc";
+  const password =
+    process.env.E2E_TEST_USER_PASSWORD || process.env.TEST_USER_PASSWORD || "SealE2ePassword123!";
   const defaultSlug = buildDefaultOrganizationSlug(email);
 
   return {
     email,
-    emailCode,
+    password,
+    name: process.env.E2E_TEST_USER_NAME || "Seal E2E",
     organizationName:
       process.env.E2E_TEST_ORGANIZATION_NAME ||
       process.env.TEST_ORGANIZATION_NAME ||
@@ -31,47 +31,67 @@ export function getTestWorkspaceConfig(): TestWorkspaceConfig {
 }
 
 /**
- * Sign in a test user following Clerk's official Playwright testing protocol,
- * then verify Convex authentication is ready before saving state.
+ * Sign in (or sign up + onboard) the Better-Auth test user, then verify Convex
+ * authentication is ready before the caller saves storage state.
  *
- * Pattern ported from Catapult project — keep this simple:
- * 1. Navigate to unprotected page that loads Clerk
- * 2. clerk.signIn() (internally calls setupClerkTestingToken)
- * 3. Navigate to app, wait for authenticated URL
- * 4. Poll Convex auth until ready
- * 5. Done — no org creation here
+ * Better-Auth (no Clerk):
+ * 1. Try the email+password sign-in form.
+ * 2. If sign-in does not land authenticated (account does not exist yet), sign
+ *    up via the sign-up form.
+ * 3. If routed to onboarding, create the personal workspace.
+ * 4. Land on a `/{slug}/home` route and poll Convex auth until ready.
  */
 export async function signInTestUser(page: Page): Promise<void> {
-  const { email: testEmail } = getTestWorkspaceConfig();
+  const config = getTestWorkspaceConfig();
 
-  // Clerk docs: navigate to an unprotected page that loads Clerk first
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-
-  // clerk.signIn() calls page.waitForFunction internally. The global actionTimeout
-  // (5s) is too tight on a cold app boot — bump to 60s for the sign-in only.
+  // Cold app boot can be slow; relax the per-action timeout for the auth flow.
   page.setDefaultTimeout(60000);
-  // clerk.signIn() internally calls setupClerkTestingToken()
-  await clerk.signIn({
-    page,
-    signInParams: {
-      strategy: "email_code",
-      identifier: testEmail,
-    },
-  });
-  // Restore default action timeout for the rest of the test
+
+  await signInWithPassword(page, config);
+
+  if (!isAuthenticatedUrl(page.url())) {
+    await signUpWithPassword(page, config);
+  }
+
+  await completeOnboardingIfPresent(page, config);
+
   page.setDefaultTimeout(5000);
 
-  // Navigate to the authenticated app area
-  await page.goto("/app", { waitUntil: "domcontentloaded" });
-
-  // Wait for the app to land on a workspace page (flexible match)
-  await page.waitForURL(/\/(app|[\w-]+\/home|[\w-]+\/onboarding)/, {
-    timeout: 10000,
-    waitUntil: "domcontentloaded",
-  });
-
-  // Wait for Convex client to be ready and authenticated (ported from Catapult)
   await ensureConvexAuth(page);
+}
+
+async function signInWithPassword(page: Page, config: TestWorkspaceConfig): Promise<void> {
+  await page.goto("/sign-in", { waitUntil: "domcontentloaded" }).catch(() => {});
+  await page.fill('input[type="email"]', config.email).catch(() => {});
+  await page.fill('input[type="password"]', config.password).catch(() => {});
+  await page.click('button[type="submit"], button:has-text("Sign in")').catch(() => {});
+  await page
+    .waitForURL(/\/([\w-]+\/home|onboarding)/, { timeout: 15000, waitUntil: "domcontentloaded" })
+    .catch(() => {});
+}
+
+async function signUpWithPassword(page: Page, config: TestWorkspaceConfig): Promise<void> {
+  await page.goto("/sign-up", { waitUntil: "domcontentloaded" }).catch(() => {});
+  await page.fill('input[type="text"]', config.name).catch(() => {});
+  await page.fill('input[type="email"]', config.email).catch(() => {});
+  await page.fill('input[type="password"]', config.password).catch(() => {});
+  await page.click('button[type="submit"], button:has-text("Create account")').catch(() => {});
+  await page
+    .waitForURL(/\/([\w-]+\/home|onboarding)/, { timeout: 20000, waitUntil: "domcontentloaded" })
+    .catch(() => {});
+}
+
+async function completeOnboardingIfPresent(
+  page: Page,
+  _config: TestWorkspaceConfig,
+): Promise<void> {
+  if (!page.url().includes("/onboarding")) {
+    return;
+  }
+  await page.click('button:has-text("Create a new workspace")').catch(() => {});
+  await page
+    .waitForURL(/\/[\w-]+\/home/, { timeout: 20000, waitUntil: "domcontentloaded" })
+    .catch(() => {});
 }
 
 /**
@@ -146,26 +166,16 @@ export function isAuthenticatedUrl(url: string): boolean {
 }
 
 /**
- * Ensure Convex client is authenticated by polling window.__convexClient.
- * Falls back to Clerk session token check if __convexClient isn't exposed.
- *
- * Ported from Catapult: polls a lightweight query to confirm the auth token
- * has propagated from Clerk → Convex. No mutations, no org creation.
+ * Ensure the Convex client is authenticated by polling window.__convexClient.
+ * Auth-mechanism agnostic: confirms the Better-Auth session token has propagated
+ * into the Convex client. No mutations, no org creation.
  */
 export async function ensureConvexAuth(page: Page): Promise<void> {
-  // First wait for the Convex client and API to be exposed on window
-  try {
-    await page.waitForFunction(
-      () => window.__convexClient !== undefined && window.__convexApi !== undefined,
-      { timeout: 8000 },
-    );
-  } catch {
-    // If __convexClient isn't exposed, fall back to Clerk token check
-    await waitForClerkConvexToken(page);
-    return;
-  }
+  await page.waitForFunction(
+    () => window.__convexClient !== undefined && window.__convexApi !== undefined,
+    { timeout: 8000 },
+  );
 
-  // Poll for authentication by attempting a lightweight query
   const maxAttempts = 20;
   const delayMs = 500;
   let authenticated = false;
@@ -193,19 +203,19 @@ export async function ensureConvexAuth(page: Page): Promise<void> {
   if (!authenticated) {
     throw new Error(
       "[E2E] Timed out waiting for Convex authentication. " +
-        "Ensure Clerk auth completes and Convex client receives token.",
+        "Ensure Better-Auth sign-in completes and the Convex client receives a token.",
     );
   }
 }
 
 /**
  * Ensure workspace exists — called AFTER auth is saved, never blocks auth setup.
- * Wrapped in Promise.race with timeout so it never fails the test.
+ * Wrapped in Promise.race with timeout so it never fails the test. Onboarding
+ * already creates the workspace via the UI; this is a belt-and-suspenders path.
  */
 export async function ensureWorkspace(page: Page): Promise<void> {
   const workspace = getTestWorkspaceConfig();
 
-  // Fire-and-forget with a 15s timeout — failure is acceptable (org may already exist)
   await Promise.race([
     (async () => {
       try {
@@ -237,78 +247,6 @@ export async function ensureWorkspace(page: Page): Promise<void> {
     })(),
     new Promise<void>((resolve) => setTimeout(resolve, 15000)),
   ]);
-}
-
-/**
- * Fallback: wait for Clerk to issue a Convex token via window.Clerk.session
- */
-export async function waitForClerkConvexToken(page: Page): Promise<string> {
-  const token = await retry(
-    async () =>
-      page.evaluate(async () => {
-        const clerk = (
-          window as Window & {
-            Clerk?: {
-              session?: {
-                getToken(options?: {
-                  template?: "convex";
-                  skipCache?: boolean;
-                }): Promise<string | null>;
-              } | null;
-            };
-          }
-        ).Clerk;
-        return (
-          (await clerk?.session?.getToken({
-            template: "convex",
-            skipCache: true,
-          })) ?? null
-        );
-      }),
-    {
-      attempts: 10,
-      delayMs: 500,
-      isComplete: (value) => typeof value === "string" && value.length > 0,
-    },
-  );
-
-  if (!token) {
-    throw new Error("Failed to fetch Clerk Convex token for E2E workspace setup");
-  }
-
-  return token;
-}
-
-async function retry<T>(
-  fn: () => Promise<T>,
-  options: {
-    attempts: number;
-    delayMs: number;
-    isComplete?: (value: T) => boolean;
-  },
-): Promise<T> {
-  let lastError: unknown;
-
-  for (let attempt = 1; attempt <= options.attempts; attempt++) {
-    try {
-      const result = await fn();
-      if (!options.isComplete || options.isComplete(result)) {
-        return result;
-      }
-    } catch (error) {
-      lastError = error;
-    }
-
-    if (attempt < options.attempts) {
-      await new Promise((resolve) => setTimeout(resolve, options.delayMs));
-    }
-  }
-
-  if (lastError instanceof Error) {
-    throw lastError;
-  }
-
-  throw new Error("Retry operation did not complete successfully");
 }
 
 function buildDefaultOrganizationSlug(email: string): string {

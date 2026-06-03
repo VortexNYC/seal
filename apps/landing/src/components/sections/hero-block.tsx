@@ -24,7 +24,10 @@ export function StaticHero() {
           <div
             aria-hidden="true"
             className="pointer-events-none absolute -inset-12 opacity-50 blur-[100px]"
-            style={{ background: "radial-gradient(ellipse at 50% 40%, #A63D2F 0%, #c4503e 20%, #A63D2F33 60%, transparent 85%)" }}
+            style={{
+              background:
+                "radial-gradient(ellipse at 50% 40%, #A63D2F 0%, #c4503e 20%, #A63D2F33 60%, transparent 85%)",
+            }}
           />
           {/* Mockup card — mask fades the whole card including its clip boundary */}
           <div className="relative overflow-hidden rounded-t-2xl [mask-image:linear-gradient(to_bottom,black_40%,transparent_88%)]">
@@ -36,13 +39,36 @@ export function StaticHero() {
                   <span className="size-2.5 rounded-full bg-yellow-400/60" />
                   <span className="size-2.5 rounded-full bg-green-400/60" />
                 </div>
-                <div className="bg-background/60 flex items-center gap-1.5 rounded-t-md border border-b-0 border-border/40 px-3 py-1.5">
-                  <svg className="text-primary size-3 shrink-0" fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 2a1 1 0 0 1 1-1h5.586a1 1 0 0 1 .707.293l3.414 3.414A1 1 0 0 1 14 5.414V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2Z" fill="currentColor" opacity="0.2" />
-                    <path d="M9 1.5V5a1 1 0 0 0 1 1h3.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" />
-                    <path d="M3 2a1 1 0 0 1 1-1h5.586a1 1 0 0 1 .707.293l3.414 3.414A1 1 0 0 1 14 5.414V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" />
+                <div className="bg-background/60 border-border/40 flex items-center gap-1.5 rounded-t-md border border-b-0 px-3 py-1.5">
+                  <svg
+                    className="text-primary size-3 shrink-0"
+                    fill="none"
+                    viewBox="0 0 16 16"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M3 2a1 1 0 0 1 1-1h5.586a1 1 0 0 1 .707.293l3.414 3.414A1 1 0 0 1 14 5.414V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2Z"
+                      fill="currentColor"
+                      opacity="0.2"
+                    />
+                    <path
+                      d="M9 1.5V5a1 1 0 0 0 1 1h3.5"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.2"
+                    />
+                    <path
+                      d="M3 2a1 1 0 0 1 1-1h5.586a1 1 0 0 1 .707.293l3.414 3.414A1 1 0 0 1 14 5.414V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2Z"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.2"
+                    />
                   </svg>
-                  <span className="text-foreground/70 max-w-[180px] truncate text-xs">ACME Corp — Service Agreement.pdf</span>
+                  <span className="text-foreground/70 max-w-[180px] truncate text-xs">
+                    ACME Corp — Service Agreement.pdf
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-2 px-4 py-2">
@@ -58,9 +84,10 @@ export function StaticHero() {
                 aria-hidden="true"
                 className="h-full w-full object-cover object-top"
                 src="/product-screenshot.png"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                }}
               />
-
             </div>
           </div>
         </div>

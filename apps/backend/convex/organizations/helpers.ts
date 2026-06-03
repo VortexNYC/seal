@@ -21,26 +21,6 @@ export const getOrganizationById = internalQuery({
 });
 
 /**
- * Get organization member by ID (internal query for actions)
- */
-export const getOrganizationMemberById = internalQuery({
-  args: {
-    memberId: v.id("organization_members"),
-    organizationId: v.id("organizations"),
-  },
-  handler: async (ctx, args) => {
-    const member = await ctx.db.get(args.memberId);
-
-    // Verify member belongs to the specified organization
-    if (member && member.organizationId !== args.organizationId) {
-      return null;
-    }
-
-    return member;
-  },
-});
-
-/**
  * Get user by ID (internal query for actions)
  */
 export const getUserById = internalQuery({

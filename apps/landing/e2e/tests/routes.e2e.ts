@@ -19,7 +19,9 @@ test.describe("landing public routes", () => {
 
     await visitFooterLink("Pricing", async () => {
       await expect(page).toHaveURL(/\/pricing$/);
-      await expect(page.getByRole("heading", { level: 2, name: /simple, honest pricing/i })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { level: 2, name: /simple, honest pricing/i }),
+      ).toBeVisible();
     });
 
     await visitFooterLink("Changelog", async () => {

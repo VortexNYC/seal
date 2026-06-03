@@ -9,13 +9,15 @@ const AI_CLAUSES = [
   {
     type: "error",
     title: "Missing co-founder signature block — Page 6",
-    detail: "Term sheets with multiple founders require all signatures. The agreement may be unenforceable.",
+    detail:
+      "Term sheets with multiple founders require all signatures. The agreement may be unenforceable.",
     cta: "Fix this →",
   },
   {
     type: "warning",
     title: "Unusual liquidation preference — §4.3",
-    detail: "3× non-participating preference. Market standard is 1×. Significantly investor-favorable.",
+    detail:
+      "3× non-participating preference. Market standard is 1×. Significantly investor-favorable.",
     cta: null,
   },
   {
@@ -77,7 +79,7 @@ function AiReviewMockup() {
             Scanning…
           </span>
         ) : (
-          <span className="bg-success/15 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium animate-badge-pop">
+          <span className="bg-success/15 text-success animate-badge-pop inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
             <Circle aria-hidden="true" className="size-1.5 fill-current" />
             AI reviewed
           </span>
@@ -87,15 +89,15 @@ function AiReviewMockup() {
       {/* Progress bar during scan */}
       {scanning && (
         <div className="h-0.5 w-full overflow-hidden bg-transparent">
-          <div className="bg-primary h-full animate-progress-bar" />
+          <div className="bg-primary animate-progress-bar h-full" />
         </div>
       )}
 
-      <div className="space-y-2.5 p-4 min-h-[200px]">
+      <div className="min-h-[200px] space-y-2.5 p-4">
         {AI_CLAUSES.slice(0, visibleCount).map((clause, i) => (
           <div
             key={clause.title}
-            className={`rounded-lg border p-3.5 animate-slide-in-up ${
+            className={`animate-slide-in-up rounded-lg border p-3.5 ${
               clause.type === "error"
                 ? "bg-destructive/8 border-destructive/20"
                 : clause.type === "warning"
@@ -127,7 +129,7 @@ function AiReviewMockup() {
         ))}
         {scanning && (
           <div className="flex items-center gap-2 px-1 py-2">
-            <span className="bg-muted h-2 w-2/3 rounded animate-pulse" />
+            <span className="bg-muted h-2 w-2/3 animate-pulse rounded" />
           </div>
         )}
       </div>
@@ -181,9 +183,7 @@ function SigningMockup() {
         </span>
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-300 ${
-            phase === "complete"
-              ? "bg-success/15 text-success"
-              : "bg-primary/10 text-primary"
+            phase === "complete" ? "bg-success/15 text-success" : "bg-primary/10 text-primary"
           }`}
         >
           <Circle aria-hidden="true" className="size-1.5 fill-current" />
@@ -193,7 +193,7 @@ function SigningMockup() {
 
       <div className="p-5">
         <div className="bg-muted/40 mb-4 rounded-lg p-5">
-          <div className="space-y-2 mb-5">
+          <div className="mb-5 space-y-2">
             <div className="bg-muted h-2 w-4/5 rounded" />
             <div className="bg-muted h-2 w-full rounded" />
             <div className="bg-muted h-2 w-3/4 rounded" />
@@ -201,7 +201,7 @@ function SigningMockup() {
 
           {/* Signer 1 */}
           <div
-            className={`border rounded-lg p-3 mb-2 transition-all duration-500 ${
+            className={`mb-2 rounded-lg border p-3 transition-all duration-500 ${
               phase === "signing1" || phase === "signing2" || phase === "complete"
                 ? "border-success/30 bg-success/5"
                 : "border-border bg-card"
@@ -229,7 +229,7 @@ function SigningMockup() {
 
           {/* Signer 2 */}
           <div
-            className={`border rounded-lg p-3 transition-all duration-500 ${
+            className={`rounded-lg border p-3 transition-all duration-500 ${
               phase === "signing2" || phase === "complete"
                 ? "border-success/30 bg-success/5"
                 : "border-border bg-card"
@@ -257,7 +257,7 @@ function SigningMockup() {
 
       <div className="border-border flex items-center justify-between border-t px-5 py-3">
         {phase === "complete" ? (
-          <span className="text-success flex items-center gap-1.5 text-xs font-medium animate-fade-in">
+          <span className="text-success animate-fade-in flex items-center gap-1.5 text-xs font-medium">
             <Check aria-hidden="true" className="size-3" />
             All parties signed · 42 seconds
           </span>
@@ -285,7 +285,7 @@ const API_STEPS = [
       '  "signers": [',
       '    { "email": "sarah@acme.com",',
       '      "role": "client" }',
-      '  ],',
+      "  ],",
       '  "collect_payment": true',
     ],
   },
@@ -342,7 +342,7 @@ function DevApiMockup() {
   const current = API_STEPS[step] ?? API_STEPS[0]!;
 
   return (
-    <div className="border-border bg-card w-full overflow-hidden rounded-xl border shadow-lg font-mono text-xs">
+    <div className="border-border bg-card w-full overflow-hidden rounded-xl border font-mono text-xs shadow-lg">
       {/* Terminal tab bar */}
       <div className="border-border bg-muted/30 flex items-center gap-1.5 border-b px-4 py-2.5">
         <span className="size-2.5 rounded-full bg-red-400/70" />
@@ -351,17 +351,21 @@ function DevApiMockup() {
         <span className="text-muted-foreground ml-3 text-xs">seal api — zsh</span>
       </div>
 
-      <div className="p-5 min-h-[220px] space-y-1">
+      <div className="min-h-[220px] space-y-1 p-5">
         {/* All completed steps shown dimmed */}
         {API_STEPS.slice(0, step).map((s) => (
           <div key={s.label} className="opacity-30">
-            <p className={`mb-1 ${s.type === "request" ? "text-primary" : s.type === "response" ? "text-success" : "text-warning"}`}>
+            <p
+              className={`mb-1 ${s.type === "request" ? "text-primary" : s.type === "response" ? "text-success" : "text-warning"}`}
+            >
               {s.type === "request" ? "$ curl" : s.type === "response" ? "←" : "⚡"}{" "}
               <span className="text-foreground/70">{s.label}</span>
             </p>
-            <div className="pl-4 space-y-0.5">
+            <div className="space-y-0.5 pl-4">
               {s.lines.map((line) => (
-                <p key={line} className="text-muted-foreground">{line}</p>
+                <p key={line} className="text-muted-foreground">
+                  {line}
+                </p>
               ))}
             </div>
           </div>
@@ -369,18 +373,24 @@ function DevApiMockup() {
 
         {/* Current active step */}
         <div>
-          <p className={`mb-1 ${current.type === "request" ? "text-primary" : current.type === "response" ? "text-success" : "text-warning"}`}>
+          <p
+            className={`mb-1 ${current.type === "request" ? "text-primary" : current.type === "response" ? "text-success" : "text-warning"}`}
+          >
             {current.type === "request" ? "$ curl" : current.type === "response" ? "←" : "⚡"}{" "}
             <span className="text-foreground">{current.label}</span>
           </p>
-          <div className="pl-4 space-y-0.5">
+          <div className="space-y-0.5 pl-4">
             {current.lines.slice(0, lineCount).map((line, i) => (
-              <p key={line} className="text-muted-foreground animate-fade-in" style={{ animationDelay: `${i * 20}ms` }}>
+              <p
+                key={line}
+                className="text-muted-foreground animate-fade-in"
+                style={{ animationDelay: `${i * 20}ms` }}
+              >
                 {line}
               </p>
             ))}
             {lineCount < current.lines.length && (
-              <span className="inline-block size-2 bg-foreground animate-pulse rounded-sm" />
+              <span className="bg-foreground inline-block size-2 animate-pulse rounded-sm" />
             )}
           </div>
         </div>
@@ -392,7 +402,11 @@ function DevApiMockup() {
             <span
               key={s.label}
               className={`size-1.5 rounded-full transition-colors duration-300 ${
-                i < step ? "bg-success" : i === step ? "bg-primary animate-pulse" : "bg-muted-foreground/30"
+                i < step
+                  ? "bg-success"
+                  : i === step
+                    ? "bg-primary animate-pulse"
+                    : "bg-muted-foreground/30"
               }`}
             />
           ))}
@@ -457,7 +471,7 @@ function PaymentsMockup() {
       </div>
 
       <div className="px-5 py-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="text-foreground text-sm font-medium">ACME Corp</p>
             <p className="text-muted-foreground text-xs">Signed · Mar 3, 2026</p>
@@ -484,17 +498,27 @@ function PaymentsMockup() {
               <div
                 key={row.label}
                 className={`flex items-center justify-between rounded-lg px-3 py-2 transition-all duration-500 ${
-                  isPaid ? "bg-success/8" : isActive ? "bg-muted/30 ring-1 ring-primary/20" : "bg-transparent"
+                  isPaid
+                    ? "bg-success/8"
+                    : isActive
+                      ? "bg-muted/30 ring-primary/20 ring-1"
+                      : "bg-transparent"
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   <Circle
                     aria-hidden="true"
                     className={`size-2 shrink-0 fill-current transition-colors duration-500 ${
-                      isPaid ? "text-success" : isActive ? "text-primary animate-pulse" : "text-muted-foreground/30"
+                      isPaid
+                        ? "text-success"
+                        : isActive
+                          ? "text-primary animate-pulse"
+                          : "text-muted-foreground/30"
                     }`}
                   />
-                  <span className={`text-sm transition-colors duration-300 ${isPaid ? "text-foreground" : "text-muted-foreground"}`}>
+                  <span
+                    className={`text-sm transition-colors duration-300 ${isPaid ? "text-foreground" : "text-muted-foreground"}`}
+                  >
                     {row.label}
                   </span>
                 </div>

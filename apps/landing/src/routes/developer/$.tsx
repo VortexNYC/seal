@@ -55,9 +55,7 @@ function DevPageRoute() {
     return (
       <DocsPage full>
         <DocsTitle>{loaderData.title}</DocsTitle>
-        {loaderData.description && (
-          <DocsDescription>{loaderData.description}</DocsDescription>
-        )}
+        {loaderData.description && <DocsDescription>{loaderData.description}</DocsDescription>}
         <DocsBody>
           <ClientAPIPage {...loaderData.props} />
         </DocsBody>
@@ -70,9 +68,7 @@ function DevPageRoute() {
   return (
     <DocsPage key={loaderData.path} toc={loaderData.toc}>
       <DocsTitle>{loaderData.title}</DocsTitle>
-      {loaderData.description && (
-        <DocsDescription>{loaderData.description}</DocsDescription>
-      )}
+      {loaderData.description && <DocsDescription>{loaderData.description}</DocsDescription>}
       <DocsBody>
         <Suspense fallback={<div>Loading...</div>}>
           {renderDeveloperPageContent(loaderData.path)}

@@ -34,11 +34,11 @@ function DocsLayoutRoute() {
     >
       <ClientOnly>
         <DocsLayout
-          containerProps={{ style: { '--fd-layout-width': '100vw' } as CSSProperties }}
+          containerProps={{ style: { "--fd-layout-width": "100vw" } as CSSProperties }}
           tree={docsPageTree}
           nav={{
             title: (
-              <a href="/docs" className="font-semibold text-base">
+              <a href="/docs" className="text-base font-semibold">
                 Docs
               </a>
             ),

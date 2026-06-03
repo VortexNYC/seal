@@ -1,9 +1,9 @@
-import { useUser } from "@clerk/clerk-react";
 import usePresence from "@convex-dev/presence/react";
 import { api } from "@seal/backend/convex/_generated/api";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 import { getInitials } from "@/lib/formatting";
 import { cn } from "@/lib/utils";
 

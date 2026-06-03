@@ -6,7 +6,6 @@
  * Route: /{slug}/settings/profile/ (index)
  */
 
-import { UserProfile } from "@clerk/clerk-react";
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
@@ -18,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")({
@@ -27,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/profile/")(
 const MAX_BIO_LENGTH = 500;
 
 function ProfileSettings() {
+  const { user } = useCurrentUser();
   const userProfile = useQuery(api.user_profiles.queries.getCurrentUserProfile);
   const updateProfile = useMutation(api.user_profiles.mutations.updateProfile);
 
@@ -73,35 +74,24 @@ function ProfileSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Clerk UserProfile for account settings */}
-      <style>
-        {`
-					/* Hide the entire navbar/sidebar */
-					.cl-navbar,
-					.cl-userProfile__navbar {
-						display: none !important;
-					}
-
-					/* Add padding to the left side of the content area */
-					.cl-pageScrollBox,
-					.cl-userProfile__pageScrollBox {
-						padding-left: 2rem !important;
-					}
-
-					/* Remove shadow from profile details card */
-					.cl-profileSection__profile,
-					.cl-profileSection {
-						box-shadow: none !important;
-					}
-				`}
-      </style>
-      <UserProfile
-        appearance={{
-          elements: {
-            cardBox: "!shadow-sm !bg-card !rounded-xl !border",
-          },
-        }}
-      />
+      {/* Account info (managed by vortex-auth). Password reset is via the
+          email flow; account-management + 2FA UI is wired in a follow-up. */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+          <CardDescription>Your account details.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <Label>Name</Label>
+            <p className="text-sm">{user?.fullName ?? "—"}</p>
+          </div>
+          <div className="space-y-1">
+            <Label>Email</Label>
+            <p className="text-sm">{user?.primaryEmailAddress?.emailAddress ?? "—"}</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Bio Card - Custom Convex-backed field */}
       <Card>

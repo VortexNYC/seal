@@ -1,10 +1,10 @@
-import { useClerk } from "@clerk/clerk-react";
 import * as Sentry from "@sentry/react";
 import { type ErrorComponentProps, Link, useRouter } from "@tanstack/react-router";
 import { AlertTriangleIcon, HomeIcon, LogOut, MailIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect } from "react";
 
 import { useAnalytics } from "@/hooks/use-analytics";
+import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
 
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
@@ -17,7 +17,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
  */
 export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
-  const { signOut } = useClerk();
+  const { signOut } = useAppAuthActions();
   const { reset: resetAnalytics } = useAnalytics();
   const isDev = import.meta.env.DEV;
 
@@ -39,7 +39,7 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
 
   const handleSignOut = async () => {
     resetAnalytics();
-    await signOut();
+    await signOut({ redirectUrl: "/sign-in" });
   };
 
   return (

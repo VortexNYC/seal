@@ -1,6 +1,6 @@
 import { cp } from "node:fs/promises";
-import path from "node:path";
 import { createRequire } from "node:module";
+import path from "node:path";
 
 const require = createRequire(import.meta.url);
 const projectRoot = path.resolve(import.meta.dirname, "..");

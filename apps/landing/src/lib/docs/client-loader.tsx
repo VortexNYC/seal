@@ -2,7 +2,9 @@ import browserCollections from "fumadocs-mdx:collections/browser";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { ReactNode } from "react";
 
-const mdxComponent = (loaded: { default: React.ComponentType<{ components: typeof defaultMdxComponents }> }): ReactNode => {
+const mdxComponent = (loaded: {
+  default: React.ComponentType<{ components: typeof defaultMdxComponents }>;
+}): ReactNode => {
   const MDXContent = loaded.default;
   return <MDXContent components={defaultMdxComponents} />;
 };

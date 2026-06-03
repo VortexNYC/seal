@@ -4,7 +4,6 @@
  * Displays organization members in a table with role management
  */
 
-import { useUser } from "@clerk/clerk-react";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { Filter, SearchIcon, UsersIcon, X } from "lucide-react";
@@ -32,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useCurrentUser as useUser } from "@/hooks/use-current-user";
 
 import { RoleSelector } from "./role-selector";
 

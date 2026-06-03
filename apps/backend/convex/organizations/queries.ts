@@ -117,63 +117,6 @@ export const getOrganizationMembers = authQuery({
 });
 
 /**
- * Get pending invitations for an organization
- */
-export const getPendingInvitations = authQuery({
-  args: {
-    organizationId: v.id("organizations"),
-  },
-  handler: async (ctx, args) => {
-    // Verify user has access and can manage members
-    const userMember = await ctx.db
-      .query("organization_members")
-      .withIndex("by_user_organization", (q) =>
-        q.eq("userId", ctx.auth.user._id).eq("organizationId", args.organizationId),
-      )
-      .first();
-
-    if (!userMember) {
-      throw new ConvexError("No access to this organization");
-    }
-
-    // Only admins and owners can view invitations
-    if (!hasPermission(userMember, DOCUMENT_SIGNING_PERMISSIONS.ORG_USERS_INVITE)) {
-      throw new ConvexError("Insufficient permissions to view invitations");
-    }
-
-    // Get pending invitations
-    const invitations = await ctx.db
-      .query("organization_invitations")
-      .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-      .filter((q) => q.eq(q.field("status"), "pending"))
-      .collect();
-
-    // Fetch inviter details
-    const invitationsWithDetails = await Promise.all(
-      invitations.map(async (invitation) => {
-        const inviter = await ctx.db.get(invitation.invitedBy);
-
-        return {
-          id: invitation._id,
-          email: invitation.email,
-          role: invitation.role,
-          status: invitation.status,
-          invitedAt: invitation._creationTime,
-          expiresAt: invitation.expiresAt,
-          inviterName: inviter?.name || "Unknown",
-          inviterEmail: inviter?.email || "",
-          clerkInvitationId: invitation.clerkInvitationId,
-          clerkOrganizationId: invitation.clerkOrganizationId,
-        };
-      }),
-    );
-
-    // Sort by most recent first
-    return invitationsWithDetails.sort((a, b) => b.invitedAt - a.invitedAt);
-  },
-});
-
-/**
  * Get user's permissions for the current organization
  */
 export const getUserPermissions = authQuery({
@@ -353,61 +296,6 @@ export const getOrganizationMember = authQuery({
       permissionOverrides: member.permissionOverrides,
       clerkId: user.clerkId,
       timezone: user.timezone,
-    };
-  },
-});
-
-/**
- * Get invitation by ID (internal only)
- * Used by actions that need to lookup invitations without auth
- */
-export const getInvitationById = internalQuery({
-  args: {
-    invitationId: v.id("organization_invitations"),
-  },
-  handler: async (ctx, args) => {
-    const invitation = await ctx.db.get(args.invitationId);
-
-    if (!invitation) {
-      return null;
-    }
-
-    return {
-      _id: invitation._id,
-      organizationId: invitation.organizationId,
-      emailAddress: invitation.email,
-      role: invitation.role,
-      status: invitation.status,
-      clerkInvitationId: invitation.clerkInvitationId,
-    };
-  },
-});
-
-/**
- * Get invitation by Clerk invitation ID (internal only)
- * Used by actions that need to lookup invitations without auth
- */
-export const getInvitationByClerkId = internalQuery({
-  args: {
-    clerkInvitationId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const invitation = await ctx.db
-      .query("organization_invitations")
-      .withIndex("by_clerk_invitation_id", (q) => q.eq("clerkInvitationId", args.clerkInvitationId))
-      .first();
-
-    if (!invitation) {
-      return null;
-    }
-
-    return {
-      _id: invitation._id,
-      organizationId: invitation.organizationId,
-      emailAddress: invitation.email,
-      role: invitation.role,
-      status: invitation.status,
-      clerkInvitationId: invitation.clerkInvitationId,
     };
   },
 });

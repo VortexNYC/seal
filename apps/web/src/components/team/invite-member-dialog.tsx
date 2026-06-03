@@ -7,7 +7,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { useAction } from "convex/react";
+import { useMutation } from "convex/react";
 import { AlertCircle } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -60,7 +60,7 @@ export function InviteMemberDialog({
   open,
   onOpenChange,
 }: InviteMemberDialogProps) {
-  const clerkInvite = useAction(api.organizations.actions.clerkInvite);
+  const createInvitation = useMutation(api.invitations.createInvitation);
 
   const form = useForm<InviteMemberFormValues>({
     resolver: zodResolver(inviteMemberSchema),
@@ -74,21 +74,15 @@ export function InviteMemberDialog({
 
   const handleSubmit = async (values: InviteMemberFormValues) => {
     try {
-      const result = await clerkInvite({
+      await createInvitation({
         email: values.email.trim().toLowerCase(),
         role: values.role,
-        organizationId: _organizationId,
       });
 
-      if (result.ok) {
-        toast.success("Invitation sent", {
-          description: `An invitation has been sent to ${values.email} via email`,
-        });
-        onOpenChange(false);
-      } else {
-        form.setError("root", { message: result.message || "Failed to send invitation" });
-        toast.error("Failed to send invitation", { description: result.message });
-      }
+      toast.success("Invitation sent", {
+        description: `An invitation has been sent to ${values.email} via email`,
+      });
+      onOpenChange(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to send invitation";
       form.setError("root", { message: errorMessage });

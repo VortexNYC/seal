@@ -1,30 +1,19 @@
 /**
  * External Data Sync Utilities
  *
- * Provides operational actions to:
- * 1. Sync users from Clerk into Convex
- * 2. Sync Stripe data into Convex (catalog, customer links, subscriptions)
- * 3. Run both in sequence (Clerk first, then Stripe)
+ * Provides operational actions to sync Stripe data into Convex
+ * (catalog, customer links, subscriptions).
  *
  * Usage:
- *   bunx convex run sync_external_data:syncClerkThenStripeToConvex
+ *   bunx convex run sync_external_data:syncStripeToConvex
  */
 
-import { createClerkClient } from "@clerk/backend";
 import { v } from "convex/values";
 import Stripe from "stripe";
 
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type ActionCtx, internalAction, internalMutation } from "./_generated/server";
-
-function getClerkClient() {
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!secretKey) {
-    throw new Error("CLERK_SECRET_KEY not configured");
-  }
-  return createClerkClient({ secretKey });
-}
 
 function getStripeClient(): Stripe {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -35,15 +24,6 @@ function getStripeClient(): Stripe {
   return new Stripe(stripeSecretKey, {
     apiVersion: "2026-02-25.clover",
   });
-}
-
-interface ClerkUserSyncResult {
-  totalFetched: number;
-  synced: number;
-  created: number;
-  updated: number;
-  skippedNoEmail: number;
-  errors: number;
 }
 
 interface StripeLinkingResult {
@@ -68,84 +48,10 @@ interface StripeSyncResult {
   };
 }
 
-interface CombinedSyncResult {
-  clerk: ClerkUserSyncResult;
-  stripe: StripeSyncResult;
-}
-
 type UserForStripeLink = {
   userId: Id<"users">;
   email: string;
 };
-
-function getPrimaryEmailAddress(clerkUser: {
-  primaryEmailAddressId: string | null;
-  emailAddresses: Array<{
-    id: string;
-    emailAddress: string;
-    verification?: { status?: string | null } | null;
-  }>;
-}): { email: string; isVerified: boolean } | null {
-  const primaryEmail =
-    clerkUser.emailAddresses.find((email) => email.id === clerkUser.primaryEmailAddressId) ??
-    clerkUser.emailAddresses[0];
-  const email = primaryEmail?.emailAddress?.toLowerCase();
-
-  if (!email) {
-    return null;
-  }
-
-  return {
-    email,
-    isVerified: primaryEmail?.verification?.status === "verified",
-  };
-}
-
-async function syncClerkUserRecord(
-  ctx: ActionCtx,
-  clerkUser: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    emailAddresses: Array<{
-      id: string;
-      emailAddress: string;
-      verification?: { status?: string | null } | null;
-    }>;
-    primaryEmailAddressId: string | null;
-    imageUrl: string;
-    locale: string | null;
-  },
-): Promise<"created" | "updated" | "skipped_no_email" | "error"> {
-  const primaryEmail = getPrimaryEmailAddress(clerkUser);
-  if (!primaryEmail) {
-    return "skipped_no_email";
-  }
-
-  const firstName = clerkUser.firstName ?? "";
-  const lastName = clerkUser.lastName ?? "";
-  const fullName = `${firstName} ${lastName}`.trim() || undefined;
-
-  try {
-    const result = await ctx.runMutation(api.clerk_webhooks.syncUser, {
-      clerkId: clerkUser.id,
-      name: fullName,
-      email: primaryEmail.email,
-      avatar: clerkUser.imageUrl || undefined,
-      isEmailVerified: primaryEmail.isVerified,
-      locale: clerkUser.locale ?? undefined,
-    });
-
-    return result.isNewUser ? "created" : "updated";
-  } catch (error) {
-    console.error("[syncUsersFromClerkToConvex] Failed to sync user", {
-      clerkUserId: clerkUser.id,
-      email: primaryEmail.email,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return "error";
-  }
-}
 
 async function linkStripeCustomers(
   ctx: ActionCtx,
@@ -216,245 +122,6 @@ export const getUsersForStripeCustomerLinking = internalMutation({
       userId: user._id,
       email: user.email,
     }));
-  },
-});
-
-/**
- * Sync all Clerk users into Convex users table.
- * Idempotent: existing users are updated, missing users are created.
- */
-export const syncUsersFromClerkToConvex = internalAction({
-  args: {
-    pageSize: v.optional(v.number()),
-  },
-  handler: async (ctx, args): Promise<ClerkUserSyncResult> => {
-    const clerk = getClerkClient();
-    const pageSize = Math.max(1, Math.min(args.pageSize ?? 100, 500));
-
-    let offset = 0;
-    let totalFetched = 0;
-    let synced = 0;
-    let created = 0;
-    let updated = 0;
-    let skippedNoEmail = 0;
-    let errors = 0;
-
-    while (true) {
-      const page = await clerk.users.getUserList({
-        limit: pageSize,
-        offset,
-      });
-
-      if (page.data.length === 0) {
-        break;
-      }
-
-      for (const clerkUser of page.data) {
-        totalFetched++;
-        const outcome = await syncClerkUserRecord(ctx, clerkUser);
-        if (outcome === "created") {
-          synced++;
-          created++;
-        } else if (outcome === "updated") {
-          synced++;
-          updated++;
-        } else if (outcome === "skipped_no_email") {
-          skippedNoEmail++;
-        } else {
-          errors++;
-        }
-      }
-
-      offset += page.data.length;
-      if (offset >= page.totalCount) {
-        break;
-      }
-    }
-
-    const result: ClerkUserSyncResult = {
-      totalFetched,
-      synced,
-      created,
-      updated,
-      skippedNoEmail,
-      errors,
-    };
-
-    console.warn("[syncUsersFromClerkToConvex] complete", result);
-    return result;
-  },
-});
-
-/**
- * Sync all Clerk organizations into Convex organizations table.
- * Idempotent: existing orgs are updated, missing orgs are created.
- */
-export const syncOrganizationsFromClerkToConvex = internalAction({
-  args: {
-    pageSize: v.optional(v.number()),
-  },
-  handler: async (ctx, args): Promise<{ totalFetched: number; synced: number; errors: number }> => {
-    const clerk = getClerkClient();
-    const pageSize = Math.max(1, Math.min(args.pageSize ?? 100, 500));
-
-    let offset = 0;
-    let totalFetched = 0;
-    let synced = 0;
-    let errors = 0;
-
-    while (true) {
-      const page = await clerk.organizations.getOrganizationList({
-        limit: pageSize,
-        offset,
-      });
-
-      if (page.data.length === 0) break;
-
-      for (const org of page.data) {
-        totalFetched++;
-        try {
-          await ctx.runMutation(api.clerk_webhooks.syncOrganization, {
-            clerkId: org.id,
-            name: org.name,
-            slug: org.slug ?? undefined,
-            logo: org.imageUrl ?? undefined,
-          });
-          synced++;
-        } catch (error) {
-          errors++;
-          console.error("[syncOrganizationsFromClerkToConvex] Failed to sync org", {
-            clerkOrgId: org.id,
-            name: org.name,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-
-      offset += page.data.length;
-      if (offset >= page.totalCount) break;
-    }
-
-    const result = { totalFetched, synced, errors };
-    console.warn("[syncOrganizationsFromClerkToConvex] complete", result);
-    return result;
-  },
-});
-
-/**
- * Sync all Clerk organization memberships into Convex.
- * Iterates every org, fetches its members, and upserts memberships.
- * Must run AFTER users and organizations are synced.
- */
-export const syncMembershipsFromClerkToConvex = internalAction({
-  args: {
-    pageSize: v.optional(v.number()),
-  },
-  handler: async (
-    ctx,
-    args,
-  ): Promise<{ orgsProcessed: number; membershipsSync: number; errors: number }> => {
-    const clerk = getClerkClient();
-    const pageSize = Math.max(1, Math.min(args.pageSize ?? 100, 500));
-
-    let orgsProcessed = 0;
-    let membershipsSync = 0;
-    let errors = 0;
-
-    // Iterate all orgs
-    let orgOffset = 0;
-    while (true) {
-      const orgsPage = await clerk.organizations.getOrganizationList({
-        limit: pageSize,
-        offset: orgOffset,
-      });
-
-      if (orgsPage.data.length === 0) break;
-
-      for (const org of orgsPage.data) {
-        orgsProcessed++;
-
-        // Fetch members for this org
-        let memberOffset = 0;
-        while (true) {
-          const membersPage = await clerk.organizations.getOrganizationMembershipList({
-            organizationId: org.id,
-            limit: pageSize,
-            offset: memberOffset,
-          });
-
-          if (membersPage.data.length === 0) break;
-
-          for (const membership of membersPage.data) {
-            const userId = membership.publicUserData?.userId;
-            if (!userId) continue;
-
-            try {
-              await ctx.runMutation(api.clerk_webhooks.syncOrganizationMembership, {
-                userClerkId: userId,
-                organizationClerkId: org.id,
-                role: membership.role,
-              });
-              membershipsSync++;
-            } catch (error) {
-              errors++;
-              console.error("[syncMembershipsFromClerkToConvex] Failed to sync membership", {
-                clerkOrgId: org.id,
-                clerkUserId: userId,
-                error: error instanceof Error ? error.message : String(error),
-              });
-            }
-          }
-
-          memberOffset += membersPage.data.length;
-          if (memberOffset >= membersPage.totalCount) break;
-        }
-      }
-
-      orgOffset += orgsPage.data.length;
-      if (orgOffset >= orgsPage.totalCount) break;
-    }
-
-    const result = { orgsProcessed, membershipsSync, errors };
-    console.warn("[syncMembershipsFromClerkToConvex] complete", result);
-    return result;
-  },
-});
-
-/**
- * Full Clerk sync: users, then organizations, then memberships.
- *
- * Usage:
- *   bunx convex run sync_external_data:syncAllClerkToConvex
- */
-export const syncAllClerkToConvex = internalAction({
-  args: {
-    pageSize: v.optional(v.number()),
-  },
-  handler: async (
-    ctx,
-    args,
-  ): Promise<{
-    users: ClerkUserSyncResult;
-    orgs: { totalFetched: number; synced: number; errors: number };
-    memberships: { orgsProcessed: number; membershipsSync: number; errors: number };
-  }> => {
-    const users = await ctx.runAction(internal.sync_external_data.syncUsersFromClerkToConvex, {
-      pageSize: args.pageSize,
-    });
-
-    const orgs = await ctx.runAction(
-      internal.sync_external_data.syncOrganizationsFromClerkToConvex,
-      { pageSize: args.pageSize },
-    );
-
-    const memberships = await ctx.runAction(
-      internal.sync_external_data.syncMembershipsFromClerkToConvex,
-      { pageSize: args.pageSize },
-    );
-
-    const result = { users, orgs, memberships };
-    console.warn("[syncAllClerkToConvex] complete", result);
-    return result;
   },
 });
 
@@ -538,35 +205,6 @@ export const syncStripeToConvex = internalAction({
     };
 
     console.warn("[syncStripeToConvex] complete", result);
-    return result;
-  },
-});
-
-/**
- * One-shot operational sequence:
- * 1. Sync Clerk users -> Convex
- * 2. Sync Stripe -> Convex
- */
-export const syncClerkThenStripeToConvex = internalAction({
-  args: {
-    pageSize: v.optional(v.number()),
-    syncCatalog: v.optional(v.boolean()),
-    linkCustomers: v.optional(v.boolean()),
-    syncSubscriptions: v.optional(v.boolean()),
-  },
-  handler: async (ctx, args): Promise<CombinedSyncResult> => {
-    const clerk = await ctx.runAction(internal.sync_external_data.syncUsersFromClerkToConvex, {
-      pageSize: args.pageSize,
-    });
-
-    const stripe = await ctx.runAction(internal.sync_external_data.syncStripeToConvex, {
-      syncCatalog: args.syncCatalog,
-      linkCustomers: args.linkCustomers,
-      syncSubscriptions: args.syncSubscriptions,
-    });
-
-    const result: CombinedSyncResult = { clerk, stripe };
-    console.warn("[syncClerkThenStripeToConvex] complete", result);
     return result;
   },
 });

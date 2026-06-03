@@ -2,13 +2,16 @@
  * Organization/Workspace mutations for Control Zero
  */
 
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type GenericId, v } from "convex/values";
 
+import { components } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, type MutationCtx, mutation } from "../_generated/server";
 import { logAction } from "../audit_logs/helpers";
 import { adminMutation, authMutation } from "../auth";
 import { ensureProFeature, ensureSeatLimit } from "../auth/subscription_guards";
+import { getComponentMemberRefForUserOrganization } from "../lib/componentOrgReads";
+import { anchorNewOrganizationOwner } from "../lib/vortexAuthOrganizations";
 import { seedSystemRoles } from "../organization_roles/helpers";
 import { organizationBaseSchema } from "../validations/organizations";
 
@@ -137,7 +140,6 @@ async function ensurePrimaryOwnerMembership(
       status: "active",
       isPrimary: true,
       permissions: [],
-      externalId: undefined,
     });
     return;
   }
@@ -249,6 +251,13 @@ export const ensurePersonalOrganization = mutation({
     await ensurePrimaryOwnerMembership(ctx, user._id, organization._id);
     await clearOtherPrimaryMemberships(ctx, user._id, organization._id);
 
+    // Mirror the org + owner into the vortexAuth component immediately so
+    // component-truth consumers (MCP OAuth, /api/v1) see it without waiting.
+    await anchorNewOrganizationOwner(ctx, {
+      organizationId: organization._id,
+      ownerUserId: user._id,
+    });
+
     await ctx.db.patch(user._id, {
       activeOrganizationId: organization._id,
       updatedAt: Date.now(),
@@ -349,6 +358,13 @@ export const createWorkspace = authMutation({
       status: "active",
       isPrimary: true,
       permissions: [],
+    });
+
+    // Mirror the org + owner into the vortexAuth component immediately so
+    // component-truth consumers (MCP OAuth, /api/v1) see it without waiting.
+    await anchorNewOrganizationOwner(ctx, {
+      organizationId,
+      ownerUserId: user._id,
     });
 
     return { id: organizationId };
@@ -604,6 +620,24 @@ export const removeMember = adminMutation({
     const removedUserId = membership.userId;
     const removedRole = membership.role;
 
+    // Remove the component membership (B2B: suspend, never touch the auth
+    // account — a user can belong to multiple orgs). Resolve the component
+    // member ref via the user + org bridge ids; no-op when either is absent.
+    const removedUser = await ctx.db.get(removedUserId);
+    if (removedUser) {
+      const componentMemberRef = await getComponentMemberRefForUserOrganization(
+        ctx,
+        removedUser,
+        organization,
+      );
+      if (componentMemberRef) {
+        await ctx.runMutation(components.vortexAuth.organizations.setMemberStatus, {
+          memberId: componentMemberRef.memberId as GenericId<"organization_members">,
+          status: "suspended",
+        });
+      }
+    }
+
     await ctx.db.delete(args.memberId);
 
     await logAction(ctx, {
@@ -618,159 +652,6 @@ export const removeMember = adminMutation({
       metadata: { description: `Member removed from organization` },
       ipAddress: "web-authenticated",
     });
-
-    return { success: true };
-  },
-});
-
-/**
- * Create invitation for new member or add existing user directly
- */
-export const createInvitation = adminMutation({
-  args: {
-    email: v.string(),
-    role: v.union(v.literal("admin"), v.literal("member"), v.literal("viewer")),
-  },
-  handler: async (ctx, args) => {
-    const { organization, user: currentUser } = ctx.auth;
-
-    await ensureSeatLimit(ctx.db, organization._id);
-
-    // Validate email
-    const email = args.email.trim().toLowerCase();
-    if (!email || !email.includes("@")) {
-      throw new ConvexError("Invalid email address");
-    }
-
-    // Check if user already exists with this email
-    const existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .first();
-
-    if (existingUser) {
-      // Check if already a member
-      const existingMembership = await ctx.db
-        .query("organization_members")
-        .withIndex("by_user_organization", (q) =>
-          q.eq("userId", existingUser._id).eq("organizationId", organization._id),
-        )
-        .first();
-
-      if (existingMembership) {
-        throw new ConvexError("User is already a member of this organization");
-      }
-
-      // User exists but is not a member - add them directly
-      const membershipId = await ctx.db.insert("organization_members", {
-        organizationId: organization._id,
-        userId: existingUser._id,
-        role: args.role,
-        status: "active",
-        isPrimary: false,
-        permissions: [],
-      });
-
-      await logAction(ctx, {
-        organizationId: organization._id,
-        userId: currentUser.clerkId,
-        actorType: "user",
-        actorId: currentUser.clerkId,
-        action: "member.joined",
-        resourceType: "member",
-        resourceId: existingUser.clerkId,
-        newValues: { role: args.role, email },
-        metadata: { description: `${email} added directly to organization` },
-        ipAddress: "web-authenticated",
-      });
-
-      return {
-        id: membershipId,
-        addedDirectly: true,
-        message: "User added to organization",
-      };
-    }
-
-    // Check for existing pending invitation
-    const existingInvitation = await ctx.db
-      .query("organization_invitations")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("organizationId"), organization._id),
-          q.eq(q.field("status"), "pending"),
-        ),
-      )
-      .first();
-
-    if (existingInvitation) {
-      throw new ConvexError("An invitation has already been sent to this email");
-    }
-
-    // Generate invitation token
-    const token = crypto.randomUUID();
-
-    // Create invitation for new user
-    const invitationId = await ctx.db.insert("organization_invitations", {
-      organizationId: organization._id,
-      email,
-      role: args.role,
-      status: "pending",
-      token,
-      invitedBy: currentUser._id,
-      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-      createdAt: Date.now(),
-    });
-
-    await logAction(ctx, {
-      organizationId: organization._id,
-      userId: currentUser.clerkId,
-      actorType: "user",
-      actorId: currentUser.clerkId,
-      action: "member.invited",
-      resourceType: "member",
-      resourceId: invitationId,
-      newValues: { email, role: args.role },
-      metadata: { description: `Invitation sent to ${email}` },
-      ipAddress: "web-authenticated",
-    });
-
-    return {
-      id: invitationId,
-      addedDirectly: false,
-      message: "Invitation sent",
-    };
-  },
-});
-
-/**
- * Cancel a pending invitation
- */
-export const cancelInvitation = adminMutation({
-  args: {
-    invitationId: v.id("organization_invitations"),
-  },
-  handler: async (ctx, args) => {
-    const { organization } = ctx.auth;
-
-    // Get the invitation
-    const invitation = await ctx.db.get(args.invitationId);
-    if (!invitation) {
-      throw new ConvexError("Invitation not found");
-    }
-
-    // Ensure invitation belongs to the organization
-    if (invitation.organizationId !== organization._id) {
-      throw new ConvexError("Invitation not found");
-    }
-
-    // Check if invitation is still pending
-    if (invitation.status !== "pending") {
-      throw new ConvexError("Can only cancel pending invitations");
-    }
-
-    // Delete the invitation
-    await ctx.db.delete(args.invitationId);
 
     return { success: true };
   },

@@ -1,8 +1,12 @@
-import { SignIn } from "@clerk/clerk-react";
+import * as Sentry from "@sentry/react";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { useTheme } from "@/components/theme-provider";
-import { getClerkAuthAppearance } from "@/lib/clerk-auth-theme";
+import {
+  authRoutePaths,
+  captureAuthEvent,
+  markPendingAuthFlow,
+  runtime,
+} from "@/lib/auth-runtime.better-auth";
 import { createPageMeta, pageSEO } from "@/lib/seo";
 
 export const Route = createFileRoute("/_auth/sign-in")({
@@ -11,13 +15,13 @@ export const Route = createFileRoute("/_auth/sign-in")({
 });
 
 function RouteComponent() {
-  const { resolvedTheme } = useTheme();
-
   return (
-    <SignIn
-      routing="virtual"
-      signUpUrl="/waitlist"
-      appearance={getClerkAuthAppearance(resolvedTheme === "dark")}
+    <runtime.AuthSignInRoutePage
+      signUpPath={authRoutePaths.signUpPath}
+      postSignInPath="/app"
+      markPendingAuthFlow={markPendingAuthFlow}
+      captureAuthEvent={captureAuthEvent}
+      captureException={(error: unknown) => Sentry.captureException(error)}
     />
   );
 }

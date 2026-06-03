@@ -1,6 +1,6 @@
 /**
  * @fileoverview HTTP endpoint definitions for Seal.
- * Includes webhook receivers (Clerk, Stripe) and public REST API endpoints.
+ * Includes webhook receivers (Stripe) and public REST API endpoints.
  *
  * @module http
  *
@@ -17,12 +17,15 @@
  * ```
  */
 
-import { type GenericActionCtx, httpRouter } from "convex/server";
+import {
+  createMcpOAuthAccessRuntime,
+  createMcpOAuthHttpHandlers,
+} from "@plasmapos/vortex-auth/mcp";
+import { httpRouter } from "convex/server";
 import Stripe from "stripe";
-import { Webhook } from "svix";
 
-import { api, internal } from "./_generated/api";
-import type { DataModel, Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { httpAction } from "./_generated/server";
 import {
   API_SCOPES,
@@ -36,19 +39,34 @@ import {
   validateRequiredFields,
 } from "./api";
 import { ApiError } from "./api/errors";
+import { registerAuthRoutes } from "./betterAuth";
 import { resendComponent } from "./emails/resend_component";
 import {
-  createAuthorizationCode as mcpCreateAuthorizationCode,
-  createRefreshToken as mcpCreateRefreshToken,
-  deleteAuthorizationCode as mcpDeleteAuthorizationCode,
-  deleteRefreshToken as mcpDeleteRefreshToken,
-  getAuthorizationCode as mcpGetAuthorizationCode,
-  getClient as mcpGetClient,
-  getRefreshToken as mcpGetRefreshToken,
-  registerClient as mcpRegisterClient,
-  updateRefreshToken as mcpUpdateRefreshToken,
-  validateRedirectUri as mcpValidateRedirectUri,
-} from "./mcp_oauth/http";
+  buildBetterAuthTokenIdentifier,
+  getBetterAuthIdentityIssuer,
+  getBetterAuthIdentityProvider,
+} from "./lib/authIdentities";
+import {
+  MCP_OAUTH_ALLOWED_SCOPES,
+  MCP_OAUTH_AUDIENCE,
+  MCP_OAUTH_AUTHORIZE_PATH,
+  MCP_OAUTH_AUTHORIZATION_SERVER_METADATA_PATH,
+  MCP_OAUTH_JWKS_PATH,
+  MCP_OAUTH_PROTECTED_RESOURCE_METADATA_PATH,
+  MCP_OAUTH_REGISTRATION_PATH,
+  MCP_OAUTH_RESOURCE_ID,
+  MCP_OAUTH_TOKEN_PATH,
+  buildAuthorizationServerMetadata,
+  buildProtectedResourceMetadata,
+  resolveMcpOAuthOrigin,
+} from "./mcpOAuth";
+import {
+  requireAccessibleOrganization,
+  requireAllowedRedirectUri,
+  requireAllowedScopes,
+  requireKnownClient,
+} from "./mcpOAuthAuth";
+import { validateRequestedOAuthScopes } from "./mcpOAuthAuthorization";
 import { processStripeConnectWebhookEvent } from "./stripe/connect_webhook_handlers";
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
 
@@ -76,443 +94,227 @@ function extractClientIp(request: Request): string {
   return "unknown";
 }
 
-interface ClerkWebhookEvent {
-  type:
-    | "user.created"
-    | "user.updated"
-    | "user.deleted"
-    | "organization.created"
-    | "organization.updated"
-    | "organization.deleted"
-    | "organizationMembership.created"
-    | "organizationMembership.updated"
-    | "organizationMembership.deleted"
-    | "organizationInvitation.created"
-    | "organizationInvitation.accepted"
-    | "organizationInvitation.revoked"
-    | "waitlistEntry.created"
-    | "waitlistEntry.updated"
-    | "session.created"
-    | "session.ended"
-    | "session.removed"
-    | "session.revoked";
-  data: {
-    id: string;
-    first_name?: string;
-    last_name?: string;
-    email_addresses?: Array<{
-      email_address: string;
-      verification?: { status: string };
-    }>;
-    image_url?: string;
-    name?: string;
-    slug?: string;
-    logo_url?: string;
-    public_metadata?: Record<string, unknown>;
-    private_metadata?: Record<string, unknown>;
-    // For membership events
-    organization?: { id: string };
-    public_user_data?: { user_id: string };
-    role?: string;
-    // For invitation events (organization_id is a direct field, not nested)
-    organization_id?: string;
-    email_address?: string;
-    status?: string;
-    url?: string | null;
-    created_at?: number;
-    updated_at?: number;
-    // For waitlist events
-    is_locked?: boolean;
-    invitation?: {
-      email_address: string;
-      public_metadata: Record<string, unknown> | null;
-      status?: string;
-      url?: string | null;
-      created_at: number;
-      updated_at: number;
-    } | null;
-    // For organization events — Clerk sends the creator's user ID
-    created_by?: string;
-    // For session events
-    user_id?: string;
-    client_id?: string;
-    last_active_at?: number;
-  };
-}
-
-type HttpActionCtx = GenericActionCtx<DataModel>;
-
-type SvixHeaders = {
-  "svix-id": string;
-  "svix-signature": string;
-  "svix-timestamp": string;
-};
-
-type ClerkSessionAction = "user.login" | "user.logout";
-
-type ClerkEventHandler = (ctx: HttpActionCtx, data: ClerkWebhookEvent["data"]) => Promise<void>;
-
-function getClerkWebhookSecret(): string | null {
-  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
-  if (!webhookSecret) {
-    console.error("CLERK_WEBHOOK_SECRET not configured");
-    return null;
-  }
-
-  return webhookSecret;
-}
-
-function getSvixHeaders(request: Request): SvixHeaders | null {
-  const svixId = request.headers.get("svix-id");
-  const svixTimestamp = request.headers.get("svix-timestamp");
-  const svixSignature = request.headers.get("svix-signature");
-
-  if (!svixId || !svixTimestamp || !svixSignature) {
-    console.error("Missing svix headers");
-    return null;
-  }
-
-  return {
-    "svix-id": svixId,
-    "svix-signature": svixSignature,
-    "svix-timestamp": svixTimestamp,
-  };
-}
-
-async function verifyClerkWebhookEvent(
-  request: Request,
-  webhookSecret: string,
-  headers: SvixHeaders,
-): Promise<ClerkWebhookEvent | null> {
-  const payload = await request.text();
-  const webhook = new Webhook(webhookSecret);
-
-  try {
-    return webhook.verify(payload, headers) as ClerkWebhookEvent;
-  } catch (err) {
-    console.error("Webhook verification failed:", err);
-    return null;
-  }
-}
-
-function getClerkUserProfile(data: ClerkWebhookEvent["data"]) {
-  const firstName = data.first_name || "";
-  const lastName = data.last_name || "";
-  const fullName = `${firstName} ${lastName}`.trim();
-  const primaryEmail = data.email_addresses?.[0];
-
-  return {
-    avatar: data.image_url || undefined,
-    email: primaryEmail?.email_address || "",
-    isEmailVerified: primaryEmail?.verification?.status === "verified",
-    name: fullName || undefined,
-  };
-}
-
-async function handleClerkUserCreated(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  const profile = getClerkUserProfile(data);
-  await ctx.runMutation(api.clerk_webhooks.syncUser, {
-    clerkId: data.id,
-    name: profile.name,
-    email: profile.email,
-    avatar: profile.avatar,
-    isEmailVerified: profile.isEmailVerified,
-  });
-  console.info(`[Clerk Webhook] User synced: ${data.id}`);
-}
-
-async function handleClerkUserUpdated(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  const profile = getClerkUserProfile(data);
-  await ctx.runMutation(api.clerk_webhooks.syncUser, {
-    clerkId: data.id,
-    name: profile.name,
-    email: profile.email,
-    avatar: profile.avatar,
-    isEmailVerified: profile.isEmailVerified,
-  });
-  console.info(`[Clerk Webhook] User synced: ${data.id}`);
-}
-
-async function handleClerkUserDeleted(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  await ctx.runMutation(api.clerk_webhooks.deleteUser, {
-    clerkId: data.id,
-  });
-  console.info(`[Clerk Webhook] User deleted: ${data.id}`);
-}
-
-async function handleClerkOrganizationSynced(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  const result = await ctx.runMutation(api.clerk_webhooks.syncOrganization, {
-    clerkId: data.id,
-    name: data.name || "",
-    slug: data.slug || undefined,
-    logo: data.logo_url || undefined,
-    metadata: data.public_metadata ? JSON.stringify(data.public_metadata) : undefined,
-  });
-  console.info(`[Clerk Webhook] Organization synced: ${data.id}`);
-
-  // For new organizations, create Stripe customer + enroll in Free plan
-  if (result?.organizationId) {
-    try {
-      const adminEmail = data.created_by || "admin@seal.nyc";
-      await ctx.runAction(internal.stripe.subscription_actions.handleNewOrgCreated, {
-        organizationId: result.organizationId,
-        orgName: data.name || "",
-        adminEmail,
-      });
-    } catch (err) {
-      console.error(`[Clerk Webhook] Failed to setup Stripe for org ${data.id}:`, err);
-    }
-  }
-}
-
-async function handleClerkOrganizationDeleted(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  await ctx.runMutation(api.clerk_webhooks.deleteOrganization, {
-    clerkId: data.id,
-  });
-  console.info(`[Clerk Webhook] Organization deleted: ${data.id}`);
-}
-
-async function handleClerkMembershipCreated(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  if (!data.organization?.id || !data.public_user_data?.user_id) {
-    return;
-  }
-
-  await ctx.runMutation(internal.clerk_webhooks.upsertMembershipFromClerk, {
-    clerkUserId: data.public_user_data.user_id,
-    clerkOrgId: data.organization.id,
-    clerkMembershipId: data.id,
-    role: data.role || "member",
-  });
-  console.info(
-    `[Clerk Webhook] Membership created: ${data.public_user_data.user_id} -> ${data.organization.id} (${data.id})`,
-  );
-}
-
-async function handleClerkMembershipUpdated(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  if (!data.id) {
-    return;
-  }
-
-  await ctx.runMutation(internal.clerk_webhooks.syncMembershipFromClerk, {
-    clerkMembershipId: data.id,
-  });
-  console.info(`[Clerk Webhook] Membership updated: ${data.id}`);
-}
-
-async function handleClerkMembershipDeleted(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  if (!data.id) {
-    return;
-  }
-
-  await ctx.runMutation(internal.clerk_webhooks.deleteMembershipFromClerk, {
-    clerkMembershipId: data.id,
-  });
-  console.info(`[Clerk Webhook] Membership deleted: ${data.id}`);
-}
-
-async function handleClerkInvitationCreated(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  console.info(`[Clerk Webhook] Processing invitation.created`, {
-    hasOrgId: !!data.organization_id,
-    hasEmail: !!data.email_address,
-    orgId: data.organization_id,
-    email: data.email_address,
-  });
-
-  if (!data.organization_id || !data.email_address) {
-    console.warn(`[Clerk Webhook] Missing required data for invitation.created`, {
-      hasOrgId: !!data.organization_id,
-      hasEmail: !!data.email_address,
-    });
-    return;
-  }
-
-  try {
-    const result = await ctx.runMutation(internal.clerk_webhooks.handleInvitationCreated, {
-      clerkInvitationId: data.id,
-      clerkOrganizationId: data.organization_id,
-      emailAddress: data.email_address,
-      role: data.role,
-      inviteUrl: data.url || undefined,
-      publicMetadata: data.public_metadata,
-      createdAt: data.created_at,
-    });
-    console.info(
-      `[Clerk Webhook] Invitation created successfully: ${data.email_address} -> ${data.organization_id}`,
-      result,
-    );
-  } catch (error) {
-    console.error(`[Clerk Webhook] Error handling invitation.created:`, error);
-    throw error;
-  }
-}
-
-async function handleClerkInvitationAccepted(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  if (!data.organization_id) {
-    return;
-  }
-
-  await ctx.runMutation(internal.clerk_webhooks.handleInvitationAccepted, {
-    clerkInvitationId: data.id,
-    clerkOrganizationId: data.organization_id,
-    clerkUserId: data.public_user_data?.user_id,
-  });
-  console.info(`[Clerk Webhook] Invitation accepted: ${data.id}`);
-}
-
-async function handleClerkInvitationRevoked(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  await ctx.runMutation(internal.clerk_webhooks.handleInvitationRevoked, {
-    clerkInvitationId: data.id,
-  });
-  console.info(`[Clerk Webhook] Invitation revoked: ${data.id}`);
-}
-
-async function handleClerkWaitlistEntryUpsert(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-): Promise<void> {
-  if (!data.email_address) {
-    console.warn(`[Clerk Webhook] Missing email for waitlist entry`, { id: data.id });
-    return;
-  }
-
-  const invitation = data.invitation;
-  await ctx.runMutation(internal.clerk_webhooks.upsertWaitlistEntry, {
-    clerkId: data.id,
-    emailAddress: data.email_address,
-    status: (data.status as "pending" | "invited" | "completed" | "rejected") || "pending",
-    isLocked: data.is_locked || false,
-    inviteUrl: invitation?.url || undefined,
-    invitationStatus: invitation?.status,
-    invitationCreatedAt: invitation?.created_at,
-    invitationUpdatedAt: invitation?.updated_at,
-    createdAt: data.created_at || Date.now(),
-    updatedAt: data.updated_at || Date.now(),
-  });
-  console.info(`[Clerk Webhook] Waitlist entry synced: ${data.email_address} (${data.status})`);
-}
-
-async function logClerkSessionEvent(
-  ctx: HttpActionCtx,
-  data: ClerkWebhookEvent["data"],
-  action: ClerkSessionAction,
-  logMessage: string,
-): Promise<void> {
-  if (!data.user_id) {
-    return;
-  }
-
-  await ctx.runMutation(internal.clerk_webhooks.logSessionEvent, {
-    clerkUserId: data.user_id,
-    sessionId: data.id,
-    action,
-  });
-  console.info(`${logMessage}: ${data.user_id}`);
-}
-
-const clerkWebhookHandlers: Partial<Record<ClerkWebhookEvent["type"], ClerkEventHandler>> = {
-  "user.created": handleClerkUserCreated,
-  "user.updated": handleClerkUserUpdated,
-  "user.deleted": handleClerkUserDeleted,
-  "organization.created": handleClerkOrganizationSynced,
-  "organization.updated": handleClerkOrganizationSynced,
-  "organization.deleted": handleClerkOrganizationDeleted,
-  "organizationMembership.created": handleClerkMembershipCreated,
-  "organizationMembership.updated": handleClerkMembershipUpdated,
-  "organizationMembership.deleted": handleClerkMembershipDeleted,
-  "organizationInvitation.created": handleClerkInvitationCreated,
-  "organizationInvitation.accepted": handleClerkInvitationAccepted,
-  "organizationInvitation.revoked": handleClerkInvitationRevoked,
-  "waitlistEntry.created": handleClerkWaitlistEntryUpsert,
-  "waitlistEntry.updated": handleClerkWaitlistEntryUpsert,
-  "session.created": (ctx, data) =>
-    logClerkSessionEvent(ctx, data, "user.login", "[Clerk Webhook] Session logged"),
-  "session.ended": (ctx, data) =>
-    logClerkSessionEvent(ctx, data, "user.logout", "[Clerk Webhook] Session end logged"),
-  "session.removed": (ctx, data) =>
-    logClerkSessionEvent(ctx, data, "user.logout", "[Clerk Webhook] Session end logged"),
-  "session.revoked": (ctx, data) =>
-    logClerkSessionEvent(ctx, data, "user.logout", "[Clerk Webhook] Session end logged"),
-};
-
-async function handleClerkWebhookEvent(
-  ctx: HttpActionCtx,
-  event: ClerkWebhookEvent,
-): Promise<void> {
-  const handler = clerkWebhookHandlers[event.type];
-  if (!handler) {
-    console.info(`[Clerk Webhook] Unhandled event type: ${event.type}`);
-    return;
-  }
-
-  await handler(ctx, event.data);
-}
-
 const http = httpRouter();
 
+// Mount Better-Auth routes (/api/auth/*) from vortex-auth.
+registerAuthRoutes(http);
+
+// ===========================================================================
+// MCP OAuth (Better-Auth) authorization server — ADDITIVE
+//
+// Stands up the Better-Auth-backed MCP OAuth server (metadata, JWKS, authorize,
+// token, dynamic client registration, and the /mcp tool endpoint). Runs in
+// PARALLEL with the existing Clerk MCP/JWT path; nothing else in this file is
+// touched. Mirrors crm's wiring, adapted to Seal's scopes + tools.
+// ===========================================================================
+
+type McpHttpActionCtx = Parameters<Parameters<typeof httpAction>[0]>[0];
+
+function mcpJson(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function createMcpOAuthAccessRuntimeForCtx(ctx: McpHttpActionCtx) {
+  return createMcpOAuthAccessRuntime({
+    resolveIdentityForUser: async (betterAuthUserId) => {
+      const issuer = getBetterAuthIdentityIssuer();
+      return await ctx.runQuery(internal.apiAuth.getUserByIdentityForApiAuth, {
+        provider: getBetterAuthIdentityProvider(),
+        issuer,
+        subject: betterAuthUserId,
+        tokenIdentifier: buildBetterAuthTokenIdentifier(betterAuthUserId, issuer),
+      });
+    },
+    getAccessibleOrganizations: async (userId) =>
+      await ctx.runQuery(internal.apiAuth.getAccessibleOrganizationsForApiAuth, { userId }),
+    getOrganizationAccess: async ({ userId, requestedOrganizationId, organizationHintId }) =>
+      await ctx.runQuery(internal.apiAuth.getOrganizationAccessForApiAuth, {
+        userId,
+        requestedOrganizationId: (requestedOrganizationId as Id<"organizations"> | null) ?? null,
+        organizationHintId: (organizationHintId as Id<"organizations"> | null) ?? null,
+      }),
+    normalizeScopes: (requestedScopes) => requireAllowedScopes(requestedScopes),
+    validateScopes: ({ permissions, requestedScopes }) =>
+      validateRequestedOAuthScopes({
+        permissions: [...permissions],
+        requestedScopes: requireAllowedScopes(requestedScopes),
+      }),
+    requireAccessibleOrganization: (organizationId) =>
+      requireAccessibleOrganization((organizationId as Id<"organizations"> | null) ?? null),
+    signAccessToken: async ({ betterAuthUserId, clientId, organizationId, scopes, audience }) =>
+      await ctx.runAction(internal.mcpOAuthNode.signAccessToken, {
+        betterAuthUserId,
+        clientId,
+        organizationId: organizationId as Id<"organizations">,
+        scopes: [...requireAllowedScopes(scopes)],
+        audience,
+      }),
+  });
+}
+
+async function createStoredMcpAuthorizationCode(
+  ctx: McpHttpActionCtx,
+  input: {
+    code: string;
+    clientId: string;
+    redirectUri: string;
+    betterAuthUserId: string;
+    organizationId: string;
+    scopes: readonly string[];
+    codeChallenge: string;
+    codeChallengeMethod: "S256";
+    state?: string;
+    audience: string;
+    resourceId: string;
+    expiresAt: number;
+  },
+): Promise<void> {
+  await ctx.runMutation(internal.mcpOAuthAuth.createAuthorizationCode, {
+    code: input.code,
+    clientId: input.clientId,
+    redirectUri: input.redirectUri,
+    betterAuthUserId: input.betterAuthUserId,
+    organizationId: input.organizationId as Id<"organizations">,
+    scopes: requireAllowedScopes(input.scopes),
+    codeChallenge: input.codeChallenge,
+    codeChallengeMethod: input.codeChallengeMethod,
+    state: input.state,
+    audience: input.audience,
+    resourceId: input.resourceId,
+    expiresAt: input.expiresAt,
+  });
+}
+
+function createBoundMcpOAuthHttpHandlers(ctx: McpHttpActionCtx) {
+  const accessRuntime = createMcpOAuthAccessRuntimeForCtx(ctx);
+  return createMcpOAuthHttpHandlers({
+    authorize: {
+      defaultAudience: MCP_OAUTH_AUDIENCE,
+      defaultResourceId: MCP_OAUTH_RESOURCE_ID,
+      allowTestingExpiresInMs: process.env.ENABLE_DEVELOPMENT_TESTING_MUTATIONS === "true",
+      resolveClient: async (clientId) => {
+        return requireKnownClient(
+          await ctx.runQuery(internal.mcpOAuthAuth.resolveClient, { clientId }),
+        );
+      },
+      requireAllowedRedirectUri,
+      resolveRequestedScopes: (scope) => requireAllowedScopes(scope.split(" ").filter(Boolean)),
+      resolveSessionFromToken: async (sessionToken) => {
+        return await ctx.runQuery(internal.mcpOAuthAuth.resolveBetterAuthSessionFromToken, {
+          sessionToken,
+        });
+      },
+      resolveIdentityForSession: accessRuntime.resolveIdentityForSession,
+      authorize: accessRuntime.authorize,
+      createAuthorizationCode: async (input) => {
+        await createStoredMcpAuthorizationCode(ctx, input);
+      },
+    },
+    clientRegistration: {
+      supportedScopes: MCP_OAUTH_ALLOWED_SCOPES,
+      createDynamicClient: async (input) => {
+        return await ctx.runMutation(internal.mcpOAuthAuth.createDynamicClient, {
+          clientName: input.clientName,
+          redirectUris: [...input.redirectUris],
+          scope: input.scope ?? undefined,
+          tokenEndpointAuthMethod: input.tokenEndpointAuthMethod ?? undefined,
+          grantTypes: input.grantTypes ? [...input.grantTypes] : undefined,
+          responseTypes: input.responseTypes ? [...input.responseTypes] : undefined,
+          softwareId: input.softwareId ?? undefined,
+          softwareVersion: input.softwareVersion ?? undefined,
+        });
+      },
+    },
+    token: {
+      resolveClient: async (clientId) => {
+        return await ctx.runQuery(internal.mcpOAuthAuth.resolveClient, { clientId });
+      },
+      consumeAuthorizationCode: async (input) => {
+        return await ctx.runMutation(internal.mcpOAuthAuth.consumeAuthorizationCode, input);
+      },
+      redeemRefreshToken: async ({ client, refreshGrant }) => {
+        return await ctx.runMutation(internal.mcpOAuthAuth.redeemRefreshToken, {
+          clientId: client.clientId,
+          refreshToken: refreshGrant.refreshToken,
+          requestedScopes:
+            refreshGrant.requestedScopes.length > 0
+              ? requireAllowedScopes(refreshGrant.requestedScopes)
+              : undefined,
+        });
+      },
+      signAccessToken: accessRuntime.signAccessToken,
+      issueRefreshToken: async (input) => {
+        return await ctx.runMutation(internal.mcpOAuthAuth.issueRefreshToken, {
+          clientId: input.clientId,
+          betterAuthUserId: input.betterAuthUserId,
+          organizationId: input.organizationId as Id<"organizations">,
+          scopes: requireAllowedScopes(input.scopes),
+          audience: input.audience,
+          resourceId: input.resourceId,
+        });
+      },
+    },
+  });
+}
+
 http.route({
-  path: "/clerk-webhooks",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    const webhookSecret = getClerkWebhookSecret();
-    if (!webhookSecret) {
-      return new Response("Webhook secret not configured", { status: 500 });
-    }
-
-    const headers = getSvixHeaders(request);
-    if (!headers) {
-      return new Response("Missing webhook headers", { status: 400 });
-    }
-
-    const evt = await verifyClerkWebhookEvent(request, webhookSecret, headers);
-    if (!evt) {
-      return new Response("Webhook verification failed", { status: 400 });
-    }
-
-    const { type, data } = evt;
-    console.info(`[Clerk Webhook] Received: ${type}`, { id: data.id });
-
-    try {
-      await handleClerkWebhookEvent(ctx, evt);
-      return new Response("Webhook processed successfully", { status: 200 });
-    } catch (error) {
-      console.error("[Clerk Webhook] Processing error:", error);
-      return new Response("Webhook processing failed", { status: 500 });
-    }
+  path: MCP_OAUTH_AUTHORIZATION_SERVER_METADATA_PATH,
+  method: "GET",
+  handler: httpAction(async (_ctx, request) => {
+    const origin = resolveMcpOAuthOrigin(request);
+    return mcpJson(200, buildAuthorizationServerMetadata(origin));
   }),
 });
+
+http.route({
+  path: MCP_OAUTH_PROTECTED_RESOURCE_METADATA_PATH,
+  method: "GET",
+  handler: httpAction(async (_ctx, request) => {
+    const origin = resolveMcpOAuthOrigin(request);
+    return mcpJson(200, buildProtectedResourceMetadata(origin));
+  }),
+});
+
+http.route({
+  path: MCP_OAUTH_JWKS_PATH,
+  method: "GET",
+  handler: httpAction(async (ctx) =>
+    mcpJson(200, await ctx.runAction(internal.mcpOAuthNode.getPublicJwks, {})),
+  ),
+});
+
+http.route({
+  path: MCP_OAUTH_AUTHORIZE_PATH,
+  method: "GET",
+  handler: httpAction(
+    async (ctx, request) =>
+      await createBoundMcpOAuthHttpHandlers(ctx).handleAuthorizeRequest(request),
+  ),
+});
+
+http.route({
+  path: MCP_OAUTH_REGISTRATION_PATH,
+  method: "POST",
+  handler: httpAction(
+    async (ctx, request) =>
+      await createBoundMcpOAuthHttpHandlers(ctx).handleClientRegistrationRequest(request),
+  ),
+});
+
+http.route({
+  path: MCP_OAUTH_TOKEN_PATH,
+  method: "POST",
+  handler: httpAction(
+    async (ctx, request) => await createBoundMcpOAuthHttpHandlers(ctx).handleTokenRequest(request),
+  ),
+});
+
+// MCP tool calls ride the standard /api/v1 resource server (auth via
+// resolveMcpApiAuth in api/context.ts). This deployment only hosts the MCP
+// OAuth *authorization* server (metadata, JWKS, authorize, token, register).
 
 http.route({
   path: "/stripe-webhook",
@@ -601,74 +403,6 @@ http.route({
 
     return new Response("Webhook processed", { status: 200 });
   }),
-});
-
-// =============================================================================
-// MCP OAUTH ENDPOINTS (Internal - secured by MCP_INTERNAL_SECRET)
-// =============================================================================
-
-// Client operations
-http.route({
-  path: "/mcp-oauth/clients",
-  method: "POST",
-  handler: mcpRegisterClient,
-});
-
-http.route({
-  path: "/mcp-oauth/clients",
-  method: "GET",
-  handler: mcpGetClient,
-});
-
-// Authorization code operations
-http.route({
-  path: "/mcp-oauth/codes",
-  method: "POST",
-  handler: mcpCreateAuthorizationCode,
-});
-
-http.route({
-  path: "/mcp-oauth/codes",
-  method: "GET",
-  handler: mcpGetAuthorizationCode,
-});
-
-http.route({
-  path: "/mcp-oauth/codes",
-  method: "DELETE",
-  handler: mcpDeleteAuthorizationCode,
-});
-
-// Refresh token operations
-http.route({
-  path: "/mcp-oauth/refresh-tokens",
-  method: "POST",
-  handler: mcpCreateRefreshToken,
-});
-
-http.route({
-  path: "/mcp-oauth/refresh-tokens",
-  method: "GET",
-  handler: mcpGetRefreshToken,
-});
-
-http.route({
-  path: "/mcp-oauth/refresh-tokens",
-  method: "PUT",
-  handler: mcpUpdateRefreshToken,
-});
-
-http.route({
-  path: "/mcp-oauth/refresh-tokens",
-  method: "DELETE",
-  handler: mcpDeleteRefreshToken,
-});
-
-// Validation operations
-http.route({
-  path: "/mcp-oauth/validate-redirect",
-  method: "GET",
-  handler: mcpValidateRedirectUri,
 });
 
 // =============================================================================

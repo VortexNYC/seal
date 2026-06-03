@@ -324,9 +324,11 @@ test.describe("Team Management - Invitation Actions (chromium-serial)", () => {
     await expect(invitationRow).not.toBeVisible();
   });
 
-  test("should resend invitation", async ({ authenticatedPage, organizationSlug }, testInfo) => {
-    if (testInfo.project.name !== "chromium") test.skip();
-
+  // SKIPPED: "resend invitation" is not part of the component-based invitations
+  // (the Clerk clerkResendInvitation path was removed in the vortex-auth migration
+  // and the new PendingInvitationsList only supports revoke). Re-enable if/when a
+  // resend action is added to the invitations component + UI.
+  test.skip("should resend invitation", async ({ authenticatedPage, organizationSlug }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);
 
     await teamPage.goto(organizationSlug);
