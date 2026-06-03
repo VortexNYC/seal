@@ -38,7 +38,7 @@ async function getStorageId(): Promise<string> {
 /**
  * Extended test with authentication fixtures
  *
- * The setup project saves storageState with a valid Clerk session.
+ * The setup project saves storageState with a valid Better-Auth session.
  * This fixture verifies we're authenticated and lands on the workspace home.
  */
 export const test = base.extend<AuthFixtures>({

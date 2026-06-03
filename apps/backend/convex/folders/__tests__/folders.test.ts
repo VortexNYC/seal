@@ -29,7 +29,7 @@ describe("Folders", () => {
       return await ctx.db.insert("users", {
         email: "admin@folders-test.com",
         name: "Admin User",
-        clerkId: "clerk_folders_admin",
+        authSubject: "folders_admin",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -41,7 +41,7 @@ describe("Folders", () => {
       return await ctx.db.insert("users", {
         email: "owner@folders-test.com",
         name: "Owner User",
-        clerkId: "clerk_folders_owner",
+        authSubject: "folders_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -53,7 +53,7 @@ describe("Folders", () => {
       return await ctx.db.insert("users", {
         email: "member@folders-test.com",
         name: "Member User",
-        clerkId: "clerk_folders_member",
+        authSubject: "folders_member",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -102,7 +102,7 @@ describe("Folders", () => {
   describe("createFolder", () => {
     test("creates a root folder", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Contracts",
           type: "document",
@@ -124,14 +124,14 @@ describe("Folders", () => {
 
     test("creates a nested folder", async () => {
       const parent = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Parent",
           type: "document",
         });
 
       const child = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Child",
           type: "document",
@@ -147,12 +147,10 @@ describe("Folders", () => {
 
     test("rejects empty name", async () => {
       await expect(
-        t
-          .withIdentity({ subject: "clerk_folders_admin" })
-          .mutation(api.folders.mutations.createFolder, {
-            name: "   ",
-            type: "document",
-          }),
+        t.withIdentity({ subject: "folders_admin" }).mutation(api.folders.mutations.createFolder, {
+          name: "   ",
+          type: "document",
+        }),
       ).rejects.toThrow("Folder name cannot be empty");
     });
 
@@ -164,7 +162,7 @@ describe("Folders", () => {
       let currentParentId: Id<"folders"> | undefined;
       for (let i = 1; i <= 10; i++) {
         const result = await t
-          .withIdentity({ subject: "clerk_folders_admin" })
+          .withIdentity({ subject: "folders_admin" })
           .mutation(api.folders.mutations.createFolder, {
             name: `Level ${i}`,
             type: "document",
@@ -175,32 +173,28 @@ describe("Folders", () => {
 
       // The 11th nested folder should fail (ancestor depth = 10, and 10 > 9 is true)
       await expect(
-        t
-          .withIdentity({ subject: "clerk_folders_admin" })
-          .mutation(api.folders.mutations.createFolder, {
-            name: "Level 11",
-            type: "document",
-            parentId: currentParentId,
-          }),
+        t.withIdentity({ subject: "folders_admin" }).mutation(api.folders.mutations.createFolder, {
+          name: "Level 11",
+          type: "document",
+          parentId: currentParentId,
+        }),
       ).rejects.toThrow("Folder nesting cannot exceed");
     });
 
     test("rejects parent type mismatch", async () => {
       const parent = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Doc Folder",
           type: "document",
         });
 
       await expect(
-        t
-          .withIdentity({ subject: "clerk_folders_admin" })
-          .mutation(api.folders.mutations.createFolder, {
-            name: "Template Child",
-            type: "template",
-            parentId: parent.id,
-          }),
+        t.withIdentity({ subject: "folders_admin" }).mutation(api.folders.mutations.createFolder, {
+          name: "Template Child",
+          type: "template",
+          parentId: parent.id,
+        }),
       ).rejects.toThrow("Parent folder type must match");
     });
   });
@@ -212,14 +206,14 @@ describe("Folders", () => {
   describe("updateFolder", () => {
     test("renames a folder", async () => {
       const { id: folderId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Old Name",
           type: "document",
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.updateFolder, {
           folderId,
           name: "New Name",
@@ -234,14 +228,14 @@ describe("Folders", () => {
 
     test("changes visibility", async () => {
       const { id: folderId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Folder",
           type: "document",
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.updateFolder, {
           folderId,
           visibility: "admin",
@@ -262,14 +256,14 @@ describe("Folders", () => {
   describe("deleteFolder", () => {
     test("deletes folder and its children recursively", async () => {
       const { id: parentId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Parent",
           type: "document",
         });
 
       const { id: childId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Child",
           type: "document",
@@ -277,7 +271,7 @@ describe("Folders", () => {
         });
 
       const { id: grandchildId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Grandchild",
           type: "document",
@@ -285,7 +279,7 @@ describe("Folders", () => {
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.deleteFolder, {
           folderId: parentId,
         });
@@ -301,7 +295,7 @@ describe("Folders", () => {
 
     test("orphans documents and templates to root when folder is deleted", async () => {
       const { id: folderId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "To Delete",
           type: "document",
@@ -326,7 +320,7 @@ describe("Folders", () => {
 
       // Insert a template directly into a template folder
       const { id: templateFolderId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Template Folder",
           type: "template",
@@ -350,14 +344,14 @@ describe("Folders", () => {
 
       // Delete the document folder
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.deleteFolder, {
           folderId,
         });
 
       // Delete the template folder
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.deleteFolder, {
           folderId: templateFolderId,
         });
@@ -380,21 +374,21 @@ describe("Folders", () => {
   describe("moveToFolder", () => {
     test("moves folder to a new parent", async () => {
       const { id: folderA } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Folder A",
           type: "document",
         });
 
       const { id: folderB } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Folder B",
           type: "document",
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.moveToFolder, {
           folderId: folderA,
           newParentId: folderB,
@@ -406,14 +400,14 @@ describe("Folders", () => {
 
     test("moves folder to root", async () => {
       const { id: parentId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Parent",
           type: "document",
         });
 
       const { id: childId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Child",
           type: "document",
@@ -421,7 +415,7 @@ describe("Folders", () => {
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.moveToFolder, {
           folderId: childId,
           // newParentId omitted = move to root
@@ -433,14 +427,14 @@ describe("Folders", () => {
 
     test("rejects circular reference", async () => {
       const { id: parentId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Parent",
           type: "document",
         });
 
       const { id: childId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Child",
           type: "document",
@@ -448,12 +442,10 @@ describe("Folders", () => {
         });
 
       await expect(
-        t
-          .withIdentity({ subject: "clerk_folders_admin" })
-          .mutation(api.folders.mutations.moveToFolder, {
-            folderId: parentId,
-            newParentId: childId,
-          }),
+        t.withIdentity({ subject: "folders_admin" }).mutation(api.folders.mutations.moveToFolder, {
+          folderId: parentId,
+          newParentId: childId,
+        }),
       ).rejects.toThrow("Cannot move a folder into its own descendant");
     });
 
@@ -462,7 +454,7 @@ describe("Folders", () => {
       let deepParentId: Id<"folders"> | undefined;
       for (let i = 1; i <= 8; i++) {
         const result = await t
-          .withIdentity({ subject: "clerk_folders_admin" })
+          .withIdentity({ subject: "folders_admin" })
           .mutation(api.folders.mutations.createFolder, {
             name: `Deep ${i}`,
             type: "document",
@@ -473,14 +465,14 @@ describe("Folders", () => {
 
       // Create a separate chain: A -> B (subtree depth = 1)
       const { id: folderA } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "A",
           type: "document",
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "B",
           type: "document",
@@ -490,12 +482,10 @@ describe("Folders", () => {
       // Moving A (subtreeDepth=1) under deepParentId (ancestor depth=8)
       // newDepth = 8 + 1 = 9, subtreeDepth = 1, total = 9 + 1 + 1 = 11 > 10
       await expect(
-        t
-          .withIdentity({ subject: "clerk_folders_admin" })
-          .mutation(api.folders.mutations.moveToFolder, {
-            folderId: folderA,
-            newParentId: deepParentId,
-          }),
+        t.withIdentity({ subject: "folders_admin" }).mutation(api.folders.mutations.moveToFolder, {
+          folderId: folderA,
+          newParentId: deepParentId,
+        }),
       ).rejects.toThrow("Move would exceed maximum nesting depth");
     });
   });
@@ -507,7 +497,7 @@ describe("Folders", () => {
   describe("moveItemsToFolder", () => {
     test("moves documents to a folder", async () => {
       const { id: folderId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Target",
           type: "document",
@@ -529,7 +519,7 @@ describe("Folders", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.moveItemsToFolder, {
           itemIds: [docId],
           itemType: "document",
@@ -544,7 +534,7 @@ describe("Folders", () => {
 
     test("rejects type mismatch (document into template folder)", async () => {
       const { id: templateFolderId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Template Folder",
           type: "template",
@@ -567,7 +557,7 @@ describe("Folders", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_folders_admin" })
+          .withIdentity({ subject: "folders_admin" })
           .mutation(api.folders.mutations.moveItemsToFolder, {
             itemIds: [docId],
             itemType: "document",
@@ -604,14 +594,14 @@ describe("Folders", () => {
       });
 
       const { id: folderId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "My Folder",
           type: "document",
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.moveItemsToFolder, {
           itemIds: [otherDocId],
           itemType: "document",
@@ -630,7 +620,7 @@ describe("Folders", () => {
   describe("togglePinFolder", () => {
     test("toggles pinned state", async () => {
       const { id: folderId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Pin Me",
           type: "document",
@@ -638,7 +628,7 @@ describe("Folders", () => {
 
       // First toggle: should pin
       const result1 = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.togglePinFolder, {
           folderId,
         });
@@ -646,7 +636,7 @@ describe("Folders", () => {
 
       // Second toggle: should unpin
       const result2 = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.togglePinFolder, {
           folderId,
         });
@@ -661,21 +651,21 @@ describe("Folders", () => {
   describe("listFolders", () => {
     test("returns root folders", async () => {
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Root A",
           type: "document",
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Root B",
           type: "document",
         });
 
       const folders = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .query(api.folders.queries.listFolders, {
           organizationId,
           type: "document",
@@ -688,14 +678,14 @@ describe("Folders", () => {
 
     test("returns child folders for a given parent", async () => {
       const { id: parentId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Parent",
           type: "document",
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Child 1",
           type: "document",
@@ -703,7 +693,7 @@ describe("Folders", () => {
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Child 2",
           type: "document",
@@ -711,7 +701,7 @@ describe("Folders", () => {
         });
 
       const children = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .query(api.folders.queries.listFolders, {
           organizationId,
           type: "document",
@@ -726,7 +716,7 @@ describe("Folders", () => {
 
     test("filters admin-only folders from members", async () => {
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Public Folder",
           type: "document",
@@ -734,7 +724,7 @@ describe("Folders", () => {
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Admin Folder",
           type: "document",
@@ -743,7 +733,7 @@ describe("Folders", () => {
 
       // Member should only see the "everyone" folder
       const memberFolders = await t
-        .withIdentity({ subject: "clerk_folders_member" })
+        .withIdentity({ subject: "folders_member" })
         .query(api.folders.queries.listFolders, {
           organizationId,
           type: "document",
@@ -754,7 +744,7 @@ describe("Folders", () => {
 
       // Admin should see both
       const adminFolders = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .query(api.folders.queries.listFolders, {
           organizationId,
           type: "document",
@@ -765,14 +755,14 @@ describe("Folders", () => {
 
     test("sorts pinned folders first, then alphabetical", async () => {
       const { id: folderZ } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Zebra",
           type: "document",
         });
 
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Apple",
           type: "document",
@@ -780,13 +770,13 @@ describe("Folders", () => {
 
       // Pin Zebra
       await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.togglePinFolder, {
           folderId: folderZ,
         });
 
       const folders = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .query(api.folders.queries.listFolders, {
           organizationId,
           type: "document",
@@ -805,14 +795,14 @@ describe("Folders", () => {
   describe("getFolderBreadcrumbs", () => {
     test("returns correct breadcrumb chain", async () => {
       const { id: grandparentId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Grandparent",
           type: "document",
         });
 
       const { id: parentId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Parent",
           type: "document",
@@ -820,7 +810,7 @@ describe("Folders", () => {
         });
 
       const { id: childId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Child",
           type: "document",
@@ -828,7 +818,7 @@ describe("Folders", () => {
         });
 
       const breadcrumbs = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .query(api.folders.queries.getFolderBreadcrumbs, {
           folderId: childId,
         });
@@ -842,14 +832,14 @@ describe("Folders", () => {
 
     test("returns single entry for root folder", async () => {
       const { id: rootId } = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .mutation(api.folders.mutations.createFolder, {
           name: "Root",
           type: "document",
         });
 
       const breadcrumbs = await t
-        .withIdentity({ subject: "clerk_folders_admin" })
+        .withIdentity({ subject: "folders_admin" })
         .query(api.folders.queries.getFolderBreadcrumbs, {
           folderId: rootId,
         });

@@ -92,7 +92,7 @@ export const auditLogsTable = defineTable({
   organizationId: v.id("organizations"), // Organization context
 
   // Actor Information
-  userId: v.optional(v.string()), // Clerk user ID (optional for recipient actions)
+  userId: v.optional(v.string()), // auth subject (optional for recipient actions)
   actorType: v.union(v.literal("user"), v.literal("recipient"), v.literal("system")), // Who performed the action
   actorId: v.optional(v.string()), // ID of the actor (userId or recipientId)
 

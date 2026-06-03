@@ -253,8 +253,8 @@ test.describe("Team Management - Pending Invitations", () => {
   });
 });
 
-// These tests call the Clerk invitation API which has a 5-member org quota.
-// Running in parallel across browsers or within a project would exhaust the quota —
+// These tests exercise the invitation flow, which can collide if run in parallel
+// across browsers or within a project (duplicate invites, shared pending state) —
 // run serially in chromium only.
 test.describe("Team Management - Invitation Actions (chromium-serial)", () => {
   test.describe.configure({ mode: "serial" });
@@ -325,8 +325,7 @@ test.describe("Team Management - Invitation Actions (chromium-serial)", () => {
   });
 
   // SKIPPED: "resend invitation" is not part of the component-based invitations
-  // (the Clerk clerkResendInvitation path was removed in the vortex-auth migration
-  // and the new PendingInvitationsList only supports revoke). Re-enable if/when a
+  // (the new PendingInvitationsList only supports revoke). Re-enable if/when a
   // resend action is added to the invitations component + UI.
   test.skip("should resend invitation", async ({ authenticatedPage, organizationSlug }) => {
     const teamPage = new TeamSettingsPage(authenticatedPage);

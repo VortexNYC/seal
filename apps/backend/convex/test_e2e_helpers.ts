@@ -214,12 +214,12 @@ export const createTestDocument = mutation({
       .first();
     if (!owner) {
       // activeOrganizationId may not be set; find any user via org memberships
-      // Use the well-known E2E test user Clerk ID as a reliable fallback
-      const e2eClerkId = "user_3B4i0q60eWUsHUVSbdnnVPLmRT7"; // seal-e2e+clerk_test@example.com
+      // Use the well-known E2E test user auth subject as a reliable fallback
+      const e2eAuthSubject = "user_3B4i0q60eWUsHUVSbdnnVPLmRT7"; // seal-e2e+test@example.com
       owner =
         (await ctx.db
           .query("users")
-          .withIndex("by_clerk_id", (q) => q.eq("clerkId", e2eClerkId))
+          .withIndex("by_auth_subject", (q) => q.eq("authSubject", e2eAuthSubject))
           .first()) ?? (await ctx.db.query("users").first());
     }
     if (!owner) throw new Error("no_user_found_for_org");
@@ -283,11 +283,11 @@ export const createSignableTestDocument = mutation({
       .withIndex("by_active_org", (q) => q.eq("activeOrganizationId", org._id))
       .first();
     if (!owner) {
-      const e2eClerkId = "user_3B4i0q60eWUsHUVSbdnnVPLmRT7";
+      const e2eAuthSubject = "user_3B4i0q60eWUsHUVSbdnnVPLmRT7";
       owner =
         (await ctx.db
           .query("users")
-          .withIndex("by_clerk_id", (q) => q.eq("clerkId", e2eClerkId))
+          .withIndex("by_auth_subject", (q) => q.eq("authSubject", e2eAuthSubject))
           .first()) ?? (await ctx.db.query("users").first());
     }
     if (!owner) throw new Error("no_user_found_for_org");
@@ -433,7 +433,7 @@ export const getOrgDebugInfo = query({
       .query("subscriptions")
       .withIndex("by_organization_id", (q) => q.eq("organizationId", org._id))
       .first();
-    return { slug: org.slug, clerkId: org.clerkId, hasSub: !!sub, subStatus: sub?.status };
+    return { slug: org.slug, hasSub: !!sub, subStatus: sub?.status };
   },
 });
 

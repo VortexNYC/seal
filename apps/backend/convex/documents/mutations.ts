@@ -229,7 +229,7 @@ export const createDocument = permissionMutation("documents:create")({
     // Audit trail
     await logDocumentAction(ctx, {
       organizationId: args.organizationId,
-      userId: ctx.auth.user.clerkId,
+      userId: ctx.auth.user.authSubject,
       action: "document.created",
       documentId,
       newValues: { name: args.name, fileType: args.fileType },
@@ -731,7 +731,7 @@ export const replaceDocumentPdf = permissionMutation("documents:edit")({
     // 6. Audit trail
     await logDocumentAction(ctx, {
       organizationId: document.organizationId,
-      userId: ctx.auth.user.clerkId,
+      userId: ctx.auth.user.authSubject,
       action: "document.updated",
       documentId: args.documentId,
       newValues: { currentVersion: newVersionNumber, storageId: args.storageId },
@@ -838,7 +838,7 @@ export const restoreDocumentVersion = permissionMutation("documents:edit")({
     // 6. Audit trail
     await logDocumentAction(ctx, {
       organizationId: document.organizationId,
-      userId: ctx.auth.user.clerkId,
+      userId: ctx.auth.user.authSubject,
       action: "document.updated",
       documentId: args.documentId,
       newValues: {
@@ -909,7 +909,7 @@ export const transferDocumentOwnership = permissionMutation("documents:edit")({
 
     await logDocumentAction(ctx, {
       organizationId: document.organizationId,
-      userId: ctx.auth.user.clerkId,
+      userId: ctx.auth.user.authSubject,
       action: "document.ownership_transferred",
       documentId: args.documentId,
       description: `Ownership transferred to ${newOwner.name ?? newOwner.email}`,

@@ -33,7 +33,7 @@ describe("api/v1/audit", () => {
         organizationId: overrides.organizationId ?? organizationId,
         action: overrides.action ?? "document.created",
         actorType: overrides.actorType ?? "user",
-        userId: overrides.userId ?? "clerk_audit_owner",
+        userId: overrides.userId ?? "audit_owner",
         resourceType: "document",
         ipAddress: "127.0.0.1",
         createdAt: overrides.createdAt ?? BASE_TIME,
@@ -71,7 +71,7 @@ describe("api/v1/audit", () => {
       return await ctx.db.insert("users", {
         email: "owner@audit-test.com",
         name: "Audit Owner",
-        clerkId: "clerk_audit_owner",
+        authSubject: "audit_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -294,7 +294,7 @@ describe("api/v1/audit", () => {
       await insertAuditLog({
         action: "document.created",
         actorType: "user",
-        userId: "clerk_audit_owner",
+        userId: "audit_owner",
         createdAt: BASE_TIME,
       });
 

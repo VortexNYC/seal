@@ -6,4 +6,4 @@ public/api/search.json
 
 .env.local
 .env*.local
-playwright/.clerk/
+playwright/.auth/

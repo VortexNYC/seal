@@ -186,7 +186,7 @@ export async function createNotification(
     if (user) {
       const profile = await ctx.db
         .query("user_profiles")
-        .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", user.clerkId))
+        .withIndex("by_auth_subject", (q) => q.eq("authSubject", user.authSubject))
         .unique();
 
       if (profile?.notificationPreferences) {

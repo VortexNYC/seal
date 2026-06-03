@@ -21,10 +21,10 @@ export const getUserSignatures = query({
       return [];
     }
 
-    // Get user by Clerk ID
+    // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
       .first();
 
     if (!user) {
@@ -57,10 +57,10 @@ export const getDefaultSignature = query({
       return null;
     }
 
-    // Get user by Clerk ID
+    // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
       .first();
 
     if (!user) {
@@ -89,10 +89,10 @@ export const getSignatureById = query({
       return null;
     }
 
-    // Get user by Clerk ID
+    // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
       .first();
 
     if (!user) {
@@ -121,10 +121,10 @@ export const getSignatureCount = query({
       return 0;
     }
 
-    // Get user by Clerk ID
+    // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
       .first();
 
     if (!user) {

@@ -177,14 +177,14 @@ function getUserManagementRules(
         if (rlsCtx.isSuperAdmin) return true;
         if (!rlsCtx.userId) return false;
         const user = await queryCtx.db.get(rlsCtx.userId);
-        return user !== null && user.clerkId === doc.clerkUserId;
+        return user !== null && user.authSubject === doc.authSubject;
       },
       modify: async (queryCtx, doc) => {
         if (!rlsCtx) return false;
         if (rlsCtx.isSuperAdmin) return true;
         if (!rlsCtx.userId) return false;
         const user = await queryCtx.db.get(rlsCtx.userId);
-        return user !== null && user.clerkId === doc.clerkUserId;
+        return user !== null && user.authSubject === doc.authSubject;
       },
     },
     saved_signatures: {

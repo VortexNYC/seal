@@ -1,13 +1,13 @@
 /**
- * Clerk-compatible current-user adapter over vortex-auth's useAppUser.
+ * Compatibility current-user adapter over vortex-auth's useAppUser.
  *
  * vortex-auth's `useAppUser()` returns a minimal user
  * ({ id, username, fullName, primaryEmailAddress }). Seal's existing call
- * sites read Clerk-shaped fields (firstName, lastName, imageUrl,
- * emailAddresses[]). This adapter derives/maps those so the migration is a
- * one-line import-alias change per consumer instead of a rewrite:
+ * sites read firstName/lastName/imageUrl-shaped fields (firstName, lastName,
+ * imageUrl, emailAddresses[]). This adapter derives/maps those so the
+ * migration is a one-line import-alias change per consumer instead of a
+ * rewrite:
  *
- *   - import { useUser } from "@clerk/clerk-react";
  *   + import { useCurrentUser as useUser } from "@/hooks/use-current-user";
  *
  * Fields not provided by Better-Auth identity (imageUrl, createdAt) are

@@ -29,7 +29,7 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Owner",
-        clerkId: "clerk_owner",
+        authSubject: "owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

@@ -32,7 +32,7 @@ describe("processAutomatedReminders", () => {
       return await ctx.db.insert("users", {
         email: "owner@reminder-test.com",
         name: "Doc Owner",
-        clerkId: "clerk_reminder_owner",
+        authSubject: "reminder_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -248,7 +248,7 @@ describe("getDocumentsApproachingDeadline", () => {
       return await ctx.db.insert("users", {
         email: "owner@expiration-test.com",
         name: "Doc Owner",
-        clerkId: "clerk_expiration_owner",
+        authSubject: "expiration_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

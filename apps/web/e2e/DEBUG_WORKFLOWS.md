@@ -58,11 +58,13 @@ When a test fails, use Chrome DevTools MCP to:
 
 ```typescript
 // Check application state
+// Auth is a Better-Auth session cookie — there is no global window auth object.
+// Check for the session cookie instead of a window flag.
 (await mcp__chrome) -
   devtools__evaluate_script({
     function: `() => {
     return {
-      isAuthenticated: !!window.__CLERK_LOADED__,
+      hasAuthCookie: document.cookie.includes("better-auth"),
       convexState: window.convex?.connectionState,
       reactVersion: React.version
     };
@@ -103,18 +105,22 @@ When a test fails, use Chrome DevTools MCP to:
   });
 ```
 
-### 3. Debugging Clerk Authentication Issues
+### 3. Debugging Authentication Issues (Better-Auth)
 
-**Check Clerk session state:**
+Auth is handled by Better-Auth (via `@plasmapos/vortex-auth`). The session lives in
+an HTTP cookie — there is **no** global window auth object to inspect.
+
+**Check the auth session cookie:**
 
 ```typescript
 (await mcp__chrome) -
   devtools__evaluate_script({
     function: `() => {
     return {
-      clerkLoaded: window.Clerk !== undefined,
-      session: window.Clerk?.session,
-      user: window.Clerk?.user?.emailAddresses
+      // Better-Auth session cookie present?
+      hasAuthCookie: document.cookie.includes("better-auth"),
+      cookies: document.cookie,
+      convexState: window.convex?.connectionState
     };
   }`,
   });
@@ -129,7 +135,7 @@ When a test fails, use Chrome DevTools MCP to:
     pageSize: 50,
   });
 
-// Filter for clerk.* domains in the results
+// Filter for the Better-Auth endpoints (e.g. /api/auth/* or the Convex auth HTTP routes) in the results
 ```
 
 ### 4. Debugging Convex Real-Time Updates
@@ -332,7 +338,7 @@ const state =
   (await mcp__chrome) -
   devtools__evaluate_script({
     function: `() => ({
-    auth: !!window.Clerk?.session,
+    auth: document.cookie.includes("better-auth"),
     convex: window.convex?.connectionState
   })`,
   });
@@ -345,15 +351,14 @@ const state =
 Create `.env.test` for test-specific configuration:
 
 ```bash
-# Test user credentials
-E2E_TEST_USER_EMAIL=seal-e2e+clerk_test@example.com
+# Test user credentials — the e2e suite signs in via the Better-Auth
+# email+password form using these.
+E2E_TEST_USER_EMAIL=seal-e2e@seal.nyc
+E2E_TEST_USER_PASSWORD=your-test-user-password
 E2E_TEST_EMAIL_CODE=424242
 
 # Convex
 VITE_CONVEX_URL=https://test-deployment.convex.cloud
-
-# Clerk
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 
 # Playwright
 PLAYWRIGHT_BASE_URL=http://localhost:5180

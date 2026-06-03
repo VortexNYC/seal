@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const playwrightStateDir = path.resolve(__dirname, "../../playwright/.clerk");
+const playwrightStateDir = path.resolve(__dirname, "../../playwright/.auth");
 
 export const authStatePath = path.resolve(playwrightStateDir, "user.json");
 export const pdfStorageIdPath = path.resolve(playwrightStateDir, "e2e-pdf-storage-id.txt");

@@ -31,7 +31,7 @@ describe("Webhook delivery", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

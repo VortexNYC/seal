@@ -141,7 +141,7 @@ export const createSubscriptionRecord = internalMutation({
 /**
  * Handle new organization creation — creates Stripe customer and enrolls to Free plan.
  *
- * Called from the Clerk webhook handler (syncOrganization) when a new org is created.
+ * Called when a new organization is created.
  * Creates a Stripe customer for the org (no card required) and subscribes to the Free plan.
  */
 export const handleNewOrgCreated = internalAction({

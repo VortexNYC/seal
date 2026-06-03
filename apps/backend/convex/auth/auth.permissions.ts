@@ -51,7 +51,7 @@ async function requireAuthenticatedUser(ctx: QueryCtx | MutationCtx): Promise<Do
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+    .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
     .first();
 
   if (!user) {
@@ -208,7 +208,7 @@ function buildPermissionContext(
 /**
  * Get enhanced auth context with resolved permissions
  * This function handles the full permission resolution flow:
- * 1. Authenticate user via Clerk
+ * 1. Authenticate the user
  * 2. Load user from database
  * 3. Check super admin status
  * 4. Load organization membership

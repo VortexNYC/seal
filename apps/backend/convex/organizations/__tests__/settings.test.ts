@@ -28,7 +28,7 @@ describe("Organization settings", () => {
       return await ctx.db.insert("users", {
         email: "admin@settings-test.com",
         name: "Admin User",
-        clerkId: "clerk_settings_admin",
+        authSubject: "settings_admin",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -40,7 +40,7 @@ describe("Organization settings", () => {
       return await ctx.db.insert("users", {
         email: "owner@settings-test.com",
         name: "Owner User",
-        clerkId: "clerk_settings_owner",
+        authSubject: "settings_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -116,7 +116,7 @@ describe("Organization settings", () => {
   describe("getBrandingSettings", () => {
     test("returns defaults including companyName and companyWebsite", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -130,14 +130,14 @@ describe("Organization settings", () => {
   describe("updateBrandingSettings", () => {
     test("updates companyName and companyWebsite", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           companyName: "Acme Corp",
           companyWebsite: "https://acme.com",
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -148,19 +148,19 @@ describe("Organization settings", () => {
 
     test("preserves companyName on partial update", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           companyName: "Acme Corp",
         });
 
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           brandColor: "#ff0000",
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -177,7 +177,7 @@ describe("Organization settings", () => {
   describe("getSigningSettings", () => {
     test("returns defaults when no settings saved", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getSigningSettings, {
           organizationId,
         });
@@ -201,7 +201,7 @@ describe("Organization settings", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getSigningSettings, {
           organizationId,
         });
@@ -215,13 +215,13 @@ describe("Organization settings", () => {
   describe("updateSigningSettings", () => {
     test("updates allowed signature types", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateSigningSettings, {
           allowedSignatureTypes: ["draw"],
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getSigningSettings, {
           organizationId,
         });
@@ -233,13 +233,13 @@ describe("Organization settings", () => {
 
     test("updates deadline days", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateSigningSettings, {
           defaultDeadlineDays: 7,
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getSigningSettings, {
           organizationId,
         });
@@ -250,20 +250,20 @@ describe("Organization settings", () => {
     test("preserves existing settings on partial update", async () => {
       // First: set consent text
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateSigningSettings, {
           esignConsentText: "Custom consent.",
         });
 
       // Second: only update deadline
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateSigningSettings, {
           defaultDeadlineDays: 60,
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getSigningSettings, {
           organizationId,
         });
@@ -275,7 +275,7 @@ describe("Organization settings", () => {
     test("rejects deadline < 1", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_admin" })
+          .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateSigningSettings, {
             defaultDeadlineDays: 0,
           }),
@@ -285,7 +285,7 @@ describe("Organization settings", () => {
     test("rejects deadline > 365", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_admin" })
+          .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateSigningSettings, {
             defaultDeadlineDays: 366,
           }),
@@ -295,7 +295,7 @@ describe("Organization settings", () => {
     test("rejects empty signature types array", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_admin" })
+          .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateSigningSettings, {
             allowedSignatureTypes: [],
           }),
@@ -310,7 +310,7 @@ describe("Organization settings", () => {
   describe("getNotificationSettings", () => {
     test("returns defaults when no settings saved", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getNotificationSettings, {
           organizationId,
         });
@@ -334,7 +334,7 @@ describe("Organization settings", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getNotificationSettings, {
           organizationId,
         });
@@ -349,13 +349,13 @@ describe("Organization settings", () => {
   describe("updateNotificationSettings", () => {
     test("updates reminder schedule", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateNotificationSettings, {
           reminderSchedule: [1, 3, 7],
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getNotificationSettings, {
           organizationId,
         });
@@ -367,14 +367,14 @@ describe("Organization settings", () => {
 
     test("toggles boolean notifications", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateNotificationSettings, {
           sendCompletionEmail: false,
           sendViewedNotification: false,
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getNotificationSettings, {
           organizationId,
         });
@@ -386,7 +386,7 @@ describe("Organization settings", () => {
     test("rejects reminder schedule with > 10 entries", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_admin" })
+          .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateNotificationSettings, {
             reminderSchedule: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
           }),
@@ -396,7 +396,7 @@ describe("Organization settings", () => {
     test("rejects reminder schedule not in ascending order", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_admin" })
+          .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateNotificationSettings, {
             reminderSchedule: [7, 3, 14],
           }),
@@ -406,7 +406,7 @@ describe("Organization settings", () => {
     test("rejects reminder days < 1", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_admin" })
+          .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateNotificationSettings, {
             reminderSchedule: [0, 3],
           }),
@@ -416,7 +416,7 @@ describe("Organization settings", () => {
     test("rejects expiration alert days out of range", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_admin" })
+          .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateNotificationSettings, {
             expirationAlertDays: 0,
           }),
@@ -424,7 +424,7 @@ describe("Organization settings", () => {
 
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_admin" })
+          .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateNotificationSettings, {
             expirationAlertDays: 31,
           }),
@@ -439,7 +439,7 @@ describe("Organization settings", () => {
   describe("getSecuritySettings", () => {
     test("returns defaults when no settings saved", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getSecuritySettings, {
           organizationId,
         });
@@ -461,7 +461,7 @@ describe("Organization settings", () => {
       });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getSecuritySettings, {
           organizationId,
         });
@@ -474,13 +474,13 @@ describe("Organization settings", () => {
   describe("updateSecuritySettings", () => {
     test("owner can update IP allowlist", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .mutation(api.organizations.mutations.updateSecuritySettings, {
           ipAllowlist: ["10.0.0.0/8"],
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .query(api.organizations.queries.getSecuritySettings, {
           organizationId,
         });
@@ -490,13 +490,13 @@ describe("Organization settings", () => {
 
     test("owner can disable API access", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .mutation(api.organizations.mutations.updateSecuritySettings, {
           allowApiAccess: false,
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .query(api.organizations.queries.getSecuritySettings, {
           organizationId,
         });
@@ -507,7 +507,7 @@ describe("Organization settings", () => {
     test("admin (non-owner) cannot update security settings", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_admin" })
+          .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.updateSecuritySettings, {
             allowApiAccess: false,
           }),
@@ -517,7 +517,7 @@ describe("Organization settings", () => {
     test("rejects invalid CIDR format", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_owner" })
+          .withIdentity({ subject: "settings_owner" })
           .mutation(api.organizations.mutations.updateSecuritySettings, {
             ipAllowlist: ["not-a-cidr"],
           }),
@@ -526,13 +526,13 @@ describe("Organization settings", () => {
 
     test("owner can enable requireMfa", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .mutation(api.organizations.mutations.updateSecuritySettings, {
           requireMfa: true,
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .query(api.organizations.queries.getSecuritySettings, {
           organizationId,
         });
@@ -542,13 +542,13 @@ describe("Organization settings", () => {
 
     test("owner can set sessionTimeoutMinutes", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .mutation(api.organizations.mutations.updateSecuritySettings, {
           sessionTimeoutMinutes: 60,
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .query(api.organizations.queries.getSecuritySettings, {
           organizationId,
         });
@@ -559,7 +559,7 @@ describe("Organization settings", () => {
     test("rejects session timeout < 15", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_owner" })
+          .withIdentity({ subject: "settings_owner" })
           .mutation(api.organizations.mutations.updateSecuritySettings, {
             sessionTimeoutMinutes: 14,
           }),
@@ -569,7 +569,7 @@ describe("Organization settings", () => {
     test("rejects session timeout > 10080", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_owner" })
+          .withIdentity({ subject: "settings_owner" })
           .mutation(api.organizations.mutations.updateSecuritySettings, {
             sessionTimeoutMinutes: 10081,
           }),
@@ -578,19 +578,19 @@ describe("Organization settings", () => {
 
     test("preserves requireMfa on partial update", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .mutation(api.organizations.mutations.updateSecuritySettings, {
           requireMfa: true,
         });
 
       await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .mutation(api.organizations.mutations.updateSecuritySettings, {
           allowApiAccess: false,
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .query(api.organizations.queries.getSecuritySettings, {
           organizationId,
         });
@@ -607,7 +607,7 @@ describe("Organization settings", () => {
   describe("getOrgSettings", () => {
     test("returns all settings categories with defaults", async () => {
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getOrgSettings, {
           organizationId,
         });
@@ -643,7 +643,7 @@ describe("Organization settings", () => {
     test("resets branding settings to defaults", async () => {
       // Set some branding first
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateBrandingSettings, {
           companyName: "Acme Corp",
           brandColor: "#ff0000",
@@ -652,13 +652,13 @@ describe("Organization settings", () => {
 
       // Reset
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.resetOrgSettings, {
           category: "branding",
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getBrandingSettings, {
           organizationId,
         });
@@ -670,19 +670,19 @@ describe("Organization settings", () => {
 
     test("resets signing settings to defaults", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateSigningSettings, {
           defaultDeadlineDays: 7,
         });
 
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.resetOrgSettings, {
           category: "signing",
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getSigningSettings, {
           organizationId,
         });
@@ -692,19 +692,19 @@ describe("Organization settings", () => {
 
     test("resets notification settings to defaults", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.updateNotificationSettings, {
           sendCompletionEmail: false,
         });
 
       await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .mutation(api.organizations.mutations.resetOrgSettings, {
           category: "notifications",
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_admin" })
+        .withIdentity({ subject: "settings_admin" })
         .query(api.organizations.queries.getNotificationSettings, {
           organizationId,
         });
@@ -714,20 +714,20 @@ describe("Organization settings", () => {
 
     test("owner can reset security settings", async () => {
       await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .mutation(api.organizations.mutations.updateSecuritySettings, {
           requireMfa: true,
           allowApiAccess: false,
         });
 
       await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .mutation(api.organizations.mutations.resetOrgSettings, {
           category: "security",
         });
 
       const result = await t
-        .withIdentity({ subject: "clerk_settings_owner" })
+        .withIdentity({ subject: "settings_owner" })
         .query(api.organizations.queries.getSecuritySettings, {
           organizationId,
         });
@@ -739,7 +739,7 @@ describe("Organization settings", () => {
     test("admin (non-owner) cannot reset security settings", async () => {
       await expect(
         t
-          .withIdentity({ subject: "clerk_settings_admin" })
+          .withIdentity({ subject: "settings_admin" })
           .mutation(api.organizations.mutations.resetOrgSettings, {
             category: "security",
           }),

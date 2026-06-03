@@ -27,7 +27,7 @@ describe("api/v1/settings", () => {
       return await ctx.db.insert("users", {
         email: "admin@settings-api.com",
         name: "Admin",
-        clerkId: "clerk_settings_api_admin",
+        authSubject: "settings_api_admin",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

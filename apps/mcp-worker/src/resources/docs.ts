@@ -353,7 +353,7 @@ Keys are prefixed with \`ak_\` and are scoped to specific permissions.
 
 ## MCP Authentication
 
-The MCP server uses OAuth 2.0 via Clerk. When connecting via Claude Desktop or another MCP client, you'll be redirected to Seal's OAuth flow to authorize access. The MCP server requests the same scopes as above based on which tools it needs.`,
+The MCP server uses OAuth 2.0. When connecting via Claude Desktop or another MCP client, you'll be redirected to Seal's OAuth flow to authorize access. The MCP server requests the same scopes as above based on which tools it needs.`,
   },
 };
 

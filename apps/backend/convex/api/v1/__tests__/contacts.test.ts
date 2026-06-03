@@ -72,7 +72,7 @@ describe("api/v1/contacts", () => {
       return await ctx.db.insert("users", {
         email: "owner@contacts-api.com",
         name: "Owner",
-        clerkId: "clerk_contacts_api_owner",
+        authSubject: "contacts_api_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

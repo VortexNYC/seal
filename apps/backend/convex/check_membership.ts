@@ -20,16 +20,16 @@ export const hasOrganization = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      // Auth token not yet attached (race during page load with ConvexProviderWithClerk).
+      // Auth token not yet attached (race during page load before the auth provider attaches it).
       // Returning null lets the React caller treat this as a loading state instead of
       // tripping the error boundary on every fresh navigation.
       return null;
     }
 
-    // Get user by Clerk ID
+    // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
       .first();
 
     if (!user) {
@@ -88,10 +88,10 @@ export const ensureActiveOrganization = mutation({
       throw new ConvexError("Authentication required");
     }
 
-    // Get user by Clerk ID
+    // Get user by auth subject
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
       .first();
 
     if (!user) {
@@ -154,7 +154,7 @@ export const listUserOrganizations = query({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
       .first();
 
     if (!user) {

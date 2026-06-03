@@ -31,7 +31,7 @@ export const updateProfile = mutation({
       throw new ConvexError("User not authenticated");
     }
 
-    const clerkUserId = identity.subject;
+    const authSubject = identity.subject;
 
     // Validate bio length if provided
     if (args.bio !== undefined && args.bio.length > 500) {
@@ -41,11 +41,11 @@ export const updateProfile = mutation({
     // Check if profile exists
     const existingProfile = await ctx.db
       .query("user_profiles")
-      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", authSubject))
       .first();
 
     const profileData = {
-      clerkUserId: clerkUserId,
+      authSubject,
       bio: args.bio,
       preferences: args.preferences,
       updatedAt: Date.now(),
@@ -89,12 +89,12 @@ export const updateNotificationPreferences = mutation({
       throw new ConvexError("User not authenticated");
     }
 
-    const clerkUserId = identity.subject;
+    const authSubject = identity.subject;
 
     // Check if profile exists
     const existingProfile = await ctx.db
       .query("user_profiles")
-      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", authSubject))
       .first();
 
     const notificationPreferences = {
@@ -121,7 +121,7 @@ export const updateNotificationPreferences = mutation({
 
     // Create new profile with notification preferences
     const profileId = await ctx.db.insert("user_profiles", {
-      clerkUserId,
+      authSubject,
       notificationPreferences,
       updatedAt: Date.now(),
     });

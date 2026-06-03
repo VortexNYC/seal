@@ -30,7 +30,7 @@ export const list = query({
       presenceList.map(async (entry) => {
         const user = await ctx.db
           .query("users")
-          .withIndex("by_clerk_id", (q) => q.eq("clerkId", entry.userId))
+          .withIndex("by_auth_subject", (q) => q.eq("authSubject", entry.userId))
           .unique();
         return {
           ...entry,

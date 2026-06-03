@@ -1,10 +1,9 @@
 /**
- * Organization invitations on the vortexAuth component (P7).
+ * Organization invitations on the vortexAuth component.
  *
- * Replaces the removed Clerk-based invite flow (the old Clerk invite action
- * + the deleted Clerk acceptance webhook). Invitation truth lives in the
- * component; the raw token is shown once and emailed, only its sha256 hash is
- * stored. Acceptance materializes a component membership.
+ * Invitation truth lives in the component; the raw token is shown once and
+ * emailed, only its sha256 hash is stored. Acceptance materializes a
+ * component membership.
  */
 import { createOrganizationInvitationEmailDraft } from "@plasmapos/vortex-auth/convex";
 import { ConvexError, v } from "convex/values";
@@ -221,7 +220,7 @@ export const redeemInvitation = mutation({
     }
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
       .first();
     if (user === null) {
       throw new ConvexError("User record not found");

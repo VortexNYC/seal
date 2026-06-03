@@ -136,7 +136,7 @@ test.describe("Billing", () => {
 
 /**
  * Wait for the billing page to render to the point where the Convex client
- * has finished attaching the Clerk auth token. The "Manage Billing" header
+ * has finished attaching the Better-Auth auth token. The "Manage Billing" header
  * action only mounts after the auth-gated subscription query resolves, so
  * its presence is a reliable proxy for "auth is attached and queries can
  * fire successfully against authed routes."

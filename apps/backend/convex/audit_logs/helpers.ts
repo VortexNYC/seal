@@ -25,7 +25,7 @@ type AuditMutationCtx = Pick<MutationCtx, "db">;
 
 interface AuditLogParams {
   organizationId: Id<"organizations">;
-  userId?: string; // Clerk user ID
+  userId?: string; // auth subject
   actorType: "user" | "recipient" | "system";
   actorId?: string;
   action: AuditAction;

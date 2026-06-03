@@ -106,10 +106,10 @@ async function getNotificationExports(ctx: QueryCtx, userId: Id<"users">) {
   }));
 }
 
-async function getAuditExports(ctx: QueryCtx, clerkUserId: string) {
+async function getAuditExports(ctx: QueryCtx, authSubject: string) {
   const auditLogs = await ctx.db
     .query("audit_logs")
-    .withIndex("by_user", (q) => q.eq("userId", clerkUserId))
+    .withIndex("by_user", (q) => q.eq("userId", authSubject))
     .order("desc")
     .take(1000);
 
@@ -259,7 +259,7 @@ export const gatherUserData = internalQuery({
       getMembershipExports(ctx, args.userId),
       getSavedSignatureExports(ctx, args.userId),
       getNotificationExports(ctx, args.userId),
-      getAuditExports(ctx, user.clerkId),
+      getAuditExports(ctx, user.authSubject),
       getSubscriptionExport(ctx, args.userId),
       getAccessExports(ctx, args.userId),
     ]);

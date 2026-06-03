@@ -23,13 +23,13 @@ export const emailNotificationPreferencesValidator = v.object({
 /**
  * User Profiles Schema
  *
- * Stores extended user profile information beyond what Clerk provides.
- * This complements Clerk's auth data with additional fields like bio.
+ * Stores extended user profile information (bio, notification preferences)
+ * keyed by the user's auth subject.
  */
 
 export const userProfilesTable = defineTable({
-  // Reference to Clerk user ID
-  clerkUserId: v.string(),
+  // Auth-subject key (identity.subject) this profile belongs to.
+  authSubject: v.string(),
 
   // Extended profile fields
   bio: v.optional(v.string()),
@@ -62,5 +62,5 @@ export const userProfilesTable = defineTable({
   // Timestamps
   updatedAt: v.number(), // Unix timestamp
 })
-  .index("by_clerk_user_id", ["clerkUserId"])
+  .index("by_auth_subject", ["authSubject"])
   .index("by_updated_at", ["updatedAt"]);

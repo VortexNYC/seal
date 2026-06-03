@@ -94,7 +94,7 @@ describe("subscription_guards", () => {
       return await ctx.db.insert("users", {
         email: `user-${Math.random().toString(36).slice(2)}@test.com`,
         name: "Test User",
-        clerkId: `clerk_${Math.random().toString(36).slice(2)}`,
+        authSubject: `${Math.random().toString(36).slice(2)}`,
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

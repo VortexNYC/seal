@@ -4,8 +4,6 @@ const config: KnipConfig = {
   entry: ["convex/**/*.ts"],
   project: ["convex/**/*.ts"],
   ignoreDependencies: [
-    // Clerk types (peer dependency)
-    "@clerk/types",
     // PDF signing libraries (used in signing functionality)
     "@signpdf/placeholder-pdf-lib",
     "@signpdf/signpdf",

@@ -16,42 +16,11 @@ function getConvexSetupContext(): {
 }
 
 export async function cleanupPendingInvitations(): Promise<void> {
-  const clerkSecretKey = process.env.CLERK_SECRET_KEY;
-  const clerkOrgId = process.env.E2E_CLERK_ORG_ID || "org_3BLR7tViJcVbpYwfByrDfPhR0Bn";
-
-  if (!clerkSecretKey) {
-    return;
-  }
-
-  try {
-    const invRes = await fetch(
-      `https://api.clerk.com/v1/organizations/${clerkOrgId}/invitations?status=pending&limit=100`,
-      { headers: { Authorization: `Bearer ${clerkSecretKey}` } },
-    );
-    if (!invRes.ok) {
-      return;
-    }
-
-    const invData = (await invRes.json()) as { data: { id: string }[] };
-    for (const inv of invData.data) {
-      await fetch(
-        `https://api.clerk.com/v1/organizations/${clerkOrgId}/invitations/${inv.id}/revoke`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${clerkSecretKey}`,
-            "Content-Type": "application/json",
-          },
-        },
-      ).catch(() => {});
-    }
-
-    if (invData.data.length > 0) {
-      console.info(`[setup] Revoked ${invData.data.length} stale pending invitation(s)`);
-    }
-  } catch (err) {
-    console.warn("[setup] Failed to clean up pending invitations:", err);
-  }
+  // Invitations are now component-based (Better-Auth / vortex-auth), so the old
+  // external invitation-cleanup API call no longer applies. This is a safe no-op
+  // that keeps `prepareBackendState` working until a replacement is wired up.
+  // TODO(auth): port invitation cleanup to the vortex-auth component if needed
+  console.info("[setup] Invitation cleanup skipped (no-op): no component cleanup wired yet");
 }
 
 export async function purgeE2eDocuments(): Promise<void> {

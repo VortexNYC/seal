@@ -27,7 +27,7 @@ describe("Contact queries", () => {
       return await ctx.db.insert("users", {
         email: "owner@contacts-query.com",
         name: "Owner User",
-        clerkId: "clerk_contacts_owner",
+        authSubject: "contacts_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -46,7 +46,7 @@ describe("Contact queries", () => {
     });
   });
 
-  const asOwner = () => t.withIdentity({ subject: "clerk_contacts_owner" });
+  const asOwner = () => t.withIdentity({ subject: "contacts_owner" });
 
   describe("list", () => {
     test("returns all contacts for the org", async () => {

@@ -43,7 +43,7 @@ describe("workflows/document_completion_steps", () => {
       ctx.db.insert("users", {
         email: "owner@example.com",
         name: "Owner User",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

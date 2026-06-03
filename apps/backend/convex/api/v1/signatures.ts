@@ -343,17 +343,17 @@ export const getAuditTrail = internalQuery({
       .order("desc")
       .take(limit);
 
-    // Enrich with user information by looking up users by clerkId
+    // Enrich with user information by looking up users by authSubject
     const events = await Promise.all(
       auditLogs.map(async (log) => {
         let actorEmail: string | undefined;
         let actorName: string | undefined;
 
         if (log.userId) {
-          // userId is a Clerk user ID (string), find user by clerkId
+          // userId is an auth subject (string), find user by authSubject
           const user = await ctx.db
             .query("users")
-            .withIndex("by_clerk_id", (q) => q.eq("clerkId", log.userId as string))
+            .withIndex("by_auth_subject", (q) => q.eq("authSubject", log.userId as string))
             .first();
           if (user) {
             actorEmail = user.email;

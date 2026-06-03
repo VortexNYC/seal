@@ -11,11 +11,8 @@ export const userStatus = v.union(
 export type UserStatus = Infer<typeof userStatus>;
 
 export const usersTable = defineTable({
-  // Kept REQUIRED during the migration so the dozens of existing
-  // clerkId-keyed call sites stay green. Better-Auth-provisioned users
-  // (which have no Clerk id) store their Better-Auth subject here as a
-  // transitional value. The whole column is dropped in P7.
-  clerkId: v.string(),
+  // Canonical auth-subject key (the Better-Auth subject == identity.subject).
+  authSubject: v.string(),
 
   // vortex-auth component opaque userId (NOT the raw JWT subject).
   vortexAuthUserId: v.optional(v.string()),
@@ -47,7 +44,7 @@ export const usersTable = defineTable({
 
   updatedAt: v.optional(v.number()),
 })
-  .index("by_clerk_id", ["clerkId"])
+  .index("by_auth_subject", ["authSubject"])
   .index("by_email", ["email"])
   .index("by_active_org", ["activeOrganizationId"])
   .index("by_vortex_auth_user", ["vortexAuthUserId"]);

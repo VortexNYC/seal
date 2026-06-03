@@ -4,7 +4,7 @@
  * These wrappers are used for unauthenticated access where recipients
  * access documents via signing tokens (email links).
  *
- * Unlike auth wrappers, these do NOT require Clerk authentication.
+ * Unlike auth wrappers, these do NOT require user authentication.
  * Token validation must happen in the handler using validateRecipientToken.
  *
  * Note: RLS is NOT applied to these wrappers. Access control is enforced

@@ -24,8 +24,7 @@ type UpsertBetterAuthUserArgs = {
 /**
  * Return the currently-authenticated user's Seal `users` row, or null when
  * unauthenticated / not yet provisioned. Resolution is by identity subject
- * (= clerkId for both Clerk users and Better-Auth users, which store their
- * BA subject in clerkId during the migration). Used by the vortex-auth React
+ * (stored on the `authSubject` column). Used by the vortex-auth React
  * identity provisioner to detect whether the local user exists yet.
  */
 export const getCurrentUser = query({
@@ -37,7 +36,7 @@ export const getCurrentUser = query({
     }
     return await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
       .first();
   },
 });
@@ -155,11 +154,8 @@ async function upsertBetterAuthUser(ctx: MutationCtx, args: UpsertBetterAuthUser
 
   const userId = await ctx.db.insert("users", {
     ...patch,
-    // Transitional: Better-Auth users have no Clerk id. Store the
-    // Better-Auth subject in the still-required clerkId column (unique
-    // per user, never collides with a real `user_…` Clerk id). Dropped
-    // in P7 once the column is removed.
-    clerkId: args.betterAuthUserId,
+    // The Better-Auth subject is the user's canonical auth-subject key.
+    authSubject: args.betterAuthUserId,
     timezone: "UTC",
     locale: "en-US",
     isSuperAdmin: false,

@@ -38,7 +38,7 @@ describe("Audit log helpers", () => {
       return await ctx.db.insert("users", {
         email: "owner@test.com",
         name: "Test Owner",
-        clerkId: "clerk_test_owner",
+        authSubject: "test_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
@@ -83,9 +83,9 @@ describe("Audit log helpers", () => {
       const logId = await t.run(async (ctx) => {
         return await logAction(ctx, {
           organizationId,
-          userId: "clerk_test_owner",
+          userId: "test_owner",
           actorType: "user",
-          actorId: "clerk_test_owner",
+          actorId: "test_owner",
           action: "document.created",
           resourceType: "document",
           resourceId: documentId,
@@ -101,7 +101,7 @@ describe("Audit log helpers", () => {
 
       expect(log).not.toBeNull();
       expect(log!.organizationId).toBe(organizationId);
-      expect(log!.userId).toBe("clerk_test_owner");
+      expect(log!.userId).toBe("test_owner");
       expect(log!.actorType).toBe("user");
       expect(log!.action).toBe("document.created");
       expect(log!.resourceType).toBe("document");
@@ -139,7 +139,7 @@ describe("Audit log helpers", () => {
       const logId = await t.run(async (ctx) => {
         return await logDocumentAction(ctx, {
           organizationId,
-          userId: "clerk_test_owner",
+          userId: "test_owner",
           action: "document.created",
           documentId,
           newValues: { name: "Test Doc", fileType: "application/pdf" },
@@ -152,7 +152,7 @@ describe("Audit log helpers", () => {
 
       expect(log!.action).toBe("document.created");
       expect(log!.actorType).toBe("user");
-      expect(log!.actorId).toBe("clerk_test_owner");
+      expect(log!.actorId).toBe("test_owner");
       expect(log!.resourceType).toBe("document");
       expect(log!.resourceId).toBe(documentId);
       expect(log!.metadata?.description).toBe("Document created");
@@ -163,7 +163,7 @@ describe("Audit log helpers", () => {
       const logId = await t.run(async (ctx) => {
         return await logDocumentAction(ctx, {
           organizationId,
-          userId: "clerk_test_owner",
+          userId: "test_owner",
           action: "document.sent",
           documentId,
           newValues: { workflowStatus: "sent" },
@@ -215,8 +215,8 @@ describe("Audit log helpers", () => {
         return await logRecipientAction(ctx, {
           organizationId,
           actorType: "user",
-          actorId: "clerk_test_owner",
-          userId: "clerk_test_owner",
+          actorId: "test_owner",
+          userId: "test_owner",
           action: "recipient.signed",
           documentId,
           recipientId,
@@ -229,8 +229,8 @@ describe("Audit log helpers", () => {
 
       expect(log!.action).toBe("recipient.signed");
       expect(log!.actorType).toBe("user");
-      expect(log!.userId).toBe("clerk_test_owner");
-      expect(log!.actorId).toBe("clerk_test_owner");
+      expect(log!.userId).toBe("test_owner");
+      expect(log!.actorId).toBe("test_owner");
     });
 
     test("logs recipient.declined", async () => {
@@ -298,7 +298,7 @@ describe("Audit log helpers", () => {
       const logId = await t.run(async (ctx) => {
         return await logFieldAction(ctx, {
           organizationId,
-          userId: "clerk_test_owner",
+          userId: "test_owner",
           action: "field.created",
           fieldId,
           documentId,
@@ -380,7 +380,7 @@ describe("Audit log helpers", () => {
       await t.run(async (ctx) => {
         await logDocumentAction(ctx, {
           organizationId,
-          userId: "clerk_test_owner",
+          userId: "test_owner",
           action: "document.created",
           documentId,
           ipAddress: "web-authenticated",
@@ -390,7 +390,7 @@ describe("Audit log helpers", () => {
       await t.run(async (ctx) => {
         await logDocumentAction(ctx, {
           organizationId,
-          userId: "clerk_test_owner",
+          userId: "test_owner",
           action: "document.sent",
           documentId,
           ipAddress: "web-authenticated",
@@ -420,7 +420,7 @@ describe("Audit log helpers", () => {
       await t.run(async (ctx) => {
         await logDocumentAction(ctx, {
           organizationId,
-          userId: "clerk_test_owner",
+          userId: "test_owner",
           action: "document.created",
           documentId,
           ipAddress: "web-authenticated",

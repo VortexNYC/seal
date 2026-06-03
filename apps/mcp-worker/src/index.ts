@@ -8,9 +8,8 @@
  * Auth is delegated entirely to Seal Convex (`@plasmapos/vortex-auth` MCP OAuth
  * server + `resolveMcpApiAuth` at `/api/v1`). The worker does NOT verify tokens
  * itself: it requires a bearer to be present and passes it straight through;
- * Seal's `/api/v1` validates the Better-Auth MCP access token. There is no Clerk
- * here — the authorization server, JWKS, and token validation all live in Seal
- * Convex.
+ * Seal's `/api/v1` validates the Better-Auth MCP access token. The authorization
+ * server, JWKS, and token validation all live in Seal Convex.
  *
  * Discovery: the worker advertises Seal Convex's protected-resource metadata
  * (proxied) so the MCP client discovers Seal's OAuth authorization server and

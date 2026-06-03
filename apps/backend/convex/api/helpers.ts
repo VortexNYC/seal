@@ -1,7 +1,7 @@
 /**
  * @fileoverview Internal helper queries for API context resolution.
  * These are internal queries not exposed to clients, used by the
- * API Context Bridge to resolve Clerk IDs to internal Convex IDs.
+ * API Context Bridge to resolve auth subjects to internal Convex IDs.
  *
  * @module api/helpers
  * @internal
@@ -10,42 +10,6 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../_generated/server";
-
-/**
- * Look up user by Clerk user ID.
- * Used to resolve API key subject to internal user ID.
- *
- * @internal
- * @param clerkUserId - The Clerk user ID (user_xxx format)
- * @returns User document or null if not found
- */
-export const getUserByClerkId = internalQuery({
-  args: { clerkUserId: v.string() },
-  handler: async (ctx, args) => {
-    return ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkUserId))
-      .first();
-  },
-});
-
-/**
- * Look up organization by Clerk org ID.
- * Used to resolve organization-scoped API keys.
- *
- * @internal
- * @param clerkOrgId - The Clerk organization ID (org_xxx format)
- * @returns Organization document or null if not found
- */
-export const getOrgByClerkId = internalQuery({
-  args: { clerkOrgId: v.string() },
-  handler: async (ctx, args) => {
-    return ctx.db
-      .query("organizations")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkOrgId))
-      .first();
-  },
-});
 
 /**
  * Get membership for user in organization.
@@ -255,7 +219,7 @@ export const getUserOrganizationMemberships = internalQuery({
  * Log API activity for analytics and debugging.
  *
  * @internal
- * @param apiKeyId - The Clerk API key ID
+ * @param apiKeyId - The API key ID
  * @param userId - Internal user ID
  * @param organizationId - Internal organization ID
  * @param action - The API action performed (e.g., "documents.list")

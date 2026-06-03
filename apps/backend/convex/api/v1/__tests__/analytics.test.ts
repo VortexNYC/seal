@@ -76,7 +76,7 @@ describe("api/v1/analytics", () => {
       return await ctx.db.insert("users", {
         email: "owner@analytics-test.com",
         name: "Owner",
-        clerkId: "clerk_analytics_owner",
+        authSubject: "analytics_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",

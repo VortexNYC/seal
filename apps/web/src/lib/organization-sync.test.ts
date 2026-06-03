@@ -3,11 +3,11 @@ import { describe, expect, test } from "vitest";
 import { shouldWaitForOrganizationSync } from "./organization-sync";
 
 describe("shouldWaitForOrganizationSync", () => {
-  test("returns false until Clerk finishes loading", () => {
+  test("returns false until auth finishes loading", () => {
     expect(
       shouldWaitForOrganizationSync({
-        isClerkLoaded: false,
-        hasClerkActiveOrganization: true,
+        isAuthLoaded: false,
+        hasActiveOrganization: true,
         hasOrganization: false,
         activeOrganizationSlug: null,
         hasAttemptedRecovery: false,
@@ -15,11 +15,11 @@ describe("shouldWaitForOrganizationSync", () => {
     ).toBe(false);
   });
 
-  test("returns false when there is no active Clerk organization", () => {
+  test("returns false when there is no active organization", () => {
     expect(
       shouldWaitForOrganizationSync({
-        isClerkLoaded: true,
-        hasClerkActiveOrganization: false,
+        isAuthLoaded: true,
+        hasActiveOrganization: false,
         hasOrganization: false,
         activeOrganizationSlug: null,
         hasAttemptedRecovery: false,
@@ -27,11 +27,11 @@ describe("shouldWaitForOrganizationSync", () => {
     ).toBe(false);
   });
 
-  test("returns true when Clerk has an active organization but Convex has not synced it yet", () => {
+  test("returns true when auth has an active organization but Convex has not synced it yet", () => {
     expect(
       shouldWaitForOrganizationSync({
-        isClerkLoaded: true,
-        hasClerkActiveOrganization: true,
+        isAuthLoaded: true,
+        hasActiveOrganization: true,
         hasOrganization: false,
         activeOrganizationSlug: null,
         hasAttemptedRecovery: false,
@@ -42,8 +42,8 @@ describe("shouldWaitForOrganizationSync", () => {
   test("returns true when membership exists but the active organization slug still needs repair", () => {
     expect(
       shouldWaitForOrganizationSync({
-        isClerkLoaded: true,
-        hasClerkActiveOrganization: true,
+        isAuthLoaded: true,
+        hasActiveOrganization: true,
         hasOrganization: true,
         activeOrganizationSlug: null,
         hasAttemptedRecovery: false,
@@ -54,8 +54,8 @@ describe("shouldWaitForOrganizationSync", () => {
   test("returns false once Convex has the active organization slug", () => {
     expect(
       shouldWaitForOrganizationSync({
-        isClerkLoaded: true,
-        hasClerkActiveOrganization: true,
+        isAuthLoaded: true,
+        hasActiveOrganization: true,
         hasOrganization: true,
         activeOrganizationSlug: "acme",
         hasAttemptedRecovery: false,
@@ -66,8 +66,8 @@ describe("shouldWaitForOrganizationSync", () => {
   test("returns false after recovery has already been attempted", () => {
     expect(
       shouldWaitForOrganizationSync({
-        isClerkLoaded: true,
-        hasClerkActiveOrganization: true,
+        isAuthLoaded: true,
+        hasActiveOrganization: true,
         hasOrganization: false,
         activeOrganizationSlug: null,
         hasAttemptedRecovery: true,

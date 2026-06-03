@@ -66,7 +66,6 @@ export const organizationsTable = defineTable({
   currencyKind: v.optional(v.string()), // default "normal"
   timezone: v.string(), // default "UTC"
   isActive: v.boolean(),
-  clerkId: v.optional(v.string()),
 
   // vortex-auth component organization id (anchor bridge). Optional for
   // backwards compat with pre-migration rows; becomes the org truth in P2.
@@ -107,7 +106,6 @@ export const organizationsTable = defineTable({
   .index("by_slug", ["slug"])
   .index("by_type", ["type"])
   .index("by_active", ["isActive"])
-  .index("by_clerk_id", ["clerkId"])
   .index("by_stripe_customer_id", ["stripeCustomerId"])
   .index("by_status", ["status"])
   .index("by_vortex_auth_organization", ["vortexAuthOrganizationId"]);

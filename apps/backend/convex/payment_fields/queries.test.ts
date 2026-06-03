@@ -30,7 +30,7 @@ describe("Payment field queries", () => {
       return await ctx.db.insert("users", {
         email: "owner@querytest.com",
         name: "Query Owner",
-        clerkId: "clerk_query_owner",
+        authSubject: "query_owner",
         isEmailVerified: true,
         timezone: "UTC",
         locale: "en-US",
