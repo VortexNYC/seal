@@ -6,6 +6,7 @@ export interface OrganizationSyncState {
   hasAttemptedRecovery?: boolean;
 }
 
+/** Returns true when the auth session has an active org but Convex has not yet mirrored it locally. */
 export function shouldWaitForOrganizationSync(state: OrganizationSyncState): boolean {
   if (state.hasAttemptedRecovery) {
     return false;
