@@ -71,6 +71,7 @@ import { processStripeConnectWebhookEvent } from "./stripe/connect_webhook_handl
 import { processStripeWebhookEvent } from "./stripe/webhook_handlers";
 import {
   extractVortexPayableUpdatedProjection,
+  extractVortexSubscriptionProjection,
   parseVortexBillingWebhookEvent,
   verifyVortexWebhookSignature,
 } from "./vortex_billing/webhook_receiver";
@@ -442,25 +443,43 @@ http.route({
       return new Response("Invalid Vortex Billing webhook payload", { status: 400 });
     }
 
-    if (event.type !== "payable_object.updated") {
-      return Response.json({ ok: true, ignored: true, eventType: event.type }, { status: 200 });
+    if (event.type === "payable_object.updated") {
+      const projection = extractVortexPayableUpdatedProjection(event);
+      if (!projection) {
+        return new Response("Invalid payable_object.updated payload", { status: 400 });
+      }
+
+      const result = await ctx.runAction(
+        internal.vortex_billing.projection_actions.applyVortexPayableUpdatedEvent,
+        {
+          eventId: event.id,
+          eventType: event.type,
+          ...projection,
+        },
+      );
+
+      return Response.json({ ok: true, eventId: event.id, result }, { status: 200 });
     }
 
-    const projection = extractVortexPayableUpdatedProjection(event);
-    if (!projection) {
-      return new Response("Invalid payable_object.updated payload", { status: 400 });
+    if (event.type === "subscription.updated" || event.type === "subscription.canceled") {
+      const projection = extractVortexSubscriptionProjection(event);
+      if (!projection) {
+        return new Response(`Invalid ${event.type} payload`, { status: 400 });
+      }
+
+      const result = await ctx.runAction(
+        internal.vortex_billing.projection_actions.applyVortexSubscriptionUpdatedEvent,
+        {
+          eventId: event.id,
+          eventType: event.type,
+          ...projection,
+        },
+      );
+
+      return Response.json({ ok: true, eventId: event.id, result }, { status: 200 });
     }
 
-    const result = await ctx.runAction(
-      internal.vortex_billing.projection_actions.applyVortexPayableUpdatedEvent,
-      {
-        eventId: event.id,
-        eventType: event.type,
-        ...projection,
-      },
-    );
-
-    return Response.json({ ok: true, eventId: event.id, result }, { status: 200 });
+    return Response.json({ ok: true, ignored: true, eventType: event.type }, { status: 200 });
   }),
 });
 

@@ -41,6 +41,20 @@ export type VortexPayableUpdatedProjection = {
   readonly hostedInvoiceUrl?: string;
 };
 
+export type VortexSubscriptionProjection = {
+  readonly vortexSubscriptionId: string;
+  readonly vortexCustomerId: string;
+  readonly vortexPriceId: string;
+  readonly status: "active" | "canceled" | "past_due" | "trialing" | "incomplete" | "incomplete_expired" | "unpaid";
+  readonly cancelAtPeriodEnd: boolean;
+  readonly currentPeriodStart: number;
+  readonly currentPeriodEnd: number;
+  readonly sealOrganizationId?: string;
+  readonly latestInvoiceId?: string;
+  readonly canceledAt?: number;
+  readonly cancelReason?: string;
+};
+
 const defaultToleranceSeconds = 5 * 60;
 
 function bytesToHex(bytes: Uint8Array): string {
@@ -220,5 +234,92 @@ export function extractVortexPayableUpdatedProjection(
         : undefined,
     hostedInvoiceUrl:
       typeof checkoutUrl === "string" && checkoutUrl.length > 0 ? checkoutUrl : undefined,
+  };
+}
+
+function timestampMillis(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  if (typeof value === "string" && value.length > 0) {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function isVortexSubscriptionStatus(value: unknown): value is VortexSubscriptionProjection["status"] {
+  return (
+    value === "active" ||
+    value === "canceled" ||
+    value === "past_due" ||
+    value === "trialing" ||
+    value === "incomplete" ||
+    value === "incomplete_expired" ||
+    value === "unpaid"
+  );
+}
+
+export function extractVortexSubscriptionProjection(
+  event: ParsedVortexWebhookEvent,
+): VortexSubscriptionProjection | null {
+  if (event.type !== "subscription.updated" && event.type !== "subscription.canceled") {
+    return null;
+  }
+
+  const subscription = event.data.subscription;
+  if (!isRecord(subscription)) {
+    return null;
+  }
+
+  const subscriptionExternalId = subscription.subscriptionExternalId;
+  const customerExternalId = subscription.customerExternalId;
+  const planCode = subscription.planCode;
+  const status = subscription.status;
+  const cancelAtPeriodEnd = subscription.cancelAtPeriodEnd;
+  const currentPeriodStart = timestampMillis(subscription.currentPeriodStart);
+  const currentPeriodEnd = timestampMillis(subscription.currentPeriodEnd);
+  if (
+    typeof subscriptionExternalId !== "string" ||
+    subscriptionExternalId.length === 0 ||
+    typeof customerExternalId !== "string" ||
+    customerExternalId.length === 0 ||
+    typeof planCode !== "string" ||
+    planCode.length === 0 ||
+    !isVortexSubscriptionStatus(status) ||
+    typeof cancelAtPeriodEnd !== "boolean" ||
+    currentPeriodStart === null ||
+    currentPeriodEnd === null
+  ) {
+    return null;
+  }
+
+  const metadata = isRecord(subscription.metadata) ? subscription.metadata : {};
+  const sealOrganizationId = metadata.sealOrganizationId;
+  const latestInvoiceId = subscription.latestInvoiceId;
+  const canceledAt = timestampMillis(subscription.canceledAt);
+  const cancelReason = subscription.cancelReason;
+
+  return {
+    vortexSubscriptionId: subscriptionExternalId,
+    vortexCustomerId: customerExternalId,
+    vortexPriceId: planCode,
+    status,
+    cancelAtPeriodEnd,
+    currentPeriodStart,
+    currentPeriodEnd,
+    sealOrganizationId:
+      typeof sealOrganizationId === "string" && sealOrganizationId.length > 0
+        ? sealOrganizationId
+        : undefined,
+    latestInvoiceId:
+      typeof latestInvoiceId === "string" && latestInvoiceId.length > 0
+        ? latestInvoiceId
+        : undefined,
+    canceledAt: canceledAt ?? undefined,
+    cancelReason:
+      typeof cancelReason === "string" && cancelReason.length > 0
+        ? cancelReason
+        : undefined,
   };
 }

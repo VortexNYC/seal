@@ -55,6 +55,11 @@ type SeedVortexSaasBillingProjectionResult = {
   readonly subscriptionId: Id<"subscriptions">;
 };
 
+type SeedVortexSaasBillingCatalogProjectionResult = Omit<
+  SeedVortexSaasBillingProjectionResult,
+  "subscriptionId"
+>;
+
 type VortexSaasBillingProofState = {
   readonly organizationId: Id<"organizations">;
   readonly plan: {
@@ -655,6 +660,59 @@ export const seedVortexSaasBillingProjection = internalMutation({
       subscriptionProductId,
       subscriptionPriceId,
       subscriptionId,
+    };
+  },
+});
+
+export const seedVortexSaasBillingCatalogProjection = internalMutation({
+  args: {
+    proofRunId: v.string(),
+    vortexPriceId: v.string(),
+    vortexProductId: v.string(),
+    lookupKey: v.string(),
+    tier: v.union(v.literal("pro"), v.literal("enterprise")),
+    features: v.string(),
+    unitAmount: v.number(),
+    currency: v.string(),
+  },
+  handler: async (ctx, args): Promise<SeedVortexSaasBillingCatalogProjectionResult> => {
+    const now = Date.now();
+    const organizationId = await insertSaasProofOrganization(ctx, args.proofRunId, now);
+    const ownerId = await insertSaasProofOwner(ctx, args.proofRunId, organizationId);
+    const subscriptionProductId = await ctx.db.insert("subscription_products", {
+      externalProductId: args.vortexProductId,
+      name: args.tier === "enterprise" ? "Vortex Enterprise" : "Vortex Pro",
+      description: "Vortex-projected Seal SaaS billing proof product",
+      status: "active",
+      metadata: {
+        tier: args.tier,
+        useType: "business",
+        features: args.features,
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+    const subscriptionPriceId = await ctx.db.insert("subscription_prices", {
+      externalPriceId: args.vortexPriceId,
+      externalProductId: args.vortexProductId,
+      subscriptionProductId,
+      type: "recurring",
+      billingScheme: "per_unit",
+      currency: args.currency.toLowerCase(),
+      recurring: { interval: "month", intervalCount: 1 },
+      unitAmount: args.unitAmount,
+      usageType: "licensed",
+      status: "active",
+      lookupKey: args.lookupKey,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      organizationId,
+      ownerId,
+      subscriptionProductId,
+      subscriptionPriceId,
     };
   },
 });

@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   createVortexWebhookSignature,
   extractVortexPayableUpdatedProjection,
+  extractVortexSubscriptionProjection,
   parseVortexBillingWebhookEvent,
   verifyVortexWebhookSignature,
 } from "./webhook_receiver";
@@ -21,6 +22,27 @@ function payablePayload() {
         lineage: {
           paymentRequestId: "pr_123",
           checkoutUrl: "https://billing.vortex.test/pay/123",
+        },
+      },
+    },
+  });
+}
+
+function subscriptionPayload() {
+  return JSON.stringify({
+    id: "evt_subscription_1",
+    type: "subscription.updated",
+    data: {
+      subscription: {
+        subscriptionExternalId: "vtx_sub_seal_123",
+        customerExternalId: "vtx_cust_seal_123",
+        planCode: "vtx_price_seal_pro_monthly",
+        status: "active",
+        cancelAtPeriodEnd: false,
+        currentPeriodStart: "2026-01-01T00:00:00.000Z",
+        currentPeriodEnd: "2026-02-01T00:00:00.000Z",
+        metadata: {
+          sealOrganizationId: "org_123",
         },
       },
     },
@@ -95,5 +117,44 @@ describe("Vortex Billing webhook receiver", () => {
     expect(event).not.toBeNull();
     expect(extractVortexPayableUpdatedProjection(event!)).toBeNull();
     expect(parseVortexBillingWebhookEvent("{")).toBeNull();
+  });
+
+  test("extracts subscription.updated projection arguments", () => {
+    const event = parseVortexBillingWebhookEvent(subscriptionPayload());
+    expect(event).not.toBeNull();
+    const projection = extractVortexSubscriptionProjection(event!);
+
+    expect(projection).toEqual({
+      vortexSubscriptionId: "vtx_sub_seal_123",
+      vortexCustomerId: "vtx_cust_seal_123",
+      vortexPriceId: "vtx_price_seal_pro_monthly",
+      status: "active",
+      cancelAtPeriodEnd: false,
+      currentPeriodStart: Date.UTC(2026, 0, 1),
+      currentPeriodEnd: Date.UTC(2026, 1, 1),
+      sealOrganizationId: "org_123",
+      latestInvoiceId: undefined,
+      canceledAt: undefined,
+      cancelReason: undefined,
+    });
+  });
+
+  test("rejects malformed subscription.updated payloads", () => {
+    const event = parseVortexBillingWebhookEvent(
+      JSON.stringify({
+        id: "evt_subscription_bad",
+        type: "subscription.updated",
+        data: {
+          subscription: {
+            subscriptionExternalId: "vtx_sub_seal_123",
+            customerExternalId: "vtx_cust_seal_123",
+            status: "active",
+          },
+        },
+      }),
+    );
+
+    expect(event).not.toBeNull();
+    expect(extractVortexSubscriptionProjection(event!)).toBeNull();
   });
 });

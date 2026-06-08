@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+import { getSubscriptionPlan } from "../auth/subscription_guards";
 import { mapVortexPayableStatusToSealPaymentStatus } from "../payment_fields/mutations";
 import { createTestContext } from "../test.setup";
 
@@ -120,6 +121,52 @@ async function storeProjectionPayable(
     customerEmail: "buyer@seal.test",
     customerName: "Buyer",
   });
+}
+
+async function createSubscriptionCatalog(t: ReturnType<typeof createTestContext>) {
+  const organizationId = await t.run(async (ctx) => {
+    return await ctx.db.insert("organizations", {
+      name: "Vortex SaaS Projection Org",
+      slug: "vortex-saas-projection-org",
+      type: "company",
+      isActive: true,
+      timezone: "UTC",
+      updatedAt: Date.now(),
+    });
+  });
+  const productId = await t.run(async (ctx) => {
+    return await ctx.db.insert("subscription_products", {
+      externalProductId: "vtx_prod_seal_projection",
+      name: "Seal Pro",
+      description: "Projection test product",
+      status: "active",
+      metadata: {
+        tier: "pro",
+        useType: "business",
+        features: "api_access,webhook_access",
+      },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  });
+  await t.run(async (ctx) => {
+    await ctx.db.insert("subscription_prices", {
+      externalPriceId: "vtx_price_seal_projection_monthly",
+      externalProductId: "vtx_prod_seal_projection",
+      subscriptionProductId: productId,
+      type: "recurring",
+      billingScheme: "per_unit",
+      currency: "usd",
+      recurring: { interval: "month", intervalCount: 1 },
+      unitAmount: 2900,
+      usageType: "licensed",
+      status: "active",
+      lookupKey: "pro:monthly:v2",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  });
+  return { organizationId };
 }
 
 describe("Vortex Billing payment projection", () => {
@@ -353,5 +400,75 @@ describe("Vortex Billing payment projection", () => {
       return await ctx.db.get(configId);
     });
     expect(config?.paymentStatus).toBe("awaiting");
+  });
+
+  test("projects Vortex subscription events into Seal Pro access", async () => {
+    const t = createTestContext();
+    const { organizationId } = await createSubscriptionCatalog(t);
+    const periodStart = Date.UTC(2026, 0, 1);
+    const periodEnd = Date.UTC(2026, 1, 1);
+
+    const first = await t.action(
+      internal.vortex_billing.projection_actions.applyVortexSubscriptionUpdatedEvent,
+      {
+        eventId: "evt_vortex_subscription_projection",
+        eventType: "subscription.updated",
+        vortexSubscriptionId: "vtx_sub_seal_projection",
+        vortexCustomerId: "vtx_cust_seal_projection",
+        vortexPriceId: "vtx_price_seal_projection_monthly",
+        status: "active",
+        cancelAtPeriodEnd: false,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+        sealOrganizationId: organizationId,
+      },
+    );
+    const duplicate = await t.action(
+      internal.vortex_billing.projection_actions.applyVortexSubscriptionUpdatedEvent,
+      {
+        eventId: "evt_vortex_subscription_projection",
+        eventType: "subscription.updated",
+        vortexSubscriptionId: "vtx_sub_seal_projection",
+        vortexCustomerId: "vtx_cust_seal_projection",
+        vortexPriceId: "vtx_price_seal_projection_monthly",
+        status: "active",
+        cancelAtPeriodEnd: false,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+        sealOrganizationId: organizationId,
+      },
+    );
+
+    expect(first).toMatchObject({
+      duplicate: false,
+      result: {
+        organizationId,
+        externalCustomerId: "vtx_cust_seal_projection",
+        externalSubscriptionId: "vtx_sub_seal_projection",
+        externalPriceId: "vtx_price_seal_projection_monthly",
+        status: "active",
+      },
+    });
+    expect(duplicate).toEqual({ duplicate: true, result: null });
+
+    const state = await t.run(async (ctx) => {
+      const plan = await getSubscriptionPlan(ctx.db, organizationId);
+      const subscription = await ctx.db
+        .query("subscriptions")
+        .withIndex("by_external_subscription_id", (q) =>
+          q.eq("externalSubscriptionId", "vtx_sub_seal_projection"),
+        )
+        .unique();
+      return { plan, subscription };
+    });
+
+    expect(state.plan).toMatchObject({ isPro: true, isEnterprise: false, plan: "pro" });
+    expect(state.subscription?.externalCustomerId).toBe("vtx_cust_seal_projection");
+    expect(state.subscription?.externalPriceId).toBe("vtx_price_seal_projection_monthly");
+    expect(state.subscription?.currentPeriodStart).toBe(periodStart);
+    expect(state.subscription?.currentPeriodEnd).toBe(periodEnd);
+    expect(state.subscription?.externalCustomerId.startsWith("cus_")).toBe(false);
+    expect(state.subscription?.externalSubscriptionId.startsWith("sub_")).toBe(false);
+    expect(state.subscription?.externalPriceId.startsWith("price_")).toBe(false);
   });
 });
