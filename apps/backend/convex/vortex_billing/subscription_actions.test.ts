@@ -10,6 +10,7 @@ import {
   readVortexBillingSaasEnv,
   readVortexCheckoutSessionResult,
   resolveSaasCheckoutProviderForOrganization,
+  resolveVortexSaasPriceId,
 } from "./subscription_actions";
 
 const organizationId = "org_seal_vortex_saas" as Id<"organizations">;
@@ -30,12 +31,14 @@ describe("Vortex Billing SaaS subscription actions", () => {
       apiKey: "vb_test_123",
       defaultBillingAccountId: "acct_default",
       billingAccountMapJson: JSON.stringify({ [organizationId]: "acct_org" }),
+      priceMapJson: JSON.stringify({ "pro:monthly:v2": "vtx_price_pro_monthly" }),
     });
 
     expect(env.apiBaseUrl).toBe("https://billing.vortex.test");
     expect(env.apiKey).toBe("vb_test_123");
     expect(env.defaultBillingAccountId).toBe("acct_default");
     expect(env.billingAccountMap.get(organizationId)).toBe("acct_org");
+    expect(env.priceMap.get("pro:monthly:v2")).toBe("vtx_price_pro_monthly");
   });
 
   test("rejects missing Vortex Billing SaaS credentials", () => {
@@ -60,6 +63,9 @@ describe("Vortex Billing SaaS subscription actions", () => {
     expect(resolveSaasCheckoutProviderForOrganization(organizationId, "different_org")).toBe(
       "stripe",
     );
+    expect(resolveSaasCheckoutProviderForOrganization(organizationId, "*")).toBe(
+      "vortex_billing",
+    );
     expect(resolveSaasCheckoutProviderForOrganization(organizationId, undefined)).toBe("stripe");
   });
 
@@ -67,6 +73,20 @@ describe("Vortex Billing SaaS subscription actions", () => {
     expect(() => assertVortexSaasCheckoutEnabled(organizationId, undefined)).toThrow(ConvexError);
     expect(() => assertVortexSaasCheckoutEnabled(organizationId, "different_org")).toThrow(ConvexError);
     expect(() => assertVortexSaasCheckoutEnabled(organizationId, organizationId)).not.toThrow();
+  });
+
+  test("resolves Vortex SaaS price ids without corrupting Stripe catalog ids", () => {
+    const env = { priceMap: new Map([["pro:monthly:v2", "vtx_price_pro_monthly"]]) };
+
+    expect(resolveVortexSaasPriceId(env, "pro:monthly:v2", "price_stripe_monthly")).toBe(
+      "vtx_price_pro_monthly",
+    );
+    expect(resolveVortexSaasPriceId({ priceMap: new Map() }, "pro:monthly:v2", "vtx_price_legacy")).toBe(
+      "vtx_price_legacy",
+    );
+    expect(() =>
+      resolveVortexSaasPriceId({ priceMap: new Map() }, "pro:monthly:v2", "price_stripe_monthly"),
+    ).toThrow(ConvexError);
   });
 
   test("reads hosted checkout session results", () => {

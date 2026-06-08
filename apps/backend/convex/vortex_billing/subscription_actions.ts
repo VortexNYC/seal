@@ -11,6 +11,7 @@ type VortexBillingSaasEnv = {
   readonly apiKey: string;
   readonly defaultBillingAccountId: string | undefined;
   readonly billingAccountMap: ReadonlyMap<string, string>;
+  readonly priceMap: ReadonlyMap<string, string>;
 };
 
 type VortexBillingSaasEnvInput = {
@@ -18,6 +19,7 @@ type VortexBillingSaasEnvInput = {
   readonly apiKey?: string;
   readonly defaultBillingAccountId?: string;
   readonly billingAccountMapJson?: string;
+  readonly priceMapJson?: string;
 };
 
 type VortexCheckoutSessionResult = {
@@ -33,6 +35,7 @@ type VortexRequestOptions = {
 
 type SaasCheckoutProviderResult = {
   readonly provider: SaasCheckoutProvider;
+  readonly enabledAllOrganizations: boolean;
 };
 
 function readRequiredEnv(name: string, value: string | undefined): string {
@@ -81,6 +84,7 @@ export function readVortexBillingSaasEnv(input: VortexBillingSaasEnvInput): Vort
         ? input.defaultBillingAccountId.trim()
         : undefined,
     billingAccountMap: parseStringMap("VORTEX_BILLING_ACCOUNT_MAP", input.billingAccountMapJson),
+    priceMap: parseStringMap("VORTEX_BILLING_SAAS_PRICE_MAP", input.priceMapJson),
   };
 }
 
@@ -123,6 +127,9 @@ export function resolveSaasCheckoutProviderForOrganization(
   enabledOrganizationIdsRaw: string | undefined,
 ): SaasCheckoutProvider {
   const enabledOrganizationIds = parseVortexBillingSaasOrganizationIds(enabledOrganizationIdsRaw);
+  if (enabledOrganizationIds.has("*")) {
+    return "vortex_billing";
+  }
   return enabledOrganizationIds.has(organizationId) ? "vortex_billing" : "stripe";
 }
 
@@ -219,6 +226,23 @@ function resolveBillingAccountId(
   return env.billingAccountMap.get(organizationId) ?? env.defaultBillingAccountId;
 }
 
+export function resolveVortexSaasPriceId(
+  env: Pick<VortexBillingSaasEnv, "priceMap">,
+  lookupKey: string,
+  catalogExternalPriceId: string,
+): string {
+  const mappedPriceId = env.priceMap.get(lookupKey);
+  if (mappedPriceId !== undefined) {
+    return mappedPriceId;
+  }
+  if (catalogExternalPriceId.startsWith("vtx_price_")) {
+    return catalogExternalPriceId;
+  }
+  throw new ConvexError(
+    `Missing Vortex Billing SaaS price mapping for ${lookupKey}. Set VORTEX_BILLING_SAAS_PRICE_MAP so Stripe fallback can keep using Stripe catalog price ids.`,
+  );
+}
+
 async function requestVortexJson(
   method: "POST" | "PUT",
   path: string,
@@ -290,6 +314,7 @@ export const createCheckoutSession = action({
       apiKey: process.env.VORTEX_BILLING_API_KEY,
       defaultBillingAccountId: process.env.VORTEX_BILLING_ACCOUNT_ID,
       billingAccountMapJson: process.env.VORTEX_BILLING_ACCOUNT_MAP,
+      priceMapJson: process.env.VORTEX_BILLING_SAAS_PRICE_MAP,
     });
     const priceData = await ctx.runMutation(
       internal.stripe.subscription_actions.getPriceByLookupKey,
@@ -302,6 +327,7 @@ export const createCheckoutSession = action({
     const customerExternalId = buildVortexCustomerId(organization._id);
     const subscriptionExternalId = buildVortexSubscriptionId(organization._id, lookupKey);
     const billingAccountId = resolveBillingAccountId(env, organization._id);
+    const vortexPriceId = resolveVortexSaasPriceId(env, lookupKey, priceData.price.externalPriceId);
 
     await requestVortexJson(
       "PUT",
@@ -331,7 +357,7 @@ export const createCheckoutSession = action({
         ...(billingAccountId !== undefined ? { billingAccountId } : {}),
         subscriptionExternalId,
         collectionMode: "automatic",
-        lineItems: [{ priceId: priceData.price.externalPriceId, quantity: 1 }],
+        lineItems: [{ priceId: vortexPriceId, quantity: 1 }],
         createdByRef: "seal-vortex-saas-billing",
         metadata: {
           sourceSystem: "seal",
@@ -354,11 +380,13 @@ export const getCheckoutProvider = query({
   args: {},
   handler: async (ctx): Promise<SaasCheckoutProviderResult> => {
     const { organization } = await resolveAuthenticatedOrganizationForQuery(ctx);
+    const enabledOrganizationIdsRaw = process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS;
     return {
       provider: resolveSaasCheckoutProviderForOrganization(
         organization._id,
-        process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS,
+        enabledOrganizationIdsRaw,
       ),
+      enabledAllOrganizations: enabledOrganizationIdsRaw?.trim() === "*",
     };
   },
 });
