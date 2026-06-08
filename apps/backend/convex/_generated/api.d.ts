@@ -249,6 +249,7 @@ import type * as validations_organizations from "../validations/organizations.js
 import type * as vortex_billing_payable_actions from "../vortex_billing/payable_actions.js";
 import type * as vortex_billing_projection_actions from "../vortex_billing/projection_actions.js";
 import type * as vortex_billing_proof_actions from "../vortex_billing/proof_actions.js";
+import type * as vortex_billing_subscription_actions from "../vortex_billing/subscription_actions.js";
 import type * as vortex_billing_webhook_idempotency from "../vortex_billing/webhook_idempotency.js";
 import type * as vortex_billing_webhook_receiver from "../vortex_billing/webhook_receiver.js";
 import type * as webhooks_delivery from "../webhooks/delivery.js";
@@ -510,6 +511,7 @@ declare const fullApi: ApiFromModules<{
   "vortex_billing/payable_actions": typeof vortex_billing_payable_actions;
   "vortex_billing/projection_actions": typeof vortex_billing_projection_actions;
   "vortex_billing/proof_actions": typeof vortex_billing_proof_actions;
+  "vortex_billing/subscription_actions": typeof vortex_billing_subscription_actions;
   "vortex_billing/webhook_idempotency": typeof vortex_billing_webhook_idempotency;
   "vortex_billing/webhook_receiver": typeof vortex_billing_webhook_receiver;
   "webhooks/delivery": typeof webhooks_delivery;
