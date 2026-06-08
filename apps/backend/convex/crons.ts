@@ -37,6 +37,12 @@ crons.daily(
   internal.stripe.webhook_idempotency.cleanupOldEvents,
 );
 
+crons.daily(
+  "cleanup-vortex-billing-webhook-events",
+  { hourUTC: 2, minuteUTC: 15 },
+  internal.vortex_billing.webhook_idempotency.cleanupOldEvents,
+);
+
 // Verify subscription states are in sync with Stripe (catches missed webhooks)
 crons.daily(
   "check-stripe-subscription-status",

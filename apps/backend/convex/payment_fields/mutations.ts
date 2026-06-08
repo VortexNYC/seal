@@ -6,6 +6,7 @@ import {
   paymentMethodTuple,
   paymentStatusTuple,
   paymentTypeTuple,
+  type PaymentStatus,
 } from "../schemas/payment_field_configs";
 import { computeTotalAmountCents, validatePaymentConfig } from "./helpers";
 
@@ -49,6 +50,10 @@ const depositBalanceConfigArg = v.object({
   depositPercent: v.number(),
   balanceDueDays: v.number(),
 });
+
+function isTerminalPaymentStatus(status: PaymentStatus | undefined): boolean {
+  return status === "paid" || status === "cancelled";
+}
 
 /**
  * Upsert a payment configuration for a payment field.
@@ -288,6 +293,112 @@ export const updatePaymentStatusFromWebhook = internalMutation({
       configId: config?._id,
       documentId: config?.documentId ?? invoiceRecord?.documentId,
       invoiceRecordId: invoiceRecord?._id,
+    };
+  },
+});
+
+export function mapVortexPayableStatusToSealPaymentStatus(
+  vortexStatus: string,
+): PaymentStatus | null {
+  switch (vortexStatus) {
+    case "paid":
+    case "succeeded":
+    case "collected":
+      return "paid";
+    case "failed":
+    case "payment_failed":
+      return "failed";
+    case "void":
+    case "voided":
+    case "canceled":
+    case "cancelled":
+      return "cancelled";
+    case "awaiting_payment":
+    case "open":
+    case "payment_requested":
+      return "awaiting";
+    case "created":
+    case "draft":
+      return "created";
+    default:
+      return null;
+  }
+}
+
+export const storeVortexPayableLink = internalMutation({
+  args: {
+    configId: v.id("payment_field_configs"),
+    vortexPayableId: v.string(),
+    vortexPaymentRequestId: v.optional(v.string()),
+    hostedInvoiceUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const config = await ctx.db.get(args.configId);
+    if (!config) {
+      throw new ConvexError("Payment config not found");
+    }
+
+    await ctx.db.patch(args.configId, {
+      paymentStatus: "awaiting",
+      vortexPayableId: args.vortexPayableId,
+      ...(args.vortexPaymentRequestId !== undefined && {
+        vortexPaymentRequestId: args.vortexPaymentRequestId,
+      }),
+      ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
+      updatedAt: Date.now(),
+    });
+
+    return {
+      configId: args.configId,
+      documentId: config.documentId,
+    };
+  },
+});
+
+export const updatePaymentStatusFromVortexPayable = internalMutation({
+  args: {
+    vortexPayableId: v.string(),
+    vortexStatus: v.string(),
+    vortexPaymentRequestId: v.optional(v.string()),
+    hostedInvoiceUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const paymentStatus = mapVortexPayableStatusToSealPaymentStatus(args.vortexStatus);
+    if (paymentStatus === null) {
+      return null;
+    }
+
+    const config = await ctx.db
+      .query("payment_field_configs")
+      .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+      .first();
+
+    if (!config) {
+      return null;
+    }
+
+    const currentPaymentStatus = config.paymentStatus;
+    if (isTerminalPaymentStatus(currentPaymentStatus)) {
+      return {
+        configId: config._id,
+        documentId: config.documentId,
+        paymentStatus: currentPaymentStatus,
+      };
+    }
+
+    await ctx.db.patch(config._id, {
+      paymentStatus,
+      ...(args.vortexPaymentRequestId !== undefined && {
+        vortexPaymentRequestId: args.vortexPaymentRequestId,
+      }),
+      ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
+      updatedAt: Date.now(),
+    });
+
+    return {
+      configId: config._id,
+      documentId: config.documentId,
+      paymentStatus,
     };
   },
 });
