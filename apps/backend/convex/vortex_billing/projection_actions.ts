@@ -3,7 +3,7 @@ import { ConvexError } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { internalAction } from "../_generated/server";
+import { type ActionCtx, internalAction } from "../_generated/server";
 
 type VortexPayableProjectionResult = {
   readonly configId: Id<"payment_field_configs">;
@@ -57,6 +57,28 @@ function normalizeProjectionResult(
   };
 }
 
+async function projectRecoveryState(
+  ctx: ActionCtx,
+  result: NonNullable<VortexPayableProjectionResult>,
+): Promise<void> {
+  if (!result.invoiceRecordId) {
+    return;
+  }
+
+  if (result.paymentStatus === "failed") {
+    await ctx.runMutation(internal.payment_fields.dunning.startDunning, {
+      invoiceId: result.invoiceRecordId,
+    });
+    return;
+  }
+
+  if (result.paymentStatus === "paid" || result.paymentStatus === "cancelled") {
+    await ctx.runMutation(internal.payment_fields.dunning.cancelDunning, {
+      invoiceId: result.invoiceRecordId,
+    });
+  }
+}
+
 export const applyVortexPayableUpdated = internalAction({
   args: {
     vortexPayableId: v.string(),
@@ -79,6 +101,10 @@ export const applyVortexPayableUpdated = internalAction({
           documentId: result.documentId,
         },
       );
+    }
+
+    if (result !== null) {
+      await projectRecoveryState(ctx, result);
     }
 
     return result;

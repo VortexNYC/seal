@@ -27,6 +27,11 @@ type VortexWebhookProofPaymentState = {
   readonly invoiceVortexPaymentRequestId: string | undefined;
   readonly invoiceHostedUrl: string | undefined;
   readonly invoicePaidAt: number | undefined;
+  readonly invoiceDunningStatus: string | undefined;
+  readonly invoiceDunningStep: number | undefined;
+  readonly invoiceDunningStartedAt: number | undefined;
+  readonly invoiceNextDunningAt: number | undefined;
+  readonly invoiceDunningCompletedAt: number | undefined;
 } | null;
 
 type SeedVortexSendFlowProofResult = {
@@ -437,6 +442,11 @@ export const getVortexWebhookProofPaymentState = internalQuery({
       invoiceVortexPaymentRequestId: invoice?.vortexPaymentRequestId,
       invoiceHostedUrl: invoice?.hostedInvoiceUrl,
       invoicePaidAt: invoice?.paidAt,
+      invoiceDunningStatus: invoice?.dunningStatus,
+      invoiceDunningStep: invoice?.dunningStep,
+      invoiceDunningStartedAt: invoice?.dunningStartedAt,
+      invoiceNextDunningAt: invoice?.nextDunningAt,
+      invoiceDunningCompletedAt: invoice?.dunningCompletedAt,
     };
   },
 });

@@ -187,6 +187,77 @@ describe("Vortex Billing payment projection", () => {
     expect(document?.workflowStatus).toBe("completed");
   });
 
+  test("projects failed Vortex status into invoice recovery without restarting active dunning", async () => {
+    const t = createTestContext();
+    const { configId } = await createPaymentConfig(t);
+
+    await storeProjectionPayable(t, configId);
+    const invoiceBefore = await getVortexInvoice(t, "payable_projection_1");
+
+    const first = await t.action(internal.vortex_billing.projection_actions.applyVortexPayableUpdated, {
+      vortexPayableId: "payable_projection_1",
+      vortexStatus: "failed",
+      vortexPaymentRequestId: "pr_projection_1",
+    });
+
+    expect(first?.paymentStatus).toBe("failed");
+    expect(first?.invoiceRecordId).toBe(invoiceBefore?._id);
+
+    const failedInvoice = await t.run(async (ctx) => {
+      return await ctx.db.get(invoiceBefore!._id);
+    });
+    expect(failedInvoice?.status).toBe("uncollectible");
+    expect(failedInvoice?.dunningStatus).toBe("active");
+    expect(failedInvoice?.dunningStep).toBe(0);
+    expect(failedInvoice?.dunningStartedAt).toBeDefined();
+    expect(failedInvoice?.nextDunningAt).toBeDefined();
+
+    await t.action(internal.vortex_billing.projection_actions.applyVortexPayableUpdated, {
+      vortexPayableId: "payable_projection_1",
+      vortexStatus: "failed",
+      vortexPaymentRequestId: "pr_projection_1",
+    });
+
+    const replayedInvoice = await t.run(async (ctx) => {
+      return await ctx.db.get(invoiceBefore!._id);
+    });
+    expect(replayedInvoice?.dunningStatus).toBe("active");
+    expect(replayedInvoice?.dunningStep).toBe(0);
+    expect(replayedInvoice?.dunningStartedAt).toBe(failedInvoice?.dunningStartedAt);
+  });
+
+  test("cancels Vortex recovery when a failed payable later pays", async () => {
+    const t = createTestContext();
+    const { configId, documentId } = await createPaymentConfig(t);
+
+    await storeProjectionPayable(t, configId);
+    const invoiceBefore = await getVortexInvoice(t, "payable_projection_1");
+
+    await t.action(internal.vortex_billing.projection_actions.applyVortexPayableUpdated, {
+      vortexPayableId: "payable_projection_1",
+      vortexStatus: "failed",
+      vortexPaymentRequestId: "pr_projection_1",
+    });
+    await t.action(internal.vortex_billing.projection_actions.applyVortexPayableUpdated, {
+      vortexPayableId: "payable_projection_1",
+      vortexStatus: "paid",
+      vortexPaymentRequestId: "pr_projection_1",
+    });
+
+    const invoiceAfter = await t.run(async (ctx) => {
+      return await ctx.db.get(invoiceBefore!._id);
+    });
+    expect(invoiceAfter?.status).toBe("paid");
+    expect(invoiceAfter?.dunningStatus).toBe("cancelled");
+    expect(invoiceAfter?.nextDunningAt).toBeUndefined();
+    expect(invoiceAfter?.dunningCompletedAt).toBeDefined();
+
+    const document = await t.run(async (ctx) => {
+      return await ctx.db.get(documentId as Id<"documents">);
+    });
+    expect(document?.workflowStatus).toBe("completed");
+  });
+
   test("dedupes Vortex payable events by event id", async () => {
     const t = createTestContext();
     const { configId } = await createPaymentConfig(t);
