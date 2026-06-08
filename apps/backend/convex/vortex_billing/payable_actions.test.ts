@@ -38,6 +38,7 @@ describe("Vortex Billing payable bridge", () => {
       sourceNamespace: "seal",
       customerMapJson: JSON.stringify({ "buyer@seal.test": "cust_123" }),
       billingAccountMapJson: JSON.stringify({ organization_1: "bacc_123" }),
+      merchantAccountMapJson: JSON.stringify({ organization_1: "ma_123" }),
       priceMapJson: JSON.stringify({ seal_line_1: "price_123" }),
     });
 
@@ -59,6 +60,7 @@ describe("Vortex Billing payable bridge", () => {
       dueAt: "2026-01-31T00:00:00.000Z",
       metadata: {
         sourceSystem: "seal",
+        vortexMerchantAccountId: "ma_123",
         sealDocumentId: "document_1",
         sealPaymentFieldConfigId: "payment_config_1",
         sealPaymentFieldId: "payment_field_1",
@@ -90,6 +92,7 @@ describe("Vortex Billing payable bridge", () => {
       apiKey: "vb_test_key",
       customerMapJson: JSON.stringify({ "buyer@seal.test": "cust_123" }),
       defaultBillingAccountId: "bacc_123",
+      defaultMerchantAccountId: "ma_123",
       priceMapJson: JSON.stringify({ seal_line_1: "price_123" }),
     });
 
@@ -108,6 +111,7 @@ describe("Vortex Billing payable bridge", () => {
       apiBaseUrl: "https://billing.vortex.test",
       apiKey: "vb_test_key",
       defaultBillingAccountId: "bacc_123",
+      defaultMerchantAccountId: "ma_123",
       priceMapJson: JSON.stringify({}),
     });
 
@@ -119,5 +123,40 @@ describe("Vortex Billing payable bridge", () => {
         now: Date.UTC(2026, 0, 1),
       }),
     ).toThrow("Missing Vortex customer mapping");
+  });
+
+  test("requires explicit merchant and billing account mappings", () => {
+    const env = readVortexBillingEnv({
+      apiBaseUrl: "https://billing.vortex.test",
+      apiKey: "vb_test_key",
+      customerMapJson: JSON.stringify({ "buyer@seal.test": "cust_123" }),
+      priceMapJson: JSON.stringify({ seal_line_1: "price_123" }),
+    });
+
+    expect(() =>
+      buildCreatePayableRequest({
+        config: makePaymentConfig(),
+        recipient: { email: "buyer@seal.test", name: "Buyer" },
+        env,
+        now: Date.UTC(2026, 0, 1),
+      }),
+    ).toThrow("Missing Vortex merchant account mapping");
+
+    const merchantOnlyEnv = readVortexBillingEnv({
+      apiBaseUrl: "https://billing.vortex.test",
+      apiKey: "vb_test_key",
+      customerMapJson: JSON.stringify({ "buyer@seal.test": "cust_123" }),
+      defaultMerchantAccountId: "ma_123",
+      priceMapJson: JSON.stringify({ seal_line_1: "price_123" }),
+    });
+
+    expect(() =>
+      buildCreatePayableRequest({
+        config: makePaymentConfig(),
+        recipient: { email: "buyer@seal.test", name: "Buyer" },
+        env: merchantOnlyEnv,
+        now: Date.UTC(2026, 0, 1),
+      }),
+    ).toThrow("Missing Vortex billing account mapping");
   });
 });

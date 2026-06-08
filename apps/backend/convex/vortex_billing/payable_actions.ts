@@ -73,6 +73,16 @@ type CreatePayableRequest = {
   readonly metadata: Record<string, string>;
 };
 
+type VortexMerchantReadiness = {
+  readonly merchantAccountId: string;
+  readonly merchantStatus: string;
+  readonly canAcceptPayments: boolean;
+  readonly payoutReadiness: string;
+  readonly openRequirementIds: readonly string[];
+  readonly activeCapabilityKeys: readonly string[];
+  readonly restrictedCapabilityKeys: readonly string[];
+};
+
 type VortexPayableLink = {
   readonly recipientEmail: string;
   readonly hostedInvoiceUrl: string | null;
@@ -94,6 +104,9 @@ type VortexBillingEnv = {
   readonly customerMap: ReadonlyMap<string, string>;
   readonly billingAccountMap: ReadonlyMap<string, string>;
   readonly defaultBillingAccountId: string | undefined;
+  readonly merchantAccountMap: ReadonlyMap<string, string>;
+  readonly defaultMerchantAccountId: string | undefined;
+  readonly paymentsEnvironment: "sandbox" | "production";
   readonly priceMap: ReadonlyMap<string, string>;
 };
 
@@ -104,6 +117,9 @@ type VortexBillingEnvInput = {
   readonly customerMapJson?: string;
   readonly billingAccountMapJson?: string;
   readonly defaultBillingAccountId?: string;
+  readonly merchantAccountMapJson?: string;
+  readonly defaultMerchantAccountId?: string;
+  readonly paymentsEnvironment?: string;
   readonly priceMapJson?: string;
 };
 
@@ -138,6 +154,11 @@ function parseStringMap(name: string, raw: string | undefined): ReadonlyMap<stri
 }
 
 export function readVortexBillingEnv(input: VortexBillingEnvInput): VortexBillingEnv {
+  const paymentsEnvironment = input.paymentsEnvironment?.trim() ?? "sandbox";
+  if (paymentsEnvironment !== "sandbox" && paymentsEnvironment !== "production") {
+    throw new ConvexError("VORTEX_BILLING_PAYMENTS_ENVIRONMENT must be sandbox or production");
+  }
+
   return {
     apiBaseUrl: readRequiredEnv("VORTEX_BILLING_API_BASE_URL", input.apiBaseUrl).replace(
       /\/+$/,
@@ -154,6 +175,15 @@ export function readVortexBillingEnv(input: VortexBillingEnvInput): VortexBillin
       input.defaultBillingAccountId !== undefined && input.defaultBillingAccountId.trim().length > 0
         ? input.defaultBillingAccountId.trim()
         : undefined,
+    merchantAccountMap: parseStringMap(
+      "VORTEX_BILLING_MERCHANT_ACCOUNT_MAP",
+      input.merchantAccountMapJson,
+    ),
+    defaultMerchantAccountId:
+      input.defaultMerchantAccountId !== undefined && input.defaultMerchantAccountId.trim().length > 0
+        ? input.defaultMerchantAccountId.trim()
+        : undefined,
+    paymentsEnvironment,
     priceMap: parseStringMap("VORTEX_BILLING_PRICE_MAP", input.priceMapJson),
   };
 }
@@ -173,6 +203,13 @@ function resolveBillingAccountId(
   organizationId: Id<"organizations">,
 ): string {
   return env.billingAccountMap.get(organizationId) ?? env.defaultBillingAccountId ?? "";
+}
+
+function resolveMerchantAccountId(
+  env: VortexBillingEnv,
+  organizationId: Id<"organizations">,
+): string {
+  return env.merchantAccountMap.get(organizationId) ?? env.defaultMerchantAccountId ?? "";
 }
 
 function sourceIdForConfig(config: PaymentFieldConfig, env: VortexBillingEnv): string {
@@ -278,6 +315,12 @@ export function buildCreatePayableRequest(input: {
   readonly now: number;
 }): CreatePayableRequest {
   assertOneTimePayment(input.config);
+  const merchantAccountId = resolveMerchantAccountId(input.env, input.config.organizationId);
+  if (merchantAccountId.length === 0) {
+    throw new ConvexError(
+      `Missing Vortex merchant account mapping for organization ${input.config.organizationId}. Set VORTEX_BILLING_MERCHANT_ACCOUNT_MAP or VORTEX_BILLING_MERCHANT_ACCOUNT_ID.`,
+    );
+  }
   const billingAccountId = resolveBillingAccountId(input.env, input.config.organizationId);
   if (billingAccountId.length === 0) {
     throw new ConvexError(
@@ -298,6 +341,7 @@ export function buildCreatePayableRequest(input: {
     lineItems: buildLineItems(input.config, input.env),
     metadata: {
       sourceSystem: "seal",
+      vortexMerchantAccountId: merchantAccountId,
       sealDocumentId: input.config.documentId.toString(),
       sealPaymentFieldConfigId: input.config._id.toString(),
       sealPaymentFieldId: input.config.fieldId.toString(),
@@ -308,6 +352,80 @@ export function buildCreatePayableRequest(input: {
       sealCurrency: input.config.currency,
     },
   };
+}
+
+function readStringArray(value: unknown, field: string): readonly string[] {
+  if (!Array.isArray(value)) {
+    throw new ConvexError(`Vortex merchant readiness response ${field} must be an array`);
+  }
+  return value.map((entry) => {
+    if (typeof entry !== "string") {
+      throw new ConvexError(`Vortex merchant readiness response ${field} entries must be strings`);
+    }
+    return entry;
+  });
+}
+
+function readVortexMerchantReadiness(value: unknown): VortexMerchantReadiness {
+  if (!isJsonObject(value) || !isJsonObject(value.data)) {
+    throw new ConvexError("Vortex merchant readiness response did not include data");
+  }
+  const data = value.data;
+  if (typeof data.merchantAccountId !== "string" || data.merchantAccountId.length === 0) {
+    throw new ConvexError("Vortex merchant readiness response did not include merchantAccountId");
+  }
+  if (typeof data.merchantStatus !== "string" || data.merchantStatus.length === 0) {
+    throw new ConvexError("Vortex merchant readiness response did not include merchantStatus");
+  }
+  if (typeof data.canAcceptPayments !== "boolean") {
+    throw new ConvexError("Vortex merchant readiness response did not include canAcceptPayments");
+  }
+  if (typeof data.payoutReadiness !== "string" || data.payoutReadiness.length === 0) {
+    throw new ConvexError("Vortex merchant readiness response did not include payoutReadiness");
+  }
+  return {
+    merchantAccountId: data.merchantAccountId,
+    merchantStatus: data.merchantStatus,
+    canAcceptPayments: data.canAcceptPayments,
+    payoutReadiness: data.payoutReadiness,
+    openRequirementIds: readStringArray(data.openRequirementIds, "openRequirementIds"),
+    activeCapabilityKeys: readStringArray(data.activeCapabilityKeys, "activeCapabilityKeys"),
+    restrictedCapabilityKeys: readStringArray(data.restrictedCapabilityKeys, "restrictedCapabilityKeys"),
+  };
+}
+
+async function requireVortexMerchantReady(
+  env: VortexBillingEnv,
+  merchantAccountId: string,
+): Promise<VortexMerchantReadiness> {
+  const response = await fetch(
+    `${env.apiBaseUrl}/v1/merchant-accounts/${encodeURIComponent(merchantAccountId)}/state?environment=${env.paymentsEnvironment}`,
+    {
+      method: "GET",
+      headers: {
+        authorization: `Bearer ${env.apiKey}`,
+        "x-vortex-service": "billing",
+      },
+    },
+  );
+  const body = (await response.json()) as unknown;
+  if (!response.ok) {
+    throw new ConvexError(
+      `Vortex merchant readiness check failed with ${response.status}: ${JSON.stringify(body)}`,
+    );
+  }
+  const readiness = readVortexMerchantReadiness(body);
+  if (readiness.merchantAccountId !== merchantAccountId) {
+    throw new ConvexError(
+      `Vortex merchant readiness returned ${readiness.merchantAccountId} for requested ${merchantAccountId}`,
+    );
+  }
+  if (!readiness.canAcceptPayments) {
+    throw new ConvexError(
+      `Vortex merchant ${merchantAccountId} cannot accept payments: status=${readiness.merchantStatus}, payoutReadiness=${readiness.payoutReadiness}, openRequirements=${readiness.openRequirementIds.join(",")}`,
+    );
+  }
+  return readiness;
 }
 
 function readPaymentFieldRecipient(
@@ -401,8 +519,18 @@ export const createVortexPayablesForPaymentFields = internalAction({
       customerMapJson: process.env.VORTEX_BILLING_CUSTOMER_MAP,
       billingAccountMapJson: process.env.VORTEX_BILLING_ACCOUNT_MAP,
       defaultBillingAccountId: process.env.VORTEX_BILLING_ACCOUNT_ID,
+      merchantAccountMapJson: process.env.VORTEX_BILLING_MERCHANT_ACCOUNT_MAP,
+      defaultMerchantAccountId: process.env.VORTEX_BILLING_MERCHANT_ACCOUNT_ID,
+      paymentsEnvironment: process.env.VORTEX_BILLING_PAYMENTS_ENVIRONMENT,
       priceMapJson: process.env.VORTEX_BILLING_PRICE_MAP,
     });
+    const merchantAccountId = resolveMerchantAccountId(env, args.organizationId);
+    if (merchantAccountId.length === 0) {
+      throw new ConvexError(
+        `Missing Vortex merchant account mapping for organization ${args.organizationId}. Set VORTEX_BILLING_MERCHANT_ACCOUNT_MAP or VORTEX_BILLING_MERCHANT_ACCOUNT_ID.`,
+      );
+    }
+    await requireVortexMerchantReady(env, merchantAccountId);
 
     const configs: Doc<"payment_field_configs">[] = await ctx.runQuery(
       internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
