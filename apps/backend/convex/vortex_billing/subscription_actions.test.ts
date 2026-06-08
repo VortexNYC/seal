@@ -3,10 +3,13 @@ import { describe, expect, test } from "vitest";
 
 import type { Id } from "../_generated/dataModel";
 import {
+  assertVortexSaasCheckoutEnabled,
   buildVortexCustomerId,
   buildVortexSubscriptionId,
+  parseVortexBillingSaasOrganizationIds,
   readVortexBillingSaasEnv,
   readVortexCheckoutSessionResult,
+  resolveSaasCheckoutProviderForOrganization,
 } from "./subscription_actions";
 
 const organizationId = "org_seal_vortex_saas" as Id<"organizations">;
@@ -42,6 +45,28 @@ describe("Vortex Billing SaaS subscription actions", () => {
         apiKey: "vb_test_123",
       }),
     ).toThrow(ConvexError);
+  });
+
+  test("resolves Vortex SaaS checkout only for explicitly enabled organizations", () => {
+    expect(parseVortexBillingSaasOrganizationIds(`${organizationId}, other_org`).has(organizationId)).toBe(
+      true,
+    );
+    expect(
+      parseVortexBillingSaasOrganizationIds(JSON.stringify([organizationId])).has(organizationId),
+    ).toBe(true);
+    expect(resolveSaasCheckoutProviderForOrganization(organizationId, organizationId)).toBe(
+      "vortex_billing",
+    );
+    expect(resolveSaasCheckoutProviderForOrganization(organizationId, "different_org")).toBe(
+      "stripe",
+    );
+    expect(resolveSaasCheckoutProviderForOrganization(organizationId, undefined)).toBe("stripe");
+  });
+
+  test("blocks direct Vortex SaaS checkout when the organization is not enabled", () => {
+    expect(() => assertVortexSaasCheckoutEnabled(organizationId, undefined)).toThrow(ConvexError);
+    expect(() => assertVortexSaasCheckoutEnabled(organizationId, "different_org")).toThrow(ConvexError);
+    expect(() => assertVortexSaasCheckoutEnabled(organizationId, organizationId)).not.toThrow();
   });
 
   test("reads hosted checkout session results", () => {

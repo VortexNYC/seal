@@ -104,9 +104,12 @@ function formatDate(timestamp: number) {
 function BillingSettingsPage() {
   const subscription = useQuery(api.stripe.queries.getSubscriptionDetails);
   const plans = useQuery(api.stripe.queries.getAvailablePlans);
+  const checkoutProvider = useQuery(api.vortex_billing.subscription_actions.getCheckoutProvider);
   const createVortexCheckout = useAction(
     api.vortex_billing.subscription_actions.createCheckoutSession,
   );
+  const createStripeCheckout = useAction(api.stripe.actions.createCheckoutSession);
+  const { slug } = Route.useParams();
 
   const [checkoutLookupKey, setCheckoutLookupKey] = useState<string | null>(null);
 
@@ -116,8 +119,22 @@ function BillingSettingsPage() {
   async function handleUpgrade(lookupKey: string) {
     setCheckoutLookupKey(lookupKey);
     try {
-      const { checkoutUrl } = await createVortexCheckout({ lookupKey });
-      window.location.href = checkoutUrl;
+      if (checkoutProvider === undefined) {
+        throw new Error("Billing provider is still loading");
+      }
+      if (checkoutProvider.provider === "vortex_billing") {
+        const { checkoutUrl } = await createVortexCheckout({ lookupKey });
+        window.location.href = checkoutUrl;
+        return;
+      }
+
+      const returnUrl = `${window.location.origin}/${slug}/settings/billing`;
+      const { url } = await createStripeCheckout({
+        lookupKey,
+        successUrl: `${returnUrl}?checkout=success`,
+        cancelUrl: `${returnUrl}?checkout=canceled`,
+      });
+      window.location.href = url;
     } catch (err) {
       toast.error(
         err instanceof Error && err.message
@@ -230,7 +247,7 @@ function BillingSettingsPage() {
                     <Button
                       className="w-full"
                       onClick={() => void handleUpgrade(proMonthlyLookupKey)}
-                      disabled={checkoutLookupKey !== null}
+                      disabled={checkoutLookupKey !== null || checkoutProvider === undefined}
                     >
                       {checkoutLookupKey === proMonthlyLookupKey ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

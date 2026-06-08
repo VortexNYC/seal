@@ -2,7 +2,9 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { type ActionCtx, action, internalMutation } from "../_generated/server";
+import { type ActionCtx, type QueryCtx, action, internalMutation, query } from "../_generated/server";
+
+export type SaasCheckoutProvider = "vortex_billing" | "stripe";
 
 type VortexBillingSaasEnv = {
   readonly apiBaseUrl: string;
@@ -27,6 +29,10 @@ type VortexCheckoutSessionResult = {
 type VortexRequestOptions = {
   readonly env: VortexBillingSaasEnv;
   readonly idempotencyKey: string;
+};
+
+type SaasCheckoutProviderResult = {
+  readonly provider: SaasCheckoutProvider;
 };
 
 function readRequiredEnv(name: string, value: string | undefined): string {
@@ -78,6 +84,57 @@ export function readVortexBillingSaasEnv(input: VortexBillingSaasEnvInput): Vort
   };
 }
 
+export function parseVortexBillingSaasOrganizationIds(raw: string | undefined): ReadonlySet<string> {
+  if (raw === undefined || raw.trim().length === 0) {
+    return new Set();
+  }
+
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("[")) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(trimmed) as unknown;
+    } catch {
+      throw new ConvexError("VORTEX_BILLING_SAAS_ORGANIZATION_IDS must be valid JSON or a comma-separated list");
+    }
+    if (!Array.isArray(parsed)) {
+      throw new ConvexError("VORTEX_BILLING_SAAS_ORGANIZATION_IDS JSON value must be an array");
+    }
+    return new Set(
+      parsed.map((entry) => {
+        if (typeof entry !== "string" || entry.trim().length === 0) {
+          throw new ConvexError("VORTEX_BILLING_SAAS_ORGANIZATION_IDS entries must be non-empty strings");
+        }
+        return entry.trim();
+      }),
+    );
+  }
+
+  return new Set(
+    trimmed
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0),
+  );
+}
+
+export function resolveSaasCheckoutProviderForOrganization(
+  organizationId: Id<"organizations">,
+  enabledOrganizationIdsRaw: string | undefined,
+): SaasCheckoutProvider {
+  const enabledOrganizationIds = parseVortexBillingSaasOrganizationIds(enabledOrganizationIdsRaw);
+  return enabledOrganizationIds.has(organizationId) ? "vortex_billing" : "stripe";
+}
+
+export function assertVortexSaasCheckoutEnabled(
+  organizationId: Id<"organizations">,
+  enabledOrganizationIdsRaw: string | undefined,
+): void {
+  if (resolveSaasCheckoutProviderForOrganization(organizationId, enabledOrganizationIdsRaw) !== "vortex_billing") {
+    throw new ConvexError("Vortex Billing SaaS checkout is not enabled for this organization");
+  }
+}
+
 function resolveAuthContext(ctx: ActionCtx): Promise<{
   readonly user: Doc<"users">;
   readonly organization: Doc<"organizations">;
@@ -114,6 +171,33 @@ async function resolveAuthenticatedOrganization(ctx: ActionCtx): Promise<{
   }
 
   return { user, organization };
+}
+
+async function resolveAuthenticatedOrganizationForQuery(ctx: QueryCtx): Promise<{
+  readonly organization: Doc<"organizations">;
+}> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new ConvexError("Authentication required");
+  }
+
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_auth_subject", (q) => q.eq("authSubject", identity.subject))
+    .unique();
+  if (!user) {
+    throw new ConvexError("User not found");
+  }
+  if (!user.activeOrganizationId) {
+    throw new ConvexError("No active organization");
+  }
+
+  const organization = await ctx.db.get(user.activeOrganizationId);
+  if (!organization) {
+    throw new ConvexError("Organization not found");
+  }
+
+  return { organization };
 }
 
 export function buildVortexCustomerId(organizationId: Id<"organizations">): string {
@@ -196,13 +280,17 @@ export const createCheckoutSession = action({
     lookupKey: v.string(),
   },
   handler: async (ctx, { lookupKey }): Promise<VortexCheckoutSessionResult> => {
+    const { user, organization } = await resolveAuthContext(ctx);
+    assertVortexSaasCheckoutEnabled(
+      organization._id,
+      process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS,
+    );
     const env = readVortexBillingSaasEnv({
       apiBaseUrl: process.env.VORTEX_BILLING_API_BASE_URL,
       apiKey: process.env.VORTEX_BILLING_API_KEY,
       defaultBillingAccountId: process.env.VORTEX_BILLING_ACCOUNT_ID,
       billingAccountMapJson: process.env.VORTEX_BILLING_ACCOUNT_MAP,
     });
-    const { user, organization } = await resolveAuthContext(ctx);
     const priceData = await ctx.runMutation(
       internal.stripe.subscription_actions.getPriceByLookupKey,
       { lookupKey },
@@ -259,6 +347,19 @@ export const createCheckoutSession = action({
     );
 
     return readVortexCheckoutSessionResult(checkoutResponse);
+  },
+});
+
+export const getCheckoutProvider = query({
+  args: {},
+  handler: async (ctx): Promise<SaasCheckoutProviderResult> => {
+    const { organization } = await resolveAuthenticatedOrganizationForQuery(ctx);
+    return {
+      provider: resolveSaasCheckoutProviderForOrganization(
+        organization._id,
+        process.env.VORTEX_BILLING_SAAS_ORGANIZATION_IDS,
+      ),
+    };
   },
 });
 

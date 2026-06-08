@@ -1,8 +1,9 @@
 import { v } from "convex/values";
 
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { internalMutation, internalQuery, type MutationCtx } from "../_generated/server";
 import { getSubscriptionPlan } from "../auth/subscription_guards";
+import { resolveSaasCheckoutProviderForOrganization } from "./subscription_actions";
 
 type SeedVortexWebhookProofResult = {
   readonly organizationId: Id<"organizations">;
@@ -88,6 +89,13 @@ type VortexSaasBillingProofState = {
     readonly unitAmount: number | undefined;
   } | null;
   readonly activeStripeIdPresent: boolean;
+};
+
+type VortexSaasCheckoutCutoverGuardProofState = {
+  readonly organizationId: Id<"organizations">;
+  readonly provider: "vortex_billing" | "stripe";
+  readonly stripeCustomerId: string | undefined;
+  readonly stripeCustomerIdPresent: boolean;
 };
 
 async function insertWebhookProofOrganization(
@@ -399,6 +407,7 @@ async function insertSaasProofOrganization(
   ctx: MutationCtx,
   proofRunId: string,
   now: number,
+  stripeCustomerId?: string,
 ): Promise<Id<"organizations">> {
   return await ctx.db.insert("organizations", {
     name: `Vortex SaaS Billing Proof ${proofRunId}`,
@@ -406,6 +415,7 @@ async function insertSaasProofOrganization(
     type: "company",
     isActive: true,
     timezone: "UTC",
+    ...(stripeCustomerId !== undefined ? { stripeCustomerId } : {}),
     updatedAt: now,
   });
 }
@@ -431,6 +441,65 @@ function hasStripePrefix(value: string | undefined): boolean {
     return false;
   }
   return /^(cus|sub|price|prod)_/.test(value);
+}
+
+function toProofSubscription(
+  subscription: Doc<"subscriptions"> | null,
+): VortexSaasBillingProofState["subscription"] {
+  if (subscription === null) {
+    return null;
+  }
+
+  return {
+    externalCustomerId: subscription.externalCustomerId,
+    externalSubscriptionId: subscription.externalSubscriptionId,
+    externalPriceId: subscription.externalPriceId,
+    status: subscription.status,
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+    currentPeriodStart: subscription.currentPeriodStart,
+    currentPeriodEnd: subscription.currentPeriodEnd,
+  };
+}
+
+function toProofProduct(
+  product: Doc<"subscription_products"> | null,
+): VortexSaasBillingProofState["product"] {
+  if (product === null) {
+    return null;
+  }
+
+  return {
+    externalProductId: product.externalProductId,
+    tier: product.metadata?.tier,
+    features: product.metadata?.features,
+  };
+}
+
+function toProofPrice(
+  price: Doc<"subscription_prices"> | null,
+): VortexSaasBillingProofState["price"] {
+  if (price === null) {
+    return null;
+  }
+
+  return {
+    externalPriceId: price.externalPriceId,
+    lookupKey: price.lookupKey,
+    currency: price.currency,
+    unitAmount: price.unitAmount,
+  };
+}
+
+function hasActiveStripeId(
+  subscription: Doc<"subscriptions"> | null,
+  product: Doc<"subscription_products"> | null,
+): boolean {
+  return (
+    hasStripePrefix(subscription?.externalCustomerId) ||
+    hasStripePrefix(subscription?.externalSubscriptionId) ||
+    hasStripePrefix(subscription?.externalPriceId) ||
+    hasStripePrefix(product?.externalProductId)
+  );
 }
 
 export const seedVortexWebhookProofPaymentConfig = internalMutation({
@@ -606,12 +675,18 @@ export const seedVortexSaasBillingProjection = internalMutation({
     features: v.string(),
     unitAmount: v.number(),
     currency: v.string(),
+    stripeCustomerId: v.optional(v.string()),
     currentPeriodStart: v.number(),
     currentPeriodEnd: v.number(),
   },
   handler: async (ctx, args): Promise<SeedVortexSaasBillingProjectionResult> => {
     const now = Date.now();
-    const organizationId = await insertSaasProofOrganization(ctx, args.proofRunId, now);
+    const organizationId = await insertSaasProofOrganization(
+      ctx,
+      args.proofRunId,
+      now,
+      args.stripeCustomerId,
+    );
     const ownerId = await insertSaasProofOwner(ctx, args.proofRunId, organizationId);
     const subscriptionProductId = await ctx.db.insert("subscription_products", {
       externalProductId: args.vortexProductId,
@@ -674,10 +749,16 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
     features: v.string(),
     unitAmount: v.number(),
     currency: v.string(),
+    stripeCustomerId: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<SeedVortexSaasBillingCatalogProjectionResult> => {
     const now = Date.now();
-    const organizationId = await insertSaasProofOrganization(ctx, args.proofRunId, now);
+    const organizationId = await insertSaasProofOrganization(
+      ctx,
+      args.proofRunId,
+      now,
+      args.stripeCustomerId,
+    );
     const ownerId = await insertSaasProofOwner(ctx, args.proofRunId, organizationId);
     const subscriptionProductId = await ctx.db.insert("subscription_products", {
       externalProductId: args.vortexProductId,
@@ -713,6 +794,34 @@ export const seedVortexSaasBillingCatalogProjection = internalMutation({
       ownerId,
       subscriptionProductId,
       subscriptionPriceId,
+    };
+  },
+});
+
+export const getVortexSaasCheckoutCutoverGuardProofState = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+    enabledOrganizationIdsRaw: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<VortexSaasCheckoutCutoverGuardProofState> => {
+    const organization = await ctx.db.get(args.organizationId);
+    if (organization === null) {
+      throw new Error("Organization not found");
+    }
+
+    const provider = resolveSaasCheckoutProviderForOrganization(
+      args.organizationId,
+      args.enabledOrganizationIdsRaw,
+    );
+
+    return {
+      organizationId: args.organizationId,
+      provider,
+      stripeCustomerId: organization.stripeCustomerId,
+      stripeCustomerIdPresent: organization.stripeCustomerId !== undefined,
     };
   },
 });
@@ -759,40 +868,10 @@ export const getVortexSaasBillingProofState = internalQuery({
     return {
       organizationId: args.organizationId,
       plan,
-      subscription:
-        subscription === null
-          ? null
-          : {
-              externalCustomerId: subscription.externalCustomerId,
-              externalSubscriptionId: subscription.externalSubscriptionId,
-              externalPriceId: subscription.externalPriceId,
-              status: subscription.status,
-              cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-              currentPeriodStart: subscription.currentPeriodStart,
-              currentPeriodEnd: subscription.currentPeriodEnd,
-            },
-      product:
-        product === null
-          ? null
-          : {
-              externalProductId: product.externalProductId,
-              tier: product.metadata?.tier,
-              features: product.metadata?.features,
-            },
-      price:
-        price === null
-          ? null
-          : {
-              externalPriceId: price.externalPriceId,
-              lookupKey: price.lookupKey,
-              currency: price.currency,
-              unitAmount: price.unitAmount,
-            },
-      activeStripeIdPresent:
-        hasStripePrefix(subscription?.externalCustomerId) ||
-        hasStripePrefix(subscription?.externalSubscriptionId) ||
-        hasStripePrefix(subscription?.externalPriceId) ||
-        hasStripePrefix(product?.externalProductId),
+      subscription: toProofSubscription(subscription),
+      product: toProofProduct(product),
+      price: toProofPrice(price),
+      activeStripeIdPresent: hasActiveStripeId(subscription, product),
     };
   },
 });
