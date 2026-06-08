@@ -177,7 +177,7 @@ export const resetEvalState = internalMutation({
   handler: async (ctx) => {
     let deleted = 0;
 
-    const threads = await ctx.db.query("ai_threads").collect();
+    const threads = await ctx.db.query("ai_threads").order("desc").take(500);
     for (const t of threads) {
       if (t.threadId && t.threadId.startsWith?.("[eval]")) {
         await ctx.db.delete(t._id);
