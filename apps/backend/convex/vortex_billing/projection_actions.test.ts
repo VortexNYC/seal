@@ -99,6 +99,29 @@ async function createPaymentConfig(t: ReturnType<typeof createTestContext>) {
   return { configId, documentId };
 }
 
+async function getVortexInvoice(t: ReturnType<typeof createTestContext>, vortexPayableId: string) {
+  return await t.run(async (ctx) => {
+    return await ctx.db
+      .query("document_invoices")
+      .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", vortexPayableId))
+      .unique();
+  });
+}
+
+async function storeProjectionPayable(
+  t: ReturnType<typeof createTestContext>,
+  configId: Id<"payment_field_configs">,
+) {
+  await t.mutation(internal.payment_fields.mutations.storeVortexPayableLink, {
+    configId,
+    vortexPayableId: "payable_projection_1",
+    vortexPaymentRequestId: "pr_projection_1",
+    hostedInvoiceUrl: "https://billing.vortex.test/pay/projection",
+    customerEmail: "buyer@seal.test",
+    customerName: "Buyer",
+  });
+}
+
 describe("Vortex Billing payment projection", () => {
   test("maps Vortex payable statuses into Seal payment statuses", () => {
     expect(mapVortexPayableStatusToSealPaymentStatus("awaiting_payment")).toBe("awaiting");
@@ -108,16 +131,11 @@ describe("Vortex Billing payment projection", () => {
     expect(mapVortexPayableStatusToSealPaymentStatus("unknown_future_status")).toBeNull();
   });
 
-  test("stores Vortex payable identity and projects paid status", async () => {
+  test("stores Vortex payable identity and creates dashboard invoice row", async () => {
     const t = createTestContext();
-    const { configId, documentId } = await createPaymentConfig(t);
+    const { configId } = await createPaymentConfig(t);
 
-    await t.mutation(internal.payment_fields.mutations.storeVortexPayableLink, {
-      configId,
-      vortexPayableId: "payable_projection_1",
-      vortexPaymentRequestId: "pr_projection_1",
-      hostedInvoiceUrl: "https://billing.vortex.test/pay/projection",
-    });
+    await storeProjectionPayable(t, configId);
 
     const stored = await t.run(async (ctx) => {
       return await ctx.db.get(configId);
@@ -126,6 +144,20 @@ describe("Vortex Billing payment projection", () => {
     expect(stored?.vortexPayableId).toBe("payable_projection_1");
     expect(stored?.vortexPaymentRequestId).toBe("pr_projection_1");
     expect(stored?.hostedInvoiceUrl).toBe("https://billing.vortex.test/pay/projection");
+    const invoiceBefore = await getVortexInvoice(t, "payable_projection_1");
+    expect(invoiceBefore?.provider).toBe("vortex_billing");
+    expect(invoiceBefore?.status).toBe("open");
+    expect(invoiceBefore?.stripeInvoiceId).toBeUndefined();
+    expect(invoiceBefore?.stripeAccountId).toBeUndefined();
+    expect(invoiceBefore?.customerEmail).toBe("buyer@seal.test");
+  });
+
+  test("projects paid Vortex status into payment config, invoice row, and document completion", async () => {
+    const t = createTestContext();
+    const { configId, documentId } = await createPaymentConfig(t);
+
+    await storeProjectionPayable(t, configId);
+    const invoiceBefore = await getVortexInvoice(t, "payable_projection_1");
 
     const result = await t.action(
       internal.vortex_billing.projection_actions.applyVortexPayableUpdated,
@@ -137,11 +169,17 @@ describe("Vortex Billing payment projection", () => {
     );
 
     expect(result?.paymentStatus).toBe("paid");
+    expect(result?.invoiceRecordId).toBe(invoiceBefore?._id);
 
     const projected = await t.run(async (ctx) => {
       return await ctx.db.get(configId);
     });
     expect(projected?.paymentStatus).toBe("paid");
+    const invoiceAfter = await t.run(async (ctx) => {
+      return await ctx.db.get(invoiceBefore!._id);
+    });
+    expect(invoiceAfter?.status).toBe("paid");
+    expect(invoiceAfter?.paidAt).toBeDefined();
 
     const document = await t.run(async (ctx) => {
       return await ctx.db.get(documentId as Id<"documents">);
@@ -157,6 +195,7 @@ describe("Vortex Billing payment projection", () => {
       configId,
       vortexPayableId: "payable_projection_dedupe",
       vortexPaymentRequestId: "pr_projection_dedupe",
+      customerEmail: "buyer@seal.test",
     });
 
     const first = await t.action(
@@ -196,6 +235,7 @@ describe("Vortex Billing payment projection", () => {
     await t.mutation(internal.payment_fields.mutations.storeVortexPayableLink, {
       configId,
       vortexPayableId: "payable_projection_stale",
+      customerEmail: "buyer@seal.test",
     });
     await t.action(internal.vortex_billing.projection_actions.applyVortexPayableUpdated, {
       vortexPayableId: "payable_projection_stale",
@@ -215,6 +255,8 @@ describe("Vortex Billing payment projection", () => {
       return await ctx.db.get(configId);
     });
     expect(config?.paymentStatus).toBe("paid");
+    const invoice = await getVortexInvoice(t, "payable_projection_stale");
+    expect(invoice?.status).toBe("paid");
   });
 
   test("ignores Vortex payable statuses that Seal does not understand yet", async () => {
@@ -224,6 +266,7 @@ describe("Vortex Billing payment projection", () => {
     await t.mutation(internal.payment_fields.mutations.storeVortexPayableLink, {
       configId,
       vortexPayableId: "payable_projection_unknown",
+      customerEmail: "buyer@seal.test",
     });
 
     const result = await t.mutation(

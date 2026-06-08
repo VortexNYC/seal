@@ -21,6 +21,12 @@ type VortexWebhookProofPaymentState = {
   readonly vortexPaymentRequestId: string | undefined;
   readonly hostedInvoiceUrl: string | undefined;
   readonly documentWorkflowStatus: string | undefined;
+  readonly invoiceStatus: string | undefined;
+  readonly invoiceProvider: string | undefined;
+  readonly invoiceVortexPayableId: string | undefined;
+  readonly invoiceVortexPaymentRequestId: string | undefined;
+  readonly invoiceHostedUrl: string | undefined;
+  readonly invoicePaidAt: number | undefined;
 } | null;
 
 type SeedVortexSendFlowProofResult = {
@@ -34,6 +40,172 @@ type SeedVortexSendFlowProofResult = {
   readonly recipientEmail: string;
   readonly lineItemId: string;
 };
+
+async function insertWebhookProofOrganization(
+  ctx: MutationCtx,
+  proofRunId: string,
+  now: number,
+): Promise<Id<"organizations">> {
+  const slug = `vortex-webhook-proof-${proofRunId}`.toLowerCase();
+  return await ctx.db.insert("organizations", {
+    name: `Vortex Webhook Proof ${proofRunId}`,
+    slug,
+    type: "company",
+    isActive: true,
+    timezone: "UTC",
+    updatedAt: now,
+  });
+}
+
+async function insertWebhookProofOwner(
+  ctx: MutationCtx,
+  proofRunId: string,
+  organizationId: Id<"organizations">,
+): Promise<Id<"users">> {
+  return await ctx.db.insert("users", {
+    email: `owner+${proofRunId}@seal.test`,
+    name: "Vortex Webhook Proof Owner",
+    authSubject: `vortex_webhook_proof_${proofRunId}`,
+    isEmailVerified: true,
+    timezone: "UTC",
+    locale: "en-US",
+    activeOrganizationId: organizationId,
+  });
+}
+
+async function insertWebhookProofDocument(
+  ctx: MutationCtx,
+  input: {
+    readonly proofRunId: string;
+    readonly organizationId: Id<"organizations">;
+    readonly ownerId: Id<"users">;
+    readonly now: number;
+  },
+): Promise<Id<"documents">> {
+  return await ctx.db.insert("documents", {
+    name: "Vortex Webhook Proof Document",
+    ownerId: input.ownerId,
+    organizationId: input.organizationId,
+    status: "active",
+    workflowStatus: "waiting_for_payment",
+    sharingMode: "private",
+    fileSize: 1024,
+    fileType: "application/pdf",
+    storageId: `storage_${input.proofRunId}`,
+    createdAt: input.now,
+    updatedAt: input.now,
+  });
+}
+
+async function insertWebhookProofRecipient(
+  ctx: MutationCtx,
+  input: {
+    readonly proofRunId: string;
+    readonly documentId: Id<"documents">;
+    readonly now: number;
+  },
+): Promise<Id<"document_recipients">> {
+  return await ctx.db.insert("document_recipients", {
+    documentId: input.documentId,
+    email: `buyer+${input.proofRunId}@seal.test`,
+    name: "Vortex Webhook Proof Buyer",
+    role: "signer",
+    status: "signed",
+    signingToken: `token_${input.proofRunId}`,
+    tokenExpiresAt: input.now + 86_400_000,
+    order: 0,
+    createdAt: input.now,
+    updatedAt: input.now,
+  });
+}
+
+async function insertWebhookProofPaymentField(
+  ctx: MutationCtx,
+  input: {
+    readonly documentId: Id<"documents">;
+    readonly recipientId: Id<"document_recipients">;
+    readonly now: number;
+  },
+): Promise<Id<"signature_fields">> {
+  return await ctx.db.insert("signature_fields", {
+    documentId: input.documentId,
+    recipientId: input.recipientId,
+    fieldType: "payment",
+    label: "Payment",
+    isRequired: true,
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 40,
+    page: 1,
+    createdAt: input.now,
+    updatedAt: input.now,
+  });
+}
+
+async function insertWebhookProofPaymentConfig(
+  ctx: MutationCtx,
+  input: {
+    readonly fieldId: Id<"signature_fields">;
+    readonly documentId: Id<"documents">;
+    readonly organizationId: Id<"organizations">;
+    readonly vortexPayableId: string;
+    readonly vortexPaymentRequestId: string | undefined;
+    readonly hostedInvoiceUrl: string | undefined;
+    readonly now: number;
+  },
+): Promise<Id<"payment_field_configs">> {
+  return await ctx.db.insert("payment_field_configs", {
+    fieldId: input.fieldId,
+    documentId: input.documentId,
+    organizationId: input.organizationId,
+    paymentType: "one_time",
+    items: [{ id: "line_1", description: "Vortex proof payment", quantity: 1, unitPrice: 4200 }],
+    currency: "usd",
+    dueDateTerms: "net_30",
+    allowedPaymentMethods: ["card"],
+    feeHandling: "absorb",
+    taxEnabled: false,
+    totalAmountCents: 4200,
+    paymentStatus: "awaiting",
+    vortexPayableId: input.vortexPayableId,
+    vortexPaymentRequestId: input.vortexPaymentRequestId,
+    hostedInvoiceUrl: input.hostedInvoiceUrl,
+    createdAt: input.now,
+    updatedAt: input.now,
+  });
+}
+
+async function insertWebhookProofInvoice(
+  ctx: MutationCtx,
+  input: {
+    readonly proofRunId: string;
+    readonly documentId: Id<"documents">;
+    readonly organizationId: Id<"organizations">;
+    readonly vortexPayableId: string;
+    readonly vortexPaymentRequestId: string | undefined;
+    readonly hostedInvoiceUrl: string | undefined;
+    readonly now: number;
+  },
+): Promise<void> {
+  await ctx.db.insert("document_invoices", {
+    provider: "vortex_billing",
+    documentId: input.documentId,
+    organizationId: input.organizationId,
+    vortexPayableId: input.vortexPayableId,
+    vortexPaymentRequestId: input.vortexPaymentRequestId,
+    status: "open",
+    customerEmail: `buyer+${input.proofRunId}@seal.test`,
+    customerName: "Vortex Webhook Proof Buyer",
+    amountDue: 4200,
+    currency: "usd",
+    hostedInvoiceUrl: input.hostedInvoiceUrl,
+    finalizedAt: input.now,
+    dunningStatus: "none",
+    createdAt: input.now,
+    updatedAt: input.now,
+  });
+}
 
 async function insertSendFlowProofOrganization(
   ctx: MutationCtx,
@@ -183,86 +355,41 @@ export const seedVortexWebhookProofPaymentConfig = internalMutation({
   },
   handler: async (ctx, args): Promise<SeedVortexWebhookProofResult> => {
     const now = Date.now();
-    const slug = `vortex-webhook-proof-${args.proofRunId}`.toLowerCase();
-    const organizationId = await ctx.db.insert("organizations", {
-      name: `Vortex Webhook Proof ${args.proofRunId}`,
-      slug,
-      type: "company",
-      isActive: true,
-      timezone: "UTC",
-      updatedAt: now,
-    });
-
-    const ownerId = await ctx.db.insert("users", {
-      email: `owner+${args.proofRunId}@seal.test`,
-      name: "Vortex Webhook Proof Owner",
-      authSubject: `vortex_webhook_proof_${args.proofRunId}`,
-      isEmailVerified: true,
-      timezone: "UTC",
-      locale: "en-US",
-      activeOrganizationId: organizationId,
-    });
-
-    const documentId = await ctx.db.insert("documents", {
-      name: "Vortex Webhook Proof Document",
-      ownerId,
+    const organizationId = await insertWebhookProofOrganization(ctx, args.proofRunId, now);
+    const ownerId = await insertWebhookProofOwner(ctx, args.proofRunId, organizationId);
+    const documentId = await insertWebhookProofDocument(ctx, {
+      proofRunId: args.proofRunId,
       organizationId,
-      status: "active",
-      workflowStatus: "waiting_for_payment",
-      sharingMode: "private",
-      fileSize: 1024,
-      fileType: "application/pdf",
-      storageId: `storage_${args.proofRunId}`,
-      createdAt: now,
-      updatedAt: now,
+      ownerId,
+      now,
     });
-
-    const recipientId = await ctx.db.insert("document_recipients", {
+    const recipientId = await insertWebhookProofRecipient(ctx, {
+      proofRunId: args.proofRunId,
       documentId,
-      email: `buyer+${args.proofRunId}@seal.test`,
-      name: "Vortex Webhook Proof Buyer",
-      role: "signer",
-      status: "signed",
-      signingToken: `token_${args.proofRunId}`,
-      tokenExpiresAt: now + 86_400_000,
-      order: 0,
-      createdAt: now,
-      updatedAt: now,
+      now,
     });
-
-    const fieldId = await ctx.db.insert("signature_fields", {
+    const fieldId = await insertWebhookProofPaymentField(ctx, {
       documentId,
       recipientId,
-      fieldType: "payment",
-      label: "Payment",
-      isRequired: true,
-      x: 0,
-      y: 0,
-      width: 100,
-      height: 40,
-      page: 1,
-      createdAt: now,
-      updatedAt: now,
+      now,
     });
-
-    const configId = await ctx.db.insert("payment_field_configs", {
+    const configId = await insertWebhookProofPaymentConfig(ctx, {
       fieldId,
       documentId,
       organizationId,
-      paymentType: "one_time",
-      items: [{ id: "line_1", description: "Vortex proof payment", quantity: 1, unitPrice: 4200 }],
-      currency: "usd",
-      dueDateTerms: "net_30",
-      allowedPaymentMethods: ["card"],
-      feeHandling: "absorb",
-      taxEnabled: false,
-      totalAmountCents: 4200,
-      paymentStatus: "awaiting",
       vortexPayableId: args.vortexPayableId,
       vortexPaymentRequestId: args.vortexPaymentRequestId,
       hostedInvoiceUrl: args.hostedInvoiceUrl,
-      createdAt: now,
-      updatedAt: now,
+      now,
+    });
+    await insertWebhookProofInvoice(ctx, {
+      proofRunId: args.proofRunId,
+      documentId,
+      organizationId,
+      vortexPayableId: args.vortexPayableId,
+      vortexPaymentRequestId: args.vortexPaymentRequestId,
+      hostedInvoiceUrl: args.hostedInvoiceUrl,
+      now,
     });
 
     return {
@@ -292,6 +419,10 @@ export const getVortexWebhookProofPaymentState = internalQuery({
     }
 
     const document = await ctx.db.get(config.documentId);
+    const invoice = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+      .first();
     return {
       configId: config._id,
       documentId: config.documentId,
@@ -300,6 +431,12 @@ export const getVortexWebhookProofPaymentState = internalQuery({
       vortexPaymentRequestId: config.vortexPaymentRequestId,
       hostedInvoiceUrl: config.hostedInvoiceUrl,
       documentWorkflowStatus: document?.workflowStatus,
+      invoiceStatus: invoice?.status,
+      invoiceProvider: invoice?.provider,
+      invoiceVortexPayableId: invoice?.vortexPayableId,
+      invoiceVortexPaymentRequestId: invoice?.vortexPaymentRequestId,
+      invoiceHostedUrl: invoice?.hostedInvoiceUrl,
+      invoicePaidAt: invoice?.paidAt,
     };
   },
 });

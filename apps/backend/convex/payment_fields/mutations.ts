@@ -331,6 +331,8 @@ export const storeVortexPayableLink = internalMutation({
     vortexPayableId: v.string(),
     vortexPaymentRequestId: v.optional(v.string()),
     hostedInvoiceUrl: v.optional(v.string()),
+    customerEmail: v.string(),
+    customerName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const config = await ctx.db.get(args.configId);
@@ -348,6 +350,40 @@ export const storeVortexPayableLink = internalMutation({
       updatedAt: Date.now(),
     });
 
+    const now = Date.now();
+    const invoiceRecord = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+      .first();
+
+    const invoicePatch = {
+      provider: "vortex_billing" as const,
+      documentId: config.documentId,
+      organizationId: config.organizationId,
+      vortexPayableId: args.vortexPayableId,
+      ...(args.vortexPaymentRequestId !== undefined && {
+        vortexPaymentRequestId: args.vortexPaymentRequestId,
+      }),
+      status: "open" as const,
+      customerEmail: args.customerEmail,
+      customerName: args.customerName,
+      amountDue: config.totalAmountCents,
+      currency: config.currency,
+      hostedInvoiceUrl: args.hostedInvoiceUrl,
+      finalizedAt: now,
+      updatedAt: now,
+    };
+
+    if (invoiceRecord) {
+      await ctx.db.patch(invoiceRecord._id, invoicePatch);
+    } else {
+      await ctx.db.insert("document_invoices", {
+        ...invoicePatch,
+        dunningStatus: "none",
+        createdAt: now,
+      });
+    }
+
     return {
       configId: args.configId,
       documentId: config.documentId,
@@ -363,6 +399,7 @@ export const updatePaymentStatusFromVortexPayable = internalMutation({
     hostedInvoiceUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const now = Date.now();
     const paymentStatus = mapVortexPayableStatusToSealPaymentStatus(args.vortexStatus);
     if (paymentStatus === null) {
       return null;
@@ -377,12 +414,18 @@ export const updatePaymentStatusFromVortexPayable = internalMutation({
       return null;
     }
 
+    const invoiceRecord = await ctx.db
+      .query("document_invoices")
+      .withIndex("by_vortex_payable", (q) => q.eq("vortexPayableId", args.vortexPayableId))
+      .first();
+
     const currentPaymentStatus = config.paymentStatus;
     if (isTerminalPaymentStatus(currentPaymentStatus)) {
       return {
         configId: config._id,
         documentId: config.documentId,
         paymentStatus: currentPaymentStatus,
+        invoiceRecordId: invoiceRecord?._id,
       };
     }
 
@@ -392,13 +435,39 @@ export const updatePaymentStatusFromVortexPayable = internalMutation({
         vortexPaymentRequestId: args.vortexPaymentRequestId,
       }),
       ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
+
+    if (invoiceRecord) {
+      const invoiceStatusMap: Record<
+        PaymentStatus,
+        "draft" | "open" | "paid" | "void" | "uncollectible"
+      > = {
+        pending: "draft",
+        created: "draft",
+        awaiting: "open",
+        paid: "paid",
+        failed: "uncollectible",
+        cancelled: "void",
+      };
+      const invoiceStatus = invoiceStatusMap[paymentStatus];
+      await ctx.db.patch(invoiceRecord._id, {
+        status: invoiceStatus,
+        ...(args.vortexPaymentRequestId !== undefined && {
+          vortexPaymentRequestId: args.vortexPaymentRequestId,
+        }),
+        ...(args.hostedInvoiceUrl !== undefined && { hostedInvoiceUrl: args.hostedInvoiceUrl }),
+        ...(invoiceStatus === "paid" && { paidAt: now }),
+        ...(invoiceStatus === "void" && { voidedAt: now }),
+        updatedAt: now,
+      });
+    }
 
     return {
       configId: config._id,
       documentId: config.documentId,
       paymentStatus,
+      invoiceRecordId: invoiceRecord?._id,
     };
   },
 });

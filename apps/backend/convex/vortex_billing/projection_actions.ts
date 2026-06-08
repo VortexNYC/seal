@@ -9,6 +9,7 @@ type VortexPayableProjectionResult = {
   readonly configId: Id<"payment_field_configs">;
   readonly documentId: Id<"documents">;
   readonly paymentStatus: "pending" | "created" | "awaiting" | "paid" | "failed" | "cancelled";
+  readonly invoiceRecordId?: Id<"document_invoices">;
 } | null;
 
 type VortexPayableProjectionEventResult =
@@ -39,6 +40,7 @@ function normalizeProjectionResult(
     readonly configId: Id<"payment_field_configs">;
     readonly documentId: Id<"documents">;
     readonly paymentStatus?: unknown;
+    readonly invoiceRecordId?: Id<"document_invoices">;
   } | null,
 ): VortexPayableProjectionResult {
   if (value === null) {
@@ -51,6 +53,7 @@ function normalizeProjectionResult(
     configId: value.configId,
     documentId: value.documentId,
     paymentStatus: value.paymentStatus,
+    invoiceRecordId: value.invoiceRecordId,
   };
 }
 

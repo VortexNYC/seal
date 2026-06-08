@@ -447,6 +447,8 @@ export const createVortexPayablesForPaymentFields = internalAction({
         vortexPayableId: result.payableId,
         vortexPaymentRequestId: result.paymentRequestId,
         hostedInvoiceUrl: result.checkoutUrl ?? undefined,
+        customerEmail: recipient.email,
+        customerName: recipient.name,
       });
       invoiceLinks.push({
         recipientEmail: recipient.email,
