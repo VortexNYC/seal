@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 interface SignatureDetails {
   signedAt: number;
   signerName?: string;
-  signerEmail?: string;
+  primarySignerEmail?: string;
   signatureMethod?: string;
 }
 
@@ -232,7 +232,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
                 <div className="flex items-baseline gap-1">
                   <span className="text-muted-foreground text-[9px]">Signed by:</span>
                   <span className="text-foreground truncate text-[10px] font-semibold">
-                    {signatureDetails.signerName || signatureDetails.signerEmail}
+                    {signatureDetails.signerName || signatureDetails.primarySignerEmail}
                   </span>
                 </div>
                 {/* Date and time */}
@@ -256,7 +256,7 @@ export const FillableFieldOverlay = forwardRef<HTMLButtonElement, FillableFieldO
               <div className="text-muted-foreground text-[8px]">
                 <div className="truncate font-medium">{getFieldTypeLabel(fieldType)}</div>
                 <div className="mt-0.5 truncate text-[7px]">
-                  {signatureDetails.signerName || signatureDetails.signerEmail}
+                  {signatureDetails.signerName || signatureDetails.primarySignerEmail}
                 </div>
                 {formattedDate && (
                   <div className="mt-0.5 truncate text-[7px]">

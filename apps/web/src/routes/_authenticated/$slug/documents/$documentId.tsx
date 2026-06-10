@@ -204,7 +204,7 @@ function DocumentDetailPage() {
               signedAt: signature.signedAt,
               signatureMethod: signature.signatureMethod,
               signerName: signer?.name,
-              signerEmail: signer?.email,
+              primarySignerEmail: signer?.email,
             },
           ];
         }),

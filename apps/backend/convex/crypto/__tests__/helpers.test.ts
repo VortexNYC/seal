@@ -155,7 +155,7 @@ describe("generateSignatureCertificate", () => {
       documentName: "Contract.pdf",
       documentHash: "doc-hash-at-sign",
       signerName: "John Doe",
-      signerEmail: "john@example.com",
+      primarySignerEmail: "john@example.com",
       signedAt: new Date(1700000000000).toISOString(),
       signatureHash: "sig-hash-abc",
       documentHashAtSigning: "doc-hash-at-sign",

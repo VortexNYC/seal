@@ -40,7 +40,7 @@ interface FieldWithValue {
   signatureDetails?: {
     signedAt: number;
     signerName?: string;
-    signerEmail?: string;
+    primarySignerEmail?: string;
     signatureMethod?: string;
   };
   properties?: {

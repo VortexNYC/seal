@@ -68,7 +68,7 @@ export interface PlacedField {
     value?: string;
     signedAt?: number;
     signerName?: string;
-    signerEmail?: string;
+    primarySignerEmail?: string;
     signatureMethod?: string;
   };
 }
@@ -471,7 +471,7 @@ export function DraggableField({
 
     const formattedDate = formatDate(field.signatureData?.signedAt);
     const signerName =
-      field.signatureData?.signerName || field.signatureData?.signerEmail || "Unknown";
+      field.signatureData?.signerName || field.signatureData?.primarySignerEmail || "Unknown";
 
     const isSmallField = availableHeight < 40;
     const titleFontSize = isSmallField ? 8 : 10;

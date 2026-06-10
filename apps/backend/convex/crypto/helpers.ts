@@ -138,7 +138,7 @@ export function generateSignatureCertificate(
   documentName: string;
   documentHash: string | null;
   signerName: string | null;
-  signerEmail: string;
+  primarySignerEmail: string;
   signedAt: string;
   signatureHash: string | null;
   documentHashAtSigning: string | null;
@@ -157,7 +157,7 @@ export function generateSignatureCertificate(
     documentName: document.name,
     documentHash: document.documentHash ?? null,
     signerName: recipient.name ?? null,
-    signerEmail: recipient.email,
+    primarySignerEmail: recipient.email,
     signedAt: new Date(signature.signedAt).toISOString(),
     signatureHash: signature.signatureHash ?? null,
     documentHashAtSigning: signature.documentHashAtSigning ?? null,

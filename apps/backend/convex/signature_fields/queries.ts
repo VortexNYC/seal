@@ -270,12 +270,12 @@ export const getFieldsBySigningToken = query({
 
         // Get recipient info for this signature if it exists
         let signerName: string | undefined;
-        let signerEmail: string | undefined;
+        let primarySignerEmail: string | undefined;
 
         if (signature) {
           const signerRecipient = await ctx.db.get(signature.recipientId);
           if (signerRecipient) {
-            signerEmail = signerRecipient.email;
+            primarySignerEmail = signerRecipient.email;
             // Try recipient name first, then look up user by email for their name
             if (signerRecipient.name) {
               signerName = signerRecipient.name;
@@ -313,7 +313,7 @@ export const getFieldsBySigningToken = query({
             ? {
                 signedAt: signature.signedAt,
                 signerName,
-                signerEmail,
+                primarySignerEmail,
                 signatureMethod: signature.signatureMethod,
               }
             : undefined,
@@ -378,12 +378,12 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
 
         // Get recipient info for this signature if it exists
         let signerName: string | undefined;
-        let signerEmail: string | undefined;
+        let primarySignerEmail: string | undefined;
 
         if (signature) {
           const signerRecipient = await ctx.db.get(signature.recipientId);
           if (signerRecipient) {
-            signerEmail = signerRecipient.email;
+            primarySignerEmail = signerRecipient.email;
             // Try recipient name first, then look up user by email for their name
             if (signerRecipient.name) {
               signerName = signerRecipient.name;
@@ -421,7 +421,7 @@ export const getFieldsForAuthenticatedRecipient = authQuery({
             ? {
                 signedAt: signature.signedAt,
                 signerName,
-                signerEmail,
+                primarySignerEmail,
                 signatureMethod: signature.signatureMethod,
               }
             : undefined,

@@ -32,7 +32,7 @@ type SignatureData = {
   signedAt?: number;
   signatureMethod?: string;
   signerName?: string;
-  signerEmail?: string;
+  primarySignerEmail?: string;
 };
 
 type PaymentConfig = {

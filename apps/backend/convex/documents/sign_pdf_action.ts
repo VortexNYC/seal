@@ -398,7 +398,7 @@ function drawTypedSignatureText(
 function drawSignatureStampDetails(
   page: PDFPage,
   signerName: string,
-  signerEmail: string,
+  primarySignerEmail: string,
   signedAt: { dateStr: string; timeStr: string },
   layout: SignatureStampLayout,
   helvetica: PDFFont,
@@ -426,9 +426,11 @@ function drawSignatureStampDetails(
 
   stampY -= stampConfig.lineHeight;
 
-  if (signerEmail && signerEmail !== signerName) {
+  if (primarySignerEmail && primarySignerEmail !== signerName) {
     const emailDisplay =
-      signerEmail.length > 35 ? `${signerEmail.substring(0, 32)}...` : signerEmail;
+      primarySignerEmail.length > 35
+        ? `${primarySignerEmail.substring(0, 32)}...`
+        : primarySignerEmail;
     page.drawText(emailDisplay, {
       x: stampX,
       y: stampY,
