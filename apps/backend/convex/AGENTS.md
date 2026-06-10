@@ -44,3 +44,10 @@ apps/backend/convex/
 - Modify `apps/backend/convex/schemas/subscription_coupons.ts` or `apps/backend/convex/schemas/subscription_promo_codes.ts` directly.
 - Update `creditsUsed` in `apps/backend/convex/stripe/handlers.ts` (preserve usage history).
 - Edit `apps/backend/convex/_generated/*` manually.
+
+## See Also
+
+- [Project knowledge base](../../AGENTS.md) — root conventions, commands, anti-patterns
+- [Web app guide](../../web/AGENTS.md) — frontend routing, components, E2E tests
+- [Landing/docs guide](../../landing/AGENTS.md) — marketing site, Fumadocs, API reference
+- [Transactional email guide](../../../packages/transactional/AGENTS.md) — email templates and previews
