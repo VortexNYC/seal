@@ -193,11 +193,13 @@ export const addRecipient = internalMutation({
       };
     }
 
+    const normalizedEmail = args.email.toLowerCase().trim();
+
     // Check if recipient already exists
     const existing = await ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .filter((q) => q.eq(q.field("email"), normalizedEmail))
       .first();
 
     if (existing) {
@@ -214,7 +216,7 @@ export const addRecipient = internalMutation({
     // Create recipient
     const recipientId = await ctx.db.insert("document_recipients", {
       documentId: args.documentId,
-      email: args.email,
+      email: normalizedEmail,
       name: args.name,
       role: args.role,
       status: "pending",
