@@ -198,9 +198,10 @@ async function expectDirectVortexCheckoutToReject(page: Page): Promise<void> {
 }
 
 async function clickUpgrade(page: Page): Promise<void> {
-  const upgradeButton = page.getByRole("button", {
-    name: /upgrade to professional/i,
-  });
+  const upgradeButton = page
+    .locator(`[data-vortex-plan-lookup-key="${lookupKey}"]`)
+    .locator("[data-vortex-plan-action]")
+    .first();
   await expect(upgradeButton).toBeVisible({ timeout: 15000 });
   await expect(upgradeButton).toBeEnabled({ timeout: 15000 });
   await upgradeButton.click();

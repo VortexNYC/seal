@@ -2,6 +2,11 @@ import type { Page } from "@playwright/test";
 
 import { expect, test } from "../fixtures/auth";
 
+type CheckoutProvider = "vortex_billing" | "stripe";
+
+const lookupKey = process.env.SEAL_BILLING_E2E_LOOKUP_KEY ?? "pro:monthly:v2";
+const expectedProvider = readExpectedProvider();
+
 /**
  * Billing surface E2E validates the Vortex Billing integration on the test
  * deployment without driving the hosted checkout form.
@@ -10,8 +15,9 @@ import { expect, test } from "../fixtures/auth";
  *   1. Page renders for an authenticated, pro-tier workspace (the seeded state).
  *   2. Plans query returns at least one product (proves backend can read
  *      `subscription_products` and the seed worked).
- *   3. Vortex checkout session can be created (proves Seal can upsert the
- *      billing customer and ask Vortex for a hosted subscription checkout).
+ *   3. Checkout provider contract matches the active environment. Stripe
+ *      deployments must reject direct Vortex checkout; Vortex deployments must
+ *      return a hosted Vortex checkout URL.
  */
 
 test.describe("Billing", () => {
@@ -69,31 +75,79 @@ test.describe("Billing", () => {
     }
   });
 
-  test("createCheckoutSession returns a Vortex hosted checkout URL", async ({
+  test("checkout session honors the active billing provider", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
     await authenticatedPage.goto(`/${organizationSlug}/settings/billing`);
     await waitForBillingPageReady(authenticatedPage);
 
-    const result = await authenticatedPage.evaluate(async () => {
+    const provider = await authenticatedPage.evaluate(async () => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      return (await client.action(api.vortex_billing.subscription_actions.createCheckoutSession, {
-        lookupKey: "pro:monthly:v2",
-      })) as {
-        checkoutSessionId: string;
-        checkoutUrl: string;
-        subscriptionExternalId: string;
+      return (await client.query(
+        api.vortex_billing.subscription_actions.getCheckoutProvider,
+        {},
+      )) as {
+        provider: CheckoutProvider;
+        enabledAllOrganizations: boolean;
       };
     });
+
+    expect(provider.provider, JSON.stringify(provider)).toBe(expectedProvider);
+
+    if (expectedProvider === "stripe") {
+      const rejection = await authenticatedPage.evaluate(
+        async ({ lookupKey: checkedLookupKey }) => {
+          const client = window.__convexClient;
+          const api = window.__convexApi;
+          if (!client || !api) throw new Error("Convex client not ready");
+          try {
+            await client.action(api.vortex_billing.subscription_actions.createCheckoutSession, {
+              lookupKey: checkedLookupKey,
+            });
+            return "";
+          } catch (error) {
+            return error instanceof Error ? error.message : String(error);
+          }
+        },
+        { lookupKey },
+      );
+
+      expect(rejection).toContain("Vortex Billing SaaS checkout is not enabled");
+      return;
+    }
+
+    const result = await authenticatedPage.evaluate(
+      async ({ lookupKey: checkedLookupKey }) => {
+        const client = window.__convexClient;
+        const api = window.__convexApi;
+        if (!client || !api) throw new Error("Convex client not ready");
+        return (await client.action(api.vortex_billing.subscription_actions.createCheckoutSession, {
+          lookupKey: checkedLookupKey,
+        })) as {
+          checkoutSessionId: string;
+          checkoutUrl: string;
+          subscriptionExternalId: string;
+        };
+      },
+      { lookupKey },
+    );
 
     expect(result.checkoutSessionId).toMatch(/^plink_/);
     expect(result.checkoutUrl).toContain("/pay/");
     expect(result.subscriptionExternalId).toMatch(/^vtx_sub_seal_org_/);
   });
 });
+
+function readExpectedProvider(): CheckoutProvider {
+  const raw = process.env.SEAL_BILLING_E2E_EXPECTED_PROVIDER ?? "vortex_billing";
+  if (raw === "vortex_billing" || raw === "stripe") {
+    return raw;
+  }
+  throw new Error("SEAL_BILLING_E2E_EXPECTED_PROVIDER must be either vortex_billing or stripe.");
+}
 
 /**
  * Wait for the billing page to render to the point where the Convex client
