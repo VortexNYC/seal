@@ -18,17 +18,7 @@ import { seedSystemRoles } from "./helpers";
 export const seedAllOrganizations = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const [activeOrganizations, inactiveOrganizations] = await Promise.all([
-      ctx.db
-        .query("organizations")
-        .withIndex("by_active", (q) => q.eq("isActive", true))
-        .collect(),
-      ctx.db
-        .query("organizations")
-        .withIndex("by_active", (q) => q.eq("isActive", false))
-        .collect(),
-    ]);
-    const organizations = [...activeOrganizations, ...inactiveOrganizations];
+    const organizations = await ctx.db.query("organizations").collect();
 
     let seededCount = 0;
     let skippedCount = 0;

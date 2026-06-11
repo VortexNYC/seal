@@ -88,7 +88,6 @@ import { subscriptionsTable } from "./schemas/subscriptions";
 import { type TemplateStatus, templateFieldsTable, templatesTable } from "./schemas/templates";
 import { userProfilesTable } from "./schemas/user_profiles";
 import { type UserStatus, usersTable } from "./schemas/users";
-import { vortexBillingWebhookEventsTable } from "./schemas/vortex_billing_webhook_events";
 import {
   type WebhookDeliveryStatus,
   type WebhookEndpointStatus,
@@ -196,7 +195,6 @@ export default defineSchema({
   subscription_promo_codes: subscriptionPromoCodesTable,
   stripe_accounts: stripeAccountsTable,
   stripe_webhook_events: stripeWebhookEventsTable,
-  vortex_billing_webhook_events: vortexBillingWebhookEventsTable,
 
   // Integrations
   connected_apps: connectedAppsTable,

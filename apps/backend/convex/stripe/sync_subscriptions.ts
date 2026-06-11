@@ -42,10 +42,7 @@ export const getOrgsWithStripeCustomers = internalMutation({
       existingSubscriptionIds: string[];
     }>
   > => {
-    const allOrgs = await ctx.db
-      .query("organizations")
-      .withIndex("by_stripe_customer_id")
-      .collect();
+    const allOrgs = await ctx.db.query("organizations").collect();
 
     const results = [];
     for (const org of allOrgs) {

@@ -2,22 +2,22 @@ import type { Page } from "@playwright/test";
 
 import { expect, test } from "../fixtures/auth";
 
-type CheckoutProvider = "vortex_billing" | "stripe";
-
-const lookupKey = process.env.SEAL_BILLING_E2E_LOOKUP_KEY ?? "pro:monthly:v2";
-const expectedProvider = readExpectedProvider();
-
 /**
- * Billing surface E2E validates the Vortex Billing integration on the test
- * deployment without driving the hosted checkout form.
+ * Billing surface E2E — validates the Stripe integration is wired up
+ * end-to-end on the test deployment, without driving the Stripe-hosted
+ * iframe.
  *
  * Coverage layered intentionally:
  *   1. Page renders for an authenticated, pro-tier workspace (the seeded state).
  *   2. Plans query returns at least one product (proves backend can read
  *      `subscription_products` and the seed worked).
- *   3. Checkout provider contract matches the active environment. Stripe
- *      deployments must reject direct Vortex checkout; Vortex deployments must
- *      return a hosted Vortex checkout URL.
+ *   3. Customer portal session can be created (proves the org has a real
+ *      Stripe customer + the Stripe SDK is reachable from Convex actions).
+ *
+ * Iframe-driven Stripe Checkout (4242 test card → webhook → subscription
+ * row) is a follow-up — it requires a non-pro workspace and reliable
+ * webhook delivery to clever-goose-484. That belongs with the webhook
+ * integration tests (#13).
  */
 
 test.describe("Billing", () => {
@@ -58,15 +58,16 @@ test.describe("Billing", () => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      return (await client.query(api.stripe.queries.getAvailablePlans, {})) as Plan[];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (await client.query((api as any).stripe.queries.getAvailablePlans, {})) as Plan[];
     });
 
     expect(Array.isArray(plans)).toBe(true);
     expect(plans.length).toBeGreaterThan(0);
 
-    // Every plan should be readable end-to-end: id, name, tier, pricing. This
-    // proves the subscription catalog resolves the joined price rows on the
-    // test deployment.
+    // Every plan should be readable end-to-end: id, name, tier, pricing.
+    // This proves the public Stripe-backed query reaches subscription_products
+    // and resolves the joined price rows on the test deployment.
     for (const plan of plans) {
       expect(plan).toHaveProperty("productId");
       expect(plan).toHaveProperty("name");
@@ -75,91 +76,78 @@ test.describe("Billing", () => {
     }
   });
 
-  test("checkout session honors the active billing provider", async ({
+  test("createCustomerPortalSession returns a real Stripe portal URL", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
     await authenticatedPage.goto(`/${organizationSlug}/settings/billing`);
     await waitForBillingPageReady(authenticatedPage);
 
-    const provider = await authenticatedPage.evaluate(async () => {
+    // Drive the action directly off the exposed test-mode Convex client. This
+    // is the same call the "Manage Billing" header button makes — proves the
+    // Stripe SDK is reachable from Convex actions, the org has a real Stripe
+    // customer record (seeded by `seedStripeCustomerForE2E` in
+    // backend.setup), and the portal endpoint hands back a URL.
+    const result = await authenticatedPage.evaluate(async (returnUrl) => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      return (await client.query(
-        api.vortex_billing.subscription_actions.getCheckoutProvider,
-        {},
-      )) as {
-        provider: CheckoutProvider;
-        enabledAllOrganizations: boolean;
-      };
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (await client.action((api as any).stripe.actions.createCustomerPortalSession, {
+        returnUrl,
+      })) as { url: string };
+    }, authenticatedPage.url());
 
-    expect(provider.provider, JSON.stringify(provider)).toBe(expectedProvider);
+    expect(result).toHaveProperty("url");
+    // Stripe-hosted portal URLs are served from billing.stripe.com.
+    expect(result.url).toMatch(/^https:\/\/billing\.stripe\.com\//);
+  });
 
-    if (expectedProvider === "stripe") {
-      const rejection = await authenticatedPage.evaluate(
-        async ({ lookupKey: checkedLookupKey }) => {
-          const client = window.__convexClient;
-          const api = window.__convexApi;
-          if (!client || !api) throw new Error("Convex client not ready");
-          try {
-            await client.action(api.vortex_billing.subscription_actions.createCheckoutSession, {
-              lookupKey: checkedLookupKey,
-            });
-            return "";
-          } catch (error) {
-            return error instanceof Error ? error.message : String(error);
-          }
-        },
-        { lookupKey },
-      );
+  test("createEmbeddedCheckoutSession returns a clientSecret for a known price", async ({
+    authenticatedPage,
+    organizationSlug,
+  }) => {
+    await authenticatedPage.goto(`/${organizationSlug}/settings/billing`);
+    await waitForBillingPageReady(authenticatedPage);
 
-      expect(rejection).toContain("Vortex Billing SaaS checkout is not enabled");
-      return;
-    }
+    // The pro:monthly:v2 lookup key resolves to a real recurring price on the
+    // shared Stripe sandbox account. The action assembles a checkout session
+    // using the seeded Stripe customer (provisioned by seedStripeCustomerForE2E)
+    // and returns the clientSecret the embedded iframe would mount with.
+    // We assert the session is created — driving the actual iframe + 4242 card
+    // is a separate concern (Stripe's own UI) and not covered here.
+    const result = await authenticatedPage.evaluate(async (returnUrl) => {
+      const client = window.__convexClient;
+      const api = window.__convexApi;
+      if (!client || !api) throw new Error("Convex client not ready");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (await client.action((api as any).stripe.actions.createEmbeddedCheckoutSession, {
+        lookupKey: "pro:monthly:v2",
+        returnUrl,
+      })) as { clientSecret: string };
+    }, authenticatedPage.url());
 
-    const result = await authenticatedPage.evaluate(
-      async ({ lookupKey: checkedLookupKey }) => {
-        const client = window.__convexClient;
-        const api = window.__convexApi;
-        if (!client || !api) throw new Error("Convex client not ready");
-        return (await client.action(api.vortex_billing.subscription_actions.createCheckoutSession, {
-          lookupKey: checkedLookupKey,
-        })) as {
-          checkoutSessionId: string;
-          checkoutUrl: string;
-          subscriptionExternalId: string;
-        };
-      },
-      { lookupKey },
-    );
-
-    expect(result.checkoutSessionId).toMatch(/^plink_/);
-    expect(result.checkoutUrl).toContain("/pay/");
-    expect(result.subscriptionExternalId).toMatch(/^vtx_sub_seal_org_/);
+    expect(result).toHaveProperty("clientSecret");
+    // Stripe checkout client secrets follow `cs_*_secret_*` (v3 format) or the
+    // older `cs_*` shape; both start with `cs_`.
+    expect(result.clientSecret).toMatch(/^cs_/);
   });
 });
 
-function readExpectedProvider(): CheckoutProvider {
-  const raw = process.env.SEAL_BILLING_E2E_EXPECTED_PROVIDER ?? "vortex_billing";
-  if (raw === "vortex_billing" || raw === "stripe") {
-    return raw;
-  }
-  throw new Error("SEAL_BILLING_E2E_EXPECTED_PROVIDER must be either vortex_billing or stripe.");
-}
-
 /**
  * Wait for the billing page to render to the point where the Convex client
- * has finished attaching the Better-Auth auth token and the auth-gated billing
- * route has mounted.
+ * has finished attaching the Better-Auth auth token. The "Manage Billing" header
+ * action only mounts after the auth-gated subscription query resolves, so
+ * its presence is a reliable proxy for "auth is attached and queries can
+ * fire successfully against authed routes."
  */
 async function waitForBillingPageReady(page: Page): Promise<void> {
   await page.waitForFunction(
     () => window.__convexClient !== undefined && window.__convexApi !== undefined,
     { timeout: 10000 },
   );
-  await expect(page.getByText(/current plan|available plans|billing/i).first()).toBeVisible({
-    timeout: 15000,
-  });
+  await page
+    .getByRole("button", { name: /manage billing/i })
+    .first()
+    .waitFor({ state: "visible", timeout: 15000 });
 }

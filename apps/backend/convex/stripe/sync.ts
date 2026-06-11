@@ -339,17 +339,7 @@ export const getSubscriptionPlans = internalMutation({
 export const getStripeCatalogDetailed = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const productStatuses = ["active", "archived", "deleted"] as const;
-    const products = (
-      await Promise.all(
-        productStatuses.map((status) =>
-          ctx.db
-            .query("subscription_products")
-            .withIndex("by_status", (q) => q.eq("status", status))
-            .collect(),
-        ),
-      )
-    ).flat();
+    const products = await ctx.db.query("subscription_products").collect();
     const result: Array<{
       product: Doc<"subscription_products">;
       prices: Doc<"subscription_prices">[];

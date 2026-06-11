@@ -2,198 +2,377 @@
  * Billing Settings Page
  *
  * Manage organization billing and subscription.
- * - Subscription summary: Vortex package surface
- * - Plan comparison: Vortex package surface
- * - Upgrade: Vortex hosted checkout redirect
+ * - Free plan: single card with current plan + Pro upgrade side by side
+ * - Pro plan: single card with plan details and feature list
+ * - Upgrade: inline Embedded Checkout (no redirect to Stripe)
+ * - Manage Billing: redirect to Stripe Customer Portal (no embedded replacement exists)
  *
  * Route: /{slug}/settings/billing
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
+import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  VortexPlanComparison,
-  VortexPaymentsProvider,
-  VortexSubscriptionActionSummary,
-  type VortexEmbeddedComponentClassNames,
-  type VortexPlanComparisonPlan,
-  type VortexSurfaceLaunch,
-} from "@vortex/payments/react";
 import { useAction, useQuery } from "convex/react";
-import { useState } from "react";
+import { Check, CreditCard, ExternalLink, Loader2, Sparkles, X } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { BillingSkeleton } from "@/components/skeletons";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
-import {
-  buildVortexPlanComparison,
-  buildVortexSubscriptionSummary,
-  type SealBillingPlan,
-  type SealBillingSubscription,
-} from "./-billing-adapter";
+// Initialize Stripe.js once (lazy-loaded on first use)
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string);
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/billing")({
   component: BillingSettingsPage,
   pendingComponent: BillingSkeleton,
 });
 
-function buildClassNames(): VortexEmbeddedComponentClassNames {
-  return {
-    root: "rounded-lg border bg-card p-6 text-card-foreground shadow-sm",
-    header: "space-y-1.5",
-    title: "text-lg font-semibold text-balance",
-    description: "text-muted-foreground text-sm text-pretty",
-    metrics: "mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4",
-    metricLabel: "text-muted-foreground block text-xs font-medium",
-    metricValue: "mt-1 block font-medium tabular-nums",
-    list: "mt-4 grid gap-3 md:grid-cols-2",
-    item: "rounded-md border bg-background p-4",
-    itemTitle: "font-medium text-balance",
-    itemDescription: "text-muted-foreground mt-1 text-sm text-pretty",
-    status: "text-muted-foreground mt-2 text-sm text-pretty",
-    actions: "mt-4 flex flex-wrap gap-2",
-    button:
-      "inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-    empty: "bg-muted text-muted-foreground mt-4 rounded-md p-4 text-sm",
-    loading: "text-muted-foreground mt-4 flex items-center gap-2 text-sm",
-    error: "text-destructive bg-destructive/10 mt-4 rounded-md p-3 text-sm",
-  };
+type SubscriptionStatus =
+  | "active"
+  | "canceled"
+  | "past_due"
+  | "incomplete"
+  | "incomplete_expired"
+  | "unpaid";
+
+function getStatusBadge(status: SubscriptionStatus, cancelAtPeriodEnd: boolean) {
+  if (cancelAtPeriodEnd) {
+    return <Badge variant="outline">Canceling</Badge>;
+  }
+
+  switch (status) {
+    case "active":
+      return <Badge>Active</Badge>;
+    case "past_due":
+      return <Badge variant="destructive">Past Due</Badge>;
+    case "canceled":
+      return <Badge variant="outline">Canceled</Badge>;
+    case "incomplete":
+    case "incomplete_expired":
+    case "unpaid":
+      return <Badge variant="destructive">{status.replace("_", " ")}</Badge>;
+    default:
+      return <Badge variant="outline">{status}</Badge>;
+  }
+}
+
+function formatPrice(amount: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+function formatInterval(interval: string, intervalCount: number) {
+  if (intervalCount === 1) {
+    return `/${interval}`;
+  }
+  return `/ ${intervalCount} ${interval}s`;
+}
+
+const featureLabels: Record<string, string> = {
+  api_access: "Full API access",
+  webhook_access: "Webhooks",
+  mcp_access: "MCP integration",
+  multi_user: "Unlimited team members",
+  priority_support: "Priority support",
+  custom_branding: "Custom branding",
+  advanced_analytics: "Advanced analytics",
+  audit_trail: "Audit trail",
+  sso: "Single sign-on (SSO)",
+  templates: "Unlimited templates",
+};
+
+function formatFeatureLabel(raw: string): string {
+  const trimmed = raw.trim();
+  return (
+    featureLabels[trimmed] ?? trimmed.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
+}
+
+function formatDate(timestamp: number) {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function BillingSettingsPage() {
   const subscription = useQuery(api.stripe.queries.getSubscriptionDetails);
   const plans = useQuery(api.stripe.queries.getAvailablePlans);
-  const checkoutProvider = useQuery(api.vortex_billing.subscription_actions.getCheckoutProvider);
-  const createVortexCheckout = useAction(
-    api.vortex_billing.subscription_actions.createCheckoutSession,
-  );
-  const createStripeCheckout = useAction(api.stripe.actions.createCheckoutSession);
-  const { slug } = Route.useParams();
+  const createEmbeddedCheckout = useAction(api.stripe.actions.createEmbeddedCheckoutSession);
+  const createPortal = useAction(api.stripe.actions.createCustomerPortalSession);
 
+  const [showCheckout, setShowCheckout] = useState(false);
   const [checkoutLookupKey, setCheckoutLookupKey] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
-  const typedSubscription = subscription as SealBillingSubscription | null | undefined;
-  const typedPlans = plans as readonly SealBillingPlan[] | undefined;
+  const currentUrl = window.location.href;
+  const isActiveSubscription = subscription?.status === "active";
+  const isFreePlan = !subscription || subscription.tier === "free" || !isActiveSubscription;
 
-  async function createVortexCheckoutSession({ lookupKey }: { readonly lookupKey: string }) {
-    setCheckoutLookupKey(lookupKey);
-    try {
-      return await createVortexCheckout({ lookupKey });
-    } catch (err) {
-      setCheckoutLookupKey(null);
-      throw err;
+  // Stripe calls this to get a fresh client secret when EmbeddedCheckout mounts
+  const fetchClientSecret = useCallback(async () => {
+    if (!checkoutLookupKey) {
+      throw new Error("No lookup key set");
     }
-  }
 
-  function handleVortexCheckoutError(err: unknown) {
-    toast.error(
-      err instanceof Error && err.message
-        ? err.message
-        : "Failed to start checkout. Please try again.",
-    );
-    setCheckoutLookupKey(null);
-  }
-
-  function navigateToVortexCheckout(launch: VortexSurfaceLaunch) {
-    window.location.href = launch.url;
-  }
-
-  async function handleStripeUpgrade(lookupKey: string) {
-    setCheckoutLookupKey(lookupKey);
     try {
-      if (checkoutProvider === undefined) {
-        throw new Error("Billing provider is still loading");
-      }
-
-      const returnUrl = `${window.location.origin}/${slug}/settings/billing`;
-      const { url } = await createStripeCheckout({
-        lookupKey,
-        successUrl: `${returnUrl}?checkout=success`,
-        cancelUrl: `${returnUrl}?checkout=canceled`,
+      const { clientSecret } = await createEmbeddedCheckout({
+        lookupKey: checkoutLookupKey,
+        returnUrl: `${window.location.origin}${window.location.pathname}?upgraded=true`,
       });
-      window.location.href = url;
+      return clientSecret;
     } catch (err) {
       toast.error(
         err instanceof Error && err.message
           ? err.message
           : "Failed to start checkout. Please try again.",
       );
-      setCheckoutLookupKey(null);
+      handleCancelCheckout();
+      throw err;
+    }
+  }, [createEmbeddedCheckout, checkoutLookupKey]);
+
+  // Memoize options so EmbeddedCheckoutProvider doesn't re-initialize
+  const checkoutOptions = useMemo(
+    () => ({
+      fetchClientSecret,
+      onComplete: () => {
+        setShowCheckout(false);
+        setCheckoutLookupKey(null);
+      },
+    }),
+    [fetchClientSecret],
+  );
+
+  function handleUpgrade(lookupKey: string) {
+    setCheckoutLookupKey(lookupKey);
+    setShowCheckout(true);
+  }
+
+  function handleCancelCheckout() {
+    setShowCheckout(false);
+    setCheckoutLookupKey(null);
+  }
+
+  async function handleManageBilling() {
+    setPortalLoading(true);
+    try {
+      const { url } = await createPortal({
+        returnUrl: currentUrl,
+      });
+      window.location.href = url;
+    } catch {
+      toast.error("Failed to open billing portal. Please try again.");
+      setPortalLoading(false);
     }
   }
 
-  const checkoutLoading = checkoutLookupKey !== null || checkoutProvider === undefined;
-  const vortexPaymentsConfig = {
-    baseUrl: window.location.origin,
-    environment: "production" as const,
-    organizationId: slug,
-    branding: {
-      brandName: "Seal",
-      showVortexBrand: true,
-    },
-  };
-  const vortexClassNames = buildClassNames();
-  const customerId = `seal:${slug}`;
-  const returnPath = `/${slug}/settings/billing`;
-  const currentSubscriptionSummary = buildVortexSubscriptionSummary({
-    customerId,
-    subscription: typedSubscription ?? null,
-  });
-  const planComparison = buildVortexPlanComparison({
-    customerId,
-    plans: typedPlans,
-    subscription: typedSubscription ?? null,
-    selectedLookupKey: checkoutLookupKey,
-    checkoutReturnPath: returnPath,
-  });
-
-  async function handlePlanSelect(plan: VortexPlanComparisonPlan) {
-    if (!plan.lookupKey || plan.status === "current" || plan.status === "disabled") {
-      return;
-    }
-    if (checkoutProvider?.provider === "vortex_billing") {
-      try {
-        const launch = await createVortexCheckoutSession({ lookupKey: plan.lookupKey });
-        navigateToVortexCheckout({
-          surface: "checkout",
-          url: launch.checkoutUrl,
-          mode: "hosted_redirect",
-        });
-      } catch (err) {
-        handleVortexCheckoutError(err);
-      }
-      return;
-    }
-    await handleStripeUpgrade(plan.lookupKey);
-  }
+  const proPlan = plans?.find((p: { tier: string | null }) => p.tier === "pro");
+  const proMonthlyLookupKey = proPlan?.pricing.monthly?.lookupKey;
+  const proFeatures = proPlan?.features
+    ? proPlan.features.split(",").map((f: string) => f.trim())
+    : [];
+  // For Pro plan, use the subscription's own features if available, fallback to product features
+  const currentFeatures = subscription?.features
+    ? subscription.features.split(",").map((f: string) => f.trim())
+    : proFeatures;
 
   return (
-    <PageWrapper title="Billing">
+    <PageWrapper
+      title="Billing"
+      headerActions={
+        <Button variant="outline" size="sm" onClick={handleManageBilling} disabled={portalLoading}>
+          {portalLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <ExternalLink className="mr-2 h-4 w-4" />
+          )}
+          Manage Billing
+        </Button>
+      }
+    >
       <div className="space-y-6">
         <p className="text-muted-foreground text-sm">
           Manage your subscription and billing information
         </p>
 
-        <VortexPaymentsProvider config={vortexPaymentsConfig} navigate={navigateToVortexCheckout}>
-          <div className="grid gap-6">
-            <VortexSubscriptionActionSummary
-              subscription={currentSubscriptionSummary}
-              classNames={vortexClassNames}
-              loading={subscription === undefined}
-              disabled={checkoutLoading}
-            />
-            <VortexPlanComparison
-              comparison={planComparison}
-              classNames={vortexClassNames}
-              loading={plans === undefined || checkoutProvider === undefined}
-              disabled={checkoutLoading}
-              onPlanSelect={(plan) => {
-                void handlePlanSelect(plan);
-              }}
-            />
-          </div>
-        </VortexPaymentsProvider>
+        {/* Inline Embedded Checkout */}
+        {showCheckout && checkoutLookupKey && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Complete your upgrade</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Close checkout"
+                  onClick={handleCancelCheckout}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <CardDescription>Enter your payment details below to upgrade to Pro.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EmbeddedCheckoutProvider stripe={stripePromise} options={checkoutOptions}>
+                <EmbeddedCheckout />
+              </EmbeddedCheckoutProvider>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Plan Card — merged current plan + upgrade (free) or current plan + features (pro) */}
+        {!showCheckout && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="text-muted-foreground h-5 w-5" />
+                  <CardTitle>{isFreePlan ? "Plan" : "Current Plan"}</CardTitle>
+                </div>
+                {subscription &&
+                  getStatusBadge(
+                    subscription.status as SubscriptionStatus,
+                    subscription.cancelAtPeriodEnd,
+                  )}
+              </div>
+              <CardDescription>
+                {isFreePlan
+                  ? "You are on the Free plan"
+                  : `You are on the ${subscription?.planName ?? "Pro"} plan`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Past due warning */}
+              {subscription?.status === "past_due" && (
+                <div className="bg-destructive/10 text-destructive mb-6 rounded-md p-3 text-sm">
+                  Your payment is past due. Please update your payment method to avoid service
+                  interruption.
+                </div>
+              )}
+
+              {isFreePlan && proPlan ? (
+                /* Free plan: two-column layout — current plan left, upgrade right */
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Left: Current Free plan */}
+                  <div className="space-y-4">
+                    <h3 className="text-muted-foreground text-sm font-medium">Current</h3>
+                    <div>
+                      <p className="text-lg font-semibold">Free</p>
+                      <div className="mt-1 flex items-baseline gap-1">
+                        <span className="text-3xl font-bold">$0</span>
+                        <span className="text-muted-foreground">/month</span>
+                      </div>
+                    </div>
+                    {subscription && isActiveSubscription && (
+                      <p className="text-muted-foreground text-sm">
+                        {subscription.cancelAtPeriodEnd
+                          ? `Access until ${formatDate(subscription.currentPeriodEnd)}`
+                          : `Renews ${formatDate(subscription.currentPeriodEnd)}`}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Right: Pro upgrade */}
+                  <div className="space-y-4">
+                    <h3 className="text-muted-foreground text-sm font-medium">Upgrade</h3>
+                    <div>
+                      <p className="text-lg font-semibold">{proPlan.name}</p>
+                      {proPlan.pricing.monthly && (
+                        <div className="mt-1 flex items-baseline gap-1">
+                          <span className="text-3xl font-bold">
+                            {formatPrice(
+                              proPlan.pricing.monthly.amount,
+                              proPlan.pricing.monthly.currency,
+                            )}
+                          </span>
+                          <span className="text-muted-foreground">/month</span>
+                        </div>
+                      )}
+                    </div>
+                    {proFeatures.length > 0 && (
+                      <ul className="space-y-2 text-sm">
+                        {proFeatures.map((feature: string) => (
+                          <li
+                            key={feature}
+                            className="text-muted-foreground flex items-center gap-2"
+                          >
+                            <Check className="text-primary h-3.5 w-3.5 shrink-0" />
+                            {formatFeatureLabel(feature)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {proMonthlyLookupKey && (
+                      <Button className="w-full" onClick={() => handleUpgrade(proMonthlyLookupKey)}>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Upgrade to Professional
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Professional plan (or paid): single column with details + features */
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-bold">
+                        {subscription
+                          ? formatPrice(subscription.unitAmount / 100, subscription.currency)
+                          : "$0"}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {subscription
+                          ? formatInterval(subscription.interval, subscription.intervalCount)
+                          : "/month"}
+                      </span>
+                    </div>
+
+                    {subscription && subscription.status !== "canceled" && (
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {subscription.cancelAtPeriodEnd
+                          ? `Access until ${formatDate(subscription.currentPeriodEnd)}`
+                          : `Next billing date: ${formatDate(subscription.currentPeriodEnd)}`}
+                      </p>
+                    )}
+                  </div>
+
+                  {currentFeatures.length > 0 && (
+                    <>
+                      <Separator />
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium">Included features</p>
+                        <ul className="grid gap-2 text-sm sm:grid-cols-2">
+                          {currentFeatures.map((feature: string) => (
+                            <li
+                              key={feature}
+                              className="text-muted-foreground flex items-center gap-2"
+                            >
+                              <Check className="text-primary h-3.5 w-3.5 shrink-0" />
+                              {formatFeatureLabel(feature)}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </PageWrapper>
   );

@@ -118,15 +118,10 @@ export const paymentFieldConfigsTable = defineTable({
   // Denormalized total for display
   totalAmountCents: v.number(),
 
-  // Provider references (populated when document is sent)
+  // Stripe references (populated when document is sent)
   stripeInvoiceId: v.optional(v.string()),
   stripeSubscriptionId: v.optional(v.string()),
   stripePaymentIntentId: v.optional(v.string()),
-  vortexRecurringPayableId: v.optional(v.string()),
-  vortexInstallmentPayableId: v.optional(v.string()),
-  vortexDepositBalancePayableId: v.optional(v.string()),
-  vortexPayableId: v.optional(v.string()),
-  vortexPaymentRequestId: v.optional(v.string()),
   hostedInvoiceUrl: v.optional(v.string()),
 
   // Payment status
@@ -140,5 +135,4 @@ export const paymentFieldConfigsTable = defineTable({
   .index("by_document", ["documentId"])
   .index("by_organization", ["organizationId"])
   .index("by_stripe_invoice", ["stripeInvoiceId"])
-  .index("by_stripe_subscription", ["stripeSubscriptionId"])
-  .index("by_vortex_payable", ["vortexPayableId"]);
+  .index("by_stripe_subscription", ["stripeSubscriptionId"]);

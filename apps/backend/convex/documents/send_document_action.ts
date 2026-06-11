@@ -22,8 +22,7 @@ import { findFirstIncompleteGroup } from "./recipient_helpers";
 type PaymentInvoiceLink = {
   recipientEmail: string;
   hostedInvoiceUrl: string | null;
-  stripeInvoiceId?: string;
-  paymentObjectId?: string;
+  stripeInvoiceId: string;
   totalAmountCents: number;
   currency: string;
 };
@@ -145,62 +144,6 @@ function resolveInvoiceDetails(paymentInvoiceLinks: PaymentInvoiceLink[], recipi
     invoiceAmount: paymentLink?.totalAmountCents,
     invoiceCurrency: paymentLink?.currency,
   };
-}
-
-export function parseVortexBillingPayableOrganizationIds(
-  raw: string | undefined,
-): ReadonlySet<string> {
-  if (raw === undefined || raw.trim().length === 0) {
-    return new Set();
-  }
-
-  const trimmed = raw.trim();
-  if (trimmed.startsWith("[")) {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(trimmed) as unknown;
-    } catch {
-      throw new ConvexError("VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS must be valid JSON");
-    }
-    if (!Array.isArray(parsed)) {
-      throw new ConvexError("VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS must be a JSON array");
-    }
-    return new Set(
-      parsed.map((entry) => {
-        if (typeof entry !== "string" || entry.trim().length === 0) {
-          throw new ConvexError(
-            "VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS entries must be non-empty strings",
-          );
-        }
-        return entry.trim();
-      }),
-    );
-  }
-
-  return new Set(
-    trimmed
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0),
-  );
-}
-
-export function isVortexBillingPayableEnabledForOrganizationId(
-  organizationId: string,
-  rawEnabledOrganizationIds: string | undefined,
-): boolean {
-  const enabledOrganizationIds =
-    parseVortexBillingPayableOrganizationIds(rawEnabledOrganizationIds);
-  return enabledOrganizationIds.has("*") || enabledOrganizationIds.has(organizationId);
-}
-
-function isVortexBillingPayableEnabledForOrganization(
-  organizationId: Id<"organizations">,
-): boolean {
-  return isVortexBillingPayableEnabledForOrganizationId(
-    organizationId.toString(),
-    process.env.VORTEX_BILLING_PAYABLE_ORGANIZATION_IDS,
-  );
 }
 
 async function sendInvitationBatch(
@@ -326,82 +269,17 @@ async function getPaymentInvoiceLinksForDocument(
     );
   }
 
-  const paymentResult = isVortexBillingPayableEnabledForOrganization(params.organizationId)
-    ? await ctx.runAction(
-        internal.vortex_billing.payable_actions.createVortexPayablesForPaymentFields,
-        {
-          documentId: params.documentId,
-          organizationId: params.organizationId,
-          userId: params.userId,
-        },
-      )
-    : await ctx.runAction(
-        internal.stripe.payment_field_actions.createStripeObjectsForPaymentFields,
-        {
-          documentId: params.documentId,
-          organizationId: params.organizationId,
-          userId: params.userId,
-        },
-      );
+  const paymentResult = await ctx.runAction(
+    internal.stripe.payment_field_actions.createStripeObjectsForPaymentFields,
+    {
+      documentId: params.documentId,
+      organizationId: params.organizationId,
+      userId: params.userId,
+    },
+  );
 
   return paymentResult.invoiceLinks;
 }
-
-type ProvePaymentInvoiceLinksResult = {
-  readonly invoiceLinks: PaymentInvoiceLink[];
-  readonly configs: readonly {
-    readonly configId: Id<"payment_field_configs">;
-    readonly paymentStatus:
-      | "pending"
-      | "created"
-      | "awaiting"
-      | "paid"
-      | "failed"
-      | "cancelled"
-      | undefined;
-    readonly vortexPayableId: string | undefined;
-    readonly vortexRecurringPayableId: string | undefined;
-    readonly vortexInstallmentPayableId: string | undefined;
-    readonly vortexDepositBalancePayableId: string | undefined;
-    readonly vortexPaymentRequestId: string | undefined;
-    readonly hostedInvoiceUrl: string | undefined;
-    readonly stripeInvoiceId: string | undefined;
-    readonly stripePaymentIntentId: string | undefined;
-    readonly stripeSubscriptionId: string | undefined;
-  }[];
-};
-
-export const provePaymentInvoiceLinksForDocument = internalAction({
-  args: {
-    documentId: v.id("documents"),
-    organizationId: v.id("organizations"),
-    userId: v.id("users"),
-  },
-  handler: async (ctx, args): Promise<ProvePaymentInvoiceLinksResult> => {
-    const invoiceLinks = await getPaymentInvoiceLinksForDocument(ctx, args);
-    const paymentConfigs = await ctx.runQuery(
-      internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
-      { documentId: args.documentId },
-    );
-
-    return {
-      invoiceLinks,
-      configs: paymentConfigs.map((config) => ({
-        configId: config._id,
-        paymentStatus: config.paymentStatus,
-        vortexPayableId: config.vortexPayableId,
-        vortexRecurringPayableId: config.vortexRecurringPayableId,
-        vortexInstallmentPayableId: config.vortexInstallmentPayableId,
-        vortexDepositBalancePayableId: config.vortexDepositBalancePayableId,
-        vortexPaymentRequestId: config.vortexPaymentRequestId,
-        hostedInvoiceUrl: config.hostedInvoiceUrl,
-        stripeInvoiceId: config.stripeInvoiceId,
-        stripePaymentIntentId: config.stripePaymentIntentId,
-        stripeSubscriptionId: config.stripeSubscriptionId,
-      })),
-    };
-  },
-});
 
 function buildSendDocumentEmailsResult(
   recipients: Doc<"document_recipients">[],
@@ -877,11 +755,6 @@ export const sendDocumentEmailsInternal = internalAction({
       document.ownerId,
       document.organizationId,
     );
-    const paymentInvoiceLinks = await getPaymentInvoiceLinksForDocument(ctx, {
-      documentId: args.documentId,
-      organizationId: document.organizationId,
-      userId: document.ownerId,
-    });
 
     await sendInvitationBatch(ctx, {
       recipients: getRecipientsToEmail(document, recipients),
@@ -892,7 +765,7 @@ export const sendDocumentEmailsInternal = internalAction({
       customMessage: args.customMessage,
       recipientMessageMap: new Map(),
       emailBranding,
-      paymentInvoiceLinks,
+      paymentInvoiceLinks: [],
       deadline: undefined,
     });
   },

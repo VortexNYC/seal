@@ -34,7 +34,6 @@
     "knip:fix": "(cd apps/backend && bun run knip:fix) && (cd packages/react-sdk && bun run knip:fix) && (cd packages/transactional && bun run knip:fix) && (cd apps/web && bun run knip:fix)",
     "verify": "bun run lint && bun run format:check && bun run typecheck && bun run knip",
     "test": "turbo run test",
-    "prove:vortex-one-time-payable-bridge": "bun run --cwd apps/backend prove:vortex-one-time-payable-bridge",
     "clean": "(cd apps/backend && bun run clean) && (cd apps/web && bun run clean) && git clean -xdf .cache .turbo dist node_modules",
     "eval": "cd evals && npx promptfoo eval",
     "eval:redteam": "cd evals && npx promptfoo eval -c redteam.yaml",

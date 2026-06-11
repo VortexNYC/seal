@@ -6,7 +6,6 @@
     "dev": "convex dev",
     "deploy": "convex deploy",
     "test": "vitest run --maxWorkers=1",
-    "prove:vortex-one-time-payable-bridge": "vitest run convex/vortex_billing/payable_actions.test.ts convex/vortex_billing/projection_actions.test.ts convex/vortex_billing/webhook_receiver.test.ts --maxWorkers=1",
     "test:watch": "vitest",
     "lint": "oxlint",
     "format": "oxfmt --write",

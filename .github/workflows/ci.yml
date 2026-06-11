@@ -19,23 +19,12 @@ env:
 jobs:
   quality:
     name: Quality Checks
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Checkout Vortex Payments
-        uses: actions/checkout@v4
-        with:
-          repository: shlomokabareti/vortex-payments
-          ref: main
-          path: vortex-payments
-          token: ${{ secrets.GH_PACKAGES_TOKEN }}
-
-      - name: Link Vortex Payments package path
-        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -50,24 +39,13 @@ jobs:
 
   test-backend:
     name: Backend Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     needs: quality
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Checkout Vortex Payments
-        uses: actions/checkout@v4
-        with:
-          repository: shlomokabareti/vortex-payments
-          ref: main
-          path: vortex-payments
-          token: ${{ secrets.GH_PACKAGES_TOKEN }}
-
-      - name: Link Vortex Payments package path
-        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -82,24 +60,13 @@ jobs:
 
   test-frontend:
     name: Frontend Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     needs: quality
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Checkout Vortex Payments
-        uses: actions/checkout@v4
-        with:
-          repository: shlomokabareti/vortex-payments
-          ref: main
-          path: vortex-payments
-          token: ${{ secrets.GH_PACKAGES_TOKEN }}
-
-      - name: Link Vortex Payments package path
-        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -117,24 +84,13 @@ jobs:
 
   test-web-e2e-smoke:
     name: Web E2E Smoke
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     needs: quality
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Checkout Vortex Payments
-        uses: actions/checkout@v4
-        with:
-          repository: shlomokabareti/vortex-payments
-          ref: main
-          path: vortex-payments
-          token: ${{ secrets.GH_PACKAGES_TOKEN }}
-
-      - name: Link Vortex Payments package path
-        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -161,7 +117,6 @@ jobs:
           VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL_TEST }}
           VITE_BETTER_AUTH_URL: ${{ vars.VITE_BETTER_AUTH_URL_TEST }}
           VITE_APP_URL: http://localhost:5180
-          SEAL_BILLING_E2E_EXPECTED_PROVIDER: stripe
           NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: Upload web E2E smoke artifacts
@@ -176,7 +131,7 @@ jobs:
 
   test-web-e2e-chromium:
     name: Web E2E Chromium
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 20
     needs:
       - quality
@@ -185,17 +140,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Checkout Vortex Payments
-        uses: actions/checkout@v4
-        with:
-          repository: shlomokabareti/vortex-payments
-          ref: main
-          path: vortex-payments
-          token: ${{ secrets.GH_PACKAGES_TOKEN }}
-
-      - name: Link Vortex Payments package path
-        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -208,13 +152,11 @@ jobs:
       - name: Install Playwright browsers
         run: cd apps/web && bunx playwright install --with-deps chromium
 
-      - name: Run web billing E2E chromium suite
+      - name: Run web E2E chromium suite
         id: web_e2e_chromium
         # Smoke passed in the upstream job, but this job runs on a fresh machine.
         # Re-run setup dependencies here so Chromium has its own local setup artifacts.
-        # Keep this PR gate on the billing surfaces this branch changes; the full
-        # app chromium suite belongs in scheduled/full-regression validation.
-        run: cd apps/web && bun run test:e2e --project=chromium e2e/tests/billing.e2e.ts e2e/tests/billing-cutover.e2e.ts
+        run: cd apps/web && bun run test:e2e --project=chromium
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           E2E_TEST_USER_EMAIL: ${{ vars.E2E_TEST_USER_EMAIL }}
@@ -222,7 +164,6 @@ jobs:
           VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL_TEST }}
           VITE_BETTER_AUTH_URL: ${{ vars.VITE_BETTER_AUTH_URL_TEST }}
           VITE_APP_URL: http://localhost:5180
-          SEAL_BILLING_E2E_EXPECTED_PROVIDER: stripe
           NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: Upload web E2E chromium artifacts
@@ -237,24 +178,13 @@ jobs:
 
   test-landing-e2e:
     name: Landing E2E
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 20
     needs: quality
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Checkout Vortex Payments
-        uses: actions/checkout@v4
-        with:
-          repository: shlomokabareti/vortex-payments
-          ref: main
-          path: vortex-payments
-          token: ${{ secrets.GH_PACKAGES_TOKEN }}
-
-      - name: Link Vortex Payments package path
-        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2

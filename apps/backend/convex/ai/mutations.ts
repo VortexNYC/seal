@@ -133,6 +133,7 @@ export const applyFieldSuggestions = authMutation({
     const document = await ctx.db.get(suggestion.documentId);
     if (!document) throw new ConvexError("Document not found");
 
+    // Get signer recipients sorted by order for heuristic assignment
     const signers = await ctx.db
       .query("document_recipients")
       .withIndex("by_document", (q) => q.eq("documentId", suggestion.documentId))
@@ -173,6 +174,7 @@ export const applyFieldSuggestions = authMutation({
 
     await ctx.db.patch(args.suggestionId, { status: "applied" as const });
 
+    // Create payment_field_configs for payment fields using pre-extracted data
     if (paymentFieldIds.length > 0 && suggestion.paymentExtraction) {
       const ext = suggestion.paymentExtraction;
       const items = ext.lineItems.map((item, i) => ({

@@ -43,7 +43,7 @@ export const authQuery = customQuery(
  *   args: {},
  *   handler: async (ctx) => {
  *     // Permission already checked, RLS applied to db
- *     return await ctx.db.query("documents").withIndex("by_organization").take(50);
+ *     return await ctx.db.query("documents").collect();
  *   },
  * });
  */

@@ -570,7 +570,6 @@ function getAuditAndBillingRules(
   | "subscription_prices"
   | "stripe_accounts"
   | "stripe_webhook_events"
-  | "vortex_billing_webhook_events"
   | "feedback"
 > {
   return {
@@ -626,10 +625,6 @@ function getAuditAndBillingRules(
       },
     },
     stripe_webhook_events: {
-      read: async () => Boolean(rlsCtx?.isSuperAdmin),
-      modify: async () => false,
-    },
-    vortex_billing_webhook_events: {
       read: async () => Boolean(rlsCtx?.isSuperAdmin),
       modify: async () => false,
     },

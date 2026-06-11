@@ -1,30 +1,25 @@
 /**
  * Payments Settings Page
  *
- * Vortex merchant payment settings.
+ * Stripe Connect embedded onboarding and account management.
  * Route: /{slug}/settings/payments
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { createFileRoute } from "@tanstack/react-router";
 import {
-  VortexMerchantAccountPanel,
-  VortexMerchantActionQueue,
-  VortexPaymentsProvider,
-  VortexPayoutReadinessPanel,
-  type VortexEmbeddedComponentClassNames,
-  type VortexMerchantAccountPanelProps,
-  type VortexMerchantActionQueueItem,
-  type VortexPayoutReadinessPanelProps,
-  type VortexSurfaceLaunch,
-} from "@vortex/payments/react";
+  ConnectAccountManagement,
+  ConnectAccountOnboarding,
+  ConnectNotificationBanner,
+} from "@stripe/react-connect-js";
+import { createFileRoute } from "@tanstack/react-router";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, BadgeCheck, BadgeX, Loader2, PlugZap } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
+import { StripeConnectProvider } from "@/components/stripe/connect-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -38,10 +33,6 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/payments")(
 type ConnectionStatus = "not_connected" | "pending" | "restricted" | "connected";
 
 type FeeHandling = "absorb" | "pass_to_recipient";
-
-type VortexMerchantAccount = VortexMerchantAccountPanelProps["merchantAccount"];
-type VortexMerchantState = NonNullable<VortexMerchantAccountPanelProps["merchantState"]>;
-type VortexPayoutProfile = NonNullable<VortexPayoutReadinessPanelProps["payoutProfile"]>;
 
 type ConnectedAccountResult = {
   status: ConnectionStatus;
@@ -63,186 +54,32 @@ type ConnectedAccountResult = {
   canManage: boolean;
 };
 
-export function toMerchantStatus(status: ConnectionStatus): VortexMerchantAccount["status"] {
+function getStatusLabel(status: ConnectionStatus) {
   switch (status) {
     case "connected":
-      return "active";
-    case "restricted":
-      return "restricted";
+      return "Connected";
     case "pending":
-      return "pending_review";
+      return "Setup Incomplete";
+    case "restricted":
+      return "Restricted";
     case "not_connected":
     default:
-      return "draft";
+      return "Not Connected";
   }
 }
 
-function buildClassNames(): VortexEmbeddedComponentClassNames {
-  return {
-    root: "rounded-lg border bg-card p-6 text-card-foreground shadow-sm",
-    header: "space-y-1.5",
-    title: "text-lg font-semibold text-balance",
-    description: "text-muted-foreground text-sm text-pretty",
-    metrics: "mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3",
-    metricLabel: "text-muted-foreground block text-xs font-medium",
-    metricValue: "mt-1 block font-medium tabular-nums",
-    list: "mt-4 grid gap-3 md:grid-cols-2",
-    item: "rounded-md border bg-background p-4",
-    itemTitle: "font-medium text-balance",
-    itemDescription: "text-muted-foreground mt-1 text-sm text-pretty",
-    status: "text-muted-foreground mt-2 block text-sm text-pretty",
-    actions: "mt-4 flex flex-wrap gap-2",
-    button:
-      "inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-    empty: "bg-muted text-muted-foreground mt-4 rounded-md p-4 text-sm",
-    loading: "text-muted-foreground mt-4 flex items-center gap-2 text-sm",
-    error: "text-destructive bg-destructive/10 mt-4 rounded-md p-3 text-sm",
-  };
-}
-
-function uniqueStrings(values: readonly string[]): readonly string[] {
-  return Array.from(new Set(values.filter((value) => value.length > 0)));
-}
-
-export function getRequirementIds(account: ConnectedAccountResult["account"]): readonly string[] {
-  if (!account?.requirements) {
-    return [];
+function getStatusIcon(status: ConnectionStatus) {
+  switch (status) {
+    case "connected":
+      return <BadgeCheck className="text-success h-4 w-4" />;
+    case "pending":
+      return <AlertTriangle className="text-warning h-4 w-4" />;
+    case "restricted":
+      return <BadgeX className="text-destructive h-4 w-4" />;
+    case "not_connected":
+    default:
+      return <PlugZap className="text-muted-foreground h-4 w-4" />;
   }
-  return uniqueStrings([
-    ...account.requirements.currentlyDue,
-    ...account.requirements.pastDue,
-    ...account.requirements.eventuallyDue,
-  ]);
-}
-
-export function buildVortexMerchantAccount(args: {
-  readonly slug: string;
-  readonly organizationName: string;
-  readonly status: ConnectionStatus;
-  readonly account: ConnectedAccountResult["account"];
-}): VortexMerchantAccount {
-  const recordedAt = new Date().toISOString();
-  const accountId = args.account?.stripeAccountId ?? `seal_${args.slug}_merchant`;
-  const merchantStatus = toMerchantStatus(args.status);
-
-  return {
-    id: accountId,
-    environment: "production",
-    tenantId: `seal:${args.slug}`,
-    externalMerchantRef: args.slug,
-    displayName: args.organizationName,
-    legalEntityType: "company",
-    country: "US",
-    merchantMode: "processing",
-    defaultCurrency: "USD",
-    status: merchantStatus,
-    capabilityStatus: args.account?.chargesEnabled ? "active" : "restricted",
-    processorAccountRefs: args.account
-      ? [
-          {
-            provider: "stripe",
-            objectType: "account",
-            objectId: args.account.stripeAccountId,
-            relationship: "legacy_processor_account",
-            recordedAt,
-          },
-        ]
-      : [],
-    createdAt: recordedAt,
-    updatedAt: recordedAt,
-  };
-}
-
-export function buildVortexMerchantState(args: {
-  readonly merchantAccountId: string;
-  readonly status: ConnectionStatus;
-  readonly account: ConnectedAccountResult["account"];
-}): VortexMerchantState {
-  const generatedAt = new Date().toISOString();
-  const requirementIds = getRequirementIds(args.account);
-  const activeCapabilityKeys = uniqueStrings([
-    ...(args.account?.chargesEnabled ? ["card_payments"] : []),
-    ...(args.account?.payoutsEnabled ? ["payouts"] : []),
-  ]);
-  const restrictedCapabilityKeys = uniqueStrings([
-    ...(args.account && !args.account.chargesEnabled ? ["card_payments"] : []),
-    ...(args.account && !args.account.payoutsEnabled ? ["payouts"] : []),
-  ]);
-
-  return {
-    merchantAccountId: args.merchantAccountId,
-    environment: "production",
-    merchantStatus: toMerchantStatus(args.status),
-    onboardingStatus:
-      args.status === "connected"
-        ? "approved"
-        : args.status === "restricted"
-          ? "action_required"
-          : args.status === "pending"
-            ? "under_review"
-            : "draft",
-    openRequirementIds: requirementIds,
-    activeCapabilityKeys,
-    restrictedCapabilityKeys,
-    canAcceptPayments: args.status === "connected" && args.account?.chargesEnabled === true,
-    payoutReadiness:
-      args.account?.payoutsEnabled === true ? "ready" : args.account ? "blocked" : "unknown",
-    payoutBlockReason: args.account?.requirements?.disabledReason,
-    capabilitySnapshots: [
-      {
-        id: `${args.merchantAccountId}:card_payments`,
-        environment: "production",
-        merchantAccountId: args.merchantAccountId,
-        capabilityKey: "card_payments",
-        status: args.account?.chargesEnabled ? "active" : "restricted",
-        restrictedReason: args.account?.chargesEnabled ? undefined : "payment_collection_not_ready",
-        effectiveAt: generatedAt,
-        updatedByType: "system",
-      },
-      {
-        id: `${args.merchantAccountId}:payouts`,
-        environment: "production",
-        merchantAccountId: args.merchantAccountId,
-        capabilityKey: "payouts",
-        status: args.account?.payoutsEnabled ? "active" : "restricted",
-        restrictedReason: args.account?.payoutsEnabled ? undefined : "payouts_not_ready",
-        effectiveAt: generatedAt,
-        updatedByType: "system",
-      },
-    ],
-    generatedAt,
-  };
-}
-
-export function buildPayoutProfile(merchantState: VortexMerchantState): VortexPayoutProfile {
-  return {
-    environment: "production",
-    merchantAccountId: merchantState.merchantAccountId,
-    mode: "net",
-    payoutRail: merchantState.payoutReadiness === "ready" ? "next_day_ach" : "unknown",
-    payoutSchedule: "daily",
-    currency: "USD",
-    fundingRequirement: merchantState.payoutReadiness === "ready" ? "standard" : "requirements_due",
-    capabilities: [
-      {
-        key: "standard_next_day_ach",
-        status: merchantState.payoutReadiness === "ready" ? "enabled" : "disabled",
-        reason:
-          merchantState.payoutBlockReason ??
-          "Payout readiness is derived from merchant account state.",
-        source: "operator_policy",
-      },
-      {
-        key: "sub_merchant_payee_payment",
-        status: merchantState.canAcceptPayments ? "enabled" : "disabled",
-        reason: merchantState.canAcceptPayments
-          ? "Merchant can accept document payments."
-          : "Payment collection is not ready.",
-        source: "operator_policy",
-      },
-    ],
-    fetchedAt: merchantState.generatedAt,
-  };
 }
 
 function PaymentsSettingsPage() {
@@ -274,31 +111,33 @@ function PaymentsSettingsPage() {
 
   const feeHandling = connectedAccount?.account?.feeHandling ?? "absorb";
 
+  // Create a Stripe account (required before embedded onboarding can render)
   async function handleCreateAccount() {
     if (!orgId) return;
 
     setIsCreatingAccount(true);
     try {
       await createConnectedAccount({ organizationId: orgId });
-      toast.success("Merchant account created");
+      toast.success("Stripe account created — complete onboarding below");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create merchant account");
+      toast.error(error instanceof Error ? error.message : "Failed to create Stripe account");
     } finally {
       setIsCreatingAccount(false);
     }
   }
 
-  const handleRefreshAccount = useCallback(async () => {
+  // Called when embedded onboarding component exits
+  const handleOnboardingExit = useCallback(async () => {
     if (!orgId) return;
 
     setIsRefreshing(true);
     try {
       const result = await refreshConnectedAccount({ organizationId: orgId });
       if (result.status === "refreshed") {
-        toast.success("Merchant account status updated");
+        toast.success("Stripe account status updated");
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to refresh merchant status");
+    } catch {
+      // Refresh failure is non-critical
     } finally {
       setIsRefreshing(false);
     }
@@ -320,121 +159,50 @@ function PaymentsSettingsPage() {
     return null;
   }
 
-  const account = connectedAccount?.account ?? null;
-  const merchantAccount = buildVortexMerchantAccount({
-    slug,
-    organizationName: organization.name,
-    status,
-    account,
-  });
-  const merchantState = buildVortexMerchantState({
-    merchantAccountId: merchantAccount.id,
-    status,
-    account,
-  });
-  const payoutProfile = buildPayoutProfile(merchantState);
-  const vortexClassNames = buildClassNames();
-  const vortexPaymentsConfig = {
-    baseUrl: window.location.origin,
-    environment: "production" as const,
-    organizationId: slug,
-    branding: {
-      brandName: "Seal",
-      showVortexBrand: true,
-    },
-  };
-  const canEditMerchant = canManage && isPro && !isLoadingPlan;
-  const merchantActions: readonly VortexMerchantActionQueueItem[] = [
-    ...(!isPro && !isLoadingPlan
-      ? [
-          {
-            id: "upgrade-required",
-            kind: "merchant_status" as const,
-            title: "Professional plan required",
-            description: "Upgrade before accepting document payments.",
-            severity: "warning" as const,
-            status: "blocked" as const,
-            primaryActionLabel: "Upgrade to Professional",
-            primaryAction: {
-              surface: "plan_comparison" as const,
-              path: `/${slug}/settings/billing`,
-            },
-          },
-        ]
-      : []),
-    ...(isPro && !hasStripeAccount
-      ? [
-          {
-            id: "create-merchant-account",
-            kind: "onboarding_requirement" as const,
-            title: "Create merchant account",
-            description: "Create the merchant account before collecting document payments.",
-            severity: "critical" as const,
-            status: "open" as const,
-            primaryActionLabel: isCreatingAccount ? "Creating..." : "Create account",
-            primaryAction: {
-              surface: "merchant_action_queue" as const,
-              path: `/${slug}/settings/payments`,
-              query: { action: "create-merchant-account" },
-            },
-          },
-        ]
-      : []),
-    ...(isPro && hasStripeAccount && status !== "connected"
-      ? [
-          {
-            id: "refresh-merchant-account",
-            kind: "onboarding_requirement" as const,
-            title: "Refresh merchant requirements",
-            description: "Check the latest onboarding, capability, and payout readiness state.",
-            severity: status === "restricted" ? ("critical" as const) : ("warning" as const),
-            status: "open" as const,
-            primaryActionLabel: isRefreshing ? "Refreshing..." : "Refresh status",
-            primaryAction: {
-              surface: "merchant_action_queue" as const,
-              path: `/${slug}/settings/payments`,
-              query: { action: "refresh-merchant-account" },
-            },
-          },
-        ]
-      : []),
-  ];
-
-  function handleVortexMerchantAction(action: VortexMerchantActionQueueItem) {
-    if (action.id === "create-merchant-account") {
-      void handleCreateAccount();
-      return;
-    }
-    if (action.id === "refresh-merchant-account") {
-      void handleRefreshAccount();
-    }
-  }
-
-  function handleVortexMerchantLaunch(launch: VortexSurfaceLaunch) {
-    if (launch.url.includes("action=create-merchant-account")) {
-      return;
-    }
-    if (launch.url.includes("action=refresh-merchant-account")) {
-      return;
-    }
-    window.location.href = launch.url;
-  }
-
   return (
     <PageWrapper title="Payments">
       <div className="space-y-6">
         <p className="text-muted-foreground text-sm">
-          Manage document payment readiness, merchant requirements, and payout posture. Only
-          workspace owners and admins can update payment settings.
+          Connect Stripe to accept payments through documents. Only workspace owners and admins can
+          manage payment settings.
           {!isPro && !isLoadingPlan && (
             <span className="text-warning mt-1 block">
-              Payment collection requires a Professional plan.
+              Stripe Connect requires a Professional plan.
             </span>
           )}
         </p>
 
-        <VortexPaymentsProvider config={vortexPaymentsConfig} navigate={handleVortexMerchantLaunch}>
-          <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                Stripe Connection
+                {isRefreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isPro ? (
+                  getStatusIcon(status)
+                ) : (
+                  getStatusIcon("not_connected")
+                )}
+              </span>
+              <span className="text-sm font-medium">
+                {isRefreshing
+                  ? "Refreshing…"
+                  : isPro
+                    ? getStatusLabel(status)
+                    : "Professional Required"}
+              </span>
+            </CardTitle>
+            <CardDescription>
+              Manage onboarding status, required actions, and connection health.
+              {!isPro && !isLoadingPlan && (
+                <span className="text-warning mt-1 block">
+                  Upgrade to Professional to connect Stripe and accept payments.
+                </span>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             {!canManage && (
               <div className="bg-muted text-muted-foreground rounded-md p-3 text-sm">
                 You can view connection status, but only owners and admins can update payment
@@ -442,62 +210,62 @@ function PaymentsSettingsPage() {
               </div>
             )}
 
-            <VortexMerchantAccountPanel
-              merchantAccount={merchantAccount}
-              merchantState={merchantState}
-              classNames={vortexClassNames}
-              loading={connectedAccount === undefined}
-              disabled={!canEditMerchant || isCreatingAccount || isRefreshing}
-              onActionLaunch={(_action, launch) => handleVortexMerchantLaunch(launch)}
-            />
+            {/* Not connected + no Stripe account yet → create account button */}
+            {status === "not_connected" && isPro && !hasStripeAccount && (
+              <div className="space-y-3">
+                <p className="text-sm">
+                  No Stripe account connected. Create a Stripe account to start accepting payments
+                  through your documents.
+                </p>
+                <Button onClick={handleCreateAccount} disabled={!canManage || isCreatingAccount}>
+                  {isCreatingAccount ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <PlugZap className="mr-2 h-4 w-4" />
+                  )}
+                  Connect with Stripe
+                </Button>
+              </div>
+            )}
 
-            <VortexMerchantActionQueue
-              merchantState={merchantState}
-              actions={merchantActions.length > 0 ? merchantActions : undefined}
-              classNames={vortexClassNames}
-              loading={connectedAccount === undefined}
-              disabled={!canEditMerchant || isCreatingAccount || isRefreshing}
-              onAction={handleVortexMerchantAction}
-              onActionLaunch={(_action, launch) => handleVortexMerchantLaunch(launch)}
-            />
-
-            <VortexPayoutReadinessPanel
-              merchantState={merchantState}
-              payoutProfile={payoutProfile}
-              classNames={vortexClassNames}
-              loading={connectedAccount === undefined}
-              disabled={!canEditMerchant || isRefreshing}
-              onActionLaunch={(_action, launch) => handleVortexMerchantLaunch(launch)}
-            />
+            {/* Stripe account exists but not fully onboarded → show embedded onboarding */}
+            {(status === "not_connected" || status === "pending" || status === "restricted") &&
+              isPro &&
+              hasStripeAccount &&
+              orgId && (
+                <StripeConnectProvider organizationId={orgId}>
+                  <div className="space-y-4">
+                    {(status === "pending" || status === "restricted") && (
+                      <ConnectNotificationBanner />
+                    )}
+                    <ConnectAccountOnboarding onExit={handleOnboardingExit} />
+                  </div>
+                </StripeConnectProvider>
+              )}
 
             {status === "not_connected" && !isPro && !isLoadingPlan && (
               <div className="space-y-3">
-                <p className="text-sm">Upgrade to accept payments through your documents.</p>
+                <p className="text-sm">
+                  Stripe Connect is available on the Professional plan. Upgrade to accept payments
+                  through your documents.
+                </p>
                 <Button asChild>
                   <a href={`/${slug}/settings/billing`}>Upgrade to Professional</a>
                 </Button>
               </div>
             )}
 
-            {isPro && hasStripeAccount && (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void handleRefreshAccount()}
-                  disabled={!canManage || isRefreshing}
-                >
-                  {isRefreshing ? (
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="mr-2 size-4" />
-                  )}
-                  Refresh status
-                </Button>
-              </div>
+            {/* Connected → show account management inline */}
+            {status === "connected" && isPro && orgId && (
+              <StripeConnectProvider organizationId={orgId}>
+                <div className="space-y-4">
+                  <ConnectNotificationBanner />
+                  <ConnectAccountManagement />
+                </div>
+              </StripeConnectProvider>
             )}
-          </div>
-        </VortexPaymentsProvider>
+          </CardContent>
+        </Card>
 
         {status === "connected" && isPro && connectedAccount?.account && (
           <Card>
