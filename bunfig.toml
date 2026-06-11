@@ -1,14 +1,3 @@
 [install]
 # Configure workspaces for monorepo
 workspaces = ["apps/*", "packages/*", "tooling/*"]
-
-[test]
-# The real Seal test suite is split by runtime through package scripts:
-# - apps/backend uses Vitest with Convex/Vite transforms.
-# - apps/web uses Vitest with jsdom and React setup.
-#
-# Bare `bun test` cannot run those environments directly. Restrict Bun's test
-# discovery to a small delegating runner so `bun test` still exercises the
-# real suite instead of scanning every Vitest file with the wrong runner.
-root = "tooling/bun-test-runner"
-timeout = 120000

@@ -93,7 +93,7 @@ Use this summary shape:
 Test Assessment Report
 ======================
 
-## MCP Server Unit (bun test)
+## MCP Server Unit (Vitest)
 - Location: apps/mcp-server/src/**/*.test.ts
 - Status: PASS / FAIL / ERROR / SKIPPED / NO TESTS FOUND
 - Tests: X passed, Y failed, Z skipped (total: N)
