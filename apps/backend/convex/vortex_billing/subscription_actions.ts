@@ -2,7 +2,13 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { type ActionCtx, type QueryCtx, action, internalMutation, query } from "../_generated/server";
+import {
+  type ActionCtx,
+  type QueryCtx,
+  action,
+  internalMutation,
+  query,
+} from "../_generated/server";
 
 export type SaasCheckoutProvider = "vortex_billing" | "stripe";
 
@@ -88,7 +94,9 @@ export function readVortexBillingSaasEnv(input: VortexBillingSaasEnvInput): Vort
   };
 }
 
-export function parseVortexBillingSaasOrganizationIds(raw: string | undefined): ReadonlySet<string> {
+export function parseVortexBillingSaasOrganizationIds(
+  raw: string | undefined,
+): ReadonlySet<string> {
   if (raw === undefined || raw.trim().length === 0) {
     return new Set();
   }
@@ -99,7 +107,9 @@ export function parseVortexBillingSaasOrganizationIds(raw: string | undefined): 
     try {
       parsed = JSON.parse(trimmed) as unknown;
     } catch {
-      throw new ConvexError("VORTEX_BILLING_SAAS_ORGANIZATION_IDS must be valid JSON or a comma-separated list");
+      throw new ConvexError(
+        "VORTEX_BILLING_SAAS_ORGANIZATION_IDS must be valid JSON or a comma-separated list",
+      );
     }
     if (!Array.isArray(parsed)) {
       throw new ConvexError("VORTEX_BILLING_SAAS_ORGANIZATION_IDS JSON value must be an array");
@@ -107,7 +117,9 @@ export function parseVortexBillingSaasOrganizationIds(raw: string | undefined): 
     return new Set(
       parsed.map((entry) => {
         if (typeof entry !== "string" || entry.trim().length === 0) {
-          throw new ConvexError("VORTEX_BILLING_SAAS_ORGANIZATION_IDS entries must be non-empty strings");
+          throw new ConvexError(
+            "VORTEX_BILLING_SAAS_ORGANIZATION_IDS entries must be non-empty strings",
+          );
         }
         return entry.trim();
       }),
@@ -137,7 +149,10 @@ export function assertVortexSaasCheckoutEnabled(
   organizationId: Id<"organizations">,
   enabledOrganizationIdsRaw: string | undefined,
 ): void {
-  if (resolveSaasCheckoutProviderForOrganization(organizationId, enabledOrganizationIdsRaw) !== "vortex_billing") {
+  if (
+    resolveSaasCheckoutProviderForOrganization(organizationId, enabledOrganizationIdsRaw) !==
+    "vortex_billing"
+  ) {
     throw new ConvexError("Vortex Billing SaaS checkout is not enabled for this organization");
   }
 }
@@ -273,7 +288,11 @@ function isJsonObject(value: unknown): value is Record<string, unknown> {
 }
 
 export function readVortexCheckoutSessionResult(value: unknown): VortexCheckoutSessionResult {
-  if (!isJsonObject(value) || !isJsonObject(value.data) || !isJsonObject(value.data.checkoutSession)) {
+  if (
+    !isJsonObject(value) ||
+    !isJsonObject(value.data) ||
+    !isJsonObject(value.data.checkoutSession)
+  ) {
     throw new ConvexError("Vortex checkout response did not include data.checkoutSession");
   }
 

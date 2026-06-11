@@ -241,11 +241,14 @@ describe("Vortex Billing payment projection", () => {
     await storeProjectionPayable(t, configId);
     const invoiceBefore = await getVortexInvoice(t, "payable_projection_1");
 
-    const first = await t.action(internal.vortex_billing.projection_actions.applyVortexPayableUpdated, {
-      vortexPayableId: "payable_projection_1",
-      vortexStatus: "failed",
-      vortexPaymentRequestId: "pr_projection_1",
-    });
+    const first = await t.action(
+      internal.vortex_billing.projection_actions.applyVortexPayableUpdated,
+      {
+        vortexPayableId: "payable_projection_1",
+        vortexStatus: "failed",
+        vortexPaymentRequestId: "pr_projection_1",
+      },
+    );
 
     expect(first?.paymentStatus).toBe("failed");
     expect(first?.invoiceRecordId).toBe(invoiceBefore?._id);

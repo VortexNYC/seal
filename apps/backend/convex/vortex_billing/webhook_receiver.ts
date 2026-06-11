@@ -45,7 +45,14 @@ export type VortexSubscriptionProjection = {
   readonly vortexSubscriptionId: string;
   readonly vortexCustomerId: string;
   readonly vortexPriceId: string;
-  readonly status: "active" | "canceled" | "past_due" | "trialing" | "incomplete" | "incomplete_expired" | "unpaid";
+  readonly status:
+    | "active"
+    | "canceled"
+    | "past_due"
+    | "trialing"
+    | "incomplete"
+    | "incomplete_expired"
+    | "unpaid";
   readonly cancelAtPeriodEnd: boolean;
   readonly currentPeriodStart: number;
   readonly currentPeriodEnd: number;
@@ -248,7 +255,9 @@ function timestampMillis(value: unknown): number | null {
   return null;
 }
 
-function isVortexSubscriptionStatus(value: unknown): value is VortexSubscriptionProjection["status"] {
+function isVortexSubscriptionStatus(
+  value: unknown,
+): value is VortexSubscriptionProjection["status"] {
   return (
     value === "active" ||
     value === "canceled" ||

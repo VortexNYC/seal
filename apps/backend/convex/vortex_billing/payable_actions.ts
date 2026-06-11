@@ -241,7 +241,8 @@ export function readVortexBillingEnv(input: VortexBillingEnvInput): VortexBillin
       input.merchantAccountMapJson,
     ),
     defaultMerchantAccountId:
-      input.defaultMerchantAccountId !== undefined && input.defaultMerchantAccountId.trim().length > 0
+      input.defaultMerchantAccountId !== undefined &&
+      input.defaultMerchantAccountId.trim().length > 0
         ? input.defaultMerchantAccountId.trim()
         : undefined,
     paymentsEnvironment,
@@ -324,7 +325,9 @@ function resolveCurrency(config: PaymentFieldConfig): "USD" | "CAD" {
   if (currency === "USD" || currency === "CAD") {
     return currency;
   }
-  throw new ConvexError(`Vortex Billing payable bridge does not support currency ${config.currency}`);
+  throw new ConvexError(
+    `Vortex Billing payable bridge does not support currency ${config.currency}`,
+  );
 }
 
 function buildRecurringEndPolicy(
@@ -339,7 +342,9 @@ function buildRecurringEndPolicy(
       return { mode: "never" };
     case "after_count":
       if (recurringConfig.endAfterCount === undefined || recurringConfig.endAfterCount <= 0) {
-        throw new ConvexError("Recurring payment field after_count end condition requires endAfterCount");
+        throw new ConvexError(
+          "Recurring payment field after_count end condition requires endAfterCount",
+        );
       }
       return { mode: "after_count", cycleCount: recurringConfig.endAfterCount };
     case "on_date":
@@ -550,9 +555,10 @@ export function buildCreateRecurringPayableRequest(input: {
       sealRecurringIntervalCount: recurringConfig.intervalCount.toString(),
       sealRecurringEndCondition: recurringConfig.endCondition,
       sealRecurringEndAfterCount: recurringConfig.endAfterCount?.toString() ?? "",
-      sealRecurringEndOnDate: recurringConfig.endOnDate === undefined
-        ? ""
-        : new Date(recurringConfig.endOnDate).toISOString(),
+      sealRecurringEndOnDate:
+        recurringConfig.endOnDate === undefined
+          ? ""
+          : new Date(recurringConfig.endOnDate).toISOString(),
     },
   };
 }
@@ -700,13 +706,17 @@ export function buildCreateDepositBalancePayableRequest(input: {
   if (depositBalanceConfig.balanceDueDays < 1) {
     throw new ConvexError("Balance due days must be at least 1");
   }
-  const depositAmount = Math.round(input.config.totalAmountCents * (depositBalanceConfig.depositPercent / 100));
+  const depositAmount = Math.round(
+    input.config.totalAmountCents * (depositBalanceConfig.depositPercent / 100),
+  );
   const balanceAmount = input.config.totalAmountCents - depositAmount;
   if (depositAmount <= 0 || balanceAmount <= 0) {
     throw new ConvexError("Deposit/balance amounts must be positive");
   }
   const depositDueAt = new Date(input.now).toISOString();
-  const balanceDueAt = new Date(input.now + depositBalanceConfig.balanceDueDays * 86_400_000).toISOString();
+  const balanceDueAt = new Date(
+    input.now + depositBalanceConfig.balanceDueDays * 86_400_000,
+  ).toISOString();
   return {
     sourceType: "document_payment_field",
     sourceId: sourceIdForConfig(input.config, input.env),
@@ -723,12 +733,22 @@ export function buildCreateDepositBalancePayableRequest(input: {
     deposit: {
       dueAt: depositDueAt,
       amountDue: depositAmount,
-      lineItems: buildLineItemsWithPriceMapSuffix(input.config, input.env, "deposit", depositAmount),
+      lineItems: buildLineItemsWithPriceMapSuffix(
+        input.config,
+        input.env,
+        "deposit",
+        depositAmount,
+      ),
     },
     balance: {
       dueAt: balanceDueAt,
       amountDue: balanceAmount,
-      lineItems: buildLineItemsWithPriceMapSuffix(input.config, input.env, "balance", balanceAmount),
+      lineItems: buildLineItemsWithPriceMapSuffix(
+        input.config,
+        input.env,
+        "balance",
+        balanceAmount,
+      ),
     },
     metadata: {
       sourceSystem: "seal",
@@ -785,7 +805,10 @@ function readVortexMerchantReadiness(value: unknown): VortexMerchantReadiness {
     payoutReadiness: data.payoutReadiness,
     openRequirementIds: readStringArray(data.openRequirementIds, "openRequirementIds"),
     activeCapabilityKeys: readStringArray(data.activeCapabilityKeys, "activeCapabilityKeys"),
-    restrictedCapabilityKeys: readStringArray(data.restrictedCapabilityKeys, "restrictedCapabilityKeys"),
+    restrictedCapabilityKeys: readStringArray(
+      data.restrictedCapabilityKeys,
+      "restrictedCapabilityKeys",
+    ),
   };
 }
 
@@ -1031,11 +1054,7 @@ async function createVortexPayableForConfig(input: {
     );
   }
   const request = buildCreatePayableRequest(input);
-  return await createVortexPayable(
-    input.env,
-    request,
-    `seal:${request.sourceId}:vortex-payable`,
-  );
+  return await createVortexPayable(input.env, request, `seal:${request.sourceId}:vortex-payable`);
 }
 
 export const createVortexPayablesForPaymentFields = internalAction({

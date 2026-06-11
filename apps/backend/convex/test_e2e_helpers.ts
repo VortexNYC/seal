@@ -508,7 +508,11 @@ export const patchBillingCutoverStripePriceForE2E = internalMutation({
       stripeProductId,
       now,
     });
-    const archivedProductCount = await archiveBillingCutoverCompetingProducts(ctx, product._id, now);
+    const archivedProductCount = await archiveBillingCutoverCompetingProducts(
+      ctx,
+      product._id,
+      now,
+    );
     const { repairedVortexPriceCount, archivedPriceCount } =
       await repairBillingCutoverCompetingPrices(ctx, {
         canonicalPriceId: price._id,

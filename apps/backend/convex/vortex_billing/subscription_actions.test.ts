@@ -17,9 +17,7 @@ const organizationId = "org_seal_vortex_saas" as Id<"organizations">;
 
 describe("Vortex Billing SaaS subscription actions", () => {
   test("builds Vortex-owned customer and subscription ids from Seal organization state", () => {
-    expect(buildVortexCustomerId(organizationId)).toBe(
-      "vtx_cust_seal_org_org_seal_vortex_saas",
-    );
+    expect(buildVortexCustomerId(organizationId)).toBe("vtx_cust_seal_org_org_seal_vortex_saas");
     expect(buildVortexSubscriptionId(organizationId, "pro:monthly:v2")).toBe(
       "vtx_sub_seal_org_org_seal_vortex_saas_pro_monthly_v2",
     );
@@ -51,9 +49,9 @@ describe("Vortex Billing SaaS subscription actions", () => {
   });
 
   test("resolves Vortex SaaS checkout only for explicitly enabled organizations", () => {
-    expect(parseVortexBillingSaasOrganizationIds(`${organizationId}, other_org`).has(organizationId)).toBe(
-      true,
-    );
+    expect(
+      parseVortexBillingSaasOrganizationIds(`${organizationId}, other_org`).has(organizationId),
+    ).toBe(true);
     expect(
       parseVortexBillingSaasOrganizationIds(JSON.stringify([organizationId])).has(organizationId),
     ).toBe(true);
@@ -63,15 +61,15 @@ describe("Vortex Billing SaaS subscription actions", () => {
     expect(resolveSaasCheckoutProviderForOrganization(organizationId, "different_org")).toBe(
       "stripe",
     );
-    expect(resolveSaasCheckoutProviderForOrganization(organizationId, "*")).toBe(
-      "vortex_billing",
-    );
+    expect(resolveSaasCheckoutProviderForOrganization(organizationId, "*")).toBe("vortex_billing");
     expect(resolveSaasCheckoutProviderForOrganization(organizationId, undefined)).toBe("stripe");
   });
 
   test("blocks direct Vortex SaaS checkout when the organization is not enabled", () => {
     expect(() => assertVortexSaasCheckoutEnabled(organizationId, undefined)).toThrow(ConvexError);
-    expect(() => assertVortexSaasCheckoutEnabled(organizationId, "different_org")).toThrow(ConvexError);
+    expect(() => assertVortexSaasCheckoutEnabled(organizationId, "different_org")).toThrow(
+      ConvexError,
+    );
     expect(() => assertVortexSaasCheckoutEnabled(organizationId, organizationId)).not.toThrow();
   });
 
@@ -81,9 +79,9 @@ describe("Vortex Billing SaaS subscription actions", () => {
     expect(resolveVortexSaasPriceId(env, "pro:monthly:v2", "price_stripe_monthly")).toBe(
       "vtx_price_pro_monthly",
     );
-    expect(resolveVortexSaasPriceId({ priceMap: new Map() }, "pro:monthly:v2", "vtx_price_legacy")).toBe(
-      "vtx_price_legacy",
-    );
+    expect(
+      resolveVortexSaasPriceId({ priceMap: new Map() }, "pro:monthly:v2", "vtx_price_legacy"),
+    ).toBe("vtx_price_legacy");
     expect(() =>
       resolveVortexSaasPriceId({ priceMap: new Map() }, "pro:monthly:v2", "price_stripe_monthly"),
     ).toThrow(ConvexError);

@@ -3,7 +3,12 @@ import { ConvexError } from "convex/values";
 
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
-import { type ActionCtx, type MutationCtx, internalAction, internalMutation } from "../_generated/server";
+import {
+  type ActionCtx,
+  type MutationCtx,
+  internalAction,
+  internalMutation,
+} from "../_generated/server";
 import type { SubscriptionStatus } from "../schemas/subscriptions";
 
 type VortexPayableProjectionResult = {
@@ -83,15 +88,15 @@ async function resolveVortexSubscriptionOrganization(
 
   const existingCustomerSubscription = await ctx.db
     .query("subscriptions")
-    .withIndex("by_external_customer_id", (q) =>
-      q.eq("externalCustomerId", args.vortexCustomerId),
-    )
+    .withIndex("by_external_customer_id", (q) => q.eq("externalCustomerId", args.vortexCustomerId))
     .first();
   if (existingCustomerSubscription?.organizationId !== undefined) {
     return existingCustomerSubscription.organizationId;
   }
 
-  throw new ConvexError(`Seal organization not found for Vortex subscription ${args.vortexSubscriptionId}`);
+  throw new ConvexError(
+    `Seal organization not found for Vortex subscription ${args.vortexSubscriptionId}`,
+  );
 }
 
 async function cancelOtherSealSubscriptions(

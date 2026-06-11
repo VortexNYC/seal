@@ -176,9 +176,7 @@ describe("Vortex Billing payable bridge", () => {
     });
 
     expect(request.installments.map((installment) => installment.amountDue)).toEqual([
-      3333,
-      3333,
-      3335,
+      3333, 3333, 3335,
     ]);
     expect(request.installments.map((installment) => installment.dueAt)).toEqual([
       "2026-01-31T00:00:00.000Z",

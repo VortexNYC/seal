@@ -380,11 +380,8 @@ async function insertSendFlowProofPaymentConfig(
   },
 ): Promise<Id<"payment_field_configs">> {
   const paymentType = input.paymentType ?? "one_time";
-  const totalAmountCents = paymentType === "installments"
-    ? 12600
-    : paymentType === "deposit_balance"
-      ? 20000
-      : 4200;
+  const totalAmountCents =
+    paymentType === "installments" ? 12600 : paymentType === "deposit_balance" ? 20000 : 4200;
   return await ctx.db.insert("payment_field_configs", {
     fieldId: input.fieldId,
     documentId: input.documentId,
@@ -1022,10 +1019,7 @@ export const getVortexSaasCheckoutCutoverGuardProofState = internalQuery({
     organizationId: v.id("organizations"),
     enabledOrganizationIdsRaw: v.optional(v.string()),
   },
-  handler: async (
-    ctx,
-    args,
-  ): Promise<VortexSaasCheckoutCutoverGuardProofState> => {
+  handler: async (ctx, args): Promise<VortexSaasCheckoutCutoverGuardProofState> => {
     const organization = await ctx.db.get(args.organizationId);
     if (organization === null) {
       throw new Error("Organization not found");
