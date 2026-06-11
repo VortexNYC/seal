@@ -197,7 +197,8 @@ The API reference content is generated from `apps/landing/openapi.yaml`.
 - Web app guide: [apps/web/AGENTS.md](apps/web/AGENTS.md)
 - Backend guide: [apps/backend/convex/AGENTS.md](apps/backend/convex/AGENTS.md)
 - MCP server details: [apps/mcp-server/README.md](apps/mcp-server/README.md)
-- E2E testing playbook: [apps/web/e2e/README.md](apps/web/e2e/README.md)
+- E2E testing guide: [apps/web/e2e/README.md](apps/web/e2e/README.md)
+- E2E troubleshooting playbook: [apps/web/e2e/TROUBLESHOOTING.md](apps/web/e2e/TROUBLESHOOTING.md)
 
 <!-- val-token: 1776627247462 -->
 <!-- vortex victory 4 2026-05-07 -->
