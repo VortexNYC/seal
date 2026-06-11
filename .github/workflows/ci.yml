@@ -26,6 +26,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout Vortex Payments
+        uses: actions/checkout@v4
+        with:
+          repository: shlomokabareti/vortex-payments
+          ref: main
+          path: ../vortex-payments
+          token: ${{ secrets.GH_PACKAGES_TOKEN }}
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -47,6 +55,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout Vortex Payments
+        uses: actions/checkout@v4
+        with:
+          repository: shlomokabareti/vortex-payments
+          ref: main
+          path: ../vortex-payments
+          token: ${{ secrets.GH_PACKAGES_TOKEN }}
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -67,6 +83,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Checkout Vortex Payments
+        uses: actions/checkout@v4
+        with:
+          repository: shlomokabareti/vortex-payments
+          ref: main
+          path: ../vortex-payments
+          token: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -91,6 +115,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Checkout Vortex Payments
+        uses: actions/checkout@v4
+        with:
+          repository: shlomokabareti/vortex-payments
+          ref: main
+          path: ../vortex-payments
+          token: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -141,6 +173,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout Vortex Payments
+        uses: actions/checkout@v4
+        with:
+          repository: shlomokabareti/vortex-payments
+          ref: main
+          path: ../vortex-payments
+          token: ${{ secrets.GH_PACKAGES_TOKEN }}
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -185,6 +225,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Checkout Vortex Payments
+        uses: actions/checkout@v4
+        with:
+          repository: shlomokabareti/vortex-payments
+          ref: main
+          path: ../vortex-payments
+          token: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
