@@ -161,6 +161,7 @@ jobs:
           VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL_TEST }}
           VITE_BETTER_AUTH_URL: ${{ vars.VITE_BETTER_AUTH_URL_TEST }}
           VITE_APP_URL: http://localhost:5180
+          SEAL_BILLING_E2E_EXPECTED_PROVIDER: stripe
           NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: Upload web E2E smoke artifacts
@@ -219,6 +220,7 @@ jobs:
           VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL_TEST }}
           VITE_BETTER_AUTH_URL: ${{ vars.VITE_BETTER_AUTH_URL_TEST }}
           VITE_APP_URL: http://localhost:5180
+          SEAL_BILLING_E2E_EXPECTED_PROVIDER: stripe
           NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: Upload web E2E chromium artifacts
