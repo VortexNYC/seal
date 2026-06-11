@@ -31,8 +31,11 @@ jobs:
         with:
           repository: shlomokabareti/vortex-payments
           ref: main
-          path: ../vortex-payments
+          path: vortex-payments
           token: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      - name: Link Vortex Payments package path
+        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -60,8 +63,11 @@ jobs:
         with:
           repository: shlomokabareti/vortex-payments
           ref: main
-          path: ../vortex-payments
+          path: vortex-payments
           token: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      - name: Link Vortex Payments package path
+        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -89,8 +95,11 @@ jobs:
         with:
           repository: shlomokabareti/vortex-payments
           ref: main
-          path: ../vortex-payments
+          path: vortex-payments
           token: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      - name: Link Vortex Payments package path
+        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -121,8 +130,11 @@ jobs:
         with:
           repository: shlomokabareti/vortex-payments
           ref: main
-          path: ../vortex-payments
+          path: vortex-payments
           token: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      - name: Link Vortex Payments package path
+        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -178,8 +190,11 @@ jobs:
         with:
           repository: shlomokabareti/vortex-payments
           ref: main
-          path: ../vortex-payments
+          path: vortex-payments
           token: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      - name: Link Vortex Payments package path
+        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -231,8 +246,11 @@ jobs:
         with:
           repository: shlomokabareti/vortex-payments
           ref: main
-          path: ../vortex-payments
+          path: vortex-payments
           token: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      - name: Link Vortex Payments package path
+        run: ln -sfn "$GITHUB_WORKSPACE/vortex-payments" "$GITHUB_WORKSPACE/../vortex-payments"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
