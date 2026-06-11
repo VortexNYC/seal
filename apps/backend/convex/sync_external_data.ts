@@ -53,75 +53,98 @@ type UserForStripeLink = {
   email: string;
 };
 
+type UserForStripeLinkPage = {
+  page: UserForStripeLink[];
+  continueCursor: string;
+  isDone: boolean;
+};
+
 async function linkStripeCustomers(
   ctx: ActionCtx,
   stripe: Stripe,
   customerLinking: StripeLinkingResult,
 ): Promise<void> {
-  const users = await ctx.runMutation(
-    internal.sync_external_data.getUsersForStripeCustomerLinking,
-    {},
-  );
+  let cursor: string | null = null;
+  let isDone = false;
 
-  for (const user of users) {
-    customerLinking.checked++;
+  while (!isDone) {
+    const usersPage: UserForStripeLinkPage = await ctx.runMutation(
+      internal.sync_external_data.getUsersForStripeCustomerLinking,
+      { cursor },
+    );
+    cursor = usersPage.continueCursor;
+    isDone = usersPage.isDone;
 
-    // TODO: check org-level stripeCustomerId instead of user-level
-    // For now, skip the alreadyLinked check since user no longer has stripeCustomerId
+    for (const user of usersPage.page) {
+      customerLinking.checked++;
 
-    try {
-      const byMetadata = await findStripeCustomerByMetadata(stripe, user.userId);
-      if (byMetadata) {
-        // TODO: resolve organizationId from user context for org-scoped linking
-        console.warn("[syncStripeToConvex] Skipping metadata link — needs org-scoped migration", {
-          userId: user.userId,
-          stripeCustomerId: byMetadata,
-        });
-        customerLinking.linkedByMetadata++;
-        continue;
-      }
+      // TODO: check org-level stripeCustomerId instead of user-level
+      // For now, skip the alreadyLinked check since user no longer has stripeCustomerId
 
-      const byEmail = await findStripeCustomersByEmail(stripe, user.email);
-      if (byEmail.length === 1) {
-        // TODO: resolve organizationId from user context for org-scoped linking
-        console.warn("[syncStripeToConvex] Skipping email link — needs org-scoped migration", {
-          userId: user.userId,
-          stripeCustomerId: byEmail[0]!,
-        });
-        customerLinking.linkedByEmail++;
-        continue;
-      }
+      try {
+        const byMetadata = await findStripeCustomerByMetadata(stripe, user.userId);
+        if (byMetadata) {
+          // TODO: resolve organizationId from user context for org-scoped linking
+          console.warn("[syncStripeToConvex] Skipping metadata link — needs org-scoped migration", {
+            userId: user.userId,
+            stripeCustomerId: byMetadata,
+          });
+          customerLinking.linkedByMetadata++;
+          continue;
+        }
 
-      if (byEmail.length > 1) {
-        customerLinking.ambiguousByEmail++;
-        console.warn("[syncStripeToConvex] Multiple Stripe customers for email", {
+        const byEmail = await findStripeCustomersByEmail(stripe, user.email);
+        if (byEmail.length === 1) {
+          // TODO: resolve organizationId from user context for org-scoped linking
+          console.warn("[syncStripeToConvex] Skipping email link — needs org-scoped migration", {
+            userId: user.userId,
+            stripeCustomerId: byEmail[0]!,
+          });
+          customerLinking.linkedByEmail++;
+          continue;
+        }
+
+        if (byEmail.length > 1) {
+          customerLinking.ambiguousByEmail++;
+          console.warn("[syncStripeToConvex] Multiple Stripe customers for email", {
+            userId: user.userId,
+            email: user.email,
+            customerIds: byEmail,
+          });
+          continue;
+        }
+
+        customerLinking.noMatch++;
+      } catch (error) {
+        customerLinking.errors++;
+        console.error("[syncStripeToConvex] Failed customer linking", {
           userId: user.userId,
           email: user.email,
-          customerIds: byEmail,
+          error: error instanceof Error ? error.message : String(error),
         });
-        continue;
       }
-
-      customerLinking.noMatch++;
-    } catch (error) {
-      customerLinking.errors++;
-      console.error("[syncStripeToConvex] Failed customer linking", {
-        userId: user.userId,
-        email: user.email,
-        error: error instanceof Error ? error.message : String(error),
-      });
     }
   }
 }
 
 export const getUsersForStripeCustomerLinking = internalMutation({
-  args: {},
-  handler: async (ctx): Promise<UserForStripeLink[]> => {
-    const users = await ctx.db.query("users").collect();
-    return users.map((user) => ({
-      userId: user._id,
-      email: user.email,
-    }));
+  args: {
+    cursor: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args): Promise<UserForStripeLinkPage> => {
+    const users = await ctx.db
+      .query("users")
+      .withIndex("by_email")
+      .paginate({ cursor: args.cursor, numItems: 100 });
+
+    return {
+      page: users.page.map((user) => ({
+        userId: user._id,
+        email: user.email,
+      })),
+      continueCursor: users.continueCursor,
+      isDone: users.isDone,
+    };
   },
 });
 

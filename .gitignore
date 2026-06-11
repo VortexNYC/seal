@@ -54,6 +54,10 @@ bun-debug.log*
 # vercel
 .vercel
 
+# cloudflare local deploy state
+.wrangler/
+**/.wrangler/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

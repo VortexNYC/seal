@@ -62,6 +62,7 @@ export const getPriceByLookupKey = internalMutation({
     const price = await ctx.db
       .query("subscription_prices")
       .withIndex("by_lookup_key", (q) => q.eq("lookupKey", lookupKey))
+      .filter((q) => q.eq(q.field("status"), "active"))
       .first();
 
     if (!price) {

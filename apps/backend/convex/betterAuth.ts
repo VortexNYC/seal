@@ -79,10 +79,10 @@ const betterAuthRuntime: BetterAuthConvexRuntime<DataModel> =
       "http://127.0.0.1:5173",
       "http://localhost:4173",
       "http://127.0.0.1:4173",
-      // Any localhost port (Vite dev assigns a dynamic port under portless).
-      "http://localhost:*",
-      "http://127.0.0.1:*",
-      // portless dev origin used by the test protocol.
+      // Product-only portless proof runs bind Vite to an available local port.
+      "http://localhost:4542",
+      "http://127.0.0.1:4542",
+      // Portless dev origin used by the test protocol.
       "http://seal.localhost:1355",
       // Staging + production web app origins.
       "https://app.seal.nyc",
