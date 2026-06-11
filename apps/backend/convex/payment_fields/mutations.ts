@@ -328,6 +328,9 @@ export function mapVortexPayableStatusToSealPaymentStatus(
 export const storeVortexPayableLink = internalMutation({
   args: {
     configId: v.id("payment_field_configs"),
+    vortexRecurringPayableId: v.optional(v.string()),
+    vortexInstallmentPayableId: v.optional(v.string()),
+    vortexDepositBalancePayableId: v.optional(v.string()),
     vortexPayableId: v.string(),
     vortexPaymentRequestId: v.optional(v.string()),
     hostedInvoiceUrl: v.optional(v.string()),
@@ -342,6 +345,15 @@ export const storeVortexPayableLink = internalMutation({
 
     await ctx.db.patch(args.configId, {
       paymentStatus: "awaiting",
+      ...(args.vortexRecurringPayableId !== undefined && {
+        vortexRecurringPayableId: args.vortexRecurringPayableId,
+      }),
+      ...(args.vortexInstallmentPayableId !== undefined && {
+        vortexInstallmentPayableId: args.vortexInstallmentPayableId,
+      }),
+      ...(args.vortexDepositBalancePayableId !== undefined && {
+        vortexDepositBalancePayableId: args.vortexDepositBalancePayableId,
+      }),
       vortexPayableId: args.vortexPayableId,
       ...(args.vortexPaymentRequestId !== undefined && {
         vortexPaymentRequestId: args.vortexPaymentRequestId,

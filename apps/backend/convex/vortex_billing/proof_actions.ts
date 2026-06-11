@@ -375,28 +375,61 @@ async function insertSendFlowProofPaymentConfig(
     readonly documentId: Id<"documents">;
     readonly organizationId: Id<"organizations">;
     readonly lineItemId: string;
+    readonly paymentType?: "one_time" | "recurring" | "installments" | "deposit_balance";
     readonly now: number;
   },
 ): Promise<Id<"payment_field_configs">> {
+  const paymentType = input.paymentType ?? "one_time";
+  const totalAmountCents = paymentType === "installments"
+    ? 12600
+    : paymentType === "deposit_balance"
+      ? 20000
+      : 4200;
   return await ctx.db.insert("payment_field_configs", {
     fieldId: input.fieldId,
     documentId: input.documentId,
     organizationId: input.organizationId,
-    paymentType: "one_time",
+    paymentType,
     items: [
       {
         id: input.lineItemId,
         description: "Vortex send-flow proof payment",
         quantity: 1,
-        unitPrice: 4200,
+        unitPrice: totalAmountCents,
       },
     ],
     currency: "usd",
     dueDateTerms: "net_30",
+    ...(paymentType === "recurring"
+      ? {
+          recurringConfig: {
+            interval: "month" as const,
+            intervalCount: 1,
+            endCondition: "after_count" as const,
+            endAfterCount: 2,
+          },
+        }
+      : {}),
+    ...(paymentType === "installments"
+      ? {
+          installmentsConfig: {
+            count: 3,
+            interval: "month" as const,
+          },
+        }
+      : {}),
+    ...(paymentType === "deposit_balance"
+      ? {
+          depositBalanceConfig: {
+            depositPercent: 25,
+            balanceDueDays: 30,
+          },
+        }
+      : {}),
     allowedPaymentMethods: ["card"],
     feeHandling: "absorb",
     taxEnabled: false,
-    totalAmountCents: 4200,
+    totalAmountCents,
     paymentStatus: "pending",
     createdAt: input.now,
     updatedAt: input.now,
@@ -646,6 +679,192 @@ export const seedVortexSendFlowProofDocument = internalMutation({
       documentId,
       organizationId,
       lineItemId: args.lineItemId,
+      now,
+    });
+
+    return {
+      organizationId,
+      ownerId,
+      documentId,
+      recipientId,
+      signatureFieldId,
+      paymentFieldId,
+      configId,
+      recipientEmail: args.recipientEmail,
+      lineItemId: args.lineItemId,
+    };
+  },
+});
+
+export const seedVortexRecurringDocumentPayableProofDocument = internalMutation({
+  args: {
+    proofRunId: v.string(),
+    lineItemId: v.string(),
+    recipientEmail: v.string(),
+  },
+  handler: async (ctx, args): Promise<SeedVortexSendFlowProofResult> => {
+    const now = Date.now();
+    const organizationId = await insertSendFlowProofOrganization(ctx, args.proofRunId, now);
+    const ownerId = await insertSendFlowProofOwner(ctx, args.proofRunId, organizationId);
+    const documentId = await insertSendFlowProofDocument(
+      ctx,
+      args.proofRunId,
+      organizationId,
+      ownerId,
+      now,
+    );
+    const recipientId = await insertSendFlowProofRecipient(ctx, {
+      documentId,
+      recipientEmail: args.recipientEmail,
+      proofRunId: args.proofRunId,
+      now,
+    });
+    const signatureFieldId = await insertSendFlowProofField(ctx, {
+      documentId,
+      recipientId,
+      fieldType: "signature",
+      label: "Signature",
+      y: 0,
+      now,
+    });
+    const paymentFieldId = await insertSendFlowProofField(ctx, {
+      documentId,
+      recipientId,
+      fieldType: "payment",
+      label: "Recurring payment",
+      y: 60,
+      now,
+    });
+    const configId = await insertSendFlowProofPaymentConfig(ctx, {
+      fieldId: paymentFieldId,
+      documentId,
+      organizationId,
+      lineItemId: args.lineItemId,
+      paymentType: "recurring",
+      now,
+    });
+
+    return {
+      organizationId,
+      ownerId,
+      documentId,
+      recipientId,
+      signatureFieldId,
+      paymentFieldId,
+      configId,
+      recipientEmail: args.recipientEmail,
+      lineItemId: args.lineItemId,
+    };
+  },
+});
+
+export const seedVortexInstallmentDocumentPayableProofDocument = internalMutation({
+  args: {
+    proofRunId: v.string(),
+    lineItemId: v.string(),
+    recipientEmail: v.string(),
+  },
+  handler: async (ctx, args): Promise<SeedVortexSendFlowProofResult> => {
+    const now = Date.now();
+    const organizationId = await insertSendFlowProofOrganization(ctx, args.proofRunId, now);
+    const ownerId = await insertSendFlowProofOwner(ctx, args.proofRunId, organizationId);
+    const documentId = await insertSendFlowProofDocument(
+      ctx,
+      args.proofRunId,
+      organizationId,
+      ownerId,
+      now,
+    );
+    const recipientId = await insertSendFlowProofRecipient(ctx, {
+      documentId,
+      recipientEmail: args.recipientEmail,
+      proofRunId: args.proofRunId,
+      now,
+    });
+    const signatureFieldId = await insertSendFlowProofField(ctx, {
+      documentId,
+      recipientId,
+      fieldType: "signature",
+      label: "Signature",
+      y: 0,
+      now,
+    });
+    const paymentFieldId = await insertSendFlowProofField(ctx, {
+      documentId,
+      recipientId,
+      fieldType: "payment",
+      label: "Installment payment",
+      y: 60,
+      now,
+    });
+    const configId = await insertSendFlowProofPaymentConfig(ctx, {
+      fieldId: paymentFieldId,
+      documentId,
+      organizationId,
+      lineItemId: args.lineItemId,
+      paymentType: "installments",
+      now,
+    });
+
+    return {
+      organizationId,
+      ownerId,
+      documentId,
+      recipientId,
+      signatureFieldId,
+      paymentFieldId,
+      configId,
+      recipientEmail: args.recipientEmail,
+      lineItemId: args.lineItemId,
+    };
+  },
+});
+
+export const seedVortexDepositBalanceDocumentPayableProofDocument = internalMutation({
+  args: {
+    proofRunId: v.string(),
+    lineItemId: v.string(),
+    recipientEmail: v.string(),
+  },
+  handler: async (ctx, args): Promise<SeedVortexSendFlowProofResult> => {
+    const now = Date.now();
+    const organizationId = await insertSendFlowProofOrganization(ctx, args.proofRunId, now);
+    const ownerId = await insertSendFlowProofOwner(ctx, args.proofRunId, organizationId);
+    const documentId = await insertSendFlowProofDocument(
+      ctx,
+      args.proofRunId,
+      organizationId,
+      ownerId,
+      now,
+    );
+    const recipientId = await insertSendFlowProofRecipient(ctx, {
+      documentId,
+      recipientEmail: args.recipientEmail,
+      proofRunId: args.proofRunId,
+      now,
+    });
+    const signatureFieldId = await insertSendFlowProofField(ctx, {
+      documentId,
+      recipientId,
+      fieldType: "signature",
+      label: "Signature",
+      y: 0,
+      now,
+    });
+    const paymentFieldId = await insertSendFlowProofField(ctx, {
+      documentId,
+      recipientId,
+      fieldType: "payment",
+      label: "Deposit and balance payment",
+      y: 60,
+      now,
+    });
+    const configId = await insertSendFlowProofPaymentConfig(ctx, {
+      fieldId: paymentFieldId,
+      documentId,
+      organizationId,
+      lineItemId: args.lineItemId,
+      paymentType: "deposit_balance",
       now,
     });
 

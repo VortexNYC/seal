@@ -360,6 +360,9 @@ type ProvePaymentInvoiceLinksResult = {
       | "cancelled"
       | undefined;
     readonly vortexPayableId: string | undefined;
+    readonly vortexRecurringPayableId: string | undefined;
+    readonly vortexInstallmentPayableId: string | undefined;
+    readonly vortexDepositBalancePayableId: string | undefined;
     readonly vortexPaymentRequestId: string | undefined;
     readonly hostedInvoiceUrl: string | undefined;
     readonly stripeInvoiceId: string | undefined;
@@ -387,6 +390,9 @@ export const provePaymentInvoiceLinksForDocument = internalAction({
         configId: config._id,
         paymentStatus: config.paymentStatus,
         vortexPayableId: config.vortexPayableId,
+        vortexRecurringPayableId: config.vortexRecurringPayableId,
+        vortexInstallmentPayableId: config.vortexInstallmentPayableId,
+        vortexDepositBalancePayableId: config.vortexDepositBalancePayableId,
         vortexPaymentRequestId: config.vortexPaymentRequestId,
         hostedInvoiceUrl: config.hostedInvoiceUrl,
         stripeInvoiceId: config.stripeInvoiceId,

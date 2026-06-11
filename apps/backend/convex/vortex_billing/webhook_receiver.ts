@@ -260,6 +260,54 @@ function isVortexSubscriptionStatus(value: unknown): value is VortexSubscription
   );
 }
 
+function readNonEmptyString(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function optionalNonEmptyString(value: unknown): string | undefined {
+  return readNonEmptyString(value) ?? undefined;
+}
+
+function readRequiredSubscriptionProjection(
+  subscription: Record<string, unknown>,
+): Pick<
+  VortexSubscriptionProjection,
+  | "vortexSubscriptionId"
+  | "vortexCustomerId"
+  | "vortexPriceId"
+  | "status"
+  | "cancelAtPeriodEnd"
+  | "currentPeriodStart"
+  | "currentPeriodEnd"
+> | null {
+  const vortexSubscriptionId = readNonEmptyString(subscription.subscriptionExternalId);
+  const vortexCustomerId = readNonEmptyString(subscription.customerExternalId);
+  const vortexPriceId = readNonEmptyString(subscription.planCode);
+  const currentPeriodStart = timestampMillis(subscription.currentPeriodStart);
+  const currentPeriodEnd = timestampMillis(subscription.currentPeriodEnd);
+  if (
+    vortexSubscriptionId === null ||
+    vortexCustomerId === null ||
+    vortexPriceId === null ||
+    !isVortexSubscriptionStatus(subscription.status) ||
+    typeof subscription.cancelAtPeriodEnd !== "boolean" ||
+    currentPeriodStart === null ||
+    currentPeriodEnd === null
+  ) {
+    return null;
+  }
+
+  return {
+    vortexSubscriptionId,
+    vortexCustomerId,
+    vortexPriceId,
+    status: subscription.status,
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+    currentPeriodStart,
+    currentPeriodEnd,
+  };
+}
+
 export function extractVortexSubscriptionProjection(
   event: ParsedVortexWebhookEvent,
 ): VortexSubscriptionProjection | null {
@@ -272,54 +320,18 @@ export function extractVortexSubscriptionProjection(
     return null;
   }
 
-  const subscriptionExternalId = subscription.subscriptionExternalId;
-  const customerExternalId = subscription.customerExternalId;
-  const planCode = subscription.planCode;
-  const status = subscription.status;
-  const cancelAtPeriodEnd = subscription.cancelAtPeriodEnd;
-  const currentPeriodStart = timestampMillis(subscription.currentPeriodStart);
-  const currentPeriodEnd = timestampMillis(subscription.currentPeriodEnd);
-  if (
-    typeof subscriptionExternalId !== "string" ||
-    subscriptionExternalId.length === 0 ||
-    typeof customerExternalId !== "string" ||
-    customerExternalId.length === 0 ||
-    typeof planCode !== "string" ||
-    planCode.length === 0 ||
-    !isVortexSubscriptionStatus(status) ||
-    typeof cancelAtPeriodEnd !== "boolean" ||
-    currentPeriodStart === null ||
-    currentPeriodEnd === null
-  ) {
+  const requiredProjection = readRequiredSubscriptionProjection(subscription);
+  if (requiredProjection === null) {
     return null;
   }
 
   const metadata = isRecord(subscription.metadata) ? subscription.metadata : {};
-  const sealOrganizationId = metadata.sealOrganizationId;
-  const latestInvoiceId = subscription.latestInvoiceId;
-  const canceledAt = timestampMillis(subscription.canceledAt);
-  const cancelReason = subscription.cancelReason;
 
   return {
-    vortexSubscriptionId: subscriptionExternalId,
-    vortexCustomerId: customerExternalId,
-    vortexPriceId: planCode,
-    status,
-    cancelAtPeriodEnd,
-    currentPeriodStart,
-    currentPeriodEnd,
-    sealOrganizationId:
-      typeof sealOrganizationId === "string" && sealOrganizationId.length > 0
-        ? sealOrganizationId
-        : undefined,
-    latestInvoiceId:
-      typeof latestInvoiceId === "string" && latestInvoiceId.length > 0
-        ? latestInvoiceId
-        : undefined,
-    canceledAt: canceledAt ?? undefined,
-    cancelReason:
-      typeof cancelReason === "string" && cancelReason.length > 0
-        ? cancelReason
-        : undefined,
+    ...requiredProjection,
+    sealOrganizationId: optionalNonEmptyString(metadata.sealOrganizationId),
+    latestInvoiceId: optionalNonEmptyString(subscription.latestInvoiceId),
+    canceledAt: timestampMillis(subscription.canceledAt) ?? undefined,
+    cancelReason: optionalNonEmptyString(subscription.cancelReason),
   };
 }
