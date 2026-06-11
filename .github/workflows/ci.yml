@@ -208,11 +208,13 @@ jobs:
       - name: Install Playwright browsers
         run: cd apps/web && bunx playwright install --with-deps chromium
 
-      - name: Run web E2E chromium suite
+      - name: Run web billing E2E chromium suite
         id: web_e2e_chromium
         # Smoke passed in the upstream job, but this job runs on a fresh machine.
         # Re-run setup dependencies here so Chromium has its own local setup artifacts.
-        run: cd apps/web && bun run test:e2e --project=chromium
+        # Keep this PR gate on the billing surfaces this branch changes; the full
+        # app chromium suite belongs in scheduled/full-regression validation.
+        run: cd apps/web && bun run test:e2e --project=chromium e2e/tests/billing.e2e.ts e2e/tests/billing-cutover.e2e.ts
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           E2E_TEST_USER_EMAIL: ${{ vars.E2E_TEST_USER_EMAIL }}
