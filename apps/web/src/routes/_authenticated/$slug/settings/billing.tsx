@@ -17,8 +17,6 @@ import {
   VortexSubscriptionActionSummary,
   type VortexEmbeddedComponentClassNames,
   type VortexPlanComparisonPlan,
-  type VortexPlanComparisonState,
-  type VortexSubscriptionActionSummaryState,
   type VortexSurfaceLaunch,
 } from "@vortex/payments/react";
 import { useAction, useQuery } from "convex/react";
@@ -28,86 +26,17 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { BillingSkeleton } from "@/components/skeletons";
 
+import {
+  buildVortexPlanComparison,
+  buildVortexSubscriptionSummary,
+  type SealBillingPlan,
+  type SealBillingSubscription,
+} from "./-billing-adapter";
+
 export const Route = createFileRoute("/_authenticated/$slug/settings/billing")({
   component: BillingSettingsPage,
   pendingComponent: BillingSkeleton,
 });
-
-type SubscriptionStatus =
-  | "active"
-  | "trialing"
-  | "canceled"
-  | "past_due"
-  | "incomplete"
-  | "incomplete_expired"
-  | "unpaid";
-
-function toVortexSubscriptionStatus(
-  status: SubscriptionStatus,
-  cancelAtPeriodEnd: boolean,
-): VortexSubscriptionActionSummaryState["status"] {
-  if (cancelAtPeriodEnd && status !== "canceled") {
-    return "scheduled_cancellation";
-  }
-  switch (status) {
-    case "active":
-      return "active";
-    case "trialing":
-      return "trialing";
-    case "past_due":
-      return "past_due";
-    case "canceled":
-      return "canceled";
-    case "incomplete":
-    case "incomplete_expired":
-    case "unpaid":
-      return "payment_action_required";
-    default:
-      return "none";
-  }
-}
-
-function toCadence(interval: string): VortexPlanComparisonPlan["cadence"] {
-  switch (interval) {
-    case "month":
-      return "monthly";
-    case "year":
-      return "yearly";
-    case "week":
-    case "day":
-      return "custom";
-    default:
-      return "custom";
-  }
-}
-
-const featureLabels: Record<string, string> = {
-  api_access: "Full API access",
-  webhook_access: "Webhooks",
-  mcp_access: "MCP integration",
-  multi_user: "Unlimited team members",
-  priority_support: "Priority support",
-  custom_branding: "Custom branding",
-  advanced_analytics: "Advanced analytics",
-  audit_trail: "Audit trail",
-  sso: "Single sign-on (SSO)",
-  templates: "Unlimited templates",
-};
-
-function formatFeatureLabel(raw: string): string {
-  const trimmed = raw.trim();
-  return (
-    featureLabels[trimmed] ?? trimmed.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  );
-}
-
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 function buildClassNames(): VortexEmbeddedComponentClassNames {
   return {
@@ -144,8 +73,8 @@ function BillingSettingsPage() {
 
   const [checkoutLookupKey, setCheckoutLookupKey] = useState<string | null>(null);
 
-  const isActiveSubscription = subscription?.status === "active";
-  const isFreePlan = !subscription || subscription.tier === "free" || !isActiveSubscription;
+  const typedSubscription = subscription as SealBillingSubscription | null | undefined;
+  const typedPlans = plans as readonly SealBillingPlan[] | undefined;
 
   async function createVortexCheckoutSession({ lookupKey }: { readonly lookupKey: string }) {
     setCheckoutLookupKey(lookupKey);
@@ -195,7 +124,6 @@ function BillingSettingsPage() {
   }
 
   const checkoutLoading = checkoutLookupKey !== null || checkoutProvider === undefined;
-  const proPlan = plans?.find((plan) => plan.tier === "pro");
   const vortexPaymentsConfig = {
     baseUrl: window.location.origin,
     environment: "production" as const,
@@ -208,98 +136,17 @@ function BillingSettingsPage() {
   const vortexClassNames = buildClassNames();
   const customerId = `seal:${slug}`;
   const returnPath = `/${slug}/settings/billing`;
-  const proMonthlyPrice = proPlan?.pricing.monthly;
-  const proPlanComparisonPlan: VortexPlanComparisonPlan | null =
-    proPlan === undefined || !proMonthlyPrice?.lookupKey
-      ? null
-      : {
-          id: "pro",
-          lookupKey: proMonthlyPrice.lookupKey,
-          status: !isFreePlan && subscription?.tier === proPlan.tier ? "current" : "recommended",
-          title: proPlan.name,
-          description: proPlan.description ?? undefined,
-          priceAmount: Math.round(proMonthlyPrice.amount * 100),
-          currency: proMonthlyPrice.currency,
-          cadence: toCadence("month"),
-          cadenceLabel: "month",
-          featureHighlights: (proPlan.features ?? "")
-            .split(",")
-            .map((feature: string) => feature.trim())
-            .filter((feature: string) => feature.length > 0)
-            .map(formatFeatureLabel),
-        };
-
-  const currentSubscriptionSummary: VortexSubscriptionActionSummaryState = subscription
-    ? {
-        customerId,
-        status: toVortexSubscriptionStatus(
-          subscription.status as SubscriptionStatus,
-          subscription.cancelAtPeriodEnd,
-        ),
-        title: isFreePlan ? "Free plan" : `${subscription.planName ?? "Professional"} plan`,
-        description: isFreePlan
-          ? "You are on the Free plan."
-          : "Your workspace subscription is active through Vortex Payments.",
-        planLabel: subscription.planName ?? "Free",
-        cadenceLabel:
-          subscription.intervalCount === 1
-            ? subscription.interval
-            : `${subscription.intervalCount} ${subscription.interval}s`,
-        renewalAt:
-          subscription.status !== "canceled" && !subscription.cancelAtPeriodEnd
-            ? formatDate(subscription.currentPeriodEnd)
-            : undefined,
-        trialEndsAt: subscription.trialEnd ? formatDate(subscription.trialEnd) : undefined,
-        scheduledCancelAt: subscription.cancelAtPeriodEnd
-          ? formatDate(subscription.currentPeriodEnd)
-          : undefined,
-        amountDue: subscription.unitAmount,
-        currency: subscription.currency,
-        nextAction:
-          subscription.status === "past_due"
-            ? "Update payment method to avoid service interruption."
-            : isFreePlan
-              ? "Upgrade when you need the Professional workspace limits."
-              : "Manage plan changes from billing.",
-        action: isFreePlan ? "change_plan" : "open_portal",
-        actionDisabledReason: isFreePlan
-          ? "Choose a Professional plan below."
-          : "Hosted subscription management is not enabled for this workspace yet.",
-      }
-    : {
-        customerId,
-        status: "none",
-        title: "Free plan",
-        description: "You are on the Free plan.",
-        planLabel: "Free",
-        cadenceLabel: "monthly",
-        nextAction: "Upgrade when you need the Professional workspace limits.",
-        action: "change_plan",
-        actionDisabledReason: "Choose a Professional plan below.",
-      };
-
-  const planComparison: VortexPlanComparisonState = {
+  const currentSubscriptionSummary = buildVortexSubscriptionSummary({
     customerId,
-    status: plans === undefined ? "empty" : plans.length === 0 ? "empty" : "ready",
-    currentPlanId: isFreePlan ? "free" : (subscription?.tier ?? undefined),
-    recommendedPlanId: "pro",
-    selectedPlanId: checkoutLookupKey ?? undefined,
+    subscription: typedSubscription ?? null,
+  });
+  const planComparison = buildVortexPlanComparison({
+    customerId,
+    plans: typedPlans,
+    subscription: typedSubscription ?? null,
+    selectedLookupKey: checkoutLookupKey,
     checkoutReturnPath: returnPath,
-    plans: [
-      {
-        id: "free",
-        status: isFreePlan ? "current" : "available",
-        title: "Free",
-        description: "Start signing documents without paid workspace features.",
-        priceAmount: 0,
-        currency: "usd",
-        cadence: "monthly",
-        cadenceLabel: "month",
-        featureHighlights: ["Basic document signing", "Starter workspace limits"],
-      },
-      ...(proPlanComparisonPlan === null ? [] : [proPlanComparisonPlan]),
-    ],
-  };
+  });
 
   async function handlePlanSelect(plan: VortexPlanComparisonPlan) {
     if (!plan.lookupKey || plan.status === "current" || plan.status === "disabled") {
