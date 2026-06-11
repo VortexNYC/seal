@@ -77,12 +77,14 @@ describe("payments settings Vortex merchant adapters", () => {
       displayName: "Acme",
       status: "active",
       capabilityStatus: "active",
-      processorAccountRefs: [{
-        provider: "stripe",
-        objectType: "account",
-        objectId: "acct_123",
-        relationship: "legacy_processor_account",
-      }],
+      processorAccountRefs: [
+        {
+          provider: "stripe",
+          objectType: "account",
+          objectId: "acct_123",
+          relationship: "legacy_processor_account",
+        },
+      ],
     });
     expect(merchantState).toMatchObject({
       merchantAccountId: "acct_123",
@@ -136,17 +138,20 @@ describe("payments settings Vortex merchant adapters", () => {
     expect(payoutProfile).toMatchObject({
       payoutRail: "unknown",
       fundingRequirement: "requirements_due",
-      capabilities: [{
-        key: "standard_next_day_ach",
-        status: "disabled",
-        reason: "requirements.currently_due",
-        source: "operator_policy",
-      }, {
-        key: "sub_merchant_payee_payment",
-        status: "disabled",
-        reason: "Payment collection is not ready.",
-        source: "operator_policy",
-      }],
+      capabilities: [
+        {
+          key: "standard_next_day_ach",
+          status: "disabled",
+          reason: "requirements.currently_due",
+          source: "operator_policy",
+        },
+        {
+          key: "sub_merchant_payee_payment",
+          status: "disabled",
+          reason: "Payment collection is not ready.",
+          source: "operator_policy",
+        },
+      ],
     });
   });
 });

@@ -66,9 +66,7 @@ function readExpectedProvider(): CheckoutProvider {
   if (raw === "vortex_billing" || raw === "stripe") {
     return raw;
   }
-  throw new Error(
-    "SEAL_BILLING_E2E_EXPECTED_PROVIDER must be either vortex_billing or stripe.",
-  );
+  throw new Error("SEAL_BILLING_E2E_EXPECTED_PROVIDER must be either vortex_billing or stripe.");
 }
 
 async function ensureRouteWorkspaceIsActive(page: Page, organizationSlug: string): Promise<void> {
@@ -76,17 +74,20 @@ async function ensureRouteWorkspaceIsActive(page: Page, organizationSlug: string
     () => window.__convexClient !== undefined && window.__convexApi !== undefined,
     { timeout: 10000 },
   );
-  await page.evaluate(async ({ slug }) => {
-    const client = window.__convexClient;
-    const api = window.__convexApi;
-    if (!client || !api) {
-      throw new Error("Convex client not ready");
-    }
-    await client.mutation(api.organizations.mutations.ensurePersonalOrganization, {
-      organizationName: "Seal E2E Workspace",
-      organizationSlug: slug,
-    });
-  }, { slug: organizationSlug });
+  await page.evaluate(
+    async ({ slug }) => {
+      const client = window.__convexClient;
+      const api = window.__convexApi;
+      if (!client || !api) {
+        throw new Error("Convex client not ready");
+      }
+      await client.mutation(api.organizations.mutations.ensurePersonalOrganization, {
+        organizationName: "Seal E2E Workspace",
+        organizationSlug: slug,
+      });
+    },
+    { slug: organizationSlug },
+  );
 }
 
 async function readActiveOrganization(page: Page): Promise<{
@@ -162,7 +163,10 @@ async function readCheckoutProvider(page: Page): Promise<{
     if (!client || !api) {
       throw new Error("Convex client not ready");
     }
-    const result = (await client.query(api.vortex_billing.subscription_actions.getCheckoutProvider, {})) as {
+    const result = (await client.query(
+      api.vortex_billing.subscription_actions.getCheckoutProvider,
+      {},
+    )) as {
       provider: CheckoutProvider;
       enabledAllOrganizations: boolean;
     };
@@ -171,21 +175,24 @@ async function readCheckoutProvider(page: Page): Promise<{
 }
 
 async function expectDirectVortexCheckoutToReject(page: Page): Promise<void> {
-  const rejection = await page.evaluate(async ({ lookupKey: checkedLookupKey }) => {
-    const client = window.__convexClient;
-    const api = window.__convexApi;
-    if (!client || !api) {
-      throw new Error("Convex client not ready");
-    }
-    try {
-      await client.action(api.vortex_billing.subscription_actions.createCheckoutSession, {
-        lookupKey: checkedLookupKey,
-      });
-      return "";
-    } catch (error) {
-      return error instanceof Error ? error.message : String(error);
-    }
-  }, { lookupKey });
+  const rejection = await page.evaluate(
+    async ({ lookupKey: checkedLookupKey }) => {
+      const client = window.__convexClient;
+      const api = window.__convexApi;
+      if (!client || !api) {
+        throw new Error("Convex client not ready");
+      }
+      try {
+        await client.action(api.vortex_billing.subscription_actions.createCheckoutSession, {
+          lookupKey: checkedLookupKey,
+        });
+        return "";
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+    },
+    { lookupKey },
+  );
 
   expect(rejection).toContain("Vortex Billing SaaS checkout is not enabled");
 }

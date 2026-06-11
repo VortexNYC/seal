@@ -7,6 +7,7 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   VortexMerchantAccountPanel,
   VortexMerchantActionQueue,
@@ -18,7 +19,6 @@ import {
   type VortexPayoutReadinessPanelProps,
   type VortexSurfaceLaunch,
 } from "@vortex/payments/react";
-import { createFileRoute } from "@tanstack/react-router";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -138,13 +138,15 @@ export function buildVortexMerchantAccount(args: {
     status: merchantStatus,
     capabilityStatus: args.account?.chargesEnabled ? "active" : "restricted",
     processorAccountRefs: args.account
-      ? [{
-          provider: "stripe",
-          objectType: "account",
-          objectId: args.account.stripeAccountId,
-          relationship: "legacy_processor_account",
-          recordedAt,
-        }]
+      ? [
+          {
+            provider: "stripe",
+            objectType: "account",
+            objectId: args.account.stripeAccountId,
+            relationship: "legacy_processor_account",
+            recordedAt,
+          },
+        ]
       : [],
     createdAt: recordedAt,
     updatedAt: recordedAt,
@@ -184,11 +186,7 @@ export function buildVortexMerchantState(args: {
     restrictedCapabilityKeys,
     canAcceptPayments: args.status === "connected" && args.account?.chargesEnabled === true,
     payoutReadiness:
-      args.account?.payoutsEnabled === true
-        ? "ready"
-        : args.account
-          ? "blocked"
-          : "unknown",
+      args.account?.payoutsEnabled === true ? "ready" : args.account ? "blocked" : "unknown",
     payoutBlockReason: args.account?.requirements?.disabledReason,
     capabilitySnapshots: [
       {
@@ -225,19 +223,24 @@ export function buildPayoutProfile(merchantState: VortexMerchantState): VortexPa
     payoutSchedule: "daily",
     currency: "USD",
     fundingRequirement: merchantState.payoutReadiness === "ready" ? "standard" : "requirements_due",
-    capabilities: [{
-      key: "standard_next_day_ach",
-      status: merchantState.payoutReadiness === "ready" ? "enabled" : "disabled",
-      reason: merchantState.payoutBlockReason ?? "Payout readiness is derived from merchant account state.",
-      source: "operator_policy",
-    }, {
-      key: "sub_merchant_payee_payment",
-      status: merchantState.canAcceptPayments ? "enabled" : "disabled",
-      reason: merchantState.canAcceptPayments
-        ? "Merchant can accept document payments."
-        : "Payment collection is not ready.",
-      source: "operator_policy",
-    }],
+    capabilities: [
+      {
+        key: "standard_next_day_ach",
+        status: merchantState.payoutReadiness === "ready" ? "enabled" : "disabled",
+        reason:
+          merchantState.payoutBlockReason ??
+          "Payout readiness is derived from merchant account state.",
+        source: "operator_policy",
+      },
+      {
+        key: "sub_merchant_payee_payment",
+        status: merchantState.canAcceptPayments ? "enabled" : "disabled",
+        reason: merchantState.canAcceptPayments
+          ? "Merchant can accept document payments."
+          : "Payment collection is not ready.",
+        source: "operator_policy",
+      },
+    ],
     fetchedAt: merchantState.generatedAt,
   };
 }
@@ -343,51 +346,57 @@ function PaymentsSettingsPage() {
   const canEditMerchant = canManage && isPro && !isLoadingPlan;
   const merchantActions: readonly VortexMerchantActionQueueItem[] = [
     ...(!isPro && !isLoadingPlan
-      ? [{
-          id: "upgrade-required",
-          kind: "merchant_status" as const,
-          title: "Professional plan required",
-          description: "Upgrade before accepting document payments.",
-          severity: "warning" as const,
-          status: "blocked" as const,
-          primaryActionLabel: "Upgrade to Professional",
-          primaryAction: {
-            surface: "plan_comparison" as const,
-            path: `/${slug}/settings/billing`,
+      ? [
+          {
+            id: "upgrade-required",
+            kind: "merchant_status" as const,
+            title: "Professional plan required",
+            description: "Upgrade before accepting document payments.",
+            severity: "warning" as const,
+            status: "blocked" as const,
+            primaryActionLabel: "Upgrade to Professional",
+            primaryAction: {
+              surface: "plan_comparison" as const,
+              path: `/${slug}/settings/billing`,
+            },
           },
-        }]
+        ]
       : []),
     ...(isPro && !hasStripeAccount
-      ? [{
-          id: "create-merchant-account",
-          kind: "onboarding_requirement" as const,
-          title: "Create merchant account",
-          description: "Create the merchant account before collecting document payments.",
-          severity: "critical" as const,
-          status: "open" as const,
-          primaryActionLabel: isCreatingAccount ? "Creating..." : "Create account",
-          primaryAction: {
-            surface: "merchant_action_queue" as const,
-            path: `/${slug}/settings/payments`,
-            query: { action: "create-merchant-account" },
+      ? [
+          {
+            id: "create-merchant-account",
+            kind: "onboarding_requirement" as const,
+            title: "Create merchant account",
+            description: "Create the merchant account before collecting document payments.",
+            severity: "critical" as const,
+            status: "open" as const,
+            primaryActionLabel: isCreatingAccount ? "Creating..." : "Create account",
+            primaryAction: {
+              surface: "merchant_action_queue" as const,
+              path: `/${slug}/settings/payments`,
+              query: { action: "create-merchant-account" },
+            },
           },
-        }]
+        ]
       : []),
     ...(isPro && hasStripeAccount && status !== "connected"
-      ? [{
-          id: "refresh-merchant-account",
-          kind: "onboarding_requirement" as const,
-          title: "Refresh merchant requirements",
-          description: "Check the latest onboarding, capability, and payout readiness state.",
-          severity: status === "restricted" ? "critical" as const : "warning" as const,
-          status: "open" as const,
-          primaryActionLabel: isRefreshing ? "Refreshing..." : "Refresh status",
-          primaryAction: {
-            surface: "merchant_action_queue" as const,
-            path: `/${slug}/settings/payments`,
-            query: { action: "refresh-merchant-account" },
+      ? [
+          {
+            id: "refresh-merchant-account",
+            kind: "onboarding_requirement" as const,
+            title: "Refresh merchant requirements",
+            description: "Check the latest onboarding, capability, and payout readiness state.",
+            severity: status === "restricted" ? ("critical" as const) : ("warning" as const),
+            status: "open" as const,
+            primaryActionLabel: isRefreshing ? "Refreshing..." : "Refresh status",
+            primaryAction: {
+              surface: "merchant_action_queue" as const,
+              path: `/${slug}/settings/payments`,
+              query: { action: "refresh-merchant-account" },
+            },
           },
-        }]
+        ]
       : []),
   ];
 
@@ -424,10 +433,7 @@ function PaymentsSettingsPage() {
           )}
         </p>
 
-        <VortexPaymentsProvider
-          config={vortexPaymentsConfig}
-          navigate={handleVortexMerchantLaunch}
-        >
+        <VortexPaymentsProvider config={vortexPaymentsConfig} navigate={handleVortexMerchantLaunch}>
           <div className="grid gap-6">
             {!canManage && (
               <div className="bg-muted text-muted-foreground rounded-md p-3 text-sm">
@@ -466,9 +472,7 @@ function PaymentsSettingsPage() {
 
             {status === "not_connected" && !isPro && !isLoadingPlan && (
               <div className="space-y-3">
-                <p className="text-sm">
-                  Upgrade to accept payments through your documents.
-                </p>
+                <p className="text-sm">Upgrade to accept payments through your documents.</p>
                 <Button asChild>
                   <a href={`/${slug}/settings/billing`}>Upgrade to Professional</a>
                 </Button>
