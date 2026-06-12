@@ -9,7 +9,7 @@ import { useQuery } from "convex/react";
  * for conditionally rendering tier-gated features.
  */
 export function useSubscriptionLimits() {
-  const subscription = useQuery(api.stripe.queries.getSubscriptionDetails);
+  const subscription = useQuery(api.payments.billing_queries.getSubscriptionDetails);
 
   const isLoading = subscription === undefined;
 

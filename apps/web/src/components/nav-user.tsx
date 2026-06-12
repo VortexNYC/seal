@@ -37,7 +37,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
-  const subscription = useQuery(api.stripe.queries.getSubscriptionDetails);
+  const subscription = useQuery(api.payments.billing_queries.getSubscriptionDetails);
   const isActiveSubscription = subscription?.status === "active";
   const planName = isActiveSubscription ? (subscription?.planName ?? "Free") : "Free";
   const isPro = isActiveSubscription && subscription?.tier === "pro";

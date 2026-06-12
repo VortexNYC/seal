@@ -101,11 +101,13 @@ const vortexBillingClassNames = {
 } satisfies VortexEmbeddedComponentClassNames;
 
 function BillingSettingsPage() {
-  const subscription = useQuery(api.stripe.queries.getSubscriptionDetails) as
+  const subscription = useQuery(api.payments.billing_queries.getSubscriptionDetails) as
     | BillingSubscription
     | null
     | undefined;
-  const plans = useQuery(api.stripe.queries.getAvailablePlans) as AvailablePlan[] | undefined;
+  const plans = useQuery(api.payments.billing_queries.getAvailablePlans) as
+    | AvailablePlan[]
+    | undefined;
   const createCheckout = useAction(api.payments.subscription_actions.createCheckoutSession);
   const createPortal = useAction(api.payments.subscription_actions.createCustomerPortalSession);
 
