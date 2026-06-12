@@ -152,7 +152,10 @@ function BillingSettingsPage() {
     }
   }
 
-  async function handlePlanSelect(plan: VortexPlanComparisonPlan) {
+  async function handlePlanSelect(
+    plan: VortexPlanComparisonPlan,
+    _comparison: VortexPlanComparisonState,
+  ) {
     const lookupKey = checkoutLookupKeysByPlanId[plan.id];
     if (!lookupKey) {
       toast.error("This plan is not available for checkout yet.");
@@ -232,9 +235,7 @@ function BillingSettingsPage() {
                 selectPlanLabel: "Select plan",
                 title: "Plans",
               }}
-              onPlanSelect={(plan) => {
-                void handlePlanSelect(plan);
-              }}
+              onPlanSelect={handlePlanSelect}
             />
           </div>
         </VortexPaymentsProvider>
