@@ -37,3 +37,6 @@ export * as templates from "./templates";
 
 // Webhooks Management API internal queries/mutations
 export * as webhooks from "./webhooks";
+
+// Workspace feedback
+export * as feedback from "./feedback";
