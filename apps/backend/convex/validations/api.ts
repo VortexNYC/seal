@@ -298,7 +298,7 @@ export const getAuditTrailSchema = z.object({
     .number()
     .min(1)
     .max(100)
-    .optional()
+    .default(100)
     .describe("Maximum number of audit entries to return"),
 });
 export type GetAuditTrailInput = z.infer<typeof getAuditTrailSchema>;
@@ -713,7 +713,7 @@ export interface ApiSettings {
 
 /** Schema for listing org-wide audit log */
 export const listAuditLogSchema = z.object({
-  limit: z.number().min(1).max(100).optional().describe("Number of entries (1–100, default 20)"),
+  limit: z.number().min(1).max(100).default(100).describe("Number of entries (1–100, default 100)"),
   cursor: z.string().optional().describe("Pagination cursor from previous response"),
   document_id: z.string().optional().describe("Filter by document ID"),
   action: z.string().optional().describe("Filter by action type (e.g. document.signed)"),
