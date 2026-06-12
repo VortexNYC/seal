@@ -20,6 +20,9 @@ export * as contacts from "./contacts";
 // Documents API internal queries/mutations
 export * as documents from "./documents";
 
+// Feedback API internal queries/mutations
+export * as feedback from "./feedback";
+
 // Team members
 export * as members from "./members";
 
