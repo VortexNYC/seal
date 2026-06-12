@@ -10,8 +10,10 @@ const documentSidebarPath = "apps/web/src/components/documents/document-sidebar.
 const fieldToolbarPath = "apps/web/src/components/documents/field-toolbar.tsx";
 const paymentsQueriesPath = "apps/backend/convex/payments/queries.ts";
 const paymentsSubscriptionActionsPath = "apps/backend/convex/payments/subscription_actions.ts";
+const paymentsPaymentFieldActionsPath = "apps/backend/convex/payments/payment_field_actions.ts";
 const paymentsMerchantAccountActionsPath =
   "apps/backend/convex/payments/merchant_account_actions.ts";
+const providerPaymentFieldActionsPath = "apps/backend/convex/stripe/payment_field_actions.ts";
 const providerConnectActionsPath = "apps/backend/convex/stripe/connect_actions.ts";
 const generatedApiPath = "apps/backend/convex/_generated/api.d.ts";
 const deletedProviderSubscriptionActionsPath =
@@ -21,7 +23,9 @@ const failures: string[] = [];
 for (const requiredPath of [
   paymentsQueriesPath,
   paymentsSubscriptionActionsPath,
+  paymentsPaymentFieldActionsPath,
   paymentsMerchantAccountActionsPath,
+  providerPaymentFieldActionsPath,
   providerConnectActionsPath,
   generatedApiPath,
 ]) {
@@ -46,8 +50,16 @@ const paymentsSubscriptionActions = readFileSync(
   join(repoRoot, paymentsSubscriptionActionsPath),
   "utf8",
 );
+const paymentsPaymentFieldActions = readFileSync(
+  join(repoRoot, paymentsPaymentFieldActionsPath),
+  "utf8",
+);
 const paymentsMerchantAccountActions = readFileSync(
   join(repoRoot, paymentsMerchantAccountActionsPath),
+  "utf8",
+);
+const providerPaymentFieldActions = readFileSync(
+  join(repoRoot, providerPaymentFieldActionsPath),
   "utf8",
 );
 const providerConnectActions = readFileSync(join(repoRoot, providerConnectActionsPath), "utf8");
@@ -137,6 +149,47 @@ if (generatedApi.includes("stripe/connect_subscription_actions")) {
 }
 
 for (const requiredFragment of [
+  "internal.stripe.payment_field_actions.createProviderPaymentObjectsForDocumentFields",
+  "type ProviderPaymentLink",
+  "providerInvoiceId",
+  "processorInvoiceId",
+]) {
+  if (!paymentsPaymentFieldActions.includes(requiredFragment)) {
+    failures.push(
+      `${paymentsPaymentFieldActionsPath} missing Vortex payment object boundary fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+for (const forbiddenFragment of [
+  "createStripePaymentObjectsForDocumentFields",
+  "type StripeInvoiceLink",
+  "type StripePaymentObjectsResult",
+]) {
+  if (paymentsPaymentFieldActions.includes(forbiddenFragment)) {
+    failures.push(
+      `${paymentsPaymentFieldActionsPath} still exposes Stripe-shaped payment object fragment: ${forbiddenFragment}`,
+    );
+  }
+}
+
+for (const requiredFragment of [
+  "export const createProviderPaymentObjectsForDocumentFields = internalAction",
+  "paymentLinks:",
+  "providerInvoiceId:",
+]) {
+  if (!providerPaymentFieldActions.includes(requiredFragment)) {
+    failures.push(
+      `${providerPaymentFieldActionsPath} missing internal provider payment object fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+if (providerPaymentFieldActions.includes("createStripePaymentObjectsForDocumentFields")) {
+  failures.push("Internal provider payment field action must use provider-neutral export naming.");
+}
+
+for (const requiredFragment of [
   "internal.stripe.connect_actions.createConnectedAccount",
   "internal.stripe.connect_actions.createAccountLink",
   "internal.stripe.connect_actions.createConnectOAuthUrl",
@@ -185,3 +238,4 @@ console.log("- Browser no longer supplies processor account ids for subscription
 console.log("- Vortex subscription actions resolve processor context server-side.");
 console.log("- Vortex Connect account operations enter through api.payments merchant actions.");
 console.log("- Dead public provider subscription actions stay deleted from source and generated API.");
+console.log("- Document payment object creation uses Vortex-owned payment link naming.");

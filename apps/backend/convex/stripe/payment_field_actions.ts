@@ -1081,23 +1081,23 @@ async function createStripeObjectsForConfig(
 }
 
 /**
- * Internal Stripe processor action for all payment fields on a document.
+ * Internal provider action for all payment fields on a document.
  *
  * Called through payments/payment_field_actions after validation passes.
- * Returns a map of recipientEmail → hostedInvoiceUrl for email inclusion.
+ * Returns payment links for email inclusion.
  */
-export const createStripePaymentObjectsForDocumentFields = internalAction({
+export const createProviderPaymentObjectsForDocumentFields = internalAction({
   args: {
     documentId: v.id("documents"),
     organizationId: v.id("organizations"),
     userId: v.id("users"),
   },
   returns: v.object({
-    invoiceLinks: v.array(
+    paymentLinks: v.array(
       v.object({
         recipientEmail: v.string(),
         hostedInvoiceUrl: v.union(v.string(), v.null()),
-        stripeInvoiceId: v.string(),
+        providerInvoiceId: v.string(),
         totalAmountCents: v.number(),
         currency: v.string(),
       }),
@@ -1110,7 +1110,7 @@ export const createStripePaymentObjectsForDocumentFields = internalAction({
     );
 
     if (configs.length === 0) {
-      return { invoiceLinks: [] };
+      return { paymentLinks: [] };
     }
 
     const account = await ctx.runQuery(
@@ -1119,10 +1119,10 @@ export const createStripePaymentObjectsForDocumentFields = internalAction({
     );
 
     if (!account) {
-      throw new ConvexError("Stripe account not connected");
+      throw new ConvexError("Vortex Connect account not connected");
     }
     if (!account.chargesEnabled) {
-      throw new ConvexError("Stripe account is not enabled for charges");
+      throw new ConvexError("Vortex Connect account is not enabled for charges");
     }
 
     const subscriptionStatus = await ctx.runQuery(
@@ -1143,10 +1143,10 @@ export const createStripePaymentObjectsForDocumentFields = internalAction({
     const fieldMap = new Map(fields.map((f) => [f._id.toString(), f]));
 
     const stripe = initializeStripe();
-    const invoiceLinks: Array<{
+    const paymentLinks: Array<{
       recipientEmail: string;
       hostedInvoiceUrl: string | null;
-      stripeInvoiceId: string;
+      providerInvoiceId: string;
       totalAmountCents: number;
       currency: string;
     }> = [];
@@ -1159,15 +1159,15 @@ export const createStripePaymentObjectsForDocumentFields = internalAction({
         recipient,
       });
 
-      invoiceLinks.push({
+      paymentLinks.push({
         recipientEmail: recipient.email,
         hostedInvoiceUrl: result.hostedInvoiceUrl,
-        stripeInvoiceId: result.stripeInvoiceId,
+        providerInvoiceId: result.stripeInvoiceId,
         totalAmountCents: config.totalAmountCents,
         currency: config.currency,
       });
     }
 
-    return { invoiceLinks };
+    return { paymentLinks };
   },
 });

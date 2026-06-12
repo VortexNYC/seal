@@ -5,16 +5,16 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 
-type StripeInvoiceLink = {
+type ProviderPaymentLink = {
   recipientEmail: string;
   hostedInvoiceUrl: string | null;
-  stripeInvoiceId: string;
+  providerInvoiceId: string;
   totalAmountCents: number;
   currency: string;
 };
 
-type StripePaymentObjectsResult = {
-  invoiceLinks: StripeInvoiceLink[];
+type ProviderPaymentObjectsResult = {
+  paymentLinks: ProviderPaymentLink[];
 };
 
 type PaymentObjectsResult = {
@@ -45,16 +45,16 @@ export const createPaymentObjectsForDocumentFields = internalAction({
     ),
   }),
   handler: async (ctx, args): Promise<PaymentObjectsResult> => {
-    const result: StripePaymentObjectsResult = await ctx.runAction(
-      internal.stripe.payment_field_actions.createStripePaymentObjectsForDocumentFields,
+    const result: ProviderPaymentObjectsResult = await ctx.runAction(
+      internal.stripe.payment_field_actions.createProviderPaymentObjectsForDocumentFields,
       args,
     );
 
     return {
-      paymentLinks: result.invoiceLinks.map((link) => ({
+      paymentLinks: result.paymentLinks.map((link) => ({
         recipientEmail: link.recipientEmail,
         hostedPaymentUrl: link.hostedInvoiceUrl,
-        processorInvoiceId: link.stripeInvoiceId,
+        processorInvoiceId: link.providerInvoiceId,
         totalAmountCents: link.totalAmountCents,
         currency: link.currency,
       })),
