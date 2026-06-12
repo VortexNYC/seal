@@ -302,6 +302,19 @@ components:
         next_cursor:
           type: string
 
+    PaginatedRecipients:
+      type: object
+      required: [data, has_more]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Recipient"
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+
     Error:
       type: object
       required: [type, status, title]
@@ -690,24 +703,65 @@ paths:
       tags: [Recipients]
       operationId: listRecipients
       summary: List recipients
+      description: >
+        Returns a paginated list of recipients for a document. Use the
+        `next_cursor` from the response to fetch the next page.
       parameters:
         - name: document_id
           in: query
           required: true
           schema:
             type: string
+          description: Document ID to list recipients for
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of results per page
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from the previous response
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/RecipientStatus"
+          description: Filter by recipient status
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/RecipientRole"
+          description: Filter by recipient role
+        - name: email
+          in: query
+          schema:
+            type: string
+          description: Filter by email (substring match)
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [order, email, name, role, status, created_at]
+            default: order
+          description: Field to sort by
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: Sort direction
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  recipients:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Recipient"
+                $ref: "#/components/schemas/PaginatedRecipients"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":

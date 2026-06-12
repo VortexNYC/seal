@@ -145,6 +145,30 @@ export type VoidDocumentInput = z.infer<typeof voidDocumentSchema>;
 /** Schema for listing recipients */
 export const listRecipientsSchema = z.object({
   document_id: z.string().describe("The document ID"),
+  limit: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe("Maximum number of recipients to return (1-100, default 20)"),
+  cursor: z.string().optional().describe("Pagination cursor from previous response"),
+  status: recipientStatusSchema.optional().describe("Filter by recipient status"),
+  role: recipientRoleSchema.optional().describe("Filter by recipient role"),
+  email: z.string().optional().describe("Filter by email (substring match)"),
+  sort_by: z
+    .enum(["order", "email", "name", "role", "status", "created_at"])
+    .optional()
+    .describe("Sort field (default: order)"),
+  sort_order: z
+    .enum(["asc", "desc"])
+    .optional()
+    .describe("Sort direction (default: asc)"),
+  fields: z
+    .string()
+    .optional()
+    .describe(
+      "Comma-separated list of fields to include in response (e.g. 'email,name,status')",
+    ),
 });
 export type ListRecipientsInput = z.infer<typeof listRecipientsSchema>;
 

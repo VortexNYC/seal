@@ -911,8 +911,16 @@ http.route({
  * @scope seal:recipients:read
  *
  * @queryparam {string} document_id - Document ID (required)
+ * @queryparam {number} [limit=20] - Maximum results (1-100)
+ * @queryparam {string} [cursor] - Pagination cursor
+ * @queryparam {string} [status] - Filter by recipient status
+ * @queryparam {string} [role] - Filter by recipient role
+ * @queryparam {string} [email] - Filter by email (substring match)
+ * @queryparam {string} [sort_by=order] - Sort field: order, email, name, role, status, created_at
+ * @queryparam {string} [sort_order=asc] - Sort direction: asc or desc
+ * @queryparam {string} [fields] - Comma-separated list of fields to include in response
  *
- * @returns List of recipients for the document
+ * @returns Paginated list of recipients for the document
  */
 http.route({
   path: "/api/v1/recipients",
@@ -923,17 +931,27 @@ http.route({
         throw new ApiError(400, "document_id is required", "VALIDATION_ERROR");
       }
 
-      const recipients = await ctx.runQuery(internal.api.v1.recipients.listRecipients, {
+      const { limit, cursor } = parsePagination(query);
+      const fields = query.fields ? query.fields.split(",").map((f) => f.trim()) : undefined;
+      const result = await ctx.runQuery(internal.api.v1.recipients.listRecipients, {
         userId: auth.userId,
         organizationId: auth.organizationId,
         documentId: query.document_id as Id<"documents">,
+        limit,
+        cursor,
+        status: query.status as Parameters<typeof ctx.runQuery>[1]["status"],
+        role: query.role as Parameters<typeof ctx.runQuery>[1]["role"],
+        email: query.email,
+        sort_by: query.sort_by as Parameters<typeof ctx.runQuery>[1]["sort_by"],
+        sort_order: query.sort_order as Parameters<typeof ctx.runQuery>[1]["sort_order"],
+        fields,
       });
 
-      if (recipients === null) {
+      if (result === null) {
         throw new ApiError(404, "Document not found", "DOCUMENT_NOT_FOUND");
       }
 
-      return apiResponse(200, { data: recipients });
+      return paginatedResponse(result.recipients, result.has_more, result.next_cursor);
     },
     { scope: API_SCOPES.RECIPIENTS_READ },
   ),

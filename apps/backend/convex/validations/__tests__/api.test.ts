@@ -298,8 +298,52 @@ describe("listRecipientsSchema", () => {
     });
   });
 
+  test("accepts optional pagination and filter params", () => {
+    expect(
+      listRecipientsSchema.parse({
+        document_id: "doc_123",
+        limit: 10,
+        cursor: "cursor_1",
+        status: "pending",
+        role: "signer",
+        email: "alice@test.com",
+        sort_by: "email",
+        sort_order: "desc",
+      }),
+    ).toEqual({
+      document_id: "doc_123",
+      limit: 10,
+      cursor: "cursor_1",
+      status: "pending",
+      role: "signer",
+      email: "alice@test.com",
+      sort_by: "email",
+      sort_order: "desc",
+    });
+  });
+
   test("rejects missing document_id", () => {
     expect(listRecipientsSchema.safeParse({}).success).toBe(false);
+  });
+
+  test("rejects invalid sort_by", () => {
+    expect(listRecipientsSchema.safeParse({ document_id: "doc_123", sort_by: "invalid" }).success).toBe(false);
+  });
+
+  test("rejects invalid sort_order", () => {
+    expect(listRecipientsSchema.safeParse({ document_id: "doc_123", sort_order: "invalid" }).success).toBe(false);
+  });
+
+  test("accepts fields parameter", () => {
+    expect(
+      listRecipientsSchema.parse({
+        document_id: "doc_123",
+        fields: "email,name,status",
+      }),
+    ).toEqual({
+      document_id: "doc_123",
+      fields: "email,name,status",
+    });
   });
 });
 

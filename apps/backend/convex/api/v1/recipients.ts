@@ -87,29 +87,155 @@ function getSigningUrl(
  *
  * @internal
  */
+const RECIPIENT_FIELDS = [
+  "id",
+  "email",
+  "name",
+  "role",
+  "status",
+  "order",
+  "viewed_at",
+  "completed_at",
+  "signing_url",
+] as const;
+
+type RecipientField = (typeof RECIPIENT_FIELDS)[number];
+
+function filterRecipientFields(
+  recipient: ApiRecipient,
+  fields?: RecipientField[],
+): Partial<ApiRecipient> {
+  if (!fields || fields.length === 0) return recipient;
+  const result: Partial<ApiRecipient> = {};
+  for (const field of fields) {
+    if (field in recipient) {
+      (result as Record<string, unknown>)[field] = recipient[field];
+    }
+  }
+  return result;
+}
+
 export const listRecipients = internalQuery({
   args: {
     userId: v.id("users"),
     organizationId: v.id("organizations"),
     documentId: v.id("documents"),
+    limit: v.optional(v.number()),
+    cursor: v.optional(v.string()),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("viewed"),
+        v.literal("signed"),
+        v.literal("approved"),
+        v.literal("declined"),
+        v.literal("expired"),
+      ),
+    ),
+    role: v.optional(v.union(v.literal("signer"), v.literal("approver"), v.literal("viewer"))),
+    email: v.optional(v.string()),
+    sort_by: v.optional(
+      v.union(
+        v.literal("order"),
+        v.literal("email"),
+        v.literal("name"),
+        v.literal("role"),
+        v.literal("status"),
+        v.literal("created_at"),
+      ),
+    ),
+    sort_order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
+    fields: v.optional(v.array(v.string())),
   },
-  handler: async (ctx, args): Promise<ApiRecipient[] | null> => {
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ recipients: Partial<ApiRecipient>[]; has_more: boolean; next_cursor?: string } | null> => {
     // Verify document exists and belongs to the organization
     const document = await ctx.db.get(args.documentId);
     if (!isDocumentAccessible(document, args.organizationId)) {
       return null;
     }
 
-    // Get recipients
-    const recipients = await ctx.db
-      .query("document_recipients")
-      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .collect();
+    let raw;
+    if (args.status) {
+      raw = await ctx.db
+        .query("document_recipients")
+        .withIndex("by_document_status", (q) =>
+          q.eq("documentId", args.documentId).eq("status", args.status!),
+        )
+        .collect();
+    } else {
+      raw = await ctx.db
+        .query("document_recipients")
+        .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+        .collect();
+    }
 
-    // Sort by order if present
-    recipients.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+    // Apply post-filters
+    const normalizedEmail = args.email?.toLowerCase().trim();
+    const filtered = raw.filter((r) => {
+      if (args.role && r.role !== args.role) return false;
+      if (normalizedEmail && !r.email.toLowerCase().includes(normalizedEmail)) return false;
+      return true;
+    });
 
-    return recipients.map((recipient) => buildApiRecipient(recipient));
+    // Sort
+    const sortField = args.sort_by ?? "order";
+    const sortOrder = args.sort_order ?? "asc";
+    const sortMultiplier = sortOrder === "desc" ? -1 : 1;
+
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "order":
+          comparison = (a.order ?? 999) - (b.order ?? 999);
+          break;
+        case "email":
+          comparison = a.email.localeCompare(b.email);
+          break;
+        case "name":
+          comparison = (a.name ?? "").localeCompare(b.name ?? "");
+          break;
+        case "role":
+          comparison = a.role.localeCompare(b.role);
+          break;
+        case "status":
+          comparison = a.status.localeCompare(b.status);
+          break;
+        case "created_at":
+          comparison = a.createdAt - b.createdAt;
+          break;
+      }
+      return comparison * sortMultiplier;
+    });
+
+    // Cursor pagination — limit is validated by parsePagination in the HTTP handler
+    const limit = args.limit ?? 20;
+    let start = 0;
+    if (args.cursor) {
+      const idx = filtered.findIndex((r) => r._id === args.cursor);
+      if (idx !== -1) start = idx + 1;
+    }
+
+    const page = filtered.slice(start, start + limit + 1);
+    const has_more = page.length > limit;
+    const items = has_more ? page.slice(0, limit) : page;
+    const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
+
+    const selectedFields = args.fields?.length
+      ? (args.fields.filter((f): f is RecipientField =>
+          (RECIPIENT_FIELDS as readonly string[]).includes(f),
+        ))
+      : undefined;
+
+    return {
+      recipients: items.map((recipient) =>
+        filterRecipientFields(buildApiRecipient(recipient), selectedFields),
+      ),
+      has_more,
+      next_cursor,
+    };
   },
 });
 
