@@ -59,65 +59,99 @@ export const listContacts = internalQuery({
     ctx,
     args,
   ): Promise<{ contacts: ApiContact[]; has_more: boolean; next_cursor?: string }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const maxLimit = Math.min(args.limit ?? 20, 100);
+    const numItems = maxLimit + 1;
 
-    let raw;
-    if (args.status) {
-      raw = await ctx.db
-        .query("contacts")
-        .withIndex("by_org_status", (q) =>
-          q.eq("organizationId", args.organizationId).eq("status", args.status!),
-        )
-        .collect();
-    } else {
-      raw = await ctx.db
-        .query("contacts")
-        .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
-        .collect();
+    const formatContact = (c: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+      fullName: string;
+      email: string;
+      phone?: string;
+      company?: string;
+      title?: string;
+      status: "active" | "inactive" | "lead";
+      notes?: string;
+      tags?: string[];
+      lastContactedAt?: number;
+      createdAt: number;
+      updatedAt: number;
+    }): ApiContact => ({
+      id: c._id,
+      first_name: c.firstName,
+      last_name: c.lastName,
+      full_name: c.fullName,
+      email: c.email,
+      phone: c.phone,
+      company: c.company,
+      title: c.title,
+      status: c.status,
+      notes: c.notes,
+      tags: c.tags,
+      last_contacted_at: c.lastContactedAt ? new Date(c.lastContactedAt).toISOString() : undefined,
+      created_at: new Date(c.createdAt).toISOString(),
+      updated_at: new Date(c.updatedAt).toISOString(),
+    });
+
+    // Search path: must collect all — email search is not covered by the search index
+    if (args.search) {
+      const raw = args.status
+        ? await ctx.db
+            .query("contacts")
+            .withIndex("by_org_status", (q) =>
+              q.eq("organizationId", args.organizationId).eq("status", args.status!),
+            )
+            .collect()
+        : await ctx.db
+            .query("contacts")
+            .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+            .collect();
+
+      const filtered = raw.filter(
+        (c) =>
+          c.fullName.toLowerCase().includes(args.search!.toLowerCase()) ||
+          c.email.toLowerCase().includes(args.search!.toLowerCase()),
+      );
+
+      let start = 0;
+      if (args.cursor) {
+        const idx = filtered.findIndex((c) => c._id === args.cursor);
+        if (idx !== -1) start = idx + 1;
+      }
+
+      const page = filtered.slice(start, start + numItems);
+      const hasMore = page.length > maxLimit;
+      const items = hasMore ? page.slice(0, maxLimit) : page;
+
+      return {
+        contacts: items.map(formatContact),
+        has_more: hasMore,
+        next_cursor: hasMore ? items[items.length - 1]?._id : undefined,
+      };
     }
 
-    // Client-side search filter
-    const filtered = args.search
-      ? raw.filter(
-          (c) =>
-            c.fullName.toLowerCase().includes(args.search!.toLowerCase()) ||
-            c.email.toLowerCase().includes(args.search!.toLowerCase()),
-        )
-      : raw;
+    // No search: paginate at the database level to avoid collecting all contacts
+    const paginated = args.status
+      ? await ctx.db
+          .query("contacts")
+          .withIndex("by_org_status", (q) =>
+            q.eq("organizationId", args.organizationId).eq("status", args.status!),
+          )
+          .paginate({ cursor: args.cursor ?? null, numItems })
+      : await ctx.db
+          .query("contacts")
+          .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
+          .paginate({ cursor: args.cursor ?? null, numItems });
 
-    // Cursor pagination
-    let start = 0;
-    if (args.cursor) {
-      const idx = filtered.findIndex((c) => c._id === args.cursor);
-      if (idx !== -1) start = idx + 1;
-    }
-
-    const page = filtered.slice(start, start + limit + 1);
-    const has_more = page.length > limit;
-    const items = has_more ? page.slice(0, limit) : page;
-    const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
+    const page = paginated.page;
+    const hasMore = page.length > maxLimit;
+    const items = hasMore ? page.slice(0, maxLimit) : page;
 
     return {
-      contacts: items.map((c) => ({
-        id: c._id,
-        first_name: c.firstName,
-        last_name: c.lastName,
-        full_name: c.fullName,
-        email: c.email,
-        phone: c.phone,
-        company: c.company,
-        title: c.title,
-        status: c.status,
-        notes: c.notes,
-        tags: c.tags,
-        last_contacted_at: c.lastContactedAt
-          ? new Date(c.lastContactedAt).toISOString()
-          : undefined,
-        created_at: new Date(c.createdAt).toISOString(),
-        updated_at: new Date(c.updatedAt).toISOString(),
-      })),
-      has_more,
-      next_cursor,
+      contacts: items.map(formatContact),
+      has_more: hasMore,
+      next_cursor: hasMore ? paginated.continueCursor : undefined,
     };
   },
 });
