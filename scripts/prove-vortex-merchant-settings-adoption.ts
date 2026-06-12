@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
@@ -18,8 +18,20 @@ const webPackage = parseJsonObject(readFileSync(webPackagePath, "utf8"));
 const dependencies = getObject(webPackage, "dependencies");
 const failures: string[] = [];
 
+for (const deletedPath of ["apps/web/src/lib/stripe-theme.ts", "apps/web/src/components/stripe"]) {
+  if (existsSync(join(repoRoot, deletedPath))) {
+    failures.push(`${deletedPath} must stay deleted.`);
+  }
+}
+
 if (dependencies["@vortex/payments"] === undefined) {
   failures.push("apps/web must depend on @vortex/payments.");
+}
+
+for (const dependencyName of ["@stripe/connect-js", "@stripe/react-connect-js"]) {
+  if (dependencies[dependencyName] !== undefined) {
+    failures.push(`apps/web/package.json must not depend on ${dependencyName}.`);
+  }
 }
 
 for (const requiredFragment of [
@@ -80,8 +92,8 @@ console.log("Vortex merchant settings adoption proof passed:");
 console.log(
   "- Seal payments settings renders merchant account state through Vortex package components.",
 );
-console.log("- Stripe Connect embedded account UI stays deleted from the route.");
-console.log("- Existing backend query is only an adapter input for the package surface.");
+console.log("- Stripe Connect embedded account UI and theme helpers stay deleted.");
+console.log("- Merchant account data reads through the Vortex Payments boundary.");
 
 function parseJsonObject(source: string): Record<string, unknown> {
   const parsed: unknown = JSON.parse(source);
