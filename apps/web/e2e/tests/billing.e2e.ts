@@ -55,7 +55,7 @@ test.describe("Billing", () => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      return (await client.query(api.stripe.queries.getAvailablePlans, {})) as Plan[];
+      return (await client.query(api.payments.billing_queries.getAvailablePlans, {})) as Plan[];
     });
 
     expect(Array.isArray(plans)).toBe(true);
