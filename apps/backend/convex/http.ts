@@ -2331,6 +2331,187 @@ http.route({
 });
 
 // =============================================================================
+// FOLDERS API
+// =============================================================================
+
+/**
+ * List Folders
+ *
+ * @route GET /api/v1/folders
+ * @scope seal:folders:read
+ */
+http.route({
+  path: "/api/v1/folders",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      const { limit, cursor } = parsePagination(query);
+      const result = await ctx.runQuery(internal.api.v1.folders.listFolders, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        limit,
+        cursor,
+        type: query.type as Parameters<typeof ctx.runQuery>[1]["type"],
+        parentId: query.parent_id as Parameters<typeof ctx.runQuery>[1]["parentId"],
+        search: query.search,
+      });
+      return apiResponse(200, result);
+    },
+    { scope: API_SCOPES.FOLDERS_READ },
+  ),
+});
+
+/**
+ * Get Folder
+ *
+ * @route GET /api/v1/folders/get
+ * @scope seal:folders:read
+ */
+http.route({
+  path: "/api/v1/folders/get",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+      }
+      let folder = null;
+      try {
+        folder = await ctx.runQuery(internal.api.v1.folders.getFolder, {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          folderId: query.id as Parameters<typeof ctx.runQuery>[1]["folderId"],
+        });
+      } catch {
+        // Invalid ID format — treat as not found
+      }
+      if (!folder) {
+        throw new ApiError(404, "Folder not found", "RESOURCE_NOT_FOUND");
+      }
+      return apiResponse(200, folder);
+    },
+    { scope: API_SCOPES.FOLDERS_READ },
+  ),
+});
+
+/**
+ * Create Folder
+ *
+ * @route POST /api/v1/folders
+ * @scope seal:folders:write
+ */
+http.route({
+  path: "/api/v1/folders",
+  method: "POST",
+  handler: apiHttpAction(
+    async ({ ctx, auth, request }) => {
+      const body = await parseJsonBody<{
+        name?: string;
+        type?: string;
+        parent_id?: string;
+        visibility?: string;
+      }>(request);
+      validateRequiredFields(body as Record<string, unknown>, ["name", "type"]);
+
+      if (body.type !== "document" && body.type !== "template") {
+        throw new ApiError(422, "type must be 'document' or 'template'", "VALIDATION_ERROR", {
+          type: ["type must be 'document' or 'template'"],
+        });
+      }
+
+      const result = await ctx.runMutation(internal.api.v1.folders.createFolder, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        name: body.name!,
+        type: body.type as "document" | "template",
+        parent_id: body.parent_id as Parameters<typeof ctx.runMutation>[1]["parent_id"],
+        visibility: body.visibility as Parameters<typeof ctx.runMutation>[1]["visibility"],
+      });
+
+      return apiResponse(201, result);
+    },
+    { scope: API_SCOPES.FOLDERS_WRITE },
+  ),
+});
+
+/**
+ * Update Folder
+ *
+ * @route PUT /api/v1/folders/update
+ * @scope seal:folders:write
+ */
+http.route({
+  path: "/api/v1/folders/update",
+  method: "PUT",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query, request }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+      }
+
+      const body = await parseJsonBody<{
+        name?: string;
+        parent_id?: string;
+        visibility?: string;
+        pinned?: boolean;
+      }>(request);
+
+      if (body.visibility && body.visibility !== "everyone" && body.visibility !== "admin") {
+        throw new ApiError(422, "visibility must be 'everyone' or 'admin'", "VALIDATION_ERROR", {
+          visibility: ["visibility must be 'everyone' or 'admin'"],
+        });
+      }
+
+      const result = await ctx.runMutation(internal.api.v1.folders.updateFolder, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        folderId: query.id as Parameters<typeof ctx.runMutation>[1]["folderId"],
+        name: body.name,
+        parent_id: body.parent_id as Parameters<typeof ctx.runMutation>[1]["parent_id"],
+        visibility: body.visibility as Parameters<typeof ctx.runMutation>[1]["visibility"],
+        pinned: body.pinned,
+      });
+
+      if (!result.success) {
+        throw new ApiError(404, result.error ?? "Folder not found", "RESOURCE_NOT_FOUND");
+      }
+
+      return apiResponse(200, result);
+    },
+    { scope: API_SCOPES.FOLDERS_WRITE },
+  ),
+});
+
+/**
+ * Delete Folder
+ *
+ * @route DELETE /api/v1/folders/delete
+ * @scope seal:folders:write
+ */
+http.route({
+  path: "/api/v1/folders/delete",
+  method: "DELETE",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+      }
+      try {
+        await ctx.runMutation(internal.api.v1.folders.deleteFolder, {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          folderId: query.id as Parameters<typeof ctx.runMutation>[1]["folderId"],
+        });
+      } catch {
+        throw new ApiError(404, "Folder not found", "RESOURCE_NOT_FOUND");
+      }
+      return apiResponse(200, { success: true });
+    },
+    { scope: API_SCOPES.FOLDERS_WRITE },
+  ),
+});
+
+// =============================================================================
 // DOCUMENT ACCESS / SHARING MODE
 // =============================================================================
 
