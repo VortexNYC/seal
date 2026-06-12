@@ -1701,7 +1701,7 @@ http.route({
         throw new ApiError(400, "document_id is required", "VALIDATION_ERROR");
       }
 
-      const limit = query.limit ? Number.parseInt(query.limit, 10) : 100;
+      const { limit } = parsePagination(query, { limit: 100 });
 
       const result = await ctx.runQuery(internal.api.v1.signatures.getAuditTrail, {
         userId: auth.userId,

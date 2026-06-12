@@ -316,14 +316,13 @@ export async function parseJsonBody<T = unknown>(request: Request): Promise<T> {
  */
 export function parsePagination(
   query: Record<string, string>,
-  defaults: { limit: number; maxLimit: number } = { limit: 20, maxLimit: 100 },
+  defaults: { limit: number; maxLimit?: number } = { limit: 20, maxLimit: 100 },
 ): { limit: number; cursor?: string } {
   let limit = parseInt(query.limit ?? String(defaults.limit), 10);
 
-  // Clamp limit to valid range
   if (Number.isNaN(limit) || limit < 1) {
     limit = defaults.limit;
-  } else if (limit > defaults.maxLimit) {
+  } else if (defaults.maxLimit !== undefined && limit > defaults.maxLimit) {
     limit = defaults.maxLimit;
   }
 
