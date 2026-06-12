@@ -1,0 +1,15 @@
+{
+  "name": "@vortex/payments",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./react": {
+      "types": "./src/react/index.d.ts",
+      "default": "./src/react/index.ts"
+    }
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  }
+}
