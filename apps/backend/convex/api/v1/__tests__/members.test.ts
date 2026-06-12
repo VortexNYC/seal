@@ -66,7 +66,6 @@ describe("api/v1/members", () => {
 
     memberId = await t.run(async (ctx) => {
       return await ctx.db.insert("users", {
-        // No name set — should fall back to email
         email: "member@members-test.com",
         authSubject: "members_member",
         isEmailVerified: true,
@@ -113,25 +112,25 @@ describe("api/v1/members", () => {
 
   describe("listMembers", () => {
     test("returns all non-system members sorted by role", async () => {
-      const results = await t.query(internal.api.v1.members.listMembers, {
+      const result = await t.query(internal.api.v1.members.listMembers, {
         userId: ownerId,
         organizationId,
       });
 
-      expect(results).toHaveLength(3);
-      // Owner comes first, then admin, then member
-      expect(results[0]?.role).toBe("owner");
-      expect(results[1]?.role).toBe("admin");
-      expect(results[2]?.role).toBe("member");
+      expect(result.members).toHaveLength(3);
+      expect(result.hasMore).toBe(false);
+      expect(result.members[0]?.role).toBe("owner");
+      expect(result.members[1]?.role).toBe("admin");
+      expect(result.members[2]?.role).toBe("member");
     });
 
     test("returns correct fields for each member", async () => {
-      const results = await t.query(internal.api.v1.members.listMembers, {
+      const result = await t.query(internal.api.v1.members.listMembers, {
         userId: ownerId,
         organizationId,
       });
 
-      const owner = results.find((m: (typeof results)[number]) => m.role === "owner");
+      const owner = result.members.find((m) => m.role === "owner");
       expect(owner).toBeDefined();
       expect(owner?.email).toBe("owner@members-test.com");
       expect(owner?.name).toBe("Owner User");
@@ -142,29 +141,29 @@ describe("api/v1/members", () => {
     });
 
     test("uses email as name fallback when user has no name", async () => {
-      const results = await t.query(internal.api.v1.members.listMembers, {
+      const result = await t.query(internal.api.v1.members.listMembers, {
         userId: ownerId,
         organizationId,
       });
 
-      const member = results.find((m: (typeof results)[number]) => m.role === "member");
+      const member = result.members.find((m) => m.role === "member");
       expect(member?.name).toBe("member@members-test.com");
     });
 
     test("filters by role when specified", async () => {
-      const adminOnly = await t.query(internal.api.v1.members.listMembers, {
+      const result = await t.query(internal.api.v1.members.listMembers, {
         userId: ownerId,
         organizationId,
         role: "admin",
       });
 
-      expect(adminOnly).toHaveLength(1);
-      expect(adminOnly[0]?.role).toBe("admin");
-      expect(adminOnly[0]?.email).toBe("admin@members-test.com");
+      expect(result.members).toHaveLength(1);
+      expect(result.members[0]?.role).toBe("admin");
+      expect(result.members[0]?.email).toBe("admin@members-test.com");
+      expect(result.hasMore).toBe(false);
     });
 
     test("excludes system members", async () => {
-      // Add a system member
       const systemUserId = await t.run(async (ctx) => {
         return await ctx.db.insert("users", {
           email: "system@internal.com",
@@ -184,18 +183,13 @@ describe("api/v1/members", () => {
         });
       });
 
-      const results = await t.query(internal.api.v1.members.listMembers, {
+      const result = await t.query(internal.api.v1.members.listMembers, {
         userId: ownerId,
         organizationId,
       });
 
-      // Still 3 — system member excluded (only owner, admin, member returned)
-      expect(results).toHaveLength(3);
-      expect(
-        results.every((m: (typeof results)[number]) =>
-          ["owner", "admin", "member", "viewer"].includes(m.role),
-        ),
-      ).toBe(true);
+      expect(result.members).toHaveLength(3);
+      expect(result.members.every((m) => ["owner", "admin", "member", "viewer"].includes(m.role))).toBe(true);
     });
 
     test("returns empty array for org with no members", async () => {
@@ -210,12 +204,314 @@ describe("api/v1/members", () => {
         });
       });
 
-      const results = await t.query(internal.api.v1.members.listMembers, {
+      const result = await t.query(internal.api.v1.members.listMembers, {
         userId: ownerId,
         organizationId: emptyOrgId,
       });
 
-      expect(results).toHaveLength(0);
+      expect(result.members).toHaveLength(0);
+      expect(result.hasMore).toBe(false);
+      expect(result.nextCursor).toBeUndefined();
+    });
+
+    // =========================================================================
+    // Pagination
+    // =========================================================================
+
+    test("respects limit parameter", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        limit: 1,
+      });
+
+      expect(result.members).toHaveLength(1);
+      expect(result.hasMore).toBe(true);
+      expect(result.nextCursor).toBeDefined();
+      expect(typeof result.nextCursor).toBe("string");
+    });
+
+    test("returns hasMore: false when results fit within limit", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        limit: 50,
+      });
+
+      expect(result.members).toHaveLength(3);
+      expect(result.hasMore).toBe(false);
+      expect(result.nextCursor).toBeUndefined();
+    });
+
+    test("supports cursor-based pagination through all pages", async () => {
+      const page1 = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        limit: 1,
+      });
+
+      expect(page1.members).toHaveLength(1);
+      expect(page1.hasMore).toBe(true);
+      expect(page1.nextCursor).toBeDefined();
+
+      const page2 = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        limit: 1,
+        cursor: page1.nextCursor,
+      });
+
+      expect(page2.members).toHaveLength(1);
+      expect(page2.members[0]?.id).not.toBe(page1.members[0]?.id);
+      expect(page2.hasMore).toBe(true);
+
+      const page3 = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        limit: 1,
+        cursor: page2.nextCursor,
+      });
+
+      expect(page3.members).toHaveLength(1);
+      expect(page3.members[0]?.id).not.toBe(page1.members[0]?.id);
+      expect(page3.members[0]?.id).not.toBe(page2.members[0]?.id);
+      expect(page3.hasMore).toBe(false);
+      expect(page3.nextCursor).toBeUndefined();
+    });
+
+    test("cursor with invalid value returns first page", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        cursor: "nonexistent_cursor_id",
+      });
+
+      expect(result.members).toHaveLength(3);
+      expect(result.hasMore).toBe(false);
+    });
+
+    test("caps limit at 100", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        limit: 999,
+      });
+
+      // limit is clamped to 100, but only 3 members exist
+      expect(result.members).toHaveLength(3);
+      expect(result.hasMore).toBe(false);
+    });
+
+    // =========================================================================
+    // Filtering
+    // =========================================================================
+
+    test("filters by search on name (case-insensitive)", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        search: "owner",
+      });
+
+      expect(result.members).toHaveLength(1);
+      expect(result.members[0]?.name).toBe("Owner User");
+    });
+
+    test("filters by search on email (case-insensitive)", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        search: "admin@members-test",
+      });
+
+      expect(result.members).toHaveLength(1);
+      expect(result.members[0]?.email).toBe("admin@members-test.com");
+    });
+
+    test("search returns empty when no matches", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        search: "nonexistent_user",
+      });
+
+      expect(result.members).toHaveLength(0);
+      expect(result.hasMore).toBe(false);
+    });
+
+    test("filters by status", async () => {
+      // Add an inactive member
+      await t.run(async (ctx) => {
+        const userId = await ctx.db.insert("users", {
+          email: "inactive@members-test.com",
+          name: "Inactive User",
+          authSubject: "members_inactive",
+          isEmailVerified: true,
+          timezone: "UTC",
+          locale: "en-US",
+          activeOrganizationId: organizationId,
+        });
+        await ctx.db.insert("organization_members", {
+          userId,
+          organizationId,
+          role: "member",
+          status: "inactive",
+          isPrimary: false,
+        });
+      });
+
+      const activeResult = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        status: "active",
+      });
+
+      expect(activeResult.members).toHaveLength(3);
+      expect(activeResult.members.every((m) => m.status === "active")).toBe(true);
+
+      const inactiveResult = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        status: "inactive",
+      });
+
+      expect(inactiveResult.members).toHaveLength(1);
+      expect(inactiveResult.members[0]?.name).toBe("Inactive User");
+    });
+
+    test("combines role filter with search", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        role: "admin",
+        search: "admin",
+      });
+
+      expect(result.members).toHaveLength(1);
+      expect(result.members[0]?.role).toBe("admin");
+      expect(result.members[0]?.name).toBe("Admin User");
+    });
+
+    // =========================================================================
+    // Sorting
+    // =========================================================================
+
+    test("sorts by name ascending", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        sort_by: "name",
+        sort_order: "asc",
+      });
+
+      expect(result.members).toHaveLength(3);
+      expect(result.members[0]?.name).toBe("Admin User");
+      expect(result.members[1]?.name).toBe("member@members-test.com");
+      expect(result.members[2]?.name).toBe("Owner User");
+    });
+
+    test("sorts by name descending", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        sort_by: "name",
+        sort_order: "desc",
+      });
+
+      expect(result.members).toHaveLength(3);
+      expect(result.members[0]?.name).toBe("Owner User");
+      expect(result.members[1]?.name).toBe("member@members-test.com");
+      expect(result.members[2]?.name).toBe("Admin User");
+    });
+
+    test("sorts by email ascending", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        sort_by: "email",
+        sort_order: "asc",
+      });
+
+      expect(result.members).toHaveLength(3);
+      expect(result.members[0]?.email).toBe("admin@members-test.com");
+      expect(result.members[1]?.email).toBe("member@members-test.com");
+      expect(result.members[2]?.email).toBe("owner@members-test.com");
+    });
+
+    test("sorts by joined_at ascending", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        sort_by: "joined_at",
+        sort_order: "asc",
+      });
+
+      expect(result.members).toHaveLength(3);
+      // All seeded at same time, so order is stable by insertion order
+      for (let i = 1; i < result.members.length; i++) {
+        expect(
+          new Date(result.members[i]!.joined_at).getTime(),
+        ).toBeGreaterThanOrEqual(
+          new Date(result.members[i - 1]!.joined_at).getTime(),
+        );
+      }
+    });
+
+    test("sorts by joined_at descending", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        sort_by: "joined_at",
+        sort_order: "desc",
+      });
+
+      expect(result.members).toHaveLength(3);
+      for (let i = 1; i < result.members.length; i++) {
+        expect(
+          new Date(result.members[i]!.joined_at).getTime(),
+        ).toBeLessThanOrEqual(
+          new Date(result.members[i - 1]!.joined_at).getTime(),
+        );
+      }
+    });
+
+    test("default sort is by role ascending", async () => {
+      const result = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+      });
+
+      expect(result.members[0]?.role).toBe("owner");
+      expect(result.members[1]?.role).toBe("admin");
+      expect(result.members[2]?.role).toBe("member");
+    });
+
+    test("paginated results maintain sort order", async () => {
+      const page1 = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        sort_by: "name",
+        sort_order: "desc",
+        limit: 2,
+      });
+
+      expect(page1.members).toHaveLength(2);
+      expect(page1.members[0]?.name).toBe("Owner User");
+      expect(page1.members[1]?.name).toBe("member@members-test.com");
+      expect(page1.hasMore).toBe(true);
+
+      const page2 = await t.query(internal.api.v1.members.listMembers, {
+        userId: ownerId,
+        organizationId,
+        sort_by: "name",
+        sort_order: "desc",
+        limit: 2,
+        cursor: page1.nextCursor,
+      });
+
+      expect(page2.members).toHaveLength(1);
+      expect(page2.members[0]?.name).toBe("Admin User");
+      expect(page2.hasMore).toBe(false);
     });
   });
 
@@ -241,7 +537,7 @@ describe("api/v1/members", () => {
       const result = await t.query(internal.api.v1.members.getMember, {
         userId: ownerId,
         organizationId: otherOrgId,
-        memberId: ownerMemberId, // ownerMemberId belongs to organizationId, not otherOrgId
+        memberId: ownerMemberId,
       });
 
       expect(result).toBeNull();

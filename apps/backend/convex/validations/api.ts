@@ -586,6 +586,12 @@ export type MemberRole = z.infer<typeof memberRoleSchema>;
 /** Schema for listing members */
 export const listMembersSchema = z.object({
   role: memberRoleSchema.optional().describe("Filter by role"),
+  limit: z.number().min(1).max(100).optional().describe("Maximum results (1-100, default 20)"),
+  cursor: z.string().optional().describe("Pagination cursor"),
+  search: z.string().optional().describe("Case-insensitive search on name or email"),
+  status: z.string().optional().describe("Filter by membership status"),
+  sort_by: z.enum(["role", "name", "joined_at", "email"]).optional().describe("Sort field (default: role)"),
+  sort_order: z.enum(["asc", "desc"]).optional().describe("Sort direction (default: asc)"),
 });
 export type ListMembersInput = z.infer<typeof listMembersSchema>;
 

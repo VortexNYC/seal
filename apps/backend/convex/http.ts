@@ -2046,19 +2046,37 @@ http.route({
  *
  * @route GET /api/v1/members
  * @scope seal:members:read
+ *
+ * @queryparam {number} [limit=20] - Maximum results (1-100)
+ * @queryparam {string} [cursor] - Pagination cursor
+ * @queryparam {string} [role] - Filter by role (owner, admin, member, viewer)
+ * @queryparam {string} [search] - Case-insensitive search on name or email
+ * @queryparam {string} [status] - Filter by membership status
+ * @queryparam {string} [sort_by] - Sort field (role, name, joined_at, email; default: role)
+ * @queryparam {string} [sort_order] - Sort direction (asc, desc; default: asc)
+ *
+ * @returns Paginated list of workspace members
  */
 http.route({
   path: "/api/v1/members",
   method: "GET",
   handler: apiHttpAction(
     async ({ ctx, auth, query }) => {
-      const role = query.role as "owner" | "admin" | "member" | "viewer" | undefined;
-      const members = await ctx.runQuery(internal.api.v1.members.listMembers, {
+      const { limit, cursor } = parsePagination(query);
+
+      const result = await ctx.runQuery(internal.api.v1.members.listMembers, {
         userId: auth.userId,
         organizationId: auth.organizationId,
-        role,
+        limit,
+        cursor,
+        role: query.role as "owner" | "admin" | "member" | "viewer" | undefined,
+        search: query.search,
+        status: query.status,
+        sort_by: query.sort_by as "role" | "name" | "joined_at" | "email" | undefined,
+        sort_order: query.sort_order as "asc" | "desc" | undefined,
       });
-      return apiResponse(200, { data: members });
+
+      return paginatedResponse(result.members, result.hasMore, result.nextCursor);
     },
     { scope: API_SCOPES.MEMBERS_READ },
   ),

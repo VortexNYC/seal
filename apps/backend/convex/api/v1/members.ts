@@ -29,8 +29,62 @@ export interface ApiMember {
   joined_at: string;
 }
 
+/** Sortable member fields */
+type MemberSortField = "role" | "name" | "joined_at" | "email";
+/** Sort direction */
+type SortOrder = "asc" | "desc";
+
+const ROLE_ORDER: Record<string, number> = {
+  owner: 0,
+  admin: 1,
+  member: 2,
+  viewer: 3,
+  system: 4,
+};
+
+function matchesSearch(displayName: string, email: string, searchTerm: string): boolean {
+  return displayName.toLowerCase().includes(searchTerm) || email.toLowerCase().includes(searchTerm);
+}
+
+function compareMembers(a: ApiMember, b: ApiMember, sortBy: MemberSortField, direction: 1 | -1): number {
+  let cmp = 0;
+  switch (sortBy) {
+    case "role":
+      cmp = (ROLE_ORDER[a.role] ?? 99) - (ROLE_ORDER[b.role] ?? 99);
+      break;
+    case "name":
+      cmp = a.name.localeCompare(b.name);
+      break;
+    case "joined_at":
+      cmp = new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
+      break;
+    case "email":
+      cmp = a.email.localeCompare(b.email);
+      break;
+  }
+  if (cmp !== 0) return cmp * direction;
+  return (new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()) * direction;
+}
+
+function slicePage(results: ApiMember[], cursor: string | undefined, limit: number): {
+  paged: ApiMember[];
+  hasMore: boolean;
+  nextCursor?: string;
+} {
+  let start = 0;
+  if (cursor) {
+    const idx = results.findIndex((m) => m.id === cursor);
+    if (idx !== -1) start = idx + 1;
+  }
+  const page = results.slice(start, start + limit + 1);
+  const hasMore = page.length > limit;
+  const paged = hasMore ? page.slice(0, limit) : page;
+  const nextCursor = hasMore ? paged[paged.length - 1]?.id : undefined;
+  return { paged, hasMore, nextCursor };
+}
+
 /**
- * Internal query to list all workspace members.
+ * Internal query to list workspace members with pagination, filtering, and sorting.
  *
  * @internal
  */
@@ -41,35 +95,47 @@ export const listMembers = internalQuery({
     role: v.optional(
       v.union(v.literal("owner"), v.literal("admin"), v.literal("member"), v.literal("viewer")),
     ),
+    limit: v.optional(v.number()),
+    cursor: v.optional(v.string()),
+    search: v.optional(v.string()),
+    status: v.optional(v.string()),
+    sort_by: v.optional(v.union(v.literal("role"), v.literal("name"), v.literal("joined_at"), v.literal("email"))),
+    sort_order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
   },
-  handler: async (ctx, args): Promise<ApiMember[]> => {
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    members: ApiMember[];
+    hasMore: boolean;
+    nextCursor?: string;
+  }> => {
+    const limit = Math.min(args.limit ?? 20, 100);
+    const sortBy: MemberSortField = args.sort_by ?? "role";
+    const sortOrder: SortOrder = args.sort_order ?? "asc";
+    const searchTerm = args.search?.trim().toLowerCase();
+
     const members = await ctx.db
       .query("organization_members")
       .withIndex("by_organization", (q) => q.eq("organizationId", args.organizationId))
       .collect();
 
-    const roleOrder: Record<string, number> = {
-      owner: 0,
-      admin: 1,
-      member: 2,
-      viewer: 3,
-      system: 4,
-    };
-
     const results: ApiMember[] = [];
     for (const member of members) {
-      // Skip system members from public API
       if (member.role === "system") continue;
-      // Filter by role if requested
       if (args.role && member.role !== args.role) continue;
+      if (args.status && member.status !== args.status) continue;
 
       const user = await ctx.db.get(member.userId);
       if (!user) continue;
 
+      const displayName = user.name ?? user.email;
+      if (searchTerm && !matchesSearch(displayName, user.email, searchTerm)) continue;
+
       results.push({
         id: member._id,
         user_id: user._id,
-        name: user.name ?? user.email,
+        name: displayName,
         email: user.email,
         avatar_url: user.avatar ?? undefined,
         role: member.role as ApiMember["role"],
@@ -78,11 +144,11 @@ export const listMembers = internalQuery({
       });
     }
 
-    return results.sort((a, b) => {
-      const roleCompare = (roleOrder[a.role] ?? 99) - (roleOrder[b.role] ?? 99);
-      if (roleCompare !== 0) return roleCompare;
-      return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
-    });
+    const direction = sortOrder === "desc" ? -1 : 1;
+    results.sort((a, b) => compareMembers(a, b, sortBy, direction as 1 | -1));
+
+    const { paged, hasMore, nextCursor } = slicePage(results, args.cursor, limit);
+    return { members: paged, hasMore, nextCursor };
   },
 });
 
