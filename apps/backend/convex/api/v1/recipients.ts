@@ -150,7 +150,11 @@ export const listRecipients = internalQuery({
   handler: async (
     ctx,
     args,
-  ): Promise<{ recipients: Partial<ApiRecipient>[]; has_more: boolean; next_cursor?: string } | null> => {
+  ): Promise<{
+    recipients: Partial<ApiRecipient>[];
+    has_more: boolean;
+    next_cursor?: string;
+  } | null> => {
     // Verify document exists and belongs to the organization
     const document = await ctx.db.get(args.documentId);
     if (!isDocumentAccessible(document, args.organizationId)) {
@@ -210,8 +214,7 @@ export const listRecipients = internalQuery({
       return comparison * sortMultiplier;
     });
 
-    // Cursor pagination — limit is validated by parsePagination in the HTTP handler
-    const limit = args.limit ?? 20;
+    const limit = Math.min(args.limit ?? 20, 100);
     let start = 0;
     if (args.cursor) {
       const idx = filtered.findIndex((r) => r._id === args.cursor);
@@ -224,9 +227,9 @@ export const listRecipients = internalQuery({
     const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
 
     const selectedFields = args.fields?.length
-      ? (args.fields.filter((f): f is RecipientField =>
+      ? args.fields.filter((f): f is RecipientField =>
           (RECIPIENT_FIELDS as readonly string[]).includes(f),
-        ))
+        )
       : undefined;
 
     return {

@@ -327,11 +327,15 @@ describe("listRecipientsSchema", () => {
   });
 
   test("rejects invalid sort_by", () => {
-    expect(listRecipientsSchema.safeParse({ document_id: "doc_123", sort_by: "invalid" }).success).toBe(false);
+    expect(
+      listRecipientsSchema.safeParse({ document_id: "doc_123", sort_by: "invalid" }).success,
+    ).toBe(false);
   });
 
   test("rejects invalid sort_order", () => {
-    expect(listRecipientsSchema.safeParse({ document_id: "doc_123", sort_order: "invalid" }).success).toBe(false);
+    expect(
+      listRecipientsSchema.safeParse({ document_id: "doc_123", sort_order: "invalid" }).success,
+    ).toBe(false);
   });
 
   test("accepts fields parameter", () => {

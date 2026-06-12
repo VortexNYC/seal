@@ -755,6 +755,14 @@ paths:
             enum: [asc, desc]
             default: asc
           description: Sort direction
+        - name: fields
+          in: query
+          schema:
+            type: string
+          description: >-
+            Comma-separated list of fields to include in the response.
+            Available fields: id, email, name, role, status, order, viewed_at,
+            completed_at, signing_url. Omit to return all fields.
       responses:
         "200":
           description: OK

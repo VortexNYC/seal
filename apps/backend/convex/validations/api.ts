@@ -159,16 +159,11 @@ export const listRecipientsSchema = z.object({
     .enum(["order", "email", "name", "role", "status", "created_at"])
     .optional()
     .describe("Sort field (default: order)"),
-  sort_order: z
-    .enum(["asc", "desc"])
-    .optional()
-    .describe("Sort direction (default: asc)"),
+  sort_order: z.enum(["asc", "desc"]).optional().describe("Sort direction (default: asc)"),
   fields: z
     .string()
     .optional()
-    .describe(
-      "Comma-separated list of fields to include in response (e.g. 'email,name,status')",
-    ),
+    .describe("Comma-separated list of fields to include in response (e.g. 'email,name,status')"),
 });
 export type ListRecipientsInput = z.infer<typeof listRecipientsSchema>;
 

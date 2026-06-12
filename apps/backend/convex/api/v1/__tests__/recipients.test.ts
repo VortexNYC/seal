@@ -12,11 +12,13 @@ describe("api/v1/recipients", () => {
 
   const BASE_TIME = 1_700_000_000_000;
 
-  async function insertDocument(overrides: {
-    organizationId?: Id<"organizations">;
-    status?: "active" | "deleted";
-    workflowStatus?: "draft" | "sent" | "in_progress" | "completed" | "cancelled" | "declined";
-  } = {}) {
+  async function insertDocument(
+    overrides: {
+      organizationId?: Id<"organizations">;
+      status?: "active" | "deleted";
+      workflowStatus?: "draft" | "sent" | "in_progress" | "completed" | "cancelled" | "declined";
+    } = {},
+  ) {
     const orgId = overrides.organizationId ?? organizationId;
     return t.run(async (ctx) => {
       return await ctx.db.insert("documents", {
@@ -292,6 +294,10 @@ describe("api/v1/recipients", () => {
 
     test("caps limit at 100", async () => {
       const documentId = await insertDocument();
+      for (let i = 0; i < 110; i++) {
+        await insertRecipient(documentId, { email: `r${i}@test.com`, order: i });
+      }
+
       const result = await t.query(internal.api.v1.recipients.listRecipients, {
         userId,
         organizationId,
@@ -299,8 +305,8 @@ describe("api/v1/recipients", () => {
         limit: 500,
       });
 
-      expect(result!.recipients).toHaveLength(0);
-      expect(result!.has_more).toBe(false);
+      expect(result!.recipients).toHaveLength(100);
+      expect(result!.has_more).toBe(true);
     });
 
     test("returns only requested fields", async () => {
