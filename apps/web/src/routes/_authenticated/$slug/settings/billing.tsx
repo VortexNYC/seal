@@ -232,7 +232,7 @@ function BillingSettingsPage() {
                 selectPlanLabel: "Select plan",
                 title: "Plans",
               }}
-              onPlanSelect={(plan) => {
+              onPlanSelect={(plan: VortexPlanComparisonPlan) => {
                 void handlePlanSelect(plan);
               }}
             />
