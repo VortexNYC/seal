@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/react";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Link, rootRouteId, useMatch, useRouter } from "@tanstack/react-router";
 import { AlertCircle, Home, LogOut, RefreshCw, Undo2 } from "lucide-react";
@@ -26,12 +25,6 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
   });
 
   console.error(error);
-
-  useEffect(() => {
-    Sentry.captureException(error, {
-      tags: { boundary: "default-catch" },
-    });
-  }, [error]);
 
   const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
   const errorStack = error instanceof Error ? error.stack : undefined;

@@ -1,14 +1,9 @@
-import * as Sentry from "@sentry/react";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { ErrorBoundary, ErrorFallback } from "./error-boundary";
-
-vi.mock("@sentry/react", () => ({
-  captureException: vi.fn(),
-}));
 
 function ThrowingComponent({ shouldThrow }: { shouldThrow: boolean }) {
   if (shouldThrow) throw new Error("Test error");
@@ -81,24 +76,6 @@ describe("ErrorBoundary", () => {
 
     expect(screen.getByText("Custom fallback")).toBeDefined();
     expect(screen.queryByText("Something went wrong")).toBeNull();
-    consoleSpy.mockRestore();
-  });
-
-  test("calls Sentry.captureException when error caught", () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    render(
-      <ErrorBoundary>
-        <ThrowingComponent shouldThrow={true} />
-      </ErrorBoundary>,
-    );
-
-    expect(Sentry.captureException).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        extra: expect.objectContaining({ componentStack: expect.anything() }),
-      }),
-    );
     consoleSpy.mockRestore();
   });
 

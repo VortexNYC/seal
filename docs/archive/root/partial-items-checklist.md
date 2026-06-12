@@ -234,7 +234,6 @@
 ### Other Security Items
 
 - [x] ~~**[BLOCKER]** Hash/salt recipient tokens (currently plaintext)~~ — Done: SHA-256 hashed tokens with `by_token_hash` index
-- [x] ~~Fix Sentry error boundary~~ — Done: `captureException` properly called
 - [ ] Security scanning (npm audit, Snyk)
   - Source: `development-roadmap.md` → #18 bullet list
 - [ ] Auth vulnerability testing (CSRF, XSS)
@@ -244,14 +243,12 @@
 
 ## #19 Production Deployment
 
-> Roadmap says "Sentry monitoring configured" and "Production smoke tests passing"
+> Roadmap says "Production smoke tests passing"
 
 - [x] ~~**[BLOCKER]** Set up CI/CD pipeline (GitHub Actions)~~ — Done: `.github/workflows/ci.yml` with lint, format, typecheck, and build jobs
 - [x] ~~Add security headers (CSP, HSTS, X-Frame-Options, etc.)~~ — Done: `apps/web/vercel.json` now includes X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, HSTS, Permissions-Policy, X-DNS-Prefetch-Control
   - Source: Audit finding — Vercel config has no headers
   - Source: `development-roadmap.md` → #18: "Auth vulnerability testing"
-- [x] ~~Fix Sentry error boundary integration~~ — Already done: `error-boundary.tsx` calls `Sentry.captureException` in `componentDidCatch`
-  - Source: `development-roadmap.md` → #19: "Sentry monitoring configured"
 - [ ] Create production smoke tests
   - Source: `development-roadmap.md` → #19: "Production smoke tests passing"
 - [ ] Configure production environment variables documentation

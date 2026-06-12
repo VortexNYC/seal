@@ -1,7 +1,5 @@
-import * as Sentry from "@sentry/react";
 import { type ErrorComponentProps, Link, useRouter } from "@tanstack/react-router";
 import { AlertTriangleIcon, HomeIcon, LogOut, MailIcon, RefreshCwIcon } from "lucide-react";
-import { useEffect } from "react";
 
 import { useAnalytics } from "@/hooks/use-analytics";
 import { useAppAuthActions } from "@/lib/auth-runtime.better-auth";
@@ -20,12 +18,6 @@ export function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
   const { signOut } = useAppAuthActions();
   const { reset: resetAnalytics } = useAnalytics();
   const isDev = import.meta.env.DEV;
-
-  useEffect(() => {
-    Sentry.captureException(error, {
-      tags: { boundary: "route-error" },
-    });
-  }, [error]);
 
   const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
   const errorStack = error instanceof Error ? error.stack : undefined;

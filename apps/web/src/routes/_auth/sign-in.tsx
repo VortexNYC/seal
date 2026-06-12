@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import {
@@ -21,7 +20,6 @@ function RouteComponent() {
       postSignInPath="/app"
       markPendingAuthFlow={markPendingAuthFlow}
       captureAuthEvent={captureAuthEvent}
-      captureException={(error: unknown) => Sentry.captureException(error)}
     />
   );
 }

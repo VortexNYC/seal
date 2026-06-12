@@ -1,13 +1,11 @@
 import path from "node:path";
 
-import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-export default defineConfig(({ command }) => {
-  const enableSentry = command === "build";
+export default defineConfig(() => {
   const defaultPort = Number(process.env.PORT || 5180);
   const manualChunks = (moduleId: string): string | undefined => {
     if (moduleId.includes("react-pdf") || moduleId.includes("pdfjs-dist")) {
@@ -67,24 +65,7 @@ export default defineConfig(({ command }) => {
   };
 
   return {
-    plugins: [
-      tailwindcss(),
-      tanstackRouter({}),
-      react(),
-      // Sentry must be last so source maps from all other plugins are finalized
-      enableSentry
-        ? sentryVitePlugin({
-            org: "plasma-vh",
-            project: "seal",
-            // Disabled: adds significant build time with Rolldown and provides
-            // limited value — Sentry can infer component names from sourcemaps.
-            reactComponentAnnotation: { enabled: false },
-            sourcemaps: {
-              filesToDeleteAfterUpload: ["./dist/**/*.map"],
-            },
-          })
-        : undefined,
-    ].filter(Boolean),
+    plugins: [tailwindcss(), tanstackRouter({}), react()],
 
     resolve: {
       alias: {
@@ -112,7 +93,7 @@ export default defineConfig(({ command }) => {
     },
 
     build: {
-      sourcemap: "hidden",
+      sourcemap: "hidden" as const,
       chunkSizeWarningLimit: 1600,
       // SEA-136: Mobile performance optimization - chunk splitting for lazy loading
       rollupOptions: {

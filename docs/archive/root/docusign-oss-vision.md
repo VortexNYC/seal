@@ -40,7 +40,6 @@ We're using a **Turborepo + Bun workspaces** monorepo for code organization and 
 - **Auth**: Clerk (hosted service)
 - **Payments**: Stripe (hosted service)
 - **Email**: Resend (hosted service)
-- **Monitoring**: Sentry (hosted service)
 
 ## 🛠 Technology Stack
 
@@ -99,9 +98,8 @@ We're using a **Turborepo + Bun workspaces** monorepo for code organization and 
 - **date-fns**: Lightweight date handling library
 - **sharp**: Image processing and optimization
 
-### Monitoring & Observability
+### Observability
 
-- **Sentry**: Error monitoring and performance tracking (MVP)
 - **PostHog**: Product analytics and feature flags (post-MVP)
 
 ### Search & Content Processing

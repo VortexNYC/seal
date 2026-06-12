@@ -49,7 +49,6 @@
     "@react-input/number-format": "^2.0.3",
     "@seal/backend": "workspace:*",
     "@seal/tokens": "workspace:*",
-    "@sentry/react": "^10.36.0",
     "@stripe/connect-js": "^3.3.34",
     "@stripe/react-connect-js": "^3.3.33",
     "@stripe/react-stripe-js": "^5.6.0",
@@ -93,7 +92,6 @@
   },
   "devDependencies": {
     "@playwright/test": "1.59.1",
-    "@sentry/vite-plugin": "^4.7.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

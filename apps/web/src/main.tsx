@@ -1,7 +1,6 @@
 // VAL-REAL-1776573534487
 import { ConvexQueryClient } from "@convex-dev/react-query";
 import { api } from "@seal/backend/convex/_generated/api";
-import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
@@ -18,9 +17,7 @@ import { AuthRuntimeProvider } from "./lib/auth-runtime.better-auth";
 import { routeTree } from "./routeTree.gen";
 import "./styles.css";
 
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN as string;
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string;
-const shouldInitSentry = Boolean(SENTRY_DSN) && import.meta.env.PROD;
 
 if (!CONVEX_URL) {
   throw new Error("missing VITE_CONVEX_URL envar");
@@ -78,39 +75,6 @@ const router = createRouter({
   },
 });
 
-// Sentry — init after router is created so we can pass it to the tracing integration
-if (shouldInitSentry) {
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || "production",
-    release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
-    sendDefaultPii: true,
-    integrations: [Sentry.tanstackRouterBrowserTracingIntegration(router)],
-    tracesSampleRate: 0.2,
-    tracePropagationTargets: [/^\//, /convex\.cloud/],
-    beforeSend(event) {
-      // Strip document content and signature data from breadcrumbs
-      if (event.breadcrumbs) {
-        for (const crumb of event.breadcrumbs) {
-          if (crumb.data) {
-            delete crumb.data.pdfContent;
-            delete crumb.data.signatureData;
-            delete crumb.data.documentContent;
-          }
-        }
-      }
-      return event;
-    },
-    ignoreErrors: [
-      "ResizeObserver loop",
-      "Non-Error promise rejection",
-      "Failed to fetch",
-      "Load failed",
-      "NetworkError",
-    ],
-  });
-}
-
 declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
@@ -144,11 +108,7 @@ if (POSTHOG_KEY) {
 }
 
 if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement, {
-    onUncaughtError: Sentry.reactErrorHandler(),
-    onCaughtError: Sentry.reactErrorHandler(),
-    onRecoverableError: Sentry.reactErrorHandler(),
-  });
+  const root = ReactDOM.createRoot(rootElement);
   root.render(
     <PostHogProvider client={posthog}>
       <RouterProvider router={router} />

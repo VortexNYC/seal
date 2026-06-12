@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/react";
 import { AlertTriangleIcon, HomeIcon, RefreshCwIcon } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
@@ -40,12 +39,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     console.error("Error info:", errorInfo);
 
     this.setState({ errorInfo });
-
-    Sentry.captureException(error, {
-      extra: {
-        componentStack: errorInfo.componentStack,
-      },
-    });
   }
 
   handleReset = (): void => {

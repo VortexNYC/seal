@@ -88,7 +88,6 @@ Required for boot:
 
 Common optional vars:
 
-- `VITE_SENTRY_DSN`
 - `VITE_PUBLIC_POSTHOG_KEY`
 - `VITE_STRIPE_PUBLISHABLE_KEY`
 - `VITE_APP_URL`

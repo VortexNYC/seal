@@ -34,7 +34,7 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 | **Quality & Launch Layer**     |                             |            |                                                                                                                                                                                                                                                         |
 | 17                             | Testing                     | 🟡 PARTIAL | Vitest backend (113 tests), frontend (29 tests), Playwright E2E setup. **Gap**: no performance testing, no load testing, coverage unknown                                                                                                               |
 | 18                             | Security & Compliance       | ✅ DONE    | ESIGN Act 5 requirements implemented: consent modal, IP tracking, SHA-256 integrity, token hashing, 7-year retention, certificate of completion. See `compliance-implementation-checklist.md`. **Remaining**: legal review, security audit, pen testing |
-| 19                             | Production Deployment       | 🟡 PARTIAL | Convex + Vercel deployed. Sentry wired in error boundary. Security headers configured. CI/CD via GitHub Actions. **Gap**: no smoke tests                                                                                                                |
+| 19                             | Production Deployment       | 🟡 PARTIAL | Convex + Vercel deployed. Security headers configured. CI/CD via GitHub Actions. **Gap**: no smoke tests                                                                                                                                                |
 | 20                             | Launch Prep                 | 🟡 PARTIAL | Landing page done. **Gap**: no demo videos, no user/developer docs site, no GitHub open-source prep                                                                                                                                                     |
 
 ### Additional Work Not in Original Roadmap
@@ -587,13 +587,11 @@ This roadmap maps build sequence to existing documentation. Each deliverable ref
 - Production Clerk app configured
 - Production Stripe account configured
 - Custom domain + SSL
-- Sentry monitoring configured
 - Production smoke tests passing
 
 **Documentation References**:
 
 - **Tech Stack (Deployment)**: `/docusign-oss-vision.md` (lines 62-65)
-- **Tech Stack (Monitoring)**: `/docusign-oss-vision.md` (lines 90-92)
 - **Deployment Architecture**: `/docusign-oss-vision.md` (lines 33-40)
 
 **Done when**: Production app is live and functional

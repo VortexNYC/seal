@@ -247,7 +247,6 @@
 - [ ] Catches and displays JavaScript errors
 - [ ] Shows friendly error message to users
 - [ ] Logs errors to console in development
-- [ ] Production errors logged to Sentry (future)
 - [ ] "Try Again" button resets error boundary
 
 **Error Pages:**
@@ -2034,7 +2033,7 @@
 **Child Tasks:**
 
 - 40.1: Setup production Convex deployment with environment variables, configure production Clerk app with OAuth providers, setup production Stripe account with real products
-- 40.2: Deploy frontend to Vercel production, configure custom domain and SSL, setup Sentry monitoring with error tracking and performance monitoring
+- 40.2: Deploy frontend to Vercel production, configure custom domain and SSL
 - 40.3: Run production smoke tests (auth flow, document upload, signing flow, payment flow, API endpoints, webhooks), configure production environment variables across all services
 
 **Acceptance Criteria:**
@@ -2066,11 +2065,8 @@
 - [ ] Resend production account configured
 - [ ] Email sending tested in production
 
-**Monitoring & Logging:**
+**Logging:**
 
-- [ ] Sentry project created
-- [ ] Sentry error tracking active
-- [ ] Sentry performance monitoring enabled
 - [ ] Error alerts configured
 - [ ] Production logs accessible
 
