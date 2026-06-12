@@ -193,6 +193,11 @@ export const addRecipient = internalMutation({
       };
     }
 
+    const trimmedName = args.name.trim();
+    if (!trimmedName) {
+      return { success: false, error: "Recipient name is required" };
+    }
+
     const normalizedEmail = args.email.toLowerCase().trim();
 
     // Check if recipient already exists
@@ -217,7 +222,7 @@ export const addRecipient = internalMutation({
     const recipientId = await ctx.db.insert("document_recipients", {
       documentId: args.documentId,
       email: normalizedEmail,
-      name: args.name,
+      name: trimmedName,
       role: args.role,
       status: "pending",
       order: args.order,
