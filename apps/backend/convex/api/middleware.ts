@@ -316,7 +316,7 @@ export async function parseJsonBody<T = unknown>(request: Request): Promise<T> {
  */
 export function parsePagination(
   query: Record<string, string>,
-  defaults: { limit: number; maxLimit: number } = { limit: 20, maxLimit: 100 },
+  defaults: { limit: number; maxLimit: number } = { limit: 100, maxLimit: 100 },
 ): { limit: number; cursor?: string } {
   let limit = parseInt(query.limit ?? String(defaults.limit), 10);
 

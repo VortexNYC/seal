@@ -713,7 +713,7 @@ export interface ApiSettings {
 
 /** Schema for listing org-wide audit log */
 export const listAuditLogSchema = z.object({
-  limit: z.number().min(1).max(100).optional().describe("Number of entries (1–100, default 20)"),
+  limit: z.number().min(1).max(100).describe("Number of entries (1–100)"),
   cursor: z.string().optional().describe("Pagination cursor from previous response"),
   document_id: z.string().optional().describe("Filter by document ID"),
   action: z.string().optional().describe("Filter by action type (e.g. document.signed)"),

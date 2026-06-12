@@ -104,6 +104,7 @@ describe("api/v1/audit", () => {
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
         organizationId,
+        limit: 100,
       });
 
       expect(result.entries).toHaveLength(0);
@@ -130,6 +131,7 @@ describe("api/v1/audit", () => {
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
         organizationId,
+        limit: 100,
       });
 
       expect(result.entries).toHaveLength(2);
@@ -144,6 +146,7 @@ describe("api/v1/audit", () => {
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
         organizationId,
+        limit: 100,
       });
 
       expect(result.entries).toHaveLength(3);
@@ -160,6 +163,7 @@ describe("api/v1/audit", () => {
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
         organizationId,
+        limit: 100,
         action: "document.created",
       });
 
@@ -180,6 +184,7 @@ describe("api/v1/audit", () => {
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
         organizationId,
+        limit: 100,
         document_id: documentId,
       });
 
@@ -197,6 +202,7 @@ describe("api/v1/audit", () => {
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
         organizationId,
+        limit: 100,
         created_after: BASE_TIME + 5000,
       });
 
@@ -217,6 +223,7 @@ describe("api/v1/audit", () => {
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
         organizationId,
+        limit: 100,
         created_before: BASE_TIME + 15000,
       });
 
@@ -301,6 +308,7 @@ describe("api/v1/audit", () => {
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
         organizationId,
+        limit: 100,
       });
 
       expect(result.entries).toHaveLength(1);
@@ -315,6 +323,7 @@ describe("api/v1/audit", () => {
       const result = await t.query(internal.api.v1.audit.listAuditLog, {
         userId,
         organizationId,
+        limit: 100,
       });
 
       expect(result.entries[0]?.created_at).toBe(new Date(BASE_TIME).toISOString());
