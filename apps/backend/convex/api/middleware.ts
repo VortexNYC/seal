@@ -308,7 +308,11 @@ export async function parseJsonBody<T = unknown>(request: Request): Promise<T> {
 }
 
 /**
- * Parses and validates pagination parameters from query string.
+ * Parses and validates pagination parameters from the query string.
+ *
+ * Accepted query parameters:
+ * - `limit` — number of items per page (defaults to 20, max 100)
+ * - `cursor` — opaque cursor string for the next page
  *
  * @param query - Query parameters object
  * @param defaults - Default values for pagination
