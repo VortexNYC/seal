@@ -1,12 +1,6 @@
 /**
  * Billing Settings Page
  *
- * Manage organization billing and subscription.
- * - Free plan: single card with current plan + Pro upgrade side by side
- * - Pro plan: single card with plan details and feature list
- * - Upgrade: inline Embedded Checkout (no redirect to Stripe)
- * - Manage Billing: redirect to Stripe Customer Portal (no embedded replacement exists)
- *
  * Route: /{slug}/settings/billing
  */
 
@@ -14,19 +8,28 @@ import { api } from "@seal/backend/convex/_generated/api";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+  VortexPaymentsProvider,
+  VortexPlanComparison,
+  VortexSubscriptionActionSummary,
+  type VortexEmbeddedComponentClassNames,
+  type VortexPaymentsEnvironment,
+  type VortexPlanComparisonPlan,
+  type VortexPlanComparisonState,
+  type VortexSubscriptionActionSummaryAction,
+  type VortexSubscriptionActionSummaryState,
+  type VortexSubscriptionActionSummaryStatus,
+} from "@vortex/payments/react";
 import { useAction, useQuery } from "convex/react";
-import { Check, CreditCard, ExternalLink, Loader2, Sparkles, X } from "lucide-react";
+import { ExternalLink, Loader2, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { BillingSkeleton } from "@/components/skeletons";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
-// Initialize Stripe.js once (lazy-loaded on first use)
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string);
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/billing")({
@@ -34,82 +37,80 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/billing")({
   pendingComponent: BillingSkeleton,
 });
 
-type SubscriptionStatus =
-  | "active"
-  | "canceled"
-  | "past_due"
-  | "incomplete"
-  | "incomplete_expired"
-  | "unpaid";
+type BillingSubscription = {
+  readonly status: string;
+  readonly currentPeriodEnd: number;
+  readonly cancelAtPeriodEnd: boolean;
+  readonly trialEnd?: number;
+  readonly tier: string;
+  readonly planName: string;
+  readonly features: string | null;
+  readonly unitAmount: number;
+  readonly currency: string;
+  readonly interval: string;
+  readonly intervalCount: number;
+};
 
-function getStatusBadge(status: SubscriptionStatus, cancelAtPeriodEnd: boolean) {
-  if (cancelAtPeriodEnd) {
-    return <Badge variant="outline">Canceling</Badge>;
-  }
+type AvailablePlanPrice = {
+  readonly amount: number;
+  readonly currency: string;
+  readonly lookupKey: string | null;
+};
 
-  switch (status) {
-    case "active":
-      return <Badge>Active</Badge>;
-    case "past_due":
-      return <Badge variant="destructive">Past Due</Badge>;
-    case "canceled":
-      return <Badge variant="outline">Canceled</Badge>;
-    case "incomplete":
-    case "incomplete_expired":
-    case "unpaid":
-      return <Badge variant="destructive">{status.replace("_", " ")}</Badge>;
-    default:
-      return <Badge variant="outline">{status}</Badge>;
-  }
-}
-
-function formatPrice(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
-function formatInterval(interval: string, intervalCount: number) {
-  if (intervalCount === 1) {
-    return `/${interval}`;
-  }
-  return `/ ${intervalCount} ${interval}s`;
-}
+type AvailablePlan = {
+  readonly productId: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly tier: string | null;
+  readonly features: string | null;
+  readonly pricing: {
+    readonly monthly: AvailablePlanPrice | null;
+    readonly yearly: AvailablePlanPrice | null;
+  };
+};
 
 const featureLabels: Record<string, string> = {
+  advanced_analytics: "Advanced analytics",
   api_access: "Full API access",
-  webhook_access: "Webhooks",
+  audit_trail: "Audit trail",
+  custom_branding: "Custom branding",
   mcp_access: "MCP integration",
   multi_user: "Unlimited team members",
   priority_support: "Priority support",
-  custom_branding: "Custom branding",
-  advanced_analytics: "Advanced analytics",
-  audit_trail: "Audit trail",
-  sso: "Single sign-on (SSO)",
+  sso: "Single sign-on",
   templates: "Unlimited templates",
+  webhook_access: "Webhooks",
 };
 
-function formatFeatureLabel(raw: string): string {
-  const trimmed = raw.trim();
-  return (
-    featureLabels[trimmed] ?? trimmed.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  );
-}
-
-function formatDate(timestamp: number) {
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+const vortexBillingClassNames = {
+  actions: "mt-5 flex flex-wrap gap-2",
+  button:
+    "inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50",
+  description: "text-muted-foreground text-sm text-pretty",
+  empty: "mt-4 rounded-md border border-dashed p-4 text-sm text-muted-foreground",
+  error:
+    "mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive",
+  header: "space-y-1.5",
+  item: "rounded-md border bg-background p-4",
+  itemDescription: "mt-1 text-muted-foreground text-sm text-pretty",
+  itemTitle: "block text-base font-semibold text-balance",
+  list: "mt-4 grid gap-3 sm:grid-cols-2",
+  loading: "mt-4 rounded-md border p-3 text-sm text-muted-foreground",
+  metricLabel: "text-muted-foreground",
+  metrics: "mt-4 grid gap-3 rounded-md border bg-muted/30 p-4 text-sm sm:grid-cols-2",
+  metricValue: "font-medium tabular-nums",
+  root: "rounded-lg border bg-card p-6 text-card-foreground shadow-sm",
+  status:
+    "mt-2 inline-flex w-fit rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground",
+  title: "text-lg font-semibold text-balance",
+} satisfies VortexEmbeddedComponentClassNames;
 
 function BillingSettingsPage() {
-  const subscription = useQuery(api.stripe.queries.getSubscriptionDetails);
-  const plans = useQuery(api.stripe.queries.getAvailablePlans);
+  const subscription = useQuery(api.stripe.queries.getSubscriptionDetails) as
+    | BillingSubscription
+    | null
+    | undefined;
+  const plans = useQuery(api.stripe.queries.getAvailablePlans) as AvailablePlan[] | undefined;
   const createEmbeddedCheckout = useAction(api.stripe.actions.createEmbeddedCheckoutSession);
   const createPortal = useAction(api.stripe.actions.createCustomerPortalSession);
 
@@ -120,8 +121,9 @@ function BillingSettingsPage() {
   const currentUrl = window.location.href;
   const isActiveSubscription = subscription?.status === "active";
   const isFreePlan = !subscription || subscription.tier === "free" || !isActiveSubscription;
+  const proPlan = plans?.find((plan) => plan.tier === "pro");
+  const proMonthlyLookupKey = proPlan?.pricing.monthly?.lookupKey;
 
-  // Stripe calls this to get a fresh client secret when EmbeddedCheckout mounts
   const fetchClientSecret = useCallback(async () => {
     if (!checkoutLookupKey) {
       throw new Error("No lookup key set");
@@ -144,7 +146,6 @@ function BillingSettingsPage() {
     }
   }, [createEmbeddedCheckout, checkoutLookupKey]);
 
-  // Memoize options so EmbeddedCheckoutProvider doesn't re-initialize
   const checkoutOptions = useMemo(
     () => ({
       fetchClientSecret,
@@ -154,6 +155,25 @@ function BillingSettingsPage() {
       },
     }),
     [fetchClientSecret],
+  );
+
+  const subscriptionSummary = useMemo(
+    () => buildSubscriptionActionSummary(subscription, isFreePlan),
+    [isFreePlan, subscription],
+  );
+  const planComparison = useMemo(
+    () => buildPlanComparison(plans, subscription, isFreePlan),
+    [isFreePlan, plans, subscription],
+  );
+  const checkoutLookupKeysByPlanId = useMemo<Record<string, string | null | undefined>>(
+    () => ({
+      [proPlanId]: proMonthlyLookupKey,
+    }),
+    [proMonthlyLookupKey],
+  );
+  const environment = useMemo<VortexPaymentsEnvironment>(
+    () => (import.meta.env.PROD ? "production" : "development"),
+    [],
   );
 
   function handleUpgrade(lookupKey: string) {
@@ -179,15 +199,20 @@ function BillingSettingsPage() {
     }
   }
 
-  const proPlan = plans?.find((p: { tier: string | null }) => p.tier === "pro");
-  const proMonthlyLookupKey = proPlan?.pricing.monthly?.lookupKey;
-  const proFeatures = proPlan?.features
-    ? proPlan.features.split(",").map((f: string) => f.trim())
-    : [];
-  // For Pro plan, use the subscription's own features if available, fallback to product features
-  const currentFeatures = subscription?.features
-    ? subscription.features.split(",").map((f: string) => f.trim())
-    : proFeatures;
+  function handlePlanSelect(plan: VortexPlanComparisonPlan) {
+    const lookupKey = checkoutLookupKeysByPlanId[plan.id];
+    if (!lookupKey) {
+      toast.error("This plan is not available for checkout yet.");
+      return;
+    }
+    handleUpgrade(lookupKey);
+  }
+
+  function handleSubscriptionAction(actionSummary: VortexSubscriptionActionSummaryState) {
+    if (actionSummary.action === "custom") {
+      void handleManageBilling();
+    }
+  }
 
   return (
     <PageWrapper
@@ -195,35 +220,36 @@ function BillingSettingsPage() {
       headerActions={
         <Button variant="outline" size="sm" onClick={handleManageBilling} disabled={portalLoading}>
           {portalLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 size-4 animate-spin" />
           ) : (
-            <ExternalLink className="mr-2 h-4 w-4" />
+            <ExternalLink className="mr-2 size-4" />
           )}
           Manage Billing
         </Button>
       }
     >
       <div className="space-y-6">
-        <p className="text-muted-foreground text-sm">
-          Manage your subscription and billing information
+        <p className="text-muted-foreground text-sm text-pretty">
+          Manage your subscription and billing information.
         </p>
 
-        {/* Inline Embedded Checkout */}
         {showCheckout && checkoutLookupKey && (
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Complete your upgrade</CardTitle>
+              <div className="flex items-center justify-between gap-4">
+                <CardTitle className="text-balance">Complete your upgrade</CardTitle>
                 <Button
                   variant="ghost"
                   size="icon"
                   aria-label="Close checkout"
                   onClick={handleCancelCheckout}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="size-4" />
                 </Button>
               </div>
-              <CardDescription>Enter your payment details below to upgrade to Pro.</CardDescription>
+              <CardDescription className="text-pretty">
+                Enter your payment details below to upgrade to Professional.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <EmbeddedCheckoutProvider stripe={stripePromise} options={checkoutOptions}>
@@ -233,147 +259,190 @@ function BillingSettingsPage() {
           </Card>
         )}
 
-        {/* Plan Card — merged current plan + upgrade (free) or current plan + features (pro) */}
         {!showCheckout && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="text-muted-foreground h-5 w-5" />
-                  <CardTitle>{isFreePlan ? "Plan" : "Current Plan"}</CardTitle>
-                </div>
-                {subscription &&
-                  getStatusBadge(
-                    subscription.status as SubscriptionStatus,
-                    subscription.cancelAtPeriodEnd,
-                  )}
-              </div>
-              <CardDescription>
-                {isFreePlan
-                  ? "You are on the Free plan"
-                  : `You are on the ${subscription?.planName ?? "Pro"} plan`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Past due warning */}
-              {subscription?.status === "past_due" && (
-                <div className="bg-destructive/10 text-destructive mb-6 rounded-md p-3 text-sm">
-                  Your payment is past due. Please update your payment method to avoid service
-                  interruption.
-                </div>
-              )}
-
-              {isFreePlan && proPlan ? (
-                /* Free plan: two-column layout — current plan left, upgrade right */
-                <div className="grid gap-6 md:grid-cols-2">
-                  {/* Left: Current Free plan */}
-                  <div className="space-y-4">
-                    <h3 className="text-muted-foreground text-sm font-medium">Current</h3>
-                    <div>
-                      <p className="text-lg font-semibold">Free</p>
-                      <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-3xl font-bold">$0</span>
-                        <span className="text-muted-foreground">/month</span>
-                      </div>
-                    </div>
-                    {subscription && isActiveSubscription && (
-                      <p className="text-muted-foreground text-sm">
-                        {subscription.cancelAtPeriodEnd
-                          ? `Access until ${formatDate(subscription.currentPeriodEnd)}`
-                          : `Renews ${formatDate(subscription.currentPeriodEnd)}`}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Right: Pro upgrade */}
-                  <div className="space-y-4">
-                    <h3 className="text-muted-foreground text-sm font-medium">Upgrade</h3>
-                    <div>
-                      <p className="text-lg font-semibold">{proPlan.name}</p>
-                      {proPlan.pricing.monthly && (
-                        <div className="mt-1 flex items-baseline gap-1">
-                          <span className="text-3xl font-bold">
-                            {formatPrice(
-                              proPlan.pricing.monthly.amount,
-                              proPlan.pricing.monthly.currency,
-                            )}
-                          </span>
-                          <span className="text-muted-foreground">/month</span>
-                        </div>
-                      )}
-                    </div>
-                    {proFeatures.length > 0 && (
-                      <ul className="space-y-2 text-sm">
-                        {proFeatures.map((feature: string) => (
-                          <li
-                            key={feature}
-                            className="text-muted-foreground flex items-center gap-2"
-                          >
-                            <Check className="text-primary h-3.5 w-3.5 shrink-0" />
-                            {formatFeatureLabel(feature)}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {proMonthlyLookupKey && (
-                      <Button className="w-full" onClick={() => handleUpgrade(proMonthlyLookupKey)}>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Upgrade to Professional
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* Professional plan (or paid): single column with details + features */
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold">
-                        {subscription
-                          ? formatPrice(subscription.unitAmount / 100, subscription.currency)
-                          : "$0"}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {subscription
-                          ? formatInterval(subscription.interval, subscription.intervalCount)
-                          : "/month"}
-                      </span>
-                    </div>
-
-                    {subscription && subscription.status !== "canceled" && (
-                      <p className="text-muted-foreground mt-1 text-sm">
-                        {subscription.cancelAtPeriodEnd
-                          ? `Access until ${formatDate(subscription.currentPeriodEnd)}`
-                          : `Next billing date: ${formatDate(subscription.currentPeriodEnd)}`}
-                      </p>
-                    )}
-                  </div>
-
-                  {currentFeatures.length > 0 && (
-                    <>
-                      <Separator />
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium">Included features</p>
-                        <ul className="grid gap-2 text-sm sm:grid-cols-2">
-                          {currentFeatures.map((feature: string) => (
-                            <li
-                              key={feature}
-                              className="text-muted-foreground flex items-center gap-2"
-                            >
-                              <Check className="text-primary h-3.5 w-3.5 shrink-0" />
-                              {formatFeatureLabel(feature)}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <VortexPaymentsProvider
+            config={{
+              baseUrl: window.location.origin,
+              environment,
+              branding: { brandName: "Seal" },
+            }}
+            navigate={() => undefined}
+          >
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
+              <VortexSubscriptionActionSummary
+                subscription={subscriptionSummary}
+                classNames={vortexBillingClassNames}
+                copy={{
+                  customActionLabel: "Manage billing",
+                  title: "Current subscription",
+                }}
+                onAction={handleSubscriptionAction}
+              />
+              <VortexPlanComparison
+                comparison={planComparison}
+                classNames={vortexBillingClassNames}
+                copy={{
+                  currentButtonLabel: "Current plan",
+                  openCheckoutLabel: "Upgrade",
+                  selectPlanLabel: "Select plan",
+                  title: "Plans",
+                }}
+                onPlanSelect={handlePlanSelect}
+              />
+            </div>
+          </VortexPaymentsProvider>
         )}
       </div>
     </PageWrapper>
   );
+}
+
+const freePlanId = "vortex-plan-free";
+const proPlanId = "vortex-plan-professional";
+
+function buildSubscriptionActionSummary(
+  subscription: BillingSubscription | null | undefined,
+  isFreePlan: boolean,
+): VortexSubscriptionActionSummaryState {
+  const status = subscriptionActionStatus(subscription, isFreePlan);
+  const action = subscriptionAction(status);
+  const planLabel = isFreePlan ? "Free" : (subscription?.planName ?? "Professional");
+
+  return {
+    action,
+    actionDisabledReason: action === "change_plan" ? "Choose a paid plan below." : undefined,
+    amountDue: isFreePlan ? undefined : subscription?.unitAmount,
+    cadenceLabel: isFreePlan ? "Monthly" : subscriptionCadenceLabel(subscription),
+    currency: subscription?.currency ?? "usd",
+    customerId: "current-organization",
+    description: subscriptionActionMessage(subscription, isFreePlan),
+    planLabel,
+    renewalAt: subscription?.cancelAtPeriodEnd
+      ? undefined
+      : formatDate(subscription?.currentPeriodEnd),
+    scheduledCancelAt: subscription?.cancelAtPeriodEnd
+      ? formatDate(subscription.currentPeriodEnd)
+      : undefined,
+    status,
+    title: planLabel,
+    trialEndsAt: formatDate(subscription?.trialEnd),
+  };
+}
+
+function buildPlanComparison(
+  plans: readonly AvailablePlan[] | undefined,
+  subscription: BillingSubscription | null | undefined,
+  isFreePlan: boolean,
+): VortexPlanComparisonState {
+  const proPlan = plans?.find((plan) => plan.tier === "pro");
+  const proMonthly = proPlan?.pricing.monthly;
+  const hasProCheckout = Boolean(proMonthly?.lookupKey);
+  const planRows: VortexPlanComparisonPlan[] = [
+    {
+      cadence: "monthly",
+      cadenceLabel: "Monthly",
+      currency: "usd",
+      description: "Core signing and document workflows.",
+      featureHighlights: ["Document signing", "Basic workspace features"],
+      id: freePlanId,
+      priceAmount: 0,
+      status: isFreePlan ? "current" : "available",
+      title: "Free",
+    },
+  ];
+
+  if (proPlan && proMonthly) {
+    planRows.push({
+      cadence: "monthly",
+      cadenceLabel: "Monthly",
+      currency: proMonthly.currency,
+      description: proPlan.description ?? "Advanced workspace, API, and automation features.",
+      disabledReason: hasProCheckout ? undefined : "Checkout is not configured for this plan.",
+      featureHighlights: parseFeatureHighlights(proPlan.features),
+      id: proPlanId,
+      priceAmount: Math.round(proMonthly.amount * 100),
+      status: isFreePlan ? "recommended" : "current",
+      title: proPlan.name,
+    });
+  }
+
+  return {
+    currentPlanId: isFreePlan ? freePlanId : proPlanId,
+    customerId: "current-organization",
+    message:
+      subscription?.status === "past_due"
+        ? "Your payment is past due. Update billing to avoid service interruption."
+        : undefined,
+    plans: planRows,
+    recommendedPlanId: isFreePlan && proPlan ? proPlanId : undefined,
+    status: planRows.length > 1 ? "ready" : "empty",
+  };
+}
+
+function subscriptionActionStatus(
+  subscription: BillingSubscription | null | undefined,
+  isFreePlan: boolean,
+): VortexSubscriptionActionSummaryStatus {
+  if (isFreePlan) return "none";
+  if (subscription?.cancelAtPeriodEnd) return "scheduled_cancellation";
+  if (subscription?.status === "past_due" || subscription?.status === "unpaid") return "past_due";
+  if (subscription?.status === "canceled") return "canceled";
+  if (subscription?.trialEnd && subscription.trialEnd > Date.now()) return "trialing";
+  return "active";
+}
+
+function subscriptionAction(
+  status: VortexSubscriptionActionSummaryStatus,
+): VortexSubscriptionActionSummaryAction {
+  return status === "none" ? "change_plan" : "custom";
+}
+
+function subscriptionActionMessage(
+  subscription: BillingSubscription | null | undefined,
+  isFreePlan: boolean,
+): string {
+  if (isFreePlan) return "Upgrade when you need API access, webhooks, and team scale.";
+  if (subscription?.cancelAtPeriodEnd) {
+    return `Access continues until ${formatDate(subscription.currentPeriodEnd)}.`;
+  }
+  if (subscription?.status === "past_due") {
+    return "Your latest payment needs attention.";
+  }
+  return "Your paid workspace billing is active.";
+}
+
+function subscriptionCadenceLabel(subscription: BillingSubscription | null | undefined): string {
+  if (!subscription) return "Monthly";
+  const interval =
+    subscription.intervalCount === 1
+      ? subscription.interval
+      : `${subscription.intervalCount} ${subscription.interval}s`;
+  return interval.charAt(0).toUpperCase() + interval.slice(1);
+}
+
+function parseFeatureHighlights(features: string | null): readonly string[] {
+  const parsed = features
+    ?.split(",")
+    .map((feature) => feature.trim())
+    .filter((feature) => feature.length > 0)
+    .map(formatFeatureLabel);
+
+  return parsed && parsed.length > 0
+    ? parsed
+    : ["API access", "Webhooks", "MCP integration", "Advanced analytics"];
+}
+
+function formatFeatureLabel(raw: string): string {
+  return (
+    featureLabels[raw] ?? raw.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+  );
+}
+
+function formatDate(timestamp: number | undefined): string | undefined {
+  if (timestamp === undefined) return undefined;
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
