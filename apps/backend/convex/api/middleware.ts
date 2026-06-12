@@ -318,6 +318,7 @@ export function parsePagination(
   query: Record<string, string>,
   defaults: { limit: number; maxLimit: number } = { limit: 20, maxLimit: 100 },
 ): { limit: number; cursor?: string } {
+  // Seal canonical pagination helper — shared by all v1 list endpoints
   let limit = parseInt(query.limit ?? String(defaults.limit), 10);
 
   // Clamp limit to valid range
