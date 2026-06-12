@@ -117,7 +117,7 @@ async function linkStripeCustomers(
 export const getUsersForStripeCustomerLinking = internalMutation({
   args: {},
   handler: async (ctx): Promise<UserForStripeLink[]> => {
-    const users = await ctx.db.query("users").collect();
+    const users = await ctx.db.query("users").withIndex("by_email").collect();
     return users.map((user) => ({
       userId: user._id,
       email: user.email,
