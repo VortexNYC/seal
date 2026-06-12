@@ -8,16 +8,6 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  VortexFeePolicyPanel,
-  VortexMerchantAccountPanel,
-  VortexMerchantActionQueue,
-  VortexPaymentsProvider,
-  type VortexEmbeddedComponentClassNames,
-  type VortexFeePolicyOwnerMode,
-  type VortexFeePolicyState,
-  type VortexMerchantAccountPanelProps,
-} from "@vortex/payments/react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Loader2, PlugZap } from "lucide-react";
 import { useState } from "react";
@@ -27,6 +17,16 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import {
+  VortexFeePolicyPanel,
+  VortexMerchantAccountPanel,
+  VortexMerchantActionQueue,
+  VortexPaymentsProvider,
+  type VortexEmbeddedComponentClassNames,
+  type VortexFeePolicyOwnerMode,
+  type VortexFeePolicyState,
+  type VortexMerchantAccountPanelProps,
+} from "@/lib/vortex-payments-stub";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/payments")({
   component: PaymentsSettingsPage,

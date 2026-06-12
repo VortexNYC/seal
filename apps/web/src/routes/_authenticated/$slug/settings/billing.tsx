@@ -6,6 +6,14 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import { createFileRoute } from "@tanstack/react-router";
+import { useAction, useQuery } from "convex/react";
+import { ExternalLink, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
+import { PageWrapper } from "@/components/page-wrapper";
+import { BillingSkeleton } from "@/components/skeletons";
+import { Button } from "@/components/ui/button";
 import {
   VortexPaymentsProvider,
   VortexPlanComparison,
@@ -17,15 +25,7 @@ import {
   type VortexSubscriptionActionSummaryAction,
   type VortexSubscriptionActionSummaryState,
   type VortexSubscriptionActionSummaryStatus,
-} from "@vortex/payments/react";
-import { useAction, useQuery } from "convex/react";
-import { ExternalLink, Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-
-import { PageWrapper } from "@/components/page-wrapper";
-import { BillingSkeleton } from "@/components/skeletons";
-import { Button } from "@/components/ui/button";
+} from "@/lib/vortex-payments-stub";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/billing")({
   component: BillingSettingsPage,

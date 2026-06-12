@@ -1,6 +1,13 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
+import type { LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowRight, FileText, WalletCards } from "lucide-react";
+
+import { PageWrapper } from "@/components/page-wrapper";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   VortexBalanceWalletPanel,
   VortexMerchantActionQueue,
@@ -12,14 +19,7 @@ import {
   type VortexEmbeddedComponentClassNames,
   type VortexMerchantAccountPanelProps,
   type VortexPaymentTimelineState,
-} from "@vortex/payments/react";
-import { useQuery } from "convex/react";
-import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, ArrowRight, FileText, WalletCards } from "lucide-react";
-
-import { PageWrapper } from "@/components/page-wrapper";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+} from "@/lib/vortex-payments-stub";
 
 type ConnectionStatus = "not_connected" | "pending" | "restricted" | "connected";
 type FeeHandling = "absorb" | "pass_to_recipient";

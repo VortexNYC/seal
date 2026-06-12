@@ -55,7 +55,6 @@
     "@tanstack/react-router-devtools": "^1.154.13",
     "@tanstack/react-virtual": "^3.13.18",
     "@tanstack/router-plugin": "^1.154.13",
-    "@vortex/payments": "file:../../../vortex-payments/packages/payments",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
