@@ -9,6 +9,11 @@ import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../../_generated/server";
 
+/** Sortable contact fields */
+type ContactSortField = "first_name" | "last_name" | "email" | "status" | "company" | "created_at" | "updated_at";
+/** Sort direction */
+type SortOrder = "asc" | "desc";
+
 /** API representation of a contact */
 export interface ApiContact {
   /** Contact record ID */
@@ -41,6 +46,35 @@ export interface ApiContact {
   updated_at: string;
 }
 
+function compareContacts(a: ApiContact, b: ApiContact, sortBy: ContactSortField, direction: 1 | -1): number {
+  let cmp = 0;
+  switch (sortBy) {
+    case "first_name":
+      cmp = a.first_name.localeCompare(b.first_name);
+      break;
+    case "last_name":
+      cmp = a.last_name.localeCompare(b.last_name);
+      break;
+    case "email":
+      cmp = a.email.localeCompare(b.email);
+      break;
+    case "status":
+      cmp = a.status.localeCompare(b.status);
+      break;
+    case "company":
+      cmp = (a.company ?? "").localeCompare(b.company ?? "");
+      break;
+    case "created_at":
+      cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      break;
+    case "updated_at":
+      cmp = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+      break;
+  }
+  if (cmp !== 0) return cmp * direction;
+  return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * direction;
+}
+
 /**
  * Internal query to list contacts in the workspace.
  *
@@ -54,12 +88,27 @@ export const listContacts = internalQuery({
     cursor: v.optional(v.string()),
     status: v.optional(v.union(v.literal("active"), v.literal("inactive"), v.literal("lead"))),
     search: v.optional(v.string()),
+    sort_by: v.optional(
+      v.union(
+        v.literal("first_name"),
+        v.literal("last_name"),
+        v.literal("email"),
+        v.literal("status"),
+        v.literal("company"),
+        v.literal("created_at"),
+        v.literal("updated_at"),
+      ),
+    ),
+    sort_order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
   },
   handler: async (
     ctx,
     args,
   ): Promise<{ contacts: ApiContact[]; has_more: boolean; next_cursor?: string }> => {
     const limit = Math.min(args.limit ?? 20, 100);
+    const sortBy: ContactSortField = args.sort_by ?? "created_at";
+    const sortOrder: SortOrder = args.sort_order ?? "desc";
+    const searchTerm = args.search?.trim().toLowerCase();
 
     let raw;
     if (args.status) {
@@ -80,42 +129,47 @@ export const listContacts = internalQuery({
     const filtered = args.search
       ? raw.filter(
           (c) =>
-            c.fullName.toLowerCase().includes(args.search!.toLowerCase()) ||
-            c.email.toLowerCase().includes(args.search!.toLowerCase()),
+            c.fullName.toLowerCase().includes(searchTerm!) ||
+            c.email.toLowerCase().includes(searchTerm!),
         )
       : raw;
+
+    const mapped = filtered.map((c) => ({
+      id: c._id,
+      first_name: c.firstName,
+      last_name: c.lastName,
+      full_name: c.fullName,
+      email: c.email,
+      phone: c.phone,
+      company: c.company,
+      title: c.title,
+      status: c.status,
+      notes: c.notes,
+      tags: c.tags,
+      last_contacted_at: c.lastContactedAt
+        ? new Date(c.lastContactedAt).toISOString()
+        : undefined,
+      created_at: new Date(c.createdAt).toISOString(),
+      updated_at: new Date(c.updatedAt).toISOString(),
+    }));
+
+    const direction = sortOrder === "desc" ? -1 : 1;
+    mapped.sort((a, b) => compareContacts(a, b, sortBy, direction as 1 | -1));
 
     // Cursor pagination
     let start = 0;
     if (args.cursor) {
-      const idx = filtered.findIndex((c) => c._id === args.cursor);
+      const idx = mapped.findIndex((c) => c.id === args.cursor);
       if (idx !== -1) start = idx + 1;
     }
 
-    const page = filtered.slice(start, start + limit + 1);
+    const page = mapped.slice(start, start + limit + 1);
     const has_more = page.length > limit;
     const items = has_more ? page.slice(0, limit) : page;
-    const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
+    const next_cursor = has_more ? items[items.length - 1]?.id : undefined;
 
     return {
-      contacts: items.map((c) => ({
-        id: c._id,
-        first_name: c.firstName,
-        last_name: c.lastName,
-        full_name: c.fullName,
-        email: c.email,
-        phone: c.phone,
-        company: c.company,
-        title: c.title,
-        status: c.status,
-        notes: c.notes,
-        tags: c.tags,
-        last_contacted_at: c.lastContactedAt
-          ? new Date(c.lastContactedAt).toISOString()
-          : undefined,
-        created_at: new Date(c.createdAt).toISOString(),
-        updated_at: new Date(c.updatedAt).toISOString(),
-      })),
+      contacts: items,
       has_more,
       next_cursor,
     };

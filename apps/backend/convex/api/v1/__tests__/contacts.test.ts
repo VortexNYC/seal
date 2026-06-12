@@ -20,11 +20,12 @@ describe("api/v1/contacts", () => {
     company?: string;
     tags?: string[];
     organizationId?: Id<"organizations">;
+    created_at?: number;
   }) {
     const orgId = overrides.organizationId ?? organizationId;
     const firstName = overrides.first_name ?? "Test";
-    const lastName = overrides.last_name ?? "Contact";
-    const now = BASE_TIME;
+    const lastName = overrides.last_name ?? "Test";
+    const createdAt = overrides.created_at ?? BASE_TIME;
 
     return t.run(async (ctx) => {
       return await ctx.db.insert("contacts", {
@@ -37,8 +38,8 @@ describe("api/v1/contacts", () => {
         status: overrides.status ?? "active",
         tags: overrides.tags,
         createdBy: userId,
-        createdAt: now,
-        updatedAt: now,
+        createdAt,
+        updatedAt: createdAt,
       });
     });
   }
@@ -233,6 +234,147 @@ describe("api/v1/contacts", () => {
 
       expect(result.contacts).toHaveLength(0);
       expect(result.has_more).toBe(false);
+    });
+
+    test("default sort is created_at desc", async () => {
+      const oldId = await seedContact({ email: "old@test.com", created_at: BASE_TIME });
+      const midId = await seedContact({ email: "mid@test.com", created_at: BASE_TIME + 1000 });
+      const newId = await seedContact({ email: "new@test.com", created_at: BASE_TIME + 2000 });
+
+      const result = await t.query(internal.api.v1.contacts.listContacts, {
+        userId,
+        organizationId,
+      });
+
+      expect(result.contacts).toHaveLength(3);
+      expect(result.contacts[0]?.id).toBe(newId);
+      expect(result.contacts[1]?.id).toBe(midId);
+      expect(result.contacts[2]?.id).toBe(oldId);
+    });
+
+    test("sort_by first_name asc", async () => {
+      await seedContact({ first_name: "Charlie", email: "c@test.com" });
+      await seedContact({ first_name: "Alice", email: "a@test.com" });
+      await seedContact({ first_name: "Bob", email: "b@test.com" });
+
+      const result = await t.query(internal.api.v1.contacts.listContacts, {
+        userId,
+        organizationId,
+        sort_by: "first_name",
+        sort_order: "asc",
+      });
+
+      expect(result.contacts).toHaveLength(3);
+      expect(result.contacts[0]?.first_name).toBe("Alice");
+      expect(result.contacts[1]?.first_name).toBe("Bob");
+      expect(result.contacts[2]?.first_name).toBe("Charlie");
+    });
+
+    test("sort_by first_name desc", async () => {
+      await seedContact({ first_name: "Charlie", email: "c@test.com" });
+      await seedContact({ first_name: "Alice", email: "a@test.com" });
+      await seedContact({ first_name: "Bob", email: "b@test.com" });
+
+      const result = await t.query(internal.api.v1.contacts.listContacts, {
+        userId,
+        organizationId,
+        sort_by: "first_name",
+        sort_order: "desc",
+      });
+
+      expect(result.contacts).toHaveLength(3);
+      expect(result.contacts[0]?.first_name).toBe("Charlie");
+      expect(result.contacts[1]?.first_name).toBe("Bob");
+      expect(result.contacts[2]?.first_name).toBe("Alice");
+    });
+
+    test("sort_by email asc", async () => {
+      await seedContact({ email: "z@test.com" });
+      await seedContact({ email: "a@test.com" });
+      await seedContact({ email: "m@test.com" });
+
+      const result = await t.query(internal.api.v1.contacts.listContacts, {
+        userId,
+        organizationId,
+        sort_by: "email",
+        sort_order: "asc",
+      });
+
+      expect(result.contacts).toHaveLength(3);
+      expect(result.contacts[0]?.email).toBe("a@test.com");
+      expect(result.contacts[1]?.email).toBe("m@test.com");
+      expect(result.contacts[2]?.email).toBe("z@test.com");
+    });
+
+    test("sort_by status groups contacts consistently", async () => {
+      await seedContact({ email: "lead@test.com", status: "lead" });
+      await seedContact({ email: "active@test.com", status: "active" });
+      await seedContact({ email: "inactive@test.com", status: "inactive" });
+
+      const result = await t.query(internal.api.v1.contacts.listContacts, {
+        userId,
+        organizationId,
+        sort_by: "status",
+        sort_order: "asc",
+      });
+
+      expect(result.contacts).toHaveLength(3);
+      expect(result.contacts[0]?.status).toBe("active");
+      expect(result.contacts[1]?.status).toBe("inactive");
+      expect(result.contacts[2]?.status).toBe("lead");
+    });
+
+    test("sort_by created_at asc (oldest first)", async () => {
+      const oldId = await seedContact({ email: "old@test.com", created_at: BASE_TIME });
+      const midId = await seedContact({ email: "mid@test.com", created_at: BASE_TIME + 1000 });
+      const newId = await seedContact({ email: "new@test.com", created_at: BASE_TIME + 2000 });
+
+      const result = await t.query(internal.api.v1.contacts.listContacts, {
+        userId,
+        organizationId,
+        sort_by: "created_at",
+        sort_order: "asc",
+      });
+
+      expect(result.contacts).toHaveLength(3);
+      expect(result.contacts[0]?.id).toBe(oldId);
+      expect(result.contacts[1]?.id).toBe(midId);
+      expect(result.contacts[2]?.id).toBe(newId);
+    });
+
+    test("sorting maintained across pages", async () => {
+      // Create contacts with names in reverse alphabetical order
+      await seedContact({ first_name: "Zara", email: "zara@test.com", created_at: BASE_TIME });
+      await seedContact({ first_name: "Yuri", email: "yuri@test.com", created_at: BASE_TIME + 1000 });
+      await seedContact({ first_name: "Xena", email: "xena@test.com", created_at: BASE_TIME + 2000 });
+      await seedContact({ first_name: "Wade", email: "wade@test.com", created_at: BASE_TIME + 3000 });
+
+      const page1 = await t.query(internal.api.v1.contacts.listContacts, {
+        userId,
+        organizationId,
+        sort_by: "first_name",
+        sort_order: "asc",
+        limit: 2,
+      });
+
+      expect(page1.contacts).toHaveLength(2);
+      expect(page1.contacts[0]?.first_name).toBe("Wade");
+      expect(page1.contacts[1]?.first_name).toBe("Xena");
+      expect(page1.has_more).toBe(true);
+
+      const page2 = await t.query(internal.api.v1.contacts.listContacts, {
+        userId,
+        organizationId,
+        sort_by: "first_name",
+        sort_order: "asc",
+        limit: 2,
+        cursor: page1.next_cursor,
+      });
+
+      expect(page2.contacts).toHaveLength(2);
+      expect(page2.contacts[0]?.first_name).toBe("Yuri");
+      expect(page2.contacts[1]?.first_name).toBe("Zara");
+      expect(page2.has_more).toBe(false);
     });
   });
 
