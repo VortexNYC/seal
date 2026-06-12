@@ -8,6 +8,7 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../../_generated/server";
+import { DEFAULT_MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "../../api/middleware";
 
 /** API representation of an org-level audit log entry */
 export interface ApiAuditLogEntry {
@@ -55,7 +56,7 @@ export const listAuditLog = internalQuery({
     ctx,
     args,
   ): Promise<{ entries: ApiAuditLogEntry[]; has_more: boolean; next_cursor?: string }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const limit = Math.min(args.limit ?? DEFAULT_PAGE_SIZE, DEFAULT_MAX_PAGE_SIZE);
 
     let query;
 

@@ -8,6 +8,7 @@
 import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../../_generated/server";
+import { DEFAULT_MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "../../api/middleware";
 
 /** API representation of a contact */
 export interface ApiContact {
@@ -59,7 +60,7 @@ export const listContacts = internalQuery({
     ctx,
     args,
   ): Promise<{ contacts: ApiContact[]; has_more: boolean; next_cursor?: string }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const limit = Math.min(args.limit ?? DEFAULT_PAGE_SIZE, DEFAULT_MAX_PAGE_SIZE);
 
     let raw;
     if (args.status) {

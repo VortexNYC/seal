@@ -10,6 +10,7 @@
 import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../../_generated/server";
+import { DEFAULT_MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "../../api/middleware";
 
 /**
  * API template response format.
@@ -88,7 +89,7 @@ export const listTemplates = internalQuery({
     hasMore: boolean;
     nextCursor?: string;
   }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const limit = Math.min(args.limit ?? DEFAULT_PAGE_SIZE, DEFAULT_MAX_PAGE_SIZE);
 
     let query = ctx.db.query("templates").withIndex("by_organization_status", (q) => {
       const base = q.eq("organizationId", args.organizationId);

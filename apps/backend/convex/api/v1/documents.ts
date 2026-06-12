@@ -12,6 +12,7 @@ import { v } from "convex/values";
 import { internal } from "../../_generated/api";
 import { internalMutation, internalQuery } from "../../_generated/server";
 import type { DocumentWorkflowStatus } from "../../schemas/document_workflow_status";
+import { DEFAULT_MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE } from "../../api/middleware";
 import { publishWebhookEvent } from "../../webhooks/publish";
 import { workflow } from "../../workflows";
 
@@ -72,7 +73,7 @@ export const listDocuments = internalQuery({
     hasMore: boolean;
     nextCursor?: string;
   }> => {
-    const limit = Math.min(args.limit ?? 20, 100);
+    const limit = Math.min(args.limit ?? DEFAULT_PAGE_SIZE, DEFAULT_MAX_PAGE_SIZE);
 
     // When filters are active, fetch more to ensure we can fill the page after post-filtering
     const hasFilters = !!(

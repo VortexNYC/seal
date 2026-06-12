@@ -88,6 +88,12 @@ export interface ApiEndpointOptions {
 /**
  * Standard headers included in all API responses.
  */
+/** Default number of items per page for paginated API responses. */
+export const DEFAULT_PAGE_SIZE = 20;
+
+/** Maximum allowed page size for paginated API responses. */
+export const DEFAULT_MAX_PAGE_SIZE = 100;
+
 const STANDARD_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -316,7 +322,7 @@ export async function parseJsonBody<T = unknown>(request: Request): Promise<T> {
  */
 export function parsePagination(
   query: Record<string, string>,
-  defaults: { limit: number; maxLimit: number } = { limit: 20, maxLimit: 100 },
+  defaults: { limit: number; maxLimit: number } = { limit: DEFAULT_PAGE_SIZE, maxLimit: DEFAULT_MAX_PAGE_SIZE },
 ): { limit: number; cursor?: string } {
   let limit = parseInt(query.limit ?? String(defaults.limit), 10);
 
