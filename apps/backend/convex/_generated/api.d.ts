@@ -199,6 +199,7 @@ import type * as schemas_subscriptions from "../schemas/subscriptions.js";
 import type * as schemas_templates from "../schemas/templates.js";
 import type * as schemas_user_profiles from "../schemas/user_profiles.js";
 import type * as schemas_users from "../schemas/users.js";
+import type * as schemas_vortex_billing_webhook_events from "../schemas/vortex_billing_webhook_events.js";
 import type * as schemas_webhooks from "../schemas/webhooks.js";
 import type * as signature_fields_helpers from "../signature_fields/helpers.js";
 import type * as signature_fields_mutations from "../signature_fields/mutations.js";
@@ -454,6 +455,7 @@ declare const fullApi: ApiFromModules<{
   "schemas/templates": typeof schemas_templates;
   "schemas/user_profiles": typeof schemas_user_profiles;
   "schemas/users": typeof schemas_users;
+  "schemas/vortex_billing_webhook_events": typeof schemas_vortex_billing_webhook_events;
   "schemas/webhooks": typeof schemas_webhooks;
   "signature_fields/helpers": typeof signature_fields_helpers;
   "signature_fields/mutations": typeof signature_fields_mutations;

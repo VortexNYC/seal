@@ -120,6 +120,40 @@ describe("document_invoices sync via storeStripeIds and updatePaymentStatusFromW
     expect(invoices[0]!.hostedInvoiceUrl).toBe("https://invoice.stripe.com/test");
   });
 
+  test("document_invoices accepts Vortex Billing invoice records without Stripe IDs", async () => {
+    const now = Date.now();
+
+    const invoiceId = await t.run(async (ctx) => {
+      return await ctx.db.insert("document_invoices", {
+        documentId,
+        organizationId,
+        provider: "vortex_billing",
+        status: "open",
+        customerEmail: "vortex-buyer@example.com",
+        customerName: "Vortex Buyer",
+        amountDue: 4200,
+        currency: "usd",
+        hostedInvoiceUrl: "https://notable-leopard-969.convex.site/pay/pay_test",
+        vortexPayableId: "payable_test",
+        vortexPaymentRequestId: "preq_test",
+        dunningStatus: "none",
+        finalizedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+
+    const invoice = await t.run(async (ctx) => {
+      return await ctx.db.get(invoiceId);
+    });
+
+    expect(invoice?.provider).toBe("vortex_billing");
+    expect(invoice?.stripeAccountId).toBeUndefined();
+    expect(invoice?.stripeInvoiceId).toBeUndefined();
+    expect(invoice?.vortexPayableId).toBe("payable_test");
+    expect(invoice?.vortexPaymentRequestId).toBe("preq_test");
+  });
+
   test("storeStripeIds is idempotent — does not create duplicate invoices", async () => {
     const { internal } = await import("../../_generated/api");
 

@@ -123,6 +123,11 @@ export const paymentFieldConfigsTable = defineTable({
   stripeSubscriptionId: v.optional(v.string()),
   stripePaymentIntentId: v.optional(v.string()),
   hostedInvoiceUrl: v.optional(v.string()),
+  vortexPayableId: v.optional(v.string()),
+  vortexDepositBalancePayableId: v.optional(v.string()),
+  vortexInstallmentPayableId: v.optional(v.string()),
+  vortexRecurringPayableId: v.optional(v.string()),
+  vortexPaymentRequestId: v.optional(v.string()),
 
   // Payment status
   paymentStatus: v.optional(paymentStatusTuple),
@@ -135,4 +140,5 @@ export const paymentFieldConfigsTable = defineTable({
   .index("by_document", ["documentId"])
   .index("by_organization", ["organizationId"])
   .index("by_stripe_invoice", ["stripeInvoiceId"])
-  .index("by_stripe_subscription", ["stripeSubscriptionId"]);
+  .index("by_stripe_subscription", ["stripeSubscriptionId"])
+  .index("by_vortex_payable", ["vortexPayableId"]);

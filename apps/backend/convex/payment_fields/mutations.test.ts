@@ -174,6 +174,53 @@ describe("Payment field mutations", () => {
       expect(config?.currency).toBe("usd");
     });
 
+    test("accepts Vortex Billing linkage fields without Stripe IDs", async () => {
+      const now = Date.now();
+
+      const configId = await t.run(async (ctx) => {
+        return await ctx.db.insert("payment_field_configs", {
+          fieldId: paymentFieldId,
+          documentId,
+          organizationId,
+          paymentType: "one_time",
+          items: [
+            {
+              id: "seal_line_send_flow_test",
+              description: "Vortex send-flow proof payment",
+              quantity: 1,
+              unitPrice: 4200,
+            },
+          ],
+          currency: "usd",
+          dueDateTerms: "net_30",
+          allowedPaymentMethods: ["card"],
+          feeHandling: "absorb",
+          taxEnabled: false,
+          totalAmountCents: 4200,
+          paymentStatus: "awaiting",
+          hostedInvoiceUrl: "https://notable-leopard-969.convex.site/pay/pay_test",
+          vortexPayableId: "payable_test",
+          vortexDepositBalancePayableId: "installment_payable_test",
+          vortexInstallmentPayableId: "installment_payable_test",
+          vortexRecurringPayableId: "recurring_payable_test",
+          vortexPaymentRequestId: "preq_test",
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      const config = (await t.run(async (ctx) => {
+        return await ctx.db.get(configId);
+      })) as Doc<"payment_field_configs"> | null;
+
+      expect(config?.stripeInvoiceId).toBeUndefined();
+      expect(config?.vortexPayableId).toBe("payable_test");
+      expect(config?.vortexDepositBalancePayableId).toBe("installment_payable_test");
+      expect(config?.vortexInstallmentPayableId).toBe("installment_payable_test");
+      expect(config?.vortexRecurringPayableId).toBe("recurring_payable_test");
+      expect(config?.vortexPaymentRequestId).toBe("preq_test");
+    });
+
     test("rejects unauthenticated requests", async () => {
       await expect(
         t.mutation(
