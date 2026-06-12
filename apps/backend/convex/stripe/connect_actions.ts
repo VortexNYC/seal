@@ -1,8 +1,8 @@
 "use node";
 /**
- * Stripe Connect actions (Node runtime).
+ * Vortex Connect provider actions (Node runtime).
  *
- * These actions call Stripe APIs to create/connect accounts and generate onboarding links.
+ * These internal actions call the current provider APIs to create/connect accounts and generate onboarding links.
  * All callers must be owners/admins for the target organization.
  */
 import { randomUUID } from "crypto";
@@ -13,7 +13,7 @@ import Stripe from "stripe";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
-import { action, internalAction } from "../_generated/server";
+import { internalAction } from "../_generated/server";
 import { isAdmin } from "../auth.utils";
 import { mapStripeCapabilities, mapStripeRequirements } from "./connect_helpers";
 
@@ -29,7 +29,7 @@ function initializeStripe(): Stripe {
 }
 
 async function resolveAdminMembership(ctx: ActionCtx, organizationId: Id<"organizations">) {
-  // Guard: only owners/admins can manage Stripe connection settings.
+  // Guard: only owners/admins can manage Vortex Connect settings.
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new ConvexError("Authentication required");
@@ -56,13 +56,13 @@ async function resolveAdminMembership(ctx: ActionCtx, organizationId: Id<"organi
   }
 
   if (!isAdmin(membership)) {
-    throw new ConvexError("Only workspace owners and admins can manage Stripe settings");
+    throw new ConvexError("Only workspace owners and admins can manage Vortex Connect settings");
   }
 
   return { user, membership };
 }
 
-export const createConnectedAccount = action({
+export const createConnectedAccount = internalAction({
   args: {
     organizationId: v.id("organizations"),
     feeHandling: v.optional(v.union(v.literal("absorb"), v.literal("pass_to_recipient"))),
@@ -113,7 +113,7 @@ export const createConnectedAccount = action({
   },
 });
 
-export const createAccountLink = action({
+export const createAccountLink = internalAction({
   args: {
     organizationId: v.id("organizations"),
     returnUrl: v.string(),
@@ -130,7 +130,7 @@ export const createAccountLink = action({
     );
 
     if (!account) {
-      throw new ConvexError("No Stripe account found for this organization");
+      throw new ConvexError("No Vortex Connect account found for this organization");
     }
 
     const stripe = initializeStripe();
@@ -146,7 +146,7 @@ export const createAccountLink = action({
   },
 });
 
-export const createConnectOAuthUrl = action({
+export const createConnectOAuthUrl = internalAction({
   args: {
     organizationId: v.id("organizations"),
     redirectUri: v.string(),
@@ -173,7 +173,7 @@ export const createConnectOAuthUrl = action({
   },
 });
 
-export const exchangeConnectOAuthCode = action({
+export const exchangeConnectOAuthCode = internalAction({
   args: {
     organizationId: v.id("organizations"),
     code: v.string(),
@@ -194,7 +194,7 @@ export const exchangeConnectOAuthCode = action({
     });
 
     if (!token.stripe_user_id) {
-      throw new ConvexError("Stripe OAuth did not return an account");
+      throw new ConvexError("Vortex Connect OAuth did not return an account");
     }
 
     await ctx.runAction(internal.stripe.connect_actions.connectExistingAccount, {
@@ -216,7 +216,7 @@ export const connectExistingAccount = internalAction({
     const account = await stripe.accounts.retrieve(args.stripeAccountId);
 
     if (!account || typeof account === "string") {
-      throw new ConvexError("Stripe account not found");
+      throw new ConvexError("Vortex Connect provider account not found");
     }
 
     // Persist the latest account capabilities and requirements in Convex.
@@ -244,7 +244,7 @@ export const connectExistingAccount = internalAction({
  * Returns a client_secret that the frontend passes to `loadConnectAndInitialize()`.
  * The session is scoped to a specific connected account and set of enabled components.
  */
-export const createAccountSession = action({
+export const createAccountSession = internalAction({
   args: {
     organizationId: v.id("organizations"),
     components: v.optional(v.array(v.string())),
@@ -260,7 +260,7 @@ export const createAccountSession = action({
     );
 
     if (!account) {
-      throw new ConvexError("No Stripe account found for this organization");
+      throw new ConvexError("No Vortex Connect account found for this organization");
     }
 
     const stripe = initializeStripe();
@@ -284,7 +284,7 @@ export const createAccountSession = action({
   },
 });
 
-export const refreshConnectedAccount = action({
+export const refreshConnectedAccount = internalAction({
   args: {
     organizationId: v.id("organizations"),
   },
@@ -306,7 +306,7 @@ export const refreshConnectedAccount = action({
     const account = await stripe.accounts.retrieve(existing.stripeAccountId);
 
     if (!account || typeof account === "string") {
-      throw new ConvexError("Stripe account not found");
+      throw new ConvexError("Vortex Connect provider account not found");
     }
 
     // Update local record with latest Stripe state

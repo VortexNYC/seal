@@ -10,9 +10,17 @@ const documentSidebarPath = "apps/web/src/components/documents/document-sidebar.
 const fieldToolbarPath = "apps/web/src/components/documents/field-toolbar.tsx";
 const paymentsQueriesPath = "apps/backend/convex/payments/queries.ts";
 const paymentsSubscriptionActionsPath = "apps/backend/convex/payments/subscription_actions.ts";
+const paymentsMerchantAccountActionsPath =
+  "apps/backend/convex/payments/merchant_account_actions.ts";
+const providerConnectActionsPath = "apps/backend/convex/stripe/connect_actions.ts";
 const failures: string[] = [];
 
-for (const requiredPath of [paymentsQueriesPath, paymentsSubscriptionActionsPath]) {
+for (const requiredPath of [
+  paymentsQueriesPath,
+  paymentsSubscriptionActionsPath,
+  paymentsMerchantAccountActionsPath,
+  providerConnectActionsPath,
+]) {
   if (!existsSync(join(repoRoot, requiredPath))) {
     failures.push(`${requiredPath} must exist as the Vortex-owned backend payments API.`);
   }
@@ -28,6 +36,11 @@ const paymentsSubscriptionActions = readFileSync(
   join(repoRoot, paymentsSubscriptionActionsPath),
   "utf8",
 );
+const paymentsMerchantAccountActions = readFileSync(
+  join(repoRoot, paymentsMerchantAccountActionsPath),
+  "utf8",
+);
+const providerConnectActions = readFileSync(join(repoRoot, providerConnectActionsPath), "utf8");
 
 for (const requiredFragment of [
   "api.payments.queries.getRevenueStats",
@@ -108,6 +121,40 @@ if (paymentsSubscriptionActions.includes("stripeAccountId: v.string()")) {
   failures.push("Vortex subscription actions must not accept processor account ids from the browser.");
 }
 
+for (const requiredFragment of [
+  "internal.stripe.connect_actions.createConnectedAccount",
+  "internal.stripe.connect_actions.createAccountLink",
+  "internal.stripe.connect_actions.createConnectOAuthUrl",
+  "internal.stripe.connect_actions.exchangeConnectOAuthCode",
+  "internal.stripe.connect_actions.createAccountSession",
+  "internal.stripe.connect_actions.refreshConnectedAccount",
+]) {
+  if (!paymentsMerchantAccountActions.includes(requiredFragment)) {
+    failures.push(
+      `${paymentsMerchantAccountActionsPath} missing internal provider fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+if (paymentsMerchantAccountActions.includes("api.stripe.connect_actions")) {
+  failures.push("Vortex merchant account actions must not call public provider connect actions.");
+}
+
+for (const providerActionName of [
+  "createConnectedAccount",
+  "createAccountLink",
+  "createConnectOAuthUrl",
+  "exchangeConnectOAuthCode",
+  "createAccountSession",
+  "refreshConnectedAccount",
+]) {
+  if (providerConnectActions.includes(`export const ${providerActionName} = action({`)) {
+    failures.push(
+      `${providerConnectActionsPath} must keep ${providerActionName} internal-only behind Vortex Payments.`,
+    );
+  }
+}
+
 if (failures.length > 0) {
   console.error("Vortex payments backend adapter adoption proof failed:");
   for (const failure of failures) {
@@ -121,3 +168,4 @@ console.log("- Payment overview reads from api.payments queries, not api.stripe 
 console.log("- Subscription route reads and writes through api.payments.");
 console.log("- Browser no longer supplies processor account ids for subscription operations.");
 console.log("- Vortex subscription actions resolve processor context server-side.");
+console.log("- Vortex Connect account operations enter through api.payments merchant actions.");

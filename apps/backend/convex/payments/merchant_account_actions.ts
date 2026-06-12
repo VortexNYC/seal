@@ -2,7 +2,7 @@
 
 import { v } from "convex/values";
 
-import { api } from "../_generated/api";
+import { internal } from "../_generated/api";
 import { action } from "../_generated/server";
 import { feeHandlingValidator } from "./merchant_account_validators";
 
@@ -36,7 +36,10 @@ export const createMerchantAccount = action({
     processorAccountId: v.string(),
   }),
   handler: async (ctx, args): Promise<CreateMerchantAccountResult> => {
-    const result = await ctx.runAction(api.stripe.connect_actions.createConnectedAccount, args);
+    const result = await ctx.runAction(
+      internal.stripe.connect_actions.createConnectedAccount,
+      args,
+    );
 
     return {
       processorAccountId: result.stripeAccountId,
@@ -54,7 +57,7 @@ export const createMerchantOnboardingLink = action({
     url: v.string(),
   }),
   handler: async (ctx, args): Promise<MerchantOnboardingLinkResult> => {
-    return await ctx.runAction(api.stripe.connect_actions.createAccountLink, args);
+    return await ctx.runAction(internal.stripe.connect_actions.createAccountLink, args);
   },
 });
 
@@ -68,7 +71,7 @@ export const createMerchantOAuthUrl = action({
     state: v.string(),
   }),
   handler: async (ctx, args): Promise<MerchantOAuthUrlResult> => {
-    return await ctx.runAction(api.stripe.connect_actions.createConnectOAuthUrl, args);
+    return await ctx.runAction(internal.stripe.connect_actions.createConnectOAuthUrl, args);
   },
 });
 
@@ -82,7 +85,10 @@ export const exchangeMerchantOAuthCode = action({
     processorAccountId: v.string(),
   }),
   handler: async (ctx, args): Promise<CreateMerchantAccountResult> => {
-    const result = await ctx.runAction(api.stripe.connect_actions.exchangeConnectOAuthCode, args);
+    const result = await ctx.runAction(
+      internal.stripe.connect_actions.exchangeConnectOAuthCode,
+      args,
+    );
 
     return {
       processorAccountId: result.stripeAccountId,
@@ -99,7 +105,7 @@ export const createMerchantAccountSession = action({
     clientSecret: v.string(),
   }),
   handler: async (ctx, args): Promise<MerchantAccountSessionResult> => {
-    return await ctx.runAction(api.stripe.connect_actions.createAccountSession, args);
+    return await ctx.runAction(internal.stripe.connect_actions.createAccountSession, args);
   },
 });
 
@@ -111,6 +117,6 @@ export const refreshMerchantAccount = action({
     status: v.union(v.literal("not_connected"), v.literal("refreshed")),
   }),
   handler: async (ctx, args): Promise<RefreshMerchantAccountResult> => {
-    return await ctx.runAction(api.stripe.connect_actions.refreshConnectedAccount, args);
+    return await ctx.runAction(internal.stripe.connect_actions.refreshConnectedAccount, args);
   },
 });
