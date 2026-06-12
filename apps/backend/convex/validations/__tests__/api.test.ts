@@ -681,6 +681,7 @@ describe("getAuditTrailSchema", () => {
   test("accepts document_id only", () => {
     expect(getAuditTrailSchema.parse({ document_id: "doc_123" })).toEqual({
       document_id: "doc_123",
+      limit: 100,
     });
   });
 
