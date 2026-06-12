@@ -938,14 +938,26 @@ http.route({
         documentId: query.document_id as Id<"documents">,
         limit,
         cursor,
-        status: query.status as Parameters<
-          typeof internal.api.v1.recipients.listRecipients
-        >["status"],
-        role: query.role as Parameters<typeof internal.api.v1.recipients.listRecipients>["role"],
-        sort: query.sort as Parameters<typeof internal.api.v1.recipients.listRecipients>["sort"],
-        sort_direction: query.sort_direction as Parameters<
-          typeof internal.api.v1.recipients.listRecipients
-        >["sort_direction"],
+        status: query.status as
+          | "pending"
+          | "viewed"
+          | "signed"
+          | "approved"
+          | "declined"
+          | "expired"
+          | undefined,
+        role: query.role as "signer" | "approver" | "viewer" | undefined,
+        sort: query.sort as
+          | "order"
+          | "email"
+          | "name"
+          | "status"
+          | "role"
+          | "created_at"
+          | "updated_at"
+          | undefined,
+        sort_direction: query.sort_direction as "asc" | "desc" | undefined,
+        search: query.search,
       });
 
       if (result === null) {
