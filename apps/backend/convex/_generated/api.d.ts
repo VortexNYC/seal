@@ -235,6 +235,7 @@ import type * as stripe_pricing from "../stripe/pricing.js";
 import type * as stripe_promo_code from "../stripe/promo_code.js";
 import type * as stripe_revenue_queries from "../stripe/revenue_queries.js";
 import type * as stripe_subscription_actions from "../stripe/subscription_actions.js";
+import type * as stripe_subscription_processor from "../stripe/subscription_processor.js";
 import type * as stripe_subscription_queries from "../stripe/subscription_queries.js";
 import type * as stripe_sync from "../stripe/sync.js";
 import type * as stripe_sync_helpers from "../stripe/sync_helpers.js";
@@ -496,6 +497,7 @@ declare const fullApi: ApiFromModules<{
   "stripe/promo_code": typeof stripe_promo_code;
   "stripe/revenue_queries": typeof stripe_revenue_queries;
   "stripe/subscription_actions": typeof stripe_subscription_actions;
+  "stripe/subscription_processor": typeof stripe_subscription_processor;
   "stripe/subscription_queries": typeof stripe_subscription_queries;
   "stripe/sync": typeof stripe_sync;
   "stripe/sync_helpers": typeof stripe_sync_helpers;

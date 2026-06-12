@@ -10,6 +10,7 @@ const documentSidebarPath = "apps/web/src/components/documents/document-sidebar.
 const fieldToolbarPath = "apps/web/src/components/documents/field-toolbar.tsx";
 const paymentsQueriesPath = "apps/backend/convex/payments/queries.ts";
 const paymentsSubscriptionActionsPath = "apps/backend/convex/payments/subscription_actions.ts";
+const providerSubscriptionProcessorPath = "apps/backend/convex/stripe/subscription_processor.ts";
 const paymentsPaymentFieldActionsPath = "apps/backend/convex/payments/payment_field_actions.ts";
 const paymentsMerchantAccountActionsPath =
   "apps/backend/convex/payments/merchant_account_actions.ts";
@@ -25,6 +26,7 @@ const failures: string[] = [];
 for (const requiredPath of [
   paymentsQueriesPath,
   paymentsSubscriptionActionsPath,
+  providerSubscriptionProcessorPath,
   paymentsPaymentFieldActionsPath,
   paymentsMerchantAccountActionsPath,
   providerPaymentFieldActionsPath,
@@ -61,6 +63,10 @@ const paymentsSubscriptionActions = readFileSync(
 );
 const paymentsPaymentFieldActions = readFileSync(
   join(repoRoot, paymentsPaymentFieldActionsPath),
+  "utf8",
+);
+const providerSubscriptionProcessor = readFileSync(
+  join(repoRoot, providerSubscriptionProcessorPath),
   "utf8",
 );
 const paymentsMerchantAccountActions = readFileSync(
@@ -141,11 +147,39 @@ for (const requiredFragment of [
   "export const resumeSubscription = action",
   "export const cancelSubscription = action",
   "resolveSubscriptionProcessorContext",
-  "processor.processorAccountId",
+  "pauseProcessorSubscription(processor)",
+  "resumeProcessorSubscription(processor)",
+  "cancelProcessorSubscription(processor)",
+  "createHostedCheckoutSession",
+  "createCustomerPortalUrl",
 ]) {
   if (!paymentsSubscriptionActions.includes(requiredFragment)) {
     failures.push(
       `${paymentsSubscriptionActionsPath} missing Vortex action fragment: ${requiredFragment}`,
+    );
+  }
+}
+
+for (const forbiddenFragment of ["import Stripe", "new Stripe(", "stripe.subscriptions.update"]) {
+  if (paymentsSubscriptionActions.includes(forbiddenFragment)) {
+    failures.push(
+      `${paymentsSubscriptionActionsPath} must not own provider SDK calls: ${forbiddenFragment}`,
+    );
+  }
+}
+
+for (const requiredFragment of [
+  "import Stripe from \"stripe\"",
+  "export async function createHostedCheckoutSession",
+  "export async function createCustomerPortalUrl",
+  "export async function pauseProcessorSubscription",
+  "export async function resumeProcessorSubscription",
+  "export async function cancelProcessorSubscription",
+  "stripe.subscriptions.update",
+]) {
+  if (!providerSubscriptionProcessor.includes(requiredFragment)) {
+    failures.push(
+      `${providerSubscriptionProcessorPath} missing provider subscription processor fragment: ${requiredFragment}`,
     );
   }
 }
@@ -258,6 +292,7 @@ console.log("- Payment overview reads from api.payments queries, not api.stripe 
 console.log("- Subscription route reads and writes through api.payments.");
 console.log("- Browser no longer supplies processor account ids for subscription operations.");
 console.log("- Vortex subscription actions resolve processor context server-side.");
+console.log("- Stripe subscription SDK calls live in the provider subscription processor.");
 console.log("- Vortex Connect account operations enter through api.payments merchant actions.");
 console.log("- Dead public provider subscription actions stay deleted from source and generated API.");
 console.log("- Document payment object creation uses Vortex-owned payment link naming.");

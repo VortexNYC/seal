@@ -11,8 +11,17 @@ import { v } from "convex/values";
 import Stripe from "stripe";
 
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import {
+  action,
+  internalMutation,
+  internalQuery,
+  type MutationCtx,
+  mutation,
+  query,
+} from "./_generated/server";
+import { listComponentInvitationsByOrganization } from "./lib/componentOrgReads";
+import { setVortexAuthInvitationStatus } from "./lib/vortexAuthOrganizations";
 import { getOrCreateStripeCustomer } from "./stripe/helpers";
 
 /**
@@ -28,6 +37,81 @@ function requireE2eDeployment(): void {
       "Test helper functions are disabled. E2E_DEPLOYMENT_SECRET is not set on this deployment.",
     );
   }
+}
+
+async function resolveE2eDocumentOwner(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  ownerAuthSubject?: string,
+  ownerEmail?: string,
+): Promise<Doc<"users">> {
+  if (ownerAuthSubject) {
+    const owner = await ctx.db
+      .query("users")
+      .withIndex("by_auth_subject", (q) => q.eq("authSubject", ownerAuthSubject))
+      .first();
+
+    if (!owner) {
+      throw new Error(`e2e_owner_auth_subject_not_found: ${ownerAuthSubject}`);
+    }
+
+    const membership = await ctx.db
+      .query("organization_members")
+      .withIndex("by_user_organization", (q) =>
+        q.eq("userId", owner._id).eq("organizationId", organizationId),
+      )
+      .first();
+
+    if (membership?.status !== "active") {
+      throw new Error(`e2e_owner_auth_subject_not_active_member: ${ownerAuthSubject}`);
+    }
+
+    return owner;
+  }
+
+  if (ownerEmail) {
+    const owners = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", ownerEmail))
+      .collect();
+
+    if (owners.length === 0) {
+      throw new Error(`e2e_owner_not_found: ${ownerEmail}`);
+    }
+
+    for (const owner of owners) {
+      const membership = await ctx.db
+        .query("organization_members")
+        .withIndex("by_user_organization", (q) =>
+          q.eq("userId", owner._id).eq("organizationId", organizationId),
+        )
+        .first();
+
+      if (membership?.status === "active") {
+        return owner;
+      }
+    }
+
+    throw new Error(`e2e_owner_not_active_member: ${ownerEmail}`);
+  }
+
+  const activeMember = await ctx.db
+    .query("organization_members")
+    .withIndex("by_organization_status", (q) =>
+      q.eq("organizationId", organizationId).eq("status", "active"),
+    )
+    .first();
+
+  if (!activeMember) {
+    throw new Error(`no_active_member_found_for_org: ${organizationId}`);
+  }
+
+  const owner = await ctx.db.get(activeMember.userId);
+  if (!owner) {
+    throw new Error(`member_user_not_found_for_org: ${organizationId}`);
+  }
+
+  return owner;
 }
 
 /**
@@ -177,6 +261,45 @@ export const purgeE2EDocuments = mutation({
 });
 
 /**
+ * Revoke pending invitations for the E2E workspace. The vortexAuth component
+ * invitation list is capped, so stale pending invites can hide freshly-created
+ * test invites from the team-management UI.
+ */
+export const purgeE2EPendingInvitations = mutation({
+  args: {
+    organizationSlug: v.string(),
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, { organizationSlug, batchSize = 50 }) => {
+    requireE2eDeployment();
+
+    const org = await ctx.db
+      .query("organizations")
+      .withIndex("by_slug", (q) => q.eq("slug", organizationSlug))
+      .first();
+
+    if (!org) {
+      return { revoked: 0, hasMore: false, reason: "org_not_found" };
+    }
+
+    const invitations = await listComponentInvitationsByOrganization(ctx, org, "pending", {
+      limit: batchSize + 1,
+    });
+    const hasMore = invitations.length > batchSize;
+    const toRevoke = invitations.slice(0, batchSize);
+
+    for (const invitation of toRevoke) {
+      await setVortexAuthInvitationStatus(ctx, {
+        invitationId: invitation._id,
+        status: "revoked",
+      });
+    }
+
+    return { revoked: toRevoke.length, hasMore };
+  },
+});
+
+/**
  * Generate a Convex storage upload URL for E2E test PDF seeding.
  */
 export const generateUploadUrl = mutation({
@@ -197,8 +320,10 @@ export const createTestDocument = mutation({
     organizationSlug: v.string(),
     storageId: v.string(),
     name: v.optional(v.string()),
+    ownerAuthSubject: v.optional(v.string()),
+    ownerEmail: v.optional(v.string()),
   },
-  handler: async (ctx, { organizationSlug, storageId, name }) => {
+  handler: async (ctx, { organizationSlug, storageId, name, ownerAuthSubject, ownerEmail }) => {
     requireE2eDeployment();
 
     const org = await ctx.db
@@ -207,22 +332,7 @@ export const createTestDocument = mutation({
       .first();
     if (!org) throw new Error(`org_not_found: ${organizationSlug}`);
 
-    // Find any user in this org — try active org index first, then fall back to any user
-    let owner = await ctx.db
-      .query("users")
-      .withIndex("by_active_org", (q) => q.eq("activeOrganizationId", org._id))
-      .first();
-    if (!owner) {
-      // activeOrganizationId may not be set; find any user via org memberships
-      // Use the well-known E2E test user auth subject as a reliable fallback
-      const e2eAuthSubject = "user_3B4i0q60eWUsHUVSbdnnVPLmRT7"; // seal-e2e+test@example.com
-      owner =
-        (await ctx.db
-          .query("users")
-          .withIndex("by_auth_subject", (q) => q.eq("authSubject", e2eAuthSubject))
-          .first()) ?? (await ctx.db.query("users").first());
-    }
-    if (!owner) throw new Error("no_user_found_for_org");
+    const owner = await resolveE2eDocumentOwner(ctx, org._id, ownerAuthSubject, ownerEmail);
 
     const now = Date.now();
     const docId = await ctx.db.insert("documents", {
@@ -257,6 +367,8 @@ export const createSignableTestDocument = mutation({
     organizationSlug: v.string(),
     storageId: v.string(),
     name: v.optional(v.string()),
+    ownerAuthSubject: v.optional(v.string()),
+    ownerEmail: v.optional(v.string()),
     recipientEmail: v.optional(v.string()),
     recipientName: v.optional(v.string()),
     // When "draft", the doc + recipient are created but the doc stays editable
@@ -267,7 +379,16 @@ export const createSignableTestDocument = mutation({
   },
   handler: async (
     ctx,
-    { organizationSlug, storageId, name, recipientEmail, recipientName, workflowStatus },
+    {
+      organizationSlug,
+      storageId,
+      name,
+      ownerAuthSubject,
+      ownerEmail,
+      recipientEmail,
+      recipientName,
+      workflowStatus,
+    },
   ) => {
     requireE2eDeployment();
     const desiredStatus = workflowStatus ?? "sent";
@@ -278,19 +399,7 @@ export const createSignableTestDocument = mutation({
       .first();
     if (!org) throw new Error(`org_not_found: ${organizationSlug}`);
 
-    let owner = await ctx.db
-      .query("users")
-      .withIndex("by_active_org", (q) => q.eq("activeOrganizationId", org._id))
-      .first();
-    if (!owner) {
-      const e2eAuthSubject = "user_3B4i0q60eWUsHUVSbdnnVPLmRT7";
-      owner =
-        (await ctx.db
-          .query("users")
-          .withIndex("by_auth_subject", (q) => q.eq("authSubject", e2eAuthSubject))
-          .first()) ?? (await ctx.db.query("users").first());
-    }
-    if (!owner) throw new Error("no_user_found_for_org");
+    const owner = await resolveE2eDocumentOwner(ctx, org._id, ownerAuthSubject, ownerEmail);
 
     const now = Date.now();
     const docId = await ctx.db.insert("documents", {

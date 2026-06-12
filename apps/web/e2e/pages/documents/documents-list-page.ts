@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { ensureAuthenticatedWorkspaceHome, ensureConvexAuth } from "../../fixtures/auth-helpers";
 
@@ -39,21 +39,19 @@ export class DocumentsListPage {
       await ensureAuthenticatedWorkspaceHome(this.page);
     });
 
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       await this.page.goto(targetUrl, { waitUntil: "domcontentloaded" });
 
-      if (await this.waitForDocumentsShell().catch(() => false)) {
+      if (await this.waitForDocumentsShell(15000).catch(() => false)) {
         return;
       }
 
-      if (!(await this.recoverFromAuthError(targetUrl))) {
-        break;
+      if (await this.authRequiredError.isVisible().catch(() => false)) {
+        await this.recoverFromAuthError(targetUrl);
       }
     }
 
-    throw new Error(
-      "Documents page stayed on an authentication error after multiple recovery attempts.",
-    );
+    throw new Error("Documents page did not become ready after multiple navigation attempts.");
   }
 
   async createDocument(pdfPath: string): Promise<string> {
@@ -163,6 +161,36 @@ export class DocumentsListPage {
 
   getDocumentRowByName(documentName: string): Locator {
     return this.documentRows.filter({ hasText: documentName }).first();
+  }
+
+  async waitForDocumentRowByName(documentName: string, timeoutMs = 30000): Promise<Locator> {
+    const row = this.getDocumentRowByName(documentName);
+    const deadline = Date.now() + timeoutMs;
+    let attempts = 0;
+
+    while (Date.now() < deadline) {
+      if (await row.isVisible().catch(() => false)) {
+        return row;
+      }
+
+      if (await this.searchInput.isVisible().catch(() => false)) {
+        await this.searchInput.fill(documentName);
+      }
+
+      await this.page.waitForTimeout(500);
+
+      if (await row.isVisible().catch(() => false)) {
+        return row;
+      }
+
+      attempts += 1;
+      if (attempts % 6 === 0) {
+        await this.page.reload({ waitUntil: "domcontentloaded" });
+      }
+    }
+
+    await expect(row).toBeVisible({ timeout: 1000 });
+    return row;
   }
 
   async getFirstDocumentName(): Promise<string | null> {

@@ -625,6 +625,7 @@ export async function listComponentInvitationsByOrganization(
   ctx: ReadCtx,
   organization: Pick<Doc<"organizations">, "vortexAuthOrganizationId">,
   status?: "pending" | "accepted" | "revoked" | "expired",
+  options?: { limit?: number },
 ): Promise<ComponentResolvedInvitation[]> {
   const vortexAuthOrganizationId = organization.vortexAuthOrganizationId;
   if (!vortexAuthOrganizationId) {
@@ -634,6 +635,7 @@ export async function listComponentInvitationsByOrganization(
     components.vortexAuth.organizations.listInvitationsByOrganization,
     {
       organizationId: vortexAuthOrganizationId as ComponentOrganizationId,
+      limit: options?.limit ?? 500,
       status,
     },
   );
@@ -644,5 +646,5 @@ export async function listComponentInvitationsByOrganization(
       mapped.push(resolved);
     }
   }
-  return mapped;
+  return mapped.sort((a, b) => b.createdAt - a.createdAt);
 }

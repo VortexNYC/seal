@@ -194,10 +194,24 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Install Playwright browsers
+      - name: Install Playwright browsers for PR gate
+        if: github.event_name == 'pull_request'
+        run: cd apps/landing && bunx playwright install --with-deps chromium
+
+      - name: Install Playwright browsers for full gate
+        if: github.event_name != 'pull_request'
         run: cd apps/landing && bunx playwright install --with-deps chromium firefox webkit
 
-      - name: Run landing E2E tests
+      - name: Run landing E2E PR gate
+        if: github.event_name == 'pull_request'
+        # PRs need a fast representative landing gate. Full cross-browser landing
+        # coverage still runs on push/manual workflow runs.
+        run: cd apps/landing && bun run test:e2e --project=chromium --project="Mobile Chrome"
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Run landing E2E full gate
+        if: github.event_name != 'pull_request'
         # Avoid `bun --bun run` here: Playwright's config loader fails under
         # Bun's Node shim, while the normal workspace script execution works
         # locally and in CI-compatible environments.
