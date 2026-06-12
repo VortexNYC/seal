@@ -49,8 +49,6 @@
     "@react-input/number-format": "^2.0.3",
     "@seal/backend": "workspace:*",
     "@seal/tokens": "workspace:*",
-    "@stripe/connect-js": "^3.3.34",
-    "@stripe/react-connect-js": "^3.3.33",
     "@stripe/react-stripe-js": "^5.6.0",
     "@stripe/stripe-js": "^8.7.0",
     "@tailwindcss/vite": "^4.1.18",

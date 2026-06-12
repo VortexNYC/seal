@@ -7,7 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
+import { NoVortexMerchantAccountState } from "@/components/payments/vortex-merchant-operational-surface";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,7 +69,7 @@ function SubscriptionsPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Subscriptions" />;
+    return <NoVortexMerchantAccountState slug={slug} title="Subscriptions" />;
   }
 
   const stripeAccountId = connectedAccount.account?.stripeAccountId;

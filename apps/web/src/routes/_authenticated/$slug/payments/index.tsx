@@ -5,7 +5,7 @@ import { BadgeDollarSign, CircleDollarSign, Clock, Receipt } from "lucide-react"
 import { useState } from "react";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { NoStripeConnectState } from "@/components/stripe/no-connect-state";
+import { NoVortexMerchantAccountState } from "@/components/payments/vortex-merchant-operational-surface";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -76,7 +76,7 @@ function PaymentsOverviewPage() {
   }
 
   if (connectedAccount.status !== "connected") {
-    return <NoStripeConnectState slug={slug} title="Payments Overview" />;
+    return <NoVortexMerchantAccountState slug={slug} title="Payments Overview" />;
   }
 
   return (
