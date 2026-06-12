@@ -231,10 +231,8 @@ import type * as stripe_subscription_actions from "../stripe/subscription_action
 import type * as stripe_subscription_queries from "../stripe/subscription_queries.js";
 import type * as stripe_sync from "../stripe/sync.js";
 import type * as stripe_sync_helpers from "../stripe/sync_helpers.js";
-import type * as stripe_sync_subscriptions from "../stripe/sync_subscriptions.js";
 import type * as stripe_webhook_handlers from "../stripe/webhook_handlers.js";
 import type * as stripe_webhook_idempotency from "../stripe/webhook_idempotency.js";
-import type * as sync_external_data from "../sync_external_data.js";
 import type * as templates_index from "../templates/index.js";
 import type * as templates_mutations from "../templates/mutations.js";
 import type * as templates_queries from "../templates/queries.js";
@@ -487,10 +485,8 @@ declare const fullApi: ApiFromModules<{
   "stripe/subscription_queries": typeof stripe_subscription_queries;
   "stripe/sync": typeof stripe_sync;
   "stripe/sync_helpers": typeof stripe_sync_helpers;
-  "stripe/sync_subscriptions": typeof stripe_sync_subscriptions;
   "stripe/webhook_handlers": typeof stripe_webhook_handlers;
   "stripe/webhook_idempotency": typeof stripe_webhook_idempotency;
-  sync_external_data: typeof sync_external_data;
   "templates/index": typeof templates_index;
   "templates/mutations": typeof templates_mutations;
   "templates/queries": typeof templates_queries;

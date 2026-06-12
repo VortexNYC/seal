@@ -1,22 +1,16 @@
 /**
- * Stripe Product & Pricing Sync
+ * Stripe Product & Pricing Webhook Sync
  *
- * Syncs products, prices, and features from Stripe to Convex.
- * This eliminates the need for hardcoded price IDs in environment variables.
- *
- * Usage:
- * 1. Set price metadata in Stripe with: tier, documentsPerMonth, maxRecipients
- * 2. Attach features to products via Stripe Entitlements
- * 3. Run: bunx convex run stripe/sync:syncFromStripe
- * 4. Products, prices, and features will be stored in Convex
+ * Keeps the legacy Stripe billing catalog projection current while Seal still
+ * accepts Stripe product and price webhooks. Manual acceptance/reconciliation
+ * sync entrypoints were removed; this file is not a backfill surface.
  */
 
 import { v } from "convex/values";
 import Stripe from "stripe";
 
-import type { Doc } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
-import { action, internalAction, internalMutation, internalQuery } from "../_generated/server";
+import { internalAction, internalMutation, internalQuery } from "../_generated/server";
 import { syncPrices, syncProduct } from "./sync_helpers";
 
 /**
@@ -254,117 +248,9 @@ const syncFromStripeInternal = async (ctx: ActionCtx) => {
 };
 
 /**
- * Sync products and prices from Stripe to Convex (manual call)
- *
- * Run this manually: bunx convex run stripeSync:syncFromStripe
- */
-export const syncFromStripe = action({
-  args: {},
-  handler: syncFromStripeInternal,
-});
-
-/**
  * Internal sync function (called by webhooks)
  */
 export const syncFromStripeWebhook = internalAction({
   args: {},
   handler: syncFromStripeInternal,
-});
-
-/**
- * Get subscription plans with their pricing
- *
- * Returns active products with their fixed and metered prices.
- * Used by frontend to display pricing options.
- */
-export const getSubscriptionPlans = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    // Get all active products
-    const products = await ctx.db
-      .query("subscription_products")
-      .withIndex("by_status", (q) => q.eq("status", "active"))
-      .collect();
-
-    const plans = [];
-
-    for (const product of products) {
-      // Get prices for this product
-      const prices = await ctx.db
-        .query("subscription_prices")
-        .withIndex("by_external_product_id", (q) =>
-          q.eq("externalProductId", product.externalProductId),
-        )
-        .filter((q) => q.eq(q.field("status"), "active"))
-        .collect();
-
-      // Find fixed (licensed) and metered prices
-      const fixedPrice = prices.find(
-        (p) => p.usageType === "licensed" || p.usageType === undefined,
-      );
-      const meteredPrice = prices.find((p) => p.usageType === "metered");
-
-      if (!fixedPrice) {
-        console.warn(`No fixed price found for product ${product.name}`);
-        continue;
-      }
-
-      plans.push({
-        productId: product.externalProductId,
-        name: product.name,
-        description: product.description,
-        tier: product.metadata?.tier,
-        features: product.metadata?.features || [],
-        pricing: {
-          monthly: fixedPrice.unitAmount ? fixedPrice.unitAmount / 100 : 0,
-          currency: fixedPrice.currency,
-          fixedPriceId: fixedPrice.externalPriceId,
-          meteredPriceId: meteredPrice?.externalPriceId,
-          overageRate: meteredPrice?.unitAmount ? meteredPrice.unitAmount / 100 : 0,
-        },
-      });
-    }
-
-    // Sort by price (lowest to highest)
-    plans.sort((a, b) => a.pricing.monthly - b.pricing.monthly);
-
-    return plans;
-  },
-});
-
-/**
- * Admin: Get full Stripe catalog with statuses
- * Returns all products and their prices, regardless of status
- */
-export const getStripeCatalogDetailed = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const productStatuses = ["active", "archived", "deleted"] as const;
-    const products = (
-      await Promise.all(
-        productStatuses.map((status) =>
-          ctx.db
-            .query("subscription_products")
-            .withIndex("by_status", (q) => q.eq("status", status))
-            .collect(),
-        ),
-      )
-    ).flat();
-    const result: Array<{
-      product: Doc<"subscription_products">;
-      prices: Doc<"subscription_prices">[];
-    }> = [];
-
-    for (const product of products) {
-      const prices = await ctx.db
-        .query("subscription_prices")
-        .withIndex("by_external_product_id", (q) =>
-          q.eq("externalProductId", product.externalProductId),
-        )
-        .collect();
-      result.push({ product, prices });
-    }
-
-    return result;
-  },
 });
