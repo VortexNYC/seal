@@ -232,7 +232,9 @@ function BillingSettingsPage() {
                 selectPlanLabel: "Select plan",
                 title: "Plans",
               }}
-              onPlanSelect={handlePlanSelect}
+              onPlanSelect={(plan) => {
+                void handlePlanSelect(plan);
+              }}
             />
           </div>
         </VortexPaymentsProvider>
