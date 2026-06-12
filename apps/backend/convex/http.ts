@@ -1701,7 +1701,8 @@ http.route({
         throw new ApiError(400, "document_id is required", "VALIDATION_ERROR");
       }
 
-      const limit = query.limit ? Number.parseInt(query.limit, 10) : 100;
+      const DEFAULT_AUDIT_PAGE_SIZE = 100;
+      const limit = query.limit ? Number.parseInt(query.limit, 10) : DEFAULT_AUDIT_PAGE_SIZE;
 
       const result = await ctx.runQuery(internal.api.v1.signatures.getAuditTrail, {
         userId: auth.userId,
