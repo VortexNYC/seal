@@ -8,1129 +8,1092 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as LogoTestRouteImport } from './routes/logo-test'
-import { Route as AppRouteImport } from './routes/app'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as AuthRouteImport } from './routes/_auth'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as VerifyQrTokenRouteImport } from './routes/verify.$qrToken'
-import { Route as SignTokenRouteImport } from './routes/sign.$token'
-import { Route as AuthenticatedSlugRouteImport } from './routes/_authenticated/$slug'
-import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
-import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
-import { Route as AuthAcceptInviteRouteImport } from './routes/_auth/accept-invite'
-import { Route as AuthenticatedSlugIndexRouteImport } from './routes/_authenticated/$slug/index'
-import { Route as AuthenticatedSlugTemplatesRouteImport } from './routes/_authenticated/$slug/templates'
-import { Route as AuthenticatedSlugPaymentsRouteImport } from './routes/_authenticated/$slug/payments'
-import { Route as AuthenticatedSlugHomeRouteImport } from './routes/_authenticated/$slug/home'
-import { Route as AuthenticatedSlugDocumentsRouteImport } from './routes/_authenticated/$slug/documents'
-import { Route as AuthenticatedSlugContactsRouteImport } from './routes/_authenticated/$slug/contacts'
-import { Route as AuthenticatedSlugAnalyticsRouteImport } from './routes/_authenticated/$slug/analytics'
-import { Route as AuthenticatedSlugSplatRouteImport } from './routes/_authenticated/$slug/$'
-import { Route as AuthenticatedOnboardingChooseOrganizationIndexRouteImport } from './routes/_authenticated/onboarding/choose-organization/index'
-import { Route as AuthenticatedSlugSettingsIndexRouteImport } from './routes/_authenticated/$slug/settings/index'
-import { Route as AuthenticatedSlugPaymentsIndexRouteImport } from './routes/_authenticated/$slug/payments/index'
-import { Route as AuthenticatedSlugDocumentsIndexRouteImport } from './routes/_authenticated/$slug/documents/index'
-import { Route as AuthenticatedSlugContactsIndexRouteImport } from './routes/_authenticated/$slug/contacts/index'
-import { Route as AuthenticatedSlugSettingsTeamRouteImport } from './routes/_authenticated/$slug/settings/team'
-import { Route as AuthenticatedSlugSettingsSigningRouteImport } from './routes/_authenticated/$slug/settings/signing'
-import { Route as AuthenticatedSlugSettingsSecurityRouteImport } from './routes/_authenticated/$slug/settings/security'
-import { Route as AuthenticatedSlugSettingsProfileRouteImport } from './routes/_authenticated/$slug/settings/profile'
-import { Route as AuthenticatedSlugSettingsPaymentsRouteImport } from './routes/_authenticated/$slug/settings/payments'
-import { Route as AuthenticatedSlugSettingsNotificationsRouteImport } from './routes/_authenticated/$slug/settings/notifications'
-import { Route as AuthenticatedSlugSettingsBrandingRouteImport } from './routes/_authenticated/$slug/settings/branding'
-import { Route as AuthenticatedSlugSettingsBillingRouteImport } from './routes/_authenticated/$slug/settings/billing'
-import { Route as AuthenticatedSlugSettingsAuditLogRouteImport } from './routes/_authenticated/$slug/settings/audit-log'
-import { Route as AuthenticatedSlugSettingsAiRouteImport } from './routes/_authenticated/$slug/settings/ai'
-import { Route as AuthenticatedSlugPaymentsTaxRouteImport } from './routes/_authenticated/$slug/payments/tax'
-import { Route as AuthenticatedSlugPaymentsSubscriptionsRouteImport } from './routes/_authenticated/$slug/payments/subscriptions'
-import { Route as AuthenticatedSlugPaymentsPayoutsRouteImport } from './routes/_authenticated/$slug/payments/payouts'
-import { Route as AuthenticatedSlugPaymentsHistoryRouteImport } from './routes/_authenticated/$slug/payments/history'
-import { Route as AuthenticatedSlugPaymentsDisputesRouteImport } from './routes/_authenticated/$slug/payments/disputes'
-import { Route as AuthenticatedSlugPaymentsBalancesRouteImport } from './routes/_authenticated/$slug/payments/balances'
-import { Route as AuthenticatedSlugDocumentsDocumentIdRouteImport } from './routes/_authenticated/$slug/documents/$documentId'
-import { Route as AuthenticatedSlugContactsContactIdRouteImport } from './routes/_authenticated/$slug/contacts/$contactId'
-import { Route as AuthenticatedSlugSettingsTeamIndexRouteImport } from './routes/_authenticated/$slug/settings/team/index'
-import { Route as AuthenticatedSlugSettingsProfileIndexRouteImport } from './routes/_authenticated/$slug/settings/profile/index'
-import { Route as AuthenticatedSlugSettingsDeveloperIndexRouteImport } from './routes/_authenticated/$slug/settings/developer/index'
-import { Route as AuthenticatedSlugSettingsTeamMemberIdRouteImport } from './routes/_authenticated/$slug/settings/team/$memberId'
-import { Route as AuthenticatedSlugSettingsProfileUsageRouteImport } from './routes/_authenticated/$slug/settings/profile/usage'
-import { Route as AuthenticatedSlugSettingsProfileSecurityRouteImport } from './routes/_authenticated/$slug/settings/profile/security'
-import { Route as AuthenticatedSlugSettingsProfileNotificationsRouteImport } from './routes/_authenticated/$slug/settings/profile/notifications'
-import { Route as AuthenticatedSlugSettingsProfileIntegrationsRouteImport } from './routes/_authenticated/$slug/settings/profile/integrations'
-import { Route as AuthenticatedSlugSettingsDeveloperWebhooksRouteImport } from './routes/_authenticated/$slug/settings/developer/webhooks'
-import { Route as AuthenticatedSlugSettingsDeveloperApiKeysRouteImport } from './routes/_authenticated/$slug/settings/developer/api-keys'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as AuthRouteImport } from "./routes/_auth";
+import { Route as AuthAcceptInviteRouteImport } from "./routes/_auth/accept-invite";
+import { Route as AuthSignInRouteImport } from "./routes/_auth/sign-in";
+import { Route as AuthSignUpRouteImport } from "./routes/_auth/sign-up";
+import { Route as AuthenticatedRouteImport } from "./routes/_authenticated";
+import { Route as AuthenticatedSlugRouteImport } from "./routes/_authenticated/$slug";
+import { Route as AuthenticatedSlugSplatRouteImport } from "./routes/_authenticated/$slug/$";
+import { Route as AuthenticatedSlugAnalyticsRouteImport } from "./routes/_authenticated/$slug/analytics";
+import { Route as AuthenticatedSlugContactsRouteImport } from "./routes/_authenticated/$slug/contacts";
+import { Route as AuthenticatedSlugContactsContactIdRouteImport } from "./routes/_authenticated/$slug/contacts/$contactId";
+import { Route as AuthenticatedSlugContactsIndexRouteImport } from "./routes/_authenticated/$slug/contacts/index";
+import { Route as AuthenticatedSlugDocumentsRouteImport } from "./routes/_authenticated/$slug/documents";
+import { Route as AuthenticatedSlugDocumentsDocumentIdRouteImport } from "./routes/_authenticated/$slug/documents/$documentId";
+import { Route as AuthenticatedSlugDocumentsIndexRouteImport } from "./routes/_authenticated/$slug/documents/index";
+import { Route as AuthenticatedSlugHomeRouteImport } from "./routes/_authenticated/$slug/home";
+import { Route as AuthenticatedSlugIndexRouteImport } from "./routes/_authenticated/$slug/index";
+import { Route as AuthenticatedSlugPaymentsRouteImport } from "./routes/_authenticated/$slug/payments";
+import { Route as AuthenticatedSlugPaymentsBalancesRouteImport } from "./routes/_authenticated/$slug/payments/balances";
+import { Route as AuthenticatedSlugPaymentsDisputesRouteImport } from "./routes/_authenticated/$slug/payments/disputes";
+import { Route as AuthenticatedSlugPaymentsHistoryRouteImport } from "./routes/_authenticated/$slug/payments/history";
+import { Route as AuthenticatedSlugPaymentsIndexRouteImport } from "./routes/_authenticated/$slug/payments/index";
+import { Route as AuthenticatedSlugPaymentsPayoutsRouteImport } from "./routes/_authenticated/$slug/payments/payouts";
+import { Route as AuthenticatedSlugPaymentsSubscriptionsRouteImport } from "./routes/_authenticated/$slug/payments/subscriptions";
+import { Route as AuthenticatedSlugPaymentsTaxRouteImport } from "./routes/_authenticated/$slug/payments/tax";
+import { Route as AuthenticatedSlugSettingsAiRouteImport } from "./routes/_authenticated/$slug/settings/ai";
+import { Route as AuthenticatedSlugSettingsAuditLogRouteImport } from "./routes/_authenticated/$slug/settings/audit-log";
+import { Route as AuthenticatedSlugSettingsBillingRouteImport } from "./routes/_authenticated/$slug/settings/billing";
+import { Route as AuthenticatedSlugSettingsBrandingRouteImport } from "./routes/_authenticated/$slug/settings/branding";
+import { Route as AuthenticatedSlugSettingsDeveloperApiKeysRouteImport } from "./routes/_authenticated/$slug/settings/developer/api-keys";
+import { Route as AuthenticatedSlugSettingsDeveloperIndexRouteImport } from "./routes/_authenticated/$slug/settings/developer/index";
+import { Route as AuthenticatedSlugSettingsDeveloperWebhooksRouteImport } from "./routes/_authenticated/$slug/settings/developer/webhooks";
+import { Route as AuthenticatedSlugSettingsIndexRouteImport } from "./routes/_authenticated/$slug/settings/index";
+import { Route as AuthenticatedSlugSettingsNotificationsRouteImport } from "./routes/_authenticated/$slug/settings/notifications";
+import { Route as AuthenticatedSlugSettingsPaymentsRouteImport } from "./routes/_authenticated/$slug/settings/payments";
+import { Route as AuthenticatedSlugSettingsProfileRouteImport } from "./routes/_authenticated/$slug/settings/profile";
+import { Route as AuthenticatedSlugSettingsProfileIndexRouteImport } from "./routes/_authenticated/$slug/settings/profile/index";
+import { Route as AuthenticatedSlugSettingsProfileIntegrationsRouteImport } from "./routes/_authenticated/$slug/settings/profile/integrations";
+import { Route as AuthenticatedSlugSettingsProfileNotificationsRouteImport } from "./routes/_authenticated/$slug/settings/profile/notifications";
+import { Route as AuthenticatedSlugSettingsProfileSecurityRouteImport } from "./routes/_authenticated/$slug/settings/profile/security";
+import { Route as AuthenticatedSlugSettingsProfileUsageRouteImport } from "./routes/_authenticated/$slug/settings/profile/usage";
+import { Route as AuthenticatedSlugSettingsSecurityRouteImport } from "./routes/_authenticated/$slug/settings/security";
+import { Route as AuthenticatedSlugSettingsSigningRouteImport } from "./routes/_authenticated/$slug/settings/signing";
+import { Route as AuthenticatedSlugSettingsTeamRouteImport } from "./routes/_authenticated/$slug/settings/team";
+import { Route as AuthenticatedSlugSettingsTeamMemberIdRouteImport } from "./routes/_authenticated/$slug/settings/team/$memberId";
+import { Route as AuthenticatedSlugSettingsTeamIndexRouteImport } from "./routes/_authenticated/$slug/settings/team/index";
+import { Route as AuthenticatedSlugTemplatesRouteImport } from "./routes/_authenticated/$slug/templates";
+import { Route as AuthenticatedOnboardingChooseOrganizationIndexRouteImport } from "./routes/_authenticated/onboarding/choose-organization/index";
+import { Route as AppRouteImport } from "./routes/app";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as LogoTestRouteImport } from "./routes/logo-test";
+import { Route as SignTokenRouteImport } from "./routes/sign.$token";
+import { Route as VerifyQrTokenRouteImport } from "./routes/verify.$qrToken";
 
 const LogoTestRoute = LogoTestRouteImport.update({
-  id: '/logo-test',
-  path: '/logo-test',
+  id: "/logo-test",
+  path: "/logo-test",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AppRoute = AppRouteImport.update({
-  id: '/app',
-  path: '/app',
+  id: "/app",
+  path: "/app",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
+  id: "/_authenticated",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthRoute = AuthRouteImport.update({
-  id: '/_auth',
+  id: "/_auth",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const VerifyQrTokenRoute = VerifyQrTokenRouteImport.update({
-  id: '/verify/$qrToken',
-  path: '/verify/$qrToken',
+  id: "/verify/$qrToken",
+  path: "/verify/$qrToken",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SignTokenRoute = SignTokenRouteImport.update({
-  id: '/sign/$token',
-  path: '/sign/$token',
+  id: "/sign/$token",
+  path: "/sign/$token",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthenticatedSlugRoute = AuthenticatedSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
+  id: "/$slug",
+  path: "/$slug",
   getParentRoute: () => AuthenticatedRoute,
-} as any)
+} as any);
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
-  id: '/sign-up',
-  path: '/sign-up',
+  id: "/sign-up",
+  path: "/sign-up",
   getParentRoute: () => AuthRoute,
-} as any)
+} as any);
 const AuthSignInRoute = AuthSignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
+  id: "/sign-in",
+  path: "/sign-in",
   getParentRoute: () => AuthRoute,
-} as any)
+} as any);
 const AuthAcceptInviteRoute = AuthAcceptInviteRouteImport.update({
-  id: '/accept-invite',
-  path: '/accept-invite',
+  id: "/accept-invite",
+  path: "/accept-invite",
   getParentRoute: () => AuthRoute,
-} as any)
+} as any);
 const AuthenticatedSlugIndexRoute = AuthenticatedSlugIndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => AuthenticatedSlugRoute,
-} as any)
-const AuthenticatedSlugTemplatesRoute =
-  AuthenticatedSlugTemplatesRouteImport.update({
-    id: '/templates',
-    path: '/templates',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugPaymentsRoute =
-  AuthenticatedSlugPaymentsRouteImport.update({
-    id: '/payments',
-    path: '/payments',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
+} as any);
+const AuthenticatedSlugTemplatesRoute = AuthenticatedSlugTemplatesRouteImport.update({
+  id: "/templates",
+  path: "/templates",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugPaymentsRoute = AuthenticatedSlugPaymentsRouteImport.update({
+  id: "/payments",
+  path: "/payments",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
 const AuthenticatedSlugHomeRoute = AuthenticatedSlugHomeRouteImport.update({
-  id: '/home',
-  path: '/home',
+  id: "/home",
+  path: "/home",
   getParentRoute: () => AuthenticatedSlugRoute,
-} as any)
-const AuthenticatedSlugDocumentsRoute =
-  AuthenticatedSlugDocumentsRouteImport.update({
-    id: '/documents',
-    path: '/documents',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugContactsRoute =
-  AuthenticatedSlugContactsRouteImport.update({
-    id: '/contacts',
-    path: '/contacts',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugAnalyticsRoute =
-  AuthenticatedSlugAnalyticsRouteImport.update({
-    id: '/analytics',
-    path: '/analytics',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
+} as any);
+const AuthenticatedSlugDocumentsRoute = AuthenticatedSlugDocumentsRouteImport.update({
+  id: "/documents",
+  path: "/documents",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugContactsRoute = AuthenticatedSlugContactsRouteImport.update({
+  id: "/contacts",
+  path: "/contacts",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugAnalyticsRoute = AuthenticatedSlugAnalyticsRouteImport.update({
+  id: "/analytics",
+  path: "/analytics",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
 const AuthenticatedSlugSplatRoute = AuthenticatedSlugSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
+  id: "/$",
+  path: "/$",
   getParentRoute: () => AuthenticatedSlugRoute,
-} as any)
+} as any);
 const AuthenticatedOnboardingChooseOrganizationIndexRoute =
   AuthenticatedOnboardingChooseOrganizationIndexRouteImport.update({
-    id: '/onboarding/choose-organization/',
-    path: '/onboarding/choose-organization/',
+    id: "/onboarding/choose-organization/",
+    path: "/onboarding/choose-organization/",
     getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSlugSettingsIndexRoute =
-  AuthenticatedSlugSettingsIndexRouteImport.update({
-    id: '/settings/',
-    path: '/settings/',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugPaymentsIndexRoute =
-  AuthenticatedSlugPaymentsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
-const AuthenticatedSlugDocumentsIndexRoute =
-  AuthenticatedSlugDocumentsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSlugDocumentsRoute,
-  } as any)
-const AuthenticatedSlugContactsIndexRoute =
-  AuthenticatedSlugContactsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSlugContactsRoute,
-  } as any)
-const AuthenticatedSlugSettingsTeamRoute =
-  AuthenticatedSlugSettingsTeamRouteImport.update({
-    id: '/settings/team',
-    path: '/settings/team',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsSigningRoute =
-  AuthenticatedSlugSettingsSigningRouteImport.update({
-    id: '/settings/signing',
-    path: '/settings/signing',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsSecurityRoute =
-  AuthenticatedSlugSettingsSecurityRouteImport.update({
-    id: '/settings/security',
-    path: '/settings/security',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsProfileRoute =
-  AuthenticatedSlugSettingsProfileRouteImport.update({
-    id: '/settings/profile',
-    path: '/settings/profile',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsPaymentsRoute =
-  AuthenticatedSlugSettingsPaymentsRouteImport.update({
-    id: '/settings/payments',
-    path: '/settings/payments',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
+  } as any);
+const AuthenticatedSlugSettingsIndexRoute = AuthenticatedSlugSettingsIndexRouteImport.update({
+  id: "/settings/",
+  path: "/settings/",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugPaymentsIndexRoute = AuthenticatedSlugPaymentsIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+} as any);
+const AuthenticatedSlugDocumentsIndexRoute = AuthenticatedSlugDocumentsIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => AuthenticatedSlugDocumentsRoute,
+} as any);
+const AuthenticatedSlugContactsIndexRoute = AuthenticatedSlugContactsIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => AuthenticatedSlugContactsRoute,
+} as any);
+const AuthenticatedSlugSettingsTeamRoute = AuthenticatedSlugSettingsTeamRouteImport.update({
+  id: "/settings/team",
+  path: "/settings/team",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugSettingsSigningRoute = AuthenticatedSlugSettingsSigningRouteImport.update({
+  id: "/settings/signing",
+  path: "/settings/signing",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugSettingsSecurityRoute = AuthenticatedSlugSettingsSecurityRouteImport.update({
+  id: "/settings/security",
+  path: "/settings/security",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugSettingsProfileRoute = AuthenticatedSlugSettingsProfileRouteImport.update({
+  id: "/settings/profile",
+  path: "/settings/profile",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugSettingsPaymentsRoute = AuthenticatedSlugSettingsPaymentsRouteImport.update({
+  id: "/settings/payments",
+  path: "/settings/payments",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
 const AuthenticatedSlugSettingsNotificationsRoute =
   AuthenticatedSlugSettingsNotificationsRouteImport.update({
-    id: '/settings/notifications',
-    path: '/settings/notifications',
+    id: "/settings/notifications",
+    path: "/settings/notifications",
     getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsBrandingRoute =
-  AuthenticatedSlugSettingsBrandingRouteImport.update({
-    id: '/settings/branding',
-    path: '/settings/branding',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsBillingRoute =
-  AuthenticatedSlugSettingsBillingRouteImport.update({
-    id: '/settings/billing',
-    path: '/settings/billing',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsAuditLogRoute =
-  AuthenticatedSlugSettingsAuditLogRouteImport.update({
-    id: '/settings/audit-log',
-    path: '/settings/audit-log',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugSettingsAiRoute =
-  AuthenticatedSlugSettingsAiRouteImport.update({
-    id: '/settings/ai',
-    path: '/settings/ai',
-    getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
-const AuthenticatedSlugPaymentsTaxRoute =
-  AuthenticatedSlugPaymentsTaxRouteImport.update({
-    id: '/tax',
-    path: '/tax',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
+  } as any);
+const AuthenticatedSlugSettingsBrandingRoute = AuthenticatedSlugSettingsBrandingRouteImport.update({
+  id: "/settings/branding",
+  path: "/settings/branding",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugSettingsBillingRoute = AuthenticatedSlugSettingsBillingRouteImport.update({
+  id: "/settings/billing",
+  path: "/settings/billing",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugSettingsAuditLogRoute = AuthenticatedSlugSettingsAuditLogRouteImport.update({
+  id: "/settings/audit-log",
+  path: "/settings/audit-log",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugSettingsAiRoute = AuthenticatedSlugSettingsAiRouteImport.update({
+  id: "/settings/ai",
+  path: "/settings/ai",
+  getParentRoute: () => AuthenticatedSlugRoute,
+} as any);
+const AuthenticatedSlugPaymentsTaxRoute = AuthenticatedSlugPaymentsTaxRouteImport.update({
+  id: "/tax",
+  path: "/tax",
+  getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+} as any);
 const AuthenticatedSlugPaymentsSubscriptionsRoute =
   AuthenticatedSlugPaymentsSubscriptionsRouteImport.update({
-    id: '/subscriptions',
-    path: '/subscriptions',
+    id: "/subscriptions",
+    path: "/subscriptions",
     getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
-const AuthenticatedSlugPaymentsPayoutsRoute =
-  AuthenticatedSlugPaymentsPayoutsRouteImport.update({
-    id: '/payouts',
-    path: '/payouts',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
-const AuthenticatedSlugPaymentsHistoryRoute =
-  AuthenticatedSlugPaymentsHistoryRouteImport.update({
-    id: '/history',
-    path: '/history',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
-const AuthenticatedSlugPaymentsDisputesRoute =
-  AuthenticatedSlugPaymentsDisputesRouteImport.update({
-    id: '/disputes',
-    path: '/disputes',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
-const AuthenticatedSlugPaymentsBalancesRoute =
-  AuthenticatedSlugPaymentsBalancesRouteImport.update({
-    id: '/balances',
-    path: '/balances',
-    getParentRoute: () => AuthenticatedSlugPaymentsRoute,
-  } as any)
+  } as any);
+const AuthenticatedSlugPaymentsPayoutsRoute = AuthenticatedSlugPaymentsPayoutsRouteImport.update({
+  id: "/payouts",
+  path: "/payouts",
+  getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+} as any);
+const AuthenticatedSlugPaymentsHistoryRoute = AuthenticatedSlugPaymentsHistoryRouteImport.update({
+  id: "/history",
+  path: "/history",
+  getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+} as any);
+const AuthenticatedSlugPaymentsDisputesRoute = AuthenticatedSlugPaymentsDisputesRouteImport.update({
+  id: "/disputes",
+  path: "/disputes",
+  getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+} as any);
+const AuthenticatedSlugPaymentsBalancesRoute = AuthenticatedSlugPaymentsBalancesRouteImport.update({
+  id: "/balances",
+  path: "/balances",
+  getParentRoute: () => AuthenticatedSlugPaymentsRoute,
+} as any);
 const AuthenticatedSlugDocumentsDocumentIdRoute =
   AuthenticatedSlugDocumentsDocumentIdRouteImport.update({
-    id: '/$documentId',
-    path: '/$documentId',
+    id: "/$documentId",
+    path: "/$documentId",
     getParentRoute: () => AuthenticatedSlugDocumentsRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugContactsContactIdRoute =
   AuthenticatedSlugContactsContactIdRouteImport.update({
-    id: '/$contactId',
-    path: '/$contactId',
+    id: "/$contactId",
+    path: "/$contactId",
     getParentRoute: () => AuthenticatedSlugContactsRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugSettingsTeamIndexRoute =
   AuthenticatedSlugSettingsTeamIndexRouteImport.update({
-    id: '/',
-    path: '/',
+    id: "/",
+    path: "/",
     getParentRoute: () => AuthenticatedSlugSettingsTeamRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugSettingsProfileIndexRoute =
   AuthenticatedSlugSettingsProfileIndexRouteImport.update({
-    id: '/',
-    path: '/',
+    id: "/",
+    path: "/",
     getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugSettingsDeveloperIndexRoute =
   AuthenticatedSlugSettingsDeveloperIndexRouteImport.update({
-    id: '/settings/developer/',
-    path: '/settings/developer/',
+    id: "/settings/developer/",
+    path: "/settings/developer/",
     getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugSettingsTeamMemberIdRoute =
   AuthenticatedSlugSettingsTeamMemberIdRouteImport.update({
-    id: '/$memberId',
-    path: '/$memberId',
+    id: "/$memberId",
+    path: "/$memberId",
     getParentRoute: () => AuthenticatedSlugSettingsTeamRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugSettingsProfileUsageRoute =
   AuthenticatedSlugSettingsProfileUsageRouteImport.update({
-    id: '/usage',
-    path: '/usage',
+    id: "/usage",
+    path: "/usage",
     getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugSettingsProfileSecurityRoute =
   AuthenticatedSlugSettingsProfileSecurityRouteImport.update({
-    id: '/security',
-    path: '/security',
+    id: "/security",
+    path: "/security",
     getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugSettingsProfileNotificationsRoute =
   AuthenticatedSlugSettingsProfileNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
+    id: "/notifications",
+    path: "/notifications",
     getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugSettingsProfileIntegrationsRoute =
   AuthenticatedSlugSettingsProfileIntegrationsRouteImport.update({
-    id: '/integrations',
-    path: '/integrations',
+    id: "/integrations",
+    path: "/integrations",
     getParentRoute: () => AuthenticatedSlugSettingsProfileRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugSettingsDeveloperWebhooksRoute =
   AuthenticatedSlugSettingsDeveloperWebhooksRouteImport.update({
-    id: '/settings/developer/webhooks',
-    path: '/settings/developer/webhooks',
+    id: "/settings/developer/webhooks",
+    path: "/settings/developer/webhooks",
     getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
+  } as any);
 const AuthenticatedSlugSettingsDeveloperApiKeysRoute =
   AuthenticatedSlugSettingsDeveloperApiKeysRouteImport.update({
-    id: '/settings/developer/api-keys',
-    path: '/settings/developer/api-keys',
+    id: "/settings/developer/api-keys",
+    path: "/settings/developer/api-keys",
     getParentRoute: () => AuthenticatedSlugRoute,
-  } as any)
+  } as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/app': typeof AppRoute
-  '/logo-test': typeof LogoTestRoute
-  '/accept-invite': typeof AuthAcceptInviteRoute
-  '/sign-in': typeof AuthSignInRoute
-  '/sign-up': typeof AuthSignUpRoute
-  '/$slug': typeof AuthenticatedSlugRouteWithChildren
-  '/sign/$token': typeof SignTokenRoute
-  '/verify/$qrToken': typeof VerifyQrTokenRoute
-  '/$slug/$': typeof AuthenticatedSlugSplatRoute
-  '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
-  '/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
-  '/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
-  '/$slug/home': typeof AuthenticatedSlugHomeRoute
-  '/$slug/payments': typeof AuthenticatedSlugPaymentsRouteWithChildren
-  '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
-  '/$slug/': typeof AuthenticatedSlugIndexRoute
-  '/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
-  '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
-  '/$slug/payments/balances': typeof AuthenticatedSlugPaymentsBalancesRoute
-  '/$slug/payments/disputes': typeof AuthenticatedSlugPaymentsDisputesRoute
-  '/$slug/payments/history': typeof AuthenticatedSlugPaymentsHistoryRoute
-  '/$slug/payments/payouts': typeof AuthenticatedSlugPaymentsPayoutsRoute
-  '/$slug/payments/subscriptions': typeof AuthenticatedSlugPaymentsSubscriptionsRoute
-  '/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
-  '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
-  '/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
-  '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
-  '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
-  '/$slug/settings/notifications': typeof AuthenticatedSlugSettingsNotificationsRoute
-  '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
-  '/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
-  '/$slug/settings/security': typeof AuthenticatedSlugSettingsSecurityRoute
-  '/$slug/settings/signing': typeof AuthenticatedSlugSettingsSigningRoute
-  '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
-  '/$slug/contacts/': typeof AuthenticatedSlugContactsIndexRoute
-  '/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
-  '/$slug/payments/': typeof AuthenticatedSlugPaymentsIndexRoute
-  '/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
-  '/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
-  '/$slug/settings/developer/api-keys': typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
-  '/$slug/settings/developer/webhooks': typeof AuthenticatedSlugSettingsDeveloperWebhooksRoute
-  '/$slug/settings/profile/integrations': typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
-  '/$slug/settings/profile/notifications': typeof AuthenticatedSlugSettingsProfileNotificationsRoute
-  '/$slug/settings/profile/security': typeof AuthenticatedSlugSettingsProfileSecurityRoute
-  '/$slug/settings/profile/usage': typeof AuthenticatedSlugSettingsProfileUsageRoute
-  '/$slug/settings/team/$memberId': typeof AuthenticatedSlugSettingsTeamMemberIdRoute
-  '/$slug/settings/developer/': typeof AuthenticatedSlugSettingsDeveloperIndexRoute
-  '/$slug/settings/profile/': typeof AuthenticatedSlugSettingsProfileIndexRoute
-  '/$slug/settings/team/': typeof AuthenticatedSlugSettingsTeamIndexRoute
+  "/": typeof IndexRoute;
+  "/app": typeof AppRoute;
+  "/logo-test": typeof LogoTestRoute;
+  "/accept-invite": typeof AuthAcceptInviteRoute;
+  "/sign-in": typeof AuthSignInRoute;
+  "/sign-up": typeof AuthSignUpRoute;
+  "/$slug": typeof AuthenticatedSlugRouteWithChildren;
+  "/sign/$token": typeof SignTokenRoute;
+  "/verify/$qrToken": typeof VerifyQrTokenRoute;
+  "/$slug/$": typeof AuthenticatedSlugSplatRoute;
+  "/$slug/analytics": typeof AuthenticatedSlugAnalyticsRoute;
+  "/$slug/contacts": typeof AuthenticatedSlugContactsRouteWithChildren;
+  "/$slug/documents": typeof AuthenticatedSlugDocumentsRouteWithChildren;
+  "/$slug/home": typeof AuthenticatedSlugHomeRoute;
+  "/$slug/payments": typeof AuthenticatedSlugPaymentsRouteWithChildren;
+  "/$slug/templates": typeof AuthenticatedSlugTemplatesRoute;
+  "/$slug/": typeof AuthenticatedSlugIndexRoute;
+  "/$slug/contacts/$contactId": typeof AuthenticatedSlugContactsContactIdRoute;
+  "/$slug/documents/$documentId": typeof AuthenticatedSlugDocumentsDocumentIdRoute;
+  "/$slug/payments/balances": typeof AuthenticatedSlugPaymentsBalancesRoute;
+  "/$slug/payments/disputes": typeof AuthenticatedSlugPaymentsDisputesRoute;
+  "/$slug/payments/history": typeof AuthenticatedSlugPaymentsHistoryRoute;
+  "/$slug/payments/payouts": typeof AuthenticatedSlugPaymentsPayoutsRoute;
+  "/$slug/payments/subscriptions": typeof AuthenticatedSlugPaymentsSubscriptionsRoute;
+  "/$slug/payments/tax": typeof AuthenticatedSlugPaymentsTaxRoute;
+  "/$slug/settings/ai": typeof AuthenticatedSlugSettingsAiRoute;
+  "/$slug/settings/audit-log": typeof AuthenticatedSlugSettingsAuditLogRoute;
+  "/$slug/settings/billing": typeof AuthenticatedSlugSettingsBillingRoute;
+  "/$slug/settings/branding": typeof AuthenticatedSlugSettingsBrandingRoute;
+  "/$slug/settings/notifications": typeof AuthenticatedSlugSettingsNotificationsRoute;
+  "/$slug/settings/payments": typeof AuthenticatedSlugSettingsPaymentsRoute;
+  "/$slug/settings/profile": typeof AuthenticatedSlugSettingsProfileRouteWithChildren;
+  "/$slug/settings/security": typeof AuthenticatedSlugSettingsSecurityRoute;
+  "/$slug/settings/signing": typeof AuthenticatedSlugSettingsSigningRoute;
+  "/$slug/settings/team": typeof AuthenticatedSlugSettingsTeamRouteWithChildren;
+  "/$slug/contacts/": typeof AuthenticatedSlugContactsIndexRoute;
+  "/$slug/documents/": typeof AuthenticatedSlugDocumentsIndexRoute;
+  "/$slug/payments/": typeof AuthenticatedSlugPaymentsIndexRoute;
+  "/$slug/settings/": typeof AuthenticatedSlugSettingsIndexRoute;
+  "/onboarding/choose-organization/": typeof AuthenticatedOnboardingChooseOrganizationIndexRoute;
+  "/$slug/settings/developer/api-keys": typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute;
+  "/$slug/settings/developer/webhooks": typeof AuthenticatedSlugSettingsDeveloperWebhooksRoute;
+  "/$slug/settings/profile/integrations": typeof AuthenticatedSlugSettingsProfileIntegrationsRoute;
+  "/$slug/settings/profile/notifications": typeof AuthenticatedSlugSettingsProfileNotificationsRoute;
+  "/$slug/settings/profile/security": typeof AuthenticatedSlugSettingsProfileSecurityRoute;
+  "/$slug/settings/profile/usage": typeof AuthenticatedSlugSettingsProfileUsageRoute;
+  "/$slug/settings/team/$memberId": typeof AuthenticatedSlugSettingsTeamMemberIdRoute;
+  "/$slug/settings/developer/": typeof AuthenticatedSlugSettingsDeveloperIndexRoute;
+  "/$slug/settings/profile/": typeof AuthenticatedSlugSettingsProfileIndexRoute;
+  "/$slug/settings/team/": typeof AuthenticatedSlugSettingsTeamIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/app': typeof AppRoute
-  '/logo-test': typeof LogoTestRoute
-  '/accept-invite': typeof AuthAcceptInviteRoute
-  '/sign-in': typeof AuthSignInRoute
-  '/sign-up': typeof AuthSignUpRoute
-  '/sign/$token': typeof SignTokenRoute
-  '/verify/$qrToken': typeof VerifyQrTokenRoute
-  '/$slug/$': typeof AuthenticatedSlugSplatRoute
-  '/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
-  '/$slug/home': typeof AuthenticatedSlugHomeRoute
-  '/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
-  '/$slug': typeof AuthenticatedSlugIndexRoute
-  '/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
-  '/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
-  '/$slug/payments/balances': typeof AuthenticatedSlugPaymentsBalancesRoute
-  '/$slug/payments/disputes': typeof AuthenticatedSlugPaymentsDisputesRoute
-  '/$slug/payments/history': typeof AuthenticatedSlugPaymentsHistoryRoute
-  '/$slug/payments/payouts': typeof AuthenticatedSlugPaymentsPayoutsRoute
-  '/$slug/payments/subscriptions': typeof AuthenticatedSlugPaymentsSubscriptionsRoute
-  '/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
-  '/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
-  '/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
-  '/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
-  '/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
-  '/$slug/settings/notifications': typeof AuthenticatedSlugSettingsNotificationsRoute
-  '/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
-  '/$slug/settings/security': typeof AuthenticatedSlugSettingsSecurityRoute
-  '/$slug/settings/signing': typeof AuthenticatedSlugSettingsSigningRoute
-  '/$slug/contacts': typeof AuthenticatedSlugContactsIndexRoute
-  '/$slug/documents': typeof AuthenticatedSlugDocumentsIndexRoute
-  '/$slug/payments': typeof AuthenticatedSlugPaymentsIndexRoute
-  '/$slug/settings': typeof AuthenticatedSlugSettingsIndexRoute
-  '/onboarding/choose-organization': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
-  '/$slug/settings/developer/api-keys': typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
-  '/$slug/settings/developer/webhooks': typeof AuthenticatedSlugSettingsDeveloperWebhooksRoute
-  '/$slug/settings/profile/integrations': typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
-  '/$slug/settings/profile/notifications': typeof AuthenticatedSlugSettingsProfileNotificationsRoute
-  '/$slug/settings/profile/security': typeof AuthenticatedSlugSettingsProfileSecurityRoute
-  '/$slug/settings/profile/usage': typeof AuthenticatedSlugSettingsProfileUsageRoute
-  '/$slug/settings/team/$memberId': typeof AuthenticatedSlugSettingsTeamMemberIdRoute
-  '/$slug/settings/developer': typeof AuthenticatedSlugSettingsDeveloperIndexRoute
-  '/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileIndexRoute
-  '/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamIndexRoute
+  "/": typeof IndexRoute;
+  "/app": typeof AppRoute;
+  "/logo-test": typeof LogoTestRoute;
+  "/accept-invite": typeof AuthAcceptInviteRoute;
+  "/sign-in": typeof AuthSignInRoute;
+  "/sign-up": typeof AuthSignUpRoute;
+  "/sign/$token": typeof SignTokenRoute;
+  "/verify/$qrToken": typeof VerifyQrTokenRoute;
+  "/$slug/$": typeof AuthenticatedSlugSplatRoute;
+  "/$slug/analytics": typeof AuthenticatedSlugAnalyticsRoute;
+  "/$slug/home": typeof AuthenticatedSlugHomeRoute;
+  "/$slug/templates": typeof AuthenticatedSlugTemplatesRoute;
+  "/$slug": typeof AuthenticatedSlugIndexRoute;
+  "/$slug/contacts/$contactId": typeof AuthenticatedSlugContactsContactIdRoute;
+  "/$slug/documents/$documentId": typeof AuthenticatedSlugDocumentsDocumentIdRoute;
+  "/$slug/payments/balances": typeof AuthenticatedSlugPaymentsBalancesRoute;
+  "/$slug/payments/disputes": typeof AuthenticatedSlugPaymentsDisputesRoute;
+  "/$slug/payments/history": typeof AuthenticatedSlugPaymentsHistoryRoute;
+  "/$slug/payments/payouts": typeof AuthenticatedSlugPaymentsPayoutsRoute;
+  "/$slug/payments/subscriptions": typeof AuthenticatedSlugPaymentsSubscriptionsRoute;
+  "/$slug/payments/tax": typeof AuthenticatedSlugPaymentsTaxRoute;
+  "/$slug/settings/ai": typeof AuthenticatedSlugSettingsAiRoute;
+  "/$slug/settings/audit-log": typeof AuthenticatedSlugSettingsAuditLogRoute;
+  "/$slug/settings/billing": typeof AuthenticatedSlugSettingsBillingRoute;
+  "/$slug/settings/branding": typeof AuthenticatedSlugSettingsBrandingRoute;
+  "/$slug/settings/notifications": typeof AuthenticatedSlugSettingsNotificationsRoute;
+  "/$slug/settings/payments": typeof AuthenticatedSlugSettingsPaymentsRoute;
+  "/$slug/settings/security": typeof AuthenticatedSlugSettingsSecurityRoute;
+  "/$slug/settings/signing": typeof AuthenticatedSlugSettingsSigningRoute;
+  "/$slug/contacts": typeof AuthenticatedSlugContactsIndexRoute;
+  "/$slug/documents": typeof AuthenticatedSlugDocumentsIndexRoute;
+  "/$slug/payments": typeof AuthenticatedSlugPaymentsIndexRoute;
+  "/$slug/settings": typeof AuthenticatedSlugSettingsIndexRoute;
+  "/onboarding/choose-organization": typeof AuthenticatedOnboardingChooseOrganizationIndexRoute;
+  "/$slug/settings/developer/api-keys": typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute;
+  "/$slug/settings/developer/webhooks": typeof AuthenticatedSlugSettingsDeveloperWebhooksRoute;
+  "/$slug/settings/profile/integrations": typeof AuthenticatedSlugSettingsProfileIntegrationsRoute;
+  "/$slug/settings/profile/notifications": typeof AuthenticatedSlugSettingsProfileNotificationsRoute;
+  "/$slug/settings/profile/security": typeof AuthenticatedSlugSettingsProfileSecurityRoute;
+  "/$slug/settings/profile/usage": typeof AuthenticatedSlugSettingsProfileUsageRoute;
+  "/$slug/settings/team/$memberId": typeof AuthenticatedSlugSettingsTeamMemberIdRoute;
+  "/$slug/settings/developer": typeof AuthenticatedSlugSettingsDeveloperIndexRoute;
+  "/$slug/settings/profile": typeof AuthenticatedSlugSettingsProfileIndexRoute;
+  "/$slug/settings/team": typeof AuthenticatedSlugSettingsTeamIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/_auth': typeof AuthRouteWithChildren
-  '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/app': typeof AppRoute
-  '/logo-test': typeof LogoTestRoute
-  '/_auth/accept-invite': typeof AuthAcceptInviteRoute
-  '/_auth/sign-in': typeof AuthSignInRoute
-  '/_auth/sign-up': typeof AuthSignUpRoute
-  '/_authenticated/$slug': typeof AuthenticatedSlugRouteWithChildren
-  '/sign/$token': typeof SignTokenRoute
-  '/verify/$qrToken': typeof VerifyQrTokenRoute
-  '/_authenticated/$slug/$': typeof AuthenticatedSlugSplatRoute
-  '/_authenticated/$slug/analytics': typeof AuthenticatedSlugAnalyticsRoute
-  '/_authenticated/$slug/contacts': typeof AuthenticatedSlugContactsRouteWithChildren
-  '/_authenticated/$slug/documents': typeof AuthenticatedSlugDocumentsRouteWithChildren
-  '/_authenticated/$slug/home': typeof AuthenticatedSlugHomeRoute
-  '/_authenticated/$slug/payments': typeof AuthenticatedSlugPaymentsRouteWithChildren
-  '/_authenticated/$slug/templates': typeof AuthenticatedSlugTemplatesRoute
-  '/_authenticated/$slug/': typeof AuthenticatedSlugIndexRoute
-  '/_authenticated/$slug/contacts/$contactId': typeof AuthenticatedSlugContactsContactIdRoute
-  '/_authenticated/$slug/documents/$documentId': typeof AuthenticatedSlugDocumentsDocumentIdRoute
-  '/_authenticated/$slug/payments/balances': typeof AuthenticatedSlugPaymentsBalancesRoute
-  '/_authenticated/$slug/payments/disputes': typeof AuthenticatedSlugPaymentsDisputesRoute
-  '/_authenticated/$slug/payments/history': typeof AuthenticatedSlugPaymentsHistoryRoute
-  '/_authenticated/$slug/payments/payouts': typeof AuthenticatedSlugPaymentsPayoutsRoute
-  '/_authenticated/$slug/payments/subscriptions': typeof AuthenticatedSlugPaymentsSubscriptionsRoute
-  '/_authenticated/$slug/payments/tax': typeof AuthenticatedSlugPaymentsTaxRoute
-  '/_authenticated/$slug/settings/ai': typeof AuthenticatedSlugSettingsAiRoute
-  '/_authenticated/$slug/settings/audit-log': typeof AuthenticatedSlugSettingsAuditLogRoute
-  '/_authenticated/$slug/settings/billing': typeof AuthenticatedSlugSettingsBillingRoute
-  '/_authenticated/$slug/settings/branding': typeof AuthenticatedSlugSettingsBrandingRoute
-  '/_authenticated/$slug/settings/notifications': typeof AuthenticatedSlugSettingsNotificationsRoute
-  '/_authenticated/$slug/settings/payments': typeof AuthenticatedSlugSettingsPaymentsRoute
-  '/_authenticated/$slug/settings/profile': typeof AuthenticatedSlugSettingsProfileRouteWithChildren
-  '/_authenticated/$slug/settings/security': typeof AuthenticatedSlugSettingsSecurityRoute
-  '/_authenticated/$slug/settings/signing': typeof AuthenticatedSlugSettingsSigningRoute
-  '/_authenticated/$slug/settings/team': typeof AuthenticatedSlugSettingsTeamRouteWithChildren
-  '/_authenticated/$slug/contacts/': typeof AuthenticatedSlugContactsIndexRoute
-  '/_authenticated/$slug/documents/': typeof AuthenticatedSlugDocumentsIndexRoute
-  '/_authenticated/$slug/payments/': typeof AuthenticatedSlugPaymentsIndexRoute
-  '/_authenticated/$slug/settings/': typeof AuthenticatedSlugSettingsIndexRoute
-  '/_authenticated/onboarding/choose-organization/': typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
-  '/_authenticated/$slug/settings/developer/api-keys': typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
-  '/_authenticated/$slug/settings/developer/webhooks': typeof AuthenticatedSlugSettingsDeveloperWebhooksRoute
-  '/_authenticated/$slug/settings/profile/integrations': typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
-  '/_authenticated/$slug/settings/profile/notifications': typeof AuthenticatedSlugSettingsProfileNotificationsRoute
-  '/_authenticated/$slug/settings/profile/security': typeof AuthenticatedSlugSettingsProfileSecurityRoute
-  '/_authenticated/$slug/settings/profile/usage': typeof AuthenticatedSlugSettingsProfileUsageRoute
-  '/_authenticated/$slug/settings/team/$memberId': typeof AuthenticatedSlugSettingsTeamMemberIdRoute
-  '/_authenticated/$slug/settings/developer/': typeof AuthenticatedSlugSettingsDeveloperIndexRoute
-  '/_authenticated/$slug/settings/profile/': typeof AuthenticatedSlugSettingsProfileIndexRoute
-  '/_authenticated/$slug/settings/team/': typeof AuthenticatedSlugSettingsTeamIndexRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/_auth": typeof AuthRouteWithChildren;
+  "/_authenticated": typeof AuthenticatedRouteWithChildren;
+  "/app": typeof AppRoute;
+  "/logo-test": typeof LogoTestRoute;
+  "/_auth/accept-invite": typeof AuthAcceptInviteRoute;
+  "/_auth/sign-in": typeof AuthSignInRoute;
+  "/_auth/sign-up": typeof AuthSignUpRoute;
+  "/_authenticated/$slug": typeof AuthenticatedSlugRouteWithChildren;
+  "/sign/$token": typeof SignTokenRoute;
+  "/verify/$qrToken": typeof VerifyQrTokenRoute;
+  "/_authenticated/$slug/$": typeof AuthenticatedSlugSplatRoute;
+  "/_authenticated/$slug/analytics": typeof AuthenticatedSlugAnalyticsRoute;
+  "/_authenticated/$slug/contacts": typeof AuthenticatedSlugContactsRouteWithChildren;
+  "/_authenticated/$slug/documents": typeof AuthenticatedSlugDocumentsRouteWithChildren;
+  "/_authenticated/$slug/home": typeof AuthenticatedSlugHomeRoute;
+  "/_authenticated/$slug/payments": typeof AuthenticatedSlugPaymentsRouteWithChildren;
+  "/_authenticated/$slug/templates": typeof AuthenticatedSlugTemplatesRoute;
+  "/_authenticated/$slug/": typeof AuthenticatedSlugIndexRoute;
+  "/_authenticated/$slug/contacts/$contactId": typeof AuthenticatedSlugContactsContactIdRoute;
+  "/_authenticated/$slug/documents/$documentId": typeof AuthenticatedSlugDocumentsDocumentIdRoute;
+  "/_authenticated/$slug/payments/balances": typeof AuthenticatedSlugPaymentsBalancesRoute;
+  "/_authenticated/$slug/payments/disputes": typeof AuthenticatedSlugPaymentsDisputesRoute;
+  "/_authenticated/$slug/payments/history": typeof AuthenticatedSlugPaymentsHistoryRoute;
+  "/_authenticated/$slug/payments/payouts": typeof AuthenticatedSlugPaymentsPayoutsRoute;
+  "/_authenticated/$slug/payments/subscriptions": typeof AuthenticatedSlugPaymentsSubscriptionsRoute;
+  "/_authenticated/$slug/payments/tax": typeof AuthenticatedSlugPaymentsTaxRoute;
+  "/_authenticated/$slug/settings/ai": typeof AuthenticatedSlugSettingsAiRoute;
+  "/_authenticated/$slug/settings/audit-log": typeof AuthenticatedSlugSettingsAuditLogRoute;
+  "/_authenticated/$slug/settings/billing": typeof AuthenticatedSlugSettingsBillingRoute;
+  "/_authenticated/$slug/settings/branding": typeof AuthenticatedSlugSettingsBrandingRoute;
+  "/_authenticated/$slug/settings/notifications": typeof AuthenticatedSlugSettingsNotificationsRoute;
+  "/_authenticated/$slug/settings/payments": typeof AuthenticatedSlugSettingsPaymentsRoute;
+  "/_authenticated/$slug/settings/profile": typeof AuthenticatedSlugSettingsProfileRouteWithChildren;
+  "/_authenticated/$slug/settings/security": typeof AuthenticatedSlugSettingsSecurityRoute;
+  "/_authenticated/$slug/settings/signing": typeof AuthenticatedSlugSettingsSigningRoute;
+  "/_authenticated/$slug/settings/team": typeof AuthenticatedSlugSettingsTeamRouteWithChildren;
+  "/_authenticated/$slug/contacts/": typeof AuthenticatedSlugContactsIndexRoute;
+  "/_authenticated/$slug/documents/": typeof AuthenticatedSlugDocumentsIndexRoute;
+  "/_authenticated/$slug/payments/": typeof AuthenticatedSlugPaymentsIndexRoute;
+  "/_authenticated/$slug/settings/": typeof AuthenticatedSlugSettingsIndexRoute;
+  "/_authenticated/onboarding/choose-organization/": typeof AuthenticatedOnboardingChooseOrganizationIndexRoute;
+  "/_authenticated/$slug/settings/developer/api-keys": typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute;
+  "/_authenticated/$slug/settings/developer/webhooks": typeof AuthenticatedSlugSettingsDeveloperWebhooksRoute;
+  "/_authenticated/$slug/settings/profile/integrations": typeof AuthenticatedSlugSettingsProfileIntegrationsRoute;
+  "/_authenticated/$slug/settings/profile/notifications": typeof AuthenticatedSlugSettingsProfileNotificationsRoute;
+  "/_authenticated/$slug/settings/profile/security": typeof AuthenticatedSlugSettingsProfileSecurityRoute;
+  "/_authenticated/$slug/settings/profile/usage": typeof AuthenticatedSlugSettingsProfileUsageRoute;
+  "/_authenticated/$slug/settings/team/$memberId": typeof AuthenticatedSlugSettingsTeamMemberIdRoute;
+  "/_authenticated/$slug/settings/developer/": typeof AuthenticatedSlugSettingsDeveloperIndexRoute;
+  "/_authenticated/$slug/settings/profile/": typeof AuthenticatedSlugSettingsProfileIndexRoute;
+  "/_authenticated/$slug/settings/team/": typeof AuthenticatedSlugSettingsTeamIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    | '/'
-    | '/app'
-    | '/logo-test'
-    | '/accept-invite'
-    | '/sign-in'
-    | '/sign-up'
-    | '/$slug'
-    | '/sign/$token'
-    | '/verify/$qrToken'
-    | '/$slug/$'
-    | '/$slug/analytics'
-    | '/$slug/contacts'
-    | '/$slug/documents'
-    | '/$slug/home'
-    | '/$slug/payments'
-    | '/$slug/templates'
-    | '/$slug/'
-    | '/$slug/contacts/$contactId'
-    | '/$slug/documents/$documentId'
-    | '/$slug/payments/balances'
-    | '/$slug/payments/disputes'
-    | '/$slug/payments/history'
-    | '/$slug/payments/payouts'
-    | '/$slug/payments/subscriptions'
-    | '/$slug/payments/tax'
-    | '/$slug/settings/ai'
-    | '/$slug/settings/audit-log'
-    | '/$slug/settings/billing'
-    | '/$slug/settings/branding'
-    | '/$slug/settings/notifications'
-    | '/$slug/settings/payments'
-    | '/$slug/settings/profile'
-    | '/$slug/settings/security'
-    | '/$slug/settings/signing'
-    | '/$slug/settings/team'
-    | '/$slug/contacts/'
-    | '/$slug/documents/'
-    | '/$slug/payments/'
-    | '/$slug/settings/'
-    | '/onboarding/choose-organization/'
-    | '/$slug/settings/developer/api-keys'
-    | '/$slug/settings/developer/webhooks'
-    | '/$slug/settings/profile/integrations'
-    | '/$slug/settings/profile/notifications'
-    | '/$slug/settings/profile/security'
-    | '/$slug/settings/profile/usage'
-    | '/$slug/settings/team/$memberId'
-    | '/$slug/settings/developer/'
-    | '/$slug/settings/profile/'
-    | '/$slug/settings/team/'
-  fileRoutesByTo: FileRoutesByTo
+    | "/"
+    | "/app"
+    | "/logo-test"
+    | "/accept-invite"
+    | "/sign-in"
+    | "/sign-up"
+    | "/$slug"
+    | "/sign/$token"
+    | "/verify/$qrToken"
+    | "/$slug/$"
+    | "/$slug/analytics"
+    | "/$slug/contacts"
+    | "/$slug/documents"
+    | "/$slug/home"
+    | "/$slug/payments"
+    | "/$slug/templates"
+    | "/$slug/"
+    | "/$slug/contacts/$contactId"
+    | "/$slug/documents/$documentId"
+    | "/$slug/payments/balances"
+    | "/$slug/payments/disputes"
+    | "/$slug/payments/history"
+    | "/$slug/payments/payouts"
+    | "/$slug/payments/subscriptions"
+    | "/$slug/payments/tax"
+    | "/$slug/settings/ai"
+    | "/$slug/settings/audit-log"
+    | "/$slug/settings/billing"
+    | "/$slug/settings/branding"
+    | "/$slug/settings/notifications"
+    | "/$slug/settings/payments"
+    | "/$slug/settings/profile"
+    | "/$slug/settings/security"
+    | "/$slug/settings/signing"
+    | "/$slug/settings/team"
+    | "/$slug/contacts/"
+    | "/$slug/documents/"
+    | "/$slug/payments/"
+    | "/$slug/settings/"
+    | "/onboarding/choose-organization/"
+    | "/$slug/settings/developer/api-keys"
+    | "/$slug/settings/developer/webhooks"
+    | "/$slug/settings/profile/integrations"
+    | "/$slug/settings/profile/notifications"
+    | "/$slug/settings/profile/security"
+    | "/$slug/settings/profile/usage"
+    | "/$slug/settings/team/$memberId"
+    | "/$slug/settings/developer/"
+    | "/$slug/settings/profile/"
+    | "/$slug/settings/team/";
+  fileRoutesByTo: FileRoutesByTo;
   to:
-    | '/'
-    | '/app'
-    | '/logo-test'
-    | '/accept-invite'
-    | '/sign-in'
-    | '/sign-up'
-    | '/sign/$token'
-    | '/verify/$qrToken'
-    | '/$slug/$'
-    | '/$slug/analytics'
-    | '/$slug/home'
-    | '/$slug/templates'
-    | '/$slug'
-    | '/$slug/contacts/$contactId'
-    | '/$slug/documents/$documentId'
-    | '/$slug/payments/balances'
-    | '/$slug/payments/disputes'
-    | '/$slug/payments/history'
-    | '/$slug/payments/payouts'
-    | '/$slug/payments/subscriptions'
-    | '/$slug/payments/tax'
-    | '/$slug/settings/ai'
-    | '/$slug/settings/audit-log'
-    | '/$slug/settings/billing'
-    | '/$slug/settings/branding'
-    | '/$slug/settings/notifications'
-    | '/$slug/settings/payments'
-    | '/$slug/settings/security'
-    | '/$slug/settings/signing'
-    | '/$slug/contacts'
-    | '/$slug/documents'
-    | '/$slug/payments'
-    | '/$slug/settings'
-    | '/onboarding/choose-organization'
-    | '/$slug/settings/developer/api-keys'
-    | '/$slug/settings/developer/webhooks'
-    | '/$slug/settings/profile/integrations'
-    | '/$slug/settings/profile/notifications'
-    | '/$slug/settings/profile/security'
-    | '/$slug/settings/profile/usage'
-    | '/$slug/settings/team/$memberId'
-    | '/$slug/settings/developer'
-    | '/$slug/settings/profile'
-    | '/$slug/settings/team'
+    | "/"
+    | "/app"
+    | "/logo-test"
+    | "/accept-invite"
+    | "/sign-in"
+    | "/sign-up"
+    | "/sign/$token"
+    | "/verify/$qrToken"
+    | "/$slug/$"
+    | "/$slug/analytics"
+    | "/$slug/home"
+    | "/$slug/templates"
+    | "/$slug"
+    | "/$slug/contacts/$contactId"
+    | "/$slug/documents/$documentId"
+    | "/$slug/payments/balances"
+    | "/$slug/payments/disputes"
+    | "/$slug/payments/history"
+    | "/$slug/payments/payouts"
+    | "/$slug/payments/subscriptions"
+    | "/$slug/payments/tax"
+    | "/$slug/settings/ai"
+    | "/$slug/settings/audit-log"
+    | "/$slug/settings/billing"
+    | "/$slug/settings/branding"
+    | "/$slug/settings/notifications"
+    | "/$slug/settings/payments"
+    | "/$slug/settings/security"
+    | "/$slug/settings/signing"
+    | "/$slug/contacts"
+    | "/$slug/documents"
+    | "/$slug/payments"
+    | "/$slug/settings"
+    | "/onboarding/choose-organization"
+    | "/$slug/settings/developer/api-keys"
+    | "/$slug/settings/developer/webhooks"
+    | "/$slug/settings/profile/integrations"
+    | "/$slug/settings/profile/notifications"
+    | "/$slug/settings/profile/security"
+    | "/$slug/settings/profile/usage"
+    | "/$slug/settings/team/$memberId"
+    | "/$slug/settings/developer"
+    | "/$slug/settings/profile"
+    | "/$slug/settings/team";
   id:
-    | '__root__'
-    | '/'
-    | '/_auth'
-    | '/_authenticated'
-    | '/app'
-    | '/logo-test'
-    | '/_auth/accept-invite'
-    | '/_auth/sign-in'
-    | '/_auth/sign-up'
-    | '/_authenticated/$slug'
-    | '/sign/$token'
-    | '/verify/$qrToken'
-    | '/_authenticated/$slug/$'
-    | '/_authenticated/$slug/analytics'
-    | '/_authenticated/$slug/contacts'
-    | '/_authenticated/$slug/documents'
-    | '/_authenticated/$slug/home'
-    | '/_authenticated/$slug/payments'
-    | '/_authenticated/$slug/templates'
-    | '/_authenticated/$slug/'
-    | '/_authenticated/$slug/contacts/$contactId'
-    | '/_authenticated/$slug/documents/$documentId'
-    | '/_authenticated/$slug/payments/balances'
-    | '/_authenticated/$slug/payments/disputes'
-    | '/_authenticated/$slug/payments/history'
-    | '/_authenticated/$slug/payments/payouts'
-    | '/_authenticated/$slug/payments/subscriptions'
-    | '/_authenticated/$slug/payments/tax'
-    | '/_authenticated/$slug/settings/ai'
-    | '/_authenticated/$slug/settings/audit-log'
-    | '/_authenticated/$slug/settings/billing'
-    | '/_authenticated/$slug/settings/branding'
-    | '/_authenticated/$slug/settings/notifications'
-    | '/_authenticated/$slug/settings/payments'
-    | '/_authenticated/$slug/settings/profile'
-    | '/_authenticated/$slug/settings/security'
-    | '/_authenticated/$slug/settings/signing'
-    | '/_authenticated/$slug/settings/team'
-    | '/_authenticated/$slug/contacts/'
-    | '/_authenticated/$slug/documents/'
-    | '/_authenticated/$slug/payments/'
-    | '/_authenticated/$slug/settings/'
-    | '/_authenticated/onboarding/choose-organization/'
-    | '/_authenticated/$slug/settings/developer/api-keys'
-    | '/_authenticated/$slug/settings/developer/webhooks'
-    | '/_authenticated/$slug/settings/profile/integrations'
-    | '/_authenticated/$slug/settings/profile/notifications'
-    | '/_authenticated/$slug/settings/profile/security'
-    | '/_authenticated/$slug/settings/profile/usage'
-    | '/_authenticated/$slug/settings/team/$memberId'
-    | '/_authenticated/$slug/settings/developer/'
-    | '/_authenticated/$slug/settings/profile/'
-    | '/_authenticated/$slug/settings/team/'
-  fileRoutesById: FileRoutesById
+    | "__root__"
+    | "/"
+    | "/_auth"
+    | "/_authenticated"
+    | "/app"
+    | "/logo-test"
+    | "/_auth/accept-invite"
+    | "/_auth/sign-in"
+    | "/_auth/sign-up"
+    | "/_authenticated/$slug"
+    | "/sign/$token"
+    | "/verify/$qrToken"
+    | "/_authenticated/$slug/$"
+    | "/_authenticated/$slug/analytics"
+    | "/_authenticated/$slug/contacts"
+    | "/_authenticated/$slug/documents"
+    | "/_authenticated/$slug/home"
+    | "/_authenticated/$slug/payments"
+    | "/_authenticated/$slug/templates"
+    | "/_authenticated/$slug/"
+    | "/_authenticated/$slug/contacts/$contactId"
+    | "/_authenticated/$slug/documents/$documentId"
+    | "/_authenticated/$slug/payments/balances"
+    | "/_authenticated/$slug/payments/disputes"
+    | "/_authenticated/$slug/payments/history"
+    | "/_authenticated/$slug/payments/payouts"
+    | "/_authenticated/$slug/payments/subscriptions"
+    | "/_authenticated/$slug/payments/tax"
+    | "/_authenticated/$slug/settings/ai"
+    | "/_authenticated/$slug/settings/audit-log"
+    | "/_authenticated/$slug/settings/billing"
+    | "/_authenticated/$slug/settings/branding"
+    | "/_authenticated/$slug/settings/notifications"
+    | "/_authenticated/$slug/settings/payments"
+    | "/_authenticated/$slug/settings/profile"
+    | "/_authenticated/$slug/settings/security"
+    | "/_authenticated/$slug/settings/signing"
+    | "/_authenticated/$slug/settings/team"
+    | "/_authenticated/$slug/contacts/"
+    | "/_authenticated/$slug/documents/"
+    | "/_authenticated/$slug/payments/"
+    | "/_authenticated/$slug/settings/"
+    | "/_authenticated/onboarding/choose-organization/"
+    | "/_authenticated/$slug/settings/developer/api-keys"
+    | "/_authenticated/$slug/settings/developer/webhooks"
+    | "/_authenticated/$slug/settings/profile/integrations"
+    | "/_authenticated/$slug/settings/profile/notifications"
+    | "/_authenticated/$slug/settings/profile/security"
+    | "/_authenticated/$slug/settings/profile/usage"
+    | "/_authenticated/$slug/settings/team/$memberId"
+    | "/_authenticated/$slug/settings/developer/"
+    | "/_authenticated/$slug/settings/profile/"
+    | "/_authenticated/$slug/settings/team/";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRouteWithChildren
-  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  AppRoute: typeof AppRoute
-  LogoTestRoute: typeof LogoTestRoute
-  SignTokenRoute: typeof SignTokenRoute
-  VerifyQrTokenRoute: typeof VerifyQrTokenRoute
+  IndexRoute: typeof IndexRoute;
+  AuthRoute: typeof AuthRouteWithChildren;
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren;
+  AppRoute: typeof AppRoute;
+  LogoTestRoute: typeof LogoTestRoute;
+  SignTokenRoute: typeof SignTokenRoute;
+  VerifyQrTokenRoute: typeof VerifyQrTokenRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/logo-test': {
-      id: '/logo-test'
-      path: '/logo-test'
-      fullPath: '/logo-test'
-      preLoaderRoute: typeof LogoTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_auth': {
-      id: '/_auth'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/verify/$qrToken': {
-      id: '/verify/$qrToken'
-      path: '/verify/$qrToken'
-      fullPath: '/verify/$qrToken'
-      preLoaderRoute: typeof VerifyQrTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sign/$token': {
-      id: '/sign/$token'
-      path: '/sign/$token'
-      fullPath: '/sign/$token'
-      preLoaderRoute: typeof SignTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/$slug': {
-      id: '/_authenticated/$slug'
-      path: '/$slug'
-      fullPath: '/$slug'
-      preLoaderRoute: typeof AuthenticatedSlugRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_auth/sign-up': {
-      id: '/_auth/sign-up'
-      path: '/sign-up'
-      fullPath: '/sign-up'
-      preLoaderRoute: typeof AuthSignUpRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/sign-in': {
-      id: '/_auth/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
-      preLoaderRoute: typeof AuthSignInRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/accept-invite': {
-      id: '/_auth/accept-invite'
-      path: '/accept-invite'
-      fullPath: '/accept-invite'
-      preLoaderRoute: typeof AuthAcceptInviteRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_authenticated/$slug/': {
-      id: '/_authenticated/$slug/'
-      path: '/'
-      fullPath: '/$slug/'
-      preLoaderRoute: typeof AuthenticatedSlugIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/templates': {
-      id: '/_authenticated/$slug/templates'
-      path: '/templates'
-      fullPath: '/$slug/templates'
-      preLoaderRoute: typeof AuthenticatedSlugTemplatesRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/payments': {
-      id: '/_authenticated/$slug/payments'
-      path: '/payments'
-      fullPath: '/$slug/payments'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/home': {
-      id: '/_authenticated/$slug/home'
-      path: '/home'
-      fullPath: '/$slug/home'
-      preLoaderRoute: typeof AuthenticatedSlugHomeRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/documents': {
-      id: '/_authenticated/$slug/documents'
-      path: '/documents'
-      fullPath: '/$slug/documents'
-      preLoaderRoute: typeof AuthenticatedSlugDocumentsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/contacts': {
-      id: '/_authenticated/$slug/contacts'
-      path: '/contacts'
-      fullPath: '/$slug/contacts'
-      preLoaderRoute: typeof AuthenticatedSlugContactsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/analytics': {
-      id: '/_authenticated/$slug/analytics'
-      path: '/analytics'
-      fullPath: '/$slug/analytics'
-      preLoaderRoute: typeof AuthenticatedSlugAnalyticsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/$': {
-      id: '/_authenticated/$slug/$'
-      path: '/$'
-      fullPath: '/$slug/$'
-      preLoaderRoute: typeof AuthenticatedSlugSplatRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/onboarding/choose-organization/': {
-      id: '/_authenticated/onboarding/choose-organization/'
-      path: '/onboarding/choose-organization'
-      fullPath: '/onboarding/choose-organization/'
-      preLoaderRoute: typeof AuthenticatedOnboardingChooseOrganizationIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/$slug/settings/': {
-      id: '/_authenticated/$slug/settings/'
-      path: '/settings'
-      fullPath: '/$slug/settings/'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/payments/': {
-      id: '/_authenticated/$slug/payments/'
-      path: '/'
-      fullPath: '/$slug/payments/'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/documents/': {
-      id: '/_authenticated/$slug/documents/'
-      path: '/'
-      fullPath: '/$slug/documents/'
-      preLoaderRoute: typeof AuthenticatedSlugDocumentsIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugDocumentsRoute
-    }
-    '/_authenticated/$slug/contacts/': {
-      id: '/_authenticated/$slug/contacts/'
-      path: '/'
-      fullPath: '/$slug/contacts/'
-      preLoaderRoute: typeof AuthenticatedSlugContactsIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugContactsRoute
-    }
-    '/_authenticated/$slug/settings/team': {
-      id: '/_authenticated/$slug/settings/team'
-      path: '/settings/team'
-      fullPath: '/$slug/settings/team'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/signing': {
-      id: '/_authenticated/$slug/settings/signing'
-      path: '/settings/signing'
-      fullPath: '/$slug/settings/signing'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsSigningRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/security': {
-      id: '/_authenticated/$slug/settings/security'
-      path: '/settings/security'
-      fullPath: '/$slug/settings/security'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsSecurityRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/profile': {
-      id: '/_authenticated/$slug/settings/profile'
-      path: '/settings/profile'
-      fullPath: '/$slug/settings/profile'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/payments': {
-      id: '/_authenticated/$slug/settings/payments'
-      path: '/settings/payments'
-      fullPath: '/$slug/settings/payments'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsPaymentsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/notifications': {
-      id: '/_authenticated/$slug/settings/notifications'
-      path: '/settings/notifications'
-      fullPath: '/$slug/settings/notifications'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsNotificationsRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/branding': {
-      id: '/_authenticated/$slug/settings/branding'
-      path: '/settings/branding'
-      fullPath: '/$slug/settings/branding'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsBrandingRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/billing': {
-      id: '/_authenticated/$slug/settings/billing'
-      path: '/settings/billing'
-      fullPath: '/$slug/settings/billing'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsBillingRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/audit-log': {
-      id: '/_authenticated/$slug/settings/audit-log'
-      path: '/settings/audit-log'
-      fullPath: '/$slug/settings/audit-log'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsAuditLogRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/ai': {
-      id: '/_authenticated/$slug/settings/ai'
-      path: '/settings/ai'
-      fullPath: '/$slug/settings/ai'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsAiRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/payments/tax': {
-      id: '/_authenticated/$slug/payments/tax'
-      path: '/tax'
-      fullPath: '/$slug/payments/tax'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsTaxRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/payments/subscriptions': {
-      id: '/_authenticated/$slug/payments/subscriptions'
-      path: '/subscriptions'
-      fullPath: '/$slug/payments/subscriptions'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsSubscriptionsRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/payments/payouts': {
-      id: '/_authenticated/$slug/payments/payouts'
-      path: '/payouts'
-      fullPath: '/$slug/payments/payouts'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsPayoutsRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/payments/history': {
-      id: '/_authenticated/$slug/payments/history'
-      path: '/history'
-      fullPath: '/$slug/payments/history'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsHistoryRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/payments/disputes': {
-      id: '/_authenticated/$slug/payments/disputes'
-      path: '/disputes'
-      fullPath: '/$slug/payments/disputes'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsDisputesRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/payments/balances': {
-      id: '/_authenticated/$slug/payments/balances'
-      path: '/balances'
-      fullPath: '/$slug/payments/balances'
-      preLoaderRoute: typeof AuthenticatedSlugPaymentsBalancesRouteImport
-      parentRoute: typeof AuthenticatedSlugPaymentsRoute
-    }
-    '/_authenticated/$slug/documents/$documentId': {
-      id: '/_authenticated/$slug/documents/$documentId'
-      path: '/$documentId'
-      fullPath: '/$slug/documents/$documentId'
-      preLoaderRoute: typeof AuthenticatedSlugDocumentsDocumentIdRouteImport
-      parentRoute: typeof AuthenticatedSlugDocumentsRoute
-    }
-    '/_authenticated/$slug/contacts/$contactId': {
-      id: '/_authenticated/$slug/contacts/$contactId'
-      path: '/$contactId'
-      fullPath: '/$slug/contacts/$contactId'
-      preLoaderRoute: typeof AuthenticatedSlugContactsContactIdRouteImport
-      parentRoute: typeof AuthenticatedSlugContactsRoute
-    }
-    '/_authenticated/$slug/settings/team/': {
-      id: '/_authenticated/$slug/settings/team/'
-      path: '/'
-      fullPath: '/$slug/settings/team/'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsTeamRoute
-    }
-    '/_authenticated/$slug/settings/profile/': {
-      id: '/_authenticated/$slug/settings/profile/'
-      path: '/'
-      fullPath: '/$slug/settings/profile/'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
-    }
-    '/_authenticated/$slug/settings/developer/': {
-      id: '/_authenticated/$slug/settings/developer/'
-      path: '/settings/developer'
-      fullPath: '/$slug/settings/developer/'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperIndexRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/team/$memberId': {
-      id: '/_authenticated/$slug/settings/team/$memberId'
-      path: '/$memberId'
-      fullPath: '/$slug/settings/team/$memberId'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamMemberIdRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsTeamRoute
-    }
-    '/_authenticated/$slug/settings/profile/usage': {
-      id: '/_authenticated/$slug/settings/profile/usage'
-      path: '/usage'
-      fullPath: '/$slug/settings/profile/usage'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileUsageRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
-    }
-    '/_authenticated/$slug/settings/profile/security': {
-      id: '/_authenticated/$slug/settings/profile/security'
-      path: '/security'
-      fullPath: '/$slug/settings/profile/security'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileSecurityRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
-    }
-    '/_authenticated/$slug/settings/profile/notifications': {
-      id: '/_authenticated/$slug/settings/profile/notifications'
-      path: '/notifications'
-      fullPath: '/$slug/settings/profile/notifications'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileNotificationsRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
-    }
-    '/_authenticated/$slug/settings/profile/integrations': {
-      id: '/_authenticated/$slug/settings/profile/integrations'
-      path: '/integrations'
-      fullPath: '/$slug/settings/profile/integrations'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileIntegrationsRouteImport
-      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute
-    }
-    '/_authenticated/$slug/settings/developer/webhooks': {
-      id: '/_authenticated/$slug/settings/developer/webhooks'
-      path: '/settings/developer/webhooks'
-      fullPath: '/$slug/settings/developer/webhooks'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperWebhooksRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
-    '/_authenticated/$slug/settings/developer/api-keys': {
-      id: '/_authenticated/$slug/settings/developer/api-keys'
-      path: '/settings/developer/api-keys'
-      fullPath: '/$slug/settings/developer/api-keys'
-      preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperApiKeysRouteImport
-      parentRoute: typeof AuthenticatedSlugRoute
-    }
+    "/logo-test": {
+      id: "/logo-test";
+      path: "/logo-test";
+      fullPath: "/logo-test";
+      preLoaderRoute: typeof LogoTestRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/app": {
+      id: "/app";
+      path: "/app";
+      fullPath: "/app";
+      preLoaderRoute: typeof AppRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_authenticated": {
+      id: "/_authenticated";
+      path: "";
+      fullPath: "/";
+      preLoaderRoute: typeof AuthenticatedRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_auth": {
+      id: "/_auth";
+      path: "";
+      fullPath: "/";
+      preLoaderRoute: typeof AuthRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/verify/$qrToken": {
+      id: "/verify/$qrToken";
+      path: "/verify/$qrToken";
+      fullPath: "/verify/$qrToken";
+      preLoaderRoute: typeof VerifyQrTokenRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/sign/$token": {
+      id: "/sign/$token";
+      path: "/sign/$token";
+      fullPath: "/sign/$token";
+      preLoaderRoute: typeof SignTokenRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_authenticated/$slug": {
+      id: "/_authenticated/$slug";
+      path: "/$slug";
+      fullPath: "/$slug";
+      preLoaderRoute: typeof AuthenticatedSlugRouteImport;
+      parentRoute: typeof AuthenticatedRoute;
+    };
+    "/_auth/sign-up": {
+      id: "/_auth/sign-up";
+      path: "/sign-up";
+      fullPath: "/sign-up";
+      preLoaderRoute: typeof AuthSignUpRouteImport;
+      parentRoute: typeof AuthRoute;
+    };
+    "/_auth/sign-in": {
+      id: "/_auth/sign-in";
+      path: "/sign-in";
+      fullPath: "/sign-in";
+      preLoaderRoute: typeof AuthSignInRouteImport;
+      parentRoute: typeof AuthRoute;
+    };
+    "/_auth/accept-invite": {
+      id: "/_auth/accept-invite";
+      path: "/accept-invite";
+      fullPath: "/accept-invite";
+      preLoaderRoute: typeof AuthAcceptInviteRouteImport;
+      parentRoute: typeof AuthRoute;
+    };
+    "/_authenticated/$slug/": {
+      id: "/_authenticated/$slug/";
+      path: "/";
+      fullPath: "/$slug/";
+      preLoaderRoute: typeof AuthenticatedSlugIndexRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/templates": {
+      id: "/_authenticated/$slug/templates";
+      path: "/templates";
+      fullPath: "/$slug/templates";
+      preLoaderRoute: typeof AuthenticatedSlugTemplatesRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/payments": {
+      id: "/_authenticated/$slug/payments";
+      path: "/payments";
+      fullPath: "/$slug/payments";
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/home": {
+      id: "/_authenticated/$slug/home";
+      path: "/home";
+      fullPath: "/$slug/home";
+      preLoaderRoute: typeof AuthenticatedSlugHomeRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/documents": {
+      id: "/_authenticated/$slug/documents";
+      path: "/documents";
+      fullPath: "/$slug/documents";
+      preLoaderRoute: typeof AuthenticatedSlugDocumentsRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/contacts": {
+      id: "/_authenticated/$slug/contacts";
+      path: "/contacts";
+      fullPath: "/$slug/contacts";
+      preLoaderRoute: typeof AuthenticatedSlugContactsRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/analytics": {
+      id: "/_authenticated/$slug/analytics";
+      path: "/analytics";
+      fullPath: "/$slug/analytics";
+      preLoaderRoute: typeof AuthenticatedSlugAnalyticsRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/$": {
+      id: "/_authenticated/$slug/$";
+      path: "/$";
+      fullPath: "/$slug/$";
+      preLoaderRoute: typeof AuthenticatedSlugSplatRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/onboarding/choose-organization/": {
+      id: "/_authenticated/onboarding/choose-organization/";
+      path: "/onboarding/choose-organization";
+      fullPath: "/onboarding/choose-organization/";
+      preLoaderRoute: typeof AuthenticatedOnboardingChooseOrganizationIndexRouteImport;
+      parentRoute: typeof AuthenticatedRoute;
+    };
+    "/_authenticated/$slug/settings/": {
+      id: "/_authenticated/$slug/settings/";
+      path: "/settings";
+      fullPath: "/$slug/settings/";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsIndexRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/payments/": {
+      id: "/_authenticated/$slug/payments/";
+      path: "/";
+      fullPath: "/$slug/payments/";
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsIndexRouteImport;
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute;
+    };
+    "/_authenticated/$slug/documents/": {
+      id: "/_authenticated/$slug/documents/";
+      path: "/";
+      fullPath: "/$slug/documents/";
+      preLoaderRoute: typeof AuthenticatedSlugDocumentsIndexRouteImport;
+      parentRoute: typeof AuthenticatedSlugDocumentsRoute;
+    };
+    "/_authenticated/$slug/contacts/": {
+      id: "/_authenticated/$slug/contacts/";
+      path: "/";
+      fullPath: "/$slug/contacts/";
+      preLoaderRoute: typeof AuthenticatedSlugContactsIndexRouteImport;
+      parentRoute: typeof AuthenticatedSlugContactsRoute;
+    };
+    "/_authenticated/$slug/settings/team": {
+      id: "/_authenticated/$slug/settings/team";
+      path: "/settings/team";
+      fullPath: "/$slug/settings/team";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/signing": {
+      id: "/_authenticated/$slug/settings/signing";
+      path: "/settings/signing";
+      fullPath: "/$slug/settings/signing";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsSigningRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/security": {
+      id: "/_authenticated/$slug/settings/security";
+      path: "/settings/security";
+      fullPath: "/$slug/settings/security";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsSecurityRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/profile": {
+      id: "/_authenticated/$slug/settings/profile";
+      path: "/settings/profile";
+      fullPath: "/$slug/settings/profile";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/payments": {
+      id: "/_authenticated/$slug/settings/payments";
+      path: "/settings/payments";
+      fullPath: "/$slug/settings/payments";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsPaymentsRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/notifications": {
+      id: "/_authenticated/$slug/settings/notifications";
+      path: "/settings/notifications";
+      fullPath: "/$slug/settings/notifications";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsNotificationsRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/branding": {
+      id: "/_authenticated/$slug/settings/branding";
+      path: "/settings/branding";
+      fullPath: "/$slug/settings/branding";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsBrandingRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/billing": {
+      id: "/_authenticated/$slug/settings/billing";
+      path: "/settings/billing";
+      fullPath: "/$slug/settings/billing";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsBillingRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/audit-log": {
+      id: "/_authenticated/$slug/settings/audit-log";
+      path: "/settings/audit-log";
+      fullPath: "/$slug/settings/audit-log";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsAuditLogRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/ai": {
+      id: "/_authenticated/$slug/settings/ai";
+      path: "/settings/ai";
+      fullPath: "/$slug/settings/ai";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsAiRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/payments/tax": {
+      id: "/_authenticated/$slug/payments/tax";
+      path: "/tax";
+      fullPath: "/$slug/payments/tax";
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsTaxRouteImport;
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute;
+    };
+    "/_authenticated/$slug/payments/subscriptions": {
+      id: "/_authenticated/$slug/payments/subscriptions";
+      path: "/subscriptions";
+      fullPath: "/$slug/payments/subscriptions";
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsSubscriptionsRouteImport;
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute;
+    };
+    "/_authenticated/$slug/payments/payouts": {
+      id: "/_authenticated/$slug/payments/payouts";
+      path: "/payouts";
+      fullPath: "/$slug/payments/payouts";
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsPayoutsRouteImport;
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute;
+    };
+    "/_authenticated/$slug/payments/history": {
+      id: "/_authenticated/$slug/payments/history";
+      path: "/history";
+      fullPath: "/$slug/payments/history";
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsHistoryRouteImport;
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute;
+    };
+    "/_authenticated/$slug/payments/disputes": {
+      id: "/_authenticated/$slug/payments/disputes";
+      path: "/disputes";
+      fullPath: "/$slug/payments/disputes";
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsDisputesRouteImport;
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute;
+    };
+    "/_authenticated/$slug/payments/balances": {
+      id: "/_authenticated/$slug/payments/balances";
+      path: "/balances";
+      fullPath: "/$slug/payments/balances";
+      preLoaderRoute: typeof AuthenticatedSlugPaymentsBalancesRouteImport;
+      parentRoute: typeof AuthenticatedSlugPaymentsRoute;
+    };
+    "/_authenticated/$slug/documents/$documentId": {
+      id: "/_authenticated/$slug/documents/$documentId";
+      path: "/$documentId";
+      fullPath: "/$slug/documents/$documentId";
+      preLoaderRoute: typeof AuthenticatedSlugDocumentsDocumentIdRouteImport;
+      parentRoute: typeof AuthenticatedSlugDocumentsRoute;
+    };
+    "/_authenticated/$slug/contacts/$contactId": {
+      id: "/_authenticated/$slug/contacts/$contactId";
+      path: "/$contactId";
+      fullPath: "/$slug/contacts/$contactId";
+      preLoaderRoute: typeof AuthenticatedSlugContactsContactIdRouteImport;
+      parentRoute: typeof AuthenticatedSlugContactsRoute;
+    };
+    "/_authenticated/$slug/settings/team/": {
+      id: "/_authenticated/$slug/settings/team/";
+      path: "/";
+      fullPath: "/$slug/settings/team/";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamIndexRouteImport;
+      parentRoute: typeof AuthenticatedSlugSettingsTeamRoute;
+    };
+    "/_authenticated/$slug/settings/profile/": {
+      id: "/_authenticated/$slug/settings/profile/";
+      path: "/";
+      fullPath: "/$slug/settings/profile/";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileIndexRouteImport;
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute;
+    };
+    "/_authenticated/$slug/settings/developer/": {
+      id: "/_authenticated/$slug/settings/developer/";
+      path: "/settings/developer";
+      fullPath: "/$slug/settings/developer/";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperIndexRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/team/$memberId": {
+      id: "/_authenticated/$slug/settings/team/$memberId";
+      path: "/$memberId";
+      fullPath: "/$slug/settings/team/$memberId";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsTeamMemberIdRouteImport;
+      parentRoute: typeof AuthenticatedSlugSettingsTeamRoute;
+    };
+    "/_authenticated/$slug/settings/profile/usage": {
+      id: "/_authenticated/$slug/settings/profile/usage";
+      path: "/usage";
+      fullPath: "/$slug/settings/profile/usage";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileUsageRouteImport;
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute;
+    };
+    "/_authenticated/$slug/settings/profile/security": {
+      id: "/_authenticated/$slug/settings/profile/security";
+      path: "/security";
+      fullPath: "/$slug/settings/profile/security";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileSecurityRouteImport;
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute;
+    };
+    "/_authenticated/$slug/settings/profile/notifications": {
+      id: "/_authenticated/$slug/settings/profile/notifications";
+      path: "/notifications";
+      fullPath: "/$slug/settings/profile/notifications";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileNotificationsRouteImport;
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute;
+    };
+    "/_authenticated/$slug/settings/profile/integrations": {
+      id: "/_authenticated/$slug/settings/profile/integrations";
+      path: "/integrations";
+      fullPath: "/$slug/settings/profile/integrations";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsProfileIntegrationsRouteImport;
+      parentRoute: typeof AuthenticatedSlugSettingsProfileRoute;
+    };
+    "/_authenticated/$slug/settings/developer/webhooks": {
+      id: "/_authenticated/$slug/settings/developer/webhooks";
+      path: "/settings/developer/webhooks";
+      fullPath: "/$slug/settings/developer/webhooks";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperWebhooksRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
+    "/_authenticated/$slug/settings/developer/api-keys": {
+      id: "/_authenticated/$slug/settings/developer/api-keys";
+      path: "/settings/developer/api-keys";
+      fullPath: "/$slug/settings/developer/api-keys";
+      preLoaderRoute: typeof AuthenticatedSlugSettingsDeveloperApiKeysRouteImport;
+      parentRoute: typeof AuthenticatedSlugRoute;
+    };
   }
 }
 
 interface AuthRouteChildren {
-  AuthAcceptInviteRoute: typeof AuthAcceptInviteRoute
-  AuthSignInRoute: typeof AuthSignInRoute
-  AuthSignUpRoute: typeof AuthSignUpRoute
+  AuthAcceptInviteRoute: typeof AuthAcceptInviteRoute;
+  AuthSignInRoute: typeof AuthSignInRoute;
+  AuthSignUpRoute: typeof AuthSignUpRoute;
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthAcceptInviteRoute: AuthAcceptInviteRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
-}
+};
 
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren);
 
 interface AuthenticatedSlugContactsRouteChildren {
-  AuthenticatedSlugContactsContactIdRoute: typeof AuthenticatedSlugContactsContactIdRoute
-  AuthenticatedSlugContactsIndexRoute: typeof AuthenticatedSlugContactsIndexRoute
+  AuthenticatedSlugContactsContactIdRoute: typeof AuthenticatedSlugContactsContactIdRoute;
+  AuthenticatedSlugContactsIndexRoute: typeof AuthenticatedSlugContactsIndexRoute;
 }
 
-const AuthenticatedSlugContactsRouteChildren: AuthenticatedSlugContactsRouteChildren =
-  {
-    AuthenticatedSlugContactsContactIdRoute:
-      AuthenticatedSlugContactsContactIdRoute,
-    AuthenticatedSlugContactsIndexRoute: AuthenticatedSlugContactsIndexRoute,
-  }
+const AuthenticatedSlugContactsRouteChildren: AuthenticatedSlugContactsRouteChildren = {
+  AuthenticatedSlugContactsContactIdRoute: AuthenticatedSlugContactsContactIdRoute,
+  AuthenticatedSlugContactsIndexRoute: AuthenticatedSlugContactsIndexRoute,
+};
 
-const AuthenticatedSlugContactsRouteWithChildren =
-  AuthenticatedSlugContactsRoute._addFileChildren(
-    AuthenticatedSlugContactsRouteChildren,
-  )
+const AuthenticatedSlugContactsRouteWithChildren = AuthenticatedSlugContactsRoute._addFileChildren(
+  AuthenticatedSlugContactsRouteChildren,
+);
 
 interface AuthenticatedSlugDocumentsRouteChildren {
-  AuthenticatedSlugDocumentsDocumentIdRoute: typeof AuthenticatedSlugDocumentsDocumentIdRoute
-  AuthenticatedSlugDocumentsIndexRoute: typeof AuthenticatedSlugDocumentsIndexRoute
+  AuthenticatedSlugDocumentsDocumentIdRoute: typeof AuthenticatedSlugDocumentsDocumentIdRoute;
+  AuthenticatedSlugDocumentsIndexRoute: typeof AuthenticatedSlugDocumentsIndexRoute;
 }
 
-const AuthenticatedSlugDocumentsRouteChildren: AuthenticatedSlugDocumentsRouteChildren =
-  {
-    AuthenticatedSlugDocumentsDocumentIdRoute:
-      AuthenticatedSlugDocumentsDocumentIdRoute,
-    AuthenticatedSlugDocumentsIndexRoute: AuthenticatedSlugDocumentsIndexRoute,
-  }
+const AuthenticatedSlugDocumentsRouteChildren: AuthenticatedSlugDocumentsRouteChildren = {
+  AuthenticatedSlugDocumentsDocumentIdRoute: AuthenticatedSlugDocumentsDocumentIdRoute,
+  AuthenticatedSlugDocumentsIndexRoute: AuthenticatedSlugDocumentsIndexRoute,
+};
 
 const AuthenticatedSlugDocumentsRouteWithChildren =
-  AuthenticatedSlugDocumentsRoute._addFileChildren(
-    AuthenticatedSlugDocumentsRouteChildren,
-  )
+  AuthenticatedSlugDocumentsRoute._addFileChildren(AuthenticatedSlugDocumentsRouteChildren);
 
 interface AuthenticatedSlugPaymentsRouteChildren {
-  AuthenticatedSlugPaymentsBalancesRoute: typeof AuthenticatedSlugPaymentsBalancesRoute
-  AuthenticatedSlugPaymentsDisputesRoute: typeof AuthenticatedSlugPaymentsDisputesRoute
-  AuthenticatedSlugPaymentsHistoryRoute: typeof AuthenticatedSlugPaymentsHistoryRoute
-  AuthenticatedSlugPaymentsPayoutsRoute: typeof AuthenticatedSlugPaymentsPayoutsRoute
-  AuthenticatedSlugPaymentsSubscriptionsRoute: typeof AuthenticatedSlugPaymentsSubscriptionsRoute
-  AuthenticatedSlugPaymentsTaxRoute: typeof AuthenticatedSlugPaymentsTaxRoute
-  AuthenticatedSlugPaymentsIndexRoute: typeof AuthenticatedSlugPaymentsIndexRoute
+  AuthenticatedSlugPaymentsBalancesRoute: typeof AuthenticatedSlugPaymentsBalancesRoute;
+  AuthenticatedSlugPaymentsDisputesRoute: typeof AuthenticatedSlugPaymentsDisputesRoute;
+  AuthenticatedSlugPaymentsHistoryRoute: typeof AuthenticatedSlugPaymentsHistoryRoute;
+  AuthenticatedSlugPaymentsPayoutsRoute: typeof AuthenticatedSlugPaymentsPayoutsRoute;
+  AuthenticatedSlugPaymentsSubscriptionsRoute: typeof AuthenticatedSlugPaymentsSubscriptionsRoute;
+  AuthenticatedSlugPaymentsTaxRoute: typeof AuthenticatedSlugPaymentsTaxRoute;
+  AuthenticatedSlugPaymentsIndexRoute: typeof AuthenticatedSlugPaymentsIndexRoute;
 }
 
-const AuthenticatedSlugPaymentsRouteChildren: AuthenticatedSlugPaymentsRouteChildren =
-  {
-    AuthenticatedSlugPaymentsBalancesRoute:
-      AuthenticatedSlugPaymentsBalancesRoute,
-    AuthenticatedSlugPaymentsDisputesRoute:
-      AuthenticatedSlugPaymentsDisputesRoute,
-    AuthenticatedSlugPaymentsHistoryRoute:
-      AuthenticatedSlugPaymentsHistoryRoute,
-    AuthenticatedSlugPaymentsPayoutsRoute:
-      AuthenticatedSlugPaymentsPayoutsRoute,
-    AuthenticatedSlugPaymentsSubscriptionsRoute:
-      AuthenticatedSlugPaymentsSubscriptionsRoute,
-    AuthenticatedSlugPaymentsTaxRoute: AuthenticatedSlugPaymentsTaxRoute,
-    AuthenticatedSlugPaymentsIndexRoute: AuthenticatedSlugPaymentsIndexRoute,
-  }
+const AuthenticatedSlugPaymentsRouteChildren: AuthenticatedSlugPaymentsRouteChildren = {
+  AuthenticatedSlugPaymentsBalancesRoute: AuthenticatedSlugPaymentsBalancesRoute,
+  AuthenticatedSlugPaymentsDisputesRoute: AuthenticatedSlugPaymentsDisputesRoute,
+  AuthenticatedSlugPaymentsHistoryRoute: AuthenticatedSlugPaymentsHistoryRoute,
+  AuthenticatedSlugPaymentsPayoutsRoute: AuthenticatedSlugPaymentsPayoutsRoute,
+  AuthenticatedSlugPaymentsSubscriptionsRoute: AuthenticatedSlugPaymentsSubscriptionsRoute,
+  AuthenticatedSlugPaymentsTaxRoute: AuthenticatedSlugPaymentsTaxRoute,
+  AuthenticatedSlugPaymentsIndexRoute: AuthenticatedSlugPaymentsIndexRoute,
+};
 
-const AuthenticatedSlugPaymentsRouteWithChildren =
-  AuthenticatedSlugPaymentsRoute._addFileChildren(
-    AuthenticatedSlugPaymentsRouteChildren,
-  )
+const AuthenticatedSlugPaymentsRouteWithChildren = AuthenticatedSlugPaymentsRoute._addFileChildren(
+  AuthenticatedSlugPaymentsRouteChildren,
+);
 
 interface AuthenticatedSlugSettingsProfileRouteChildren {
-  AuthenticatedSlugSettingsProfileIntegrationsRoute: typeof AuthenticatedSlugSettingsProfileIntegrationsRoute
-  AuthenticatedSlugSettingsProfileNotificationsRoute: typeof AuthenticatedSlugSettingsProfileNotificationsRoute
-  AuthenticatedSlugSettingsProfileSecurityRoute: typeof AuthenticatedSlugSettingsProfileSecurityRoute
-  AuthenticatedSlugSettingsProfileUsageRoute: typeof AuthenticatedSlugSettingsProfileUsageRoute
-  AuthenticatedSlugSettingsProfileIndexRoute: typeof AuthenticatedSlugSettingsProfileIndexRoute
+  AuthenticatedSlugSettingsProfileIntegrationsRoute: typeof AuthenticatedSlugSettingsProfileIntegrationsRoute;
+  AuthenticatedSlugSettingsProfileNotificationsRoute: typeof AuthenticatedSlugSettingsProfileNotificationsRoute;
+  AuthenticatedSlugSettingsProfileSecurityRoute: typeof AuthenticatedSlugSettingsProfileSecurityRoute;
+  AuthenticatedSlugSettingsProfileUsageRoute: typeof AuthenticatedSlugSettingsProfileUsageRoute;
+  AuthenticatedSlugSettingsProfileIndexRoute: typeof AuthenticatedSlugSettingsProfileIndexRoute;
 }
 
 const AuthenticatedSlugSettingsProfileRouteChildren: AuthenticatedSlugSettingsProfileRouteChildren =
@@ -1139,60 +1102,52 @@ const AuthenticatedSlugSettingsProfileRouteChildren: AuthenticatedSlugSettingsPr
       AuthenticatedSlugSettingsProfileIntegrationsRoute,
     AuthenticatedSlugSettingsProfileNotificationsRoute:
       AuthenticatedSlugSettingsProfileNotificationsRoute,
-    AuthenticatedSlugSettingsProfileSecurityRoute:
-      AuthenticatedSlugSettingsProfileSecurityRoute,
-    AuthenticatedSlugSettingsProfileUsageRoute:
-      AuthenticatedSlugSettingsProfileUsageRoute,
-    AuthenticatedSlugSettingsProfileIndexRoute:
-      AuthenticatedSlugSettingsProfileIndexRoute,
-  }
+    AuthenticatedSlugSettingsProfileSecurityRoute: AuthenticatedSlugSettingsProfileSecurityRoute,
+    AuthenticatedSlugSettingsProfileUsageRoute: AuthenticatedSlugSettingsProfileUsageRoute,
+    AuthenticatedSlugSettingsProfileIndexRoute: AuthenticatedSlugSettingsProfileIndexRoute,
+  };
 
 const AuthenticatedSlugSettingsProfileRouteWithChildren =
   AuthenticatedSlugSettingsProfileRoute._addFileChildren(
     AuthenticatedSlugSettingsProfileRouteChildren,
-  )
+  );
 
 interface AuthenticatedSlugSettingsTeamRouteChildren {
-  AuthenticatedSlugSettingsTeamMemberIdRoute: typeof AuthenticatedSlugSettingsTeamMemberIdRoute
-  AuthenticatedSlugSettingsTeamIndexRoute: typeof AuthenticatedSlugSettingsTeamIndexRoute
+  AuthenticatedSlugSettingsTeamMemberIdRoute: typeof AuthenticatedSlugSettingsTeamMemberIdRoute;
+  AuthenticatedSlugSettingsTeamIndexRoute: typeof AuthenticatedSlugSettingsTeamIndexRoute;
 }
 
-const AuthenticatedSlugSettingsTeamRouteChildren: AuthenticatedSlugSettingsTeamRouteChildren =
-  {
-    AuthenticatedSlugSettingsTeamMemberIdRoute:
-      AuthenticatedSlugSettingsTeamMemberIdRoute,
-    AuthenticatedSlugSettingsTeamIndexRoute:
-      AuthenticatedSlugSettingsTeamIndexRoute,
-  }
+const AuthenticatedSlugSettingsTeamRouteChildren: AuthenticatedSlugSettingsTeamRouteChildren = {
+  AuthenticatedSlugSettingsTeamMemberIdRoute: AuthenticatedSlugSettingsTeamMemberIdRoute,
+  AuthenticatedSlugSettingsTeamIndexRoute: AuthenticatedSlugSettingsTeamIndexRoute,
+};
 
 const AuthenticatedSlugSettingsTeamRouteWithChildren =
-  AuthenticatedSlugSettingsTeamRoute._addFileChildren(
-    AuthenticatedSlugSettingsTeamRouteChildren,
-  )
+  AuthenticatedSlugSettingsTeamRoute._addFileChildren(AuthenticatedSlugSettingsTeamRouteChildren);
 
 interface AuthenticatedSlugRouteChildren {
-  AuthenticatedSlugSplatRoute: typeof AuthenticatedSlugSplatRoute
-  AuthenticatedSlugAnalyticsRoute: typeof AuthenticatedSlugAnalyticsRoute
-  AuthenticatedSlugContactsRoute: typeof AuthenticatedSlugContactsRouteWithChildren
-  AuthenticatedSlugDocumentsRoute: typeof AuthenticatedSlugDocumentsRouteWithChildren
-  AuthenticatedSlugHomeRoute: typeof AuthenticatedSlugHomeRoute
-  AuthenticatedSlugPaymentsRoute: typeof AuthenticatedSlugPaymentsRouteWithChildren
-  AuthenticatedSlugTemplatesRoute: typeof AuthenticatedSlugTemplatesRoute
-  AuthenticatedSlugIndexRoute: typeof AuthenticatedSlugIndexRoute
-  AuthenticatedSlugSettingsAiRoute: typeof AuthenticatedSlugSettingsAiRoute
-  AuthenticatedSlugSettingsAuditLogRoute: typeof AuthenticatedSlugSettingsAuditLogRoute
-  AuthenticatedSlugSettingsBillingRoute: typeof AuthenticatedSlugSettingsBillingRoute
-  AuthenticatedSlugSettingsBrandingRoute: typeof AuthenticatedSlugSettingsBrandingRoute
-  AuthenticatedSlugSettingsNotificationsRoute: typeof AuthenticatedSlugSettingsNotificationsRoute
-  AuthenticatedSlugSettingsPaymentsRoute: typeof AuthenticatedSlugSettingsPaymentsRoute
-  AuthenticatedSlugSettingsProfileRoute: typeof AuthenticatedSlugSettingsProfileRouteWithChildren
-  AuthenticatedSlugSettingsSecurityRoute: typeof AuthenticatedSlugSettingsSecurityRoute
-  AuthenticatedSlugSettingsSigningRoute: typeof AuthenticatedSlugSettingsSigningRoute
-  AuthenticatedSlugSettingsTeamRoute: typeof AuthenticatedSlugSettingsTeamRouteWithChildren
-  AuthenticatedSlugSettingsIndexRoute: typeof AuthenticatedSlugSettingsIndexRoute
-  AuthenticatedSlugSettingsDeveloperApiKeysRoute: typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute
-  AuthenticatedSlugSettingsDeveloperWebhooksRoute: typeof AuthenticatedSlugSettingsDeveloperWebhooksRoute
-  AuthenticatedSlugSettingsDeveloperIndexRoute: typeof AuthenticatedSlugSettingsDeveloperIndexRoute
+  AuthenticatedSlugSplatRoute: typeof AuthenticatedSlugSplatRoute;
+  AuthenticatedSlugAnalyticsRoute: typeof AuthenticatedSlugAnalyticsRoute;
+  AuthenticatedSlugContactsRoute: typeof AuthenticatedSlugContactsRouteWithChildren;
+  AuthenticatedSlugDocumentsRoute: typeof AuthenticatedSlugDocumentsRouteWithChildren;
+  AuthenticatedSlugHomeRoute: typeof AuthenticatedSlugHomeRoute;
+  AuthenticatedSlugPaymentsRoute: typeof AuthenticatedSlugPaymentsRouteWithChildren;
+  AuthenticatedSlugTemplatesRoute: typeof AuthenticatedSlugTemplatesRoute;
+  AuthenticatedSlugIndexRoute: typeof AuthenticatedSlugIndexRoute;
+  AuthenticatedSlugSettingsAiRoute: typeof AuthenticatedSlugSettingsAiRoute;
+  AuthenticatedSlugSettingsAuditLogRoute: typeof AuthenticatedSlugSettingsAuditLogRoute;
+  AuthenticatedSlugSettingsBillingRoute: typeof AuthenticatedSlugSettingsBillingRoute;
+  AuthenticatedSlugSettingsBrandingRoute: typeof AuthenticatedSlugSettingsBrandingRoute;
+  AuthenticatedSlugSettingsNotificationsRoute: typeof AuthenticatedSlugSettingsNotificationsRoute;
+  AuthenticatedSlugSettingsPaymentsRoute: typeof AuthenticatedSlugSettingsPaymentsRoute;
+  AuthenticatedSlugSettingsProfileRoute: typeof AuthenticatedSlugSettingsProfileRouteWithChildren;
+  AuthenticatedSlugSettingsSecurityRoute: typeof AuthenticatedSlugSettingsSecurityRoute;
+  AuthenticatedSlugSettingsSigningRoute: typeof AuthenticatedSlugSettingsSigningRoute;
+  AuthenticatedSlugSettingsTeamRoute: typeof AuthenticatedSlugSettingsTeamRouteWithChildren;
+  AuthenticatedSlugSettingsIndexRoute: typeof AuthenticatedSlugSettingsIndexRoute;
+  AuthenticatedSlugSettingsDeveloperApiKeysRoute: typeof AuthenticatedSlugSettingsDeveloperApiKeysRoute;
+  AuthenticatedSlugSettingsDeveloperWebhooksRoute: typeof AuthenticatedSlugSettingsDeveloperWebhooksRoute;
+  AuthenticatedSlugSettingsDeveloperIndexRoute: typeof AuthenticatedSlugSettingsDeveloperIndexRoute;
 }
 
 const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
@@ -1205,48 +1160,39 @@ const AuthenticatedSlugRouteChildren: AuthenticatedSlugRouteChildren = {
   AuthenticatedSlugTemplatesRoute: AuthenticatedSlugTemplatesRoute,
   AuthenticatedSlugIndexRoute: AuthenticatedSlugIndexRoute,
   AuthenticatedSlugSettingsAiRoute: AuthenticatedSlugSettingsAiRoute,
-  AuthenticatedSlugSettingsAuditLogRoute:
-    AuthenticatedSlugSettingsAuditLogRoute,
+  AuthenticatedSlugSettingsAuditLogRoute: AuthenticatedSlugSettingsAuditLogRoute,
   AuthenticatedSlugSettingsBillingRoute: AuthenticatedSlugSettingsBillingRoute,
-  AuthenticatedSlugSettingsBrandingRoute:
-    AuthenticatedSlugSettingsBrandingRoute,
-  AuthenticatedSlugSettingsNotificationsRoute:
-    AuthenticatedSlugSettingsNotificationsRoute,
-  AuthenticatedSlugSettingsPaymentsRoute:
-    AuthenticatedSlugSettingsPaymentsRoute,
-  AuthenticatedSlugSettingsProfileRoute:
-    AuthenticatedSlugSettingsProfileRouteWithChildren,
-  AuthenticatedSlugSettingsSecurityRoute:
-    AuthenticatedSlugSettingsSecurityRoute,
+  AuthenticatedSlugSettingsBrandingRoute: AuthenticatedSlugSettingsBrandingRoute,
+  AuthenticatedSlugSettingsNotificationsRoute: AuthenticatedSlugSettingsNotificationsRoute,
+  AuthenticatedSlugSettingsPaymentsRoute: AuthenticatedSlugSettingsPaymentsRoute,
+  AuthenticatedSlugSettingsProfileRoute: AuthenticatedSlugSettingsProfileRouteWithChildren,
+  AuthenticatedSlugSettingsSecurityRoute: AuthenticatedSlugSettingsSecurityRoute,
   AuthenticatedSlugSettingsSigningRoute: AuthenticatedSlugSettingsSigningRoute,
-  AuthenticatedSlugSettingsTeamRoute:
-    AuthenticatedSlugSettingsTeamRouteWithChildren,
+  AuthenticatedSlugSettingsTeamRoute: AuthenticatedSlugSettingsTeamRouteWithChildren,
   AuthenticatedSlugSettingsIndexRoute: AuthenticatedSlugSettingsIndexRoute,
-  AuthenticatedSlugSettingsDeveloperApiKeysRoute:
-    AuthenticatedSlugSettingsDeveloperApiKeysRoute,
-  AuthenticatedSlugSettingsDeveloperWebhooksRoute:
-    AuthenticatedSlugSettingsDeveloperWebhooksRoute,
-  AuthenticatedSlugSettingsDeveloperIndexRoute:
-    AuthenticatedSlugSettingsDeveloperIndexRoute,
-}
+  AuthenticatedSlugSettingsDeveloperApiKeysRoute: AuthenticatedSlugSettingsDeveloperApiKeysRoute,
+  AuthenticatedSlugSettingsDeveloperWebhooksRoute: AuthenticatedSlugSettingsDeveloperWebhooksRoute,
+  AuthenticatedSlugSettingsDeveloperIndexRoute: AuthenticatedSlugSettingsDeveloperIndexRoute,
+};
 
-const AuthenticatedSlugRouteWithChildren =
-  AuthenticatedSlugRoute._addFileChildren(AuthenticatedSlugRouteChildren)
+const AuthenticatedSlugRouteWithChildren = AuthenticatedSlugRoute._addFileChildren(
+  AuthenticatedSlugRouteChildren,
+);
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedSlugRoute: typeof AuthenticatedSlugRouteWithChildren
-  AuthenticatedOnboardingChooseOrganizationIndexRoute: typeof AuthenticatedOnboardingChooseOrganizationIndexRoute
+  AuthenticatedSlugRoute: typeof AuthenticatedSlugRouteWithChildren;
+  AuthenticatedOnboardingChooseOrganizationIndexRoute: typeof AuthenticatedOnboardingChooseOrganizationIndexRoute;
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSlugRoute: AuthenticatedSlugRouteWithChildren,
   AuthenticatedOnboardingChooseOrganizationIndexRoute:
     AuthenticatedOnboardingChooseOrganizationIndexRoute,
-}
+};
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
-)
+);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -1256,7 +1202,7 @@ const rootRouteChildren: RootRouteChildren = {
   LogoTestRoute: LogoTestRoute,
   SignTokenRoute: SignTokenRoute,
   VerifyQrTokenRoute: VerifyQrTokenRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
