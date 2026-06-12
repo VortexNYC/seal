@@ -16,6 +16,8 @@ const paymentsMerchantAccountActionsPath =
 const providerPaymentFieldActionsPath = "apps/backend/convex/stripe/payment_field_actions.ts";
 const providerConnectActionsPath = "apps/backend/convex/stripe/connect_actions.ts";
 const generatedApiPath = "apps/backend/convex/_generated/api.d.ts";
+const billingE2ePath = "apps/web/e2e/tests/billing.e2e.ts";
+const deletedProviderBillingQueriesPath = "apps/backend/convex/stripe/queries.ts";
 const deletedProviderSubscriptionActionsPath =
   "apps/backend/convex/stripe/connect_subscription_actions.ts";
 const failures: string[] = [];
@@ -28,10 +30,17 @@ for (const requiredPath of [
   providerPaymentFieldActionsPath,
   providerConnectActionsPath,
   generatedApiPath,
+  billingE2ePath,
 ]) {
   if (!existsSync(join(repoRoot, requiredPath))) {
     failures.push(`${requiredPath} must exist as the Vortex-owned backend payments API.`);
   }
+}
+
+if (existsSync(join(repoRoot, deletedProviderBillingQueriesPath))) {
+  failures.push(
+    `${deletedProviderBillingQueriesPath} must stay deleted; billing plans enter through api.payments.`,
+  );
 }
 
 if (existsSync(join(repoRoot, deletedProviderSubscriptionActionsPath))) {
@@ -64,6 +73,7 @@ const providerPaymentFieldActions = readFileSync(
 );
 const providerConnectActions = readFileSync(join(repoRoot, providerConnectActionsPath), "utf8");
 const generatedApi = readFileSync(join(repoRoot, generatedApiPath), "utf8");
+const billingE2e = readFileSync(join(repoRoot, billingE2ePath), "utf8");
 
 for (const requiredFragment of [
   "api.payments.queries.getRevenueStats",
@@ -146,6 +156,18 @@ if (paymentsSubscriptionActions.includes("stripeAccountId: v.string()")) {
 
 if (generatedApi.includes("stripe/connect_subscription_actions")) {
   failures.push("Generated Convex API still exposes deleted provider subscription actions.");
+}
+
+if (generatedApi.includes("stripe/queries")) {
+  failures.push("Generated Convex API still exposes deleted provider billing queries.");
+}
+
+if (!billingE2e.includes("api.payments.billing_queries.getAvailablePlans")) {
+  failures.push(`${billingE2ePath} must prove available plans through api.payments billing queries.`);
+}
+
+if (billingE2e.includes("api.stripe.queries")) {
+  failures.push(`${billingE2ePath} still calls public Stripe billing queries.`);
 }
 
 for (const requiredFragment of [
@@ -239,3 +261,4 @@ console.log("- Vortex subscription actions resolve processor context server-side
 console.log("- Vortex Connect account operations enter through api.payments merchant actions.");
 console.log("- Dead public provider subscription actions stay deleted from source and generated API.");
 console.log("- Document payment object creation uses Vortex-owned payment link naming.");
+console.log("- Available billing plans enter through api.payments billing queries.");
