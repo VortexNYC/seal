@@ -308,7 +308,7 @@ export const getAuditTrail = internalQuery({
     userId: v.id("users"),
     organizationId: v.id("organizations"),
     documentId: v.id("documents"),
-    limit: v.optional(v.number()),
+    limit: v.number(),
   },
   handler: async (
     ctx,
@@ -335,7 +335,7 @@ export const getAuditTrail = internalQuery({
     }
 
     // Get audit log entries for this document
-    const limit = Math.min(args.limit ?? 100, 500);
+    const limit = Math.min(args.limit, 500);
 
     const auditLogs = await ctx.db
       .query("audit_logs")
