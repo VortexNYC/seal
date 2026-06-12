@@ -94,6 +94,9 @@ const STANDARD_HEADERS: Record<string, string> = {
   "Cache-Control": "no-store",
 };
 
+/** Default page size for paginated API responses. */
+const DEFAULT_PAGE_SIZE = 20;
+
 /**
  * Parses URL and extracts path segments and query params.
  */
@@ -316,7 +319,7 @@ export async function parseJsonBody<T = unknown>(request: Request): Promise<T> {
  */
 export function parsePagination(
   query: Record<string, string>,
-  defaults: { limit: number; maxLimit: number } = { limit: 20, maxLimit: 100 },
+  defaults: { limit: number; maxLimit: number } = { limit: DEFAULT_PAGE_SIZE, maxLimit: 100 },
 ): { limit: number; cursor?: string } {
   let limit = parseInt(query.limit ?? String(defaults.limit), 10);
 
