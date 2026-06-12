@@ -313,6 +313,7 @@ export async function parseJsonBody<T = unknown>(request: Request): Promise<T> {
  * @param query - Query parameters object
  * @param defaults - Default values for pagination
  * @returns Parsed pagination parameters
+ * Falls back to the default limit when missing or invalid, and clamps to maxLimit.
  */
 export function parsePagination(
   query: Record<string, string>,
