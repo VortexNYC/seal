@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/payments")(
 type ConnectionStatus = "not_connected" | "pending" | "restricted" | "connected";
 
 type FeeHandling = "absorb" | "pass_to_recipient";
-type VortexMerchantAccount = VortexMerchantAccountPanelProps["merchantAccount"];
+type VortexMerchantAccount = NonNullable<VortexMerchantAccountPanelProps["merchantAccount"]>;
 type VortexMerchantState = NonNullable<VortexMerchantAccountPanelProps["merchantState"]>;
 
 const vortexPaymentsClassNames = {
