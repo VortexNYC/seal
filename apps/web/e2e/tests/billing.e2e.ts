@@ -3,21 +3,18 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../fixtures/auth";
 
 /**
- * Billing surface E2E — validates the Stripe integration is wired up
- * end-to-end on the test deployment, without driving the Stripe-hosted
- * iframe.
+ * Billing surface E2E — validates the Vortex Payments facade is wired up
+ * end-to-end on the test deployment, without driving hosted provider pages.
  *
  * Coverage layered intentionally:
  *   1. Page renders for an authenticated, pro-tier workspace (the seeded state).
  *   2. Plans query returns at least one product (proves backend can read
  *      `subscription_products` and the seed worked).
- *   3. Customer portal session can be created (proves the org has a real
- *      Stripe customer + the Stripe SDK is reachable from Convex actions).
+ *   3. Customer portal and checkout sessions can be created through the
+ *      Vortex Payments facade.
  *
- * Iframe-driven Stripe Checkout (4242 test card → webhook → subscription
- * row) is a follow-up — it requires a non-pro workspace and reliable
- * webhook delivery to clever-goose-484. That belongs with the webhook
- * integration tests (#13).
+ * Hosted checkout completion (4242 test card -> webhook -> subscription row)
+ * belongs with webhook integration tests (#13).
  */
 
 test.describe("Billing", () => {
@@ -58,8 +55,7 @@ test.describe("Billing", () => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (await client.query((api as any).stripe.queries.getAvailablePlans, {})) as Plan[];
+      return (await client.query(api.stripe.queries.getAvailablePlans, {})) as Plan[];
     });
 
     expect(Array.isArray(plans)).toBe(true);
@@ -84,16 +80,13 @@ test.describe("Billing", () => {
     await waitForBillingPageReady(authenticatedPage);
 
     // Drive the action directly off the exposed test-mode Convex client. This
-    // is the same call the "Manage Billing" header button makes — proves the
-    // Stripe SDK is reachable from Convex actions, the org has a real Stripe
-    // customer record (seeded by `seedStripeCustomerForE2E` in
-    // backend.setup), and the portal endpoint hands back a URL.
+    // is the same call the "Manage Billing" header button makes and proves the
+    // Vortex Payments facade can create a provider portal handoff for the org.
     const result = await authenticatedPage.evaluate(async (returnUrl) => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (await client.action((api as any).stripe.actions.createCustomerPortalSession, {
+      return (await client.action(api.payments.subscription_actions.createCustomerPortalSession, {
         returnUrl,
       })) as { url: string };
     }, authenticatedPage.url());
@@ -103,7 +96,7 @@ test.describe("Billing", () => {
     expect(result.url).toMatch(/^https:\/\/billing\.stripe\.com\//);
   });
 
-  test("createEmbeddedCheckoutSession returns a clientSecret for a known price", async ({
+  test("createCheckoutSession returns a hosted checkout URL for a known price", async ({
     authenticatedPage,
     organizationSlug,
   }) => {
@@ -111,26 +104,21 @@ test.describe("Billing", () => {
     await waitForBillingPageReady(authenticatedPage);
 
     // The pro:monthly:v2 lookup key resolves to a real recurring price on the
-    // shared Stripe sandbox account. The action assembles a checkout session
-    // using the seeded Stripe customer (provisioned by seedStripeCustomerForE2E)
-    // and returns the clientSecret the embedded iframe would mount with.
-    // We assert the session is created — driving the actual iframe + 4242 card
-    // is a separate concern (Stripe's own UI) and not covered here.
-    const result = await authenticatedPage.evaluate(async (returnUrl) => {
+    // shared sandbox account. The facade assembles a hosted checkout session
+    // using the seeded customer and returns the handoff URL.
+    const result = await authenticatedPage.evaluate(async (currentUrl) => {
       const client = window.__convexClient;
       const api = window.__convexApi;
       if (!client || !api) throw new Error("Convex client not ready");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (await client.action((api as any).stripe.actions.createEmbeddedCheckoutSession, {
+      return (await client.action(api.payments.subscription_actions.createCheckoutSession, {
         lookupKey: "pro:monthly:v2",
-        returnUrl,
-      })) as { clientSecret: string };
+        successUrl: `${window.location.origin}${window.location.pathname}?upgraded=true`,
+        cancelUrl: currentUrl,
+      })) as { checkoutUrl: string };
     }, authenticatedPage.url());
 
-    expect(result).toHaveProperty("clientSecret");
-    // Stripe checkout client secrets follow `cs_*_secret_*` (v3 format) or the
-    // older `cs_*` shape; both start with `cs_`.
-    expect(result.clientSecret).toMatch(/^cs_/);
+    expect(result).toHaveProperty("checkoutUrl");
+    expect(result.checkoutUrl).toMatch(/^https:\/\/checkout\.stripe\.com\//);
   });
 });
 

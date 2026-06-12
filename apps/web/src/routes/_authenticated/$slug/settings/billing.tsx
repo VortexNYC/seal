@@ -5,8 +5,6 @@
  */
 
 import { api } from "@seal/backend/convex/_generated/api";
-import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   VortexPaymentsProvider,
@@ -21,16 +19,13 @@ import {
   type VortexSubscriptionActionSummaryStatus,
 } from "@vortex/payments/react";
 import { useAction, useQuery } from "convex/react";
-import { ExternalLink, Loader2, X } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { ExternalLink, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
 import { BillingSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string);
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/billing")({
   component: BillingSettingsPage,
@@ -111,11 +106,10 @@ function BillingSettingsPage() {
     | null
     | undefined;
   const plans = useQuery(api.stripe.queries.getAvailablePlans) as AvailablePlan[] | undefined;
-  const createEmbeddedCheckout = useAction(api.stripe.actions.createEmbeddedCheckoutSession);
-  const createPortal = useAction(api.stripe.actions.createCustomerPortalSession);
+  const createCheckout = useAction(api.payments.subscription_actions.createCheckoutSession);
+  const createPortal = useAction(api.payments.subscription_actions.createCustomerPortalSession);
 
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [checkoutLookupKey, setCheckoutLookupKey] = useState<string | null>(null);
+  const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
   const currentUrl = window.location.href;
@@ -123,39 +117,6 @@ function BillingSettingsPage() {
   const isFreePlan = !subscription || subscription.tier === "free" || !isActiveSubscription;
   const proPlan = plans?.find((plan) => plan.tier === "pro");
   const proMonthlyLookupKey = proPlan?.pricing.monthly?.lookupKey;
-
-  const fetchClientSecret = useCallback(async () => {
-    if (!checkoutLookupKey) {
-      throw new Error("No lookup key set");
-    }
-
-    try {
-      const { clientSecret } = await createEmbeddedCheckout({
-        lookupKey: checkoutLookupKey,
-        returnUrl: `${window.location.origin}${window.location.pathname}?upgraded=true`,
-      });
-      return clientSecret;
-    } catch (err) {
-      toast.error(
-        err instanceof Error && err.message
-          ? err.message
-          : "Failed to start checkout. Please try again.",
-      );
-      handleCancelCheckout();
-      throw err;
-    }
-  }, [createEmbeddedCheckout, checkoutLookupKey]);
-
-  const checkoutOptions = useMemo(
-    () => ({
-      fetchClientSecret,
-      onComplete: () => {
-        setShowCheckout(false);
-        setCheckoutLookupKey(null);
-      },
-    }),
-    [fetchClientSecret],
-  );
 
   const subscriptionSummary = useMemo(
     () => buildSubscriptionActionSummary(subscription, isFreePlan),
@@ -176,16 +137,6 @@ function BillingSettingsPage() {
     [],
   );
 
-  function handleUpgrade(lookupKey: string) {
-    setCheckoutLookupKey(lookupKey);
-    setShowCheckout(true);
-  }
-
-  function handleCancelCheckout() {
-    setShowCheckout(false);
-    setCheckoutLookupKey(null);
-  }
-
   async function handleManageBilling() {
     setPortalLoading(true);
     try {
@@ -199,13 +150,29 @@ function BillingSettingsPage() {
     }
   }
 
-  function handlePlanSelect(plan: VortexPlanComparisonPlan) {
+  async function handlePlanSelect(plan: VortexPlanComparisonPlan) {
     const lookupKey = checkoutLookupKeysByPlanId[plan.id];
     if (!lookupKey) {
       toast.error("This plan is not available for checkout yet.");
       return;
     }
-    handleUpgrade(lookupKey);
+
+    setCheckoutLoadingPlanId(plan.id);
+    try {
+      const { checkoutUrl } = await createCheckout({
+        lookupKey,
+        successUrl: `${window.location.origin}${window.location.pathname}?upgraded=true`,
+        cancelUrl: currentUrl,
+      });
+      window.location.href = checkoutUrl;
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to start checkout. Please try again.",
+      );
+      setCheckoutLoadingPlanId(null);
+    }
   }
 
   function handleSubscriptionAction(actionSummary: VortexSubscriptionActionSummaryState) {
@@ -233,65 +200,42 @@ function BillingSettingsPage() {
           Manage your subscription and billing information.
         </p>
 
-        {showCheckout && checkoutLookupKey && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between gap-4">
-                <CardTitle className="text-balance">Complete your upgrade</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Close checkout"
-                  onClick={handleCancelCheckout}
-                >
-                  <X className="size-4" />
-                </Button>
-              </div>
-              <CardDescription className="text-pretty">
-                Enter your payment details below to upgrade to Professional.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <EmbeddedCheckoutProvider stripe={stripePromise} options={checkoutOptions}>
-                <EmbeddedCheckout />
-              </EmbeddedCheckoutProvider>
-            </CardContent>
-          </Card>
-        )}
-
-        {!showCheckout && (
-          <VortexPaymentsProvider
-            config={{
-              baseUrl: window.location.origin,
-              environment,
-              branding: { brandName: "Seal" },
-            }}
-            navigate={() => undefined}
-          >
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
-              <VortexSubscriptionActionSummary
-                subscription={subscriptionSummary}
-                classNames={vortexBillingClassNames}
-                copy={{
-                  customActionLabel: "Manage billing",
-                  title: "Current subscription",
-                }}
-                onAction={handleSubscriptionAction}
-              />
-              <VortexPlanComparison
-                comparison={planComparison}
-                classNames={vortexBillingClassNames}
-                copy={{
-                  currentButtonLabel: "Current plan",
-                  openCheckoutLabel: "Upgrade",
-                  selectPlanLabel: "Select plan",
-                  title: "Plans",
-                }}
-                onPlanSelect={handlePlanSelect}
-              />
-            </div>
-          </VortexPaymentsProvider>
-        )}
+        <VortexPaymentsProvider
+          config={{
+            baseUrl: window.location.origin,
+            environment,
+            branding: { brandName: "Seal" },
+          }}
+          navigate={() => undefined}
+        >
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
+            <VortexSubscriptionActionSummary
+              subscription={subscriptionSummary}
+              classNames={vortexBillingClassNames}
+              copy={{
+                customActionLabel: "Manage billing",
+                title: "Current subscription",
+              }}
+              onAction={handleSubscriptionAction}
+            />
+            <VortexPlanComparison
+              comparison={planComparison}
+              classNames={vortexBillingClassNames}
+              disabled={checkoutLoadingPlanId !== null}
+              loading={checkoutLoadingPlanId !== null}
+              copy={{
+                currentButtonLabel: "Current plan",
+                loadingTitle: "Opening checkout...",
+                openCheckoutLabel: "Upgrade",
+                selectPlanLabel: "Select plan",
+                title: "Plans",
+              }}
+              onPlanSelect={(plan) => {
+                void handlePlanSelect(plan);
+              }}
+            />
+          </div>
+        </VortexPaymentsProvider>
       </div>
     </PageWrapper>
   );
