@@ -60,12 +60,12 @@ function PaymentsOverviewPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "open" | "void">("all");
 
   const stats = useQuery(
-    api.stripe.revenue_queries.getRevenueStats,
+    api.payments.queries.getRevenueStats,
     connectedAccount?.status === "connected" ? { slug } : "skip",
   );
 
   const transactions = useQuery(
-    api.stripe.revenue_queries.getTransactionList,
+    api.payments.queries.getTransactionList,
     connectedAccount?.status === "connected"
       ? { slug, statusFilter: statusFilter === "all" ? "all" : statusFilter }
       : "skip",

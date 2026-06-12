@@ -1,5 +1,4 @@
 import { api } from "@seal/backend/convex/_generated/api";
-import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
 import { useAction, useQuery } from "convex/react";
 import { Loader2, Pause, Play, RefreshCw, X } from "lucide-react";
@@ -49,22 +48,20 @@ function formatInterval(interval: string, count: number) {
 
 function SubscriptionsPage() {
   const { slug } = Route.useParams();
-  const organization = useQuery(api.organizations.queries.getOrganization, { slug });
   const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
-  const orgId = organization?._id as Id<"organizations"> | undefined;
 
   const subscriptions = useQuery(
-    api.stripe.subscription_queries.getActiveSubscriptions,
+    api.payments.queries.getActiveSubscriptions,
     connectedAccount?.status === "connected" ? { slug } : "skip",
   );
 
-  const pauseSubscription = useAction(api.stripe.connect_subscription_actions.pauseSubscription);
-  const resumeSubscription = useAction(api.stripe.connect_subscription_actions.resumeSubscription);
-  const cancelSubscription = useAction(api.stripe.connect_subscription_actions.cancelSubscription);
+  const pauseSubscription = useAction(api.payments.subscription_actions.pauseSubscription);
+  const resumeSubscription = useAction(api.payments.subscription_actions.resumeSubscription);
+  const cancelSubscription = useAction(api.payments.subscription_actions.cancelSubscription);
 
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  if (connectedAccount === undefined || !orgId) {
+  if (connectedAccount === undefined) {
     return null;
   }
 
@@ -72,13 +69,10 @@ function SubscriptionsPage() {
     return <NoVortexMerchantAccountState slug={slug} title="Subscriptions" />;
   }
 
-  const stripeAccountId = connectedAccount.account?.stripeAccountId;
-
   const handlePause = async (subscriptionId: string) => {
-    if (!stripeAccountId) return;
     setLoadingId(subscriptionId);
     try {
-      await pauseSubscription({ subscriptionId, stripeAccountId });
+      await pauseSubscription({ slug, subscriptionId });
       toast.success("Subscription paused");
     } catch {
       toast.error("Failed to pause subscription");
@@ -88,10 +82,9 @@ function SubscriptionsPage() {
   };
 
   const handleResume = async (subscriptionId: string) => {
-    if (!stripeAccountId) return;
     setLoadingId(subscriptionId);
     try {
-      await resumeSubscription({ subscriptionId, stripeAccountId });
+      await resumeSubscription({ slug, subscriptionId });
       toast.success("Subscription resumed");
     } catch {
       toast.error("Failed to resume subscription");
@@ -101,10 +94,9 @@ function SubscriptionsPage() {
   };
 
   const handleCancel = async (subscriptionId: string) => {
-    if (!stripeAccountId) return;
     setLoadingId(subscriptionId);
     try {
-      await cancelSubscription({ subscriptionId, stripeAccountId });
+      await cancelSubscription({ slug, subscriptionId });
       toast.success("Subscription will cancel at end of period");
     } catch {
       toast.error("Failed to cancel subscription");
@@ -145,7 +137,7 @@ function SubscriptionsPage() {
               </TableHeader>
               <TableBody>
                 {subscriptions.map((sub) => {
-                  const isLoading = loadingId === sub.stripeSubscriptionId;
+                  const isLoading = loadingId === sub.processorSubscriptionId;
                   return (
                     <TableRow key={sub._id}>
                       <TableCell className="max-w-[200px] truncate font-medium">
@@ -181,7 +173,7 @@ function SubscriptionsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="size-8"
-                                  onClick={() => handlePause(sub.stripeSubscriptionId)}
+                                  onClick={() => handlePause(sub.processorSubscriptionId)}
                                   aria-label="Pause subscription"
                                 >
                                   <Pause className="size-3.5" />
@@ -191,7 +183,7 @@ function SubscriptionsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="size-8"
-                                  onClick={() => handleResume(sub.stripeSubscriptionId)}
+                                  onClick={() => handleResume(sub.processorSubscriptionId)}
                                   aria-label="Resume subscription"
                                 >
                                   <Play className="size-3.5" />
@@ -220,7 +212,7 @@ function SubscriptionsPage() {
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Keep active</AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() => handleCancel(sub.stripeSubscriptionId)}
+                                      onClick={() => handleCancel(sub.processorSubscriptionId)}
                                     >
                                       Cancel subscription
                                     </AlertDialogAction>

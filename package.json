@@ -34,6 +34,7 @@
     "prove:vortex-payments-settings-adoption": "bun run scripts/prove-vortex-payments-settings-adoption.ts",
     "prove:vortex-merchant-settings-adoption": "bun run scripts/prove-vortex-merchant-settings-adoption.ts",
     "prove:vortex-operational-payments-adoption": "bun run scripts/prove-vortex-operational-payments-adoption.ts",
+    "prove:vortex-payments-backend-adapter-adoption": "bun run scripts/prove-vortex-payments-backend-adapter-adoption.ts",
     "knip": "turbo run knip",
     "knip:fix": "(cd apps/backend && bun run knip:fix) && (cd packages/react-sdk && bun run knip:fix) && (cd packages/transactional && bun run knip:fix) && (cd apps/web && bun run knip:fix)",
     "verify": "bun run lint && bun run format:check && bun run typecheck && bun run knip",
