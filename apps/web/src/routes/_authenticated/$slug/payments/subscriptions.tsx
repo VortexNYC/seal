@@ -48,11 +48,13 @@ function formatInterval(interval: string, count: number) {
 
 function SubscriptionsPage() {
   const { slug } = Route.useParams();
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const merchantAccount = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
+    slug,
+  });
 
   const subscriptions = useQuery(
     api.payments.queries.getActiveSubscriptions,
-    connectedAccount?.status === "connected" ? { slug } : "skip",
+    merchantAccount?.status === "connected" ? { slug } : "skip",
   );
 
   const pauseSubscription = useAction(api.payments.subscription_actions.pauseSubscription);
@@ -61,11 +63,11 @@ function SubscriptionsPage() {
 
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  if (connectedAccount === undefined) {
+  if (merchantAccount === undefined) {
     return null;
   }
 
-  if (connectedAccount.status !== "connected") {
+  if (merchantAccount.status !== "connected") {
     return <NoVortexMerchantAccountState slug={slug} title="Subscriptions" />;
   }
 

@@ -26,11 +26,11 @@ type FeeHandling = "absorb" | "pass_to_recipient";
 type VortexMerchantAccount = VortexMerchantAccountPanelProps["merchantAccount"];
 type VortexMerchantState = NonNullable<VortexMerchantAccountPanelProps["merchantState"]>;
 
-type ConnectedAccountResult = {
+type MerchantAccountResult = {
   status: ConnectionStatus;
   account: {
     _id: Id<"stripe_accounts">;
-    stripeAccountId: string;
+    processorAccountId: string;
     accountType: "standard" | "express";
     chargesEnabled: boolean;
     payoutsEnabled: boolean;
@@ -127,24 +127,24 @@ export function VortexMerchantOperationalSurface({
   surface,
 }: VortexMerchantOperationalSurfaceProps) {
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug }) as
-    | ConnectedAccountResult
-    | undefined;
+  const merchantAccountResult = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
+    slug,
+  }) as MerchantAccountResult | undefined;
 
-  if (organization === undefined || connectedAccount === undefined) {
+  if (organization === undefined || merchantAccountResult === undefined) {
     return null;
   }
 
   const copy = surfaceCopy[surface];
   const orgId = organization?._id as Id<"organizations"> | undefined;
-  const account = connectedAccount.account;
+  const account = merchantAccountResult.account;
   const merchantAccount =
     account === null ? null : buildMerchantAccount(account, organization?.name ?? slug, orgId);
   const merchantState =
-    account === null ? null : buildMerchantState(account, connectedAccount.status);
+    account === null ? null : buildMerchantState(account, merchantAccountResult.status);
 
   if (
-    connectedAccount.status !== "connected" ||
+    merchantAccountResult.status !== "connected" ||
     account === null ||
     merchantAccount === null ||
     merchantState === null
@@ -253,7 +253,7 @@ export function NoVortexMerchantAccountState({ slug, title }: NoVortexMerchantAc
     <PageWrapper title={title}>
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
-          <WalletCards className="text-muted-foreground mb-4 h-12 w-12" />
+          <WalletCards className="text-muted-foreground mb-4 size-12" />
           <h3 className="mb-2 text-lg font-semibold text-balance">Merchant account not ready</h3>
           <p className="text-muted-foreground mb-6 max-w-sm text-center text-sm text-pretty">
             Create or finish merchant account setup before using payment operations.
@@ -261,7 +261,7 @@ export function NoVortexMerchantAccountState({ slug, title }: NoVortexMerchantAc
           <Button asChild>
             <Link to="/$slug/settings/payments" params={{ slug }}>
               Open payment settings
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowRight className="ml-2 size-4" />
             </Link>
           </Button>
         </CardContent>
@@ -280,8 +280,8 @@ function VortexOperationalPlaceholder({
   return (
     <Card data-vortex-surface={surface}>
       <CardHeader>
-        <div className="bg-muted/30 mb-3 flex h-10 w-10 items-center justify-center rounded-md border">
-          <Icon className="text-muted-foreground h-5 w-5" />
+        <div className="bg-muted/30 mb-3 flex size-10 items-center justify-center rounded-md border">
+          <Icon className="text-muted-foreground size-5" />
         </div>
         <CardTitle className="text-balance">{title}</CardTitle>
         <CardDescription className="text-pretty">{description}</CardDescription>
@@ -290,7 +290,7 @@ function VortexOperationalPlaceholder({
         <Button variant="outline" asChild>
           <Link to="/$slug/settings/payments" params={{ slug }}>
             Review merchant account
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="ml-2 size-4" />
           </Link>
         </Button>
       </CardContent>
@@ -299,14 +299,14 @@ function VortexOperationalPlaceholder({
 }
 
 function buildMerchantAccount(
-  account: NonNullable<ConnectedAccountResult["account"]>,
+  account: NonNullable<MerchantAccountResult["account"]>,
   organizationName: string,
   organizationId: Id<"organizations"> | undefined,
 ): VortexMerchantAccount {
   const updatedAt = toIsoTimestamp(account.updatedAt);
 
   return {
-    id: account.stripeAccountId,
+    id: account.processorAccountId,
     environment: "sandbox",
     tenantId: String(organizationId ?? "unknown"),
     displayName: organizationName,
@@ -331,7 +331,7 @@ function buildMerchantAccount(
 }
 
 function buildMerchantState(
-  account: NonNullable<ConnectedAccountResult["account"]>,
+  account: NonNullable<MerchantAccountResult["account"]>,
   status: ConnectionStatus,
 ): VortexMerchantState {
   const openRequirementIds = [
@@ -355,7 +355,7 @@ function buildMerchantState(
   ].filter((capability): capability is string => capability !== null);
 
   return {
-    merchantAccountId: account.stripeAccountId,
+    merchantAccountId: account.processorAccountId,
     environment: "sandbox",
     merchantStatus: mapMerchantAccountStatus({
       chargesEnabled: account.chargesEnabled,

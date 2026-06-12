@@ -55,27 +55,29 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
 
 function PaymentsOverviewPage() {
   const { slug } = Route.useParams();
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
+  const merchantAccount = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
+    slug,
+  });
 
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "open" | "void">("all");
 
   const stats = useQuery(
     api.payments.queries.getRevenueStats,
-    connectedAccount?.status === "connected" ? { slug } : "skip",
+    merchantAccount?.status === "connected" ? { slug } : "skip",
   );
 
   const transactions = useQuery(
     api.payments.queries.getTransactionList,
-    connectedAccount?.status === "connected"
+    merchantAccount?.status === "connected"
       ? { slug, statusFilter: statusFilter === "all" ? "all" : statusFilter }
       : "skip",
   );
 
-  if (connectedAccount === undefined) {
+  if (merchantAccount === undefined) {
     return null;
   }
 
-  if (connectedAccount.status !== "connected") {
+  if (merchantAccount.status !== "connected") {
     return <NoVortexMerchantAccountState slug={slug} title="Payments Overview" />;
   }
 

@@ -151,12 +151,11 @@ function DocumentDetailPage() {
     }),
   );
 
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, {
+  const merchantAccount = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
     slug,
   }) as { status: string; account: { chargesEnabled: boolean } | null } | undefined;
-  const stripeConnected =
-    connectedAccount?.status === "connected" &&
-    (connectedAccount?.account?.chargesEnabled ?? false);
+  const merchantPaymentsReady =
+    merchantAccount?.status === "connected" && (merchantAccount?.account?.chargesEnabled ?? false);
 
   const aiSettings = useQuery(api.organizations.queries.getAiSettings, {
     organizationId: documentData.organizationId,
@@ -775,7 +774,7 @@ function DocumentDetailPage() {
               }}
               canEdit={canEdit}
               isUserAlreadyRecipient={isUserAlreadyRecipient}
-              stripeConnected={stripeConnected}
+              stripeConnected={merchantPaymentsReady}
               openSections={openSections}
               toggleSection={toggleSection}
               aiEnabled={aiEnabled}

@@ -153,6 +153,10 @@ import type * as payment_fields_dunning_email_action from "../payment_fields/dun
 import type * as payment_fields_helpers from "../payment_fields/helpers.js";
 import type * as payment_fields_mutations from "../payment_fields/mutations.js";
 import type * as payment_fields_queries from "../payment_fields/queries.js";
+import type * as payments_merchant_account_actions from "../payments/merchant_account_actions.js";
+import type * as payments_merchant_account_mutations from "../payments/merchant_account_mutations.js";
+import type * as payments_merchant_account_queries from "../payments/merchant_account_queries.js";
+import type * as payments_merchant_account_validators from "../payments/merchant_account_validators.js";
 import type * as payments_payment_field_actions from "../payments/payment_field_actions.js";
 import type * as payments_queries from "../payments/queries.js";
 import type * as payments_subscription_actions from "../payments/subscription_actions.js";
@@ -410,6 +414,10 @@ declare const fullApi: ApiFromModules<{
   "payment_fields/helpers": typeof payment_fields_helpers;
   "payment_fields/mutations": typeof payment_fields_mutations;
   "payment_fields/queries": typeof payment_fields_queries;
+  "payments/merchant_account_actions": typeof payments_merchant_account_actions;
+  "payments/merchant_account_mutations": typeof payments_merchant_account_mutations;
+  "payments/merchant_account_queries": typeof payments_merchant_account_queries;
+  "payments/merchant_account_validators": typeof payments_merchant_account_validators;
   "payments/payment_field_actions": typeof payments_payment_field_actions;
   "payments/queries": typeof payments_queries;
   "payments/subscription_actions": typeof payments_subscription_actions;

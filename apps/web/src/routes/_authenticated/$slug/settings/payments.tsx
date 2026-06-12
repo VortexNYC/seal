@@ -57,11 +57,11 @@ const vortexPaymentsClassNames = {
   title: "text-lg font-semibold text-balance",
 } satisfies VortexEmbeddedComponentClassNames;
 
-type ConnectedAccountResult = {
+type MerchantAccountResult = {
   status: ConnectionStatus;
   account: {
     _id: Id<"stripe_accounts">;
-    stripeAccountId: string;
+    processorAccountId: string;
     accountType: "standard" | "express";
     chargesEnabled: boolean;
     payoutsEnabled: boolean;
@@ -92,44 +92,46 @@ function PaymentsSettingsPage() {
 
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
 
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug }) as
-    | ConnectedAccountResult
-    | undefined;
+  const merchantAccountResult = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
+    slug,
+  }) as MerchantAccountResult | undefined;
 
-  const createConnectedAccount = useAction(api.stripe.connect_actions.createConnectedAccount);
+  const createMerchantAccount = useAction(
+    api.payments.merchant_account_actions.createMerchantAccount,
+  );
 
-  const updateFeeHandling = useMutation(api.stripe.connect_public_mutations.updateFeeHandling);
+  const updateFeeHandling = useMutation(api.payments.merchant_account_mutations.updateFeeHandling);
 
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isSavingFeeHandling, setIsSavingFeeHandling] = useState(false);
 
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
-  const status = connectedAccount?.status ?? "not_connected";
-  const canManage = connectedAccount?.canManage ?? false;
-  const hasStripeAccount =
-    connectedAccount?.account !== null && connectedAccount?.account !== undefined;
+  const status = merchantAccountResult?.status ?? "not_connected";
+  const canManage = merchantAccountResult?.canManage ?? false;
+  const hasMerchantAccount =
+    merchantAccountResult?.account !== null && merchantAccountResult?.account !== undefined;
 
-  const feeHandling = connectedAccount?.account?.feeHandling ?? "absorb";
+  const feeHandling = merchantAccountResult?.account?.feeHandling ?? "absorb";
   const feePolicy =
-    connectedAccount?.account === undefined || connectedAccount.account === null
+    merchantAccountResult?.account === undefined || merchantAccountResult.account === null
       ? null
-      : buildFeePolicy(connectedAccount.account.stripeAccountId, feeHandling);
+      : buildFeePolicy(merchantAccountResult.account.processorAccountId, feeHandling);
   const merchantAccount =
-    connectedAccount?.account === undefined || connectedAccount.account === null
+    merchantAccountResult?.account === undefined || merchantAccountResult.account === null
       ? null
-      : buildMerchantAccount(connectedAccount.account, organization?.name ?? slug, orgId);
+      : buildMerchantAccount(merchantAccountResult.account, organization?.name ?? slug, orgId);
   const merchantState =
-    connectedAccount?.account === undefined || connectedAccount.account === null
+    merchantAccountResult?.account === undefined || merchantAccountResult.account === null
       ? null
-      : buildMerchantState(connectedAccount.account, status);
+      : buildMerchantState(merchantAccountResult.account, status);
 
   async function handleCreateAccount() {
     if (!orgId) return;
 
     setIsCreatingAccount(true);
     try {
-      await createConnectedAccount({ organizationId: orgId });
+      await createMerchantAccount({ organizationId: orgId });
       toast.success("Merchant account created. Review onboarding status below.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to create merchant account");
@@ -163,7 +165,7 @@ function PaymentsSettingsPage() {
   }
 
   return (
-    <PageWrapper title="Payments">
+    <PageWrapper title="Merchant account">
       <div className="space-y-6">
         <p className="text-muted-foreground text-sm">
           Configure the merchant account that accepts document payments. Only workspace owners and
@@ -175,7 +177,7 @@ function PaymentsSettingsPage() {
           )}
         </p>
 
-        {hasStripeAccount && merchantAccount !== null && merchantState !== null ? (
+        {hasMerchantAccount && merchantAccount !== null && merchantState !== null ? (
           <VortexPaymentsProvider
             config={{
               baseUrl: window.location.origin,
@@ -225,9 +227,9 @@ function PaymentsSettingsPage() {
                   </p>
                   <Button onClick={handleCreateAccount} disabled={!canManage || isCreatingAccount}>
                     {isCreatingAccount ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 size-4 animate-spin" />
                     ) : (
-                      <PlugZap className="mr-2 h-4 w-4" />
+                      <PlugZap className="mr-2 size-4" />
                     )}
                     Create merchant account
                   </Button>
@@ -263,14 +265,14 @@ function PaymentsSettingsPage() {
 }
 
 function buildMerchantAccount(
-  account: NonNullable<ConnectedAccountResult["account"]>,
+  account: NonNullable<MerchantAccountResult["account"]>,
   organizationName: string,
   organizationId: Id<"organizations"> | undefined,
 ): VortexMerchantAccount {
   const updatedAt = toIsoTimestamp(account.updatedAt);
 
   return {
-    id: account.stripeAccountId,
+    id: account.processorAccountId,
     environment: "sandbox",
     tenantId: String(organizationId ?? "unknown"),
     displayName: organizationName,
@@ -295,7 +297,7 @@ function buildMerchantAccount(
 }
 
 function buildMerchantState(
-  account: NonNullable<ConnectedAccountResult["account"]>,
+  account: NonNullable<MerchantAccountResult["account"]>,
   status: ConnectionStatus,
 ): VortexMerchantState {
   const openRequirementIds = [
@@ -319,7 +321,7 @@ function buildMerchantState(
   ].filter((capability): capability is string => capability !== null);
 
   return {
-    merchantAccountId: account.stripeAccountId,
+    merchantAccountId: account.processorAccountId,
     environment: "sandbox",
     merchantStatus: mapMerchantAccountStatus({
       chargesEnabled: account.chargesEnabled,

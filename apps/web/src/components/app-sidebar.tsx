@@ -125,13 +125,13 @@ function buildNavSections({
   slug,
   currentPath,
   permissions,
-  hasStripeConnect,
+  hasMerchantAccount,
   isPro,
 }: {
   slug: string;
   currentPath: string;
   permissions: PermissionSet | undefined;
-  hasStripeConnect: boolean;
+  hasMerchantAccount: boolean;
   isPro: boolean;
 }): NavMainItem[] {
   const permissionFlags = permissions?.permissions;
@@ -169,38 +169,38 @@ function buildNavSections({
     {
       title: "Overview",
       url: buildOrganizationPath(slug, "/payments"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
       exactMatch: true,
     },
     {
       title: "Subscriptions",
       url: buildOrganizationPath(slug, "/payments/subscriptions"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
     },
     {
       title: "History",
       url: buildOrganizationPath(slug, "/payments/history"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
     },
     {
       title: "Payouts",
       url: buildOrganizationPath(slug, "/payments/payouts"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
     },
     {
       title: "Balances",
       url: buildOrganizationPath(slug, "/payments/balances"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
     },
     {
       title: "Disputes",
       url: buildOrganizationPath(slug, "/payments/disputes"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
     },
     {
       title: "Tax Documents",
       url: buildOrganizationPath(slug, "/payments/tax"),
-      visible: hasStripeConnect && canView(permissionFlags?.canViewSettings),
+      visible: hasMerchantAccount && canView(permissionFlags?.canViewSettings),
     },
   ].filter((item) => item.visible);
 
@@ -384,8 +384,10 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
   const { signOut } = useAppAuthActions();
   const { reset: resetAnalytics } = useAnalytics();
   const organizations = useQuery(api.check_membership.listUserOrganizations);
-  const connectedAccount = useQuery(api.stripe.connect_queries.getConnectedAccount, { slug });
-  const hasStripeConnect = connectedAccount?.status === "connected";
+  const merchantAccount = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
+    slug,
+  });
+  const hasMerchantAccount = merchantAccount?.status === "connected";
   const { isPro } = useSubscriptionLimits();
 
   // Wrapper to reset PostHog identity before signing out
@@ -405,10 +407,10 @@ export function AppSidebar({ slug, organization, permissions, ...props }: AppSid
         slug,
         currentPath: location.pathname,
         permissions,
-        hasStripeConnect,
+        hasMerchantAccount,
         isPro,
       }),
-    [slug, location.pathname, permissions, hasStripeConnect, isPro],
+    [slug, location.pathname, permissions, hasMerchantAccount, isPro],
   );
 
   const activeTeamSlug = slug;
