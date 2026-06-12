@@ -48,6 +48,7 @@ import type * as api_v1_analytics from "../api/v1/analytics.js";
 import type * as api_v1_audit from "../api/v1/audit.js";
 import type * as api_v1_contacts from "../api/v1/contacts.js";
 import type * as api_v1_documents from "../api/v1/documents.js";
+import type * as api_v1_feedback from "../api/v1/feedback.js";
 import type * as api_v1_index from "../api/v1/index.js";
 import type * as api_v1_members from "../api/v1/members.js";
 import type * as api_v1_recipients from "../api/v1/recipients.js";
@@ -309,6 +310,7 @@ declare const fullApi: ApiFromModules<{
   "api/v1/audit": typeof api_v1_audit;
   "api/v1/contacts": typeof api_v1_contacts;
   "api/v1/documents": typeof api_v1_documents;
+  "api/v1/feedback": typeof api_v1_feedback;
   "api/v1/index": typeof api_v1_index;
   "api/v1/members": typeof api_v1_members;
   "api/v1/recipients": typeof api_v1_recipients;

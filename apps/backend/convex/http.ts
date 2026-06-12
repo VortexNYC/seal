@@ -2331,6 +2331,105 @@ http.route({
 });
 
 // =============================================================================
+// FEEDBACK API
+// =============================================================================
+
+/**
+ * List Feedback
+ *
+ * @route GET /api/v1/feedback
+ * @scope seal:feedback:read
+ */
+http.route({
+  path: "/api/v1/feedback",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      const { limit, cursor } = parsePagination(query);
+      const result = await ctx.runQuery(internal.api.v1.feedback.listFeedback, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        limit,
+        cursor,
+      });
+      return apiResponse(200, result);
+    },
+    { scope: API_SCOPES.FEEDBACK_READ },
+  ),
+});
+
+/**
+ * Get Feedback
+ *
+ * @route GET /api/v1/feedback/get
+ * @scope seal:feedback:read
+ */
+http.route({
+  path: "/api/v1/feedback/get",
+  method: "GET",
+  handler: apiHttpAction(
+    async ({ ctx, auth, query }) => {
+      if (!query.id) {
+        throw new ApiError(400, "Missing required parameter: id", "VALIDATION_ERROR");
+      }
+      let feedback = null;
+      try {
+        feedback = await ctx.runQuery(internal.api.v1.feedback.getFeedback, {
+          userId: auth.userId,
+          organizationId: auth.organizationId,
+          feedbackId: query.id as Parameters<typeof ctx.runQuery>[1]["feedbackId"],
+        });
+      } catch {
+        // Invalid ID format — treat as not found
+      }
+      if (!feedback) {
+        throw new ApiError(404, "Feedback not found", "RESOURCE_NOT_FOUND");
+      }
+      return apiResponse(200, feedback);
+    },
+    { scope: API_SCOPES.FEEDBACK_READ },
+  ),
+});
+
+/**
+ * Submit Feedback
+ *
+ * @route POST /api/v1/feedback
+ * @scope seal:feedback:write
+ */
+http.route({
+  path: "/api/v1/feedback",
+  method: "POST",
+  handler: apiHttpAction(
+    async ({ ctx, auth, request }) => {
+      const body = await parseJsonBody<{
+        type?: string;
+        message?: string;
+        route?: string;
+      }>(request);
+      validateRequiredFields(body as Record<string, unknown>, ["type", "message"]);
+
+      if (body.type !== "bug" && body.type !== "suggestion") {
+        throw new ApiError(422, "type must be 'bug' or 'suggestion'", "VALIDATION_ERROR", {
+          type: ["type must be one of: bug, suggestion"],
+        });
+      }
+
+      const result = await ctx.runMutation(internal.api.v1.feedback.submitFeedback, {
+        userId: auth.userId,
+        organizationId: auth.organizationId,
+        type: body.type as "bug" | "suggestion",
+        message: body.message!,
+        route: body.route,
+      });
+
+      return apiResponse(201, result);
+    },
+    { scope: API_SCOPES.FEEDBACK_WRITE },
+  ),
+});
+
+// =============================================================================
 // DOCUMENT ACCESS / SHARING MODE
 // =============================================================================
 

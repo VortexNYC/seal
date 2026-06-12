@@ -35,5 +35,8 @@ export * as settings from "./settings";
 // Templates API internal queries/mutations
 export * as templates from "./templates";
 
+// Feedback
+export * as feedback from "./feedback";
+
 // Webhooks Management API internal queries/mutations
 export * as webhooks from "./webhooks";
