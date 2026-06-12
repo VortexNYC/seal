@@ -26,3 +26,5 @@ export {
   getSigningSessionAuditTrail,
   listOrgAuditLogs,
 } from "./queries";
+
+export { logAuditEvent, logDocumentEvent, logSecurityEvent } from "./mutations";

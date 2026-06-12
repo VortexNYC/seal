@@ -113,10 +113,14 @@ export const listAuditLog = internalQuery({
             actor_email = user.email;
           }
         } else if (entry.actorType === "recipient" && entry.actorId) {
-          const recipient = await ctx.db.get(entry.actorId as Parameters<typeof ctx.db.get>[0]);
-          if (recipient && "email" in recipient) {
-            actor_email = recipient.email as string;
-            actor_name = "name" in recipient ? (recipient.name as string) : undefined;
+          try {
+            const recipient = await ctx.db.get(entry.actorId as Parameters<typeof ctx.db.get>[0]);
+            if (recipient && "email" in recipient) {
+              actor_email = recipient.email as string;
+              actor_name = "name" in recipient ? (recipient.name as string) : undefined;
+            }
+          } catch {
+            // Malformed actorId — skip actor resolution
           }
         }
 
