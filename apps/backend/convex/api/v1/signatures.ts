@@ -298,6 +298,9 @@ export const verifyDocument = internalQuery({
   },
 });
 
+const AUDIT_TRAIL_DEFAULT_LIMIT = 100;
+const AUDIT_TRAIL_MAX_LIMIT = 500;
+
 /**
  * Internal query to get audit trail for a document.
  *
@@ -308,6 +311,7 @@ export const getAuditTrail = internalQuery({
     userId: v.id("users"),
     organizationId: v.id("organizations"),
     documentId: v.id("documents"),
+    /** Maximum events to return. Defaults to 100 when omitted. */
     limit: v.optional(v.number()),
   },
   handler: async (
@@ -335,7 +339,7 @@ export const getAuditTrail = internalQuery({
     }
 
     // Get audit log entries for this document
-    const limit = Math.min(args.limit ?? 100, 500);
+    const limit = Math.min(args.limit ?? AUDIT_TRAIL_DEFAULT_LIMIT, AUDIT_TRAIL_MAX_LIMIT);
 
     const auditLogs = await ctx.db
       .query("audit_logs")
