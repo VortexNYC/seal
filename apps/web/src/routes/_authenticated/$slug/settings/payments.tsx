@@ -7,25 +7,23 @@
 
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import {
-  ConnectAccountManagement,
-  ConnectAccountOnboarding,
-  ConnectNotificationBanner,
-} from "@stripe/react-connect-js";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   VortexFeePolicyPanel,
+  VortexMerchantAccountPanel,
+  VortexMerchantActionQueue,
+  VortexPaymentsProvider,
   type VortexEmbeddedComponentClassNames,
   type VortexFeePolicyOwnerMode,
   type VortexFeePolicyState,
+  type VortexMerchantAccountPanelProps,
 } from "@vortex/payments/react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { AlertTriangle, BadgeCheck, BadgeX, Loader2, PlugZap } from "lucide-react";
-import { useCallback, useState } from "react";
+import { Loader2, PlugZap } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { PageWrapper } from "@/components/page-wrapper";
-import { StripeConnectProvider } from "@/components/stripe/connect-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
@@ -37,6 +35,8 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/payments")(
 type ConnectionStatus = "not_connected" | "pending" | "restricted" | "connected";
 
 type FeeHandling = "absorb" | "pass_to_recipient";
+type VortexMerchantAccount = VortexMerchantAccountPanelProps["merchantAccount"];
+type VortexMerchantState = NonNullable<VortexMerchantAccountPanelProps["merchantState"]>;
 
 const vortexPaymentsClassNames = {
   description: "text-muted-foreground text-sm text-pretty",
@@ -67,6 +67,14 @@ type ConnectedAccountResult = {
     payoutsEnabled: boolean;
     detailsSubmitted: boolean;
     feeHandling: FeeHandling;
+    defaultCurrency?: string;
+    createdAt?: number;
+    updatedAt?: number;
+    capabilities?: {
+      cardPayments: string;
+      transfers: string;
+      usBankAccountAchPayments?: string;
+    };
     requirements?: {
       currentlyDue: string[];
       eventuallyDue: string[];
@@ -76,34 +84,6 @@ type ConnectedAccountResult = {
   } | null;
   canManage: boolean;
 };
-
-function getStatusLabel(status: ConnectionStatus) {
-  switch (status) {
-    case "connected":
-      return "Connected";
-    case "pending":
-      return "Setup Incomplete";
-    case "restricted":
-      return "Restricted";
-    case "not_connected":
-    default:
-      return "Not Connected";
-  }
-}
-
-function getStatusIcon(status: ConnectionStatus) {
-  switch (status) {
-    case "connected":
-      return <BadgeCheck className="text-success h-4 w-4" />;
-    case "pending":
-      return <AlertTriangle className="text-warning h-4 w-4" />;
-    case "restricted":
-      return <BadgeX className="text-destructive h-4 w-4" />;
-    case "not_connected":
-    default:
-      return <PlugZap className="text-muted-foreground h-4 w-4" />;
-  }
-}
 
 function PaymentsSettingsPage() {
   const { slug } = Route.useParams();
@@ -117,13 +97,11 @@ function PaymentsSettingsPage() {
     | undefined;
 
   const createConnectedAccount = useAction(api.stripe.connect_actions.createConnectedAccount);
-  const refreshConnectedAccount = useAction(api.stripe.connect_actions.refreshConnectedAccount);
 
   const updateFeeHandling = useMutation(api.stripe.connect_public_mutations.updateFeeHandling);
 
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isSavingFeeHandling, setIsSavingFeeHandling] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const orgId = organization?._id as Id<"organizations"> | undefined;
 
@@ -137,38 +115,28 @@ function PaymentsSettingsPage() {
     connectedAccount?.account === undefined || connectedAccount.account === null
       ? null
       : buildFeePolicy(connectedAccount.account.stripeAccountId, feeHandling);
+  const merchantAccount =
+    connectedAccount?.account === undefined || connectedAccount.account === null
+      ? null
+      : buildMerchantAccount(connectedAccount.account, organization?.name ?? slug, orgId);
+  const merchantState =
+    connectedAccount?.account === undefined || connectedAccount.account === null
+      ? null
+      : buildMerchantState(connectedAccount.account, status);
 
-  // Create a Stripe account (required before embedded onboarding can render)
   async function handleCreateAccount() {
     if (!orgId) return;
 
     setIsCreatingAccount(true);
     try {
       await createConnectedAccount({ organizationId: orgId });
-      toast.success("Stripe account created — complete onboarding below");
+      toast.success("Merchant account created. Review onboarding status below.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create Stripe account");
+      toast.error(error instanceof Error ? error.message : "Failed to create merchant account");
     } finally {
       setIsCreatingAccount(false);
     }
   }
-
-  // Called when embedded onboarding component exits
-  const handleOnboardingExit = useCallback(async () => {
-    if (!orgId) return;
-
-    setIsRefreshing(true);
-    try {
-      const result = await refreshConnectedAccount({ organizationId: orgId });
-      if (result.status === "refreshed") {
-        toast.success("Stripe account status updated");
-      }
-    } catch {
-      // Refresh failure is non-critical
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [refreshConnectedAccount, orgId]);
 
   async function handleUpdateFeeHandling(value: FeeHandling) {
     setIsSavingFeeHandling(true);
@@ -198,109 +166,87 @@ function PaymentsSettingsPage() {
     <PageWrapper title="Payments">
       <div className="space-y-6">
         <p className="text-muted-foreground text-sm">
-          Connect Stripe to accept payments through documents. Only workspace owners and admins can
-          manage payment settings.
+          Configure the merchant account that accepts document payments. Only workspace owners and
+          admins can manage payment settings.
           {!isPro && !isLoadingPlan && (
             <span className="text-warning mt-1 block">
-              Stripe Connect requires a Professional plan.
+              Merchant payment collection requires a Professional plan.
             </span>
           )}
         </p>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                Stripe Connection
-                {isRefreshing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isPro ? (
-                  getStatusIcon(status)
-                ) : (
-                  getStatusIcon("not_connected")
+        {hasStripeAccount && merchantAccount !== null && merchantState !== null ? (
+          <VortexPaymentsProvider
+            config={{
+              baseUrl: window.location.origin,
+              environment: "test",
+              organizationId: String(orgId ?? slug),
+              branding: { brandName: "Seal", showVortexBrand: true },
+            }}
+          >
+            <VortexMerchantAccountPanel
+              merchantAccount={merchantAccount}
+              merchantState={merchantState}
+              classNames={vortexPaymentsClassNames}
+              disabled={!canManage}
+            />
+            <VortexMerchantActionQueue
+              merchantState={merchantState}
+              classNames={vortexPaymentsClassNames}
+              disabled={!canManage}
+            />
+          </VortexPaymentsProvider>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Merchant account</CardTitle>
+              <CardDescription>
+                Manage onboarding status, required actions, and payment readiness.
+                {!isPro && !isLoadingPlan && (
+                  <span className="text-warning mt-1 block">
+                    Upgrade to Professional to accept document payments.
+                  </span>
                 )}
-              </span>
-              <span className="text-sm font-medium">
-                {isRefreshing
-                  ? "Refreshing…"
-                  : isPro
-                    ? getStatusLabel(status)
-                    : "Professional Required"}
-              </span>
-            </CardTitle>
-            <CardDescription>
-              Manage onboarding status, required actions, and connection health.
-              {!isPro && !isLoadingPlan && (
-                <span className="text-warning mt-1 block">
-                  Upgrade to Professional to connect Stripe and accept payments.
-                </span>
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!canManage && (
-              <div className="bg-muted text-muted-foreground rounded-md p-3 text-sm">
-                You can view connection status, but only owners and admins can update payment
-                settings.
-              </div>
-            )}
-
-            {/* Not connected + no Stripe account yet → create account button */}
-            {status === "not_connected" && isPro && !hasStripeAccount && (
-              <div className="space-y-3">
-                <p className="text-sm">
-                  No Stripe account connected. Create a Stripe account to start accepting payments
-                  through your documents.
-                </p>
-                <Button onClick={handleCreateAccount} disabled={!canManage || isCreatingAccount}>
-                  {isCreatingAccount ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <PlugZap className="mr-2 h-4 w-4" />
-                  )}
-                  Connect with Stripe
-                </Button>
-              </div>
-            )}
-
-            {/* Stripe account exists but not fully onboarded → show embedded onboarding */}
-            {(status === "not_connected" || status === "pending" || status === "restricted") &&
-              isPro &&
-              hasStripeAccount &&
-              orgId && (
-                <StripeConnectProvider organizationId={orgId}>
-                  <div className="space-y-4">
-                    {(status === "pending" || status === "restricted") && (
-                      <ConnectNotificationBanner />
-                    )}
-                    <ConnectAccountOnboarding onExit={handleOnboardingExit} />
-                  </div>
-                </StripeConnectProvider>
-              )}
-
-            {status === "not_connected" && !isPro && !isLoadingPlan && (
-              <div className="space-y-3">
-                <p className="text-sm">
-                  Stripe Connect is available on the Professional plan. Upgrade to accept payments
-                  through your documents.
-                </p>
-                <Button asChild>
-                  <a href={`/${slug}/settings/billing`}>Upgrade to Professional</a>
-                </Button>
-              </div>
-            )}
-
-            {/* Connected → show account management inline */}
-            {status === "connected" && isPro && orgId && (
-              <StripeConnectProvider organizationId={orgId}>
-                <div className="space-y-4">
-                  <ConnectNotificationBanner />
-                  <ConnectAccountManagement />
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!canManage && (
+                <div className="bg-muted text-muted-foreground rounded-md p-3 text-sm">
+                  You can view payment status, but only owners and admins can update payment
+                  settings.
                 </div>
-              </StripeConnectProvider>
-            )}
-          </CardContent>
-        </Card>
+              )}
+
+              {status === "not_connected" && isPro && (
+                <div className="space-y-3">
+                  <p className="text-sm">
+                    No merchant account is connected. Create one to start accepting payments through
+                    your documents.
+                  </p>
+                  <Button onClick={handleCreateAccount} disabled={!canManage || isCreatingAccount}>
+                    {isCreatingAccount ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <PlugZap className="mr-2 h-4 w-4" />
+                    )}
+                    Create merchant account
+                  </Button>
+                </div>
+              )}
+
+              {status === "not_connected" && !isPro && !isLoadingPlan && (
+                <div className="space-y-4">
+                  <p className="text-sm">
+                    Merchant payment collection is available on the Professional plan.
+                  </p>
+                  <Button asChild>
+                    <a href={`/${slug}/settings/billing`}>Upgrade to Professional</a>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {status === "connected" && isPro && feePolicy !== null && (
           <VortexFeePolicyPanel
@@ -314,6 +260,84 @@ function PaymentsSettingsPage() {
       </div>
     </PageWrapper>
   );
+}
+
+function buildMerchantAccount(
+  account: NonNullable<ConnectedAccountResult["account"]>,
+  organizationName: string,
+  organizationId: Id<"organizations"> | undefined,
+): VortexMerchantAccount {
+  const updatedAt = toIsoTimestamp(account.updatedAt);
+
+  return {
+    id: account.stripeAccountId,
+    environment: "sandbox",
+    tenantId: String(organizationId ?? "unknown"),
+    displayName: organizationName,
+    legalEntityType: account.accountType,
+    country: "USA",
+    merchantMode: "processing",
+    defaultCurrency: account.defaultCurrency?.toUpperCase() ?? "USD",
+    status: mapMerchantAccountStatus({
+      chargesEnabled: account.chargesEnabled,
+      detailsSubmitted: account.detailsSubmitted,
+      connectionStatus:
+        account.requirements?.disabledReason === undefined ? undefined : "restricted",
+      routeStatus: undefined,
+    }),
+    capabilityStatus: account.chargesEnabled && account.payoutsEnabled ? "active" : "restricted",
+    associatedIdentities: [],
+    metadata: {},
+    processorAccountRefs: [],
+    createdAt: toIsoTimestamp(account.createdAt) ?? updatedAt,
+    updatedAt,
+  };
+}
+
+function buildMerchantState(
+  account: NonNullable<ConnectedAccountResult["account"]>,
+  status: ConnectionStatus,
+): VortexMerchantState {
+  const openRequirementIds = [
+    ...(account.requirements?.currentlyDue ?? []),
+    ...(account.requirements?.pastDue ?? []),
+  ];
+  const activeCapabilityKeys = [
+    account.capabilities?.cardPayments === "active" ? "card_payments" : null,
+    account.capabilities?.transfers === "active" ? "transfers" : null,
+    account.capabilities?.usBankAccountAchPayments === "active"
+      ? "us_bank_account_ach_payments"
+      : null,
+  ].filter((capability): capability is string => capability !== null);
+  const restrictedCapabilityKeys = [
+    account.capabilities?.cardPayments !== "active" ? "card_payments" : null,
+    account.capabilities?.transfers !== "active" ? "transfers" : null,
+    account.capabilities?.usBankAccountAchPayments !== undefined &&
+    account.capabilities.usBankAccountAchPayments !== "active"
+      ? "us_bank_account_ach_payments"
+      : null,
+  ].filter((capability): capability is string => capability !== null);
+
+  return {
+    merchantAccountId: account.stripeAccountId,
+    environment: "sandbox",
+    merchantStatus: mapMerchantAccountStatus({
+      chargesEnabled: account.chargesEnabled,
+      detailsSubmitted: account.detailsSubmitted,
+      connectionStatus:
+        account.requirements?.disabledReason === undefined ? undefined : "restricted",
+      routeStatus: status,
+    }),
+    onboardingStatus: account.detailsSubmitted ? "approved" : "action_required",
+    openRequirementIds,
+    activeCapabilityKeys,
+    restrictedCapabilityKeys,
+    canAcceptPayments: account.chargesEnabled,
+    payoutReadiness: account.payoutsEnabled ? "ready" : "blocked",
+    payoutBlockReason: account.payoutsEnabled ? undefined : account.requirements?.disabledReason,
+    capabilitySnapshots: [],
+    generatedAt: toIsoTimestamp(account.updatedAt),
+  };
 }
 
 function buildFeePolicy(merchantAccountId: string, feeHandling: FeeHandling): VortexFeePolicyState {
@@ -336,4 +360,29 @@ function buildFeePolicy(merchantAccountId: string, feeHandling: FeeHandling): Vo
     ],
     note: "Payment rail fees stay separate from platform fee policy.",
   };
+}
+
+function mapMerchantAccountStatus(input: {
+  chargesEnabled: boolean;
+  detailsSubmitted: boolean;
+  connectionStatus: "restricted" | undefined;
+  routeStatus: ConnectionStatus | undefined;
+}): VortexMerchantAccount["status"] {
+  if (input.routeStatus === "restricted" || input.connectionStatus === "restricted") {
+    return "restricted";
+  }
+
+  if (input.chargesEnabled) {
+    return "active";
+  }
+
+  if (input.detailsSubmitted) {
+    return "pending_review";
+  }
+
+  return "draft";
+}
+
+function toIsoTimestamp(timestamp: number | undefined): string {
+  return new Date(timestamp ?? Date.now()).toISOString();
 }
