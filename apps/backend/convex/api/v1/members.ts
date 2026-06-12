@@ -27,6 +27,8 @@ export interface ApiMember {
   status: string;
   /** ISO 8601 timestamp when member joined */
   joined_at: string;
+  /** Whether this is the primary membership for the user */
+  is_primary: boolean;
 }
 
 /**
@@ -75,6 +77,7 @@ export const listMembers = internalQuery({
         role: member.role as ApiMember["role"],
         status: member.status,
         joined_at: new Date(member._creationTime).toISOString(),
+        is_primary: member.isPrimary ?? false,
       });
     }
 
@@ -113,6 +116,7 @@ export const getMember = internalQuery({
       role: member.role as ApiMember["role"],
       status: member.status,
       joined_at: new Date(member._creationTime).toISOString(),
+      is_primary: member.isPrimary ?? false,
     };
   },
 });

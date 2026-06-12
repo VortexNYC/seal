@@ -139,6 +139,10 @@ describe("api/v1/members", () => {
       expect(owner?.id).toBe(ownerMemberId);
       expect(owner?.user_id).toBe(ownerId);
       expect(owner?.joined_at).toBeDefined();
+      expect(owner?.is_primary).toBe(true);
+
+      const admin = results.find((m: (typeof results)[number]) => m.role === "admin");
+      expect(admin?.is_primary).toBe(false);
     });
 
     test("uses email as name fallback when user has no name", async () => {
@@ -235,6 +239,7 @@ describe("api/v1/members", () => {
       expect(result?.id).toBe(adminMemberId);
       expect(result?.email).toBe("admin@members-test.com");
       expect(result?.role).toBe("admin");
+      expect(result?.is_primary).toBe(false);
     });
 
     test("returns null when member does not exist", async () => {
