@@ -82,6 +82,9 @@ components:
         signed_count:
           type: integer
           description: Number of recipients who have completed their action
+        page_count:
+          type: integer
+          description: Number of pages in the document
         deadline:
           type: string
           format: date-time
@@ -438,9 +441,6 @@ paths:
                 file_size:
                   type: integer
                   description: File size in bytes
-                file_type:
-                  type: string
-                  default: application/pdf
                 page_count:
                   type: integer
                   description: Number of pages in the document
