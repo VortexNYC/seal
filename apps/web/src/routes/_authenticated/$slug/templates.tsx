@@ -30,7 +30,7 @@ import {
   SearchIcon,
   TrashIcon,
 } from "lucide-react";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CreateFolderDialog } from "@/components/folders/create-folder-dialog";
@@ -38,6 +38,7 @@ import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { MoveToFolderDialog } from "@/components/folders/move-to-folder-dialog";
 import { PageWrapper } from "@/components/page-wrapper";
 import { TemplatesSkeleton } from "@/components/skeletons";
+import { ExportTemplates } from "@/components/templates/export-templates";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -112,6 +113,7 @@ interface TemplatesListProps {
   onDeleteTemplate: (template: Doc<"templates">) => void;
   onMoveToFolder: (templateId: Id<"templates">) => void;
   onFolderNavigate: (folderId?: Id<"folders">) => void;
+  onTemplatesLoaded: (templates: Doc<"templates">[]) => void;
 }
 
 function TemplatesList({
@@ -127,6 +129,7 @@ function TemplatesList({
   onDeleteTemplate,
   onMoveToFolder,
   onFolderNavigate,
+  onTemplatesLoaded,
 }: TemplatesListProps) {
   const { slug } = Route.useParams();
   const router = useRouter();
@@ -187,6 +190,11 @@ function TemplatesList({
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, sortField, sortDirection]);
+
+  // Notify parent of loaded templates for export
+  useEffect(() => {
+    onTemplatesLoaded(filteredTemplates);
+  }, [filteredTemplates, onTemplatesLoaded]);
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString("en-US", {
@@ -550,6 +558,11 @@ function TemplatesPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [loadedTemplates, setLoadedTemplates] = useState<Doc<"templates">[]>([]);
+
+  const handleTemplatesLoaded = useCallback((templates: Doc<"templates">[]) => {
+    setLoadedTemplates(templates);
+  }, []);
 
   // Folder: move-to-folder dialog state
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
@@ -728,7 +741,12 @@ function TemplatesPage() {
   return (
     <PageWrapper
       title="Templates"
-      headerActions={<CreateFolderDialog type="template" parentId={folderId} />}
+      headerActions={
+        <>
+          <ExportTemplates templates={loadedTemplates} />
+          <CreateFolderDialog type="template" parentId={folderId} />
+        </>
+      }
       headerCenter={
         <FolderBreadcrumbs folderId={folderId} type="template" onNavigate={handleFolderSelect} />
       }
@@ -822,6 +840,7 @@ function TemplatesPage() {
             onDeleteTemplate={handleDeleteTemplate}
             onMoveToFolder={handleMoveToFolder}
             onFolderNavigate={handleFolderSelect}
+            onTemplatesLoaded={handleTemplatesLoaded}
           />
         </Suspense>
       </div>
