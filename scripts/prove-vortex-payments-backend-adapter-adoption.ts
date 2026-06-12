@@ -104,7 +104,9 @@ for (const forbiddenFragment of [
   "stripeSubscriptionId",
 ]) {
   if (overviewRoute.includes(forbiddenFragment) || subscriptionsRoute.includes(forbiddenFragment)) {
-    failures.push(`payment routes still expose Stripe backend adapter fragment: ${forbiddenFragment}`);
+    failures.push(
+      `payment routes still expose Stripe backend adapter fragment: ${forbiddenFragment}`,
+    );
   }
 }
 
@@ -132,7 +134,9 @@ for (const requiredFragment of [
   "document_invoices",
 ]) {
   if (!paymentsQueries.includes(requiredFragment)) {
-    failures.push(`${paymentsQueriesPath} missing Vortex backend query fragment: ${requiredFragment}`);
+    failures.push(
+      `${paymentsQueriesPath} missing Vortex backend query fragment: ${requiredFragment}`,
+    );
   }
 }
 
@@ -151,7 +155,9 @@ for (const requiredFragment of [
 }
 
 if (paymentsSubscriptionActions.includes("stripeAccountId: v.string()")) {
-  failures.push("Vortex subscription actions must not accept processor account ids from the browser.");
+  failures.push(
+    "Vortex subscription actions must not accept processor account ids from the browser.",
+  );
 }
 
 if (generatedApi.includes("stripe/connect_subscription_actions")) {
@@ -163,7 +169,9 @@ if (generatedApi.includes("stripe/queries")) {
 }
 
 if (!billingE2e.includes("api.payments.billing_queries.getAvailablePlans")) {
-  failures.push(`${billingE2ePath} must prove available plans through api.payments billing queries.`);
+  failures.push(
+    `${billingE2ePath} must prove available plans through api.payments billing queries.`,
+  );
 }
 
 if (billingE2e.includes("api.stripe.queries")) {
@@ -259,6 +267,8 @@ console.log("- Subscription route reads and writes through api.payments.");
 console.log("- Browser no longer supplies processor account ids for subscription operations.");
 console.log("- Vortex subscription actions resolve processor context server-side.");
 console.log("- Vortex Connect account operations enter through api.payments merchant actions.");
-console.log("- Dead public provider subscription actions stay deleted from source and generated API.");
+console.log(
+  "- Dead public provider subscription actions stay deleted from source and generated API.",
+);
 console.log("- Document payment object creation uses Vortex-owned payment link naming.");
 console.log("- Available billing plans enter through api.payments billing queries.");
