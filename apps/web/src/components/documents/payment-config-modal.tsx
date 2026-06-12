@@ -749,7 +749,7 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
                     { key: "ach_debit", label: "ACH Direct Debit" },
                     { key: "apple_pay", label: "Apple Pay (auto-enabled with Card)" },
                     { key: "google_pay", label: "Google Pay (auto-enabled with Card)" },
-                    { key: "link", label: "Stripe Link" },
+                    { key: "link", label: "Saved checkout profile" },
                   ] as const
                 ).map(({ key, label }) => (
                   <label
@@ -774,7 +774,7 @@ export function PaymentConfigModal({ open, onOpenChange, fieldId }: PaymentConfi
                 <div>
                   <Label>Tax</Label>
                   <p className="text-muted-foreground text-xs">
-                    Enable automatic tax calculation via Stripe Tax
+                    Enable automatic tax calculation through Vortex Payments
                   </p>
                 </div>
                 <Switch checked={taxEnabled} onCheckedChange={setTaxEnabled} />

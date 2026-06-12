@@ -1,7 +1,7 @@
 /**
  * Payments Settings Page
  *
- * Stripe Connect embedded onboarding and account management.
+ * Merchant payment onboarding and account management.
  * Route: /{slug}/settings/payments
  */
 

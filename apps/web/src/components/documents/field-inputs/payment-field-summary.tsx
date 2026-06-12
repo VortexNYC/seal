@@ -1,10 +1,10 @@
 import { api } from "@seal/backend/convex/_generated/api";
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { CreditCardIcon, Loader2Icon } from "lucide-react";
+import { CreditCardIcon, ExternalLinkIcon, Loader2Icon } from "lucide-react";
 
 import { Badge } from "../../ui/badge";
-import { PaymentFieldInline } from "./payment-field-inline";
+import { Button } from "../../ui/button";
 
 interface PaymentFieldSummaryProps {
   fieldId: Id<"signature_fields">;
@@ -43,8 +43,8 @@ const PAYMENT_STATUS_CONFIG: Record<
 /**
  * Read-only summary of a payment field's configuration.
  * Used in the signing view to show what payment is required.
- * When `showInlinePayment` is true and a `token` is provided,
- * renders an inline PaymentElement instead of the "Pay Now" link.
+ * Uses the Vortex Payments hosted collection handoff instead of mounting
+ * provider card-entry SDKs in the Seal signing flow.
  */
 export function PaymentFieldSummary({
   fieldId,
@@ -119,27 +119,37 @@ export function PaymentFieldSummary({
         </div>
       )}
 
-      {/* Inline payment form (when on signing page with active payment) */}
-      {showInlinePayment && token && isPayable && (
-        <PaymentFieldInline
-          configId={config._id}
-          token={token}
-          totalAmountCents={config.totalAmountCents}
-          currency={config.currency}
+      {config.hostedInvoiceUrl && isPayable && (
+        <VortexPaymentCollectionHandoff
+          hostedInvoiceUrl={config.hostedInvoiceUrl}
+          signingMode={showInlinePayment === true && Boolean(token)}
         />
       )}
+    </div>
+  );
+}
 
-      {/* Fallback: Pay Now link (when inline is not available) */}
-      {!showInlinePayment && config.hostedInvoiceUrl && isPayable && (
-        <a
-          href={config.hostedInvoiceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-field-payment hover:bg-field-payment/90 mt-1 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white transition-colors"
-        >
-          Pay Now &rarr;
-        </a>
+function VortexPaymentCollectionHandoff({
+  hostedInvoiceUrl,
+  signingMode,
+}: {
+  hostedInvoiceUrl: string;
+  signingMode: boolean;
+}) {
+  return (
+    <div className="border-field-payment-border space-y-2 border-t pt-3">
+      {signingMode && (
+        <p className="text-muted-foreground text-xs text-pretty">
+          Payment is collected through Vortex Payments before this document can be completed.
+        </p>
       )}
+      <Button asChild className="bg-field-payment hover:bg-field-payment/90 w-full text-white">
+        <a href={hostedInvoiceUrl} target="_blank" rel="noopener noreferrer">
+          <CreditCardIcon className="size-4" />
+          Pay with Vortex Payments
+          <ExternalLinkIcon className="size-4" />
+        </a>
+      </Button>
     </div>
   );
 }

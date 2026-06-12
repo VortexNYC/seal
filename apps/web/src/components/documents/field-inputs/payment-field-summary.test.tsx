@@ -1,6 +1,6 @@
 import type { Id } from "@seal/backend/convex/_generated/dataModel";
-import { render, screen } from "@testing-library/react";
-import { vi, describe, test, expect, beforeEach } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { vi, describe, test, expect, beforeEach, afterEach } from "vitest";
 
 // Mock convex/react
 const mockUseQuery = vi.fn();
@@ -8,11 +8,6 @@ vi.mock("convex/react", () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
   useMutation: vi.fn(() => vi.fn()),
   useAction: vi.fn(() => vi.fn()),
-}));
-
-// Mock PaymentFieldInline since it depends on Stripe
-vi.mock("./payment-field-inline", () => ({
-  PaymentFieldInline: () => <div data-testid="payment-inline-mock" />,
 }));
 
 import { PaymentFieldSummary } from "./payment-field-summary";
@@ -37,6 +32,10 @@ function makeConfig(overrides: Record<string, unknown> = {}) {
 describe("PaymentFieldSummary", () => {
   beforeEach(() => {
     mockUseQuery.mockReset();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   test("shows loading spinner when query returns undefined", () => {
@@ -77,7 +76,7 @@ describe("PaymentFieldSummary", () => {
     expect(screen.getByText("Paid")).toBeInTheDocument();
   });
 
-  test("shows Pay Now link when hostedInvoiceUrl is present and payment is awaiting", () => {
+  test("shows Vortex Payments handoff when hostedInvoiceUrl is present and payment is awaiting", () => {
     mockUseQuery.mockReturnValue(
       makeConfig({
         paymentStatus: "awaiting",
@@ -89,7 +88,25 @@ describe("PaymentFieldSummary", () => {
 
     const payNowLink = screen.getByRole("link");
     expect(payNowLink).toHaveAttribute("href", "https://invoice.stripe.com/test");
-    expect(payNowLink).toHaveTextContent("Pay Now");
+    expect(payNowLink).toHaveTextContent("Pay with Vortex Payments");
+  });
+
+  test("shows Vortex Payments handoff in signing mode instead of inline Stripe form", () => {
+    mockUseQuery.mockReturnValue(
+      makeConfig({
+        paymentStatus: "awaiting",
+        hostedInvoiceUrl: "https://invoice.stripe.com/test",
+      }),
+    );
+
+    render(<PaymentFieldSummary fieldId={FAKE_FIELD_ID} token="signing-token" showInlinePayment />);
+
+    expect(screen.getByText("Pay with Vortex Payments")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Payment is collected through Vortex Payments before this document can be completed.",
+      ),
+    ).toBeInTheDocument();
   });
 
   test("does not show Pay Now link when payment status is paid", () => {
@@ -102,7 +119,7 @@ describe("PaymentFieldSummary", () => {
 
     render(<PaymentFieldSummary fieldId={FAKE_FIELD_ID} showInlinePayment={false} />);
 
-    expect(screen.queryByText("Pay Now")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pay with Vortex Payments")).not.toBeInTheDocument();
   });
 
   test("shows quantity multiplier for items with quantity > 1", () => {

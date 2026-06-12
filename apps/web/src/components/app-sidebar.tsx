@@ -259,7 +259,7 @@ function buildNavSections({
         canView(permissionFlags?.canViewBilling) || canView(permissionFlags?.canManageBilling),
     },
     {
-      title: "Stripe Connect",
+      title: "Merchant Payments",
       url: buildOrganizationPath(slug, "/settings/payments"),
       visible: canView(permissionFlags?.canViewSettings),
     },

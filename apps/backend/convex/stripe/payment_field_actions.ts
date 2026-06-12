@@ -17,7 +17,7 @@ import Stripe from "stripe";
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
-import { action, internalAction } from "../_generated/server";
+import { internalAction } from "../_generated/server";
 import { getOrCreateConnectedCustomer } from "./connect_helpers";
 
 function initializeStripe(): Stripe {
@@ -1158,91 +1158,5 @@ export const createStripeObjectsForPaymentFields = internalAction({
     }
 
     return { invoiceLinks };
-  },
-});
-
-// =====================
-// PUBLIC ACTIONS (called from frontend, token-authenticated)
-// =====================
-
-/**
- * Retrieve the payment client_secret for an invoice, authenticated by recipient token.
- *
- * Called from the signing page when a signer needs to pay inline.
- * Uses Stripe's `confirmation_secret` expansion to get the PI's client_secret
- * without storing it in the DB (per Stripe's security guidance).
- */
-export const getPaymentSecret = action({
-  args: {
-    token: v.string(),
-    configId: v.id("payment_field_configs"),
-  },
-  handler: async (
-    ctx,
-    { token, configId },
-  ): Promise<{ clientSecret: string; stripeAccountId: string }> => {
-    // 1. Validate the recipient token
-    const recipient = await ctx.runQuery(
-      internal.documents.recipients_queries.findRecipientByTokenInternal,
-      { signingToken: token },
-    );
-    if (!recipient) {
-      throw new ConvexError("Invalid or expired token");
-    }
-
-    // 2. Get the payment config
-    const config = await ctx.runQuery(internal.payment_fields.queries.getPaymentConfigInternal, {
-      configId,
-    });
-    if (!config) {
-      throw new ConvexError("Payment configuration not found");
-    }
-
-    // 3. Verify the recipient belongs to the same document as the payment config
-    if (recipient.documentId !== config.documentId) {
-      throw new ConvexError("Payment config does not belong to this document");
-    }
-
-    // 4. Verify payment is in a payable state
-    if (config.paymentStatus === "paid" || config.paymentStatus === "cancelled") {
-      throw new ConvexError("Payment is already completed or cancelled");
-    }
-
-    if (!config.stripeInvoiceId) {
-      throw new ConvexError("Invoice not yet created");
-    }
-
-    // 5. Get the connected account's Stripe account ID
-    const stripeAccount = await ctx.runQuery(
-      internal.stripe.connect_mutations.getAccountByOrganizationId,
-      { organizationId: config.organizationId },
-    );
-    if (!stripeAccount?.stripeAccountId) {
-      throw new ConvexError("Stripe account not found for this organization");
-    }
-
-    // 6. Retrieve the invoice with confirmation_secret expansion
-    const stripe = initializeStripe();
-    const invoice = await stripe.invoices.retrieve(
-      config.stripeInvoiceId,
-      { expand: ["confirmation_secret"] },
-      { stripeAccount: stripeAccount.stripeAccountId },
-    );
-
-    // The confirmation_secret contains the PaymentIntent's client_secret
-    const confirmationSecret = (
-      invoice as Stripe.Invoice & {
-        confirmation_secret?: { client_secret: string };
-      }
-    ).confirmation_secret?.client_secret;
-
-    if (!confirmationSecret) {
-      throw new ConvexError("Unable to retrieve payment secret — invoice may not be finalized");
-    }
-
-    return {
-      clientSecret: confirmationSecret,
-      stripeAccountId: stripeAccount.stripeAccountId,
-    };
   },
 });
