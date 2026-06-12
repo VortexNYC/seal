@@ -19,10 +19,10 @@ import { publishWebhookEvent } from "../webhooks/publish";
 import { sendDocumentInvitation } from "./email";
 import { findFirstIncompleteGroup } from "./recipient_helpers";
 
-type PaymentInvoiceLink = {
+type PaymentHandoffLink = {
   recipientEmail: string;
-  hostedInvoiceUrl: string | null;
-  stripeInvoiceId: string;
+  hostedPaymentUrl: string | null;
+  processorInvoiceId: string;
   totalAmountCents: number;
   currency: string;
 };
@@ -137,10 +137,10 @@ function getEmailDeadline(
   return Date.now() + expirationPeriodToMs(expirationPeriod.amount, expirationPeriod.unit);
 }
 
-function resolveInvoiceDetails(paymentInvoiceLinks: PaymentInvoiceLink[], recipientEmail: string) {
-  const paymentLink = paymentInvoiceLinks.find((link) => link.recipientEmail === recipientEmail);
+function resolvePaymentHandoffDetails(paymentLinks: PaymentHandoffLink[], recipientEmail: string) {
+  const paymentLink = paymentLinks.find((link) => link.recipientEmail === recipientEmail);
   return {
-    invoiceUrl: paymentLink?.hostedInvoiceUrl ?? undefined,
+    invoiceUrl: paymentLink?.hostedPaymentUrl ?? undefined,
     invoiceAmount: paymentLink?.totalAmountCents,
     invoiceCurrency: paymentLink?.currency,
   };
@@ -162,7 +162,7 @@ async function sendInvitationBatch(
           emailReplyTo?: string;
         }
       | undefined;
-    paymentInvoiceLinks: PaymentInvoiceLink[];
+    paymentLinks: PaymentHandoffLink[];
     deadline: number | undefined;
   },
 ): Promise<InvitationEmailResult[]> {
@@ -175,7 +175,7 @@ async function sendInvitationBatch(
     }
 
     const signingUrl = `${baseUrl}/sign/${recipient.signingToken}`;
-    const invoiceDetails = resolveInvoiceDetails(params.paymentInvoiceLinks, recipient.email);
+    const invoiceDetails = resolvePaymentHandoffDetails(params.paymentLinks, recipient.email);
     const emailResult = await sendDocumentInvitation(ctx, {
       to: recipient.email,
       recipientName: recipient.name || recipient.email,
@@ -219,14 +219,14 @@ async function getRecipientsOrThrow(
   return recipients;
 }
 
-async function getPaymentInvoiceLinksForDocument(
+async function getPaymentHandoffLinksForDocument(
   ctx: ActionCtx,
   params: {
     documentId: Id<"documents">;
     organizationId: Id<"organizations">;
     userId: Id<"users">;
   },
-): Promise<PaymentInvoiceLink[]> {
+): Promise<PaymentHandoffLink[]> {
   const signatureFields = await ctx.runQuery(
     internal.signature_fields.queries.getFieldsByDocumentInternal,
     {
@@ -270,7 +270,7 @@ async function getPaymentInvoiceLinksForDocument(
   }
 
   const paymentResult = await ctx.runAction(
-    internal.stripe.payment_field_actions.createStripeObjectsForPaymentFields,
+    internal.payments.payment_field_actions.createPaymentObjectsForDocumentFields,
     {
       documentId: params.documentId,
       organizationId: params.organizationId,
@@ -278,7 +278,7 @@ async function getPaymentInvoiceLinksForDocument(
     },
   );
 
-  return paymentResult.invoiceLinks;
+  return paymentResult.paymentLinks;
 }
 
 function buildSendDocumentEmailsResult(
@@ -593,7 +593,7 @@ export const sendDocumentEmails = action({
   handler: async (ctx, args): Promise<SendDocumentEmailsResult> => {
     const { document, userId } = await authorizeDocumentOwner(ctx, args.documentId);
     const recipients = await getRecipientsOrThrow(ctx, args.documentId);
-    const paymentInvoiceLinks = await getPaymentInvoiceLinksForDocument(ctx, {
+    const paymentLinks = await getPaymentHandoffLinksForDocument(ctx, {
       documentId: args.documentId,
       organizationId: document.organizationId,
       userId,
@@ -613,7 +613,7 @@ export const sendDocumentEmails = action({
       customMessage: args.customMessage,
       recipientMessageMap: buildRecipientMessageMap(args.recipientMessages),
       emailBranding,
-      paymentInvoiceLinks,
+      paymentLinks,
       deadline: emailDeadline,
     });
     const result = buildSendDocumentEmailsResult(recipients, emailResults);
@@ -765,7 +765,7 @@ export const sendDocumentEmailsInternal = internalAction({
       customMessage: args.customMessage,
       recipientMessageMap: new Map(),
       emailBranding,
-      paymentInvoiceLinks: [],
+      paymentLinks: [],
       deadline: undefined,
     });
   },

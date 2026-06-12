@@ -211,6 +211,30 @@ type RagSearchEntry = {
   text: string;
 };
 
+type SearchIndexDocument = Pick<
+  Doc<"documents">,
+  "_id" | "name" | "status" | "extractedText" | "pageCount"
+>;
+
+type SearchFilterDocument = Pick<Doc<"documents">, "_id" | "workflowStatus" | "createdAt">;
+
+const searchIndexDocumentValidator = v.union(
+  v.object({
+    _id: v.id("documents"),
+    name: v.string(),
+    status: v.string(),
+    extractedText: v.optional(v.string()),
+    pageCount: v.optional(v.number()),
+  }),
+  v.null(),
+);
+
+const searchFilterDocumentValidator = v.object({
+  _id: v.id("documents"),
+  workflowStatus: v.optional(v.string()),
+  createdAt: v.number(),
+});
+
 function hasSearchFilters(args: {
   workflowStatus?: string;
   dateFrom?: number;
@@ -230,7 +254,7 @@ function extractDocumentIds(entries: RagSearchEntry[]): Id<"documents">[] {
 }
 
 function matchesSearchFilters(
-  document: Doc<"documents">,
+  document: SearchFilterDocument,
   args: {
     workflowStatus?: string;
     dateFrom?: number;
@@ -311,7 +335,7 @@ export const hybridSearchDocuments = internalAction({
         documentIds: extractDocumentIds(filtered),
       });
       const docMap = new Map(
-        docs.map((document: Doc<"documents">) => [document._id.toString(), document]),
+        docs.map((document: SearchFilterDocument) => [document._id.toString(), document]),
       );
 
       filtered = filtered.filter((entry) => {
@@ -366,19 +390,38 @@ export const searchCache: ActionCache<SearchAction> = new ActionCache(components
 /** Get document data needed for indexing (internal only). */
 export const getDocumentForIndexing = internalQuery({
   args: { documentId: v.id("documents") },
-  handler: async (ctx, args) => {
-    return ctx.db.get(args.documentId);
+  returns: searchIndexDocumentValidator,
+  handler: async (ctx, args): Promise<SearchIndexDocument | null> => {
+    const document = await ctx.db.get(args.documentId);
+    if (document === null) {
+      return null;
+    }
+
+    return {
+      _id: document._id,
+      name: document.name,
+      status: document.status,
+      extractedText: document.extractedText,
+      pageCount: document.pageCount,
+    };
   },
 });
 
 /** Get multiple documents by IDs for post-filtering. */
 export const getDocumentsByIds = internalQuery({
   args: { documentIds: v.array(v.id("documents")) },
-  handler: async (ctx, args) => {
-    const docs: Doc<"documents">[] = [];
+  returns: v.array(searchFilterDocumentValidator),
+  handler: async (ctx, args): Promise<SearchFilterDocument[]> => {
+    const docs: SearchFilterDocument[] = [];
     for (const id of args.documentIds) {
       const doc = await ctx.db.get(id);
-      if (doc) docs.push(doc);
+      if (doc) {
+        docs.push({
+          _id: doc._id,
+          workflowStatus: doc.workflowStatus,
+          createdAt: doc.createdAt,
+        });
+      }
     }
     return docs;
   },

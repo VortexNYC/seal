@@ -1081,17 +1081,28 @@ async function createStripeObjectsForConfig(
 }
 
 /**
- * Internal action: create Stripe objects for all payment fields on a document.
+ * Internal Stripe processor action for all payment fields on a document.
  *
- * Called during the send flow after validation passes.
+ * Called through payments/payment_field_actions after validation passes.
  * Returns a map of recipientEmail → hostedInvoiceUrl for email inclusion.
  */
-export const createStripeObjectsForPaymentFields = internalAction({
+export const createStripePaymentObjectsForDocumentFields = internalAction({
   args: {
     documentId: v.id("documents"),
     organizationId: v.id("organizations"),
     userId: v.id("users"),
   },
+  returns: v.object({
+    invoiceLinks: v.array(
+      v.object({
+        recipientEmail: v.string(),
+        hostedInvoiceUrl: v.union(v.string(), v.null()),
+        stripeInvoiceId: v.string(),
+        totalAmountCents: v.number(),
+        currency: v.string(),
+      }),
+    ),
+  }),
   handler: async (ctx, args) => {
     const configs: Doc<"payment_field_configs">[] = await ctx.runQuery(
       internal.payment_fields.queries.getPaymentConfigsByDocumentInternal,
