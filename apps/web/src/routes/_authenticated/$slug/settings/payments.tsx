@@ -13,6 +13,12 @@ import {
   ConnectNotificationBanner,
 } from "@stripe/react-connect-js";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+  VortexFeePolicyPanel,
+  type VortexEmbeddedComponentClassNames,
+  type VortexFeePolicyOwnerMode,
+  type VortexFeePolicyState,
+} from "@vortex/payments/react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { AlertTriangle, BadgeCheck, BadgeX, Loader2, PlugZap } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -22,8 +28,6 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { StripeConnectProvider } from "@/components/stripe/connect-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/payments")({
@@ -33,6 +37,25 @@ export const Route = createFileRoute("/_authenticated/$slug/settings/payments")(
 type ConnectionStatus = "not_connected" | "pending" | "restricted" | "connected";
 
 type FeeHandling = "absorb" | "pass_to_recipient";
+
+const vortexPaymentsClassNames = {
+  description: "text-muted-foreground text-sm text-pretty",
+  error:
+    "mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive",
+  header: "space-y-1.5",
+  item: "flex gap-3 rounded-md border bg-background p-4 has-[:checked]:border-primary has-[:checked]:bg-primary/5",
+  itemDescription: "mt-1 text-muted-foreground text-sm text-pretty",
+  itemTitle: "block text-sm font-medium text-balance",
+  list: "mt-4 grid gap-3",
+  loading: "mt-4 rounded-md border p-3 text-sm text-muted-foreground",
+  metricLabel: "text-muted-foreground",
+  metrics: "mt-4 grid gap-3 rounded-md border bg-muted/30 p-4 text-sm sm:grid-cols-2",
+  metricValue: "font-medium tabular-nums",
+  root: "rounded-lg border bg-card p-6 text-card-foreground shadow-sm",
+  status:
+    "mt-2 inline-flex w-fit rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground",
+  title: "text-lg font-semibold text-balance",
+} satisfies VortexEmbeddedComponentClassNames;
 
 type ConnectedAccountResult = {
   status: ConnectionStatus;
@@ -110,6 +133,10 @@ function PaymentsSettingsPage() {
     connectedAccount?.account !== null && connectedAccount?.account !== undefined;
 
   const feeHandling = connectedAccount?.account?.feeHandling ?? "absorb";
+  const feePolicy =
+    connectedAccount?.account === undefined || connectedAccount.account === null
+      ? null
+      : buildFeePolicy(connectedAccount.account.stripeAccountId, feeHandling);
 
   // Create a Stripe account (required before embedded onboarding can render)
   async function handleCreateAccount() {
@@ -153,6 +180,14 @@ function PaymentsSettingsPage() {
     } finally {
       setIsSavingFeeHandling(false);
     }
+  }
+
+  async function handleVortexFeePolicyChange(ownerMode: VortexFeePolicyOwnerMode) {
+    if (ownerMode !== "merchant_pays" && ownerMode !== "customer_pays") {
+      return;
+    }
+
+    await handleUpdateFeeHandling(ownerMode === "customer_pays" ? "pass_to_recipient" : "absorb");
   }
 
   if (!organization) {
@@ -267,46 +302,38 @@ function PaymentsSettingsPage() {
           </CardContent>
         </Card>
 
-        {status === "connected" && isPro && connectedAccount?.account && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Platform Fee</CardTitle>
-              <CardDescription>
-                Seal charges a 0.25% platform fee on Professional plans for each invoice payment.
-                Choose who pays this fee.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Who pays the platform fee?</Label>
-                <RadioGroup
-                  value={feeHandling}
-                  onValueChange={(value) => handleUpdateFeeHandling(value as FeeHandling)}
-                  className="space-y-2"
-                  disabled={!canManage || isSavingFeeHandling}
-                >
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="absorb" id="fee-absorb" />
-                    <Label htmlFor="fee-absorb">
-                      I'll absorb the fee (deducted from my payout)
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="pass_to_recipient" id="fee-pass" />
-                    <Label htmlFor="fee-pass">Add fee to invoice total (recipient pays)</Label>
-                  </div>
-                </RadioGroup>
-                {isSavingFeeHandling && (
-                  <p className="text-muted-foreground text-xs">Saving fee preference…</p>
-                )}
-                <p className="text-muted-foreground text-xs">
-                  Note: Stripe's payment processing fees are separate and handled by Stripe.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        {status === "connected" && isPro && feePolicy !== null && (
+          <VortexFeePolicyPanel
+            feePolicy={feePolicy}
+            classNames={vortexPaymentsClassNames}
+            disabled={!canManage || isSavingFeeHandling}
+            loading={isSavingFeeHandling}
+            onPolicyChange={handleVortexFeePolicyChange}
+          />
         )}
       </div>
     </PageWrapper>
   );
+}
+
+function buildFeePolicy(merchantAccountId: string, feeHandling: FeeHandling): VortexFeePolicyState {
+  return {
+    merchantAccountId,
+    ownerMode: feeHandling === "pass_to_recipient" ? "customer_pays" : "merchant_pays",
+    platformFeeLabel: "0.25%",
+    settlementLabel: "Document invoice payments",
+    options: [
+      {
+        ownerMode: "merchant_pays",
+        title: "Deduct from workspace payout",
+        description: "The workspace pays the platform fee after settlement.",
+      },
+      {
+        ownerMode: "customer_pays",
+        title: "Add fee to invoice total",
+        description: "The customer pays the platform fee during checkout.",
+      },
+    ],
+    note: "Payment rail fees stay separate from platform fee policy.",
+  };
 }
