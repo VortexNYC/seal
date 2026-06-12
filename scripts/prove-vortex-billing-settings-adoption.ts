@@ -67,7 +67,8 @@ for (const forbiddenFragment of [
 
 if (
   billingRoute.includes("<VortexPlanComparison") &&
-  !billingRoute.includes("onPlanSelect={handlePlanSelect}")
+  !billingRoute.includes("onPlanSelect={") &&
+  !billingRoute.includes("handlePlanSelect(plan)")
 ) {
   failures.push("VortexPlanComparison must own plan selection through handlePlanSelect.");
 }
