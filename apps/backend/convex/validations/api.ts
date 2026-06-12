@@ -443,6 +443,7 @@ export interface ApiDocument {
   recipients_count: number;
   signed_count: number;
   deadline?: string;
+  page_count?: number;
   download_url?: string;
   recipients?: ApiRecipient[];
 }
