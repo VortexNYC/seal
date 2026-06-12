@@ -60,7 +60,7 @@ const vortexPaymentsClassNames = {
 type MerchantAccountResult = {
   status: ConnectionStatus;
   account: {
-    _id: Id<"stripe_accounts">;
+    _id: string;
     processorAccountId: string;
     accountType: "standard" | "express";
     chargesEnabled: boolean;
@@ -132,7 +132,7 @@ function PaymentsSettingsPage() {
     setIsCreatingAccount(true);
     try {
       await createMerchantAccount({ organizationId: orgId });
-      toast.success("Merchant account created. Review onboarding status below.");
+      toast.success("Vortex Connect account created. Review onboarding status below.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to create merchant account");
     } finally {
@@ -165,11 +165,11 @@ function PaymentsSettingsPage() {
   }
 
   return (
-    <PageWrapper title="Merchant account">
+    <PageWrapper title="Vortex Connect">
       <div className="space-y-6">
         <p className="text-muted-foreground text-sm">
-          Configure the merchant account that accepts document payments. Only workspace owners and
-          admins can manage payment settings.
+          Configure the Vortex Payments merchant account that accepts document payments. Only
+          workspace owners and admins can manage payment settings.
           {!isPro && !isLoadingPlan && (
             <span className="text-warning mt-1 block">
               Merchant payment collection requires a Professional plan.
@@ -190,18 +190,20 @@ function PaymentsSettingsPage() {
               merchantAccount={merchantAccount}
               merchantState={merchantState}
               classNames={vortexPaymentsClassNames}
+              copy={{ title: "Vortex Connect" }}
               disabled={!canManage}
             />
             <VortexMerchantActionQueue
               merchantState={merchantState}
               classNames={vortexPaymentsClassNames}
+              copy={{ title: "Vortex Connect actions" }}
               disabled={!canManage}
             />
           </VortexPaymentsProvider>
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Merchant account</CardTitle>
+              <CardTitle>Vortex Connect</CardTitle>
               <CardDescription>
                 Manage onboarding status, required actions, and payment readiness.
                 {!isPro && !isLoadingPlan && (
@@ -222,8 +224,8 @@ function PaymentsSettingsPage() {
               {status === "not_connected" && isPro && (
                 <div className="space-y-3">
                   <p className="text-sm">
-                    No merchant account is connected. Create one to start accepting payments through
-                    your documents.
+                    No Vortex Connect account is ready. Create one to start accepting payments
+                    through your documents.
                   </p>
                   <Button onClick={handleCreateAccount} disabled={!canManage || isCreatingAccount}>
                     {isCreatingAccount ? (
@@ -231,7 +233,7 @@ function PaymentsSettingsPage() {
                     ) : (
                       <PlugZap className="mr-2 size-4" />
                     )}
-                    Create merchant account
+                    Create Vortex Connect account
                   </Button>
                 </div>
               )}
@@ -239,7 +241,7 @@ function PaymentsSettingsPage() {
               {status === "not_connected" && !isPro && !isLoadingPlan && (
                 <div className="space-y-4">
                   <p className="text-sm">
-                    Merchant payment collection is available on the Professional plan.
+                    Vortex Connect payment collection is available on the Professional plan.
                   </p>
                   <Button asChild>
                     <a href={`/${slug}/settings/billing`}>Upgrade to Professional</a>

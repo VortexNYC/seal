@@ -41,6 +41,7 @@ for (const requiredFragment of [
   "VortexMerchantActionQueue",
   "VortexMerchantAccountPanelProps",
   "type VortexMerchantAccount = VortexMerchantAccountPanelProps",
+  "Vortex Connect",
   "buildMerchantAccount",
   "buildMerchantState",
   "mapMerchantAccountStatus",
@@ -57,6 +58,7 @@ for (const requiredPackageFragment of [
   '"data-vortex-surface": "merchant-account-panel"',
   '"data-vortex-component": "VortexMerchantActionQueue"',
   '"data-vortex-surface": "merchant-action-queue"',
+  "Vortex Connect",
 ]) {
   if (!vortexComponents.includes(requiredPackageFragment)) {
     failures.push(
@@ -74,9 +76,12 @@ for (const forbiddenFragment of [
   "Stripe Connection",
   "Connect with Stripe",
   "No Stripe account connected",
+  'Id<"stripe_accounts">',
 ]) {
   if (paymentsRoute.includes(forbiddenFragment)) {
-    failures.push(`payments route still contains Stripe Connect UI fragment: ${forbiddenFragment}`);
+    failures.push(
+      `payments route still contains legacy provider UI fragment: ${forbiddenFragment}`,
+    );
   }
 }
 
@@ -90,9 +95,9 @@ if (failures.length > 0) {
 
 console.log("Vortex merchant settings adoption proof passed:");
 console.log(
-  "- Seal payments settings renders merchant account state through Vortex package components.",
+  "- Seal payments settings renders Vortex Connect state through Vortex package components.",
 );
-console.log("- Stripe Connect embedded account UI and theme helpers stay deleted.");
+console.log("- Legacy provider embedded account UI and theme helpers stay deleted.");
 console.log("- Merchant account data reads through the Vortex Payments boundary.");
 
 function parseJsonObject(source: string): Record<string, unknown> {

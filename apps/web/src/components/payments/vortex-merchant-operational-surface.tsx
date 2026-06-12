@@ -29,7 +29,7 @@ type VortexMerchantState = NonNullable<VortexMerchantAccountPanelProps["merchant
 type MerchantAccountResult = {
   status: ConnectionStatus;
   account: {
-    _id: Id<"stripe_accounts">;
+    _id: string;
     processorAccountId: string;
     accountType: "standard" | "express";
     chargesEnabled: boolean;
@@ -239,7 +239,7 @@ export function VortexMerchantOperationalSurface({
               merchantState={merchantState}
               classNames={vortexPaymentsClassNames}
               readOnly
-              copy={{ title: "Merchant account" }}
+              copy={{ title: "Vortex Connect" }}
             />
           )}
         </div>
@@ -254,13 +254,13 @@ export function NoVortexMerchantAccountState({ slug, title }: NoVortexMerchantAc
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <WalletCards className="text-muted-foreground mb-4 size-12" />
-          <h3 className="mb-2 text-lg font-semibold text-balance">Merchant account not ready</h3>
+          <h3 className="mb-2 text-lg font-semibold text-balance">Vortex Connect not ready</h3>
           <p className="text-muted-foreground mb-6 max-w-sm text-center text-sm text-pretty">
-            Create or finish merchant account setup before using payment operations.
+            Create or finish Vortex Connect setup before using payment operations.
           </p>
           <Button asChild>
             <Link to="/$slug/settings/payments" params={{ slug }}>
-              Open payment settings
+              Open Vortex Connect settings
               <ArrowRight className="ml-2 size-4" />
             </Link>
           </Button>
@@ -289,7 +289,7 @@ function VortexOperationalPlaceholder({
       <CardContent>
         <Button variant="outline" asChild>
           <Link to="/$slug/settings/payments" params={{ slug }}>
-            Review merchant account
+            Review Vortex Connect
             <ArrowRight className="ml-2 size-4" />
           </Link>
         </Button>
