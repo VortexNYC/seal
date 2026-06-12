@@ -320,7 +320,7 @@ export function parsePagination(
 ): { limit: number; cursor?: string } {
   let limit = parseInt(query.limit ?? String(defaults.limit), 10);
 
-  // Clamp limit to valid range
+  // Clamp limit to valid range to prevent excessive page sizes
   if (Number.isNaN(limit) || limit < 1) {
     limit = defaults.limit;
   } else if (limit > defaults.maxLimit) {
