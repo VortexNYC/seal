@@ -45,6 +45,12 @@ export interface ApiDocument {
   signed_count: number;
   /** Optional signing deadline (ISO 8601) */
   deadline?: string;
+  /** Document file metadata */
+  metadata?: {
+    file_type: string;
+    file_size: number;
+    page_count?: number;
+  };
 }
 
 /**
@@ -132,6 +138,11 @@ export const listDocuments = internalQuery({
           recipients_count: recipients.length,
           signed_count: signedCount,
           deadline: doc.deadline ? new Date(doc.deadline).toISOString() : undefined,
+          metadata: {
+            file_type: doc.fileType,
+            file_size: doc.fileSize,
+            page_count: doc.pageCount,
+          },
         };
       }),
     );
@@ -201,6 +212,11 @@ export const getDocument = internalQuery({
       recipients_count: recipients.length,
       signed_count: signedCount,
       deadline: document.deadline ? new Date(document.deadline).toISOString() : undefined,
+      metadata: {
+        file_type: document.fileType,
+        file_size: document.fileSize,
+        page_count: document.pageCount,
+      },
     };
 
     if (args.includeRecipients) {

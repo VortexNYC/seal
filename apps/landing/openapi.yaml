@@ -90,6 +90,19 @@ components:
           type: string
           format: uri
           description: Pre-signed URL to download the document PDF
+        metadata:
+          type: object
+          description: Document file metadata
+          properties:
+            file_type:
+              type: string
+              description: MIME type of the document file
+            file_size:
+              type: integer
+              description: File size in bytes
+            page_count:
+              type: integer
+              description: Number of pages
         recipients:
           type: array
           items:
