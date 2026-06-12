@@ -364,6 +364,14 @@ describe("addRecipientSchema", () => {
     expect(addRecipientSchema.safeParse(noName).success).toBe(false);
   });
 
+  test("rejects empty name", () => {
+    expect(addRecipientSchema.safeParse({ ...validInput, name: "" }).success).toBe(false);
+  });
+
+  test("rejects whitespace-only name", () => {
+    expect(addRecipientSchema.safeParse({ ...validInput, name: "   " }).success).toBe(false);
+  });
+
   test("rejects invalid role", () => {
     expect(addRecipientSchema.safeParse({ ...validInput, role: "editor" }).success).toBe(false);
   });

@@ -194,6 +194,14 @@ export const addRecipient = internalMutation({
     }
 
     const normalizedEmail = args.email.toLowerCase().trim();
+    const normalizedName = args.name.trim();
+
+    if (normalizedName.length === 0) {
+      return {
+        success: false,
+        error: "Recipient name cannot be empty",
+      };
+    }
 
     // Check if recipient already exists
     const existing = await ctx.db
@@ -217,7 +225,7 @@ export const addRecipient = internalMutation({
     const recipientId = await ctx.db.insert("document_recipients", {
       documentId: args.documentId,
       email: normalizedEmail,
-      name: args.name,
+      name: normalizedName,
       role: args.role,
       status: "pending",
       order: args.order,

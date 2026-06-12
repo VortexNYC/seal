@@ -1000,6 +1000,9 @@ http.route({
         if (result.error?.includes("Cannot add")) {
           throw new ApiError(400, result.error, "RESOURCE_CONFLICT");
         }
+        if (result.error?.includes("cannot be empty")) {
+          throw new ApiError(400, result.error, "VALIDATION_ERROR");
+        }
         throw new ApiError(404, result.error ?? "Document not found", "DOCUMENT_NOT_FOUND");
       }
 

@@ -159,7 +159,11 @@ export type GetRecipientInput = z.infer<typeof getRecipientSchema>;
 export const addRecipientSchema = z.object({
   document_id: z.string().describe("The document ID"),
   email: z.string().email().describe("Recipient email address"),
-  name: z.string().describe("Recipient display name"),
+  name: z
+    .string()
+    .min(1, "Recipient name cannot be empty")
+    .refine((val) => val.trim().length > 0, "Recipient name cannot be empty")
+    .describe("Recipient display name"),
   role: recipientRoleSchema.describe(
     "Recipient role: signer (needs to sign), approver (needs to approve), viewer (view only)",
   ),
