@@ -43,7 +43,8 @@ components:
 
     RecipientStatus:
       type: string
-      enum: [pending, viewed, signed, approved, declined]
+      enum: [pending, viewed, signed, approved, declined, expired]
+      description: Current status of a recipient in the signing workflow
 
     TemplateStatus:
       type: string
@@ -696,6 +697,49 @@ paths:
           required: true
           schema:
             type: string
+          description: Document ID to list recipients for
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum number of results per page
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor for the next page
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/RecipientStatus"
+          description: Filter recipients by status
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/RecipientRole"
+          description: Filter recipients by role
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [order, email, name, status, role, created_at, updated_at]
+            default: order
+          description: Field to sort by
+        - name: sort_direction
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: Sort direction
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Case-insensitive substring search on recipient email and name
       responses:
         "200":
           description: OK
@@ -704,10 +748,17 @@ paths:
               schema:
                 type: object
                 properties:
-                  recipients:
+                  data:
                     type: array
                     items:
                       $ref: "#/components/schemas/Recipient"
+                  has_more:
+                    type: boolean
+                    description: Whether there are more results
+                  next_cursor:
+                    type: string
+                    nullable: true
+                    description: Cursor for the next page
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":

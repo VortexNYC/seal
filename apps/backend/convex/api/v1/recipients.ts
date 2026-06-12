@@ -92,8 +92,41 @@ export const listRecipients = internalQuery({
     userId: v.id("users"),
     organizationId: v.id("organizations"),
     documentId: v.id("documents"),
+    limit: v.optional(v.number()),
+    cursor: v.optional(v.string()),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("viewed"),
+        v.literal("signed"),
+        v.literal("approved"),
+        v.literal("declined"),
+        v.literal("expired"),
+      ),
+    ),
+    role: v.optional(v.union(v.literal("signer"), v.literal("approver"), v.literal("viewer"))),
+    sort: v.optional(
+      v.union(
+        v.literal("order"),
+        v.literal("email"),
+        v.literal("name"),
+        v.literal("status"),
+        v.literal("role"),
+        v.literal("created_at"),
+        v.literal("updated_at"),
+      ),
+    ),
+    sort_direction: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
+    search: v.optional(v.string()),
   },
-  handler: async (ctx, args): Promise<ApiRecipient[] | null> => {
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    recipients: ApiRecipient[];
+    has_more: boolean;
+    next_cursor?: string;
+  } | null> => {
     // Verify document exists and belongs to the organization
     const document = await ctx.db.get(args.documentId);
     if (!isDocumentAccessible(document, args.organizationId)) {
@@ -106,10 +139,71 @@ export const listRecipients = internalQuery({
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
 
-    // Sort by order if present
-    recipients.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+    // Apply filters
+    let filtered = recipients;
+    if (args.status) {
+      filtered = filtered.filter((r) => r.status === args.status);
+    }
+    if (args.role) {
+      filtered = filtered.filter((r) => r.role === args.role);
+    }
+    if (args.search) {
+      const term = args.search.toLowerCase();
+      filtered = filtered.filter(
+        (r) => r.email.toLowerCase().includes(term) || (r.name ?? "").toLowerCase().includes(term),
+      );
+    }
 
-    return recipients.map((recipient) => buildApiRecipient(recipient));
+    // Apply sorting
+    const sortField = args.sort ?? "order";
+    const sortDirection = args.sort_direction === "desc" ? -1 : 1;
+
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "order":
+          comparison = (a.order ?? Infinity) - (b.order ?? Infinity);
+          break;
+        case "email":
+          comparison = a.email.localeCompare(b.email);
+          break;
+        case "name":
+          comparison = (a.name ?? "").localeCompare(b.name ?? "");
+          break;
+        case "status":
+          comparison = a.status.localeCompare(b.status);
+          break;
+        case "role":
+          comparison = a.role.localeCompare(b.role);
+          break;
+        case "created_at":
+          comparison = a.createdAt - b.createdAt;
+          break;
+        case "updated_at":
+          comparison = a.updatedAt - b.updatedAt;
+          break;
+      }
+      return comparison * sortDirection;
+    });
+
+    // Pagination
+    const limit = Math.min(args.limit ?? 20, 100);
+    let start = 0;
+    if (args.cursor) {
+      const idx = filtered.findIndex((r) => r._id === args.cursor);
+      if (idx !== -1) start = idx + 1;
+    }
+
+    const page = filtered.slice(start, start + limit + 1);
+    const has_more = page.length > limit;
+    const items = has_more ? page.slice(0, limit) : page;
+    const next_cursor = has_more ? items[items.length - 1]?._id : undefined;
+
+    return {
+      recipients: items.map((recipient) => buildApiRecipient(recipient)),
+      has_more,
+      next_cursor,
+    };
   },
 });
 
