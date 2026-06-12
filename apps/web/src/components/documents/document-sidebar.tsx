@@ -69,7 +69,7 @@ interface DocumentSidebarProps {
   // Permissions
   canEdit: boolean;
   isUserAlreadyRecipient: boolean;
-  stripeConnected: boolean;
+  merchantPaymentsReady: boolean;
 
   // Collapsible section state
   openSections: Set<string>;
@@ -204,7 +204,7 @@ export function DocumentSidebar({
   onCurrentUserFieldsRefetch,
   canEdit,
   isUserAlreadyRecipient,
-  stripeConnected,
+  merchantPaymentsReady,
   hasSigners,
   openSections,
   toggleSection,
@@ -566,7 +566,7 @@ export function DocumentSidebar({
                   onFieldDragStart={onFieldDragStart}
                   onFieldDragEnd={onFieldDragEnd}
                   disabled={!hasSigners}
-                  stripeConnected={stripeConnected}
+                  merchantPaymentsReady={merchantPaymentsReady}
                   documentId={documentId as Id<"documents">}
                 />
               </div>

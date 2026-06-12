@@ -774,7 +774,7 @@ function DocumentDetailPage() {
               }}
               canEdit={canEdit}
               isUserAlreadyRecipient={isUserAlreadyRecipient}
-              stripeConnected={merchantPaymentsReady}
+              merchantPaymentsReady={merchantPaymentsReady}
               openSections={openSections}
               toggleSection={toggleSection}
               aiEnabled={aiEnabled}

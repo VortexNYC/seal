@@ -5,6 +5,9 @@ const repoRoot = new URL("..", import.meta.url).pathname;
 const overviewRoutePath = "apps/web/src/routes/_authenticated/$slug/payments/index.tsx";
 const subscriptionsRoutePath =
   "apps/web/src/routes/_authenticated/$slug/payments/subscriptions.tsx";
+const documentRoutePath = "apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx";
+const documentSidebarPath = "apps/web/src/components/documents/document-sidebar.tsx";
+const fieldToolbarPath = "apps/web/src/components/documents/field-toolbar.tsx";
 const paymentsQueriesPath = "apps/backend/convex/payments/queries.ts";
 const paymentsSubscriptionActionsPath = "apps/backend/convex/payments/subscription_actions.ts";
 const failures: string[] = [];
@@ -17,6 +20,9 @@ for (const requiredPath of [paymentsQueriesPath, paymentsSubscriptionActionsPath
 
 const overviewRoute = readFileSync(join(repoRoot, overviewRoutePath), "utf8");
 const subscriptionsRoute = readFileSync(join(repoRoot, subscriptionsRoutePath), "utf8");
+const documentRoute = readFileSync(join(repoRoot, documentRoutePath), "utf8");
+const documentSidebar = readFileSync(join(repoRoot, documentSidebarPath), "utf8");
+const fieldToolbar = readFileSync(join(repoRoot, fieldToolbarPath), "utf8");
 const paymentsQueries = readFileSync(join(repoRoot, paymentsQueriesPath), "utf8");
 const paymentsSubscriptionActions = readFileSync(
   join(repoRoot, paymentsSubscriptionActionsPath),
@@ -56,6 +62,20 @@ for (const forbiddenFragment of [
   }
 }
 
+for (const [sourcePath, source] of [
+  [documentRoutePath, documentRoute],
+  [documentSidebarPath, documentSidebar],
+  [fieldToolbarPath, fieldToolbar],
+] as const) {
+  if (!source.includes("merchantPaymentsReady")) {
+    failures.push(`${sourcePath} must use merchantPaymentsReady for document payment readiness.`);
+  }
+
+  if (source.includes("stripeConnected")) {
+    failures.push(`${sourcePath} still exposes Stripe payment readiness naming.`);
+  }
+}
+
 for (const requiredFragment of [
   "export const getRevenueStats = memberQuery",
   "export const getTransactionList = memberQuery",
@@ -66,7 +86,7 @@ for (const requiredFragment of [
   "document_invoices",
 ]) {
   if (!paymentsQueries.includes(requiredFragment)) {
-    failures.push(`${paymentsQueriesPath} missing backend facade fragment: ${requiredFragment}`);
+    failures.push(`${paymentsQueriesPath} missing Vortex backend query fragment: ${requiredFragment}`);
   }
 }
 
@@ -79,7 +99,7 @@ for (const requiredFragment of [
 ]) {
   if (!paymentsSubscriptionActions.includes(requiredFragment)) {
     failures.push(
-      `${paymentsSubscriptionActionsPath} missing action facade fragment: ${requiredFragment}`,
+      `${paymentsSubscriptionActionsPath} missing Vortex action fragment: ${requiredFragment}`,
     );
   }
 }

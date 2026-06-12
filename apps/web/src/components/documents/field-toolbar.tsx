@@ -36,7 +36,7 @@ interface FieldToolbarProps {
   onFieldDragStart?: (fieldType: FieldType) => void;
   onFieldDragEnd?: () => void;
   disabled?: boolean;
-  stripeConnected?: boolean;
+  merchantPaymentsReady?: boolean;
   documentId?: Id<"documents">;
 }
 
@@ -194,7 +194,7 @@ export function FieldToolbar({
   onFieldDragStart,
   onFieldDragEnd,
   disabled,
-  stripeConnected = false,
+  merchantPaymentsReady = false,
   documentId,
 }: FieldToolbarProps) {
   const handleDragStart = (fieldType: FieldType) => {
@@ -331,7 +331,7 @@ export function FieldToolbar({
           label="Payment"
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          disabled={disabled || !stripeConnected}
+          disabled={disabled || !merchantPaymentsReady}
         />
 
         <FieldButton
