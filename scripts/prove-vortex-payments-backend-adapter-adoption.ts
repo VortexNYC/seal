@@ -13,6 +13,9 @@ const paymentsSubscriptionActionsPath = "apps/backend/convex/payments/subscripti
 const paymentsMerchantAccountActionsPath =
   "apps/backend/convex/payments/merchant_account_actions.ts";
 const providerConnectActionsPath = "apps/backend/convex/stripe/connect_actions.ts";
+const generatedApiPath = "apps/backend/convex/_generated/api.d.ts";
+const deletedProviderSubscriptionActionsPath =
+  "apps/backend/convex/stripe/connect_subscription_actions.ts";
 const failures: string[] = [];
 
 for (const requiredPath of [
@@ -20,10 +23,17 @@ for (const requiredPath of [
   paymentsSubscriptionActionsPath,
   paymentsMerchantAccountActionsPath,
   providerConnectActionsPath,
+  generatedApiPath,
 ]) {
   if (!existsSync(join(repoRoot, requiredPath))) {
     failures.push(`${requiredPath} must exist as the Vortex-owned backend payments API.`);
   }
+}
+
+if (existsSync(join(repoRoot, deletedProviderSubscriptionActionsPath))) {
+  failures.push(
+    `${deletedProviderSubscriptionActionsPath} must stay deleted; subscriptions enter through api.payments.`,
+  );
 }
 
 const overviewRoute = readFileSync(join(repoRoot, overviewRoutePath), "utf8");
@@ -41,6 +51,7 @@ const paymentsMerchantAccountActions = readFileSync(
   "utf8",
 );
 const providerConnectActions = readFileSync(join(repoRoot, providerConnectActionsPath), "utf8");
+const generatedApi = readFileSync(join(repoRoot, generatedApiPath), "utf8");
 
 for (const requiredFragment of [
   "api.payments.queries.getRevenueStats",
@@ -121,6 +132,10 @@ if (paymentsSubscriptionActions.includes("stripeAccountId: v.string()")) {
   failures.push("Vortex subscription actions must not accept processor account ids from the browser.");
 }
 
+if (generatedApi.includes("stripe/connect_subscription_actions")) {
+  failures.push("Generated Convex API still exposes deleted provider subscription actions.");
+}
+
 for (const requiredFragment of [
   "internal.stripe.connect_actions.createConnectedAccount",
   "internal.stripe.connect_actions.createAccountLink",
@@ -169,3 +184,4 @@ console.log("- Subscription route reads and writes through api.payments.");
 console.log("- Browser no longer supplies processor account ids for subscription operations.");
 console.log("- Vortex subscription actions resolve processor context server-side.");
 console.log("- Vortex Connect account operations enter through api.payments merchant actions.");
+console.log("- Dead public provider subscription actions stay deleted from source and generated API.");

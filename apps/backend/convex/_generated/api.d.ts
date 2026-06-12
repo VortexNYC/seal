@@ -224,7 +224,6 @@ import type * as stripe_connect_helpers from "../stripe/connect_helpers.js";
 import type * as stripe_connect_mutations from "../stripe/connect_mutations.js";
 import type * as stripe_connect_public_mutations from "../stripe/connect_public_mutations.js";
 import type * as stripe_connect_queries from "../stripe/connect_queries.js";
-import type * as stripe_connect_subscription_actions from "../stripe/connect_subscription_actions.js";
 import type * as stripe_connect_webhook_handlers from "../stripe/connect_webhook_handlers.js";
 import type * as stripe_coupon from "../stripe/coupon.js";
 import type * as stripe_downgrade_validation from "../stripe/downgrade_validation.js";
@@ -487,7 +486,6 @@ declare const fullApi: ApiFromModules<{
   "stripe/connect_mutations": typeof stripe_connect_mutations;
   "stripe/connect_public_mutations": typeof stripe_connect_public_mutations;
   "stripe/connect_queries": typeof stripe_connect_queries;
-  "stripe/connect_subscription_actions": typeof stripe_connect_subscription_actions;
   "stripe/connect_webhook_handlers": typeof stripe_connect_webhook_handlers;
   "stripe/coupon": typeof stripe_coupon;
   "stripe/downgrade_validation": typeof stripe_downgrade_validation;
