@@ -2,22 +2,30 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
-const overviewRoutePath = "apps/web/src/routes/_authenticated/$slug/payments/index.tsx";
+const overviewRoutePath =
+  "apps/web/src/routes/_authenticated/$slug/payments/index.tsx";
 const subscriptionsRoutePath =
   "apps/web/src/routes/_authenticated/$slug/payments/subscriptions.tsx";
-const documentRoutePath = "apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx";
-const documentSidebarPath = "apps/web/src/components/documents/document-sidebar.tsx";
+const documentRoutePath =
+  "apps/web/src/routes/_authenticated/$slug/documents/$documentId.tsx";
+const documentSidebarPath =
+  "apps/web/src/components/documents/document-sidebar.tsx";
 const fieldToolbarPath = "apps/web/src/components/documents/field-toolbar.tsx";
 const paymentsQueriesPath = "apps/backend/convex/payments/queries.ts";
-const paymentsSubscriptionActionsPath = "apps/backend/convex/payments/subscription_actions.ts";
-const paymentsPaymentFieldActionsPath = "apps/backend/convex/payments/payment_field_actions.ts";
+const paymentsSubscriptionActionsPath =
+  "apps/backend/convex/payments/subscription_actions.ts";
+const paymentsPaymentFieldActionsPath =
+  "apps/backend/convex/payments/payment_field_actions.ts";
 const paymentsMerchantAccountActionsPath =
   "apps/backend/convex/payments/merchant_account_actions.ts";
-const providerPaymentFieldActionsPath = "apps/backend/convex/stripe/payment_field_actions.ts";
-const providerConnectActionsPath = "apps/backend/convex/stripe/connect_actions.ts";
+const providerPaymentFieldActionsPath =
+  "apps/backend/convex/stripe/payment_field_actions.ts";
+const providerConnectActionsPath =
+  "apps/backend/convex/stripe/connect_actions.ts";
 const generatedApiPath = "apps/backend/convex/_generated/api.d.ts";
 const billingE2ePath = "apps/web/e2e/tests/billing.e2e.ts";
-const deletedProviderBillingQueriesPath = "apps/backend/convex/stripe/queries.ts";
+const deletedProviderBillingQueriesPath =
+  "apps/backend/convex/stripe/queries.ts";
 const deletedProviderSubscriptionActionsPath =
   "apps/backend/convex/stripe/connect_subscription_actions.ts";
 const failures: string[] = [];
@@ -33,7 +41,9 @@ for (const requiredPath of [
   billingE2ePath,
 ]) {
   if (!existsSync(join(repoRoot, requiredPath))) {
-    failures.push(`${requiredPath} must exist as the Vortex-owned backend payments API.`);
+    failures.push(
+      `${requiredPath} must exist as the Vortex-owned backend payments API.`,
+    );
   }
 }
 
@@ -50,11 +60,20 @@ if (existsSync(join(repoRoot, deletedProviderSubscriptionActionsPath))) {
 }
 
 const overviewRoute = readFileSync(join(repoRoot, overviewRoutePath), "utf8");
-const subscriptionsRoute = readFileSync(join(repoRoot, subscriptionsRoutePath), "utf8");
+const subscriptionsRoute = readFileSync(
+  join(repoRoot, subscriptionsRoutePath),
+  "utf8",
+);
 const documentRoute = readFileSync(join(repoRoot, documentRoutePath), "utf8");
-const documentSidebar = readFileSync(join(repoRoot, documentSidebarPath), "utf8");
+const documentSidebar = readFileSync(
+  join(repoRoot, documentSidebarPath),
+  "utf8",
+);
 const fieldToolbar = readFileSync(join(repoRoot, fieldToolbarPath), "utf8");
-const paymentsQueries = readFileSync(join(repoRoot, paymentsQueriesPath), "utf8");
+const paymentsQueries = readFileSync(
+  join(repoRoot, paymentsQueriesPath),
+  "utf8",
+);
 const paymentsSubscriptionActions = readFileSync(
   join(repoRoot, paymentsSubscriptionActionsPath),
   "utf8",
@@ -71,7 +90,10 @@ const providerPaymentFieldActions = readFileSync(
   join(repoRoot, providerPaymentFieldActionsPath),
   "utf8",
 );
-const providerConnectActions = readFileSync(join(repoRoot, providerConnectActionsPath), "utf8");
+const providerConnectActions = readFileSync(
+  join(repoRoot, providerConnectActionsPath),
+  "utf8",
+);
 const generatedApi = readFileSync(join(repoRoot, generatedApiPath), "utf8");
 const billingE2e = readFileSync(join(repoRoot, billingE2ePath), "utf8");
 
@@ -80,7 +102,9 @@ for (const requiredFragment of [
   "api.payments.queries.getTransactionList",
 ]) {
   if (!overviewRoute.includes(requiredFragment)) {
-    failures.push(`${overviewRoutePath} missing Vortex backend fragment: ${requiredFragment}`);
+    failures.push(
+      `${overviewRoutePath} missing Vortex backend fragment: ${requiredFragment}`,
+    );
   }
 }
 
@@ -92,7 +116,9 @@ for (const requiredFragment of [
   "processorSubscriptionId",
 ]) {
   if (!subscriptionsRoute.includes(requiredFragment)) {
-    failures.push(`${subscriptionsRoutePath} missing Vortex backend fragment: ${requiredFragment}`);
+    failures.push(
+      `${subscriptionsRoutePath} missing Vortex backend fragment: ${requiredFragment}`,
+    );
   }
 }
 
@@ -103,8 +129,13 @@ for (const forbiddenFragment of [
   "stripeAccountId",
   "stripeSubscriptionId",
 ]) {
-  if (overviewRoute.includes(forbiddenFragment) || subscriptionsRoute.includes(forbiddenFragment)) {
-    failures.push(`payment routes still expose Stripe backend adapter fragment: ${forbiddenFragment}`);
+  if (
+    overviewRoute.includes(forbiddenFragment) ||
+    subscriptionsRoute.includes(forbiddenFragment)
+  ) {
+    failures.push(
+      `payment routes still expose Stripe backend adapter fragment: ${forbiddenFragment}`,
+    );
   }
 }
 
@@ -114,11 +145,15 @@ for (const [sourcePath, source] of [
   [fieldToolbarPath, fieldToolbar],
 ] as const) {
   if (!source.includes("merchantPaymentsReady")) {
-    failures.push(`${sourcePath} must use merchantPaymentsReady for document payment readiness.`);
+    failures.push(
+      `${sourcePath} must use merchantPaymentsReady for document payment readiness.`,
+    );
   }
 
   if (source.includes("stripeConnected")) {
-    failures.push(`${sourcePath} still exposes Stripe payment readiness naming.`);
+    failures.push(
+      `${sourcePath} still exposes Stripe payment readiness naming.`,
+    );
   }
 }
 
@@ -132,7 +167,9 @@ for (const requiredFragment of [
   "document_invoices",
 ]) {
   if (!paymentsQueries.includes(requiredFragment)) {
-    failures.push(`${paymentsQueriesPath} missing Vortex backend query fragment: ${requiredFragment}`);
+    failures.push(
+      `${paymentsQueriesPath} missing Vortex backend query fragment: ${requiredFragment}`,
+    );
   }
 }
 
@@ -151,19 +188,27 @@ for (const requiredFragment of [
 }
 
 if (paymentsSubscriptionActions.includes("stripeAccountId: v.string()")) {
-  failures.push("Vortex subscription actions must not accept processor account ids from the browser.");
+  failures.push(
+    "Vortex subscription actions must not accept processor account ids from the browser.",
+  );
 }
 
 if (generatedApi.includes("stripe/connect_subscription_actions")) {
-  failures.push("Generated Convex API still exposes deleted provider subscription actions.");
+  failures.push(
+    "Generated Convex API still exposes deleted provider subscription actions.",
+  );
 }
 
 if (generatedApi.includes("stripe/queries")) {
-  failures.push("Generated Convex API still exposes deleted provider billing queries.");
+  failures.push(
+    "Generated Convex API still exposes deleted provider billing queries.",
+  );
 }
 
 if (!billingE2e.includes("api.payments.billing_queries.getAvailablePlans")) {
-  failures.push(`${billingE2ePath} must prove available plans through api.payments billing queries.`);
+  failures.push(
+    `${billingE2ePath} must prove available plans through api.payments billing queries.`,
+  );
 }
 
 if (billingE2e.includes("api.stripe.queries")) {
@@ -207,8 +252,14 @@ for (const requiredFragment of [
   }
 }
 
-if (providerPaymentFieldActions.includes("createStripePaymentObjectsForDocumentFields")) {
-  failures.push("Internal provider payment field action must use provider-neutral export naming.");
+if (
+  providerPaymentFieldActions.includes(
+    "createStripePaymentObjectsForDocumentFields",
+  )
+) {
+  failures.push(
+    "Internal provider payment field action must use provider-neutral export naming.",
+  );
 }
 
 for (const requiredFragment of [
@@ -227,7 +278,9 @@ for (const requiredFragment of [
 }
 
 if (paymentsMerchantAccountActions.includes("api.stripe.connect_actions")) {
-  failures.push("Vortex merchant account actions must not call public provider connect actions.");
+  failures.push(
+    "Vortex merchant account actions must not call public provider connect actions.",
+  );
 }
 
 for (const providerActionName of [
@@ -238,7 +291,11 @@ for (const providerActionName of [
   "createAccountSession",
   "refreshConnectedAccount",
 ]) {
-  if (providerConnectActions.includes(`export const ${providerActionName} = action({`)) {
+  if (
+    providerConnectActions.includes(
+      `export const ${providerActionName} = action({`,
+    )
+  ) {
     failures.push(
       `${providerConnectActionsPath} must keep ${providerActionName} internal-only behind Vortex Payments.`,
     );
@@ -253,12 +310,96 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("Vortex payments backend adapter adoption proof passed:");
-console.log("- Payment overview reads from api.payments queries, not api.stripe revenue queries.");
-console.log("- Subscription route reads and writes through api.payments.");
-console.log("- Browser no longer supplies processor account ids for subscription operations.");
-console.log("- Vortex subscription actions resolve processor context server-side.");
-console.log("- Vortex Connect account operations enter through api.payments merchant actions.");
-console.log("- Dead public provider subscription actions stay deleted from source and generated API.");
-console.log("- Document payment object creation uses Vortex-owned payment link naming.");
-console.log("- Available billing plans enter through api.payments billing queries.");
+const vortexPaymentsTypesPath = "apps/web/src/types/vortex-payments.d.ts";
+const billingSettingsPath =
+  "apps/web/src/routes/_authenticated/$slug/settings/billing.tsx";
+const paymentsSettingsPath =
+  "apps/web/src/routes/_authenticated/$slug/settings/payments.tsx";
+const merchantOperationalSurfacePath =
+  "apps/web/src/components/payments/vortex-merchant-operational-surface.tsx";
+
+if (!existsSync(join(repoRoot, vortexPaymentsTypesPath))) {
+  failures.push(
+    `${vortexPaymentsTypesPath} must exist with Vortex payment type declarations.`,
+  );
+}
+
+const billingSettings = readFileSync(
+  join(repoRoot, billingSettingsPath),
+  "utf8",
+);
+const paymentsSettings = readFileSync(
+  join(repoRoot, paymentsSettingsPath),
+  "utf8",
+);
+const merchantOperationalSurface = readFileSync(
+  join(repoRoot, merchantOperationalSurfacePath),
+  "utf8",
+);
+
+if (!billingSettings.includes('from "@/types/vortex-payments"')) {
+  failures.push(
+    `${billingSettingsPath} must import billing types from @/types/vortex-payments.`,
+  );
+}
+
+if (!paymentsSettings.includes('from "@/types/vortex-payments"')) {
+  failures.push(
+    `${paymentsSettingsPath} must import merchant account types from @/types/vortex-payments.`,
+  );
+}
+
+if (!merchantOperationalSurface.includes('from "@/types/vortex-payments"')) {
+  failures.push(
+    `${merchantOperationalSurfacePath} must import type declarations from @/types/vortex-payments.`,
+  );
+}
+
+if (merchantOperationalSurface.includes("type ConnectionStatus =")) {
+  failures.push(
+    `${merchantOperationalSurfacePath} must not contain local ConnectionStatus type; import MerchantConnectionStatus from @/types/vortex-payments instead.`,
+  );
+}
+
+if (merchantOperationalSurface.includes("type MerchantAccountResult =")) {
+  failures.push(
+    `${merchantOperationalSurfacePath} must not contain local MerchantAccountResult type; import from @/types/vortex-payments instead.`,
+  );
+}
+
+if (billingSettings.includes("as BillingSubscription")) {
+  failures.push(
+    `${billingSettingsPath} must not use unsafe 'as BillingSubscription' cast; prefer typed annotation.`,
+  );
+}
+
+if (paymentsSettings.includes("as MerchantAccountResult")) {
+  failures.push(
+    `${paymentsSettingsPath} must not use unsafe 'as MerchantAccountResult' cast; prefer typed annotation.`,
+  );
+}
+
+if (failures.length > 0) {
+  console.error("Vortex payments type-safety proof failed:");
+  for (const failure of failures) {
+    console.error(`- ${failure}`);
+  }
+  process.exit(1);
+}
+
+console.log("Vortex payments type-safety proof passed:");
+console.log(
+  "- Shared Vortex payment type declarations exist at apps/web/src/types/vortex-payments.d.ts.",
+);
+console.log(
+  "- Billing settings imports typed declarations instead of local mirror types.",
+);
+console.log(
+  "- Payment settings imports typed declarations instead of local mirror types.",
+);
+console.log(
+  "- Merchant operational surface imports typed declarations instead of local mirror types.",
+);
+console.log(
+  "- Unsafe as-casts replaced with type-annotated useQuery assignments.",
+);

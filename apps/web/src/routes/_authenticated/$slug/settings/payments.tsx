@@ -27,14 +27,16 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSubscriptionLimits } from "@/hooks/use-subscription-limits";
+import type {
+  FeeHandling,
+  MerchantAccountResult,
+  MerchantConnectionStatus,
+} from "@/types/vortex-payments";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/payments")({
   component: PaymentsSettingsPage,
 });
 
-type ConnectionStatus = "not_connected" | "pending" | "restricted" | "connected";
-
-type FeeHandling = "absorb" | "pass_to_recipient";
 type VortexMerchantAccount = VortexMerchantAccountPanelProps["merchantAccount"];
 type VortexMerchantState = NonNullable<VortexMerchantAccountPanelProps["merchantState"]>;
 
@@ -57,34 +59,6 @@ const vortexPaymentsClassNames = {
   title: "text-lg font-semibold text-balance",
 } satisfies VortexEmbeddedComponentClassNames;
 
-type MerchantAccountResult = {
-  status: ConnectionStatus;
-  account: {
-    _id: string;
-    processorAccountId: string;
-    accountType: "standard" | "express";
-    chargesEnabled: boolean;
-    payoutsEnabled: boolean;
-    detailsSubmitted: boolean;
-    feeHandling: FeeHandling;
-    defaultCurrency?: string;
-    createdAt?: number;
-    updatedAt?: number;
-    capabilities?: {
-      cardPayments: string;
-      transfers: string;
-      usBankAccountAchPayments?: string;
-    };
-    requirements?: {
-      currentlyDue: string[];
-      eventuallyDue: string[];
-      pastDue: string[];
-      disabledReason?: string;
-    };
-  } | null;
-  canManage: boolean;
-};
-
 function PaymentsSettingsPage() {
   const { slug } = Route.useParams();
 
@@ -92,9 +66,12 @@ function PaymentsSettingsPage() {
 
   const organization = useQuery(api.organizations.queries.getOrganization, { slug });
 
-  const merchantAccountResult = useQuery(api.payments.merchant_account_queries.getMerchantAccount, {
-    slug,
-  }) as MerchantAccountResult | undefined;
+  const merchantAccountResult: MerchantAccountResult | undefined = useQuery(
+    api.payments.merchant_account_queries.getMerchantAccount,
+    {
+      slug,
+    },
+  );
 
   const createMerchantAccount = useAction(
     api.payments.merchant_account_actions.createMerchantAccount,
@@ -300,7 +277,7 @@ function buildMerchantAccount(
 
 function buildMerchantState(
   account: NonNullable<MerchantAccountResult["account"]>,
-  status: ConnectionStatus,
+  status: MerchantConnectionStatus,
 ): VortexMerchantState {
   const openRequirementIds = [
     ...(account.requirements?.currentlyDue ?? []),
@@ -370,7 +347,7 @@ function mapMerchantAccountStatus(input: {
   chargesEnabled: boolean;
   detailsSubmitted: boolean;
   connectionStatus: "restricted" | undefined;
-  routeStatus: ConnectionStatus | undefined;
+  routeStatus: MerchantConnectionStatus | undefined;
 }): VortexMerchantAccount["status"] {
   if (input.routeStatus === "restricted" || input.connectionStatus === "restricted") {
     return "restricted";

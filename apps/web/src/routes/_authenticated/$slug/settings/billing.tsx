@@ -26,43 +26,12 @@ import { toast } from "sonner";
 import { PageWrapper } from "@/components/page-wrapper";
 import { BillingSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
+import type { AvailablePlan, BillingSubscription } from "@/types/vortex-payments";
 
 export const Route = createFileRoute("/_authenticated/$slug/settings/billing")({
   component: BillingSettingsPage,
   pendingComponent: BillingSkeleton,
 });
-
-type BillingSubscription = {
-  readonly status: string;
-  readonly currentPeriodEnd: number;
-  readonly cancelAtPeriodEnd: boolean;
-  readonly trialEnd?: number;
-  readonly tier: string;
-  readonly planName: string;
-  readonly features: string | null;
-  readonly unitAmount: number;
-  readonly currency: string;
-  readonly interval: string;
-  readonly intervalCount: number;
-};
-
-type AvailablePlanPrice = {
-  readonly amount: number;
-  readonly currency: string;
-  readonly lookupKey: string | null;
-};
-
-type AvailablePlan = {
-  readonly productId: string;
-  readonly name: string;
-  readonly description: string | null;
-  readonly tier: string | null;
-  readonly features: string | null;
-  readonly pricing: {
-    readonly monthly: AvailablePlanPrice | null;
-    readonly yearly: AvailablePlanPrice | null;
-  };
-};
 
 const featureLabels: Record<string, string> = {
   advanced_analytics: "Advanced analytics",
@@ -101,13 +70,12 @@ const vortexBillingClassNames = {
 } satisfies VortexEmbeddedComponentClassNames;
 
 function BillingSettingsPage() {
-  const subscription = useQuery(api.payments.billing_queries.getSubscriptionDetails) as
-    | BillingSubscription
-    | null
-    | undefined;
-  const plans = useQuery(api.payments.billing_queries.getAvailablePlans) as
-    | AvailablePlan[]
-    | undefined;
+  const subscription: BillingSubscription | null | undefined = useQuery(
+    api.payments.billing_queries.getSubscriptionDetails,
+  );
+  const plans: readonly AvailablePlan[] | undefined = useQuery(
+    api.payments.billing_queries.getAvailablePlans,
+  );
   const createCheckout = useAction(api.payments.subscription_actions.createCheckoutSession);
   const createPortal = useAction(api.payments.subscription_actions.createCustomerPortalSession);
 
