@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
-import type { Doc } from "../_generated/dataModel";
-import { internalMutation } from "../_generated/server";
+import type { Doc, Id } from "../_generated/dataModel";
+import { internalMutation, type MutationCtx } from "../_generated/server";
 import { authMutation } from "../auth/wrappers";
 import { computeTotalAmountCents } from "../payment_fields/helpers";
 import {
@@ -72,6 +72,72 @@ function assignRecipient(
 
   // No confident match — leave unassigned
   return undefined;
+}
+
+async function createPaymentConfigsFromExtraction(
+  ctx: Pick<MutationCtx, "db">,
+  suggestion: Doc<"ai_field_suggestions">,
+  paymentFieldIds: Id<"signature_fields">[],
+  now: number,
+): Promise<void> {
+  if (paymentFieldIds.length === 0 || !suggestion.paymentExtraction) return;
+
+  const ext = suggestion.paymentExtraction;
+  const items = ext.lineItems.map((item, i) => ({
+    id: `ai-${i}-${now}`,
+    description: item.description,
+    quantity: item.quantity,
+    unitPrice: item.unitPriceCents,
+  }));
+  const totalAmountCents = computeTotalAmountCents(items);
+
+  for (const fieldId of paymentFieldIds) {
+    await ctx.db.insert("payment_field_configs", {
+      fieldId,
+      documentId: suggestion.documentId,
+      organizationId: suggestion.organizationId,
+      paymentType: ext.paymentType,
+      items,
+      currency: ext.currency.toLowerCase(),
+      dueDateTerms: ext.dueDateTerms,
+      customDueDays: ext.customDueDays,
+      customDueDate: ext.customDueDate,
+      lateFees: ext.lateFee
+        ? {
+            enabled: true,
+            type: ext.lateFee.type,
+            amount: ext.lateFee.amount,
+            gracePeriodDays: ext.lateFee.gracePeriodDays,
+          }
+        : undefined,
+      recurringConfig: ext.recurringConfig
+        ? {
+            interval: ext.recurringConfig.interval,
+            intervalCount: ext.recurringConfig.intervalCount,
+            endCondition: "never" as const,
+          }
+        : undefined,
+      installmentsConfig: ext.installmentsConfig
+        ? {
+            count: ext.installmentsConfig.count,
+            interval: ext.installmentsConfig.interval,
+          }
+        : undefined,
+      depositBalanceConfig: ext.depositBalanceConfig
+        ? {
+            depositPercent: ext.depositBalanceConfig.depositPercent,
+            balanceDueDays: ext.depositBalanceConfig.balanceDueDays,
+          }
+        : undefined,
+      allowedPaymentMethods: ["card"],
+      feeHandling: "absorb",
+      taxEnabled: false,
+      totalAmountCents,
+      paymentStatus: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
 }
 
 export const saveFieldSuggestions = internalMutation({
@@ -145,8 +211,8 @@ export const applyFieldSuggestions = authMutation({
       ? suggestion.fields.filter((_, i) => args.selectedFieldIndices?.includes(i))
       : suggestion.fields;
 
-    const fieldIds = [];
-    const paymentFieldIds = [];
+    const fieldIds: Id<"signature_fields">[] = [];
+    const paymentFieldIds: Id<"signature_fields">[] = [];
     const now = Date.now();
 
     for (const field of fieldsToApply) {
@@ -174,65 +240,7 @@ export const applyFieldSuggestions = authMutation({
 
     await ctx.db.patch(args.suggestionId, { status: "applied" as const });
 
-    // Create payment_field_configs for payment fields using pre-extracted data
-    if (paymentFieldIds.length > 0 && suggestion.paymentExtraction) {
-      const ext = suggestion.paymentExtraction;
-      const items = ext.lineItems.map((item, i) => ({
-        id: `ai-${i}-${now}`,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPriceCents,
-      }));
-      const totalAmountCents = computeTotalAmountCents(items);
-
-      for (const fieldId of paymentFieldIds) {
-        await ctx.db.insert("payment_field_configs", {
-          fieldId,
-          documentId: suggestion.documentId,
-          organizationId: suggestion.organizationId,
-          paymentType: ext.paymentType,
-          items,
-          currency: ext.currency.toLowerCase(),
-          dueDateTerms: ext.dueDateTerms,
-          customDueDays: ext.customDueDays,
-          customDueDate: ext.customDueDate,
-          lateFees: ext.lateFee
-            ? {
-                enabled: true,
-                type: ext.lateFee.type,
-                amount: ext.lateFee.amount,
-                gracePeriodDays: ext.lateFee.gracePeriodDays,
-              }
-            : undefined,
-          recurringConfig: ext.recurringConfig
-            ? {
-                interval: ext.recurringConfig.interval,
-                intervalCount: ext.recurringConfig.intervalCount,
-                endCondition: "never" as const,
-              }
-            : undefined,
-          installmentsConfig: ext.installmentsConfig
-            ? {
-                count: ext.installmentsConfig.count,
-                interval: ext.installmentsConfig.interval,
-              }
-            : undefined,
-          depositBalanceConfig: ext.depositBalanceConfig
-            ? {
-                depositPercent: ext.depositBalanceConfig.depositPercent,
-                balanceDueDays: ext.depositBalanceConfig.balanceDueDays,
-              }
-            : undefined,
-          allowedPaymentMethods: ["card"],
-          feeHandling: "absorb",
-          taxEnabled: false,
-          totalAmountCents,
-          paymentStatus: "pending",
-          createdAt: now,
-          updatedAt: now,
-        });
-      }
-    }
+    await createPaymentConfigsFromExtraction(ctx, suggestion, paymentFieldIds, now);
 
     return { fieldIds, count: fieldIds.length };
   },
