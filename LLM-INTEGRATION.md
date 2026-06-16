@@ -34,7 +34,7 @@ bun run migrate:legacy-auth-package:check
 bun run convex:insights
 bun run typecheck
 bun run lint
-bun run format:check
+bun run format:changed:check
 bun run check:preferred-stack
 bun run build
 bun run test

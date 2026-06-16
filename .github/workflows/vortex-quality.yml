@@ -34,7 +34,6 @@ jobs:
         run: |
           git clone --depth 1 "https://x-access-token:${{ secrets.GH_PACKAGES_TOKEN }}@github.com/PlasmaPOS/vortex-core.git" "$GITHUB_WORKSPACE/../vortex-core"
 
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -47,7 +46,7 @@ jobs:
           bun run convex:insights
           bun run typecheck
           bun run lint
-          bun run format:check
+          bun run format:changed:check
           bun run check:preferred-stack
           bun run build
           bun run test

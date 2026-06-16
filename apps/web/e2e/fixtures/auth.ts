@@ -1,5 +1,5 @@
 /* oxlint-disable react-hooks/rules-of-hooks */
-import { expect, test as base, type Page } from "@playwright/test";
+import { test as base, type Page } from "@playwright/test";
 
 import { createDocument, deleteDocument } from "../factories/document-factory";
 import { ensureAuthenticatedWorkspaceHome, getTestWorkspaceConfig } from "./auth-helpers";
