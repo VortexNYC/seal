@@ -89,6 +89,484 @@ interface FieldPropertiesPanelProps {
   onConfigurePayment?: (fieldId: Id<"signature_fields">) => void;
 }
 
+function resolvePatternToSave(validationPattern: string, customPattern: string): string | undefined {
+  if (validationPattern === "custom") return customPattern || undefined;
+  if (!validationPattern || validationPattern === "none") return undefined;
+  return VALIDATION_PATTERNS.find((pattern) => pattern.value === validationPattern)?.pattern;
+}
+
+function resolveValidationPattern(pattern?: string): { value: string; custom: string } {
+  if (!pattern) return { value: "none", custom: "" };
+  const found = VALIDATION_PATTERNS.find((option) => option.pattern === pattern);
+  return found ? { value: found.value, custom: "" } : { value: "custom", custom: pattern };
+}
+
+function getFieldVisibility(fieldType: FieldType) {
+  return {
+    showPlaceholder: fieldType === "text" || fieldType === "number" || fieldType === "date",
+    showValidation: fieldType === "text",
+    showLengthLimits: fieldType === "text",
+    showValueRange: fieldType === "number",
+  };
+}
+
+function useFieldPropertiesState(field: FieldData) {
+  const initialPattern = resolveValidationPattern(field.properties?.pattern);
+  const [label, setLabel] = useState(field.label);
+  const [isRequired, setIsRequired] = useState(field.isRequired);
+  const [placeholder, setPlaceholder] = useState(field.properties?.placeholder ?? "");
+  const [helpText, setHelpText] = useState(field.properties?.helpText ?? "");
+  const [maxLength, setMaxLength] = useState<number | undefined>(field.properties?.maxLength);
+  const [minLength, setMinLength] = useState<number | undefined>(field.properties?.minLength);
+  const [validationPattern, setValidationPattern] = useState(initialPattern.value);
+  const [customPattern, setCustomPattern] = useState(initialPattern.custom);
+  const [customMessage, setCustomMessage] = useState(field.validationRules?.customMessage ?? "");
+  const [minValue, setMinValue] = useState<number | undefined>(field.validationRules?.min);
+  const [maxValue, setMaxValue] = useState<number | undefined>(field.validationRules?.max);
+  const [isSaving, setIsSaving] = useState(false);
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string>(
+    field.recipientId ?? "unassigned",
+  );
+
+  useEffect(() => {
+    const nextPattern = resolveValidationPattern(field.properties?.pattern);
+    setLabel(field.label);
+    setIsRequired(field.isRequired);
+    setPlaceholder(field.properties?.placeholder ?? "");
+    setHelpText(field.properties?.helpText ?? "");
+    setMaxLength(field.properties?.maxLength);
+    setMinLength(field.properties?.minLength);
+    setValidationPattern(nextPattern.value);
+    setCustomPattern(nextPattern.custom);
+    setCustomMessage(field.validationRules?.customMessage ?? "");
+    setMinValue(field.validationRules?.min);
+    setMaxValue(field.validationRules?.max);
+    setSelectedRecipientId(field.recipientId ?? "unassigned");
+  }, [field]);
+
+  return {
+    label,
+    setLabel,
+    isRequired,
+    setIsRequired,
+    placeholder,
+    setPlaceholder,
+    helpText,
+    setHelpText,
+    maxLength,
+    setMaxLength,
+    minLength,
+    setMinLength,
+    validationPattern,
+    setValidationPattern,
+    customPattern,
+    setCustomPattern,
+    customMessage,
+    setCustomMessage,
+    minValue,
+    setMinValue,
+    maxValue,
+    setMaxValue,
+    isSaving,
+    setIsSaving,
+    selectedRecipientId,
+    setSelectedRecipientId,
+  };
+}
+
+function useFieldPropertiesActions({
+  field,
+  state,
+  onSave,
+  onClose,
+}: {
+  field: FieldData;
+  state: ReturnType<typeof useFieldPropertiesState>;
+  onSave?: () => void;
+  onClose: () => void;
+}) {
+  const updateField = useMutation(api.signature_fields.mutations.updateField);
+  const assignField = useMutation(api.signature_fields.mutations.assignFieldToRecipient);
+
+  const handleRecipientChange = async (value: string) => {
+    if (value === "unassigned" || value === state.selectedRecipientId) return;
+    state.setSelectedRecipientId(value);
+    try {
+      await assignField({
+        fieldId: field._id,
+        recipientId: value as Id<"document_recipients">,
+      });
+      toast.success("Field assigned to recipient");
+      onSave?.();
+    } catch (error) {
+      state.setSelectedRecipientId(field.recipientId ?? "unassigned");
+      toast.error(error instanceof Error ? error.message : "Failed to assign field");
+    }
+  };
+
+  const handleSave = async () => {
+    state.setIsSaving(true);
+    const patternToSave = resolvePatternToSave(state.validationPattern, state.customPattern);
+    try {
+      await updateField({
+        fieldId: field._id,
+        label: state.label,
+        isRequired: state.isRequired,
+        properties: {
+          placeholder: state.placeholder || undefined,
+          helpText: state.helpText || undefined,
+          maxLength: state.maxLength || undefined,
+          minLength: state.minLength || undefined,
+          pattern: patternToSave,
+          options: field.properties?.options,
+          defaultValue: field.properties?.defaultValue,
+        },
+        validationRules: {
+          required: state.isRequired,
+          pattern: patternToSave,
+          customMessage: state.customMessage || undefined,
+          min: state.minValue,
+          max: state.maxValue,
+        },
+      });
+      toast.success("Field updated");
+      onSave?.();
+      onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update field");
+    } finally {
+      state.setIsSaving(false);
+    }
+  };
+
+  return { handleRecipientChange, handleSave };
+}
+
+function useFieldPropertiesForm({
+  field,
+  onSave,
+  onClose,
+}: {
+  field: FieldData;
+  onSave?: () => void;
+  onClose: () => void;
+}) {
+  const state = useFieldPropertiesState(field);
+  const actions = useFieldPropertiesActions({ field, state, onSave, onClose });
+
+  return {
+    ...state,
+    ...actions,
+    ...getFieldVisibility(field.fieldType),
+  };
+}
+
+function FieldPanelHeader({ field, onClose }: { field: FieldData; onClose: () => void }) {
+  return (
+    <div className="flex items-center justify-between border-b p-4">
+      <div className="flex items-center gap-2">
+        <div className={cn("rounded-md border p-1.5", FIELD_COLORS[field.fieldType])}>
+          {FIELD_ICONS[field.fieldType]}
+        </div>
+        <div>
+          <h3 className="text-sm font-medium">Field Properties</h3>
+          <p className="text-muted-foreground text-xs">{FIELD_TYPE_LABELS[field.fieldType]} Field</p>
+        </div>
+      </div>
+      <Button variant="ghost" size="icon" aria-label="Close field properties" onClick={onClose}>
+        <XIcon className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+function RecipientAssignmentSection({
+  recipients,
+  selectedRecipientId,
+  onRecipientChange,
+}: {
+  recipients: Recipient[];
+  selectedRecipientId: string;
+  onRecipientChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="field-recipient">Assigned to</Label>
+      {recipients.length > 0 ? (
+        <Select value={selectedRecipientId} onValueChange={onRecipientChange}>
+          <SelectTrigger
+            id="field-recipient"
+            className={selectedRecipientId === "unassigned" ? "border-warning/50 text-warning" : undefined}
+          >
+            <SelectValue placeholder="Select a recipient" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="unassigned" disabled>
+              Unassigned
+            </SelectItem>
+            {recipients.map((recipient) => (
+              <SelectItem key={recipient._id} value={recipient._id}>
+                {recipient.name ? `${recipient.name} (${recipient.email})` : recipient.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <p className="text-muted-foreground text-xs">Add a recipient to the document first</p>
+      )}
+      {selectedRecipientId === "unassigned" && recipients.length > 0 && (
+        <p className="text-warning flex items-center gap-1 text-xs">
+          <AlertTriangleIcon className="h-3 w-3" />
+          This field must be assigned before sending
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PaymentConfigurationSection({
+  field,
+  onConfigurePayment,
+}: {
+  field: FieldData;
+  onConfigurePayment?: (fieldId: Id<"signature_fields">) => void;
+}) {
+  if (field.fieldType !== "payment" || !onConfigurePayment) return null;
+
+  return (
+    <div className="space-y-2">
+      <Button
+        variant="outline"
+        className="border-field-payment-border bg-field-payment-surface text-field-payment hover:bg-field-payment-surface/80 w-full"
+        onClick={() => onConfigurePayment(field._id)}
+      >
+        <CreditCardIcon className="mr-2 h-4 w-4" />
+        Configure Payment
+      </Button>
+      <p className="text-muted-foreground text-xs">Set up line items, payment terms, and methods</p>
+    </div>
+  );
+}
+
+function BasicFieldSettings({
+  label,
+  setLabel,
+  isRequired,
+  setIsRequired,
+  placeholder,
+  setPlaceholder,
+  helpText,
+  setHelpText,
+  showPlaceholder,
+}: {
+  label: string;
+  setLabel: (value: string) => void;
+  isRequired: boolean;
+  setIsRequired: (value: boolean) => void;
+  placeholder: string;
+  setPlaceholder: (value: string) => void;
+  helpText: string;
+  setHelpText: (value: string) => void;
+  showPlaceholder: boolean;
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label htmlFor="field-label">Label</Label>
+        <Input
+          id="field-label"
+          value={label}
+          onChange={(event) => setLabel(event.target.value)}
+          placeholder="Enter field label"
+        />
+        <p className="text-muted-foreground text-xs">The name displayed on the field</p>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label htmlFor="field-required">Required</Label>
+          <p className="text-muted-foreground text-xs">Must be filled before submission</p>
+        </div>
+        <Switch id="field-required" checked={isRequired} onCheckedChange={setIsRequired} />
+      </div>
+
+      {showPlaceholder && (
+        <div className="space-y-2">
+          <Label htmlFor="field-placeholder">Placeholder</Label>
+          <Input
+            id="field-placeholder"
+            value={placeholder}
+            onChange={(event) => setPlaceholder(event.target.value)}
+            placeholder="Enter placeholder text"
+          />
+          <p className="text-muted-foreground text-xs">Shown when the field is empty</p>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label htmlFor="field-help">
+          <span className="flex items-center gap-1.5">
+            <HelpCircleIcon className="h-3.5 w-3.5" />
+            Help Text
+          </span>
+        </Label>
+        <Textarea
+          id="field-help"
+          value={helpText}
+          onChange={(event) => setHelpText(event.target.value)}
+          placeholder="Add instructions for the signer"
+          rows={2}
+        />
+        <p className="text-muted-foreground text-xs">Additional guidance for the recipient</p>
+      </div>
+    </>
+  );
+}
+
+function ValidationSettings({
+  showValidation,
+  validationPattern,
+  setValidationPattern,
+  customPattern,
+  setCustomPattern,
+  customMessage,
+  setCustomMessage,
+}: {
+  showValidation: boolean;
+  validationPattern: string;
+  setValidationPattern: (value: string) => void;
+  customPattern: string;
+  setCustomPattern: (value: string) => void;
+  customMessage: string;
+  setCustomMessage: (value: string) => void;
+}) {
+  if (!showValidation) return null;
+
+  return (
+    <div className="space-y-4 border-t pt-2">
+      <div className="flex items-center gap-2">
+        <AlertCircleIcon className="text-muted-foreground h-4 w-4" />
+        <span className="text-sm font-medium">Validation</span>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="field-validation">Format</Label>
+        <Select
+          value={validationPattern}
+          onValueChange={(value) => {
+            setValidationPattern(value);
+            if (value !== "custom") setCustomPattern("");
+          }}
+        >
+          <SelectTrigger id="field-validation">
+            <SelectValue placeholder="Select format" />
+          </SelectTrigger>
+          <SelectContent>
+            {VALIDATION_PATTERNS.map((pattern) => (
+              <SelectItem key={pattern.value} value={pattern.value}>
+                {pattern.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      {validationPattern === "custom" && (
+        <div className="space-y-2">
+          <Label htmlFor="field-custom-pattern">Custom Pattern (Regex)</Label>
+          <Input
+            id="field-custom-pattern"
+            value={customPattern}
+            onChange={(event) => setCustomPattern(event.target.value)}
+            placeholder="^[a-zA-Z]+$"
+            className="font-mono text-sm"
+          />
+        </div>
+      )}
+      {validationPattern && validationPattern !== "none" && (
+        <div className="space-y-2">
+          <Label htmlFor="field-error-message">Error Message</Label>
+          <Input
+            id="field-error-message"
+            value={customMessage}
+            onChange={(event) => setCustomMessage(event.target.value)}
+            placeholder="Please enter a valid value"
+          />
+          <p className="text-muted-foreground text-xs">Shown when validation fails</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NumberInputPair({
+  title,
+  first,
+  second,
+}: {
+  title: string;
+  first: {
+    id: string;
+    label: string;
+    value?: number;
+    placeholder: string;
+    parse: (value: string) => number;
+    onChange: (value?: number) => void;
+  };
+  second: {
+    id: string;
+    label: string;
+    value?: number;
+    placeholder: string;
+    parse: (value: string) => number;
+    onChange: (value?: number) => void;
+  };
+}) {
+  return (
+    <div className="space-y-4 border-t pt-2">
+      <span className="text-sm font-medium">{title}</span>
+      <div className="grid grid-cols-2 gap-4">
+        {[first, second].map((input) => (
+          <div className="space-y-2" key={input.id}>
+            <Label htmlFor={input.id}>{input.label}</Label>
+            <Input
+              id={input.id}
+              type="number"
+              min={0}
+              value={input.value ?? ""}
+              onChange={(event) =>
+                input.onChange(event.target.value ? input.parse(event.target.value) : undefined)
+              }
+              placeholder={input.placeholder}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FieldPropertiesFooter({
+  isSaving,
+  onClose,
+  onSave,
+}: {
+  isSaving: boolean;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div className="bg-muted/30 border-t p-4">
+      <div className="flex items-center justify-end gap-3">
+        <Button variant="outline" size="sm" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button size="sm" onClick={onSave} disabled={isSaving}>
+          {isSaving ? "Saving..." : "Save"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   signature: <PenToolIcon className="h-4 w-4" />,
   text: <TypeIcon className="h-4 w-4" />,
@@ -132,417 +610,84 @@ export function FieldPropertiesPanel({
   onSave,
   onConfigurePayment,
 }: FieldPropertiesPanelProps) {
-  // Local state for form fields
-  const [label, setLabel] = useState(field.label);
-  const [isRequired, setIsRequired] = useState(field.isRequired);
-  const [placeholder, setPlaceholder] = useState(field.properties?.placeholder ?? "");
-  const [helpText, setHelpText] = useState(field.properties?.helpText ?? "");
-  const [maxLength, setMaxLength] = useState<number | undefined>(field.properties?.maxLength);
-  const [minLength, setMinLength] = useState<number | undefined>(field.properties?.minLength);
-  const [validationPattern, setValidationPattern] = useState(() => {
-    const pattern = field.properties?.pattern;
-    if (!pattern) return "none";
-    const found = VALIDATION_PATTERNS.find((p) => p.pattern === pattern);
-    return found ? found.value : "custom";
-  });
-  const [customPattern, setCustomPattern] = useState(field.properties?.pattern ?? "");
-  const [customMessage, setCustomMessage] = useState(field.validationRules?.customMessage ?? "");
-  const [minValue, setMinValue] = useState<number | undefined>(field.validationRules?.min);
-  const [maxValue, setMaxValue] = useState<number | undefined>(field.validationRules?.max);
-
-  // Track saving state
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Update local state when field changes
-  useEffect(() => {
-    setLabel(field.label);
-    setIsRequired(field.isRequired);
-    setPlaceholder(field.properties?.placeholder ?? "");
-    setHelpText(field.properties?.helpText ?? "");
-    setMaxLength(field.properties?.maxLength);
-    setMinLength(field.properties?.minLength);
-    setCustomMessage(field.validationRules?.customMessage ?? "");
-    setMinValue(field.validationRules?.min);
-    setMaxValue(field.validationRules?.max);
-
-    const pattern = field.properties?.pattern;
-    if (!pattern) {
-      setValidationPattern("none");
-      setCustomPattern("");
-    } else {
-      const found = VALIDATION_PATTERNS.find((p) => p.pattern === pattern);
-      if (found) {
-        setValidationPattern(found.value);
-        setCustomPattern("");
-      } else {
-        setValidationPattern("custom");
-        setCustomPattern(pattern);
-      }
-    }
-  }, [field]);
-
-  const updateField = useMutation(api.signature_fields.mutations.updateField);
-  const assignField = useMutation(api.signature_fields.mutations.assignFieldToRecipient);
-
-  // Recipient assignment state
-  const [selectedRecipientId, setSelectedRecipientId] = useState<string>(
-    field.recipientId ?? "unassigned",
-  );
-
-  // Update recipient selection when field changes
-  useEffect(() => {
-    setSelectedRecipientId(field.recipientId ?? "unassigned");
-  }, [field.recipientId]);
-
-  const handleRecipientChange = async (value: string) => {
-    if (value === "unassigned" || value === selectedRecipientId) return;
-    setSelectedRecipientId(value);
-    try {
-      await assignField({
-        fieldId: field._id,
-        recipientId: value as Id<"document_recipients">,
-      });
-      toast.success("Field assigned to recipient");
-      onSave?.();
-    } catch (error) {
-      setSelectedRecipientId(field.recipientId ?? "unassigned");
-      toast.error(error instanceof Error ? error.message : "Failed to assign field");
-    }
-  };
-
-  // Save function
-  const handleSave = async () => {
-    setIsSaving(true);
-
-    // Determine the pattern to use
-    let patternToSave: string | undefined;
-    if (validationPattern === "custom" && customPattern) {
-      patternToSave = customPattern;
-    } else if (
-      validationPattern &&
-      validationPattern !== "custom" &&
-      validationPattern !== "none"
-    ) {
-      const found = VALIDATION_PATTERNS.find((p) => p.value === validationPattern);
-      patternToSave = found?.pattern;
-    }
-
-    try {
-      await updateField({
-        fieldId: field._id,
-        label,
-        isRequired,
-        properties: {
-          placeholder: placeholder || undefined,
-          helpText: helpText || undefined,
-          maxLength: maxLength || undefined,
-          minLength: minLength || undefined,
-          pattern: patternToSave,
-          // Preserve existing options
-          options: field.properties?.options,
-          defaultValue: field.properties?.defaultValue,
-        },
-        validationRules: {
-          required: isRequired,
-          pattern: patternToSave,
-          customMessage: customMessage || undefined,
-          min: minValue,
-          max: maxValue,
-        },
-      });
-
-      toast.success("Field updated");
-      onSave?.();
-      onClose();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update field";
-      toast.error(errorMessage);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Determine which fields to show based on field type
-  const showPlaceholder =
-    field.fieldType === "text" || field.fieldType === "number" || field.fieldType === "date";
-  const showValidation = field.fieldType === "text";
-  const showLengthLimits = field.fieldType === "text";
-  const showValueRange = field.fieldType === "number";
+  const form = useFieldPropertiesForm({ field, onSave, onClose });
 
   return (
     <div className="field-properties-panel bg-background flex h-full flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b p-4">
-        <div className="flex items-center gap-2">
-          <div className={cn("rounded-md border p-1.5", FIELD_COLORS[field.fieldType])}>
-            {FIELD_ICONS[field.fieldType]}
-          </div>
-          <div>
-            <h3 className="text-sm font-medium">Field Properties</h3>
-            <p className="text-muted-foreground text-xs">
-              {FIELD_TYPE_LABELS[field.fieldType]} Field
-            </p>
-          </div>
-        </div>
-        <Button variant="ghost" size="icon" aria-label="Close field properties" onClick={onClose}>
-          <XIcon className="h-4 w-4" />
-        </Button>
-      </div>
+      <FieldPanelHeader field={field} onClose={onClose} />
 
-      {/* Content */}
       <div className="flex-1 space-y-6 overflow-y-auto p-4">
-        {/* Assigned Recipient */}
-        <div className="space-y-2">
-          <Label htmlFor="field-recipient">Assigned to</Label>
-          {recipients.length > 0 ? (
-            <Select value={selectedRecipientId} onValueChange={handleRecipientChange}>
-              <SelectTrigger
-                id="field-recipient"
-                className={
-                  selectedRecipientId === "unassigned"
-                    ? "border-warning/50 text-warning"
-                    : undefined
-                }
-              >
-                <SelectValue placeholder="Select a recipient" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned" disabled>
-                  Unassigned
-                </SelectItem>
-                {recipients.map((r) => (
-                  <SelectItem key={r._id} value={r._id}>
-                    {r.name ? `${r.name} (${r.email})` : r.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <p className="text-muted-foreground text-xs">Add a recipient to the document first</p>
-          )}
-          {selectedRecipientId === "unassigned" && recipients.length > 0 && (
-            <p className="text-warning flex items-center gap-1 text-xs">
-              <AlertTriangleIcon className="h-3 w-3" />
-              This field must be assigned before sending
-            </p>
-          )}
-        </div>
-
-        {/* Configure Payment button for payment fields */}
-        {field.fieldType === "payment" && onConfigurePayment && (
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="border-field-payment-border bg-field-payment-surface text-field-payment hover:bg-field-payment-surface/80 w-full"
-              onClick={() => onConfigurePayment(field._id)}
-            >
-              <CreditCardIcon className="mr-2 h-4 w-4" />
-              Configure Payment
-            </Button>
-            <p className="text-muted-foreground text-xs">
-              Set up line items, payment terms, and methods
-            </p>
-          </div>
-        )}
-
-        {/* Label */}
-        <div className="space-y-2">
-          <Label htmlFor="field-label">Label</Label>
-          <Input
-            id="field-label"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="Enter field label"
+        <RecipientAssignmentSection
+          recipients={recipients}
+          selectedRecipientId={form.selectedRecipientId}
+          onRecipientChange={form.handleRecipientChange}
+        />
+        <PaymentConfigurationSection field={field} onConfigurePayment={onConfigurePayment} />
+        <BasicFieldSettings
+          label={form.label}
+          setLabel={form.setLabel}
+          isRequired={form.isRequired}
+          setIsRequired={form.setIsRequired}
+          placeholder={form.placeholder}
+          setPlaceholder={form.setPlaceholder}
+          helpText={form.helpText}
+          setHelpText={form.setHelpText}
+          showPlaceholder={form.showPlaceholder}
+        />
+        <ValidationSettings
+          showValidation={form.showValidation}
+          validationPattern={form.validationPattern}
+          setValidationPattern={form.setValidationPattern}
+          customPattern={form.customPattern}
+          setCustomPattern={form.setCustomPattern}
+          customMessage={form.customMessage}
+          setCustomMessage={form.setCustomMessage}
+        />
+        {form.showLengthLimits && (
+          <NumberInputPair
+            title="Length Limits"
+            first={{
+              id: "field-min-length",
+              label: "Min Length",
+              value: form.minLength,
+              placeholder: "0",
+              parse: (value) => Number.parseInt(value, 10),
+              onChange: form.setMinLength,
+            }}
+            second={{
+              id: "field-max-length",
+              label: "Max Length",
+              value: form.maxLength,
+              placeholder: "No limit",
+              parse: (value) => Number.parseInt(value, 10),
+              onChange: form.setMaxLength,
+            }}
           />
-          <p className="text-muted-foreground text-xs">The name displayed on the field</p>
-        </div>
-
-        {/* Required Toggle */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label htmlFor="field-required">Required</Label>
-            <p className="text-muted-foreground text-xs">Must be filled before submission</p>
-          </div>
-          <Switch id="field-required" checked={isRequired} onCheckedChange={setIsRequired} />
-        </div>
-
-        {/* Placeholder (for text and date fields) */}
-        {showPlaceholder && (
-          <div className="space-y-2">
-            <Label htmlFor="field-placeholder">Placeholder</Label>
-            <Input
-              id="field-placeholder"
-              value={placeholder}
-              onChange={(e) => setPlaceholder(e.target.value)}
-              placeholder="Enter placeholder text"
-            />
-            <p className="text-muted-foreground text-xs">Shown when the field is empty</p>
-          </div>
         )}
-
-        {/* Help Text */}
-        <div className="space-y-2">
-          <Label htmlFor="field-help">
-            <span className="flex items-center gap-1.5">
-              <HelpCircleIcon className="h-3.5 w-3.5" />
-              Help Text
-            </span>
-          </Label>
-          <Textarea
-            id="field-help"
-            value={helpText}
-            onChange={(e) => setHelpText(e.target.value)}
-            placeholder="Add instructions for the signer"
-            rows={2}
+        {form.showValueRange && (
+          <NumberInputPair
+            title="Value Range"
+            first={{
+              id: "field-min-value",
+              label: "Min Value",
+              value: form.minValue,
+              placeholder: "No min",
+              parse: Number.parseFloat,
+              onChange: form.setMinValue,
+            }}
+            second={{
+              id: "field-max-value",
+              label: "Max Value",
+              value: form.maxValue,
+              placeholder: "No max",
+              parse: Number.parseFloat,
+              onChange: form.setMaxValue,
+            }}
           />
-          <p className="text-muted-foreground text-xs">Additional guidance for the recipient</p>
-        </div>
-
-        {/* Validation Section (for text fields) */}
-        {showValidation && (
-          <div className="space-y-4 border-t pt-2">
-            <div className="flex items-center gap-2">
-              <AlertCircleIcon className="text-muted-foreground h-4 w-4" />
-              <span className="text-sm font-medium">Validation</span>
-            </div>
-
-            {/* Validation Pattern */}
-            <div className="space-y-2">
-              <Label htmlFor="field-validation">Format</Label>
-              <Select
-                value={validationPattern}
-                onValueChange={(value) => {
-                  setValidationPattern(value);
-                  if (value !== "custom") {
-                    setCustomPattern("");
-                  }
-                }}
-              >
-                <SelectTrigger id="field-validation">
-                  <SelectValue placeholder="Select format" />
-                </SelectTrigger>
-                <SelectContent>
-                  {VALIDATION_PATTERNS.map((pattern) => (
-                    <SelectItem key={pattern.value} value={pattern.value}>
-                      {pattern.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Custom Pattern */}
-            {validationPattern === "custom" && (
-              <div className="space-y-2">
-                <Label htmlFor="field-custom-pattern">Custom Pattern (Regex)</Label>
-                <Input
-                  id="field-custom-pattern"
-                  value={customPattern}
-                  onChange={(e) => setCustomPattern(e.target.value)}
-                  placeholder="^[a-zA-Z]+$"
-                  className="font-mono text-sm"
-                />
-              </div>
-            )}
-
-            {/* Custom Error Message */}
-            {validationPattern && validationPattern !== "none" && (
-              <div className="space-y-2">
-                <Label htmlFor="field-error-message">Error Message</Label>
-                <Input
-                  id="field-error-message"
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  placeholder="Please enter a valid value"
-                />
-                <p className="text-muted-foreground text-xs">Shown when validation fails</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Length Limits (for text fields) */}
-        {showLengthLimits && (
-          <div className="space-y-4 border-t pt-2">
-            <span className="text-sm font-medium">Length Limits</span>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="field-min-length">Min Length</Label>
-                <Input
-                  id="field-min-length"
-                  type="number"
-                  min={0}
-                  value={minLength ?? ""}
-                  onChange={(e) =>
-                    setMinLength(e.target.value ? Number.parseInt(e.target.value, 10) : undefined)
-                  }
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="field-max-length">Max Length</Label>
-                <Input
-                  id="field-max-length"
-                  type="number"
-                  min={0}
-                  value={maxLength ?? ""}
-                  onChange={(e) =>
-                    setMaxLength(e.target.value ? Number.parseInt(e.target.value, 10) : undefined)
-                  }
-                  placeholder="No limit"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Value Range (for number fields) */}
-        {showValueRange && (
-          <div className="space-y-4 border-t pt-2">
-            <span className="text-sm font-medium">Value Range</span>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="field-min-value">Min Value</Label>
-                <Input
-                  id="field-min-value"
-                  type="number"
-                  value={minValue ?? ""}
-                  onChange={(e) =>
-                    setMinValue(e.target.value ? Number.parseFloat(e.target.value) : undefined)
-                  }
-                  placeholder="No min"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="field-max-value">Max Value</Label>
-                <Input
-                  id="field-max-value"
-                  type="number"
-                  value={maxValue ?? ""}
-                  onChange={(e) =>
-                    setMaxValue(e.target.value ? Number.parseFloat(e.target.value) : undefined)
-                  }
-                  placeholder="No max"
-                />
-              </div>
-            </div>
-          </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="bg-muted/30 border-t p-4">
-        <div className="flex items-center justify-end gap-3">
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save"}
-          </Button>
-        </div>
-      </div>
+      <FieldPropertiesFooter isSaving={form.isSaving} onClose={onClose} onSave={form.handleSave} />
     </div>
   );
 }

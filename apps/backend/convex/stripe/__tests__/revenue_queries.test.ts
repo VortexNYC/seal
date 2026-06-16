@@ -5,6 +5,15 @@ import { createTestContext } from "../../test.setup";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function expectFirstInvoice<T>(invoices: T[]): T {
+  expect(invoices.length).toBeGreaterThan(0);
+  const [invoice] = invoices;
+  if (!invoice) {
+    throw new Error("Expected at least one invoice");
+  }
+  return invoice;
+}
+
 describe("revenue analytics queries", () => {
   let t: ReturnType<typeof createTestContext>;
   let organizationId: Id<"organizations">;
@@ -341,9 +350,10 @@ describe("revenue analytics queries", () => {
       });
 
       expect(result.count).toBe(1);
-      expect(result.invoices[0]!.amountDue).toBe(25000);
-      expect(result.invoices[0]!.ageDays).toBe(45);
-      expect(result.invoices[0]!.dunningStatus).toBe("none");
+      const invoice = expectFirstInvoice(result.invoices);
+      expect(invoice.amountDue).toBe(25000);
+      expect(invoice.ageDays).toBe(45);
+      expect(invoice.dunningStatus).toBe("none");
     });
 
     test("excludes invoices under threshold", async () => {
@@ -382,7 +392,8 @@ describe("revenue analytics queries", () => {
       });
 
       expect(result.count).toBe(1);
-      expect(result.invoices[0]!.dunningStatus).toBe("completed");
+      const invoice = expectFirstInvoice(result.invoices);
+      expect(invoice.dunningStatus).toBe("completed");
     });
 
     test("excludes freshly completed dunning from stalled", async () => {
@@ -424,7 +435,8 @@ describe("revenue analytics queries", () => {
       });
 
       expect(result.count).toBe(1);
-      expect(result.invoices[0]!.dunningStatus).toBe("active");
+      const invoice = expectFirstInvoice(result.invoices);
+      expect(invoice.dunningStatus).toBe("active");
     });
 
     test("excludes active dunning with future nextDunningAt", async () => {
@@ -533,8 +545,9 @@ describe("revenue analytics queries", () => {
       expect(result.count).toBe(2);
       expect(result.totalAmount).toBe(30000);
       // Oldest first
-      expect(result.invoices[0]!.ageDays).toBe(90);
-      expect(result.invoices[1]!.ageDays).toBe(35);
+      const [oldestInvoice, newerInvoice] = result.invoices;
+      expect(oldestInvoice?.ageDays).toBe(90);
+      expect(newerInvoice?.ageDays).toBe(35);
     });
   });
 });

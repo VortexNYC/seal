@@ -357,7 +357,7 @@ The MCP server uses OAuth 2.0. When connecting via Claude Desktop or another MCP
   },
 };
 
-const VALID_TOPICS = Object.keys(KNOWLEDGE_BASE);
+const VALID_TOPICS = Object.entries(KNOWLEDGE_BASE);
 
 /**
  * Registers product knowledge resources with the MCP server.
@@ -374,8 +374,7 @@ export function registerDocsResources(server: McpServer): void {
     },
     async (uri) => {
       const topicList = VALID_TOPICS.map(
-        (topic) =>
-          `- [${KNOWLEDGE_BASE[topic]!.title}](seal://docs/${topic}) — \`seal://docs/${topic}\``,
+        ([topic, entry]) => `- [${entry.title}](seal://docs/${topic}) — \`seal://docs/${topic}\``,
       ).join("\n");
 
       return {
